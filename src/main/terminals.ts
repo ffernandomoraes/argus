@@ -1,0 +1,112 @@
+import { existsSync, statSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { spawn, type IPty } from 'node-pty'
+import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
+import { claudePath } from './claudePath'
+import { expandHome } from './paths'
+
+// Guarda o fim da saída de cada terminal para redesenhar a tela ao reconectar.
+const BUFFER_LIMIT = 200_000
+
+type Session = { pty: IPty; buffer: string }
+
+export class Terminals {
+  private sessions = new Map<string, Session>()
+
+  constructor(
+    private onData: (key: string, data: string) => void,
+    private onExit: (key: string, code: number) => void
+  ) {}
+
+  open(req: TerminalOpenRequest): TerminalOpenResult {
+    const existing = this.sessions.get(req.key)
+    if (existing) {
+      existing.pty.resize(req.cols, req.rows)
+      return { ok: true, buffer: existing.buffer }
+    }
+
+    const cwd = expandHome(req.cwd)
+    if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
+      return { ok: false, error: `A pasta não existe: ${req.cwd}` }
+    }
+
+    const claude = claudePath()
+    const env = { ...process.env } as Record<string, string>
+    delete env.ELECTRON_RUN_AS_NODE
+    delete env.ELECTRON_NO_ATTACH_CONSOLE
+    env.TERM = 'xterm-256color'
+    env.COLORTERM = 'truecolor'
+    // App aberto pelo Finder não tem o PATH do terminal; o claude e o node precisam dele.
+    env.PATH = [dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+
+    try {
+      const args = [
+        ...(req.sessionId ? ['--resume', req.sessionId] : []),
+        ...(req.model ? ['--model', req.model] : []),
+        ...(req.effort ? ['--effort', req.effort] : []),
+        ...(req.settingsJson ? ['--settings', req.settingsJson] : []),
+        ...(req.permissionMode ? ['--permission-mode', req.permissionMode] : [])
+      ]
+      const pty = spawn(claude, args, {
+        name: 'xterm-256color',
+        cols: req.cols,
+        rows: req.rows,
+        cwd,
+        env
+      })
+      const session: Session = { pty, buffer: '' }
+      pty.onData((data) => {
+        session.buffer = (session.buffer + data).slice(-BUFFER_LIMIT)
+        this.onData(req.key, data)
+      })
+      pty.onExit(({ exitCode }) => {
+        this.sessions.delete(req.key)
+        this.onExit(req.key, exitCode)
+      })
+      this.sessions.set(req.key, session)
+      return { ok: true, buffer: '' }
+    } catch (err) {
+      return { ok: false, error: `Não consegui abrir o claude: ${(err as Error).message}` }
+    }
+  }
+
+  // Conversa nova que ganhou id de sessão: o terminal já aberto passa a atender pelo id novo,
+  // em vez de abrir um segundo `claude` para a mesma conversa.
+  rename(oldKey: string, newKey: string): void {
+    const session = this.sessions.get(oldKey)
+    if (!session || oldKey === newKey) return
+    this.sessions.delete(oldKey)
+    // Já havia um terminal com esse id (caso raro): fica com o novo e encerra o antigo.
+    this.sessions.get(newKey)?.pty.kill()
+    this.sessions.set(newKey, session)
+  }
+
+  write(key: string, data: string): void {
+    this.sessions.get(key)?.pty.write(data)
+  }
+
+  resize(key: string, cols: number, rows: number): void {
+    if (cols > 0 && rows > 0) this.sessions.get(key)?.pty.resize(cols, rows)
+  }
+
+  kill(key: string): void {
+    const session = this.sessions.get(key)
+    if (!session) return
+    this.sessions.delete(key)
+    const { pid } = session.pty
+    session.pty.kill()
+    // Se não sair com o pedido educado, encerra à força: nada pode ficar rodando atrás.
+    setTimeout(() => {
+      try {
+        process.kill(pid, 0)
+        process.kill(pid, 'SIGKILL')
+      } catch {
+        // já saiu
+      }
+    }, 2000).unref()
+  }
+
+  killAll(): void {
+    for (const key of [...this.sessions.keys()]) this.kill(key)
+  }
+}

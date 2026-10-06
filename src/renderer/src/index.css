@@ -1,0 +1,171 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Tema escuro (padrão). Os tons são mais afastados entre si para as camadas
+     continuarem distintas em monitores com menos contraste. */
+  --color-bg: #161618;
+  --color-surface: #222226;
+  --color-surface-2: #2c2c31;
+  --color-line: #393940;
+  --color-line-strong: #4d4d56;
+  --color-text: #f0f0f2;
+  --color-muted: #a8a8b2;
+  --color-faint: #7c7c87;
+  --color-dots: #3c3c44;
+
+  --color-area-trabalho: #3b82f6;
+  --color-area-freela: #f59e0b;
+  --color-area-pessoal: #10b981;
+
+  --color-running: #60a5fa;
+  --color-needs-you: #fbbf24;
+  --color-done: #34d399;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+/* Tema claro: as mesmas variáveis, trocadas. Terminal e código continuam escuros. */
+:root {
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #f3f3f5;
+  --color-surface: #ffffff;
+  --color-surface-2: #ececef;
+  --color-line: #dcdce1;
+  --color-line-strong: #c3c3cb;
+  --color-text: #18181b;
+  --color-muted: #52525b;
+  --color-faint: #85858f;
+  --color-dots: #c9c9d0;
+
+  --color-running: #2563eb;
+  --color-needs-you: #d97706;
+  --color-done: #059669;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Tailwind 4 tira o cursor de mão dos botões; aqui ele volta para tudo que é clicável */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']) {
+  cursor: pointer;
+}
+
+/* Faixa invisível ao lado dos semáforos arrasta a janela (titleBarStyle: hiddenInset) */
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* React Flow no tema do app */
+.react-flow {
+  --xy-background-color: var(--color-bg);
+  --xy-node-border-radius: 10px;
+  --xy-minimap-background-color: var(--color-surface);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  --xy-minimap-node-background-color: var(--color-line-strong);
+  --xy-edge-stroke: var(--color-line-strong);
+  --xy-selection-background-color: rgb(59 130 246 / 0.08);
+  --xy-selection-border: 1px dashed rgb(59 130 246 / 0.6);
+}
+.react-flow__node {
+  font-family: var(--font-sans);
+}
+.react-flow__minimap {
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__attribution {
+  display: none;
+}
+
+/* Espaço segurado: os blocos deixam de receber o mouse e o arraste vai para a câmera.
+   !important porque o React Flow define pointer-events inline em cada nó. */
+.react-flow.camera-mode .react-flow__node {
+  pointer-events: none !important;
+}
+.react-flow.camera-mode .react-flow__pane {
+  cursor: grab;
+}
+.react-flow.camera-mode .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+/* Visualizador de código (Shiki): números de linha e fonte do editor */
+.code-view pre.shiki {
+  margin: 0;
+  padding: 12px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  counter-reset: line;
+  background: transparent !important;
+}
+.code-view pre.shiki .line {
+  display: inline-block;
+  min-width: 100%;
+  padding-right: 16px;
+}
+.code-view pre.shiki .line.line-changed {
+  background: rgba(74, 222, 128, 0.16);
+  transition: background 0.4s;
+}
+.code-view pre.shiki .line.line-highlight {
+  background: rgba(96, 165, 250, 0.16);
+}
+.code-view pre.shiki .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 3.5em;
+  margin-right: 16px;
+  text-align: right;
+  color: #5c5c66;
+  user-select: none;
+}
+
+/* Barra de rolagem fina, nas cores do tema. O polegar fica mais visível ao passar o mouse. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-faint);
+}
+
+/* O código é sempre escuro: barra escura independentemente do tema.
+   O terminal desenha a própria barra (cores no tema do xterm, em TerminalView). */
+.code-view::-webkit-scrollbar-thumb {
+  background-color: #4d4d56;
+}
+.code-view::-webkit-scrollbar-thumb:hover {
+  background-color: #7c7c87;
+}

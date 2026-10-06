@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: true
+  node-pty: false
+minimumReleaseAgeExclude:
+  - vite@7.3.7

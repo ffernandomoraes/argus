@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>dev.canva-agent-editor.speech</string>
+  <key>CFBundleName</key>
+  <string>Canva Agent Editor Speech</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>O microfone é usado para ditar mensagens para o Claude.</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>O reconhecimento de fala transforma o que você diz em texto no campo da conversa.</string>
+</dict>
+</plist>

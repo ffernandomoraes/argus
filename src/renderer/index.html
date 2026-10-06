@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Canva Agent Editor</title>
+    <script>
+      // Aplica o tema salvo antes do React montar, para não piscar o tema errado.
+      try {
+        const pref = localStorage.getItem('theme') || 'dark'
+        const light = pref === 'light' || (pref === 'system' && matchMedia('(prefers-color-scheme: light)').matches)
+        document.documentElement.dataset.theme = light ? 'light' : 'dark'
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -34,7 +34,7 @@ const KEYTERMS = [
   'JavaScript', 'Node', 'Vite', 'Tailwind', 'pnpm', 'npm', 'Claude', 'Claude Code', 'Opus', 'Sonnet', 'Haiku',
   'SDK', 'API', 'CLI', 'GitHub', 'branch', 'merge', 'pull request', 'commit', 'deploy', 'build', 'debug',
   'log', 'diff', 'refactor', 'endpoint', 'cache', 'props', 'hook', 'render', 'prompt', 'markdown', 'thread',
-  'workspace', 'feature', 'release', 'terminal', 'shell', 'bash', 'grid', 'flexbox', 'Canva'
+  'workspace', 'feature', 'release', 'terminal', 'shell', 'bash', 'grid', 'flexbox', 'Canva', 'Argus'
 ]
 
 // Cabeçalho aceito pelo serviço: só ASCII, separado por vírgula, até 1024 caracteres.
@@ -245,7 +245,10 @@ export class Speech {
     // Sessão descartada não fala mais com a tela.
     const send: Send = (event) => seq === this.seq && !target.isDestroyed() && target.send('speech:event', event)
 
-    const helper = join(app.getAppPath(), 'native/speech/build/speech-helper')
+    // Empacotado, vem fora do app.asar (de dentro dele não dá para executar).
+    const helper = app.isPackaged
+      ? join(process.resourcesPath, 'speech-helper')
+      : join(app.getAppPath(), 'native/speech/build/speech-helper')
     if (!existsSync(helper)) {
       send({ type: 'error', message: 'Ditado não instalado. Rode `pnpm install` para compilar.' })
       return

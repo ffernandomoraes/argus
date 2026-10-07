@@ -158,7 +158,7 @@ export function NavBar({ zoomShortcuts = true }: { zoomShortcuts?: boolean }) {
           <Bot size={16} />
         </NavButton>
         <DevServersButton onClick={openDevServers} />
-        <NavButton label="Memória do Claude" onClick={openMemory}>
+        <NavButton label="Memória do Claude" onClick={() => openMemory()}>
           <Brain size={16} />
         </NavButton>
 

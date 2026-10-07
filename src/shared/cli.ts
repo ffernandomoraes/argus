@@ -1,4 +1,4 @@
-// Situação do comando `cae` em ~/.local/bin.
+// Situação do comando `argus` em ~/.local/bin.
 export type CliStatus = {
   installed: boolean
   // Instalado, mas o shell não vai encontrar o comando.

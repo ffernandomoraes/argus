@@ -17,6 +17,8 @@
 | D11 | O agente roda como subagente da conversa: o Claude da conversa delega, o agente trabalha sozinho e devolve um relatório. Chamado com @nome no chat ou escolhido pelo próprio Claude pela descrição. | Fernando | 06/10/2026 |
 | D12 | Na listagem da pasta, o subagente aparece recuado embaixo da conversa que o lançou, só enquanto roda (nome do agente, o que está fazendo, tempo). O registro fica no chat: pedido, atividade e o que entregou. | Fernando | 06/10/2026 |
 | D13 | Conversa sem projeto: "Nova conversa" no botão direito do canvas e no "Novo bloco". Roda na pasta do usuário (`~`), abre o painel em branco e só entra no canvas no primeiro envio, como card que reabre a conversa. | Fernando | 06/10/2026 |
+| D14 | Nome do produto: **Argus** (o gigante de cem olhos da mitologia grega, que via tudo ao mesmo tempo: o app mostra o que cada agente está fazendo). Comando no terminal: `argus .`. Substitui "Canva Agent Editor", que esbarrava na marca Canva. | Fernando | 07/10/2026 |
+| D15 | Distribuição: `.dmg` e `.zip` só Apple Silicon, por release no GitHub (workflow manual). Assinado com certificado autoassinado próprio ("Argus Code Signing", backup em `~/Documents/Argus-certificado`), o mesmo em todas as versões, para o macOS lembrar microfone e ditado depois de atualizar. Sem conta paga da Apple, sem notarização: o `.dmg` pede "Abrir Mesmo Assim" na primeira vez; o `install.sh` evita o aviso. | Fernando | 07/10/2026 |
 
 ## Em aberto
 
@@ -39,7 +41,6 @@ Com a sugestão atual de cada uma. A sugestão não é decisão até ser confirm
 | P9 | O visualizador de código só mostra ou também edita? | Só mostra, com botão "abrir no VS Code" |
 | P10 | Projetos entram automaticamente (importar os que o Claude Code já conhece) ou um por um? | Importar com seleção, sugerindo a área pela pasta |
 | P11 | Só Claude ou outros agentes no futuro? | Só Claude, sem fechar a porta |
-| P12 | Nome do produto. "Canva" é marca registrada da Canva Pty Ltd. | Trocar se um dia o app for distribuído; para uso pessoal, tanto faz |
 
 ## Alertas
 

@@ -82,7 +82,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const [codeOpen, setCodeOpen] = useState(false)
   // Posição e tamanho do painel da conversa; lembrados enquanto o app está aberto.
   const [drawerRect, setDrawerRect] = useState<PanelRect | null>(null)
-  const [memoryOpen, setMemoryOpen] = useState(false)
+  // 'all' = todas as pastas; caminho = só a memória daquela pasta.
+  const [memoryOpen, setMemoryOpen] = useState<'all' | string | null>(null)
   const [agentsOpen, setAgentsOpen] = useState(false)
   const [devServersOpen, setDevServersOpen] = useState(false)
   // Barra de comando do assistente; voice = abriu já ouvindo.
@@ -142,7 +143,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     [undo, redo]
   )
 
-  // `cae .` num terminal: a pasta entra no centro da tela, ou, se já está no canvas, a tela vai até ela.
+  // `argus .` num terminal: a pasta entra no centro da tela, ou, se já está no canvas, a tela vai até ela.
   useEffect(() => {
     const off = window.api.cli.onOpen((folder) => {
       let target = nodesRef.current.find((n) => n.type === 'project' && n.data.path === displayPath(folder))
@@ -232,7 +233,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         setActiveConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position }),
       openAllConversations: (nodeId: string) => setAllConversationsNodeId(nodeId),
       openSettings: onOpenSettings,
-      openMemory: () => setMemoryOpen(true),
+      openMemory: (projectPath?: string) => setMemoryOpen(projectPath ?? 'all'),
       openAgents: () => setAgentsOpen(true),
       openDevServers: () => setDevServersOpen(true),
     }),
@@ -434,7 +435,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         }`}
       />
       {/* Como no VS Code: a conversa aberta e o projeto; sem conversa, o nome do app. */}
-      <TitleBar title={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Canva Agent Editor'} />
+      <TitleBar title={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'} />
       {drawer && codeOpen && (
         <CodeExplorer
           root={drawer.project.path}
@@ -516,8 +517,9 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       {memoryOpen && (
         <MemoryModal
           projects={memoryProjects}
+          only={memoryOpen === 'all' ? undefined : memoryOpen}
           initialProject={drawer && !drawer.loose ? drawer.project.path : undefined}
-          onClose={() => setMemoryOpen(false)}
+          onClose={() => setMemoryOpen(null)}
         />
       )}
       {agentsOpen && <AgentsModal onClose={() => setAgentsOpen(false)} />}

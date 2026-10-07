@@ -29,7 +29,8 @@ type CanvasActions = {
   // Painel flutuante com todas as conversas da pasta.
   openAllConversations: (nodeId: string) => void
   openSettings: () => void
-  openMemory: () => void
+  // Com projectPath, mostra só a memória daquela pasta.
+  openMemory: (projectPath?: string) => void
   // Biblioteca de agentes globais.
   openAgents: () => void
   // Servidores locais que o Claude Code deixou rodando.

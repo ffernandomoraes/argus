@@ -38,7 +38,7 @@ export class Terminals {
     env.TERM = 'xterm-256color'
     env.COLORTERM = 'truecolor'
     // App aberto pelo Finder não tem o PATH do terminal; o claude e o node precisam dele.
-    // O `cae` entra em todo terminal do app, mesmo sem ter sido instalado no PATH.
+    // O `argus` entra em todo terminal do app, mesmo sem ter sido instalado no PATH.
     env.PATH = [CLI_BIN, dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
 
     // Shell de login, como o Terminal do macOS: carrega .zprofile e .zshrc.

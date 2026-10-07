@@ -3,7 +3,10 @@ import { useLayoutEffect, useRef, type PointerEvent, type RefObject } from 'reac
 // Painel flutuante com posição e tamanho livres dentro da área do canvas:
 // arrasta pelo cabeçalho e redimensiona pelas quatro bordas e pelos cantos.
 
-export type PanelRect = { x: number; y: number; width: number; height: number }
+// `area` é o tamanho da área do canvas quando o rect foi definido: se a janela muda de tamanho
+// (ex.: foi para outro monitor), o painel é reescalado na mesma proporção em vez de quebrar.
+export type PanelRect = { x: number; y: number; width: number; height: number; area?: AreaSize }
+type AreaSize = { width: number; height: number }
 
 const MARGIN = 16
 // Barra de título transparente no topo da janela (TitleBar): os painéis começam abaixo dela.
@@ -18,9 +21,24 @@ type Edges = { left?: boolean; right?: boolean; top?: boolean; bottom?: boolean 
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 
-function areaSize(el: HTMLElement | null) {
+function areaSize(el: HTMLElement | null): AreaSize | null {
   const area = el?.parentElement
   return area ? { width: area.clientWidth, height: area.clientHeight } : null
+}
+
+// Reposiciona o rect da área antiga para a nova mantendo a proporção do espaço útil
+// (descontadas as margens e a barra de título), e garante que caiba inteiro na nova.
+function rescale(rect: PanelRect, from: AreaSize, to: AreaSize): PanelRect {
+  const usable = (a: AreaSize) => ({ width: a.width - MARGIN * 2, height: a.height - PANEL_TOP - MARGIN })
+  const a = usable(from)
+  const b = usable(to)
+  const sx = a.width > 0 ? b.width / a.width : 1
+  const sy = a.height > 0 ? b.height / a.height : 1
+  const width = clamp(rect.width * sx, Math.min(PANEL_MIN.width, b.width), b.width)
+  const height = clamp(rect.height * sy, Math.min(PANEL_MIN.height, b.height), b.height)
+  const x = clamp(MARGIN + (rect.x - MARGIN) * sx, MARGIN, to.width - MARGIN - width)
+  const y = clamp(PANEL_TOP + (rect.y - PANEL_TOP) * sy, PANEL_TOP, to.height - MARGIN - height)
+  return { x, y, width, height, area: to }
 }
 
 // Sem posição definida ainda, o painel nasce encostado à direita, na altura toda.
@@ -35,8 +53,33 @@ export function useFloatingRect(
     const area = areaSize(ref.current)
     if (!area) return
     const width = Math.min(defaultWidth, area.width - MARGIN * 2)
-    onChange({ x: area.width - MARGIN - width, y: PANEL_TOP, width, height: area.height - PANEL_TOP - MARGIN })
+    onChange({ x: area.width - MARGIN - width, y: PANEL_TOP, width, height: area.height - PANEL_TOP - MARGIN, area })
   }, [rect]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A área mudou de tamanho (janela redimensionada, outro monitor), com o painel aberto ou
+  // enquanto estava fechado: reescala a partir do tamanho em que o rect foi definido.
+  const rectRef = useRef(rect)
+  rectRef.current = rect
+  useLayoutEffect(() => {
+    const el = ref.current?.parentElement
+    if (!el) return
+    const sync = () => {
+      const current = rectRef.current
+      const area = areaSize(ref.current)
+      // Área zerada (janela minimizada, ainda montando): espera um tamanho de verdade.
+      if (!current || !area || area.width === 0 || area.height === 0) return
+      const from = current.area ?? area
+      if (from.width === area.width && from.height === area.height) {
+        if (!current.area) onChange({ ...current, area })
+        return
+      }
+      onChange(rescale(current, from, area))
+    }
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mesmo gesto serve para mover (todas as bordas juntas) e redimensionar (só algumas).
   const begin = (e: PointerEvent, edges: Edges | 'move') => {
@@ -55,7 +98,8 @@ export function useFloatingRect(
         onChange({
           ...rect,
           x: clamp(rect.x + dx, MARGIN, max.right - rect.width),
-          y: clamp(rect.y + dy, PANEL_TOP, max.bottom - rect.height)
+          y: clamp(rect.y + dy, PANEL_TOP, max.bottom - rect.height),
+          area
         })
         return
       }
@@ -70,7 +114,7 @@ export function useFloatingRect(
         height = rect.y + rect.height - y
       }
       if (edges.bottom) height = clamp(rect.height + dy, PANEL_MIN.height, max.bottom - rect.y)
-      onChange({ x, y, width, height })
+      onChange({ x, y, width, height, area })
     }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)

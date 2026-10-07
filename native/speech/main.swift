@@ -78,7 +78,7 @@ let vocabulary = [
   "log", "diff", "patch", "refactor", "refatorar", "endpoint", "request", "response", "cache",
   "array", "string", "boolean", "componente", "props", "state", "hook", "render", "performance",
   "prompt", "markdown", "chat", "thread", "workspace", "repositório", "feature", "release",
-  "agente", "subagente", "terminal", "shell", "bash", "ditado", "canva", "grid", "flexbox"
+  "agente", "subagente", "terminal", "shell", "bash", "ditado", "canva", "argus", "grid", "flexbox"
 ]
 
 final class Dictation {

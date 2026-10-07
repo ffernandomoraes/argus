@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>dev.canva-agent-editor.speech</string>
+  <string>dev.argus.speech</string>
   <key>CFBundleName</key>
-  <string>Canva Agent Editor Speech</string>
+  <string>Argus Speech</string>
   <key>NSMicrophoneUsageDescription</key>
   <string>O microfone é usado para ditar mensagens para o Claude.</string>
   <key>NSSpeechRecognitionUsageDescription</key>

@@ -1,0 +1,45 @@
+appId: dev.argus.app
+productName: Argus
+copyright: Copyright © 2026 Fernando Moraes
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**
+  - package.json
+  # O app usa o `claude` instalado na máquina; o binário que vem com o SDK (~200 MB) não entra.
+  - '!node_modules/@anthropic-ai/claude-agent-sdk-*/**'
+
+# node-pty carrega .node e executa o spawn-helper: os dois precisam estar fora do asar.
+asarUnpack:
+  - node_modules/node-pty/**
+
+extraResources:
+  - from: native/speech/build/speech-helper
+    to: speech-helper
+
+npmRebuild: false
+
+mac:
+  target:
+    - target: dmg
+      arch: arm64
+    - target: zip
+      arch: arm64
+  category: public.app-category.developer-tools
+  artifactName: Argus-${version}-${arch}.${ext}
+  icon: build/icon.icns
+  # A assinatura é feita no afterPack (scripts/sign.mjs), com certificado próprio ou ad-hoc.
+  identity: null
+  extendInfo:
+    NSMicrophoneUsageDescription: O microfone é usado para ditar mensagens para o Claude.
+    NSSpeechRecognitionUsageDescription: O reconhecimento de fala transforma o que você diz em texto no campo da conversa.
+
+afterPack: scripts/sign.mjs
+
+dmg:
+  title: Argus ${version}
+
+publish: null

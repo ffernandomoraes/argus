@@ -169,7 +169,7 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener('terminal:exit', listener)
     }
   },
-  // Comando `cae` do terminal.
+  // Comando `argus` do terminal.
   cli: {
     ready: () => ipcRenderer.send('cli:ready'),
     onOpen: (cb: (path: string) => void) => {

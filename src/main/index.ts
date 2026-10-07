@@ -113,7 +113,7 @@ function createWindow(): void {
   openLinksOutside(win)
   loadRenderer(win)
   mainWindow = win
-  // Recarregar a página derruba quem escuta o `cae`; ele avisa de novo quando o canvas montar.
+  // Recarregar a página derruba quem escuta o `argus`; ele avisa de novo quando o canvas montar.
   win.webContents.on('did-start-loading', () => mainWindow === win && (canvasReady = false))
   win.on('closed', () => {
     if (mainWindow !== win) return
@@ -148,7 +148,7 @@ function createConversationWindow(hash: string): BrowserWindow {
 
 const speech = new Speech()
 
-// `cae .` num terminal: traz o app para frente e manda a pasta para o canvas. Com o app
+// `argus .` num terminal: traz o app para frente e manda a pasta para o canvas. Com o app
 // ainda abrindo, a pasta espera o canvas avisar que está pronto.
 let canvasReady = false
 const pendingOpens: string[] = []

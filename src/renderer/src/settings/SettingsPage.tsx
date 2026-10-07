@@ -29,7 +29,7 @@ const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
   { id: 'account', label: 'Conta', icon: <User size={15} /> }
 ]
 
-// `cae .` em qualquer terminal abre a pasta no canvas, como o `code .` do VS Code.
+// `argus .` em qualquer terminal abre a pasta no canvas, como o `code .` do VS Code.
 function CliRow() {
   const [status, setStatus] = useState<CliStatus | null>(null)
   const [busy, setBusy] = useState(false)
@@ -44,8 +44,8 @@ function CliRow() {
   const note = status?.error ?? status?.warning
   return (
     <Row
-      label="Comando cae no terminal"
-      description={`Digite "cae ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.${note ? ` ${note}` : ''}`}
+      label="Comando argus no terminal"
+      description={`Digite "argus ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.${note ? ` ${note}` : ''}`}
     >
       {status && (
         <button

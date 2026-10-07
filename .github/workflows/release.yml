@@ -1,0 +1,123 @@
+# Gera uma versão nova: sobe o número no package.json, cria a tag, monta o .dmg e o .zip
+# (Apple Silicon) e publica tudo num release do GitHub.
+# Rodar pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=patch
+# Com publicar=false só monta e guarda o .dmg no run, sem tag nem release.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Que parte da versão subir
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      publicar:
+        description: Publicar o release (desmarcado = só monta o app, para testar)
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Próxima versão
+        id: version
+        run: |
+          next=$(node -e '
+            const [major, minor, patch] = require("./package.json").version.split(".").map(Number)
+            const bump = process.argv[1]
+            console.log(bump === "major" ? `${major + 1}.0.0` : bump === "minor" ? `${major}.${minor + 1}.0` : `${major}.${minor}.${patch + 1}`)
+          ' "${{ inputs.bump }}")
+          if git rev-parse "v$next" >/dev/null 2>&1; then
+            echo "A tag v$next já existe." >&2
+            exit 1
+          fi
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          npm pkg set version="$next"
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      # Opcional: com os secrets do certificado, o app sai assinado sempre com a mesma
+      # identidade e o macOS não pede de novo microfone e ditado a cada versão.
+      # Sem eles, a assinatura é ad-hoc (ver scripts/sign.mjs).
+      - name: Importar certificado de assinatura
+        env:
+          MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          MAC_SIGN_IDENTITY: ${{ secrets.MAC_SIGN_IDENTITY }}
+        run: |
+          if [ -z "$MAC_CERT_P12" ]; then
+            echo "Sem certificado: assinatura ad-hoc."
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/argus.keychain-db"
+          password=$(openssl rand -hex 16)
+          echo "$MAC_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$MAC_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          # Certificado autoassinado: confiar nele para assinatura de código nesta máquina.
+          security find-certificate -c "$MAC_SIGN_IDENTITY" -p "$keychain" > "$RUNNER_TEMP/cert.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+          rm "$RUNNER_TEMP/cert.p12"
+          echo "MAC_SIGN_IDENTITY=$MAC_SIGN_IDENTITY" >> "$GITHUB_ENV"
+          echo "MAC_SIGN_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
+      - name: Montar o app
+        run: pnpm exec electron-vite build && pnpm exec electron-builder --mac --arm64 --publish never
+
+      # Mesmo certificado em todas as versões = o macOS não pede as permissões de novo.
+      - name: Conferir assinatura
+        if: env.MAC_SIGN_IDENTITY != ''
+        run: |
+          codesign --verify --deep --strict dist/mac-arm64/Argus.app
+          codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -q 'certificate leaf'
+
+      - name: Guardar o app (teste)
+        if: ${{ !inputs.publicar }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Argus-${{ steps.version.outputs.version }}
+          path: dist/*.dmg
+
+      - name: Commit da versão e tag
+        if: ${{ inputs.publicar }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Versão ${{ steps.version.outputs.version }}"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin HEAD --tags
+
+      - name: Publicar release
+        if: ${{ inputs.publicar }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            dist/*.dmg dist/*.zip \
+            --title "Argus ${{ steps.version.outputs.version }}" \
+            --generate-notes

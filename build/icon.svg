@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1F2433"/>
+      <stop offset="1" stop-color="#0B0D14"/>
+    </linearGradient>
+    <radialGradient id="iris" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A5B4FC"/>
+      <stop offset="0.55" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#312E81"/>
+    </radialGradient>
+    <clipPath id="tile"><rect x="100" y="100" width="824" height="824" rx="186"/></clipPath>
+    <clipPath id="eye"><path d="M232 512 C 330 360, 420 300, 512 300 C 604 300, 694 360, 792 512 C 694 664, 604 724, 512 724 C 420 724, 330 664, 232 512 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bg)"/>
+    <!-- os outros olhos de Argus: pontos em volta -->
+    <g fill="#818CF8">
+      <circle cx="512" cy="196" r="12" opacity="0.55"/>
+      <circle cx="512" cy="828" r="12" opacity="0.55"/>
+      <circle cx="300" cy="260" r="9" opacity="0.4"/>
+      <circle cx="724" cy="260" r="9" opacity="0.4"/>
+      <circle cx="300" cy="764" r="9" opacity="0.4"/>
+      <circle cx="724" cy="764" r="9" opacity="0.4"/>
+      <circle cx="184" cy="400" r="7" opacity="0.28"/>
+      <circle cx="840" cy="400" r="7" opacity="0.28"/>
+      <circle cx="184" cy="624" r="7" opacity="0.28"/>
+      <circle cx="840" cy="624" r="7" opacity="0.28"/>
+    </g>
+    <!-- olho -->
+    <path d="M232 512 C 330 360, 420 300, 512 300 C 604 300, 694 360, 792 512 C 694 664, 604 724, 512 724 C 420 724, 330 664, 232 512 Z" fill="#F4F5FA"/>
+    <g clip-path="url(#eye)">
+      <circle cx="512" cy="512" r="150" fill="url(#iris)"/>
+      <circle cx="512" cy="512" r="66" fill="#0B0D14"/>
+      <circle cx="556" cy="466" r="26" fill="#FFFFFF" opacity="0.9"/>
+    </g>
+    <path d="M232 512 C 330 360, 420 300, 512 300 C 604 300, 694 360, 792 512 C 694 664, 604 724, 512 724 C 420 724, 330 664, 232 512 Z" fill="none" stroke="#0B0D14" stroke-opacity="0.35" stroke-width="6"/>
+  </g>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="186" fill="none" stroke="#FFFFFF" stroke-opacity="0.08"/>
+</svg>

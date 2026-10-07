@@ -1,4 +1,5 @@
 allowBuilds:
+  electron-winstaller: false
   esbuild: true
   node-pty: false
 minimumReleaseAgeExclude:

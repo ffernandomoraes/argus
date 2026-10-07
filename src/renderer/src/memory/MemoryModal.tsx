@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Brain, FileText, Globe, ListTree, Pencil, X } from 'lucide-react'
+import { Brain, ChevronRight, FileText, Globe, ListTree, Pencil, X } from 'lucide-react'
 import type { MemoryFile, MemoryGroup, MemoryProject } from '../../../shared/memory'
 import { FileLinkContext } from '../conversation/fileLinks'
 import { Markdown } from '../conversation/Markdown'
@@ -34,10 +34,13 @@ const tildify = (path: string) => {
 // Memória do Claude Code: instruções (CLAUDE.md) e o que ele anotou sozinho, por pasta do canvas.
 export function MemoryModal({
   projects,
+  only,
   initialProject,
   onClose
 }: {
   projects: MemoryProject[]
+  // Caminho de uma pasta: mostra só a memória dela, sem o global e sem as outras.
+  only?: string
   // Pasta da conversa aberta: começa mostrando a memória dela.
   initialProject?: string
   onClose: () => void
@@ -47,6 +50,15 @@ export function MemoryModal({
   const [text, setText] = useState<string | null>(null)
   const [draft, setDraft] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Grupos abertos na lista da esquerda (id do grupo): começa só com o global, projetos recolhidos.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(['global']))
+  const toggleGroup = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   const files = useMemo(() => groups.flatMap((g) => g.files), [groups])
   const current = files.find((f) => f.path === selected) ?? null
@@ -54,14 +66,15 @@ export function MemoryModal({
   const dirty = editing && draft !== text
 
   const reload = useCallback(async () => {
-    const list = await window.api.memory.list(projects)
+    const all = await window.api.memory.list(projects)
+    const list = only ? all.filter((g) => g.projectPath === only) : all
     setGroups(list)
     return list
-  }, [projects])
+  }, [projects, only])
 
   useEffect(() => {
     reload().then((list) => {
-      const group = list.find((g) => g.projectPath === initialProject) ?? list[0]
+      const group = list.find((g) => g.projectPath === (only ?? initialProject)) ?? list[0]
       const first = group?.files.find((f) => f.kind === 'index') ?? group?.files[0]
       setSelected(first?.path ?? null)
     })
@@ -141,28 +154,40 @@ export function MemoryModal({
         <nav className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-2/40 p-3">
           <div className="mb-3 flex items-center gap-2 px-2 pt-1 text-sm font-semibold">
             <Brain size={15} />
-            Memória
+            <span className="truncate">{only ? `Memória - ${groups[0]?.label ?? ''}` : 'Memória'}</span>
           </div>
           {groups.map((g) => (
             <div key={g.id} className="mb-3">
-              <div className="mb-1 flex items-center gap-1.5 px-2 text-[11px] font-medium uppercase tracking-wide text-faint">
-                {g.id === 'global' && <Globe size={11} />}
-                <span className="truncate">{g.label}</span>
-              </div>
-              {g.files.map((f) => (
+              {/* Com uma pasta só, o nome dela já está no título. */}
+              {!only && (
                 <button
-                  key={f.path}
-                  onClick={() => select(f.path)}
-                  title={f.description ?? tildify(f.path)}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
-                    selected === f.path ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
-                  } ${f.kind === 'memory' ? 'pl-5' : ''}`}
+                  onClick={() => toggleGroup(g.id)}
+                  aria-expanded={expanded.has(g.id)}
+                  className="mb-1 flex w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-left text-[11px] font-medium uppercase tracking-wide text-faint hover:text-muted"
                 >
-                  {f.kind === 'index' ? <ListTree size={13} className="shrink-0" /> : <FileText size={13} className="shrink-0" />}
-                  <span className={`truncate ${f.exists ? '' : 'italic text-faint'}`}>{fileLabel(f)}</span>
-                  {!f.exists && <span className="ml-auto shrink-0 text-[10px] text-faint">criar</span>}
+                  <ChevronRight
+                    size={11}
+                    className={`shrink-0 transition-transform ${expanded.has(g.id) ? 'rotate-90' : ''}`}
+                  />
+                  {g.id === 'global' && <Globe size={11} className="shrink-0" />}
+                  <span className="truncate">{g.label}</span>
                 </button>
-              ))}
+              )}
+              {(only || expanded.has(g.id)) &&
+                g.files.map((f) => (
+                  <button
+                    key={f.path}
+                    onClick={() => select(f.path)}
+                    title={f.description ?? tildify(f.path)}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
+                      selected === f.path ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
+                    } ${f.kind === 'memory' ? 'pl-5' : ''}`}
+                  >
+                    {f.kind === 'index' ? <ListTree size={13} className="shrink-0" /> : <FileText size={13} className="shrink-0" />}
+                    <span className={`truncate ${f.exists ? '' : 'italic text-faint'}`}>{fileLabel(f)}</span>
+                    {!f.exists && <span className="ml-auto shrink-0 text-[10px] text-faint">criar</span>}
+                  </button>
+                ))}
             </div>
           ))}
         </nav>

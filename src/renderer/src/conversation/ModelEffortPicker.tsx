@@ -133,7 +133,6 @@ export function ModelEffortPicker({
             <span className="text-faint">{effortLabel(settings.effort)}</span>
           </>
         )}
-        {!settings.thinking && <span className="text-faint">- sem thinking</span>}
         {settings.ultracode && <Workflow size={12} className="text-running" aria-label="Ultracode ligado" />}
         <ChevronUp size={12} className="text-faint" />
       </button>

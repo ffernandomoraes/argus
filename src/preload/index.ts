@@ -5,6 +5,7 @@ import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shar
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
 import type { CliStatus } from '../shared/cli'
 import type { AppSettings } from '../shared/appSettings'
+import type { AuthState, LoginMethod } from '../shared/auth'
 import type { DevServer } from '../shared/devServers'
 import type { McpStatus } from '../shared/mcp'
 import type { FileContent, FileDiff, FileEntry } from '../shared/files'
@@ -58,6 +59,20 @@ contextBridge.exposeInMainWorld('api', {
       const listener = (_e: IpcRendererEvent, info: ClaudeInfo) => cb(info)
       ipcRenderer.on('claude:info', listener)
       return () => ipcRenderer.removeListener('claude:info', listener)
+    }
+  },
+  // Login do Claude Code, o mesmo do terminal e do VS Code.
+  auth: {
+    state: (): Promise<AuthState> => ipcRenderer.invoke('auth:state'),
+    login: (method: LoginMethod) => ipcRenderer.send('auth:login', method),
+    submitCode: (code: string) => ipcRenderer.send('auth:code', code),
+    cancel: () => ipcRenderer.send('auth:cancel'),
+    logout: (): Promise<boolean> => ipcRenderer.invoke('auth:logout'),
+    open: (url: string) => ipcRenderer.send('auth:open', url),
+    onState: (cb: (state: AuthState) => void) => {
+      const listener = (_e: IpcRendererEvent, state: AuthState) => cb(state)
+      ipcRenderer.on('auth:state', listener)
+      return () => ipcRenderer.removeListener('auth:state', listener)
     }
   },
   // Caminho no disco de um arquivo escolhido ou arrastado (anexos do chat).

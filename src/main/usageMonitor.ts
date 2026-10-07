@@ -61,6 +61,8 @@ export class UsageMonitor {
     proc.stderr.on('data', () => {})
     proc.on('error', (err) => console.warn('[usage] falha ao iniciar o claude:', err.message))
     proc.on('exit', () => {
+      // Já trocado por um novo (restart): não mexe no que é dele.
+      if (this.proc !== proc) return
       this.clearTimer()
       this.proc = null
       if (!this.stopped) this.restart = setTimeout(() => this.start(), RESTART_MS)
@@ -77,6 +79,14 @@ export class UsageMonitor {
     if (this.restart) clearTimeout(this.restart)
     this.proc?.kill()
     this.proc = null
+  }
+
+  // Conta trocada: o `claude` aberto guardou o login antigo e responderia pela conta anterior.
+  reconnect(): void {
+    this.stop()
+    this.last = null
+    this.info = null
+    this.start()
   }
 
   private poll(): void {

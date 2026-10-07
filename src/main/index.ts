@@ -4,8 +4,10 @@ import type { AgentDraftRequest, AgentSaveRequest } from '../shared/agents'
 import type { CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
 import type { TerminalOpenRequest } from '../shared/terminal'
+import type { LoginMethod } from '../shared/auth'
 import { listAgents, removeAgent, saveAgent } from './agents'
 import { loadAppSettings, saveAppSettings } from './appSettings'
+import { Auth } from './auth'
 import { draftAgent } from './agentWriter'
 import { CanvasAgent } from './canvasAgent'
 import { Cli, cliStatus, installCli, uninstallCli } from './cli'
@@ -68,6 +70,16 @@ const notifier = new ChatNotifier(
 const usage = new UsageMonitor(
   (data) => broadcast('usage:update', data),
   (info) => broadcast('claude:info', info)
+)
+
+// Login do Claude Code. Trocou de conta: o monitor de uso e as conversas paradas abrem de novo
+// com o login novo; as que estão trabalhando terminam o pedido e fecham em seguida.
+const auth = new Auth(
+  (state) => broadcast('auth:state', state),
+  () => {
+    usage.reconnect()
+    chats.releaseAll()
+  }
 )
 
 function loadRenderer(win: BrowserWindow, hash = ''): void {
@@ -246,6 +258,12 @@ app.whenReady().then(() => {
   setAppMenu()
   ipcMain.handle('usage:get', () => usage.last)
   ipcMain.handle('claude:info', () => usage.info)
+  ipcMain.handle('auth:state', () => auth.state)
+  ipcMain.on('auth:login', (_e, method: LoginMethod) => void auth.login(method))
+  ipcMain.on('auth:code', (_e, code: string) => auth.submitCode(code))
+  ipcMain.on('auth:cancel', () => auth.cancel())
+  ipcMain.handle('auth:logout', () => auth.logout())
+  ipcMain.on('auth:open', (_e, url: string) => /^https:/.test(url) && void shell.openExternal(url))
   ipcMain.on('speech:start', (e) => speech.start(e.sender))
   ipcMain.on('speech:stop', () => speech.stop())
   // Abre Ajustes do Sistema > Teclado, onde fica o Ditado.
@@ -348,6 +366,7 @@ app.whenReady().then(() => {
     return result.canceled ? null : result.filePaths[0]
   })
   usage.start()
+  void auth.refresh()
   cli.start()
   updater.start()
   setMenuBarIcon(loadAppSettings().menuBarIcon)
@@ -361,6 +380,7 @@ app.whenReady().then(() => {
 // Encerra tudo que o app abriu (claude, terminais, ditado) para não sobrar processo solto.
 function shutdown(): void {
   usage.stop()
+  auth.cancel()
   speech.stop()
   tray?.destroy()
   tray = null

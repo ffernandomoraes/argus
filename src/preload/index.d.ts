@@ -7,6 +7,7 @@ import type { ClaudeInfo } from '../shared/models'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
 import type { CliStatus } from '../shared/cli'
 import type { AppSettings } from '../shared/appSettings'
+import type { AuthState, LoginMethod } from '../shared/auth'
 import type { UpdateInfo, UpdateState } from '../shared/updates'
 import type { DevServer } from '../shared/devServers'
 import type { Message } from '../shared/history'
@@ -39,6 +40,15 @@ declare global {
       claude: {
         info: () => Promise<ClaudeInfo | null>
         onInfo: (cb: (info: ClaudeInfo) => void) => () => void
+      }
+      auth: {
+        state: () => Promise<AuthState>
+        login: (method: LoginMethod) => void
+        submitCode: (code: string) => void
+        cancel: () => void
+        logout: () => Promise<boolean>
+        open: (url: string) => void
+        onState: (cb: (state: AuthState) => void) => () => void
       }
       filePath: (file: File) => string
       chat: {

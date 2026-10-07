@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   AppWindow,
   MessagesSquare,
@@ -15,6 +15,9 @@ import { EFFORTS, groupByFamily } from '../conversation/ModelEffortPicker'
 import { MODES } from '../conversation/PermissionModePicker'
 import type { SessionSettings } from '../conversation/SessionSettings'
 import { useClaudeInfo } from '../conversation/useModels'
+import { LoginPanel } from '../auth/LoginPanel'
+import { useAuth } from '../auth/useAuth'
+import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
 import type { CliStatus } from '../../../shared/cli'
 import type { ThemePreference } from '../theme/useTheme'
 import { Row, Segmented, Select, Switch } from './controls'
@@ -229,40 +232,118 @@ function AppearanceSection({ theme, onThemeChange }: { theme: ThemePreference; o
   )
 }
 
+const PROVIDERS: Record<string, string> = {
+  bedrock: 'Amazon Bedrock',
+  vertex: 'Google Vertex AI',
+  foundry: 'Microsoft Foundry',
+  gateway: 'gateway da empresa'
+}
+
+// Conta do Claude Code, a mesma do terminal e do VS Code: entrar, trocar e sair valem para o Mac todo.
 function AccountSection() {
-  const info = useClaudeInfo()
-  const account = info?.account
+  const auth = useAuth()
+  const [switching, setSwitching] = useState(false)
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+  const [logoutFailed, setLogoutFailed] = useState(false)
+  const account = auth?.account
+  const login = auth?.login
 
-  if (!info) return <p className="text-xs text-faint">Conectando ao Claude…</p>
+  // Login terminou ou foi cancelado: volta para o resumo da conta.
+  const status = login?.status
+  const prevStatus = useRef(status)
+  useEffect(() => {
+    if ((prevStatus.current === 'starting' || prevStatus.current === 'waiting') && status === 'idle') setSwitching(false)
+    prevStatus.current = status
+  }, [status])
 
-  if (!account?.email) {
+  if (!auth) return <p className="text-xs text-faint">Conferindo a conta…</p>
+
+  if (!account) {
     return (
-      <div className="rounded-lg border border-line p-4">
-        <div className="text-sm text-text">Nenhuma conta conectada</div>
-        <p className="mt-1 text-xs leading-relaxed text-faint">
-          Abra o Terminal, rode <code className="font-mono text-muted">claude</code> e depois{' '}
-          <code className="font-mono text-muted">/login</code>. O app usa o mesmo login.
-        </p>
+      <p className="text-xs leading-relaxed text-faint">
+        Não deu para conferir a conta: o Claude Code não respondeu. Confira se ele está instalado rodando{' '}
+        <code className="font-mono text-muted">claude</code> no Terminal.
+      </p>
+    )
+  }
+
+  const loggingIn = login!.status !== 'idle'
+  if (!account.loggedIn || switching || loggingIn) {
+    return (
+      <div className="max-w-sm">
+        {account.loggedIn && (
+          <p className="mb-4 text-xs leading-relaxed text-faint">
+            Entre com a outra conta. Ela substitui {account.email ?? 'a atual'} no Claude Code deste Mac.
+          </p>
+        )}
+        <LoginPanel login={login!} onCancel={account.loggedIn ? () => setSwitching(false) : undefined} />
       </div>
     )
   }
 
+  const external = account.provider && account.provider !== 'firstParty'
+  const plan = account.subscriptionType && account.subscriptionType[0].toUpperCase() + account.subscriptionType.slice(1)
+  const name = account.email ?? (external ? PROVIDERS[account.provider!] ?? account.provider! : 'Conta conectada')
+
   return (
-    <div className="flex items-center gap-4 rounded-lg border border-line p-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-medium text-text">
-        {account.email[0].toUpperCase()}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm text-text">{account.email}</div>
-        <div className="mt-0.5 text-xs text-faint">
-          {[account.organization, account.subscriptionType].filter(Boolean).join(' - ')}
+    <>
+      <div className="flex items-center gap-4 rounded-lg border border-line p-4">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-medium text-text">
+          {name[0].toUpperCase()}
         </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm text-text">{name}</div>
+          <div className="mt-0.5 text-xs text-faint">
+            {[account.organization, plan, account.method === 'console' && 'Anthropic Console'].filter(Boolean).join(' - ')}
+          </div>
+        </div>
+        <span className="flex items-center gap-1.5 text-xs text-done">
+          <span className="size-1.5 rounded-full bg-done" />
+          Conectada
+        </span>
       </div>
-      <span className="flex items-center gap-1.5 text-xs text-done">
-        <span className="size-1.5 rounded-full bg-done" />
-        Conectada
-      </span>
-    </div>
+
+      {external ? (
+        <p className="mt-4 text-xs leading-relaxed text-faint">
+          O acesso vem das variáveis de ambiente ou das configurações do Claude Code, não de um login. Para trocar,
+          mude por lá.
+        </p>
+      ) : (
+        <div className="mt-2">
+          <Row label="Trocar de conta" description="Entra com outra conta no lugar desta.">
+            <button
+              onClick={() => setSwitching(true)}
+              className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+            >
+              Trocar
+            </button>
+          </Row>
+          <Row
+            label="Sair"
+            description={
+              logoutFailed
+                ? 'Não deu para sair. Tente de novo ou rode "claude auth logout" no Terminal.'
+                : 'Desconecta o Claude Code deste Mac: vale também para o terminal e o VS Code.'
+            }
+          >
+            <button
+              onClick={() =>
+                setConfirm({
+                  title: 'Sair da conta?',
+                  description: `O Claude Code deste Mac sai de ${name}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
+                  confirmLabel: 'Sair',
+                  onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok))
+                })
+              }
+              className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
+            >
+              Sair
+            </button>
+          </Row>
+        </div>
+      )}
+      {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
+    </>
   )
 }
 

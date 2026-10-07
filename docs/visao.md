@@ -45,8 +45,8 @@ no estilo Figma ou Miro. Nele:
 ## O que não é (por enquanto)
 
 - Não é um app web nem um SaaS: roda local, na minha máquina.
-- Não substitui o VS Code. Ver e navegar pelo código, sim. Virar uma IDE completa, não,
-  pelo menos no começo (ver [decisoes.md](decisoes.md)).
+- Não substitui o VS Code. Ver, navegar e fazer edições simples no código, sim. Virar uma
+  IDE completa, não, pelo menos no começo (ver [decisoes.md](decisoes.md)).
 - Não é multiusuário.
 
 <details>

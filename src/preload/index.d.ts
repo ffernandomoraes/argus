@@ -2,7 +2,7 @@ import type { AgentDef, AgentDraftRequest, AgentDraftResult, AgentSaveRequest, A
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
 import type { McpStatus } from '../shared/mcp'
-import type { FileContent, FileDiff, FileEntry } from '../shared/files'
+import type { FileContent, FileDiff, FileEntry, FileOpResult } from '../shared/files'
 import type { ClaudeInfo } from '../shared/models'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
 import type { CliStatus } from '../shared/cli'
@@ -113,6 +113,17 @@ declare global {
         read: (root: string, rel: string) => Promise<FileContent>
         // Mudanças do arquivo desde o último commit.
         diff: (root: string, rel: string) => Promise<FileDiff>
+        write: (root: string, rel: string, text: string) => Promise<FileOpResult>
+        // `name` pode ter subpastas ("src/novo.ts"); as que faltarem são criadas.
+        create: (root: string, dir: string, name: string, isDir: boolean) => Promise<FileOpResult>
+        rename: (root: string, rel: string, name: string) => Promise<FileOpResult>
+        // Manda para a Lixeira.
+        trash: (root: string, rel: string) => Promise<FileOpResult>
+        // Copia os itens para a área de transferência, como o ⌘C do Finder.
+        copy: (root: string, rels: string[]) => Promise<void>
+        // Cola na pasta os arquivos copiados no Finder (ou na árvore).
+        paste: (root: string, dir: string) => Promise<FileOpResult>
+        reveal: (root: string, rel: string) => void
         watch: (root: string, rel: string) => void
         unwatch: () => void
         onChanged: (cb: (root: string, rel: string) => void) => () => void

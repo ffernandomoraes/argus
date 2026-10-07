@@ -427,6 +427,18 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           selected={openFile?.root === drawer.project.path ? openFile.path : null}
           rightOffset={drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
           onOpenFile={(path) => setOpenFile({ root: drawer.project.path, path })}
+          onRenamed={(from, to) =>
+            setOpenFile((f) =>
+              f && f.root === drawer.project.path && (f.path === from || f.path.startsWith(from + '/'))
+                ? { ...f, path: to + f.path.slice(from.length) }
+                : f
+            )
+          }
+          onDeleted={(path) =>
+            setOpenFile((f) =>
+              f && f.root === drawer.project.path && (f.path === path || f.path.startsWith(path + '/')) ? null : f
+            )
+          }
           onClose={closeCode}
         >
           {openFile?.root === drawer.project.path && (

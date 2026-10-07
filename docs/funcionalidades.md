@@ -49,7 +49,7 @@ Telas de baixa fidelidade, sem código de produto. Telas propostas:
 
 ## Fase 4: Código
 
-- Árvore de arquivos e visualização de arquivo (Monaco, o editor do VS Code).
+- Árvore de arquivos e edição de arquivo (CodeMirror, com as cores do VS Code; ver D17).
 - Ver o que o agente mudou (diff: comparação lado a lado do antes e depois).
 - Botão "abrir no VS Code".
 

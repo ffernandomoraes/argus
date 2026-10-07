@@ -8,7 +8,7 @@ import type { AppSettings } from '../shared/appSettings'
 import type { AuthState, LoginMethod } from '../shared/auth'
 import type { DevServer, ProjectServer } from '../shared/devServers'
 import type { McpStatus } from '../shared/mcp'
-import type { FileContent, FileDiff, FileEntry } from '../shared/files'
+import type { FileContent, FileDiff, FileEntry, FileOpResult } from '../shared/files'
 import type { ClaudeInfo } from '../shared/models'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
 import type { Message } from '../shared/history'
@@ -161,6 +161,16 @@ contextBridge.exposeInMainWorld('api', {
     list: (root: string, rel: string): Promise<FileEntry[]> => ipcRenderer.invoke('files:list', root, rel),
     read: (root: string, rel: string): Promise<FileContent> => ipcRenderer.invoke('files:read', root, rel),
     diff: (root: string, rel: string): Promise<FileDiff> => ipcRenderer.invoke('files:diff', root, rel),
+    write: (root: string, rel: string, text: string): Promise<FileOpResult> =>
+      ipcRenderer.invoke('files:write', root, rel, text),
+    create: (root: string, dir: string, name: string, isDir: boolean): Promise<FileOpResult> =>
+      ipcRenderer.invoke('files:create', root, dir, name, isDir),
+    rename: (root: string, rel: string, name: string): Promise<FileOpResult> =>
+      ipcRenderer.invoke('files:rename', root, rel, name),
+    trash: (root: string, rel: string): Promise<FileOpResult> => ipcRenderer.invoke('files:trash', root, rel),
+    copy: (root: string, rels: string[]): Promise<void> => ipcRenderer.invoke('files:copy', root, rels),
+    paste: (root: string, dir: string): Promise<FileOpResult> => ipcRenderer.invoke('files:paste', root, dir),
+    reveal: (root: string, rel: string) => ipcRenderer.send('files:reveal', root, rel),
     watch: (root: string, rel: string) => ipcRenderer.send('files:watch', root, rel),
     unwatch: () => ipcRenderer.send('files:unwatch'),
     onChanged: (cb: (root: string, rel: string) => void) => {

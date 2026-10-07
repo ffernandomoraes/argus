@@ -50,7 +50,7 @@ esperando por você.
 
 **Ferramentas**
 - Terminais embutidos (Claude Code ou shell) soltos no canvas.
-- Explorador de arquivos e visualizador de código do projeto.
+- Explorador de arquivos e editor de código do projeto: criar, renomear, excluir, colar arquivos copiados no Finder e editar com ⌘S para salvar.
 - Biblioteca de agentes (subagentes do Claude Code): criar, editar e deixar o Claude escrever as instruções.
 - Editor da memória do Claude: `CLAUDE.md` global, de cada projeto e as anotações da memória automática.
 

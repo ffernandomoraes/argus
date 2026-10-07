@@ -20,6 +20,7 @@
 | D14 | Nome do produto: **Argus** (o gigante de cem olhos da mitologia grega, que via tudo ao mesmo tempo: o app mostra o que cada agente está fazendo). Comando no terminal: `argus .`. Substitui "Canva Agent Editor", que esbarrava na marca Canva. | Fernando | 07/10/2026 |
 | D15 | Distribuição: `.dmg` e `.zip` só Apple Silicon, por release no GitHub (workflow manual). Assinado com certificado autoassinado próprio ("Argus Code Signing", backup em `~/Documents/Argus-certificado`), o mesmo em todas as versões, para o macOS lembrar microfone e ditado depois de atualizar. Sem conta paga da Apple, sem notarização: o `.dmg` pede "Abrir Mesmo Assim" na primeira vez; o `install.sh` evita o aviso. | Fernando | 07/10/2026 |
 | D16 | Atualização dentro do app com atualizador próprio (`src/main/updater.ts`), não o electron-updater: o Squirrel.Mac dele valida a assinatura e não há garantia de que aceite certificado autoassinado. Procura no release mais recente do GitHub ao abrir e a cada 5 horas, baixa o `.zip`, só aceita se o requisito de assinatura for igual ao do app instalado e troca o `.app` depois que o processo sai. Botão discreto "Atualizar para x.y.z" e a versão em uso no canto direito da barra de título. Depende do repositório público (a API devolve 404 em repositório privado). | Fernando | 07/10/2026 |
+| D17 | O painel de código também edita (fecha P9), para não precisar de outra IDE em tarefas simples. Editor CodeMirror 6 com o tema Dark+ do VS Code, salva com ⌘S; o que não foi salvo fica como rascunho em memória ao trocar de arquivo. Na árvore: criar arquivo e pasta, renomear, excluir (vai para a Lixeira, com confirmação), copiar e colar, pelo botão direito, por ícones no cabeçalho e por atalhos (⌘C, ⌘V, Enter, ⌘⌫). ⌘V cola na pasta arquivos copiados no Finder. | Fernando | 07/10/2026 |
 
 ## Em aberto
 
@@ -39,7 +40,6 @@ Com a sugestão atual de cada uma. A sugestão não é decisão até ser confirm
 |---|---|---|
 | P5 | Como o app conversa com o Claude? | Comandar o `claude` em modo sem interface (usa a assinatura) e observar as sessões abertas fora do app, depois da prova técnica (ver [integracao-com-agentes.md](integracao-com-agentes.md)). A SDK fica descartada por D7 |
 | P7 | Um canvas só ou um por área? | Um só |
-| P9 | O visualizador de código só mostra ou também edita? | Só mostra, com botão "abrir no VS Code" |
 | P10 | Projetos entram automaticamente (importar os que o Claude Code já conhece) ou um por um? | Importar com seleção, sugerindo a área pela pasta |
 | P11 | Só Claude ou outros agentes no futuro? | Só Claude, sem fechar a porta |
 

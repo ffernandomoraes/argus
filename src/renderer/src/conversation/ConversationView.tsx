@@ -48,7 +48,7 @@ export function HeaderButton({
 const TAG = 'flex h-6 items-center rounded-md border border-line bg-surface px-2 text-muted shadow-sm'
 
 // Cor da letra de cada mudança, nos tons do VS Code.
-const KIND_COLOR: Record<UncommittedFile['kind'], string> = {
+export const KIND_COLOR: Record<UncommittedFile['kind'], string> = {
   M: 'text-needs-you',
   R: 'text-needs-you',
   A: 'text-done',
@@ -57,7 +57,7 @@ const KIND_COLOR: Record<UncommittedFile['kind'], string> = {
   '!': 'text-red-400'
 }
 
-const KIND_LABEL: Record<UncommittedFile['kind'], string> = {
+export const KIND_LABEL: Record<UncommittedFile['kind'], string> = {
   M: 'Alterado',
   R: 'Renomeado',
   A: 'Adicionado',

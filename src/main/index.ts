@@ -16,7 +16,17 @@ import { ChatNotifier } from './notifications'
 import { loadCanvas, saveCanvas } from './canvasStore'
 import { killDevServer, listDevServers } from './devServers'
 import { projectServers, startProjectServer, stopProjectServer, stopStartedServers } from './projectServers'
-import { listDir, readFile } from './files'
+import {
+  copyToClipboard,
+  createItem,
+  listDir,
+  pasteFromClipboard,
+  readFile,
+  renameItem,
+  revealItem,
+  trashItem,
+  writeFile
+} from './files'
 import { unwatchFile, watchFile } from './fileWatch'
 import { Popouts } from './popouts'
 import { readHistory, readImages } from './history'
@@ -311,6 +321,15 @@ app.whenReady().then(() => {
   ipcMain.handle('files:list', (_e, root: string, rel: string) => listDir(root, rel))
   ipcMain.handle('files:read', (_e, root: string, rel: string) => readFile(root, rel))
   ipcMain.handle('files:diff', (_e, root: string, rel: string) => fileDiff(root, rel))
+  ipcMain.handle('files:write', (_e, root: string, rel: string, text: string) => writeFile(root, rel, text))
+  ipcMain.handle('files:create', (_e, root: string, dir: string, name: string, isDir: boolean) =>
+    createItem(root, dir, name, isDir)
+  )
+  ipcMain.handle('files:rename', (_e, root: string, rel: string, name: string) => renameItem(root, rel, name))
+  ipcMain.handle('files:trash', (_e, root: string, rel: string) => trashItem(root, rel))
+  ipcMain.handle('files:copy', (_e, root: string, rels: string[]) => copyToClipboard(root, rels))
+  ipcMain.handle('files:paste', (_e, root: string, dir: string) => pasteFromClipboard(root, dir))
+  ipcMain.on('files:reveal', (_e, root: string, rel: string) => revealItem(root, rel))
   ipcMain.on('files:watch', (e, root: string, rel: string) => watchFile(e.sender, root, rel))
   ipcMain.on('files:unwatch', (e) => unwatchFile(e.sender))
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma

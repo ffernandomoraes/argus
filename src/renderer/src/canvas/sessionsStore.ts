@@ -121,6 +121,12 @@ export function useUncommitted(path: string): UncommittedFile[] | null {
   return useSyncExternalStore(subscribe, () => changesByPath.get(path) ?? null)
 }
 
+// Relê na hora, sem esperar o aviso do .git ou a conferência periódica: criar ou salvar um
+// arquivo não mexe no .git, e a árvore de código quer a cor certa logo.
+export function refreshNow(path: string): void {
+  if (watching.has(path)) void refresh(path)
+}
+
 // Redesenha quando qualquer lista muda; os dados vêm de getSessions.
 export function useSessionsVersion(): number {
   return useSyncExternalStore(subscribe, () => version)

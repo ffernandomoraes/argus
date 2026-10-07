@@ -1,10 +1,15 @@
 # Gera uma versão nova: sobe o número no package.json, cria a tag, monta o .dmg e o .zip
 # (Apple Silicon) e publica tudo num release do GitHub.
-# Rodar pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=patch -f notas="- item"
+# Roda sozinho a cada push na main (sobe o patch; notas = commits desde a última tag).
+# Na mão, pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=minor -f notas="- item"
 # Com publicar=false só monta e guarda o .dmg no run, sem tag nem release.
 name: Release
 
 on:
+  push:
+    branches: [main]
+    # Só texto (README, anotações): não vira versão.
+    paths-ignore: ['**.md']
   workflow_dispatch:
     inputs:
       bump:
@@ -24,14 +29,26 @@ on:
 permissions:
   contents: write
 
+# Um release por vez. Pushes que chegam durante um release esperam; se vierem vários, só o
+# último fica na fila, e ele publica tudo de uma vez.
 concurrency: release
 
 jobs:
   release:
+    # O commit "Versão X" que este workflow envia não dispara outro release. O GitHub já não
+    # dispara com pushes feitos pelo próprio Actions; isto é só a garantia.
+    if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Versão ') }}
     runs-on: macos-15
+    env:
+      # No push não há as opções do disparo manual: publica sempre e sobe o patch.
+      PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
+      BUMP: ${{ inputs.bump || 'patch' }}
     steps:
+      # A main como está agora, não a do push que disparou: um run que esperou na fila
+      # pega o commit de versão do anterior e o que chegou depois.
       - uses: actions/checkout@v5
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
@@ -50,7 +67,7 @@ jobs:
             const [major, minor, patch] = require("./package.json").version.split(".").map(Number)
             const bump = process.argv[1]
             console.log(bump === "major" ? `${major + 1}.0.0` : bump === "minor" ? `${major}.${minor + 1}.0` : `${major}.${minor}.${patch + 1}`)
-          ' "${{ inputs.bump }}")
+          ' "$BUMP")
           if git rev-parse "v$next" >/dev/null 2>&1; then
             echo "A tag v$next já existe." >&2
             exit 1
@@ -101,23 +118,24 @@ jobs:
           codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -qE 'certificate (leaf|root)'
 
       - name: Guardar o app (teste)
-        if: ${{ !inputs.publicar }}
+        if: env.PUBLICAR != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: Argus-${{ steps.version.outputs.version }}
           path: dist/*.dmg
 
+      # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois.
       - name: Commit da versão e tag
-        if: ${{ inputs.publicar }}
+        if: env.PUBLICAR == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "Versão ${{ steps.version.outputs.version }}"
           git tag "v${{ steps.version.outputs.version }}"
-          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v${{ steps.version.outputs.version }}"
+          git push --atomic origin "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v${{ steps.version.outputs.version }}"
 
       - name: Publicar release
-        if: ${{ inputs.publicar }}
+        if: env.PUBLICAR == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           NOTAS: ${{ inputs.notas }}

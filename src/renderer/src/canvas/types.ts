@@ -29,6 +29,8 @@ export type ProjectData = {
   name: string
   path: string
   color: string
+  // Recolhida: embaixo da pasta ficam só as conversas rodando ou esperando você.
+  collapsed?: boolean
 }
 
 // Terminal solto no canvas: o `claude` ou o shell do sistema, numa pasta.

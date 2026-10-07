@@ -237,6 +237,13 @@ export function toggleCollapse(nodes: CanvasNode[], id: string): CanvasNode[] {
   return collapse ? next : pushAway(next, [id])
 }
 
+// Pasta recolhida: a lista de conversas encolhe para as que pedem atenção.
+export function toggleProjectCollapse(nodes: CanvasNode[], id: string): CanvasNode[] {
+  return nodes.map((n) =>
+    n.id === id && n.type === 'project' ? { ...n, data: { ...n.data, collapsed: !n.data.collapsed } } : n
+  )
+}
+
 const GROUP_MIN_WIDTH = 320
 
 // Redimensiona o grupo para caber exatamente nas instâncias de dentro.

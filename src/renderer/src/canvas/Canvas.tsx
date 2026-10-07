@@ -48,7 +48,7 @@ import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
-import { addNode, findChatSpot, fitAfterResize, removeNode, rename, toggleCollapse } from './operations'
+import { addNode, findChatSpot, fitAfterResize, removeNode, rename, toggleCollapse, toggleProjectCollapse } from './operations'
 import { snap, type Guide } from './snapping'
 import type { CanvasNode, ConversationSummary, ProjectData, TerminalKind } from './types'
 import { chatMenu, groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
@@ -215,6 +215,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           )
         ),
       toggleGroup: (id: string) => change((ns) => toggleCollapse(ns, id)),
+      toggleProject: (id: string) => change((ns) => toggleProjectCollapse(ns, id)),
       activeConversation,
       openConversation: (nodeId: string, conversationId: string) => {
         // Em janela separada (já aberta, ou pela preferência): abre ou traz a janela para frente.

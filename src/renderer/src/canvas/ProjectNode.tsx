@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useStore, type NodeProps } from '@xyflow/react'
-import { Folder, List, Loader2, Plus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Folder, List, Loader2, Plus } from 'lucide-react'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
 import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH } from './factory'
@@ -16,7 +16,10 @@ import type { ConversationSummary, ProjectNode as ProjectNodeType } from './type
 
 // As conversas mais recentes ficam empilhadas embaixo da pasta; todas abrem pelo botão
 // abaixo da lista, no painel flutuante.
-const MAX_CONVERSATIONS = 5
+const MAX_CONVERSATIONS = 3
+
+// Recolhida, a pasta ainda mostra o que pede atenção, para nenhum aviso sumir junto.
+const isActive = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'
 
 // Conversas recuadas e mais estreitas que a pasta, como itens dentro dela. As linhas formam
 // uma árvore: descem de baixo da pasta, alinhadas ao ícone de pasta, e entram pela lateral
@@ -57,7 +60,9 @@ function withAgents(conversations: ConversationSummary[]): Row[] {
 export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectNodeType>) {
   const conversations = useSessions(data.path)
   const branch = useBranch(data.path)
+  const collapsed = !!data.collapsed
   const shown = [...conversations]
+    .filter((c) => !collapsed || isActive(c))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, MAX_CONVERSATIONS)
   // Qualquer conversa do projeto rodando (não só as visíveis na lista) troca a pasta pelo loader.
@@ -71,7 +76,8 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
     return color && color !== DEFAULT_GROUP_COLOR ? color : 'var(--color-running)'
   })
   const now = useNow()
-  const { activeConversation, openConversation, newConversation, openAllConversations, poppedOut } = useCanvasActions()
+  const { activeConversation, openConversation, newConversation, openAllConversations, poppedOut, toggleProject } =
+    useCanvasActions()
 
   const rootRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef<HTMLDivElement>(null)
@@ -182,6 +188,19 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
             <EditableName id={id} value={data.name} className="text-[15px] font-semibold leading-tight" />
             <PathLabel path={data.path} className="text-[11px] text-faint" />
           </div>
+          {conversations.length > 0 && (
+            <button
+              aria-label={collapsed ? 'Mostrar conversas' : 'Recolher conversas'}
+              title={collapsed ? 'Mostrar conversas' : 'Recolher conversas'}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleProject(id)
+              }}
+              className="nodrag flex size-6 shrink-0 items-center justify-center rounded-md text-muted hover:bg-line hover:text-text"
+            >
+              {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            </button>
+          )}
         </header>
 
         {conversations.length === 0 && <p className="bg-surface px-3 py-2.5 text-xs text-faint">Nenhuma conversa ainda</p>}
@@ -220,7 +239,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
       )}
 
       {/* Fecha a lista: depois da última conversa, no mesmo recuo, fora das linhas da árvore. */}
-      {conversations.length > 0 && (
+      {conversations.length > 0 && !collapsed && (
         <button
           onClick={() => openAllConversations(id)}
           className="nodrag flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text"

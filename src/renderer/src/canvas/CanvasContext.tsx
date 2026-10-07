@@ -20,6 +20,7 @@ type CanvasActions = {
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
   toggleGroup: (id: string) => void
+  toggleProject: (id: string) => void
   activeConversation: ActiveConversation | null
   openConversation: (nodeId: string, conversationId: string) => void
   newConversation: (nodeId: string) => void

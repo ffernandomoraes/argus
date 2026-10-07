@@ -71,7 +71,7 @@ Baixa a última versão, coloca em `/Applications` e abre. Rodar de novo atualiz
 
 ### Atualizações
 
-O Argus se atualiza sozinho: procura versão nova ao abrir e a cada 4 horas e baixa em
+O Argus se atualiza sozinho: procura versão nova ao abrir e a cada hora, e baixa em
 segundo plano. Quando ela está pronta, aparece **Atualizar para x.y.z** no canto direito da
 barra de título. Um clique reinicia o app já atualizado; se preferir não clicar, a versão
 nova entra quando você fechar o app. Também dá para procurar na hora pelo menu

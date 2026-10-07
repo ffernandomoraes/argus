@@ -85,7 +85,7 @@ function MenuBarIconRow() {
   )
 }
 
-// A conferência automática roda sozinha (ao abrir e a cada 4 horas); aqui dá para forçar.
+// A conferência automática roda sozinha (ao abrir e a cada hora); aqui dá para forçar.
 function UpdatesRow() {
   const updates = useUpdates()
   if (!updates) return null
@@ -98,7 +98,7 @@ function UpdatesRow() {
     : state.status === 'ready' ? `A versão ${state.version} está pronta: entra ao reiniciar ou quando o app fechar.`
     : state.status === 'error' ? state.message
     : state.status === 'unsupported' ? state.reason
-    : 'Procura versão nova ao abrir o app e a cada 4 horas.'
+    : 'Procura versão nova ao abrir o app e a cada hora.'
   const busy = state.status === 'checking' || state.status === 'downloading' || state.status === 'unsupported'
 
   return (

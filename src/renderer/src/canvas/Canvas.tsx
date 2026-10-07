@@ -434,8 +434,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           drawer || allConversations ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
         }`}
       />
-      {/* Como no VS Code: a conversa aberta e o projeto; sem conversa, o nome do app. */}
-      <TitleBar title={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'} />
+      {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
+      <TitleBar windowTitle={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'} />
       {drawer && codeOpen && (
         <CodeExplorer
           root={drawer.project.path}

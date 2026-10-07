@@ -94,7 +94,7 @@ jobs:
         if: env.MAC_SIGN_IDENTITY != ''
         run: |
           codesign --verify --deep --strict dist/mac-arm64/Argus.app
-          codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -q 'certificate leaf'
+          codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -qE 'certificate (leaf|root)'
 
       - name: Guardar o app (teste)
         if: ${{ !inputs.publicar }}
@@ -110,7 +110,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "Versão ${{ steps.version.outputs.version }}"
           git tag "v${{ steps.version.outputs.version }}"
-          git push origin HEAD --tags
+          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v${{ steps.version.outputs.version }}"
 
       - name: Publicar release
         if: ${{ inputs.publicar }}

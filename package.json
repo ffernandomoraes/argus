@@ -1,7 +1,7 @@
 {
   "name": "argus",
   "productName": "Argus",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Canvas infinito para orquestrar projetos e agentes do Claude Code",
   "main": "./out/main/index.js",

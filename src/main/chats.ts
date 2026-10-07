@@ -124,6 +124,8 @@ class ChatSession {
         model: s.model || undefined,
         effort: (s.effort || undefined) as never,
         permissionMode: toPermissionMode(s.permissionMode),
+        // Sem isso o SDK recusa o "Ignorar permissões", na abertura e na troca com a conversa aberta.
+        allowDangerouslySkipPermissions: true,
         settings: Object.keys(flags).length ? (flags as never) : undefined,
         // Cada subagente manda uma frase do que está fazendo agora; aparece no ramo dele no canvas.
         agentProgressSummaries: true,

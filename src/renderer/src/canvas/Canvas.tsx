@@ -73,8 +73,8 @@ function projectOf(node: CanvasNode | undefined): ProjectData | null {
 }
 
 // O React Flow desliga o mouse (pointer-events: none) em nó que não é selecionável nem
-// arrastável, a menos que exista onNodeClick. Sem isso, duplo clique e botão direito
-// no grupo travado atravessam para o canvas.
+// arrastável, a menos que exista onNodeClick. Sem isso, com o espaço pressionado (nada
+// arrastável nem selecionável), o botão direito nos blocos atravessa para o canvas.
 const keepPointerEvents = () => {}
 
 export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme; onOpenSettings: () => void }) {
@@ -263,17 +263,6 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     [actions, nodesRef]
   )
 
-  // Grupo só seleciona e arrasta depois de dois cliques; clique simples não mexe nele.
-  const flowNodes = useMemo(
-    () => nodes.map((n) => (n.type === 'area' ? { ...n, draggable: !!n.selected, selectable: !!n.selected } : n)),
-    [nodes]
-  )
-
-  const onNodeDoubleClick = (_e: ReactMouseEvent, node: CanvasNode) => {
-    if (node.type !== 'area') return
-    setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === node.id })))
-  }
-
   // Conversa aberta no painel; some sozinha se a pasta ou a conversa for excluída.
   // Conversa sem projeto ainda não enviada não tem bloco: roda na pasta do usuário.
   const drawer = useMemo(() => {
@@ -396,8 +385,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   return (
     <CanvasContext.Provider value={actions}>
       <ReactFlow
-        nodes={flowNodes}
-        onNodeDoubleClick={onNodeDoubleClick}
+        nodes={nodes}
         onNodeClick={keepPointerEvents}
         zoomOnDoubleClick={false}
         onNodesChange={onNodesChange}

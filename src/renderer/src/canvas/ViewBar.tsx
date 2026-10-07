@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { MiniMap, Panel, useReactFlow, useStore } from '@xyflow/react'
 import { Map, Maximize, Minus, Plus } from 'lucide-react'
 import { NavButton } from './NavBar'
-import { FIT_OPTIONS, ZOOM_DURATION } from './useCanvasShortcuts'
+import { useFitAll, ZOOM_DURATION } from './useCanvasShortcuts'
 
 // Zoom, "ver tudo" e minimapa juntos no canto inferior direito; o minimapa abre acima da barra.
 export function ViewBar() {
   const [mapOpen, setMapOpen] = useState(false)
-  const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow()
+  const { zoomIn, zoomOut, zoomTo } = useReactFlow()
+  const fitAll = useFitAll()
   const zoom = useStore((s) => s.transform[2])
 
   return (
@@ -31,7 +32,7 @@ export function ViewBar() {
           <NavButton label="Aumentar zoom" shortcut="⌘ +" compact side="top" onClick={() => zoomIn({ duration: ZOOM_DURATION })}>
             <Plus size={14} />
           </NavButton>
-          <NavButton label="Ver tudo" shortcut="⇧ 1" compact side="top" onClick={() => fitView(FIT_OPTIONS)}>
+          <NavButton label="Ver tudo" shortcut="⇧ 1" compact side="top" onClick={fitAll}>
             <Maximize size={14} />
           </NavButton>
           <span className="mx-0.5 h-4 w-px bg-line" />

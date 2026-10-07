@@ -115,12 +115,12 @@ export function UsageIndicator() {
         <button
           aria-label="Ver limites do Claude"
           onClick={() => setOpen((o) => !o)}
-          className={`flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-[11px] text-faint shadow-xl shadow-black/40 hover:text-muted ${
+          className={`flex h-[34px] items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[10px] text-faint shadow-md shadow-black/20 hover:text-muted ${
             open ? 'text-muted' : ''
           }`}
         >
-          <ClaudeIcon size={14} />
-          <Bar percent={percent} className="h-1 w-12" />
+          <ClaudeIcon size={12} />
+          <Bar percent={percent} className="h-1 w-10" />
           <span className="font-mono text-muted">{percent}%</span>
         </button>
       </div>

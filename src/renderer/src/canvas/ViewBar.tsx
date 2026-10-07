@@ -12,36 +12,37 @@ export function ViewBar() {
 
   return (
     <Panel position="bottom-right" className="!m-4">
-      <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-surface p-1.5 shadow-xl shadow-black/40">
+      <div className="flex flex-col gap-1 rounded-lg border border-line bg-surface p-1 shadow-md shadow-black/20">
         {mapOpen && (
           <MiniMap
             pannable
             zoomable
-            className="!rounded-lg !border-0"
+            className="!rounded-md !border-0"
             style={{ position: 'relative', margin: 0, width: 196, height: 120 }}
           />
         )}
-        <div className="flex items-center justify-between gap-1">
-          <NavButton label="Diminuir zoom" shortcut="⌘ −" side="top" onClick={() => zoomOut({ duration: ZOOM_DURATION })}>
-            <Minus size={16} />
+        <div className="flex items-center justify-between gap-0.5">
+          <NavButton label="Diminuir zoom" shortcut="⌘ −" compact side="top" onClick={() => zoomOut({ duration: ZOOM_DURATION })}>
+            <Minus size={14} />
           </NavButton>
-          <NavButton label="Zoom em 100%" shortcut="⇧ 0" side="top" onClick={() => zoomTo(1, { duration: ZOOM_DURATION })}>
-            <span className="font-mono text-[10px]">{Math.round(zoom * 100)}%</span>
+          <NavButton label="Zoom em 100%" shortcut="⇧ 0" compact side="top" onClick={() => zoomTo(1, { duration: ZOOM_DURATION })}>
+            <span className="px-1 font-mono text-[10px]">{Math.round(zoom * 100)}%</span>
           </NavButton>
-          <NavButton label="Aumentar zoom" shortcut="⌘ +" side="top" onClick={() => zoomIn({ duration: ZOOM_DURATION })}>
-            <Plus size={16} />
+          <NavButton label="Aumentar zoom" shortcut="⌘ +" compact side="top" onClick={() => zoomIn({ duration: ZOOM_DURATION })}>
+            <Plus size={14} />
           </NavButton>
-          <NavButton label="Ver tudo" shortcut="⇧ 1" side="top" onClick={() => fitView(FIT_OPTIONS)}>
-            <Maximize size={16} />
+          <NavButton label="Ver tudo" shortcut="⇧ 1" compact side="top" onClick={() => fitView(FIT_OPTIONS)}>
+            <Maximize size={14} />
           </NavButton>
-          <span className="mx-0.5 h-5 w-px bg-line" />
+          <span className="mx-0.5 h-4 w-px bg-line" />
           <NavButton
             label={mapOpen ? 'Recolher minimapa' : 'Mostrar minimapa'}
             side="top-end"
+            compact
             selected={mapOpen}
             onClick={() => setMapOpen((o) => !o)}
           >
-            <Map size={16} />
+            <Map size={14} />
           </NavButton>
         </div>
       </div>

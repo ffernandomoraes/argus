@@ -10,7 +10,6 @@ import {
   Settings,
   SquareDashed
 } from 'lucide-react'
-import { useDevServers } from '../devServers/useDevServers'
 import { useCanvasActions } from './CanvasContext'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { useEscape } from '../useEscape'
@@ -42,6 +41,7 @@ export function NavButton({
   active,
   selected,
   primary,
+  compact,
   side = 'right',
   children
 }: {
@@ -51,6 +51,8 @@ export function NavButton({
   active?: boolean
   selected?: boolean
   primary?: boolean
+  // Versão menor, para barras discretas (ViewBar). A largura cresce com o conteúdo, como o "88%".
+  compact?: boolean
   side?: keyof typeof TOOLTIP_SIDE
   children: ReactNode
 }) {
@@ -64,7 +66,7 @@ export function NavButton({
     <button
       aria-label={label}
       onClick={onClick}
-      className={`group relative flex size-8 items-center justify-center rounded-lg ${tone}`}
+      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-md' : 'size-8 rounded-lg'} ${tone}`}
     >
       {children}
       {!active && <Tooltip label={label} shortcut={shortcut} side={side} />}
@@ -127,21 +129,6 @@ function NewBlockMenu() {
   )
 }
 
-// O selo mostra quantos servidores estão de pé; a lista abre num painel.
-function DevServersButton({ onClick }: { onClick: () => void }) {
-  const { servers } = useDevServers()
-  return (
-    <NavButton label="Servidores rodando" onClick={onClick}>
-      <Server size={16} />
-      {servers.length > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-running px-1 font-mono text-[9px] font-semibold text-bg">
-          {servers.length}
-        </span>
-      )}
-    </NavButton>
-  )
-}
-
 export function NavBar({ zoomShortcuts = true }: { zoomShortcuts?: boolean }) {
   const { openSettings, openMemory, openAgents, openDevServers } = useCanvasActions()
   useCanvasShortcuts(zoomShortcuts)
@@ -157,7 +144,9 @@ export function NavBar({ zoomShortcuts = true }: { zoomShortcuts?: boolean }) {
         <NavButton label="Agentes" onClick={openAgents}>
           <Bot size={16} />
         </NavButton>
-        <DevServersButton onClick={openDevServers} />
+        <NavButton label="Servidores rodando" onClick={openDevServers}>
+          <Server size={16} />
+        </NavButton>
         <NavButton label="Memória do Claude" onClick={() => openMemory()}>
           <Brain size={16} />
         </NavButton>

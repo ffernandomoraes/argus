@@ -8,7 +8,8 @@ import type { CliStatus } from '../shared/cli'
 
 // Comando `argus`, o `code .` deste app: em qualquer terminal, `argus .` abre a pasta no canvas.
 // O script manda o caminho por um socket local; o app escuta enquanto está aberto.
-const DIR = join(homedir(), '.argus')
+// O pnpm dev usa outra pasta: aberto depois, tomaria o socket e o script do instalado.
+const DIR = join(homedir(), app.isPackaged ? '.argus' : '.argus-dev')
 export const CLI_BIN = join(DIR, 'bin')
 const SCRIPT = join(CLI_BIN, 'argus')
 const SOCKET = join(DIR, 'app.sock')

@@ -31,6 +31,10 @@ import { UsageMonitor } from './usageMonitor'
 import { Updater } from './updater'
 
 function broadcast(channel: string, ...args: unknown[]): void {
+// O pnpm dev tem dados próprios: com a mesma pasta do instalado, um sobrescreveria o canvas e as
+// configurações do outro.
+if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')} Dev`)
+
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send(channel, ...args)
 }
 
@@ -83,7 +87,8 @@ const auth = new Auth(
 )
 
 function loadRenderer(win: BrowserWindow, hash = ''): void {
-  if (process.env['ELECTRON_RENDERER_URL']) {
+  // Só o pnpm dev carrega do Vite; o instalado ignora a variável mesmo se ela vier herdada.
+  if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'] + (hash ? `#${hash}` : ''))
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined)

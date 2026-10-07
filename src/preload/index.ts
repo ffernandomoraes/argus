@@ -14,6 +14,7 @@ import type { Message } from '../shared/history'
 import type { MemoryGroup, MemoryProject } from '../shared/memory'
 import type { KnownFolder, SessionSummary, UncommittedFile } from '../shared/sessions'
 import type { SpeechEvent } from '../shared/speech'
+import type { UpdateInfo, UpdateState } from '../shared/updates'
 import type { Usage } from '../shared/usage'
 
 contextBridge.exposeInMainWorld('api', {
@@ -185,6 +186,17 @@ contextBridge.exposeInMainWorld('api', {
   settings: {
     get: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
     setMenuBarIcon: (on: boolean): Promise<AppSettings> => ipcRenderer.invoke('settings:menuBarIcon', on)
+  },
+  // Atualização do app pelos releases do GitHub.
+  updates: {
+    get: (): Promise<UpdateInfo> => ipcRenderer.invoke('updates:get'),
+    check: (): Promise<UpdateState> => ipcRenderer.invoke('updates:check'),
+    install: () => ipcRenderer.send('updates:install'),
+    onState: (cb: (state: UpdateState) => void) => {
+      const listener = (_e: IpcRendererEvent, state: UpdateState) => cb(state)
+      ipcRenderer.on('updates:state', listener)
+      return () => ipcRenderer.removeListener('updates:state', listener)
+    }
   },
   usage: {
     get: (): Promise<Usage | null> => ipcRenderer.invoke('usage:get'),

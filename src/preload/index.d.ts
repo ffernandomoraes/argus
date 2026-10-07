@@ -7,6 +7,7 @@ import type { ClaudeInfo } from '../shared/models'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
 import type { CliStatus } from '../shared/cli'
 import type { AppSettings } from '../shared/appSettings'
+import type { UpdateInfo, UpdateState } from '../shared/updates'
 import type { DevServer } from '../shared/devServers'
 import type { Message } from '../shared/history'
 import type { MemoryGroup, MemoryProject } from '../shared/memory'
@@ -122,6 +123,12 @@ declare global {
       settings: {
         get: () => Promise<AppSettings>
         setMenuBarIcon: (on: boolean) => Promise<AppSettings>
+      }
+      updates: {
+        get: () => Promise<UpdateInfo>
+        check: () => Promise<UpdateState>
+        install: () => void
+        onState: (cb: (state: UpdateState) => void) => () => void
       }
       usage: {
         get: () => Promise<Usage | null>

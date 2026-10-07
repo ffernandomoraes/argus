@@ -26,6 +26,7 @@ import { Speech } from './speech'
 import { StatusTray } from './statusTray'
 import { Terminals } from './terminals'
 import { UsageMonitor } from './usageMonitor'
+import { Updater } from './updater'
 
 function broadcast(channel: string, ...args: unknown[]): void {
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send(channel, ...args)
@@ -148,6 +149,36 @@ function createConversationWindow(hash: string): BrowserWindow {
 
 const speech = new Speech()
 
+// Versão nova baixada em segundo plano: entra com o botão da barra de título ou ao fechar o app.
+const updater = new Updater((state) => broadcast('updates:state', state))
+
+// "Procurar atualizações…" do menu: diferente da conferência automática, sempre responde.
+async function checkForUpdates(): Promise<void> {
+  const state = await updater.check()
+  const current = app.getVersion()
+  if (state.status === 'ready') {
+    const { response } = await dialog.showMessageBox({
+      message: `A versão ${state.version} está pronta.`,
+      detail: `Você está na ${current}. O Argus reinicia para atualizar.`,
+      buttons: ['Reiniciar agora', 'Depois'],
+      defaultId: 0,
+      cancelId: 1
+    })
+    if (response === 0) updater.install(true)
+    return
+  }
+  const message =
+    state.status === 'latest' ? 'Você já está na versão mais recente.'
+    : state.status === 'downloading' ? `Baixando a versão ${state.version}.`
+    : state.status === 'unsupported' ? state.reason
+    : state.status === 'error' ? 'Não deu para procurar atualizações.'
+    : 'Procurando atualizações.'
+  await dialog.showMessageBox({
+    message,
+    detail: state.status === 'error' ? state.message : `Versão em uso: ${current}.`
+  })
+}
+
 // `argus .` num terminal: traz o app para frente e manda a pasta para o canvas. Com o app
 // ainda abrindo, a pasta espera o canvas avisar que está pronto.
 let canvasReady = false
@@ -174,7 +205,21 @@ function sendEdit(win: Electron.BaseWindow | undefined, action: 'undo' | 'redo')
 function setAppMenu(): void {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
-      { role: 'appMenu' },
+      {
+        label: app.name,
+        submenu: [
+          { role: 'about' },
+          { label: 'Procurar atualizações…', click: () => void checkForUpdates() },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' }
+        ]
+      },
       {
         label: 'Editar',
         submenu: [
@@ -284,6 +329,9 @@ app.whenReady().then(() => {
   ipcMain.handle('cli:install', () => installCli())
   ipcMain.handle('cli:uninstall', () => uninstallCli())
   ipcMain.handle('settings:get', () => loadAppSettings())
+  ipcMain.handle('updates:get', () => ({ version: app.getVersion(), state: updater.state }))
+  ipcMain.handle('updates:check', () => updater.check())
+  ipcMain.on('updates:install', () => updater.install(true))
   ipcMain.handle('settings:menuBarIcon', (_e, on: boolean) => {
     setMenuBarIcon(on)
     return saveAppSettings({ menuBarIcon: on })
@@ -301,6 +349,7 @@ app.whenReady().then(() => {
   })
   usage.start()
   cli.start()
+  updater.start()
   setMenuBarIcon(loadAppSettings().menuBarIcon)
   app.on('browser-window-focus', () => tray?.seen())
   createWindow()
@@ -320,6 +369,9 @@ function shutdown(): void {
   chats.closeAll()
   canvasAgent.close()
   sessionWatch.close()
+  updater.stop()
+  // Versão nova já baixada e o app fechando: troca agora, para abrir atualizado da próxima vez.
+  updater.install(false)
 }
 
 app.on('before-quit', shutdown)

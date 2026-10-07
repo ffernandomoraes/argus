@@ -41,6 +41,7 @@ esperando por você.
 - Também enxerga as sessões abertas fora do app (terminal, VS Code) e o status delas.
 
 **Acompanhamento**
+- Atualização automática, com a versão em uso sempre no canto da barra de título.
 - Status de cada conversa no canvas: rodando, esperando você, concluída.
 - Notificação do sistema quando uma conversa termina ou precisa de resposta.
 - Ícone na barra de menus com o resumo do que está rodando.
@@ -68,8 +69,17 @@ curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.
 
 Baixa a última versão, coloca em `/Applications` e abre. Rodar de novo atualiza.
 
+### Atualizações
+
+O Argus se atualiza sozinho: procura versão nova ao abrir e a cada 4 horas e baixa em
+segundo plano. Quando ela está pronta, aparece **Atualizar para x.y.z** no canto direito da
+barra de título. Um clique reinicia o app já atualizado; se preferir não clicar, a versão
+nova entra quando você fechar o app. Também dá para procurar na hora pelo menu
+**Argus › Procurar atualizações…** ou em **Configurações › Geral**.
+
 As permissões que você der ao app (microfone, ditado, notificações) continuam valendo nas
-versões seguintes: todas saem assinadas com o mesmo certificado.
+versões seguintes: todas saem assinadas com o mesmo certificado, e o app só aceita uma
+atualização assinada por ele.
 
 ### Pelo .dmg
 

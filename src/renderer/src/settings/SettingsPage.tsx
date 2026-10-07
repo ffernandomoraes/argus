@@ -19,6 +19,7 @@ import type { CliStatus } from '../../../shared/cli'
 import type { ThemePreference } from '../theme/useTheme'
 import { Row, Segmented, Select, Switch } from './controls'
 import { setPreferences, usePreferences } from './preferences'
+import { useUpdates } from '../updates/useUpdates'
 
 type Section = 'general' | 'conversations' | 'appearance' | 'account'
 
@@ -84,6 +85,44 @@ function MenuBarIconRow() {
   )
 }
 
+// A conferência automática roda sozinha (ao abrir e a cada 4 horas); aqui dá para forçar.
+function UpdatesRow() {
+  const updates = useUpdates()
+  if (!updates) return null
+  const { version, state } = updates
+
+  const status =
+    state.status === 'checking' ? 'Procurando versão nova…'
+    : state.status === 'latest' ? 'Você está na versão mais recente.'
+    : state.status === 'downloading' ? `Baixando a versão ${state.version} - ${Math.round(state.progress * 100)}%.`
+    : state.status === 'ready' ? `A versão ${state.version} está pronta: entra ao reiniciar ou quando o app fechar.`
+    : state.status === 'error' ? state.message
+    : state.status === 'unsupported' ? state.reason
+    : 'Procura versão nova ao abrir o app e a cada 4 horas.'
+  const busy = state.status === 'checking' || state.status === 'downloading' || state.status === 'unsupported'
+
+  return (
+    <Row label="Atualizações" description={`Versão ${version}. ${status}`}>
+      {state.status === 'ready' ? (
+        <button
+          onClick={() => window.api.updates.install()}
+          className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+        >
+          Reiniciar e atualizar
+        </button>
+      ) : (
+        <button
+          disabled={busy}
+          onClick={() => void window.api.updates.check()}
+          className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
+        >
+          Procurar
+        </button>
+      )}
+    </Row>
+  )
+}
+
 function GeneralSection() {
   const prefs = usePreferences()
   return (
@@ -100,6 +139,7 @@ function GeneralSection() {
       </Row>
       <MenuBarIconRow />
       <CliRow />
+      <UpdatesRow />
     </>
   )
 }

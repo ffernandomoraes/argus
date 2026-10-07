@@ -11,9 +11,62 @@
         document.documentElement.dataset.theme = light ? 'light' : 'dark'
       } catch {}
     </script>
+    <style>
+      /* Tela de carregamento enquanto o JavaScript sobe. Fica dentro do #root, então o React a
+         troca pelo app ao montar. As cores repetem as do index.css, que ainda não carregou. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: #161618;
+      }
+      :root[data-theme='light'] body {
+        background: #f3f3f5;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        color: #a8a8b2;
+        font: 500 15px/1 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        letter-spacing: 0.02em;
+        user-select: none;
+        /* Só aparece se a espera passar de um instante, para não piscar quando abre rápido. */
+        opacity: 0;
+        animation: boot-in 200ms ease-out 150ms forwards;
+      }
+      :root[data-theme='light'] #boot {
+        color: #52525b;
+      }
+      #boot i {
+        width: 16px;
+        height: 16px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        opacity: 0.7;
+        animation: boot-spin 0.8s linear infinite;
+      }
+      @keyframes boot-in {
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot">Argus<i></i></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

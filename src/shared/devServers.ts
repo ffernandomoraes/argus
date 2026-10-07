@@ -14,3 +14,19 @@ export type DevServer = {
   // o editor). claude: o grupo tem um Claude Code rodando (um servidor MCP, por exemplo).
   locked?: 'app' | 'claude'
 }
+
+// Servidor de uma pasta do canvas, para o botão de iniciar e encerrar acima dela. Conta
+// qualquer porta aberta por um processo dentro da pasta, venha de onde vier o comando.
+export type ProjectServer = {
+  // Script do package.json que o botão roda (dev; sem ele, start). Nulo: não dá para iniciar daqui.
+  script: string | null
+  // Comando completo, como `pnpm run dev`.
+  command: string | null
+  // starting: iniciado daqui e ainda sem porta aberta.
+  state: 'stopped' | 'starting' | 'running'
+  ports: number[]
+  // Rodando, mas nenhum processo dá para encerrar daqui (ver DevServer.locked).
+  locked?: DevServer['locked']
+  // Iniciado daqui e saiu sem ninguém pedir: últimas linhas da saída, para dizer o motivo.
+  error?: string
+}

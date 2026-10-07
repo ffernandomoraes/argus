@@ -40,6 +40,9 @@ function parsePs(text: string): Map<number, { pgid: number; rest: string }> {
   return out
 }
 
+const MARK = /(^|\s)CLAUDECODE=1(\s|$)/
+const CLAUDE_BIN = /(^|\/)claude$|\/claude\/versions\//
+
 let ownGroup: Promise<number> | null = null
 function ownPgid(): Promise<number> {
   ownGroup ??= output(PS, ['-o', 'pgid=', '-p', String(process.pid)]).then((s) => Number(s.trim()))
@@ -52,24 +55,27 @@ async function claudeGroups(): Promise<Set<number>> {
   const groups = new Set<number>()
   for (const line of (await output(PS, ['-ax', '-o', 'pgid=,comm='])).split('\n')) {
     const m = line.match(/^\s*(\d+)\s+(.*)$/)
-    if (m && /(^|\/)claude$|\/claude\/versions\//.test(m[2].trim())) groups.add(Number(m[1]))
+    if (m && CLAUDE_BIN.test(m[2].trim())) groups.add(Number(m[1]))
   }
   return groups
 }
 
-// Todo comando que o Claude Code roda herda CLAUDECODE=1. Seguir a árvore de processos não
-// serve: rodando em segundo plano, o servidor perde o pai e é adotado pelo sistema.
-export async function listDevServers(): Promise<DevServer[]> {
+// Processo com porta aberta, com todas as portas dele. `claude`: o próprio Claude Code ou algo
+// no grupo dele (servidor MCP); não é servidor de projeto nenhum.
+export type Listening = Omit<DevServer, 'port'> & { ports: number[]; claude: boolean }
+
+// `only` filtra pelo ambiente antes das consultas mais caras (cwd, comando sem ambiente).
+export async function scanListening(only?: (env: string) => boolean): Promise<Listening[]> {
   const ports = parseFields(await output(LSOF, ['-nP', '-iTCP', '-sTCP:LISTEN', '-Fpn']), 'n')
   if (ports.size === 0) return []
   const pids = [...ports.keys()].join(',')
 
   // -E junta o ambiente ao fim do comando; é só para achar a marca e a sessão.
   const withEnv = parsePs(await output(PS, ['-E', '-ww', '-o', 'pid=,pgid=,command=', '-p', pids]))
-  const marked = [...withEnv].filter(([, p]) => /(^|\s)CLAUDECODE=1(\s|$)/.test(p.rest)).map(([pid]) => pid)
-  if (marked.length === 0) return []
+  const chosen = [...withEnv].filter(([, p]) => !only || only(p.rest)).map(([pid]) => pid)
+  if (chosen.length === 0) return []
 
-  const list = marked.join(',')
+  const list = chosen.join(',')
   const [plain, cwds, self, withClaude] = await Promise.all([
     output(PS, ['-ww', '-o', 'pid=,pgid=,command=', '-p', list]).then(parsePs),
     output(LSOF, ['-a', '-d', 'cwd', '-p', list, '-Fpn']).then((s) => parseFields(s, 'n')),
@@ -77,30 +83,40 @@ export async function listDevServers(): Promise<DevServer[]> {
     claudeGroups()
   ])
 
-  const servers: DevServer[] = []
-  for (const pid of marked) {
+  const found: Listening[] = []
+  for (const pid of chosen) {
     const info = plain.get(pid)
     if (!info) continue
-    const sessionId = withEnv.get(pid)!.rest.match(/(?:^|\s)CLAUDE_CODE_SESSION_ID=([\w-]+)/)?.[1]
+    const env = withEnv.get(pid)!.rest
     // IPv4 e IPv6 da mesma porta viram uma linha só.
     const unique = new Set(ports.get(pid)!.map((addr) => Number(addr.slice(addr.lastIndexOf(':') + 1))))
-    for (const port of unique) {
-      if (!port) continue
-      servers.push({
-        port,
-        pid,
-        pgid: info.pgid,
-        cwd: cwds.get(pid)?.[0] ?? '',
-        command: info.rest,
-        sessionId,
-        locked: info.pgid === self ? 'app' : withClaude.has(info.pgid) ? 'claude' : undefined
-      })
+    found.push({
+      pid,
+      pgid: info.pgid,
+      ports: [...unique].filter(Boolean).sort((a, b) => a - b),
+      cwd: cwds.get(pid)?.[0] ?? '',
+      command: info.rest,
+      sessionId: env.match(/(?:^|\s)CLAUDE_CODE_SESSION_ID=([\w-]+)/)?.[1],
+      locked: info.pgid === self ? 'app' : withClaude.has(info.pgid) ? 'claude' : undefined,
+      claude: withClaude.has(info.pgid) || CLAUDE_BIN.test(info.rest.split(' ')[0])
+    })
+  }
+  return found
+}
+
+// Todo comando que o Claude Code roda herda CLAUDECODE=1. Seguir a árvore de processos não
+// serve: rodando em segundo plano, o servidor perde o pai e é adotado pelo sistema.
+export async function listDevServers(): Promise<DevServer[]> {
+  const servers: DevServer[] = []
+  for (const p of await scanListening((env) => MARK.test(env))) {
+    for (const port of p.ports) {
+      servers.push({ port, pid: p.pid, pgid: p.pgid, cwd: p.cwd, command: p.command, sessionId: p.sessionId, locked: p.locked })
     }
   }
   return servers.sort((a, b) => a.port - b.port)
 }
 
-function groupAlive(pgid: number): boolean {
+export function groupAlive(pgid: number): boolean {
   try {
     process.kill(-pgid, 0)
     return true
@@ -110,10 +126,16 @@ function groupAlive(pgid: number): boolean {
 }
 
 // Encerra o grupo inteiro do servidor. Confere de novo na hora: só grupos que a lista mostra,
-// e nunca um travado. Quem ignorar o SIGTERM leva SIGKILL depois de alguns segundos.
+// e nunca um travado.
 export async function killDevServer(pgid: number): Promise<boolean> {
   const target = (await listDevServers()).find((s) => s.pgid === pgid)
-  if (!target || target.locked || pgid <= 1) return false
+  if (!target || target.locked) return false
+  return terminate(pgid)
+}
+
+// Quem ignorar o SIGTERM leva SIGKILL depois de alguns segundos.
+export async function terminate(pgid: number): Promise<boolean> {
+  if (pgid <= 1) return false
   try {
     process.kill(-pgid, 'SIGTERM')
   } catch {

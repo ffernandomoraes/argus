@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useStore, type NodeProps } from '@xyflow/react'
-import { Brain, Folder, List, Loader2, Plus } from 'lucide-react'
+import { Folder, List, Loader2, Plus } from 'lucide-react'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
 import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH } from './factory'
 import { PathLabel } from './PathLabel'
 import { BranchLabel } from './BranchLabel'
+import { ProjectServerButton } from '../devServers/ProjectServerButton'
 import { Tooltip } from './NavBar'
 import { AgentItem, ConversationItem, useNow } from './ConversationItem'
 import { getRunningAgents, useRunningAgentsVersion } from './runningAgents'
@@ -70,8 +71,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
     return color && color !== DEFAULT_GROUP_COLOR ? color : 'var(--color-running)'
   })
   const now = useNow()
-  const { activeConversation, openConversation, newConversation, openAllConversations, openMemory, poppedOut } =
-    useCanvasActions()
+  const { activeConversation, openConversation, newConversation, openAllConversations, poppedOut } = useCanvasActions()
 
   const rootRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef<HTMLDivElement>(null)
@@ -150,14 +150,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
 
       {/* Ações da pasta, fora do card: acima do canto direito, como o nome do grupo fica acima da borda. */}
       <div className="nodrag absolute bottom-full right-0 mb-1.5 flex items-center gap-1">
-        <button
-          aria-label="Memória do projeto"
-          onClick={() => openMemory(data.path)}
-          className="group relative flex size-6 items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm hover:bg-surface-2 hover:text-text"
-        >
-          <Brain size={13} />
-          <Tooltip label="Memória do projeto" />
-        </button>
+        <ProjectServerButton path={data.path} />
         <button
           aria-label="Nova conversa"
           onClick={() => newConversation(id)}

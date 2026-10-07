@@ -6,7 +6,7 @@ import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, Permi
 import type { CliStatus } from '../shared/cli'
 import type { AppSettings } from '../shared/appSettings'
 import type { AuthState, LoginMethod } from '../shared/auth'
-import type { DevServer } from '../shared/devServers'
+import type { DevServer, ProjectServer } from '../shared/devServers'
 import type { McpStatus } from '../shared/mcp'
 import type { FileContent, FileDiff, FileEntry } from '../shared/files'
 import type { ClaudeInfo } from '../shared/models'
@@ -155,6 +155,13 @@ contextBridge.exposeInMainWorld('api', {
   devServers: {
     list: (): Promise<DevServer[]> => ipcRenderer.invoke('devServers:list'),
     kill: (pgid: number): Promise<boolean> => ipcRenderer.invoke('devServers:kill', pgid)
+  },
+  // Servidor de cada pasta do canvas: rodando (venha de onde vier) e iniciar/encerrar.
+  projectServers: {
+    status: (paths: string[]): Promise<Record<string, ProjectServer>> =>
+      ipcRenderer.invoke('projectServers:status', paths),
+    start: (path: string): Promise<boolean> => ipcRenderer.invoke('projectServers:start', path),
+    stop: (path: string): Promise<boolean> => ipcRenderer.invoke('projectServers:stop', path)
   },
   files: {
     list: (root: string, rel: string): Promise<FileEntry[]> => ipcRenderer.invoke('files:list', root, rel),

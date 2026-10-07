@@ -15,6 +15,7 @@ import { Chats } from './chats'
 import { ChatNotifier } from './notifications'
 import { loadCanvas, saveCanvas } from './canvasStore'
 import { killDevServer, listDevServers } from './devServers'
+import { projectServers, startProjectServer, stopProjectServer, stopStartedServers } from './projectServers'
 import { listDir, readFile } from './files'
 import { unwatchFile, watchFile } from './fileWatch'
 import { Popouts } from './popouts'
@@ -30,11 +31,11 @@ import { Terminals } from './terminals'
 import { UsageMonitor } from './usageMonitor'
 import { Updater } from './updater'
 
-function broadcast(channel: string, ...args: unknown[]): void {
 // O pnpm dev tem dados próprios: com a mesma pasta do instalado, um sobrescreveria o canvas e as
 // configurações do outro.
 if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')} Dev`)
 
+function broadcast(channel: string, ...args: unknown[]): void {
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send(channel, ...args)
 }
 
@@ -310,6 +311,9 @@ app.whenReady().then(() => {
   ipcMain.handle('sessions:images', (_e, path: string, id: string, messageId: string) => readImages(path, id, messageId))
   ipcMain.handle('devServers:list', () => listDevServers())
   ipcMain.handle('devServers:kill', (_e, pgid: number) => killDevServer(pgid))
+  ipcMain.handle('projectServers:status', (_e, paths: string[]) => projectServers(paths))
+  ipcMain.handle('projectServers:start', (_e, path: string) => startProjectServer(path))
+  ipcMain.handle('projectServers:stop', (_e, path: string) => stopProjectServer(path))
   ipcMain.handle('files:list', (_e, root: string, rel: string) => listDir(root, rel))
   ipcMain.handle('files:read', (_e, root: string, rel: string) => readFile(root, rel))
   ipcMain.handle('files:diff', (_e, root: string, rel: string) => fileDiff(root, rel))
@@ -382,7 +386,7 @@ app.whenReady().then(() => {
   })
 })
 
-// Encerra tudo que o app abriu (claude, terminais, ditado) para não sobrar processo solto.
+// Encerra tudo que o app abriu (claude, terminais, ditado, servidores de projeto) para não sobrar processo solto.
 function shutdown(): void {
   usage.stop()
   auth.cancel()
@@ -390,6 +394,7 @@ function shutdown(): void {
   tray?.destroy()
   tray = null
   terminals.killAll()
+  stopStartedServers()
   cli.stop()
   chats.closeAll()
   canvasAgent.close()

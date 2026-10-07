@@ -9,7 +9,7 @@ import type { CliStatus } from '../shared/cli'
 import type { AppSettings } from '../shared/appSettings'
 import type { AuthState, LoginMethod } from '../shared/auth'
 import type { UpdateInfo, UpdateState } from '../shared/updates'
-import type { DevServer } from '../shared/devServers'
+import type { DevServer, ProjectServer } from '../shared/devServers'
 import type { Message } from '../shared/history'
 import type { MemoryGroup, MemoryProject } from '../shared/memory'
 import type { KnownFolder, SessionSummary, UncommittedFile } from '../shared/sessions'
@@ -104,6 +104,11 @@ declare global {
       devServers: {
         list: () => Promise<DevServer[]>
         kill: (pgid: number) => Promise<boolean>
+      }
+      projectServers: {
+        status: (paths: string[]) => Promise<Record<string, ProjectServer>>
+        start: (path: string) => Promise<boolean>
+        stop: (path: string) => Promise<boolean>
       }
       files: {
         list: (root: string, rel: string) => Promise<FileEntry[]>

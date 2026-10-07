@@ -1,10 +1,16 @@
-import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
-import type { FileContent, FileEntry } from '../shared/files'
+import type { AgentDef, AgentDraftRequest, AgentDraftResult, AgentSaveRequest, AgentSaveResult } from '../shared/agents'
+import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
+import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
+import type { McpStatus } from '../shared/mcp'
+import type { FileContent, FileDiff, FileEntry } from '../shared/files'
 import type { ClaudeInfo } from '../shared/models'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
+import type { CliStatus } from '../shared/cli'
+import type { AppSettings } from '../shared/appSettings'
+import type { DevServer } from '../shared/devServers'
 import type { Message } from '../shared/history'
 import type { MemoryGroup, MemoryProject } from '../shared/memory'
-import type { SessionSummary } from '../shared/sessions'
+import type { KnownFolder, SessionSummary, UncommittedFile } from '../shared/sessions'
 import type { SpeechEvent } from '../shared/speech'
 import type { Usage } from '../shared/usage'
 
@@ -37,12 +43,21 @@ declare global {
       chat: {
         state: (key: string) => Promise<ChatState | null>
         send: (req: ChatSendRequest) => void
+        remoteControl: (req: ChatRemoteRequest) => void
         answer: (key: string, id: string, answer: PermissionAnswer) => void
         interrupt: (key: string) => void
         retain: (key: string) => void
+        mcpStatus: (key: string, cwd: string) => Promise<McpStatus>
         release: (key: string) => void
         configure: (key: string, patch: Partial<ChatSettings>) => void
         onState: (cb: (key: string, state: ChatState) => void) => () => void
+        onOpen: (cb: (cwd: string, sessionId: string) => void) => () => void
+      }
+      agents: {
+        list: (projectPath?: string) => Promise<AgentDef[]>
+        save: (req: AgentSaveRequest) => Promise<AgentSaveResult>
+        remove: (name: string) => Promise<boolean>
+        draft: (req: AgentDraftRequest) => Promise<AgentDraftResult>
       }
       memory: {
         list: (projects: MemoryProject[]) => Promise<MemoryGroup[]>
@@ -53,16 +68,37 @@ declare global {
         load: () => unknown
         save: (data: unknown) => Promise<void>
       }
+      canvasAgent: {
+        state: () => Promise<CanvasAgentState>
+        send: (text: string) => void
+        interrupt: () => void
+        onState: (cb: (state: CanvasAgentState) => void) => () => void
+        onCall: (cb: (call: CanvasToolCall) => void) => () => void
+        respond: (result: CanvasToolResult) => void
+      }
       sessions: {
         list: (path: string) => Promise<SessionSummary[]>
+        // Pastas onde o Claude Code já conversou, da mais recente para a mais antiga.
+        folders: () => Promise<KnownFolder[]>
+        // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.
+        branch: (path: string) => Promise<string | null>
+        // Arquivos não comitados do repositório da pasta; nulo fora de repositório.
+        changes: (path: string) => Promise<UncommittedFile[] | null>
         history: (path: string, id: string) => Promise<Message[]>
+        // Imagens de uma mensagem sua (data URLs), lidas só quando o preview abre.
+        images: (path: string, id: string, messageId: string) => Promise<string[]>
         watch: (paths: string[]) => void
         onChanged: (cb: (path: string) => void) => () => void
-        search: (path: string, query: string) => Promise<{ id: string; snippet: string }[]>
+      }
+      devServers: {
+        list: () => Promise<DevServer[]>
+        kill: (pgid: number) => Promise<boolean>
       }
       files: {
         list: (root: string, rel: string) => Promise<FileEntry[]>
         read: (root: string, rel: string) => Promise<FileContent>
+        // Mudanças do arquivo desde o último commit.
+        diff: (root: string, rel: string) => Promise<FileDiff>
         watch: (root: string, rel: string) => void
         unwatch: () => void
         onChanged: (cb: (root: string, rel: string) => void) => () => void
@@ -75,6 +111,17 @@ declare global {
         kill: (key: string) => void
         onData: (cb: (key: string, data: string) => void) => () => void
         onExit: (cb: (key: string, code: number) => void) => () => void
+      }
+      cli: {
+        ready: () => void
+        onOpen: (cb: (path: string) => void) => () => void
+        status: () => Promise<CliStatus>
+        install: () => Promise<CliStatus>
+        uninstall: () => Promise<CliStatus>
+      }
+      settings: {
+        get: () => Promise<AppSettings>
+        setMenuBarIcon: (on: boolean) => Promise<AppSettings>
       }
       usage: {
         get: () => Promise<Usage | null>

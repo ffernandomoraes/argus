@@ -1,51 +1,19 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react'
-import { Code2, ExternalLink, Folder, X } from 'lucide-react'
-import { STATUS_LABEL, StatusDot } from '../canvas/StatusBadge'
+import { useRef } from 'react'
+import { Code2, ExternalLink } from 'lucide-react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
-import { ChatView } from './ChatView'
-import { ResizeHandles, useFloatingRect, type PanelRect } from './FloatingPanel'
-import { liveCommand, type SessionSettings } from './SessionSettings'
-import { useConversationHistory } from './useConversationHistory'
-import { addLocalEvent, mergeEvents, useLocalEvents } from './localEvents'
-import { EFFORTS } from './ModelEffortPicker'
-import { MODES } from './PermissionModePicker'
-import { useClaudeInfo } from './useModels'
+import { ConversationView, HeaderButton } from './ConversationView'
+import { DRAWER_DEFAULT_WIDTH, ResizeHandles, useFloatingRect, type PanelRect } from './FloatingPanel'
+import type { SessionSettings } from './SessionSettings'
 import { useDrawerZoom } from './useDrawerZoom'
-import { isSendableImage, toBase64, useChat } from './useChat'
-import { FileLinkContext, type LineRange } from './fileLinks'
-
-// Espaço dos botões do sistema no topo da janela (pl-20), em px de tela.
-const TRAFFIC_LIGHTS = 80
-
-function HeaderButton({
-  label,
-  onClick,
-  active,
-  children
-}: {
-  label: string
-  onClick: () => void
-  active?: boolean
-  children: ReactNode
-}) {
-  return (
-    <button
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className={`flex size-7 items-center justify-center rounded-md ${
-        active ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
+import type { LineRange } from './fileLinks'
+import { useEscape } from '../useEscape'
 
 // Painel flutuante à direita. Não é modal: o canvas continua clicável ao lado,
 // e abrir outra conversa troca o conteúdo deste mesmo painel.
 export function ConversationDrawer({
   project,
+  loose = false,
+  tint,
   conversation,
   settings,
   onSettingsChange,
@@ -53,173 +21,88 @@ export function ConversationDrawer({
   onToggleCode,
   onPopout,
   onOpenFile,
+  onOpenDiff,
   onSessionStarted,
-  variant = 'panel',
-  rect = null,
+  rect,
   onRectChange,
   onClose
 }: {
   project: ProjectData
+  // Conversa sem projeto: roda na pasta do usuário, sem nome de projeto nem explorador de código.
+  loose?: boolean
+  // Cor do grupo onde o projeto está; o painel puxa esse tom de leve.
+  tint?: string
   conversation: ConversationSummary
   settings: SessionSettings
   onSettingsChange: (settings: SessionSettings) => void
   codeOpen: boolean
   onToggleCode: () => void
-  // Abre a conversa numa janela própria do sistema (só no painel).
-  onPopout?: () => void
-  // Link de arquivo clicado no chat (só no painel, onde existe o visualizador de código).
-  onOpenFile?: (path: string, lines?: LineRange) => void
+  // Abre a conversa numa janela própria do sistema.
+  onPopout: () => void
+  // Link de arquivo clicado no chat.
+  onOpenFile: (path: string, lines?: LineRange) => void
+  // Arquivo da lista de não comitados: abre o diff dele.
+  onOpenDiff: (path: string) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
-  onSessionStarted?: (sessionId: string) => void
-  // 'window': ocupa a janela inteira, sem arrastar nem código.
-  variant?: 'panel' | 'window'
+  onSessionStarted: (sessionId: string) => void
   // Posição e tamanho no canvas; nulo = ainda não definido (nasce à direita).
-  rect?: PanelRect | null
-  onRectChange?: (rect: PanelRect) => void
+  rect: PanelRect | null
+  onRectChange: (rect: PanelRect) => void
   onClose: () => void
 }) {
-  const isWindow = variant === 'window'
   const zoom = useDrawerZoom()
-  const live = useChat(conversation.id)
-  // Enquanto a conversa está na tela a sessão fica de pé; ao fechar, ela é encerrada.
-  useEffect(() => {
-    const key = conversation.id
-    window.api.chat.retain(key)
-    return () => window.api.chat.release(key)
-  }, [conversation.id])
-
-  const history = useConversationHistory(project.path, conversation.sessionId, conversation.updatedAt, live?.revision)
-  const localEvents = useLocalEvents(conversation.sessionId)
-  const messages = useMemo(() => mergeEvents(history.messages, localEvents), [history.messages, localEvents])
-  const info = useClaudeInfo()
-  // Com o chat ligado, o status dele chega na hora; sem ele, vem do registro do Claude Code.
-  const status = live && live.status !== 'idle' ? live.status : conversation.status
-
-  const sessionId = live?.sessionId
-  useEffect(() => {
-    if (conversation.draft && sessionId) onSessionStarted?.(sessionId)
-  }, [conversation.draft, sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Imagens vão junto da mensagem; outros arquivos, pelo caminho no disco.
-  const send = async (text: string, files: File[]) => {
-    const images = await Promise.all(
-      files.filter(isSendableImage).map(async (f) => ({ mediaType: f.type, data: await toBase64(f) }))
-    )
-    const paths = files.filter((f) => !isSendableImage(f)).map((f) => window.api.filePath(f)).filter(Boolean)
-    const full = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
-    window.api.chat.send({
-      key: conversation.id,
-      cwd: project.path,
-      sessionId: conversation.sessionId,
-      settings,
-      text: full,
-      images
-    })
-  }
   const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, isWindow ? null : rect, (r) => onRectChange?.(r))
-
-  // Numa sessão de terminal já aberta, a troca vai como comando do próprio Claude Code.
-  // Sem sessão aberta, o write é ignorado e a escolha vale ao abrir o terminal.
-  // Divisor no chat para cada troca feita aqui, como na extensão do VS Code.
-  const markChange = (patch: Partial<SessionSettings>) => {
-    const sid = conversation.sessionId
-    if (!sid) return
-    if (patch.model !== undefined) {
-      const m = info?.models.find((x) => x.value === patch.model)
-      addLocalEvent(sid, 'model', `Modelo: ${m?.value === '' ? `Padrão${m.resolvedName ? ` (${m.resolvedName})` : ''}` : m?.displayName ?? patch.model}`)
-    }
-    if (patch.effort !== undefined) {
-      addLocalEvent(sid, 'effort', `Esforço: ${EFFORTS.find((e) => e.value === patch.effort)?.label ?? 'automático'}`)
-    }
-    if (patch.permissionMode !== undefined) {
-      addLocalEvent(sid, 'mode', `Modo: ${MODES.find((x) => x.value === patch.permissionMode)?.label ?? 'padrão da conta'}`)
-    }
-    if (patch.thinking !== undefined) addLocalEvent(sid, 'thinking', `Raciocínio ${patch.thinking ? 'ligado' : 'desligado'}`)
-    if (patch.ultracode !== undefined) addLocalEvent(sid, 'ultracode', `Ultracode ${patch.ultracode ? 'ligado' : 'desligado'}`)
-  }
-
-  const change = (patch: Partial<SessionSettings>) => {
-    markChange(patch)
-    onSettingsChange({ ...settings, ...patch })
-    const command = liveCommand(patch)
-    if (command) window.api.terminal.write(conversation.id, `${command}\r`)
-    window.api.chat.configure(conversation.id, patch)
-  }
+  const floating = useFloatingRect(panelRef, rect, onRectChange, DRAWER_DEFAULT_WIDTH)
+  useEscape(onClose)
 
   return (
     <aside
       ref={panelRef}
-      className={`absolute z-40 flex flex-col overflow-hidden bg-bg ${
-        isWindow
-          ? 'inset-0'
-          : 'rounded-xl border border-line shadow-2xl shadow-black/50'
-      }`}
-      style={
-        isWindow
-          ? undefined
-          : rect
-            ? { left: rect.x, top: rect.y, width: rect.width, height: rect.height }
-            : { visibility: 'hidden', inset: 0 }
-      }
+      className="absolute z-40 flex flex-col overflow-hidden rounded-xl border border-line bg-bg shadow-2xl shadow-black/50"
+      style={{
+        ...(rect ? { left: rect.x, top: rect.y, width: rect.width, height: rect.height } : { visibility: 'hidden', inset: 0 }),
+        ...(tint && {
+          borderColor: `color-mix(in srgb, ${tint} 35%, var(--color-line))`,
+          background: `color-mix(in srgb, ${tint} 3%, var(--color-bg))`
+        })
+      }}
     >
-      {!isWindow && onRectChange && <ResizeHandles onResizeStart={floating.onResizeStart} />}
-      <header
-        onPointerDown={isWindow ? undefined : floating.onMoveStart}
-        className={`flex items-start gap-3 border-b border-line px-4 py-3 ${
-          isWindow ? 'drag' : 'cursor-grab active:cursor-grabbing'
-        }`}
-        // Os botões do sistema não acompanham a escala: o recuo volta ao tamanho de tela.
-        style={{ zoom, ...(isWindow ? { paddingLeft: TRAFFIC_LIGHTS / zoom } : null) }}
-      >
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{conversation.title}</div>
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-faint">
-            <Folder size={12} className="shrink-0" />
-            <span className="truncate">{project.name}</span>
-            <span>·</span>
-            <StatusDot status={status} />
-            <span>{STATUS_LABEL[status]}</span>
-          </div>
-        </div>
-
-        <div className="no-drag flex shrink-0 items-center gap-1">
-          {!isWindow && (
-            <>
+      <ResizeHandles onResizeStart={floating.onResizeStart} />
+      <ConversationView
+        cwd={project.path}
+        project={loose ? undefined : project.name}
+        conversation={conversation}
+        settings={settings}
+        onSettingsChange={onSettingsChange}
+        onOpenFile={onOpenFile}
+        onOpenDiff={onOpenDiff}
+        onSessionStarted={onSessionStarted}
+        zoom={zoom}
+        headerClassName="cursor-grab active:cursor-grabbing"
+        headerStyle={{
+          zoom,
+          ...(tint && {
+            background: `color-mix(in srgb, ${tint} 8%, var(--color-bg))`,
+            borderBottomColor: `color-mix(in srgb, ${tint} 25%, var(--color-line))`
+          })
+        }}
+        onHeaderPointerDown={floating.onMoveStart}
+        actions={
+          <>
+            {!loose && (
               <HeaderButton label={codeOpen ? 'Fechar código' : 'Abrir código'} onClick={onToggleCode} active={codeOpen}>
                 <Code2 size={14} />
               </HeaderButton>
-              {onPopout && (
-                <HeaderButton label="Abrir em janela separada" onClick={onPopout}>
-                  <ExternalLink size={14} />
-                </HeaderButton>
-              )}
-            </>
-          )}
-          <HeaderButton label="Fechar" onClick={onClose}>
-            <X size={15} />
-          </HeaderButton>
-        </div>
-      </header>
-
-      {/* key: trocar de conversa recria o conteúdo (rascunho, rolagem) */}
-      <FileLinkContext.Provider value={onOpenFile ?? null}>
-          <div className="flex min-h-0 flex-1 flex-col" style={{ zoom }}>
-            <ChatView
-              key={conversation.id}
-              messages={messages}
-              loading={history.loading}
-              status={status}
-              live={live}
-              onSend={send}
-              onInterrupt={() => window.api.chat.interrupt(conversation.id)}
-              onAnswer={(id, answer) => window.api.chat.answer(conversation.id, id, answer)}
-              settings={settings}
-              onSettingChange={change}
-              contextPercent={conversation.contextPercent}
-            />
-          </div>
-      </FileLinkContext.Provider>
+            )}
+            {!conversation.draft && (
+              <HeaderButton label="Abrir em janela separada" onClick={onPopout}>
+                <ExternalLink size={14} />
+              </HeaderButton>
+            )}
+          </>
+        }
+        onClose={onClose}
+      />
     </aside>
   )
 }

@@ -2,6 +2,7 @@ import { existsSync, statSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { spawn, type IPty } from 'node-pty'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
+import { CLI_BIN } from './cli'
 import { claudePath } from './claudePath'
 import { expandHome } from './paths'
 
@@ -37,17 +38,22 @@ export class Terminals {
     env.TERM = 'xterm-256color'
     env.COLORTERM = 'truecolor'
     // App aberto pelo Finder não tem o PATH do terminal; o claude e o node precisam dele.
-    env.PATH = [dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+    // O `cae` entra em todo terminal do app, mesmo sem ter sido instalado no PATH.
+    env.PATH = [CLI_BIN, dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+
+    // Shell de login, como o Terminal do macOS: carrega .zprofile e .zshrc.
+    const shell = process.env.SHELL || '/bin/zsh'
+    const program = req.shell ? shell : claude
 
     try {
-      const args = [
+      const args = req.shell ? ['-l'] : [
         ...(req.sessionId ? ['--resume', req.sessionId] : []),
         ...(req.model ? ['--model', req.model] : []),
         ...(req.effort ? ['--effort', req.effort] : []),
         ...(req.settingsJson ? ['--settings', req.settingsJson] : []),
         ...(req.permissionMode ? ['--permission-mode', req.permissionMode] : [])
       ]
-      const pty = spawn(claude, args, {
+      const pty = spawn(program, args, {
         name: 'xterm-256color',
         cols: req.cols,
         rows: req.rows,
@@ -66,7 +72,7 @@ export class Terminals {
       this.sessions.set(req.key, session)
       return { ok: true, buffer: '' }
     } catch (err) {
-      return { ok: false, error: `Não consegui abrir o claude: ${(err as Error).message}` }
+      return { ok: false, error: `Não consegui abrir o ${req.shell ? shell : 'claude'}: ${(err as Error).message}` }
     }
   }
 

@@ -31,15 +31,29 @@ export type ProjectData = {
   color: string
 }
 
-// Terminal solto no canvas, rodando o `claude` numa pasta.
+// Terminal solto no canvas: o `claude` ou o shell do sistema, numa pasta.
+export type TerminalKind = 'claude' | 'shell'
+
 export type TerminalData = {
   name: string
   path: string
+  // Sem kind = claude (terminais salvos antes de existir o shell).
+  kind?: TerminalKind
   // Conversa que ele retoma; vazio = conversa nova.
   sessionId?: string
+}
+
+// Conversa sem projeto: roda na pasta do usuário e entra no canvas no primeiro envio,
+// como um card que reabre a conversa no painel lateral.
+export type ChatData = {
+  // Nome de reserva enquanto o Claude Code não deu título à conversa.
+  name: string
+  path: string
+  sessionId: string
 }
 
 export type AreaNode = Node<AreaData, 'area'>
 export type ProjectNode = Node<ProjectData, 'project'>
 export type TerminalNode = Node<TerminalData, 'terminal'>
-export type CanvasNode = AreaNode | ProjectNode | TerminalNode
+export type ChatNode = Node<ChatData, 'chat'>
+export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode

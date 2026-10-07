@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageCircleQuestion } from 'lucide-react'
+import { Check, MessageCircleQuestion } from 'lucide-react'
 import type { Question } from '../../../shared/chat'
 
 // Perguntas do Claude com opções. "Outra" deixa escrever a resposta.
@@ -31,32 +31,44 @@ export function QuestionCard({
   const complete = questions.every((q) => answerOf(q))
 
   return (
-    <div className="rounded-lg border border-needs-you/40 bg-needs-you/10 p-3 text-xs">
+    <div className="rounded-lg border border-running/40 bg-running/10 p-3 text-xs">
       {questions.map((q) => {
         const cur = picked[q.question] ?? []
         return (
           <div key={q.question} className="mb-3">
             <div className="flex items-start gap-2">
-              <MessageCircleQuestion size={14} className="mt-px shrink-0 text-needs-you" />
+              <MessageCircleQuestion size={14} className="mt-px shrink-0 text-running" />
               <div>
                 {q.header && <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted">{q.header}</span>}
                 <span className="font-medium text-text">{q.question}</span>
                 {q.multiSelect && <span className="ml-1 text-faint">(pode marcar mais de uma)</span>}
               </div>
             </div>
-            <div className="mt-2 flex flex-col gap-1 pl-6">
+            <div role={q.multiSelect ? 'group' : 'radiogroup'} aria-label={q.question} className="mt-2 flex flex-col gap-1 pl-6">
               {[...q.options, { label: '__other', description: '' }].map((o) => {
                 const on = cur.includes(o.label)
                 return (
                   <button
                     key={o.label}
+                    role={q.multiSelect ? 'checkbox' : 'radio'}
+                    aria-checked={on}
                     onClick={() => toggle(q, o.label)}
-                    className={`rounded-md border px-2.5 py-1.5 text-left ${
+                    className={`flex items-start gap-2 rounded-md border px-2.5 py-1.5 text-left ${
                       on ? 'border-text bg-surface-2' : 'border-line hover:bg-surface-2'
                     }`}
                   >
-                    <div className="text-text">{o.label === '__other' ? 'Outra resposta' : o.label}</div>
-                    {o.description && <div className="mt-0.5 text-faint">{o.description}</div>}
+                    {/* Única escolha: radio (círculo). Várias: checkbox (quadrado). */}
+                    <span
+                      className={`mt-px flex size-3.5 shrink-0 items-center justify-center border ${
+                        q.multiSelect ? 'rounded-[3px]' : 'rounded-full'
+                      } ${on ? 'border-text' : 'border-line-strong'} ${on && q.multiSelect ? 'bg-text' : ''}`}
+                    >
+                      {on && (q.multiSelect ? <Check size={10} strokeWidth={3} className="text-bg" /> : <span className="size-1.5 rounded-full bg-text" />)}
+                    </span>
+                    <div>
+                      <div className="text-text">{o.label === '__other' ? 'Outra resposta' : o.label}</div>
+                      {o.description && <div className="mt-0.5 text-faint">{o.description}</div>}
+                    </div>
                   </button>
                 )
               })}

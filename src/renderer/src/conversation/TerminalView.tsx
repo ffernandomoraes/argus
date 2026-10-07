@@ -16,11 +16,12 @@ const THEME = {
 
 const FONT_SIZE = 12
 
-// Terminal de verdade rodando o `claude` na pasta da conversa. O processo vive no
-// processo principal: fechar o painel ou trocar de conversa não encerra a sessão.
+// Terminal de verdade rodando o `claude` (ou o shell, com `shell`) na pasta. O processo vive
+// no processo principal: fechar o painel ou trocar de conversa não encerra a sessão.
 export function TerminalView({
   sessionKey,
   cwd,
+  shell,
   sessionId,
   model,
   effort,
@@ -30,6 +31,7 @@ export function TerminalView({
 }: {
   sessionKey: string
   cwd: string
+  shell?: boolean
   sessionId?: string
   model?: string
   effort?: string
@@ -82,6 +84,7 @@ export function TerminalView({
       .open({
         key: sessionKey,
         cwd,
+        shell,
         sessionId,
         model: launch.current.model || undefined,
         effort: launch.current.effort || undefined,
@@ -110,7 +113,7 @@ export function TerminalView({
       offExit()
       term.dispose()
     }
-  }, [sessionKey, cwd, sessionId, attempt])
+  }, [sessionKey, cwd, shell, sessionId, attempt])
 
   useEffect(() => {
     const open = live.current

@@ -6,8 +6,13 @@ import { useLayoutEffect, useRef, type PointerEvent, type RefObject } from 'reac
 export type PanelRect = { x: number; y: number; width: number; height: number }
 
 const MARGIN = 16
+// Barra de título transparente no topo da janela (TitleBar): os painéis começam abaixo dela.
+export const TITLE_BAR_HEIGHT = 40
+export const PANEL_TOP = TITLE_BAR_HEIGHT + MARGIN
 export const PANEL_MIN = { width: 360, height: 320 }
 export const PANEL_DEFAULT_WIDTH = 550
+// O painel da conversa nasce um pouco mais largo que os outros: é onde se lê e escreve.
+export const DRAWER_DEFAULT_WIDTH = PANEL_DEFAULT_WIDTH + 50
 
 type Edges = { left?: boolean; right?: boolean; top?: boolean; bottom?: boolean }
 
@@ -22,14 +27,15 @@ function areaSize(el: HTMLElement | null) {
 export function useFloatingRect(
   ref: RefObject<HTMLElement | null>,
   rect: PanelRect | null,
-  onChange: (rect: PanelRect) => void
+  onChange: (rect: PanelRect) => void,
+  defaultWidth = PANEL_DEFAULT_WIDTH
 ) {
   useLayoutEffect(() => {
     if (rect) return
     const area = areaSize(ref.current)
     if (!area) return
-    const width = Math.min(PANEL_DEFAULT_WIDTH, area.width - MARGIN * 2)
-    onChange({ x: area.width - MARGIN - width, y: MARGIN, width, height: area.height - MARGIN * 2 })
+    const width = Math.min(defaultWidth, area.width - MARGIN * 2)
+    onChange({ x: area.width - MARGIN - width, y: PANEL_TOP, width, height: area.height - PANEL_TOP - MARGIN })
   }, [rect]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mesmo gesto serve para mover (todas as bordas juntas) e redimensionar (só algumas).
@@ -49,7 +55,7 @@ export function useFloatingRect(
         onChange({
           ...rect,
           x: clamp(rect.x + dx, MARGIN, max.right - rect.width),
-          y: clamp(rect.y + dy, MARGIN, max.bottom - rect.height)
+          y: clamp(rect.y + dy, PANEL_TOP, max.bottom - rect.height)
         })
         return
       }
@@ -60,7 +66,7 @@ export function useFloatingRect(
       }
       if (edges.right) width = clamp(rect.width + dx, PANEL_MIN.width, max.right - rect.x)
       if (edges.top) {
-        y = clamp(rect.y + dy, MARGIN, rect.y + rect.height - PANEL_MIN.height)
+        y = clamp(rect.y + dy, PANEL_TOP, rect.y + rect.height - PANEL_MIN.height)
         height = rect.y + rect.height - y
       }
       if (edges.bottom) height = clamp(rect.height + dy, PANEL_MIN.height, max.bottom - rect.y)

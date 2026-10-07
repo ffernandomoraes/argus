@@ -37,11 +37,11 @@ const host = (url: string) => {
 
 export function describeTool(name: string, input: Input | undefined): ToolDescription {
   const i = input ?? {}
-  // MCP: "mcp__servidor__acao" vira "servidor · acao".
+  // MCP: "mcp__servidor__acao" vira "servidor - acao".
   if (name.startsWith('mcp__')) {
     const [, server = '', action = ''] = name.split('__')
     const first = Object.values(i).find((v) => typeof v === 'string')
-    return { label: `${server} · ${action.replace(/_/g, ' ')}`, summary: firstLine(first) }
+    return { label: `${server} - ${action.replace(/_/g, ' ')}`, summary: firstLine(first) }
   }
   const label = LABELS[name] ?? name
   switch (name) {
@@ -66,7 +66,8 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
       return { label, summary: i.query ?? '' }
     case 'Agent':
     case 'Task':
-      return { label, summary: firstLine(i.description) || firstLine(i.prompt) }
+      // O pedido inteiro que o subagente recebeu fica no detalhe.
+      return { label, summary: firstLine(i.description) || firstLine(i.prompt), detail: i.prompt }
     case 'Skill':
       return { label, summary: i.skill ?? '' }
     case 'TodoWrite':

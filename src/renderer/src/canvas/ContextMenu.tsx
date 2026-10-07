@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { COLORS } from './factory'
+import { useEscape } from '../useEscape'
 
 type Icon = ComponentType<{ size?: number }>
 
@@ -101,16 +102,14 @@ export function ContextMenu({ menu, onClose }: { menu: MenuState; onClose: () =>
     const onDown = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) onClose()
     }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey)
     window.addEventListener('wheel', onClose)
     return () => {
       window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('keydown', onKey)
       window.removeEventListener('wheel', onClose)
     }
   }, [onClose])
+  useEscape(onClose)
 
   return (
     <div

@@ -1,13 +1,13 @@
-import { Folder, Loader2, Plus, Search, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Folder, Plus, X } from 'lucide-react'
+import { useRef } from 'react'
 import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
 import { ConversationItem, useNow } from './ConversationItem'
-import { useConversationSearch } from './useConversationSearch'
 import { useSessions } from './sessionsStore'
 import type { ActiveConversation } from './CanvasContext'
+import { useEscape } from '../useEscape'
 
-// Todas as conversas de uma pasta, num painel flutuante: o card do canvas mostra só as
-// cinco mais recentes.
+// Todas as conversas de uma pasta, num painel flutuante: no canvas só as mais recentes
+// viram card.
 export function AllConversationsPanel({
   project,
   nodeId,
@@ -30,16 +30,11 @@ export function AllConversationsPanel({
   onClose: () => void
 }) {
   const conversations = useSessions(project.path)
-  const [query, setQuery] = useState('')
-  const search = useConversationSearch(project.path, conversations, query)
-  const shown = search
-    ? search.results
-    : [...conversations]
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map((conversation) => ({ conversation, snippet: undefined as string | undefined }))
+  const shown = [...conversations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   const now = useNow()
   const panelRef = useRef<HTMLElement>(null)
   const floating = useFloatingRect(panelRef, rect, onRectChange)
+  useEscape(onClose)
 
   return (
     <aside
@@ -73,30 +68,11 @@ export function AllConversationsPanel({
         </button>
       </header>
 
-      <div className="mx-3 mt-3 flex items-center gap-2 rounded-md border border-line bg-surface px-2 focus-within:border-line-strong">
-        <Search size={13} className="shrink-0 text-faint" />
-        <input
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Escape' && (query ? setQuery('') : onClose())}
-          placeholder="Buscar conversa"
-          className="min-w-0 flex-1 bg-transparent py-1.5 text-xs text-text outline-none placeholder:text-faint"
-        />
-        {search?.searching && <Loader2 size={12} className="shrink-0 animate-spin text-faint" />}
-        {query && (
-          <button aria-label="Limpar busca" onClick={() => setQuery('')} className="text-faint hover:text-text">
-            <X size={13} />
-          </button>
-        )}
-      </div>
-
       <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {shown.map(({ conversation: c, snippet }) => (
+        {shown.map((c) => (
           <ConversationItem
             key={c.id}
             conversation={c}
-            snippet={snippet}
             now={now}
             poppedOut={poppedOut.has(c.id)}
             active={
@@ -106,9 +82,6 @@ export function AllConversationsPanel({
           />
         ))}
         {conversations.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">Nenhuma conversa ainda</li>}
-        {search && !search.searching && search.results.length === 0 && (
-          <li className="px-2 py-1.5 text-xs text-faint">Nenhuma conversa com “{query.trim()}”</li>
-        )}
       </ul>
     </aside>
   )

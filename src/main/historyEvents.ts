@@ -23,10 +23,32 @@ export function compactEvent(l: Line): EventMessage | null {
   return { id: l.uuid, role: 'event', kind: 'compact', text: how + before, at: l.timestamp }
 }
 
+// "/rename teste": o Claude Code grava o comando e os argumentos em marcadores próprios.
+export function commandMessage(l: Line): Message | null {
+  if (l.type !== 'user' || typeof l.message?.content !== 'string') return null
+  const name = /<command-name>\/?([\w:-]+)<\/command-name>/.exec(l.message.content)?.[1]
+  if (!name) return null
+  const args = /<command-args>([\s\S]*?)<\/command-args>/.exec(l.message.content)?.[1]?.trim()
+  return { id: l.uuid, role: 'user', text: `/${name}${args ? ` ${args}` : ''}`, at: l.timestamp }
+}
+
+// A resposta de um comando vem numa linha de sistema ("local_command"); em sessões
+// antigas ela vinha como mensagem do usuário.
+function localOutput(l: Line): string | null {
+  const raw = l.type === 'system' ? l.content : l.type === 'user' ? l.message?.content : null
+  if (typeof raw !== 'string') return null
+  return /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(raw)?.[1]?.trim() || null
+}
+
+// O que o comando respondeu.
+export function commandOutput(l: Line): Message | null {
+  const out = localOutput(l)
+  return out ? { id: l.uuid, role: 'output', text: out, at: l.timestamp } : null
+}
+
 // Resposta dos comandos /model e /effort, gravada como mensagem com <local-command-stdout>.
 export function commandEvent(l: Line): EventMessage | null {
-  if (l.type !== 'user' || typeof l.message?.content !== 'string') return null
-  const out = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(l.message.content)?.[1]
+  const out = localOutput(l)
   if (!out) return null
   const model = /^Set model to (.+?)(?: and saved.*)?$/m.exec(out)?.[1]
   if (model) return { id: l.uuid, role: 'event', kind: 'model', text: `Modelo: ${modelName(model)}`, at: l.timestamp }

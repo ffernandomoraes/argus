@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { NodeResizer, type NodeProps } from '@xyflow/react'
-import { SquareTerminal, X } from 'lucide-react'
+import { SquareTerminal, Terminal, X } from 'lucide-react'
 import { TerminalView } from '../conversation/TerminalView'
 import { getPreferences } from '../settings/preferences'
 import { launchSettings } from '../conversation/SessionSettings'
@@ -10,9 +10,10 @@ import { useSessions } from './sessionsStore'
 import { PathLabel } from './PathLabel'
 import type { TerminalNode as TerminalNodeType } from './types'
 
-// Terminal de verdade morando no canvas, ao lado das pastas. O processo vive no processo
-// principal: mover, recolher o grupo ou fechar o app não derruba a sessão.
+// Terminal de verdade morando no canvas, ao lado das pastas: o `claude` ou o shell do sistema.
+// O processo vive no processo principal: mover, recolher o grupo ou fechar o app não derruba a sessão.
 export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>) {
+  const shell = data.kind === 'shell'
   // Modelo, esforço e modo valem ao abrir, como no terminal comum.
   const settings = getPreferences().conversation
   const { bindTerminalSession, closeTerminal } = useCanvasActions()
@@ -22,7 +23,8 @@ export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>
   const sessions = useSessions(data.path)
   const before = useRef<{ ids: Set<string>; since: number } | null>(null)
   useEffect(() => {
-    if (data.sessionId) return
+    // O shell não cria conversa; adotar uma aqui pegaria a de outro terminal da mesma pasta.
+    if (shell || data.sessionId) return
     if (!before.current) {
       before.current = { ids: new Set(sessions.map((s) => s.id)), since: Date.now() }
       return
@@ -48,7 +50,11 @@ export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>
         style={{ borderColor: selected ? 'var(--color-muted)' : 'var(--color-line)' }}
       >
         <header className="flex shrink-0 items-center gap-2 border-b border-line bg-surface-2 px-3 py-2">
-          <SquareTerminal size={14} className="shrink-0 text-muted" />
+          {shell ? (
+            <Terminal size={14} className="shrink-0 text-muted" />
+          ) : (
+            <SquareTerminal size={14} className="shrink-0 text-muted" />
+          )}
           <EditableName id={id} value={data.name} className="shrink-0 text-sm font-medium" />
           <PathLabel path={data.path} className="ml-auto min-w-0 pl-2 text-[11px] text-faint" />
           <button
@@ -66,6 +72,7 @@ export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>
           <TerminalView
             sessionKey={id}
             cwd={data.path}
+            shell={shell}
             sessionId={data.sessionId}
             model={settings.model}
             effort={settings.effort}

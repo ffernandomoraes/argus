@@ -8,7 +8,10 @@ function clean(nodes: CanvasNode[]): CanvasNode[] {
 
 export function loadNodes(): CanvasNode[] {
   const saved = window.api.canvas.load()
-  return Array.isArray(saved) ? (saved as CanvasNode[]) : []
+  // O nó "conversation" foi um teste que não ficou: não volta para a tela.
+  return Array.isArray(saved)
+    ? ((saved as { type?: string }[]).filter((n) => n.type !== 'conversation') as CanvasNode[])
+    : []
 }
 
 // Salva pouco depois da última mudança, para não gravar a cada quadro de um arraste.

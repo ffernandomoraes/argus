@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
 import type { ThemePreference } from '../theme/useTheme'
 import { SettingsPage } from './SettingsPage'
+import { useEscape } from '../useEscape'
 
 // Configurações por cima do canvas; fecha no X, no Esc ou clicando fora.
 export function SettingsModal({
@@ -12,13 +12,7 @@ export function SettingsModal({
   onThemeChange: (t: ThemePreference) => void
   onClose: () => void
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  useEscape(onClose)
 
   return (
     <div

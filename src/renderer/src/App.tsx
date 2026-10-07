@@ -24,10 +24,6 @@ export function App() {
 
   return (
     <main className="relative h-full">
-      {/* Sem barra de título, é esta faixa invisível ao lado dos semáforos que
-          arrasta a janela (e maximiza no duplo clique). Fica em z-20: acima do
-          canvas, abaixo dos painéis (z-40) e dos modais (z-50). */}
-      <div className="drag absolute left-0 top-0 z-20 h-9 w-[260px]" />
       <ReactFlowProvider>
         <Canvas colorMode={theme.resolved} onOpenSettings={openSettings} />
       </ReactFlowProvider>

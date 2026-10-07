@@ -1,15 +1,19 @@
 import { open, readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { SessionSummary } from '../shared/sessions'
+import type { KnownFolder, SessionSummary } from '../shared/sessions'
 import { contextWindowFor } from './contextWindows'
 import { liveSessions } from './liveSessions'
 import { expandHome } from './paths'
 
 // O Claude Code grava cada conversa num .jsonl dentro de uma pasta com o caminho do
 // projeto "achatado": tudo que não é letra ou número vira "-".
+const flatten = (path: string) => path.replace(/[^a-zA-Z0-9]/g, '-')
+
+const projectsDir = () => join(homedir(), '.claude', 'projects')
+
 export function sessionsDir(projectPath: string): string {
-  return join(homedir(), '.claude', 'projects', expandHome(projectPath).replace(/[^a-zA-Z0-9]/g, '-'))
+  return join(projectsDir(), flatten(expandHome(projectPath)))
 }
 
 // Os arquivos passam de MB; título e uso de contexto são regravados ao longo da conversa,
@@ -126,4 +130,77 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
     })
   )
   return results.filter((s): s is SessionSummary => s !== null).map((s) => ({ ...s, live: live.get(s.id) ?? null }))
+}
+
+// Caminho de cada pasta de ~/.claude/projects; não muda, então fica guardado.
+const folderPaths = new Map<string, string>()
+
+// Pastas temporárias (rascunhos de sessões) não são projetos.
+const TEMP = /^\/(private\/)?(tmp|var\/folders)\//
+
+// O nome achatado não volta ao caminho ("a-b" pode ser "a/b"): o caminho vem do `cwd` gravado
+// nas conversas. Vale o que, achatado, dá o próprio nome da pasta; os outros são `cd` no meio.
+// Procura no texto, sem montar as linhas: um print colado na primeira mensagem deixa a linha
+// com centenas de KB, e o `cwd` vem depois do conteúdo.
+const CWD = /"cwd":"((?:[^"\\]|\\.)*)"/g
+const CWD_HEAD_BYTES = 1024 * 1024
+
+async function folderPath(dir: string, files: string[]): Promise<string | null> {
+  const known = folderPaths.get(dir)
+  if (known) return known
+  for (const file of files) {
+    const path = join(projectsDir(), dir, file)
+    const { size } = await stat(path)
+    const slices = [() => readSlice(path, 0, CWD_HEAD_BYTES)]
+    if (size > CWD_HEAD_BYTES) slices.push(() => readSlice(path, size - TAIL_BYTES, TAIL_BYTES))
+    for (const read of slices) {
+      for (const [, raw] of (await read()).matchAll(CWD)) {
+        let cwd: string
+        try {
+          cwd = JSON.parse(`"${raw}"`)
+        } catch {
+          continue
+        }
+        if (flatten(cwd) !== dir) continue
+        folderPaths.set(dir, cwd)
+        return cwd
+      }
+    }
+  }
+  return null
+}
+
+// Pastas onde o Claude Code já conversou, da conversa mais recente para a mais antiga. Ficam de
+// fora a pasta do usuário (é onde rodam as conversas sem projeto), as temporárias e as que
+// não existem mais no disco.
+export async function listKnownFolders(): Promise<KnownFolder[]> {
+  let dirs: string[]
+  try {
+    dirs = await readdir(projectsDir())
+  } catch {
+    return []
+  }
+  const home = homedir()
+  const results = await Promise.all(
+    dirs.map(async (dir): Promise<KnownFolder | null> => {
+      try {
+        const names = (await readdir(join(projectsDir(), dir))).filter((n) => n.endsWith('.jsonl'))
+        const files = await Promise.all(
+          names.map(async (name) => ({ name, info: await stat(join(projectsDir(), dir, name)) }))
+        )
+        // Sessão vazia (aberta e fechada) não conta como conversa.
+        const used = files.filter((f) => f.info.size > 0).sort((a, b) => b.info.mtimeMs - a.info.mtimeMs)
+        if (!used.length) return null
+        const path = await folderPath(dir, used.map((f) => f.name))
+        if (!path || path === home || TEMP.test(path)) return null
+        if (!(await stat(path)).isDirectory()) return null
+        return { path, updatedAt: used[0].info.mtime.toISOString() }
+      } catch {
+        return null
+      }
+    })
+  )
+  return results
+    .filter((f): f is KnownFolder => f !== null)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }

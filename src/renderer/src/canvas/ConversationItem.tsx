@@ -1,57 +1,79 @@
-import { useEffect, useState } from 'react'
-import { Bot, ExternalLink } from 'lucide-react'
-import { ContextRing } from './ContextRing'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { Bot, ExternalLink, MessageCircle } from 'lucide-react'
+import { Elapsed } from '../conversation/turnInfo'
 import { relativeTime } from './relativeTime'
+import { agentActivity } from './runningAgents'
 import { StatusDot } from './StatusBadge'
+import type { RunningAgent } from '../../../shared/agents'
 import type { ConversationSummary } from './types'
 
-// Linha de conversa, usada na lista do card da pasta e no painel "todas as conversas".
+// Conversa: bloco na pilha da pasta, no canvas (card), ou linha no painel "todas as conversas".
 export function ConversationItem({
   conversation: c,
-  snippet,
   active,
   poppedOut,
   now,
+  card = false,
+  draggable = false,
   onOpen
 }: {
   conversation: ConversationSummary
-  snippet?: string
+  // Aberta no painel lateral agora.
   active: boolean
   poppedOut: boolean
   now: number
+  // Bloco com borda, do tamanho da pasta, empilhado embaixo dela no canvas.
+  card?: boolean
+  // O próprio card é o bloco no canvas (conversa solta): arrastar move o bloco.
+  draggable?: boolean
   onOpen: () => void
 }) {
   return (
     <li
       role="button"
       onClick={onOpen}
-      className={`flex flex-col gap-1 rounded-md px-2 py-1.5 hover:bg-surface-2 ${active ? 'bg-surface-2' : ''}`}
+      className={
+        card
+          ? `${draggable ? '' : 'nodrag '}flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-xs shadow-lg shadow-black/30 hover:bg-surface-2 ${
+              active ? 'border-muted bg-surface-2' : 'border-line bg-surface'
+            }`
+          : `flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-surface-2 ${active ? 'bg-surface-2' : ''}`
+      }
     >
-      <div className="flex items-center gap-2 text-xs">
-        <StatusDot status={c.status} />
-        <span className="truncate">{c.title}</span>
-        {poppedOut && (
-          <ExternalLink size={11} className="shrink-0 text-faint" aria-label="Aberta em janela separada" />
-        )}
-      </div>
-      {snippet && <p className="line-clamp-2 pl-3.5 text-[11px] leading-snug text-muted">{snippet}</p>}
-      <div className="flex items-center gap-1.5 pl-3.5 text-[10px] text-faint">
-        <span title={new Date(c.updatedAt).toLocaleString('pt-BR')}>{relativeTime(c.updatedAt, now)}</span>
-        <span>·</span>
-        <ContextRing percent={c.contextPercent} />
-        {c.kind === 'agente' && (
-          <>
-            <span>·</span>
-            <Bot size={11} className="shrink-0" aria-label="Agente" />
-          </>
-        )}
-        {c.status === 'needs-you' && (
-          <>
-            <span>·</span>
-            <span className="text-needs-you">precisa de você</span>
-          </>
-        )}
-      </div>
+      <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
+      <span className="min-w-0 truncate">{c.title}</span>
+      <StatusDot status={c.status} />
+      {c.kind === 'agente' && <Bot size={11} className="shrink-0 text-faint" aria-label="Agente" />}
+      {poppedOut && (
+        <ExternalLink size={11} className="shrink-0 text-faint" aria-label="Aberta em janela separada" />
+      )}
+      <span
+        title={new Date(c.updatedAt).toLocaleString('pt-BR')}
+        className="ml-auto shrink-0 pl-1 text-[10px] text-faint"
+      >
+        {relativeTime(c.updatedAt, now)}
+      </span>
+    </li>
+  )
+}
+
+// Subagente rodando, pendurado embaixo da conversa que o lançou: qual agente, o que está
+// fazendo agora e há quanto tempo. Some quando ele termina.
+export function AgentItem({ agent: a, style, onOpen }: { agent: RunningAgent; style?: CSSProperties; onOpen: () => void }) {
+  return (
+    <li
+      role="button"
+      onClick={onOpen}
+      title={a.description}
+      style={style}
+      className="nodrag flex cursor-pointer items-center gap-2 rounded-[10px] border border-running/40 bg-surface px-3 py-1.5 text-xs shadow-lg shadow-black/30 hover:bg-surface-2"
+    >
+      <Bot size={13} className="shrink-0 text-running" aria-hidden="true" />
+      <span className="shrink-0 font-medium">{a.agent}</span>
+      <span className="min-w-0 truncate text-muted">{agentActivity(a)}</span>
+      <span className="ml-auto shrink-0 pl-1 text-[10px] tabular-nums text-faint">
+        <Elapsed since={a.startedAt} />
+      </span>
     </li>
   )
 }

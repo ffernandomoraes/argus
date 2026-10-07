@@ -10,33 +10,58 @@ import {
 } from '@xyflow/react'
 import { CodeExplorer } from '../code/CodeExplorer'
 import { FileViewer } from '../code/FileViewer'
+import { TitleBar } from './TitleBar'
 import { ConversationDrawer } from '../conversation/ConversationDrawer'
 import { MemoryModal } from '../memory/MemoryModal'
+import { AgentsModal } from '../agents/AgentsModal'
+import { DevServersModal } from '../devServers/DevServersModal'
 import type { PanelRect } from '../conversation/FloatingPanel'
 import type { LineRange } from '../conversation/fileLinks'
 import type { SessionSettings } from '../conversation/SessionSettings'
 import { getPreferences, usePreferences } from '../settings/preferences'
 import { AreaNode } from './AreaNode'
 import { CanvasContext, type ActiveConversation } from './CanvasContext'
+import { CommandBar } from './CommandBar'
 import { ConfirmDialog, type ConfirmRequest } from './ConfirmDialog'
 import { ContextMenu, type MenuState } from './ContextMenu'
-import { createFolderInstance, createGroup, createTerminal } from './factory'
+import { FolderPicker } from './FolderPicker'
+import { ChatNode } from './ChatNode'
+import {
+  createChat,
+  createFolderInstance,
+  createGroup,
+  createTerminal,
+  displayPath,
+  INSTANCE_MIN_HEIGHT,
+  INSTANCE_WIDTH,
+  looseProject
+} from './factory'
 import type { ResolvedTheme } from '../theme/useTheme'
-import { MiniMapPanel } from './MiniMapPanel'
+import { ViewBar } from './ViewBar'
 import { NavBar } from './NavBar'
 import { ProjectNode } from './ProjectNode'
 import { TerminalNode } from './TerminalNode'
 import { AllConversationsPanel } from './AllConversationsPanel'
+import { AlignmentGuides } from './AlignmentGuides'
 import { loadNodes, useSaveNodes } from './persistence'
 import { getSessions, useSessionsVersion } from './sessionsStore'
 import { UsageIndicator } from './UsageIndicator'
+import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
-import { growGroupsToFit, moveToGroup, removeNode, rename, toggleCollapse } from './operations'
-import type { CanvasNode, ConversationSummary } from './types'
-import { groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
+import { addNode, findChatSpot, fitAfterResize, removeNode, rename, toggleCollapse } from './operations'
+import { snap, type Guide } from './snapping'
+import type { CanvasNode, ConversationSummary, ProjectData, TerminalKind } from './types'
+import { chatMenu, groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
 
-const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode }
+const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode }
+
+// Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
+function projectOf(node: CanvasNode | undefined): ProjectData | null {
+  if (node?.type === 'project') return node.data
+  if (node?.type === 'chat') return looseProject()
+  return null
+}
 
 // O React Flow desliga o mouse (pointer-events: none) em nó que não é selecionável nem
 // arrastável, a menos que exista onNodeClick. Sem isso, duplo clique e botão direito
@@ -58,16 +83,28 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   // Posição e tamanho do painel da conversa; lembrados enquanto o app está aberto.
   const [drawerRect, setDrawerRect] = useState<PanelRect | null>(null)
   const [memoryOpen, setMemoryOpen] = useState(false)
+  const [agentsOpen, setAgentsOpen] = useState(false)
+  const [devServersOpen, setDevServersOpen] = useState(false)
+  // Barra de comando do assistente; voice = abriu já ouvindo.
+  const [commandBar, setCommandBar] = useState<{ voice: boolean } | null>(null)
+  const closeCommandBar = useCallback(() => setCommandBar(null), [])
   // Painel com todas as conversas de uma pasta (o card do canvas mostra só as mais recentes).
   const [allConversationsNodeId, setAllConversationsNodeId] = useState<string | null>(null)
   const [allConversationsRect, setAllConversationsRect] = useState<PanelRect | null>(null)
-  const [openFile, setOpenFile] = useState<{ root: string; path: string; lines?: LineRange } | null>(null)
-  const { screenToFlowPosition } = useReactFlow()
+  // "Nova pasta" aberto: onde a pasta entra e, se veio de um grupo, em qual.
+  const [folderPicker, setFolderPicker] = useState<{ position: XYPosition; groupId?: string } | null>(null)
+  // diff: mostra as mudanças desde o último commit em vez do arquivo.
+  const [openFile, setOpenFile] = useState<{ root: string; path: string; lines?: LineRange; diff?: boolean } | null>(
+    null
+  )
+  const { screenToFlowPosition, getZoom, fitView } = useReactFlow()
+  const [guides, setGuides] = useState<Guide[]>([])
   const spaceHeld = useSpaceHeld()
   const prefs = usePreferences()
 
   const { nodesRef, change, trackGesture, undo, redo } = useHistory(nodes, setNodes)
   useSaveNodes(nodes)
+  useCanvasAgentTools(nodesRef, change)
   const sessionsVersion = useSessionsVersion()
 
   const onNodesChange = (changes: NodeChange<CanvasNode>[]) => {
@@ -77,23 +114,63 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     // Instância que mudou de tamanho empurra a borda do grupo. Só instância: medida do
     // próprio grupo não entra, senão encolher o grupo na mão seria desfeito na hora.
     const resized = changes.filter((c) => c.type === 'dimensions').map((c) => c.id)
+    // Um bloco sendo arrastado encaixa no alinhamento dos vizinhos (vários juntos, não).
+    const moves = changes.filter((c) => c.type === 'position' && c.dragging !== undefined)
+    const move = moves.length === 1 && moves[0].type === 'position' ? moves[0] : null
+    if (move?.position) {
+      const snapped = snap(nodesRef.current, move.id, move.position, getZoom())
+      move.position = snapped.position
+      setGuides(move.dragging ? snapped.guides : [])
+    } else if (moves.length) setGuides([])
     setNodes((ns) => {
       const next = applyNodeChanges(changes, ns)
-      return resized.length ? growGroupsToFit(next, resized) : next
+      return resized.length ? fitAfterResize(ns, next, resized) : next
     })
   }
 
-  // ⌘Z / ⇧⌘Z chegam pelo menu Editar do Electron. Em campo de texto, desfaz o texto.
+  // ⌘Z / ⇧⌘Z chegam pelo menu Editar do Electron. Em campo de texto, desfaz o texto; na barra
+  // de comando vazia, desfaz o que o Claude fez no canvas.
   useEffect(
     () =>
       window.api.onEdit((action) => {
         const el = document.activeElement as HTMLElement | null
-        if (el?.closest('input, textarea, [contenteditable="true"]')) document.execCommand(action)
+        const canvasUndo = el instanceof HTMLInputElement && el.dataset.canvasUndo !== undefined && !el.value
+        if (!canvasUndo && el?.closest('input, textarea, [contenteditable="true"]')) document.execCommand(action)
         else if (action === 'undo') undo()
         else redo()
       }),
     [undo, redo]
   )
+
+  // `cae .` num terminal: a pasta entra no centro da tela, ou, se já está no canvas, a tela vai até ela.
+  useEffect(() => {
+    const off = window.api.cli.onOpen((folder) => {
+      let target = nodesRef.current.find((n) => n.type === 'project' && n.data.path === displayPath(folder))
+      if (!target) {
+        const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+        target = createFolderInstance({ x: center.x - INSTANCE_WIDTH / 2, y: center.y - INSTANCE_MIN_HEIGHT / 2 }, folder)
+        const node = target
+        change((ns) => addNode(ns, node))
+      }
+      const id = target.id
+      setNodes((ns) => ns.map((n) => (n.selected === (n.id === id) ? n : { ...n, selected: n.id === id })))
+      // Espera o bloco novo ser medido antes de enquadrar.
+      setTimeout(() => fitView({ nodes: [{ id }], padding: 0.3, duration: 300, maxZoom: 1 }), 100)
+    })
+    window.api.cli.ready()
+    return off
+  }, [change, nodesRef, screenToFlowPosition, fitView])
+
+  // ⌘K abre a barra de comando para digitar (o botão da barra lateral abre já ouvindo).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'k') return
+      e.preventDefault()
+      setCommandBar((c) => c ?? { voice: false })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const actions = useMemo(
     () => ({
@@ -106,40 +183,34 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         const current = node?.type === 'area' ? node.data.label : node?.data.name
         if (name && name !== current) change((ns) => rename(ns, id, name))
       },
-      // Grupo entra no início do array para ficar atrás das instâncias soltas.
+      // Bloco novo nunca entra por cima de outro (addNode).
       addGroup: (position: XYPosition) => {
         const group = createGroup(position)
-        change((ns) => [group, ...ns])
+        change((ns) => addNode(ns, group))
         setRenamingId(group.id)
       },
-      // Dentro de um grupo, a pasta entra num lugar livre e o grupo cresce se precisar.
-      addFolder: async (position: XYPosition, groupId?: string) => {
-        const folder = await window.api.pickFolder()
-        if (!folder) return
-        const node = createFolderInstance(position, folder)
-        change((ns) => (groupId ? moveToGroup([...ns, node], node.id, groupId) : [...ns, node]))
+      // A pasta é escolhida no FolderPicker; ver pickFolder.
+      addFolder: (position: XYPosition, groupId?: string) => setFolderPicker({ position, groupId }),
+      // Terminal solto no canvas. Sem pasta conhecida, abre na pasta do usuário, sem perguntar.
+      addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => {
+        const node = createTerminal(position, folder ?? window.api.homeDir, kind)
+        change((ns) => addNode(ns, node, groupId))
       },
-      // Terminal solto no canvas. Sem pasta conhecida, pergunta qual usar.
-      addTerminal: async (position: XYPosition, groupId?: string, folder?: string, sessionId?: string, name?: string) => {
-        const chosen = folder ?? (await window.api.pickFolder())
-        if (!chosen) return
-        const node = createTerminal(position, chosen, sessionId, name)
-        change((ns) => (groupId ? moveToGroup([...ns, node], node.id, groupId) : [...ns, node]))
-      },
-      recentConversations: (path: string) =>
-        getSessions(path)
-          .slice(0, 8)
-          .map((c) => ({ id: c.id, title: c.title })),
-      closeTerminal: (nodeId: string, name: string) =>
+      closeTerminal: (nodeId: string, name: string) => {
+        const node = nodesRef.current.find((n) => n.id === nodeId)
+        const shell = node?.type === 'terminal' && node.data.kind === 'shell'
         setConfirm({
           title: `Fechar o terminal "${name}"?`,
-          description: 'A sessão do Claude que roda nele é encerrada. A conversa continua salva.',
+          description: shell
+            ? 'O shell e o que estiver rodando nele são encerrados.'
+            : 'A sessão do Claude que roda nele é encerrada. A conversa continua salva.',
           confirmLabel: 'Fechar terminal',
           onConfirm: () => {
             window.api.terminal.kill(nodeId)
             change((ns) => removeNode(ns, nodeId))
           }
-        }),
+        })
+      },
       bindTerminalSession: (nodeId: string, sessionId: string) =>
         // Sem histórico: amarrar a conversa não é uma ação para desfazer.
         setNodes((ns) =>
@@ -157,11 +228,31 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       poppedOut,
       newConversation: (nodeId: string) =>
         setActiveConversation({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true }),
+      newLooseConversation: (position?: XYPosition) =>
+        setActiveConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position }),
       openAllConversations: (nodeId: string) => setAllConversationsNodeId(nodeId),
       openSettings: onOpenSettings,
-      openMemory: () => setMemoryOpen(true)
+      openMemory: () => setMemoryOpen(true),
+      openAgents: () => setAgentsOpen(true),
+      openDevServers: () => setDevServersOpen(true),
     }),
     [renamingId, change, nodesRef, activeConversation, poppedOut, onOpenSettings] // eslint-disable-line react-hooks/exhaustive-deps
+  )
+
+  // Clique na notificação do sistema: abre a conversa pelo bloco dela (conversa solta) ou pelo
+  // projeto da pasta. Já aberta no painel, fica como está.
+  useEffect(
+    () =>
+      window.api.chat.onOpen((cwd, sessionId) => {
+        const open = actions.activeConversation
+        if (open && (open.conversationId === sessionId || open.sessionId === sessionId)) return
+        const ns = nodesRef.current
+        const target =
+          ns.find((n) => n.type === 'chat' && n.data.sessionId === sessionId) ??
+          ns.find((n) => n.type === 'project' && n.data.path === displayPath(cwd))
+        if (target) actions.openConversation(target.id, sessionId)
+      }),
+    [actions, nodesRef]
   )
 
   // Grupo só seleciona e arrasta depois de dois cliques; clique simples não mexe nele.
@@ -176,11 +267,14 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   }
 
   // Conversa aberta no painel; some sozinha se a pasta ou a conversa for excluída.
+  // Conversa sem projeto ainda não enviada não tem bloco: roda na pasta do usuário.
   const drawer = useMemo(() => {
     if (!activeConversation) return null
-    const project = nodes.find((n) => n.id === activeConversation.nodeId)
-    if (project?.type !== 'project') return null
-    const sessions = getSessions(project.data.path)
+    const node = nodes.find((n) => n.id === activeConversation.nodeId)
+    const loose = node ? node.type === 'chat' : activeConversation.nodeId === null
+    const project = node ? projectOf(node) : loose ? looseProject() : null
+    if (!project) return null
+    const sessions = getSessions(project.path)
     // Conversa nova que já entrou na lista da pasta passa a ser a conversa normal.
     const started = activeConversation.sessionId && sessions.find((c) => c.id === activeConversation.sessionId)
     const conversation: ConversationSummary | undefined = started
@@ -197,8 +291,15 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           draft: true
         }
       : sessions.find((c) => c.id === activeConversation.conversationId)
-    return conversation ? { project, conversation } : null
+    return conversation ? { nodeId: node?.id, parentId: node?.parentId, project, loose, conversation } : null
   }, [nodes, activeConversation, sessionsVersion])
+
+  // Tom do grupo que contém o projeto aberto no drawer.
+  const groupTint = useMemo(() => {
+    const parentId = drawer?.parentId
+    const group = parentId ? nodes.find((n) => n.id === parentId) : undefined
+    return group?.type === 'area' ? group.data.color : undefined
+  }, [drawer, nodes])
 
   // Pasta do painel de todas as conversas; some junto com a pasta, se ela for excluída.
   const allConversations = useMemo(() => {
@@ -215,12 +316,12 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
 
   // Abre a conversa numa janela própria (ou foca a que já existe).
   function popoutConversation(nodeId: string, conversationId: string) {
-    const project = nodesRef.current.find((n) => n.id === nodeId)
-    if (project?.type !== 'project') return
-    const conversation = getSessions(project.data.path).find((c) => c.id === conversationId)
+    const project = projectOf(nodesRef.current.find((n) => n.id === nodeId))
+    if (!project) return
+    const conversation = getSessions(project.path).find((c) => c.id === conversationId)
     if (!conversation) return
     window.api.popout.open(conversationId, {
-      project: project.data,
+      project,
       conversation,
       settings: settingsRef.current[conversationId] ?? getPreferences().conversation
     })
@@ -246,19 +347,28 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
 
   // Link de arquivo no chat: abre o código da pasta já com o arquivo. Aceita caminho relativo
   // à pasta ou absoluto dentro dela; fora da pasta, o visualizador não tem acesso.
-  const openFileLink = (root: string, path: string, lines?: LineRange) => {
+  const openFileLink = (root: string, path: string, lines?: LineRange, diff?: boolean) => {
     const home = window.api.homeDir
     const base = (root.startsWith('~/') ? home + root.slice(1) : root).replace(/\/$/, '')
     let rel = path.startsWith('~/') ? home + path.slice(1) : path
     if (rel.startsWith(base + '/')) rel = rel.slice(base.length + 1)
     else if (rel.startsWith('/')) return
     setCodeOpen(true)
-    setOpenFile({ root, path: rel.replace(/^\.\//, ''), lines })
+    setOpenFile({ root, path: rel.replace(/^\.\//, ''), lines, diff })
   }
 
   const closeCode = () => {
     setCodeOpen(false)
     setOpenFile(null)
+  }
+
+  // Dentro de um grupo, a pasta entra num lugar livre e o grupo cresce se precisar.
+  const pickFolder = (folder: string) => {
+    if (!folderPicker) return
+    const node = createFolderInstance(folderPicker.position, folder)
+    const { groupId } = folderPicker
+    change((ns) => addNode(ns, node, groupId))
+    setFolderPicker(null)
   }
 
   const deps = { nodes, setNodes: change, confirm: setConfirm, ...actions }
@@ -273,7 +383,13 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const onNodeContextMenu = (e: ReactMouseEvent, node: CanvasNode) => {
     e.preventDefault()
     const items =
-      node.type === 'area' ? groupMenu(deps, node) : node.type === 'terminal' ? terminalMenu(deps, node) : instanceMenu(deps, node)
+      node.type === 'area'
+        ? groupMenu(deps, node)
+        : node.type === 'terminal'
+          ? terminalMenu(deps, node)
+          : node.type === 'chat'
+            ? chatMenu(deps, node)
+            : instanceMenu(deps, node)
     setMenu({ x: e.clientX, y: e.clientY, items })
   }
 
@@ -304,7 +420,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--color-dots)" />
-        <MiniMapPanel />
+        <AlignmentGuides guides={guides} />
+        <ViewBar />
         {/* Com o drawer aberto, ⌘+ / ⌘- escalam o drawer em vez do canvas. */}
         <NavBar zoomShortcuts={!drawer} />
         <UsageIndicator />
@@ -316,26 +433,67 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           drawer || allConversations ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
         }`}
       />
+      {/* Como no VS Code: a conversa aberta e o projeto; sem conversa, o nome do app. */}
+      <TitleBar title={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Canva Agent Editor'} />
       {drawer && codeOpen && (
         <CodeExplorer
-          root={drawer.project.data.path}
-          name={drawer.project.data.name}
-          selected={openFile?.root === drawer.project.data.path ? openFile.path : null}
-          onOpenFile={(path) => setOpenFile({ root: drawer.project.data.path, path })}
+          root={drawer.project.path}
+          name={drawer.project.name}
+          selected={openFile?.root === drawer.project.path ? openFile.path : null}
+          rightOffset={drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
+          onOpenFile={(path) => setOpenFile({ root: drawer.project.path, path })}
           onClose={closeCode}
+        >
+          {openFile?.root === drawer.project.path && (
+            <FileViewer
+              // Outro arquivo começa do zero (rolagem, recargas); o mesmo só recarrega.
+              key={`${openFile.root}|${openFile.path}`}
+              root={openFile.root}
+              path={openFile.path}
+              lines={openFile.lines}
+              diff={!!openFile.diff}
+              onDiffChange={(diff) => setOpenFile({ ...openFile, diff })}
+              onClose={() => setOpenFile(null)}
+              onCloseCode={closeCode}
+            />
+          )}
+        </CodeExplorer>
+      )}
+      {drawer && (
+        <ConversationDrawer
+          project={drawer.project}
+          loose={drawer.loose}
+          tint={groupTint}
+          conversation={drawer.conversation}
+          settings={settings[drawer.conversation.id] ?? prefs.conversation}
+          onSettingsChange={(s) => setSettings((all) => ({ ...all, [drawer.conversation.id]: s }))}
+          codeOpen={codeOpen}
+          rect={drawerRect}
+          onRectChange={setDrawerRect}
+          onToggleCode={() => (codeOpen ? closeCode() : setCodeOpen(true))}
+          onOpenFile={(path, lines) => openFileLink(drawer.project.path, path, lines)}
+          onOpenDiff={(path) => openFileLink(drawer.project.path, path, undefined, true)}
+          onSessionStarted={(sessionId) => {
+            // Conversa sem projeto entra no canvas no primeiro envio, num lugar livre.
+            const node =
+              activeConversation?.nodeId === null
+                ? createChat(findChatSpot(nodesRef.current, activeConversation.at), sessionId)
+                : undefined
+            if (node) change((ns) => [...ns, node])
+            setActiveConversation((a) => (a?.draft ? { ...a, sessionId, ...(node && { nodeId: node.id }) } : a))
+          }}
+          onPopout={() => {
+            if (drawer.nodeId) popoutConversation(drawer.nodeId, drawer.conversation.id)
+            setActiveConversation(null)
+            closeCode()
+          }}
+          onClose={() => {
+            setActiveConversation(null)
+            closeCode()
+          }}
         />
       )}
-      {drawer && codeOpen && openFile?.root === drawer.project.data.path && (
-        <FileViewer
-          // Outro arquivo começa do zero (rolagem, recargas); o mesmo só recarrega.
-          key={`${openFile.root}|${openFile.path}`}
-          root={openFile.root}
-          path={openFile.path}
-          lines={openFile.lines}
-          rightOffset={drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 532}
-          onClose={() => setOpenFile(null)}
-        />
-      )}
+      {/* Depois do drawer: os dois nascem no mesmo lugar, e a lista tem que aparecer por cima. */}
       {allConversations && (
         <AllConversationsPanel
           project={allConversations.data}
@@ -355,40 +513,25 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           onClose={() => setAllConversationsNodeId(null)}
         />
       )}
-      {drawer && (
-        <ConversationDrawer
-          project={drawer.project.data}
-          conversation={drawer.conversation}
-          settings={settings[drawer.conversation.id] ?? prefs.conversation}
-          onSettingsChange={(s) => setSettings((all) => ({ ...all, [drawer.conversation.id]: s }))}
-          codeOpen={codeOpen}
-          rect={drawerRect}
-          onRectChange={setDrawerRect}
-          onToggleCode={() => (codeOpen ? closeCode() : setCodeOpen(true))}
-          onOpenFile={(path, lines) => openFileLink(drawer.project.data.path, path, lines)}
-          onSessionStarted={(sessionId) =>
-            setActiveConversation((a) => (a?.draft ? { ...a, sessionId } : a))
-          }
-          onPopout={() => {
-            popoutConversation(drawer.project.id, drawer.conversation.id)
-            setActiveConversation(null)
-            closeCode()
-          }}
-          onClose={() => {
-            setActiveConversation(null)
-            closeCode()
-          }}
-        />
-      )}
       {memoryOpen && (
         <MemoryModal
           projects={memoryProjects}
-          initialProject={drawer?.project.data.path}
+          initialProject={drawer && !drawer.loose ? drawer.project.path : undefined}
           onClose={() => setMemoryOpen(false)}
+        />
+      )}
+      {agentsOpen && <AgentsModal onClose={() => setAgentsOpen(false)} />}
+      {devServersOpen && <DevServersModal onClose={() => setDevServersOpen(false)} />}
+      {folderPicker && (
+        <FolderPicker
+          onCanvas={new Set(memoryProjects.map((p) => p.path))}
+          onPick={pickFolder}
+          onClose={() => setFolderPicker(null)}
         />
       )}
       {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
       {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
+      {commandBar && <CommandBar voice={commandBar.voice} onClose={closeCommandBar} />}
     </CanvasContext.Provider>
   )
 }

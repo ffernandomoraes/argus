@@ -3,6 +3,7 @@ import { Brain, FileText, Globe, ListTree, Pencil, X } from 'lucide-react'
 import type { MemoryFile, MemoryGroup, MemoryProject } from '../../../shared/memory'
 import { FileLinkContext } from '../conversation/fileLinks'
 import { Markdown } from '../conversation/Markdown'
+import { useEscape } from '../useEscape'
 
 const TYPE_LABEL: Record<string, string> = {
   user: 'sobre você',
@@ -103,13 +104,15 @@ export function MemoryModal({
       if (e.metaKey && e.key === 's' && editing) {
         e.preventDefault()
         void save()
-      } else if (e.key === 'Escape') {
-        if (editing && !dirty) setDraft(null)
-        else if (!editing) close()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  })
+  // Editando com alteração, o ESC não faz nada: sair é pelo botão, que pergunta antes de descartar.
+  useEscape(() => {
+    if (editing && !dirty) setDraft(null)
+    else if (!editing) close()
   })
 
   // Links entre anotações: [[nome]] ou arquivo.md, dentro da mesma pasta de memória.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Panel } from '@xyflow/react'
 import type { Usage, UsageWindow } from '../../../shared/usage'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
+import { useEscape } from '../useEscape'
 
 function timeLeft(resetsAt: string, now: number): string {
   const min = Math.max(0, Math.round((new Date(resetsAt).getTime() - now) / 60_000))
@@ -55,7 +56,7 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
       </div>
       <Bar percent={percent} className="mt-1.5 h-1.5 w-full" />
       <div className="mt-1.5 text-[11px] text-faint">
-        Reseta em {timeLeft(window.resetsAt, now)} · {resetLabel(window.resetsAt)}
+        Reseta em {timeLeft(window.resetsAt, now)} - {resetLabel(window.resetsAt)}
       </div>
     </div>
   )
@@ -83,14 +84,10 @@ export function UsageIndicator() {
     const close = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false)
     }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
     window.addEventListener('mousedown', close)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('mousedown', close)
-      window.removeEventListener('keydown', onKey)
-    }
+    return () => window.removeEventListener('mousedown', close)
   }, [open])
+  useEscape(() => setOpen(false), open)
 
   const session = usage?.session
   if (!session) return null

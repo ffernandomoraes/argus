@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEscape } from '../useEscape'
 
 export type ConfirmRequest = {
   title: string
@@ -8,11 +8,7 @@ export type ConfirmRequest = {
 }
 
 export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  useEscape(onClose)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onMouseDown={onClose}>

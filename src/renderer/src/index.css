@@ -21,6 +21,12 @@
   --color-needs-you: #fbbf24;
   --color-done: #34d399;
 
+  /* Contador por cima de ícone, no azul do VS Code; o mesmo nos dois temas, sempre com texto branco. */
+  --color-badge: #0078d4;
+
+  /* Linha-guia do encaixe ao arrastar: destoa de tudo para ler como ajuda, não como conteúdo. */
+  --color-guide: #f472b6;
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
@@ -45,6 +51,8 @@
   --color-running: #2563eb;
   --color-needs-you: #d97706;
   --color-done: #059669;
+
+  --color-guide: #db2777;
 }
 
 html,
@@ -168,4 +176,25 @@ button:not(:disabled),
 }
 .code-view::-webkit-scrollbar-thumb:hover {
   background-color: #7c7c87;
+}
+
+/* Linha da conversa que está rodando, na pilha da pasta (ProjectNode): o tracejado anda
+   da pasta para a conversa. */
+@keyframes conversation-flow {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+.conversation-flow {
+  stroke-dasharray: 4 4;
+  animation: conversation-flow 0.6s linear infinite;
+}
+
+/* Item da conversa (ChatView): fora da tela, o navegador não calcula nem desenha o conteúdo,
+   então conversa longa continua leve. A altura real fica guardada depois da primeira vez na
+   tela (o `auto`); antes disso vale a estimativa. Corta o que vazar da caixa: a linha do tempo
+   fica fora dela. */
+.timeline-item {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 4rem;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useTheme } from '../theme/useTheme'
-import { ConversationDrawer } from './ConversationDrawer'
+import { ConversationWindow } from './ConversationWindow'
 import type { SessionSettings } from './SessionSettings'
 
 export type PopoutPayload = {
@@ -32,14 +32,11 @@ export function PopoutApp({ id }: { id: string }) {
 
   return (
     <div className="relative h-full">
-      <ConversationDrawer
-        variant="window"
+      <ConversationWindow
         project={payload.project}
         conversation={payload.conversation}
         settings={payload.settings}
         onSettingsChange={onSettingsChange}
-        codeOpen={false}
-        onToggleCode={() => {}}
         onClose={() => window.close()}
       />
     </div>

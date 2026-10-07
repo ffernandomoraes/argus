@@ -4,9 +4,10 @@ export const SLASH_COMMANDS = [
   { name: 'compact', description: 'Resume a conversa até aqui para liberar contexto.' },
   { name: 'context', description: 'Mostra quanto do contexto está em uso.' },
   { name: 'usage', description: 'Mostra o custo da sessão e o uso do plano.' },
-  { name: 'mcp', description: 'Gerencia os servidores MCP.' },
+  { name: 'mcp', description: 'Mostra os servidores MCP: conectados, com erro e os que precisam de autorização.' },
   { name: 'init', description: 'Cria o CLAUDE.md com a documentação do projeto.' },
-  { name: 'rename', description: 'Renomeia a conversa.' }
+  { name: 'rename', description: 'Renomeia a conversa.' },
+  { name: 'remote-control', description: 'Continua esta conversa pelo claude.ai ou pelo celular. De novo, desliga.' }
 ]
 
 export type SlashCommand = (typeof SLASH_COMMANDS)[number]
@@ -46,7 +47,7 @@ export function SlashMenu({
             onMouseEnter={() => onHover(i)}
             className={`flex w-full items-baseline gap-3 rounded-md px-2 py-1.5 text-left ${i === active ? 'bg-surface-2' : ''}`}
           >
-            <span className="w-20 shrink-0 font-mono text-xs text-text">/{c.name}</span>
+            <span className="w-28 shrink-0 font-mono text-xs text-text">/{c.name}</span>
             <span className="truncate text-[11px] text-faint">{c.description}</span>
           </button>
         ))

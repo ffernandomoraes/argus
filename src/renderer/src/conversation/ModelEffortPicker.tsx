@@ -3,6 +3,7 @@ import { Check, ChevronRight, ChevronUp, Workflow } from 'lucide-react'
 import type { ClaudeModel } from '../../../shared/models'
 import type { SessionSettings } from './SessionSettings'
 import { useModels } from './useModels'
+import { useEscape } from '../useEscape'
 
 // Igual à extensão do VS Code: botão com modelo e esforço embaixo do campo; o menu abre
 // para cima com os modelos agrupados por família, a régua de esforço e as opções de
@@ -109,14 +110,10 @@ export function ModelEffortPicker({
     if (!open) return
     setExpanded(null)
     const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
     window.addEventListener('mousedown', close)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('mousedown', close)
-      window.removeEventListener('keydown', onKey)
-    }
+    return () => window.removeEventListener('mousedown', close)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEscape(() => setOpen(false), open)
 
   const row = 'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text hover:bg-surface-2'
 
@@ -124,7 +121,7 @@ export function ModelEffortPicker({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        title={`Modelo: ${currentName} · Esforço: ${allowed.length ? effortLabel(settings.effort) : 'não se aplica'}`}
+        title={`Modelo: ${currentName} - Esforço: ${allowed.length ? effortLabel(settings.effort) : 'não se aplica'}`}
         className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : 'text-muted'
         }`}
@@ -136,7 +133,7 @@ export function ModelEffortPicker({
             <span className="text-faint">{effortLabel(settings.effort)}</span>
           </>
         )}
-        {!settings.thinking && <span className="text-faint">· sem thinking</span>}
+        {!settings.thinking && <span className="text-faint">- sem thinking</span>}
         {settings.ultracode && <Workflow size={12} className="text-running" aria-label="Ultracode ligado" />}
         <ChevronUp size={12} className="text-faint" />
       </button>
@@ -152,7 +149,7 @@ export function ModelEffortPicker({
               <button onClick={() => onChange({ model: '' })} className={row}>
                 <span className="flex-1">
                   Padrão
-                  {defaultModel.resolvedName && <span className="text-faint"> · {defaultModel.resolvedName}</span>}
+                  {defaultModel.resolvedName && <span className="text-faint"> - {defaultModel.resolvedName}</span>}
                 </span>
                 {settings.model === '' && <Check size={13} className="text-muted" />}
               </button>

@@ -10,6 +10,9 @@ export type Message =
   | { id: string; role: 'assistant'; text: string; at?: string; tokens?: number }
   // Raciocínio do Claude antes de responder ou agir; recolhido no chat.
   | { id: string; role: 'thinking'; text: string; at?: string; tokens?: number; seconds?: number }
+  // Resposta de um comando de barra (/context, /usage, /rename...), escrita pelo próprio
+  // Claude Code, não pelo modelo.
+  | { id: string; role: 'output'; text: string; at?: string }
   // Marco na conversa (troca de modelo, esforço, modo; compactação): vira um divisor no chat.
   | { id: string; role: 'event'; kind: EventKind; text: string; at?: string }
   | {
@@ -27,6 +30,10 @@ export type Message =
       result: string
       error?: boolean
       diff?: DiffHunk[]
+      // Id da chamada no Claude Code; liga a linha ao subagente rodando.
+      toolUseId?: string
+      // Subagente (ferramenta Agent): qual agente foi chamado.
+      agent?: string
     }
 
 export type EventKind = 'model' | 'effort' | 'mode' | 'thinking' | 'ultracode' | 'compact'

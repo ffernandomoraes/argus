@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronRight, File, Folder, FolderOpen, X } from 'lucide-react'
 import type { FileEntry } from '../../../shared/files'
+import { useEscape } from '../useEscape'
+import { PANEL_TOP } from '../conversation/FloatingPanel'
 
 function TreeItem({
   root,
@@ -58,21 +60,29 @@ function TreeItem({
   )
 }
 
-// Painel da esquerda: árvore de pastas e arquivos do projeto, carregada sob demanda.
+// Painel de código: árvore de pastas e arquivos do projeto (carregada sob demanda) e, com um
+// arquivo aberto, o conteúdo dele ao lado, no mesmo painel, que então se estica até a conversa.
 export function CodeExplorer({
   root,
   name,
   selected,
+  rightOffset,
   onOpenFile,
-  onClose
+  onClose,
+  children
 }: {
   root: string
   name: string
   selected: string | null
+  // Espaço ocupado pelo painel da conversa à direita; vale só com arquivo aberto.
+  rightOffset: number | string
   onOpenFile: (path: string) => void
   onClose: () => void
+  // Arquivo aberto (FileViewer), mostrado à direita da árvore.
+  children?: ReactNode
 }) {
   const [entries, setEntries] = useState<FileEntry[] | null>(null)
+  useEscape(onClose)
 
   useEffect(() => {
     setEntries(null)
@@ -80,26 +90,39 @@ export function CodeExplorer({
   }, [root])
 
   return (
-    <aside className="absolute bottom-4 left-4 top-4 z-40 flex w-[280px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50">
-      <header className="flex items-center gap-2 border-b border-line px-3 py-2.5">
-        <Folder size={14} className="shrink-0 text-muted" />
-        <span className="flex-1 truncate text-sm font-medium">{name}</span>
-        <button
-          aria-label="Fechar código"
-          title="Fechar código"
-          onClick={onClose}
-          className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
-        >
-          <X size={15} />
-        </button>
-      </header>
-      <ul className="min-h-0 flex-1 overflow-y-auto p-1.5">
-        {entries === null && <li className="px-2 py-1 text-xs text-faint">Carregando…</li>}
-        {entries?.length === 0 && <li className="px-2 py-1 text-xs text-faint">Pasta vazia ou inexistente</li>}
-        {entries?.map((e) => (
-          <TreeItem key={e.path} root={root} entry={e} depth={0} selected={selected} onOpenFile={onOpenFile} />
-        ))}
-      </ul>
+    <aside
+      style={{ top: PANEL_TOP, ...(children ? { right: rightOffset } : { width: 280 }) }}
+      className="absolute bottom-4 left-4 z-40 flex overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+    >
+      <div className={`flex w-[280px] shrink-0 flex-col ${children ? 'border-r border-line' : ''}`}>
+        <header className="flex h-12 items-center gap-2 border-b border-line px-3">
+          <Folder size={14} className="shrink-0 text-muted" />
+          <span className="flex-1 truncate text-sm font-medium">{name}</span>
+          {/* Com arquivo aberto, o X fica no canto do painel, no cabeçalho do arquivo. */}
+          {!children && <CloseCodeButton onClick={onClose} />}
+        </header>
+        <ul className="min-h-0 flex-1 overflow-y-auto p-1.5">
+          {entries === null && <li className="px-2 py-1 text-xs text-faint">Carregando…</li>}
+          {entries?.length === 0 && <li className="px-2 py-1 text-xs text-faint">Pasta vazia ou inexistente</li>}
+          {entries?.map((e) => (
+            <TreeItem key={e.path} root={root} entry={e} depth={0} selected={selected} onOpenFile={onOpenFile} />
+          ))}
+        </ul>
+      </div>
+      {children}
     </aside>
+  )
+}
+
+export function CloseCodeButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      aria-label="Fechar código"
+      title="Fechar código"
+      onClick={onClick}
+      className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+    >
+      <X size={15} />
+    </button>
   )
 }

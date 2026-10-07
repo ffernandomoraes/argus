@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronUp, FilePen, Hand, ListChecks, ShieldCheck, ShieldOff, type LucideIcon } from 'lucide-react'
 import { useClaudeInfo } from './useModels'
+import { useEscape } from '../useEscape'
 
 // Modos de permissão do --permission-mode, com nomes e descrições da extensão do VS Code, traduzidos.
 export const MODES: { value: string; label: string; description: string; icon: LucideIcon; danger?: boolean }[] = [
@@ -30,14 +31,10 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
   useEffect(() => {
     if (!open) return
     const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
     window.addEventListener('mousedown', close)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('mousedown', close)
-      window.removeEventListener('keydown', onKey)
-    }
+    return () => window.removeEventListener('mousedown', close)
   }, [open])
+  useEscape(() => setOpen(false), open)
 
   // Vazio = padrão da conta, que o claude informa ao iniciar.
   const effective = value || info?.defaultPermissionMode || 'manual'
@@ -76,7 +73,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
                 <span className="flex-1">
                   <span className={`block text-xs ${m.danger ? 'text-red-400' : 'text-text'}`}>
                     {m.label}
-                    {m.value === info?.defaultPermissionMode && <span className="text-faint"> · padrão</span>}
+                    {m.value === info?.defaultPermissionMode && <span className="text-faint"> - padrão</span>}
                   </span>
                   <span className="mt-0.5 block text-[11px] leading-snug text-faint">{m.description}</span>
                 </span>

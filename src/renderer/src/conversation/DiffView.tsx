@@ -8,9 +8,16 @@ const ROW: Record<string, string> = {
 }
 
 // Linhas removidas e adicionadas numa edição. Sem número de linha quando é só a proposta.
-export const DiffView = memo(function DiffView({ hunks }: { hunks: DiffHunk[] }) {
+// full: ocupa o painel de código inteiro, sem caixa nem altura máxima; quem rola é o painel.
+export const DiffView = memo(function DiffView({ hunks, full = false }: { hunks: DiffHunk[]; full?: boolean }) {
   return (
-    <div className="max-h-72 overflow-auto rounded-md border border-line bg-bg font-mono text-[11px] leading-[1.55]">
+    <div
+      className={
+        full
+          ? 'min-w-full w-max py-2 font-mono text-[12px] leading-[1.6]'
+          : 'max-h-72 overflow-auto rounded-md border border-line bg-bg font-mono text-[11px] leading-[1.55]'
+      }
+    >
       {hunks.map((h, i) => {
         let line = h.newStart
         return (

@@ -4,21 +4,23 @@ import type { Message } from '../shared/history'
 import { diffFromResult } from './diffs'
 import { sessionsDir } from './sessions'
 import { describeTool } from './toolLabels'
-import { commandEvent, compactEvent, modelName } from './historyEvents'
+import { commandEvent, commandMessage, commandOutput, compactEvent, modelName } from './historyEvents'
 
 type Line = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const RESULT_MAX = 2000
+// O relatório de um subagente é o que ele entregou: cabe bem mais.
+const AGENT_RESULT_MAX = 20000
 const MESSAGES_MAX = 400
 
-function resultText(content: unknown): string {
+function resultText(content: unknown, max = RESULT_MAX): string {
   const text =
     typeof content === 'string'
       ? content
       : Array.isArray(content)
         ? content.map((c: Line) => (c?.type === 'text' ? c.text : c?.type === 'image' ? '[imagem]' : '')).join('\n')
         : ''
-  return text.length > RESULT_MAX ? text.slice(0, RESULT_MAX) + '\n…' : text
+  return text.length > max ? text.slice(0, max) + '\n…' : text
 }
 
 // Texto que a pessoa escreveu; avisos internos (<system-reminder>, <command-name>...) ficam de fora.
@@ -33,15 +35,41 @@ function promptText(content: unknown): string | null {
   return text || null
 }
 
+async function readSession(projectPath: string, sessionId: string): Promise<string | null> {
+  if (!/^[\w-]+$/.test(sessionId)) return null
+  try {
+    return await readFile(join(sessionsDir(projectPath), `${sessionId}.jsonl`), 'utf8')
+  } catch {
+    return null
+  }
+}
+
+// Imagens enviadas numa mensagem sua, prontas para o <img>. O histórico só conta quantas são:
+// elas pesam e só são lidas quando alguém abre o preview.
+export async function readImages(projectPath: string, sessionId: string, messageId: string): Promise<string[]> {
+  const raw = await readSession(projectPath, sessionId)
+  if (!raw) return []
+  const needle = `"uuid":"${messageId}"`
+  for (const rawLine of raw.split('\n')) {
+    if (!rawLine.includes(needle)) continue
+    let l: Line
+    try {
+      l = JSON.parse(rawLine)
+    } catch {
+      continue
+    }
+    if (l.uuid !== messageId || !Array.isArray(l.message?.content)) continue
+    return l.message.content
+      .filter((c: Line) => c?.type === 'image' && c.source?.type === 'base64' && typeof c.source.data === 'string')
+      .map((c: Line) => `data:${c.source.media_type};base64,${c.source.data}`)
+  }
+  return []
+}
+
 // Histórico de uma sessão, na ordem em que aconteceu. Raciocínio (thinking) e subagentes ficam de fora.
 export async function readHistory(projectPath: string, sessionId: string): Promise<Message[]> {
-  if (!/^[\w-]+$/.test(sessionId)) return []
-  let raw: string
-  try {
-    raw = await readFile(join(sessionsDir(projectPath), `${sessionId}.jsonl`), 'utf8')
-  } catch {
-    return []
-  }
+  const raw = await readSession(projectPath, sessionId)
+  if (!raw) return []
 
   const messages: Message[] = []
   // Resultado de ferramenta chega numa linha depois do pedido; liga os dois pelo id.
@@ -67,6 +95,12 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
       messages.push(marker)
       continue
     }
+    // Comando de barra e a resposta dele ficam visíveis, em vez de sumir da conversa.
+    const command = commandMessage(l) ?? commandOutput(l)
+    if (command) {
+      messages.push(command)
+      continue
+    }
 
     // Mensagem enviada no meio de uma resposta: o Claude Code grava como anexo "queued_command"
     // no ponto em que a entregou ao Claude (entre uma ação e outra).
@@ -87,7 +121,7 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
           if (c?.type !== 'tool_result') continue
           const tool = tools.get(c.tool_use_id)
           if (tool) {
-            tool.result = resultText(c.content)
+            tool.result = resultText(c.content, tool.agent ? AGENT_RESULT_MAX : RESULT_MAX)
             tool.error = c.is_error === true
             if (!tool.error) tool.diff = diffFromResult(l.toolUseResult)
           }
@@ -133,10 +167,27 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
         const seconds = previous ? Math.round((Date.parse(at) - Date.parse(previous)) / 1000) : undefined
         messages.push({ id, role: 'thinking', text: c.thinking.trim(), at, tokens: take(), seconds })
       } else if (c?.type === 'text' && c.text?.trim()) {
-        messages.push({ id, role: 'assistant', text: c.text.trim(), at, tokens: take() })
+        // Aviso que o próprio Claude Code grava ao retomar uma resposta cortada no meio
+        // (o app reiniciou, por exemplo).
+        const cut = model === '<synthetic>' && c.text.trim() === 'No response requested.'
+        const text = cut ? 'A resposta anterior foi interrompida antes de terminar. Seguindo daqui.' : c.text.trim()
+        messages.push({ id, role: 'assistant', text, at, tokens: take() })
       } else if (c?.type === 'tool_use') {
         const d = describeTool(c.name, c.input)
-        const tool = { id, role: 'tool' as const, name: c.name, label: d.label, input: d.summary, detail: d.detail, result: '', at, tokens: take() }
+        const agent = c.name === 'Agent' || c.name === 'Task' ? String(c.input?.subagent_type || 'general-purpose') : undefined
+        const tool = {
+          id,
+          role: 'tool' as const,
+          name: c.name,
+          label: d.label,
+          input: d.summary,
+          detail: d.detail,
+          result: '',
+          at,
+          tokens: take(),
+          toolUseId: c.id,
+          agent
+        }
         tools.set(c.id, tool)
         messages.push(tool)
       }

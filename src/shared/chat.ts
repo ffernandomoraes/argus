@@ -1,3 +1,4 @@
+import type { RunningAgent } from './agents'
 import type { DiffHunk, LiveStatus } from './history'
 
 // Pedido de permissão do Claude (editar, rodar comando...) esperando resposta no chat.
@@ -43,7 +44,14 @@ export type ChatState = {
   // Pedido em andamento: quando começou (ms) e quantos tokens o Claude já gerou nele.
   turnStartedAt?: number
   turnTokens: number
+  // Remote control ligado: a conversa também pode ser continuada pelo claude.ai ou pelo celular.
+  remote?: RemoteControl
+  // Subagentes trabalhando agora, lançados por esta conversa.
+  agents: RunningAgent[]
 }
+
+// connecting: ligando ou reconectando. failed: não conectou (detail diz o motivo).
+export type RemoteControl = { status: 'connecting' | 'connected' | 'failed'; url?: string; detail?: string }
 
 export type ChatSettings = {
   model: string
@@ -63,4 +71,9 @@ export type ChatSendRequest = {
   settings: ChatSettings
   text: string
   images: ChatImage[]
+  // Aviso para o Claude que não aparece no chat (ex.: agentes chamados com @nome).
+  hint?: string
 }
+
+// /remote-control: liga ou desliga. Sem sessão aberta, abre uma (por isso os dados da conversa).
+export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'hint'> & { enabled: boolean }

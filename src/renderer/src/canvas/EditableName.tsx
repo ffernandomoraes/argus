@@ -19,6 +19,8 @@ export function EditableName({ id, value, className }: { id: string; value: stri
       onKeyDown={(e) => {
         if (e.key === 'Enter') e.currentTarget.blur()
         if (e.key === 'Escape') {
+          // Só cancela a renomeação; não fecha o que estiver aberto.
+          e.preventDefault()
           cancelled.current = true
           e.currentTarget.blur()
         }

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   AppWindow,
   MessagesSquare,
@@ -15,6 +15,7 @@ import { EFFORTS, groupByFamily } from '../conversation/ModelEffortPicker'
 import { MODES } from '../conversation/PermissionModePicker'
 import type { SessionSettings } from '../conversation/SessionSettings'
 import { useClaudeInfo } from '../conversation/useModels'
+import type { CliStatus } from '../../../shared/cli'
 import type { ThemePreference } from '../theme/useTheme'
 import { Row, Segmented, Select, Switch } from './controls'
 import { setPreferences, usePreferences } from './preferences'
@@ -28,19 +29,78 @@ const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
   { id: 'account', label: 'Conta', icon: <User size={15} /> }
 ]
 
+// `cae .` em qualquer terminal abre a pasta no canvas, como o `code .` do VS Code.
+function CliRow() {
+  const [status, setStatus] = useState<CliStatus | null>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => void window.api.cli.status().then(setStatus), [])
+
+  const run = async (action: () => Promise<CliStatus>) => {
+    setBusy(true)
+    setStatus(await action())
+    setBusy(false)
+  }
+
+  const note = status?.error ?? status?.warning
+  return (
+    <Row
+      label="Comando cae no terminal"
+      description={`Digite "cae ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.${note ? ` ${note}` : ''}`}
+    >
+      {status && (
+        <button
+          disabled={busy || !!status.error}
+          onClick={() => run(status.installed ? window.api.cli.uninstall : window.api.cli.install)}
+          className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
+        >
+          {status.installed ? 'Remover' : 'Instalar'}
+        </button>
+      )}
+    </Row>
+  )
+}
+
+// Guardada no processo principal: o ícone é criado antes de a janela abrir.
+function MenuBarIconRow() {
+  const [on, setOn] = useState<boolean | null>(null)
+  useEffect(() => void window.api.settings.get().then((s) => setOn(s.menuBarIcon)), [])
+
+  return (
+    <Row
+      label="Ícone na barra de menus"
+      description="Mostra no topo do macOS quando uma conversa está rodando, precisa de você ou terminou."
+    >
+      {on !== null && (
+        <Switch
+          label="Ícone na barra de menus"
+          checked={on}
+          onChange={(next) => {
+            setOn(next)
+            void window.api.settings.setMenuBarIcon(next)
+          }}
+        />
+      )}
+    </Row>
+  )
+}
+
 function GeneralSection() {
   const prefs = usePreferences()
   return (
-    <Row label="Abrir conversas em" description="O que acontece ao clicar numa conversa no canvas.">
-      <Segmented
-        value={prefs.openIn}
-        onChange={(openIn) => setPreferences({ openIn })}
-        options={[
-          { value: 'panel', label: 'Painel lateral', icon: <PanelRight size={13} /> },
-          { value: 'window', label: 'Janela separada', icon: <AppWindow size={13} /> }
-        ]}
-      />
-    </Row>
+    <>
+      <Row label="Abrir conversas em" description="O que acontece ao clicar numa conversa no canvas.">
+        <Segmented
+          value={prefs.openIn}
+          onChange={(openIn) => setPreferences({ openIn })}
+          options={[
+            { value: 'panel', label: 'Painel lateral', icon: <PanelRight size={13} /> },
+            { value: 'window', label: 'Janela separada', icon: <AppWindow size={13} /> }
+          ]}
+        />
+      </Row>
+      <MenuBarIconRow />
+      <CliRow />
+    </>
   )
 }
 
@@ -63,7 +123,7 @@ function ConversationsSection() {
 
       <Row label="Modelo">
         <Select value={s.model} onChange={(model) => set({ model })}>
-          <option value="">Padrão{defaultModel?.resolvedName ? ` · ${defaultModel.resolvedName}` : ''}</option>
+          <option value="">Padrão{defaultModel?.resolvedName ? ` - ${defaultModel.resolvedName}` : ''}</option>
           {groupByFamily(models).map(([family, versions]) => (
             <optgroup key={family} label={family}>
               {versions.map((v) => (
@@ -92,7 +152,7 @@ function ConversationsSection() {
       <Row label="Modo" description="Quanto o Claude pode fazer sem pedir sua aprovação.">
         <Select value={s.permissionMode} onChange={(permissionMode) => set({ permissionMode })}>
           <option value="">
-            Padrão da conta{info ? ` · ${MODES.find((m) => m.value === info.defaultPermissionMode)?.label ?? ''}` : ''}
+            Padrão da conta{info ? ` - ${MODES.find((m) => m.value === info.defaultPermissionMode)?.label ?? ''}` : ''}
           </option>
           {MODES.map((m) => (
             <option key={m.value} value={m.value}>
@@ -155,7 +215,7 @@ function AccountSection() {
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-text">{account.email}</div>
         <div className="mt-0.5 text-xs text-faint">
-          {[account.organization, account.subscriptionType].filter(Boolean).join(' · ')}
+          {[account.organization, account.subscriptionType].filter(Boolean).join(' - ')}
         </div>
       </div>
       <span className="flex items-center gap-1.5 text-xs text-done">

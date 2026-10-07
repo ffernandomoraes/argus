@@ -19,7 +19,13 @@ function read(): Preferences {
     const raw = localStorage.getItem(KEY)
     if (!raw) return DEFAULTS
     const saved = JSON.parse(raw) as Partial<Preferences>
-    return { ...DEFAULTS, ...saved, conversation: { ...DEFAULT_SETTINGS, ...saved.conversation } }
+    return {
+      ...DEFAULTS,
+      ...saved,
+      // 'canvas' veio de uma versão de teste em que a conversa abria como nó no canvas.
+      openIn: saved.openIn === 'window' ? 'window' : 'panel',
+      conversation: { ...DEFAULT_SETTINGS, ...saved.conversation }
+    }
   } catch {
     return DEFAULTS
   }

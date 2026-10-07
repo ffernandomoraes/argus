@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
 import { bundledLanguages, codeToHtml } from 'shiki'
-import type { FileContent } from '../../../shared/files'
+import type { FileContent, FileDiff } from '../../../shared/files'
+import { DiffView } from '../conversation/DiffView'
 import type { LineRange } from '../conversation/fileLinks'
+import { useEscape } from '../useEscape'
+import { CloseCodeButton } from './CodeExplorer'
 
 // Acima disso, mostra texto puro: colorir arquivo enorme trava a interface.
 const HIGHLIGHT_LIMIT = 300_000
@@ -40,23 +42,29 @@ function changedLines(before: string, after: string): { start: number; end: numb
   return { start, end: endB }
 }
 
-// Painel central: conteúdo do arquivo com a mesma coloração do VS Code (tema Dark+).
+// Arquivo aberto, à direita da árvore no painel de código: conteúdo com a mesma coloração do VS Code (tema Dark+).
 export function FileViewer({
   root,
   path,
   lines,
-  rightOffset,
-  onClose
+  diff,
+  onDiffChange,
+  onClose,
+  onCloseCode
 }: {
   root: string
   path: string
   // Linhas citadas num link do chat: ficam destacadas e o arquivo abre nelas.
   lines?: LineRange
-  // Espaço ocupado pelo painel da conversa à direita.
-  rightOffset: number | string
+  // Mostra as mudanças desde o último commit em vez do arquivo; o cabeçalho alterna.
+  diff: boolean
+  onDiffChange: (diff: boolean) => void
+  // ESC fecha só o arquivo (volta para a árvore); o X fecha o painel de código inteiro.
   onClose: () => void
+  onCloseCode: () => void
 }) {
   const [content, setContent] = useState<FileContent | null>(null)
+  useEscape(onClose)
   const [html, setHtml] = useState<string | null>(null)
   const codeRef = useRef<HTMLDivElement>(null)
   const scrolledTo = useRef<LineRange | undefined>(undefined)
@@ -123,28 +131,63 @@ export function FileViewer({
   }, [html])
 
   return (
-    <section
-      style={{ right: rightOffset }}
-      className="absolute bottom-4 left-[312px] top-4 z-40 flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-[#1e1e1e] shadow-2xl shadow-black/50">
-      <header className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2.5">
+    <section className="flex min-w-0 flex-1 flex-col bg-[#1e1e1e]">
+      <header className="flex h-12 items-center gap-2 border-b border-line bg-surface px-3">
         <span className="flex-1 truncate font-mono text-xs text-muted" title={path}>
           {path}
         </span>
-        {content?.ok && content.truncated && <span className="text-[11px] text-needs-you">mostrando só o primeiro 1 MB</span>}
-        <button
-          aria-label="Fechar arquivo"
-          title="Fechar arquivo"
-          onClick={onClose}
-          className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
-        >
-          <X size={15} />
-        </button>
+        {!diff && content?.ok && content.truncated && (
+          <span className="text-[11px] text-needs-you">mostrando só o primeiro 1 MB</span>
+        )}
+        <div className="flex rounded-md border border-line p-0.5 text-[11px]">
+          {[
+            { value: true, label: 'Diff' },
+            { value: false, label: 'Arquivo' }
+          ].map((o) => (
+            <button
+              key={o.label}
+              onClick={() => onDiffChange(o.value)}
+              aria-pressed={diff === o.value}
+              className={`rounded px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <CloseCodeButton onClick={onCloseCode} />
       </header>
-      <div className="code-view min-h-0 flex-1 overflow-auto select-text">
-        {!content && <p className="p-4 text-xs text-faint">Carregando…</p>}
-        {content && !content.ok && <p className="p-4 text-xs text-faint">{content.error}</p>}
-        {html && <div ref={codeRef} dangerouslySetInnerHTML={{ __html: html }} />}
-      </div>
+      {diff ? (
+        <DiffPane root={root} path={path} revision={revision} />
+      ) : (
+        <div className="code-view min-h-0 flex-1 overflow-auto select-text">
+          {!content && <p className="p-4 text-xs text-faint">Carregando…</p>}
+          {content && !content.ok && <p className="p-4 text-xs text-faint">{content.error}</p>}
+          {html && <div ref={codeRef} dangerouslySetInnerHTML={{ __html: html }} />}
+        </div>
+      )}
     </section>
+  )
+}
+
+// Mudanças do arquivo desde o último commit. Relê quando o arquivo muda no disco (revision).
+function DiffPane({ root, path, revision }: { root: string; path: string; revision: number }) {
+  const [result, setResult] = useState<FileDiff | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    window.api.files.diff(root, path).then((res) => !cancelled && setResult(res))
+    return () => {
+      cancelled = true
+    }
+  }, [root, path, revision])
+
+  return (
+    <div className="min-h-0 flex-1 overflow-auto select-text">
+      {!result && <p className="p-4 text-xs text-faint">Carregando…</p>}
+      {result && !result.ok && <p className="p-4 text-xs text-faint">{result.error}</p>}
+      {result?.ok && result.hunks.length === 0 && (
+        <p className="p-4 text-xs text-faint">Sem mudanças desde o último commit.</p>
+      )}
+      {result?.ok && result.hunks.length > 0 && <DiffView hunks={result.hunks} full />}
+    </div>
   )
 }

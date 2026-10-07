@@ -57,7 +57,7 @@ export function turnFooters(messages: Message[], running: boolean): Map<string, 
       lastReply = undefined
       continue
     }
-    tokens += m.role === 'user' || m.role === 'event' ? 0 : (m.tokens ?? 0)
+    tokens += m.role === 'assistant' || m.role === 'thinking' || m.role === 'tool' ? (m.tokens ?? 0) : 0
     // O raciocínio não fecha o pedido: o rodapé vai na última resposta em texto.
     if (m.role === 'assistant') lastReply = m
   }
@@ -71,7 +71,7 @@ export function currentTurn(messages: Message[]): { startedAt?: number; tokens: 
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i]
     if (m.role === 'user' && !m.queued) return { startedAt: m.at ? Date.parse(m.at) : undefined, tokens }
-    tokens += m.role === 'user' || m.role === 'event' ? 0 : (m.tokens ?? 0)
+    tokens += m.role === 'assistant' || m.role === 'thinking' || m.role === 'tool' ? (m.tokens ?? 0) : 0
   }
   return { tokens }
 }

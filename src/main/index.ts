@@ -1,19 +1,29 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron'
-import type { ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, screen, shell } from 'electron'
+import type { AgentDraftRequest, AgentSaveRequest } from '../shared/agents'
+import type { CanvasToolResult } from '../shared/canvasAgent'
+import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
 import type { TerminalOpenRequest } from '../shared/terminal'
+import { listAgents, removeAgent, saveAgent } from './agents'
+import { loadAppSettings, saveAppSettings } from './appSettings'
+import { draftAgent } from './agentWriter'
+import { CanvasAgent } from './canvasAgent'
+import { Cli, cliStatus, installCli, uninstallCli } from './cli'
 import { Chats } from './chats'
+import { ChatNotifier } from './notifications'
 import { loadCanvas, saveCanvas } from './canvasStore'
+import { killDevServer, listDevServers } from './devServers'
 import { listDir, readFile } from './files'
 import { unwatchFile, watchFile } from './fileWatch'
 import { Popouts } from './popouts'
-import { readHistory } from './history'
+import { readHistory, readImages } from './history'
 import { listMemory, readMemory, writeMemory } from './memory'
 import type { MemoryProject } from '../shared/memory'
-import { searchSessions } from './search'
 import { SessionWatch } from './sessionWatch'
-import { listSessions } from './sessions'
+import { listKnownFolders, listSessions } from './sessions'
+import { currentBranch, fileDiff, uncommittedFiles } from './gitBranch'
 import { Speech } from './speech'
+import { StatusTray } from './statusTray'
 import { Terminals } from './terminals'
 import { UsageMonitor } from './usageMonitor'
 
@@ -28,7 +38,31 @@ const terminals = new Terminals(
 
 const sessionWatch = new SessionWatch((path) => broadcast('sessions:changed', path))
 
-const chats = new Chats((key, state) => broadcast('chat:state', key, state))
+// Criado com o app pronto (o Tray exige). Nulo também quando desligado nas configurações.
+let tray: StatusTray | null = null
+
+function setMenuBarIcon(on: boolean): void {
+  if (on && !tray) tray = new StatusTray(() => chats.list(), showApp)
+  if (!on && tray) {
+    tray.destroy()
+    tray = null
+  }
+}
+
+const chats = new Chats((key, state) => {
+  broadcast('chat:state', key, state)
+  tray?.refresh()
+  notifier.refresh()
+})
+
+// Clique na notificação: traz o app e abre a conversa que avisou.
+const notifier = new ChatNotifier(
+  () => chats.list(),
+  (cwd, sessionId) => {
+    showApp()
+    if (sessionId && canvasReady) mainWindow?.webContents.send('chat:open', cwd, sessionId)
+  }
+)
 
 const usage = new UsageMonitor(
   (data) => broadcast('usage:update', data),
@@ -53,18 +87,47 @@ function openLinksOutside(win: BrowserWindow): void {
   })
 }
 
+let mainWindow: BrowserWindow | null = null
+
+// Assistente do canvas: as ações vão para a janela principal, que é onde o canvas vive.
+const canvasAgent = new CanvasAgent(
+  () => mainWindow?.webContents ?? null,
+  (state) => broadcast('canvasAgent:state', state)
+)
+
 function createWindow(): void {
+  // Abre ocupando a tela toda (sem cobrir menu e dock).
+  const { workArea } = screen.getPrimaryDisplay()
   const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    x: workArea.x,
+    y: workArea.y,
+    width: workArea.width,
+    height: workArea.height,
     minWidth: 900,
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#161618',
     webPreferences
   })
+  win.maximize()
   openLinksOutside(win)
   loadRenderer(win)
+  mainWindow = win
+  // Recarregar a página derruba quem escuta o `cae`; ele avisa de novo quando o canvas montar.
+  win.webContents.on('did-start-loading', () => mainWindow === win && (canvasReady = false))
+  win.on('closed', () => {
+    if (mainWindow !== win) return
+    mainWindow = null
+    canvasReady = false
+  })
+}
+
+// Traz o canvas para frente (ou abre de novo, se a janela foi fechada).
+function showApp(): void {
+  if (!mainWindow) return createWindow()
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  app.focus({ steal: true })
 }
 
 // Janela de uma conversa só, para levar a outro monitor.
@@ -84,6 +147,16 @@ function createConversationWindow(hash: string): BrowserWindow {
 }
 
 const speech = new Speech()
+
+// `cae .` num terminal: traz o app para frente e manda a pasta para o canvas. Com o app
+// ainda abrindo, a pasta espera o canvas avisar que está pronto.
+let canvasReady = false
+const pendingOpens: string[] = []
+const cli = new Cli((path) => {
+  showApp()
+  if (canvasReady && mainWindow) mainWindow.webContents.send('cli:open', path)
+  else pendingOpens.push(path)
+})
 
 // Janela de conversa fechada: a sessão dela não fica rodando atrás (a limpeza do React
 // não chega a rodar quando a janela é destruída).
@@ -147,17 +220,31 @@ app.whenReady().then(() => {
     e.returnValue = loadCanvas()
   })
   ipcMain.handle('canvas:save', (_e, data: unknown) => saveCanvas(data))
+  ipcMain.handle('canvasAgent:state', () => canvasAgent.state)
+  ipcMain.on('canvasAgent:send', (_e, text: string) => canvasAgent.send(text))
+  ipcMain.on('canvasAgent:interrupt', () => void canvasAgent.interrupt())
+  ipcMain.on('canvasAgent:result', (_e, result: CanvasToolResult) => canvasAgent.result(result))
   ipcMain.handle('memory:list', (_e, projects: MemoryProject[]) => listMemory(projects))
   ipcMain.handle('memory:read', (_e, path: string, projects: MemoryProject[]) => readMemory(path, projects))
   ipcMain.handle('memory:write', (_e, path: string, text: string, projects: MemoryProject[]) =>
     writeMemory(path, text, projects)
   )
+  ipcMain.handle('agents:list', (_e, projectPath?: string) => listAgents(projectPath))
+  ipcMain.handle('agents:save', (_e, req: AgentSaveRequest) => saveAgent(req))
+  ipcMain.handle('agents:remove', (_e, name: string) => removeAgent(name))
+  ipcMain.handle('agents:draft', (_e, req: AgentDraftRequest) => draftAgent(req))
   ipcMain.handle('sessions:list', (_e, path: string) => listSessions(path))
+  ipcMain.handle('sessions:folders', () => listKnownFolders())
+  ipcMain.handle('sessions:branch', (_e, path: string) => currentBranch(path))
+  ipcMain.handle('sessions:changes', (_e, path: string) => uncommittedFiles(path))
   ipcMain.on('sessions:watch', (_e, paths: string[]) => sessionWatch.setProjects(paths))
-  ipcMain.handle('sessions:search', (_e, path: string, query: string) => searchSessions(path, query))
   ipcMain.handle('sessions:history', (_e, path: string, id: string) => readHistory(path, id))
+  ipcMain.handle('sessions:images', (_e, path: string, id: string, messageId: string) => readImages(path, id, messageId))
+  ipcMain.handle('devServers:list', () => listDevServers())
+  ipcMain.handle('devServers:kill', (_e, pgid: number) => killDevServer(pgid))
   ipcMain.handle('files:list', (_e, root: string, rel: string) => listDir(root, rel))
   ipcMain.handle('files:read', (_e, root: string, rel: string) => readFile(root, rel))
+  ipcMain.handle('files:diff', (_e, root: string, rel: string) => fileDiff(root, rel))
   ipcMain.on('files:watch', (e, root: string, rel: string) => watchFile(e.sender, root, rel))
   ipcMain.on('files:unwatch', (e) => unwatchFile(e.sender))
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma
@@ -168,7 +255,13 @@ app.whenReady().then(() => {
     if (req.sessionId) terminals.kill(req.sessionId)
     chats.send(req)
   })
+  ipcMain.on('chat:remote-control', (_e, req: ChatRemoteRequest) => {
+    terminals.kill(req.key)
+    if (req.sessionId) terminals.kill(req.sessionId)
+    chats.remoteControl(req)
+  })
   ipcMain.on('chat:answer', (_e, key: string, id: string, answer: PermissionAnswer) => chats.answer(key, id, answer))
+  ipcMain.handle('mcp:status', (_e, key: string, cwd: string) => chats.mcpStatus(key, cwd))
   ipcMain.on('chat:retain', (_e, key: string) => chats.retain(key))
   ipcMain.on('chat:release', (_e, key: string) => chats.release(key))
   ipcMain.on('chat:interrupt', (_e, key: string) => chats.interrupt(key))
@@ -182,6 +275,19 @@ app.whenReady().then(() => {
   ipcMain.on('terminal:write', (_e, key: string, data: string) => terminals.write(key, data))
   ipcMain.on('terminal:resize', (_e, key: string, cols: number, rows: number) => terminals.resize(key, cols, rows))
   ipcMain.on('terminal:kill', (_e, key: string) => terminals.kill(key))
+  ipcMain.on('cli:ready', (e) => {
+    if (e.sender !== mainWindow?.webContents) return
+    canvasReady = true
+    for (const path of pendingOpens.splice(0)) e.sender.send('cli:open', path)
+  })
+  ipcMain.handle('cli:status', () => cliStatus())
+  ipcMain.handle('cli:install', () => installCli())
+  ipcMain.handle('cli:uninstall', () => uninstallCli())
+  ipcMain.handle('settings:get', () => loadAppSettings())
+  ipcMain.handle('settings:menuBarIcon', (_e, on: boolean) => {
+    setMenuBarIcon(on)
+    return saveAppSettings({ menuBarIcon: on })
+  })
   ipcMain.handle('dialog:pickFolder', async (e) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     const options: Electron.OpenDialogOptions = {
@@ -194,6 +300,9 @@ app.whenReady().then(() => {
     return result.canceled ? null : result.filePaths[0]
   })
   usage.start()
+  cli.start()
+  setMenuBarIcon(loadAppSettings().menuBarIcon)
+  app.on('browser-window-focus', () => tray?.seen())
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -204,8 +313,12 @@ app.whenReady().then(() => {
 function shutdown(): void {
   usage.stop()
   speech.stop()
+  tray?.destroy()
+  tray = null
   terminals.killAll()
+  cli.stop()
   chats.closeAll()
+  canvasAgent.close()
   sessionWatch.close()
 }
 

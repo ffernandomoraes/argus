@@ -1,67 +1,101 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Brain, Image as ImageIcon, ImagePlus, Loader2, Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
+import { Bot, Brain, Image as ImageIcon, ImagePlus, Loader2, Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
+import { agentActivity, useRunningAgent } from '../canvas/runningAgents'
+import { AgentMenu, matchAgents } from './AgentMenu'
 import { ContextRing } from '../canvas/ContextRing'
+import { CopyButton } from './CopyButton'
 import { AttachmentList } from './AttachmentList'
+import { ImageThumbs, ImageViewer } from './ImageViewer'
 import { Markdown } from './Markdown'
 import { currentTurn, Elapsed, formatClock, formatDuration, formatTokens, turnFooters } from './turnInfo'
 import { DiffView, diffStats } from './DiffView'
 import { PermissionCard } from './PermissionCard'
+import { RemoteControlBar } from './RemoteControlBar'
 import { ModelEffortPicker } from './ModelEffortPicker'
 import { PermissionModePicker } from './PermissionModePicker'
 import { matchCommands, SlashMenu, type SlashCommand } from './SlashMenu'
 import { useAttachments } from './useAttachments'
+import { toBase64 } from './useChat'
 import { useDictation } from './useDictation'
 import { VoiceWave } from './VoiceWave'
 import type { SessionSettings } from './SessionSettings'
 import type { SessionStatus } from '../canvas/types'
+import type { AgentDef } from '../../../shared/agents'
 import type { ChatState, PermissionAnswer } from '../../../shared/chat'
 import type { Message } from './types'
+
+// Texto digitado e não enviado, por conversa: fechar o drawer (ESC, X) ou trocar de conversa
+// não perde o que estava escrito. Vale enquanto o app está aberto.
+const drafts = new Map<string, string>()
 
 type TimelineItem =
   | { kind: 'user'; key: string; node: ReactNode }
   | { kind: 'divider'; key: string; node: ReactNode }
-  | { kind: 'step'; key: string; dot: string; node: ReactNode }
+  | { kind: 'step'; key: string; dot: string; dotTop?: number; node: ReactNode }
+
+// Altura da bolinha (topo, em px) para ficar no meio da primeira linha do passo. A padrão
+// serve à resposta (15px, leading-relaxed); ações e raciocínio têm linha de 20px com 4px
+// de respiro em cima; o subagente ainda tem borda e padding da caixa.
+const DOT_ROW = 10.5
+const DOT_AGENT = 15.5
 
 // Um passo da linha do tempo: bolinha à esquerda e linha até o próximo passo.
-function Step({ dot, connect, children }: { dot: string; connect: boolean; children: ReactNode }) {
+function Step({ dot, dotTop = 8, connect, children }: { dot: string; dotTop?: number; connect: boolean; children: ReactNode }) {
   return (
     <div className="relative pl-5">
-      {connect && <span className="absolute left-[5px] top-[18px] w-px bg-line" style={{ bottom: -18 }} />}
-      <span className={`absolute left-[2px] top-[8px] size-[7px] rounded-full ${dot}`} />
-      {children}
+      {connect && <span className="absolute left-[5px] w-px bg-line" style={{ top: dotTop + 10, bottom: -18 }} />}
+      <span className={`absolute left-[2px] size-[7px] rounded-full ${dot}`} style={{ top: dotTop }} />
+      <div className="timeline-item">{children}</div>
     </div>
   )
 }
 
 // Mensagem sua. queued: enviada enquanto o Claude trabalhava.
+// imageView: lê as imagens enviadas (miniaturas) e abre o preview grande numa delas.
+type ImageView = { load: () => Promise<string[]>; open: (index: number) => void }
+
 const UserBubble = memo(function UserBubble({
   text,
   at,
   queued,
-  images = 0
+  images = 0,
+  imageView
 }: {
   text: string
   at?: string
   queued?: boolean
   images?: number
+  imageView?: ImageView
 }) {
   return (
     <div className="flex flex-col gap-1">
       {(at || queued) && (
-        <span className="self-end px-1 text-[10px] text-faint">
+        <span className="self-end px-1 text-[12px] text-faint">
           {queued && 'enviada durante a resposta'}
-          {queued && at && ' · '}
+          {queued && at && ' - '}
           {at && formatClock(at)}
         </span>
       )}
-      <div className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm">
-        {images > 0 && (
-          <div className={`flex items-center gap-1.5 text-[11px] text-muted ${text ? 'mb-1.5' : ''}`}>
-            <ImageIcon size={12} className="shrink-0" />
-            {images === 1 ? '1 imagem enviada' : `${images} imagens enviadas`}
-          </div>
-        )}
-        {text && <span className="whitespace-pre-wrap break-words">{text}</span>}
+      {/* Copiar fica dentro do balão, numa coluna à direita, no meio da altura do texto. */}
+      <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-2 py-2 pl-3 pr-2 text-[15px]">
+        <div className="min-w-0 flex-1">
+          {images > 0 && (
+            <div className={`flex flex-col gap-1.5 ${text ? 'mb-1.5' : ''}`}>
+              {imageView && <ImageThumbs count={images} load={imageView.load} onOpen={imageView.open} />}
+              <button
+                onClick={() => imageView?.open(0)}
+                disabled={!imageView}
+                title={imageView ? (images === 1 ? 'Ver imagem' : 'Ver imagens') : undefined}
+                className="flex items-center gap-1.5 self-start rounded text-[12px] text-muted enabled:hover:text-text enabled:hover:underline"
+              >
+                <ImageIcon size={12} className="shrink-0" />
+                {images === 1 ? '1 imagem enviada' : `${images} imagens enviadas`}
+              </button>
+            </div>
+          )}
+          {text && <span className="whitespace-pre-wrap break-words">{text}</span>}
+        </div>
+        {text && <CopyButton text={text} label="Copiar prompt" className="shrink-0" />}
       </div>
     </div>
   )
@@ -70,14 +104,14 @@ const UserBubble = memo(function UserBubble({
 // Raciocínio do Claude: uma linha recolhida ("Pensou por 4s"), aberta com um clique.
 const ThinkingRow = memo(function ThinkingRow({ message }: { message: Extract<Message, { role: 'thinking' }> }) {
   return (
-    <details className="group text-xs">
-      <summary className="-ml-1 flex cursor-pointer list-none items-center gap-2 rounded-md px-1 py-1 text-faint hover:bg-surface-2 hover:text-muted">
+    <details className="group text-[13px]">
+      <summary className="-ml-1 flex cursor-pointer list-none items-center gap-2 rounded-md px-1 py-1 leading-5 text-faint hover:bg-surface-2 hover:text-muted">
         <Brain size={12} className="shrink-0" />
         <span className="italic">
           {message.seconds && message.seconds > 0 ? `Pensou por ${message.seconds}s` : 'Pensou um pouco'}
         </span>
       </summary>
-      <div className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-words border-l border-line pl-3 text-[12px] italic leading-relaxed text-muted">
+      <div className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-words border-l border-line pl-3 text-[13px] italic leading-relaxed text-muted">
         {message.text}
       </div>
     </details>
@@ -86,10 +120,10 @@ const ThinkingRow = memo(function ThinkingRow({ message }: { message: Extract<Me
 
 const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
   const stats = message.diff && diffStats(message.diff)
-  // Fundo mais claro que o do painel: separa o comando do raciocínio e da resposta final, que não têm caixa.
+  // Sem caixa, como a resposta: a ação não chama mais atenção que o texto. Passar o mouse só clareia a linha.
   return (
-    <details className="group rounded-md bg-surface-2 px-2 py-1.5 text-xs" open={!!message.diff}>
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded px-1 py-0.5 text-muted hover:bg-line/50">
+    <details className="group text-[13px]" open={!!message.diff}>
+      <summary className="flex cursor-pointer list-none items-center gap-2 py-1 leading-5 text-muted hover:text-text">
         <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`} title={message.name}>
           {message.label}
         </span>
@@ -102,7 +136,7 @@ const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, {
         )}
       </summary>
       {message.detail && message.detail !== message.input && (
-        <div className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[11px] text-muted">
+        <div className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[12px] text-muted">
           {message.detail}
         </div>
       )}
@@ -111,7 +145,7 @@ const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, {
           <DiffView hunks={message.diff} />
         </div>
       ) : message.result && (
-        <div className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 font-mono text-[11px] text-faint">
+        <div className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 font-mono text-[12px] text-faint">
           {message.result}
         </div>
       )}
@@ -119,55 +153,241 @@ const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, {
   )
 })
 
+// Comando no terminal, como no VS Code: o comando (IN) e a saída (OUT) ficam à vista,
+// resumidos em poucas linhas; um clique abre os dois inteiros.
+const BashRow = memo(function BashRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
+  const [open, setOpen] = useState(false)
+  const command = message.detail ?? message.input
+  const output = message.result.trim()
+  const clamp = open ? 'max-h-60 overflow-auto' : 'line-clamp-3'
+  return (
+    <div className="text-[13px]">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center gap-2 py-1 text-left leading-5 text-muted hover:text-text"
+      >
+        <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`} title={message.name}>
+          {message.label}
+        </span>
+        <span className="truncate text-muted">{message.input}</span>
+      </button>
+      {/* Arrastar para copiar um trecho não conta como clique. */}
+      <div
+        onClick={() => !window.getSelection()?.toString() && setOpen((o) => !o)}
+        className="mt-1 grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 rounded-md border border-line bg-bg font-mono text-[12px]"
+      >
+        <span className="px-2 py-1.5 text-faint">IN</span>
+        <div className={`whitespace-pre-wrap break-all py-1.5 pr-2 text-muted ${clamp}`}>{command}</div>
+        {output && (
+          <>
+            <span className="border-t border-line px-2 py-1.5 text-faint">OUT</span>
+            <div
+              className={`whitespace-pre-wrap break-words border-t border-line py-1.5 pr-2 ${
+                message.error ? 'text-red-400' : 'text-faint'
+              } ${clamp}`}
+            >
+              {output}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+})
+
+// Subagente chamado pela conversa: qual agente, o pedido que recebeu, o que está fazendo
+// (enquanto roda) e o que entregou.
+const AgentToolRow = memo(function AgentToolRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
+  const running = useRunningAgent(message.toolUseId)
+  const steps = running?.steps ?? []
+  return (
+    <details className="group rounded-md border border-line bg-surface-2 px-2 py-1.5 text-[13px]">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded px-1 py-0.5 leading-5 text-muted hover:bg-line/50">
+        <Bot size={13} className={`shrink-0 ${running ? 'text-running' : message.error ? 'text-red-400' : 'text-text'}`} />
+        <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`}>{message.agent}</span>
+        <span className="truncate text-muted">{running ? agentActivity(running) : message.input}</span>
+        {running && (
+          <span className="ml-auto shrink-0 pl-1 tabular-nums text-faint">
+            <Elapsed since={running.startedAt} />
+          </span>
+        )}
+      </summary>
+      {message.detail && (
+        <div className="mt-1.5">
+          <div className="mb-1 px-1 text-[12px] uppercase tracking-wide text-faint">Pedido</div>
+          <div className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 text-[12px] text-muted">
+            {message.detail}
+          </div>
+        </div>
+      )}
+      {steps.length > 0 && (
+        <div className="mt-1.5">
+          <div className="mb-1 px-1 text-[12px] uppercase tracking-wide text-faint">
+            Atividade - {running?.toolUses || steps.length} ferramentas
+          </div>
+          <ul className="max-h-48 overflow-auto rounded-md bg-bg px-2 py-1.5 text-[12px]">
+            {steps.map((s, i) => (
+              <li key={i} className="flex gap-2 py-0.5">
+                <span className="shrink-0 text-text">{s.label}</span>
+                <span className="truncate text-faint">{s.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {message.result && (
+        <div className="mt-1.5">
+          <div className="mb-1 px-1 text-[12px] uppercase tracking-wide text-faint">Entregou</div>
+          <div className="max-h-96 overflow-auto rounded-md bg-bg px-3 py-2 text-[12px] leading-relaxed text-text">
+            <Markdown text={message.result} />
+          </div>
+        </div>
+      )}
+    </details>
+  )
+})
+
 export function ChatView({
+  draftKey,
   messages,
   loading = false,
   status,
   live,
   onSend,
+  loadImages,
+  onOpenMcp,
+  onRemoteControl,
   onInterrupt,
   onAnswer,
   settings,
   onSettingChange,
-  contextPercent
+  contextPercent,
+  agents = []
 }: {
+  // Conversa dona do rascunho guardado.
+  draftKey: string
   messages: Message[]
   loading?: boolean
   status: SessionStatus
   // Sessão aberta pelo chat: resposta em andamento, mensagens a caminho, permissões.
   live: ChatState | null
   onSend: (text: string, files: File[]) => void
+  // Imagens de uma mensagem já gravada no histórico, para o preview.
+  loadImages?: (messageId: string) => Promise<string[]>
+  // /mcp abre a lista de servidores aqui no app, em vez de ir para o Claude.
+  onOpenMcp: () => void
+  // /remote-control liga; de novo (ou o X da faixa), desliga.
+  onRemoteControl: (enabled: boolean) => void
   onInterrupt: () => void
   onAnswer: (id: string, answer: PermissionAnswer) => void
   contextPercent: number
   settings: SessionSettings
   onSettingChange: (patch: Partial<SessionSettings>) => void
+  // Agentes que dá para chamar com @nome: globais e os do projeto.
+  agents?: AgentDef[]
 }) {
   const attachments = useAttachments()
   const imageInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const textarea = useRef<HTMLTextAreaElement>(null)
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(() => drafts.get(draftKey) ?? '')
+  useEffect(() => {
+    if (draft) drafts.set(draftKey, draft)
+    else drafts.delete(draftKey)
+  }, [draftKey, draft])
+
+  // Abrir a conversa já deixa o campo pronto para digitar, com o cursor no fim do rascunho.
+  // Espera um quadro: o drawer nasce invisível até ser posicionado, e campo invisível não recebe foco.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const el = textarea.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [])
   const [activeCommand, setActiveCommand] = useState(0)
   const [menuClosed, setMenuClosed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   // Segue o fim da conversa quando chega mensagem nova, a menos que a pessoa tenha subido para ler.
   const pinned = useRef(true)
   // Mensagem enviada aparece na hora; sai quando já estiver no histórico gravado.
-  const [sent, setSent] = useState<{ id: string; text: string; images: number; after: number }[]>([])
+  // files: as imagens, para o preview enquanto o histórico ainda não tem a mensagem.
+  const [sent, setSent] = useState<{ id: string; text: string; images: number; files: File[]; after: number }[]>([])
+  // Preview aberto das imagens de uma mensagem.
+  const [viewer, setViewer] = useState<{ load: () => Promise<string[]>; start: number } | null>(null)
+  // Por ref: o histórico memorizado não é remontado só porque a função chegou nova.
+  const loadImagesRef = useRef(loadImages)
+  loadImagesRef.current = loadImages
+  // Imagens já lidas, por mensagem: a miniatura e o preview grande usam a mesma leitura.
+  const imageCache = useRef(new Map<string, Promise<string[]>>())
+  const imageView = useRef((key: string, read: () => Promise<string[]>): ImageView => {
+    const load = () => {
+      let p = imageCache.current.get(key)
+      if (!p) {
+        p = read().catch(() => [])
+        imageCache.current.set(key, p)
+      }
+      return p
+    }
+    return { load, open: (start) => setViewer({ load, start }) }
+  }).current
 
   useLayoutEffect(() => {
     const el = scroller.current
     if (el && pinned.current) el.scrollTop = el.scrollHeight
   }, [messages, status, live, sent])
 
+  // Mensagem fora da tela começa com altura estimada (.timeline-item) e cresce ao aparecer.
+  // Grudado no fim, acompanha esse crescimento para não parar no meio da última resposta.
+  const content = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = scroller.current
+    if (!el || !content.current) return
+    const observer = new ResizeObserver(() => {
+      if (pinned.current) el.scrollTop = el.scrollHeight
+      findPinned.current()
+    })
+    observer.observe(content.current)
+    return () => observer.disconnect()
+  }, [])
+
+  // Prompt do trecho que está na tela fica preso no topo: o último cujo balão já subiu para
+  // fora da área visível. Rolando para trás, troca para o prompt daquele ponto do histórico.
+  const [pinnedKey, setPinnedKey] = useState<string | null>(null)
+  const findPinned = useRef(() => {})
+  findPinned.current = () => {
+    const root = scroller.current
+    if (!root) return
+    const top = root.getBoundingClientRect().top + 8
+    let key: string | null = null
+    for (const el of root.querySelectorAll<HTMLElement>('[data-prompt]')) {
+      if (el.getBoundingClientRect().bottom > top) break
+      key = el.dataset.prompt ?? null
+    }
+    setPinnedKey(key)
+  }
+
   // Lista de comandos aparece enquanto o texto é "/" + palavra (igual à extensão do VS Code).
   const commands = menuClosed ? null : matchCommands(draft)
+  // Lista de agentes aparece enquanto o texto termina em "@" + palavra.
+  const mention = menuClosed || commands ? null : matchAgents(draft, agents)
+  const menuSize = commands?.length ?? mention?.items.length
 
   const updateDraft = (value: string) => {
     setDraft(value)
     setActiveCommand(0)
     setMenuClosed(false)
+  }
+
+  // Escolher um agente completa o nome dele no campo.
+  const selectAgent = (a: AgentDef) => {
+    setDraft(`${draft.slice(0, mention?.start ?? draft.length)}@${a.name} `)
+    setMenuClosed(true)
+    textarea.current?.focus()
   }
 
   // Escolher um comando escreve ele no campo; Enter envia.
@@ -183,6 +403,15 @@ export function ChatView({
   useEffect(() => {
     if (waiting.length !== sent.length) setSent(waiting)
   }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Comando de barra não volta no histórico como mensagem sua, então o balão provisório
+  // nunca seria dado como entregue. Terminou o pedido, limpa o que sobrou.
+  const wasRunning = useRef(false)
+  useEffect(() => {
+    const running = live?.status === 'running' || live?.status === 'needs-you'
+    if (wasRunning.current && !running) setSent([])
+    wasRunning.current = running
+  }, [live?.status])
 
   // A prévia da resposta some quando o mesmo texto já chegou no histórico.
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant')
@@ -200,8 +429,16 @@ export function ChatView({
     if (dictation.state !== 'idle') dictation.stop()
     if (!canSend) return
     const text = draft.trim()
-    const images = attachments.items.filter((a) => a.previewUrl).length
-    setSent((all) => [...all, { id: crypto.randomUUID(), text, images, after: messages.length }])
+    if (text === '/mcp') {
+      setDraft('')
+      return onOpenMcp()
+    }
+    if (text === '/remote-control') {
+      setDraft('')
+      return onRemoteControl(!live?.remote || live.remote.status === 'failed')
+    }
+    const files = attachments.items.filter((a) => a.previewUrl).map((a) => a.file)
+    setSent((all) => [...all, { id: crypto.randomUUID(), text, images: files.length, files, after: messages.length }])
     onSend(text, attachments.items.map((a) => a.file))
     setDraft('')
     attachments.clear()
@@ -210,19 +447,22 @@ export function ChatView({
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     // Enter envia; Shift+Enter quebra a linha (igual à extensão do VS Code).
-    if (!commands && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (menuSize === undefined && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       send()
       return
     }
-    if (!commands) return
+    if (menuSize === undefined) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const step = e.key === 'ArrowDown' ? 1 : -1
-      setActiveCommand((i) => (i + step + commands.length) % Math.max(1, commands.length))
-    } else if ((e.key === 'Enter' || e.key === 'Tab') && commands[activeCommand]) {
+      setActiveCommand((i) => (i + step + menuSize) % Math.max(1, menuSize))
+    } else if ((e.key === 'Enter' || e.key === 'Tab') && commands?.[activeCommand]) {
       e.preventDefault()
       selectCommand(commands[activeCommand])
+    } else if ((e.key === 'Enter' || e.key === 'Tab') && mention?.items[activeCommand]) {
+      e.preventDefault()
+      selectAgent(mention.items[activeCommand])
     } else if (e.key === 'Escape') {
       e.preventDefault()
       setMenuClosed(true)
@@ -265,54 +505,84 @@ export function ChatView({
   // Linha do tempo: suas mensagens em balões; cada passo do Claude (resposta, comando,
   // leitura, permissão) com uma bolinha, na ordem em que aconteceu.
   const timeline: TimelineItem[] = []
-  const user = (key: string, text: string, at?: string, queued?: boolean, images?: number) =>
-    timeline.push({ kind: 'user', key, node: <UserBubble text={text} at={at} queued={queued} images={images} /> })
-  const step = (key: string, dot: string, node: ReactNode) => timeline.push({ kind: 'step', key, dot, node })
+  const user = (key: string, text: string, at?: string, queued?: boolean, images?: number, view?: ImageView) =>
+    timeline.push({
+      kind: 'user',
+      key,
+      node: <UserBubble text={text} at={at} queued={queued} images={images} imageView={view} />
+    })
+  const step = (key: string, dot: string, node: ReactNode, dotTop?: number) =>
+    timeline.push({ kind: 'step', key, dot, dotTop, node })
 
   // O histórico só é remontado quando as mensagens mudam: assim o texto chegando aos poucos
   // não obriga a redesenhar a conversa inteira (com diffs, raciocínio e tudo).
   const history = useMemo(() => {
     const timeline: TimelineItem[] = []
-    const user = (key: string, text: string, at?: string, queued?: boolean, images?: number) =>
-      timeline.push({ kind: 'user', key, node: <UserBubble text={text} at={at} queued={queued} images={images} /> })
-    const step = (key: string, dot: string, node: ReactNode) => timeline.push({ kind: 'step', key, dot, node })
+    const user = (key: string, text: string, at?: string, queued?: boolean, images?: number, view?: ImageView) =>
+      timeline.push({
+        kind: 'user',
+        key,
+        node: <UserBubble text={text} at={at} queued={queued} images={images} imageView={view} />
+      })
+    const step = (key: string, dot: string, node: ReactNode, dotTop?: number) =>
+      timeline.push({ kind: 'step', key, dot, dotTop, node })
     messages.forEach((m, i) => {
-      if (m.role === 'user') return user(m.id, m.text, m.at, m.queued, m.images)
+      if (m.role === 'user') {
+        const read = loadImagesRef.current
+        const view = m.images && read ? imageView(m.id, () => read(m.id)) : undefined
+        return user(m.id, m.text, m.at, m.queued, m.images, view)
+      }
       if (m.role === 'event') {
         // Divisor: troca de modelo, esforço, modo ou compactação no meio da conversa.
         return timeline.push({
           kind: 'divider',
           key: m.id,
           node: (
-            <div className="flex items-center gap-2 py-1 text-[10px] text-faint">
+            <div className="flex items-center gap-2 py-1 text-[12px] text-faint">
               <span className="h-px flex-1 bg-line" />
               <span className="shrink-0">
                 {m.text}
-                {m.at && ` · ${formatClock(m.at)}`}
+                {m.at && ` - ${formatClock(m.at)}`}
               </span>
               <span className="h-px flex-1 bg-line" />
             </div>
           )
         })
       }
-      if (m.role === 'thinking') return step(m.id, 'bg-line', <ThinkingRow message={m} />)
+      if (m.role === 'output') {
+        return step(
+          m.id,
+          'bg-line',
+          <div className="rounded-md border border-line bg-surface-2/60 px-3 py-2 text-[13px] leading-relaxed text-muted">
+            <Markdown text={m.text} />
+          </div>
+        )
+      }
+      if (m.role === 'thinking') return step(m.id, 'bg-line', <ThinkingRow message={m} />, DOT_ROW)
+      if (m.role === 'tool' && m.agent) {
+        const dot = m.error ? 'bg-red-400' : !m.result && running ? 'bg-running animate-pulse' : 'bg-emerald-400'
+        return step(m.id, dot, <AgentToolRow message={m} />, DOT_AGENT)
+      }
       if (m.role === 'tool') {
         // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
         const pending = !m.result && !m.diff && running && i === messages.length - 1
         const dot = m.error ? 'bg-red-400' : pending ? 'bg-running animate-pulse' : 'bg-emerald-400'
-        return step(m.id, dot, <ToolRow message={m} />)
+        return step(m.id, dot, m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} />, DOT_ROW)
       }
       const footer = footers.get(m.id)
       step(
         m.id,
         'bg-faint',
-        <div className="text-sm leading-relaxed text-text">
+        <div className="text-[15px] leading-relaxed text-text">
           <Markdown text={m.text} />
           {footer && (
-            <div className="mt-1.5 text-[10px] text-faint">
-              {formatClock(footer.at)}
-              {footer.duration !== undefined && ` · levou ${formatDuration(footer.duration)}`}
-              {footer.tokens > 0 && ` · ${formatTokens(footer.tokens)}`}
+            <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-faint">
+              <span>
+                {formatClock(footer.at)}
+                {footer.duration !== undefined && ` - levou ${formatDuration(footer.duration)}`}
+                {footer.tokens > 0 && ` - ${formatTokens(footer.tokens)}`}
+              </span>
+              <CopyButton text={m.text} label="Copiar resposta" />
             </div>
           )}
         </div>
@@ -322,12 +592,35 @@ export function ChatView({
   }, [messages, footers, running])
 
   timeline.push(...history)
-  waiting.forEach((w) => user(w.id, w.text, undefined, false, w.images))
+  waiting.forEach((w) =>
+    user(
+      w.id,
+      w.text,
+      undefined,
+      false,
+      w.images,
+      imageView(w.id, () => Promise.all(w.files.map(async (f) => `data:${f.type};base64,${await toBase64(f)}`)))
+    )
+  )
+
+  const pinnedPrompt = useMemo(() => {
+    if (!pinnedKey) return null
+    const m = messages.find((m) => m.role === 'user' && m.id === pinnedKey)
+    if (m?.role === 'user') return { key: m.id, text: m.text, images: m.images ?? 0 }
+    const w = waiting.find((w) => w.id === pinnedKey)
+    return w ? { key: w.id, text: w.text, images: w.images } : null
+  }, [pinnedKey, messages, waiting])
+
+  const scrollToPrompt = () =>
+    scroller.current
+      ?.querySelector(`[data-prompt="${CSS.escape(pinnedKey ?? '')}"]`)
+      ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+
   if (partial) {
     step(
       'partial',
       'bg-running animate-pulse',
-      <div className="text-sm leading-relaxed text-text">
+      <div className="text-[15px] leading-relaxed text-text">
         <Markdown text={partial} />
       </div>
     )
@@ -339,23 +632,23 @@ export function ChatView({
     step(
       'working',
       'bg-running animate-pulse',
-      <div className="flex items-center gap-2 py-0.5 text-xs text-muted">
+      <div className="flex items-center gap-2 py-0.5 text-[13px] text-muted">
         Trabalhando…
         {turnStartedAt !== undefined && (
           <span className="tabular-nums text-faint">
             <Elapsed since={turnStartedAt} />
-            {turnTokens > 0 && ` · ${formatTokens(turnTokens)}`}
+            {turnTokens > 0 && ` - ${formatTokens(turnTokens)}`}
           </span>
         )}
       </div>
     )
   }
-  if (live?.error) step('error', 'bg-red-400', <p className="py-0.5 text-xs text-red-400">{live.error}</p>)
+  if (live?.error) step('error', 'bg-red-400', <p className="py-0.5 text-[13px] text-red-400">{live.error}</p>)
   if (status === 'needs-you' && !live?.permissions.length) {
     step(
       'needs-you',
       'bg-needs-you',
-      <div className="rounded-lg border border-needs-you/40 bg-needs-you/10 px-3 py-2 text-xs text-text">
+      <div className="rounded-lg border border-needs-you/40 bg-needs-you/10 px-3 py-2 text-[13px] text-text">
         Esperando você responder onde a conversa está aberta (permissão ou pergunta).
       </div>
     )
@@ -363,44 +656,76 @@ export function ChatView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        ref={scroller}
-        onScroll={(e) => {
-          const el = e.currentTarget
-          pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
-        }}
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
-      >
-        {loading && (
-          <div className="m-auto flex items-center gap-2 text-xs text-faint">
-            <Loader2 size={13} className="animate-spin" />
-            Carregando conversa…
-          </div>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {pinnedPrompt && (
+          <button
+            onClick={scrollToPrompt}
+            title="Ir para a mensagem"
+            className="absolute inset-x-4 top-2 z-10 rounded-lg border border-line bg-surface-2 px-3 py-2 text-left text-[15px] shadow-md hover:border-line-strong"
+          >
+            {pinnedPrompt.text ? (
+              <span className="line-clamp-2 whitespace-pre-wrap break-words">{pinnedPrompt.text}</span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-[12px] text-muted">
+                <ImageIcon size={12} className="shrink-0" />
+                {pinnedPrompt.images === 1 ? '1 imagem enviada' : `${pinnedPrompt.images} imagens enviadas`}
+              </span>
+            )}
+          </button>
         )}
-        {!loading && messages.length === 0 && (
-          <div className="m-auto max-w-64 text-center">
-            <p className="text-sm text-text">Nova conversa</p>
-            <p className="mt-1 text-xs leading-relaxed text-faint">
-              Escreva, fale pelo microfone ou cole um print para começar.
-            </p>
+        <div
+          ref={scroller}
+          onScroll={(e) => {
+            const el = e.currentTarget
+            pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+            findPinned.current()
+          }}
+          className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
+        >
+          {loading && (
+            <div className="m-auto flex items-center gap-2 text-xs text-faint">
+              <Loader2 size={13} className="animate-spin" />
+              Carregando conversa…
+            </div>
+          )}
+          {!loading && messages.length === 0 && (
+            <div className="m-auto max-w-64 text-center">
+              <p className="text-sm text-text">Nova conversa</p>
+              <p className="mt-1 text-xs leading-relaxed text-faint">
+                Escreva, fale pelo microfone ou cole um print para começar.
+              </p>
+            </div>
+          )}
+          {/* O app inteiro tem seleção de texto desligada (index.css); as mensagens, não: dá para copiar. */}
+          <div ref={content} className="flex select-text flex-col gap-3">
+            {timeline.map((item, i) => {
+              if (item.kind !== 'step') {
+                return (
+                  <div key={item.key} data-prompt={item.kind === 'user' ? item.key : undefined} className="timeline-item">
+                    {item.node}
+                  </div>
+                )
+              }
+              // A linha só desce até o próximo passo; mensagem sua interrompe a linha do tempo.
+              const connect = timeline[i + 1]?.kind === 'step'
+              return (
+                <Step key={item.key} dot={item.dot} dotTop={item.dotTop} connect={connect}>
+                  {item.node}
+                </Step>
+              )
+            })}
           </div>
-        )}
-        {timeline.map((item, i) => {
-          if (item.kind !== 'step') return <div key={item.key}>{item.node}</div>
-          // A linha só desce até o próximo passo; mensagem sua interrompe a linha do tempo.
-          const connect = timeline[i + 1]?.kind === 'step'
-          return (
-            <Step key={item.key} dot={item.dot} connect={connect}>
-              {item.node}
-            </Step>
-          )
-        })}
+        </div>
       </div>
 
       <div className="border-t border-line px-3 pb-2 pt-3">
+        {live?.remote && <RemoteControlBar remote={live.remote} onTurnOff={() => onRemoteControl(false)} />}
         <div className="relative rounded-lg border border-line bg-surface focus-within:border-line-strong">
           {commands && (
             <SlashMenu items={commands} active={activeCommand} onHover={setActiveCommand} onSelect={selectCommand} />
+          )}
+          {mention && (
+            <AgentMenu items={mention.items} active={activeCommand} onHover={setActiveCommand} onSelect={selectAgent} />
           )}
           <AttachmentList items={attachments.items} onRemove={attachments.remove} />
           <textarea
@@ -410,13 +735,15 @@ export function ChatView({
             onKeyDown={onKeyDown}
             onBlur={() => setMenuClosed(true)}
             onPaste={onPaste}
-            rows={3}
+            rows={2}
             placeholder={
               dictation.state === 'listening'
                 ? 'Ouvindo… fale à vontade'
                 : dictation.state === 'starting'
                   ? 'Ligando o microfone…'
-                  : 'Escreva, fale, cole um print (⌘V) ou digite / para comandos'
+                  : agents.length
+                    ? 'Escreva, fale, cole um print (⌘V), / para comandos ou @ para agentes'
+                    : 'Escreva, fale, cole um print (⌘V) ou digite / para comandos'
             }
             className="block w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-faint"
           />
@@ -520,6 +847,7 @@ export function ChatView({
           />
         </div>
       </div>
+      {viewer && <ImageViewer load={viewer.load} start={viewer.start} onClose={() => setViewer(null)} />}
     </div>
   )
 }

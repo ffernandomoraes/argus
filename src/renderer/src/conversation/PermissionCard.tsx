@@ -29,7 +29,7 @@ export function PermissionCard({
           {/* A frase pronta do Claude Code vem em inglês; fica só como dica ao passar o mouse. */}
           <div className="font-medium text-text" title={request.title}>
             {request.label}
-            {request.summary && <span className="font-normal text-muted"> · {request.summary}</span>}
+            {request.summary && <span className="font-normal text-muted"> - {request.summary}</span>}
           </div>
           {/* Para permitir, o detalhe técnico importa: o comando exato que vai rodar. */}
           {request.detail && (

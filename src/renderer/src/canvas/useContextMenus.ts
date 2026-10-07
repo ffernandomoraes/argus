@@ -1,10 +1,11 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronDown, ChevronUp, FolderInput, Fullscreen, FolderOpen, Pencil, FolderPlus, SquareDashed, SquareTerminal, Trash2, Ungroup } from 'lucide-react'
+import { ChevronDown, ChevronUp, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, Pencil, FolderPlus, SquareDashed, SquareTerminal, Terminal, Trash2, Ungroup } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { ConfirmRequest } from './ConfirmDialog'
 import type { MenuItem } from './ContextMenu'
 import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupColor, ungroup } from './operations'
-import type { AreaNode, CanvasNode, ProjectNode, TerminalNode } from './types'
+import { ClaudeIcon } from '../icons/ClaudeIcon'
+import type { AreaNode, CanvasNode, ChatNode, ProjectNode, TerminalKind, TerminalNode } from './types'
 
 type Deps = {
   nodes: CanvasNode[]
@@ -13,11 +14,12 @@ type Deps = {
   startRename: (id: string) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
-  // folder vazio = pergunta a pasta; sessionId retoma uma conversa.
-  addTerminal: (position: XYPosition, groupId?: string, folder?: string, sessionId?: string, name?: string) => void
+  // folder vazio = pasta do usuário.
+  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => void
   closeTerminal: (nodeId: string, name: string) => void
-  recentConversations: (path: string) => { id: string; title: string }[]
   toggleGroup: (id: string) => void
+  newLooseConversation: (position?: XYPosition) => void
+  openConversation: (nodeId: string, conversationId: string) => void
 }
 
 const plural = (n: number) => (n === 1 ? '1 instância' : `${n} instâncias`)
@@ -27,11 +29,25 @@ function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
   return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project')?.data.path
 }
 
+// "Novo terminal ▸ Claude Code / Shell": os dois abrem na mesma pasta e no mesmo lugar.
+function terminalSubmenu(label: string, open: (kind: TerminalKind) => void): MenuItem {
+  return {
+    type: 'submenu',
+    label,
+    icon: SquareTerminal,
+    items: [
+      { type: 'action', label: 'Claude Code', icon: ClaudeIcon, onSelect: () => open('claude') },
+      { type: 'action', label: 'Shell', icon: Terminal, onSelect: () => open('shell') }
+    ]
+  }
+}
+
 export function paneMenu(deps: Deps, position: XYPosition): MenuItem[] {
   return [
     { type: 'action', label: 'Criar grupo', icon: SquareDashed, onSelect: () => deps.addGroup(position) },
     { type: 'action', label: 'Nova pasta', icon: FolderPlus, onSelect: () => deps.addFolder(position) },
-    { type: 'action', label: 'Novo terminal', icon: SquareTerminal, onSelect: () => deps.addTerminal(position) }
+    { type: 'action', label: 'Nova conversa', icon: MessageCirclePlus, onSelect: () => deps.newLooseConversation(position) },
+    terminalSubmenu('Novo terminal', (kind) => deps.addTerminal(position, undefined, undefined, kind))
   ]
 }
 
@@ -53,13 +69,10 @@ export function groupMenu(deps: Deps, group: AreaNode): MenuItem[] {
       icon: FolderPlus,
       onSelect: () => deps.addFolder(group.position, group.id)
     },
-    {
-      type: 'action',
-      label: 'Novo terminal',
-      icon: SquareTerminal,
-      // Dentro de um grupo com pastas, abre na primeira delas; senão pergunta.
-      onSelect: () => deps.addTerminal(group.position, group.id, folderOf(deps.nodes, group.id))
-    },
+    // Dentro de um grupo com pastas, abre na primeira delas; senão na pasta do usuário.
+    terminalSubmenu('Novo terminal', (kind) =>
+      deps.addTerminal(group.position, group.id, folderOf(deps.nodes, group.id), kind)
+    ),
     { type: 'separator' },
     {
       type: 'action',
@@ -103,7 +116,8 @@ export function groupMenu(deps: Deps, group: AreaNode): MenuItem[] {
   ]
 }
 
-export function instanceMenu(deps: Deps, node: ProjectNode): MenuItem[] {
+// "Mover para grupo": os outros grupos e, se já estiver num, a saída dele.
+function moveSubmenu(deps: Deps, node: CanvasNode): MenuItem {
   const { setNodes } = deps
   const groups = deps.nodes.filter((n): n is AreaNode => n.type === 'area' && n.id !== node.parentId)
 
@@ -126,27 +140,15 @@ export function instanceMenu(deps: Deps, node: ProjectNode): MenuItem[] {
       }
     )
   }
+  return { type: 'submenu', label: 'Mover para grupo', icon: FolderInput, items: moveItems }
+}
 
-  // Retomar uma conversa desta pasta num terminal do canvas.
-  const conversations = deps.recentConversations(node.data.path)
-  const resumeItems: MenuItem[] = conversations.length
-    ? conversations.map((c) => ({
-        type: 'action',
-        label: c.title,
-        onSelect: () => deps.addTerminal(node.position, node.parentId, node.data.path, c.id, c.title)
-      }))
-    : [{ type: 'action', label: 'Nenhuma conversa ainda', disabled: true, onSelect: () => {} }]
-
+export function instanceMenu(deps: Deps, node: ProjectNode): MenuItem[] {
+  const { setNodes } = deps
   return [
-    {
-      type: 'action',
-      label: 'Novo terminal aqui',
-      icon: SquareTerminal,
-      onSelect: () => deps.addTerminal(node.position, node.parentId, node.data.path)
-    },
-    { type: 'submenu', label: 'Abrir conversa no terminal', icon: SquareTerminal, items: resumeItems },
+    terminalSubmenu('Novo terminal aqui', (kind) => deps.addTerminal(node.position, node.parentId, node.data.path, kind)),
     { type: 'separator' },
-    { type: 'submenu', label: 'Mover para grupo', icon: FolderInput, items: moveItems },
+    moveSubmenu(deps, node),
     { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
     {
@@ -175,6 +177,35 @@ export function terminalMenu(deps: Deps, node: TerminalNode): MenuItem[] {
       icon: Trash2,
       danger: true,
       onSelect: () => deps.closeTerminal(node.id, node.data.name)
+    }
+  ]
+}
+
+// Conversa sem projeto: sair do canvas não apaga a conversa, que continua salva no Claude Code.
+export function chatMenu(deps: Deps, node: ChatNode): MenuItem[] {
+  const { setNodes } = deps
+  return [
+    {
+      type: 'action',
+      label: 'Abrir conversa',
+      icon: MessageCircle,
+      onSelect: () => deps.openConversation(node.id, node.data.sessionId)
+    },
+    { type: 'separator' },
+    moveSubmenu(deps, node),
+    { type: 'separator' },
+    {
+      type: 'action',
+      label: 'Tirar do canvas',
+      icon: Trash2,
+      danger: true,
+      onSelect: () =>
+        deps.confirm({
+          title: 'Tirar a conversa do canvas?',
+          description: 'O card sai do canvas. A conversa continua salva no Claude Code.',
+          confirmLabel: 'Tirar do canvas',
+          onConfirm: () => setNodes((ns) => removeNode(ns, node.id))
+        })
     }
   ]
 }

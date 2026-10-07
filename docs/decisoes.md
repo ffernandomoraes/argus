@@ -13,6 +13,10 @@
 | D7 | Tudo roda na assinatura do Claude, sem chave de API paga por uso. | Fernando | 06/10/2026 |
 | D8 | Sem wireframe em HTML: a interface é montada direto no app e as decisões visuais são tomadas lá. Motivo: duas sessões travaram gerando o wireframe. | Fernando | 06/10/2026 |
 | D9 | Stack: Electron + React + TypeScript, com electron-vite, React Flow (`@xyflow/react`) e Tailwind (fecha P6). | Fernando | 06/10/2026 |
+| D10 | Agente global = agente do Claude Code em `~/.claude/agents/*.md`. O app só lê e grava esses arquivos (biblioteca com formulário); o mesmo agente vale no terminal e no VS Code. Editar o arquivo muda todas as conversas (fecha P8: vinculada). | Fernando | 06/10/2026 |
+| D11 | O agente roda como subagente da conversa: o Claude da conversa delega, o agente trabalha sozinho e devolve um relatório. Chamado com @nome no chat ou escolhido pelo próprio Claude pela descrição. | Fernando | 06/10/2026 |
+| D12 | Na listagem da pasta, o subagente aparece recuado embaixo da conversa que o lançou, só enquanto roda (nome do agente, o que está fazendo, tempo). O registro fica no chat: pedido, atividade e o que entregou. | Fernando | 06/10/2026 |
+| D13 | Conversa sem projeto: "Nova conversa" no botão direito do canvas e no "Novo bloco". Roda na pasta do usuário (`~`), abre o painel em branco e só entra no canvas no primeiro envio, como card que reabre a conversa. | Fernando | 06/10/2026 |
 
 ## Em aberto
 
@@ -32,7 +36,6 @@ Com a sugestão atual de cada uma. A sugestão não é decisão até ser confirm
 |---|---|---|
 | P5 | Como o app conversa com o Claude? | Comandar o `claude` em modo sem interface (usa a assinatura) e observar as sessões abertas fora do app, depois da prova técnica (ver [integracao-com-agentes.md](integracao-com-agentes.md)). A SDK fica descartada por D7 |
 | P7 | Um canvas só ou um por área? | Um só |
-| P8 | Uma instância é cópia do agente global ou fica vinculada a ele? Se eu editar o agente global, a instância muda junto? | Vinculada, com opção de "desvincular" |
 | P9 | O visualizador de código só mostra ou também edita? | Só mostra, com botão "abrir no VS Code" |
 | P10 | Projetos entram automaticamente (importar os que o Claude Code já conhece) ou um por um? | Importar com seleção, sugerindo a área pela pasta |
 | P11 | Só Claude ou outros agentes no futuro? | Só Claude, sem fechar a porta |

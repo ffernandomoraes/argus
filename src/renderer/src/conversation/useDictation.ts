@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type DictationState = 'idle' | 'starting' | 'listening'
 
-// Ditado pelo reconhecimento de fala do macOS. onText recebe o texto acumulado da fala
+// Ditado (transcrição do Claude, ou do macOS na falta dela). onText recebe o texto acumulado da fala
 // (não só o pedaço novo), então quem usa decide onde encaixar.
 export function useDictation(onText: (text: string) => void) {
   const [state, setState] = useState<DictationState>('idle')
@@ -10,22 +10,24 @@ export function useDictation(onText: (text: string) => void) {
   const [warning, setWarning] = useState<string | null>(null)
   const onTextRef = useRef(onText)
   onTextRef.current = onText
-  const active = useRef(false)
+  // flushing: já parou de gravar, mas o fim do texto ainda pode chegar.
+  const active = useRef<'off' | 'on' | 'flushing'>('off')
 
   useEffect(
     () =>
       window.api.speech.onEvent((e) => {
-        if (!active.current) return
-        if (e.type === 'ready') setState('listening')
-        else if (e.type === 'warning') setWarning(e.message)
+        if (active.current === 'off') return
+        if (e.type === 'ready') {
+          if (active.current === 'on') setState('listening')
+        } else if (e.type === 'warning') setWarning(e.message)
         else if (e.type === 'text') onTextRef.current(e.text)
         else if (e.type === 'error') {
-          active.current = false
+          active.current = 'off'
           setError({ message: e.message, action: e.action })
           setState('idle')
         } else if (e.type === 'done') {
-          active.current = false
-          setState('idle')
+          if (active.current === 'on') setState('idle')
+          active.current = 'off'
         }
       }),
     []
@@ -35,20 +37,22 @@ export function useDictation(onText: (text: string) => void) {
     setError(null)
     setWarning(null)
     setState('starting')
-    active.current = true
+    active.current = 'on'
     window.api.speech.start()
   }, [])
 
-  const stop = useCallback(() => {
+  // flush: as últimas palavras, que o serviço entrega logo depois de parar, ainda entram no
+  // campo (até o "done"). Sem flush (ex.: ao enviar a mensagem), o que chegar é descartado.
+  const stop = useCallback((flush = false) => {
     window.api.speech.stop()
-    active.current = false
+    active.current = flush ? 'flushing' : 'off'
     setState('idle')
   }, [])
 
   // Sair da conversa com o microfone ligado desliga o ditado.
   useEffect(() => () => {
-    if (active.current) window.api.speech.stop()
+    if (active.current === 'on') window.api.speech.stop()
   }, [])
 
-  return { state, error, warning, start, stop, toggle: state === 'idle' ? start : stop }
+  return { state, error, warning, start, stop, toggle: state === 'idle' ? start : () => stop(true) }
 }

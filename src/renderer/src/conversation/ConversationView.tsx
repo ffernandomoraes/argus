@@ -6,6 +6,7 @@ import type { ConversationSummary } from '../canvas/types'
 import { ChatView } from './ChatView'
 import { liveCommand, type SessionSettings } from './SessionSettings'
 import { McpPanel } from './McpPanel'
+import { moveConversationSettings, setConversationSettings, useConversationSettings } from './conversationSettings'
 import { useConversationHistory } from './useConversationHistory'
 import { addLocalEvent, mergeEvents, useLocalEvents } from './localEvents'
 import { EFFORTS } from './ModelEffortPicker'
@@ -160,8 +161,6 @@ export function ConversationView({
   cwd,
   project,
   conversation,
-  settings,
-  onSettingsChange,
   onOpenFile,
   onOpenDiff,
   onSessionStarted,
@@ -177,8 +176,6 @@ export function ConversationView({
   // Nome da pasta, mostrado no cabeçalho.
   project?: ReactNode
   conversation: ConversationSummary
-  settings: SessionSettings
-  onSettingsChange: (settings: SessionSettings) => void
   // Link de arquivo clicado no chat; sem isso, os links viram texto comum.
   onOpenFile?: (path: string, lines?: LineRange) => void
   // Arquivo da lista de não comitados; sem isso, a lista só mostra.
@@ -223,9 +220,14 @@ export function ConversationView({
   // que parou, e isso deixava a conversa como "trabalhando" depois de você mandar parar.
   const status = live ? live.status : conversation.status
 
+  // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
+  const settings = useConversationSettings(conversation.sessionId ?? conversation.id)
+
   const sessionId = live?.sessionId
   useEffect(() => {
-    if (conversation.draft && sessionId) onSessionStarted?.(sessionId)
+    if (!conversation.draft || !sessionId) return
+    moveConversationSettings(conversation.id, sessionId)
+    onSessionStarted?.(sessionId)
   }, [conversation.draft, sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Imagens vão junto da mensagem; outros arquivos, pelo caminho no disco.
@@ -268,7 +270,7 @@ export function ConversationView({
 
   const change = (patch: Partial<SessionSettings>) => {
     markChange(patch)
-    onSettingsChange({ ...settings, ...patch })
+    setConversationSettings(conversation.sessionId ?? conversation.id, patch)
     const command = liveCommand(patch)
     if (command) window.api.terminal.write(conversation.id, `${command}\r`)
     window.api.chat.configure(conversation.id, patch)

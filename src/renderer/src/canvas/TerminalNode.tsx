@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { NodeResizer, type NodeProps } from '@xyflow/react'
 import { SquareTerminal, Terminal, X } from 'lucide-react'
 import { TerminalView } from '../conversation/TerminalView'
-import { getPreferences } from '../settings/preferences'
+import { getConversationSettings } from '../conversation/conversationSettings'
 import { launchSettings } from '../conversation/SessionSettings'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
@@ -14,8 +14,8 @@ import type { TerminalNode as TerminalNodeType } from './types'
 // O processo vive no processo principal: mover, recolher o grupo ou fechar o app não derruba a sessão.
 export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>) {
   const shell = data.kind === 'shell'
-  // Modelo, esforço e modo valem ao abrir, como no terminal comum.
-  const settings = getPreferences().conversation
+  // Modelo, esforço e modo valem ao abrir, como no terminal comum; os da conversa que ele retoma.
+  const settings = getConversationSettings(data.sessionId)
   const { bindTerminalSession, closeTerminal } = useCanvasActions()
 
   // O `claude` que roda aqui cria a conversa por conta própria e não avisa qual é. O nó

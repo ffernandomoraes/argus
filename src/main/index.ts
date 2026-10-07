@@ -276,12 +276,6 @@ app.whenReady().then(() => {
   ipcMain.on('speech:openSettings', () => shell.openExternal('x-apple.systempreferences:com.apple.Keyboard-Settings.extension'))
   ipcMain.on('popout:open', (_e, id: string, payload: unknown) => popouts.show(id, payload))
   ipcMain.handle('popout:payload', (_e, id: string) => popouts.payload(id))
-  // Mudança de modelo/esforço/modo numa janela vai para as outras.
-  ipcMain.on('conversation:settings', (e, id: string, settings: unknown) => {
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (win.webContents !== e.sender) win.webContents.send('conversation:settings', id, settings)
-    }
-  })
   ipcMain.on('theme:set', (_e, theme: 'dark' | 'light' | 'system') => {
     nativeTheme.themeSource = theme
   })

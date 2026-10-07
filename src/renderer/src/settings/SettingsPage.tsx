@@ -161,7 +161,7 @@ function ConversationsSection() {
   return (
     <>
       <p className="mb-2 text-xs leading-relaxed text-faint">
-        Como cada conversa abre. Vale para conversas novas e para as que você ainda não ajustou no próprio chat.
+        Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.
       </p>
 
       <Row label="Modelo">

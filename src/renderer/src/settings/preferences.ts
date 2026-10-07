@@ -7,7 +7,7 @@ export type Preferences = {
   openIn: 'panel' | 'window'
   // Escala do conteúdo do drawer, ajustada com ⌘+ / ⌘- (ver useDrawerZoom).
   drawerZoom: number
-  // Modelo, esforço, modo etc. de conversas que ainda não foram ajustadas no próprio chat.
+  // Modelo, esforço, modo etc. de cada conversa, até ser trocado no próprio chat (conversationSettings).
   conversation: SessionSettings
 }
 

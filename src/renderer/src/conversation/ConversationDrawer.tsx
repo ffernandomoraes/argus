@@ -3,7 +3,6 @@ import { Code2, ExternalLink } from 'lucide-react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { ConversationView, HeaderButton } from './ConversationView'
 import { DRAWER_DEFAULT_WIDTH, ResizeHandles, useFloatingRect, type PanelRect } from './FloatingPanel'
-import type { SessionSettings } from './SessionSettings'
 import { useDrawerZoom } from './useDrawerZoom'
 import type { LineRange } from './fileLinks'
 import { useEscape } from '../useEscape'
@@ -15,8 +14,6 @@ export function ConversationDrawer({
   loose = false,
   tint,
   conversation,
-  settings,
-  onSettingsChange,
   codeOpen,
   onToggleCode,
   onPopout,
@@ -33,8 +30,6 @@ export function ConversationDrawer({
   // Cor do grupo onde o projeto está; o painel puxa esse tom de leve.
   tint?: string
   conversation: ConversationSummary
-  settings: SessionSettings
-  onSettingsChange: (settings: SessionSettings) => void
   codeOpen: boolean
   onToggleCode: () => void
   // Abre a conversa numa janela própria do sistema.
@@ -72,8 +67,6 @@ export function ConversationDrawer({
         cwd={project.path}
         project={loose ? undefined : project.name}
         conversation={conversation}
-        settings={settings}
-        onSettingsChange={onSettingsChange}
         onOpenFile={onOpenFile}
         onOpenDiff={onOpenDiff}
         onSessionStarted={onSessionStarted}

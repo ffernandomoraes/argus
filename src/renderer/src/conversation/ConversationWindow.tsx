@@ -1,6 +1,5 @@
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { ConversationView } from './ConversationView'
-import type { SessionSettings } from './SessionSettings'
 import { useDrawerZoom } from './useDrawerZoom'
 
 // Espaço dos botões do sistema no topo da janela, em px de tela.
@@ -11,14 +10,10 @@ const TRAFFIC_LIGHTS = 80
 export function ConversationWindow({
   project,
   conversation,
-  settings,
-  onSettingsChange,
   onClose
 }: {
   project: ProjectData
   conversation: ConversationSummary
-  settings: SessionSettings
-  onSettingsChange: (settings: SessionSettings) => void
   onClose: () => void
 }) {
   const zoom = useDrawerZoom()
@@ -29,8 +24,6 @@ export function ConversationWindow({
         cwd={project.path}
         project={project.name}
         conversation={conversation}
-        settings={settings}
-        onSettingsChange={onSettingsChange}
         zoom={zoom}
         headerClassName="drag"
         // Os botões do sistema não acompanham a escala: o recuo volta ao tamanho de tela.

@@ -45,12 +45,6 @@ contextBridge.exposeInMainWorld('api', {
       const listener = (_e: IpcRendererEvent, id: string) => cb(id)
       ipcRenderer.on('popout:closed', listener)
       return () => ipcRenderer.removeListener('popout:closed', listener)
-    },
-    sendSettings: (id: string, settings: unknown) => ipcRenderer.send('conversation:settings', id, settings),
-    onSettings: (cb: (id: string, settings: unknown) => void) => {
-      const listener = (_e: IpcRendererEvent, id: string, settings: unknown) => cb(id, settings)
-      ipcRenderer.on('conversation:settings', listener)
-      return () => ipcRenderer.removeListener('conversation:settings', listener)
     }
   },
   claude: {

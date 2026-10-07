@@ -34,8 +34,6 @@ declare global {
         open: (id: string, payload: unknown) => void
         payload: (id: string) => Promise<unknown>
         onClosed: (cb: (id: string) => void) => () => void
-        sendSettings: (id: string, settings: unknown) => void
-        onSettings: (cb: (id: string, settings: unknown) => void) => () => void
       }
       claude: {
         info: () => Promise<ClaudeInfo | null>

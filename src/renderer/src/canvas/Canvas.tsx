@@ -17,8 +17,7 @@ import { AgentsModal } from '../agents/AgentsModal'
 import { DevServersModal } from '../devServers/DevServersModal'
 import type { PanelRect } from '../conversation/FloatingPanel'
 import type { LineRange } from '../conversation/fileLinks'
-import type { SessionSettings } from '../conversation/SessionSettings'
-import { getPreferences, usePreferences } from '../settings/preferences'
+import { getPreferences } from '../settings/preferences'
 import { AreaNode } from './AreaNode'
 import { CanvasContext, type ActiveConversation } from './CanvasContext'
 import { CommandBar } from './CommandBar'
@@ -74,9 +73,6 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [activeConversation, setActiveConversation] = useState<ActiveConversation | null>(null)
-  const [settings, setSettings] = useState<Record<string, SessionSettings>>({})
-  const settingsRef = useRef(settings)
-  settingsRef.current = settings
   const [poppedOut, setPoppedOut] = useState<Set<string>>(new Set())
   // Código aberto acompanha a pasta da conversa aberta.
   const [codeOpen, setCodeOpen] = useState(false)
@@ -101,7 +97,6 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const { screenToFlowPosition, getZoom, fitView } = useReactFlow()
   const [guides, setGuides] = useState<Guide[]>([])
   const spaceHeld = useSpaceHeld()
-  const prefs = usePreferences()
 
   const { nodesRef, change, trackGesture, undo, redo } = useHistory(nodes, setNodes)
   useSaveNodes(nodes)
@@ -321,29 +316,18 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     if (!project) return
     const conversation = getSessions(project.path).find((c) => c.id === conversationId)
     if (!conversation) return
-    window.api.popout.open(conversationId, {
-      project,
-      conversation,
-      settings: settingsRef.current[conversationId] ?? getPreferences().conversation
-    })
+    window.api.popout.open(conversationId, { project, conversation })
     setPoppedOut((s) => new Set(s).add(conversationId))
   }
 
   useEffect(() => {
-    const offClosed = window.api.popout.onClosed((id) =>
+    return window.api.popout.onClosed((id) =>
       setPoppedOut((s) => {
         const next = new Set(s)
         next.delete(id)
         return next
       })
     )
-    const offSettings = window.api.popout.onSettings((id, s) =>
-      setSettings((all) => ({ ...all, [id]: s as SessionSettings }))
-    )
-    return () => {
-      offClosed()
-      offSettings()
-    }
   }, [])
 
   // Link de arquivo no chat: abre o código da pasta já com o arquivo. Aceita caminho relativo
@@ -466,8 +450,6 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           loose={drawer.loose}
           tint={groupTint}
           conversation={drawer.conversation}
-          settings={settings[drawer.conversation.id] ?? prefs.conversation}
-          onSettingsChange={(s) => setSettings((all) => ({ ...all, [drawer.conversation.id]: s }))}
           codeOpen={codeOpen}
           rect={drawerRect}
           onRectChange={setDrawerRect}

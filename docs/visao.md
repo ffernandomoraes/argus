@@ -15,6 +15,9 @@ num terminal ou numa aba do editor, então:
 
 ## A ideia
 
+> A ideia como foi pensada no começo. Parte dela mudou na construção (áreas viraram grupos,
+> a instância de agente virou subagente da conversa): ver [conceitos.md](conceitos.md).
+
 Um app desktop com um **canvas infinito**: área de trabalho sem bordas, com pan e zoom,
 no estilo Figma ou Miro. Nele:
 
@@ -45,8 +48,8 @@ no estilo Figma ou Miro. Nele:
 ## O que não é (por enquanto)
 
 - Não é um app web nem um SaaS: roda local, na minha máquina.
-- Não substitui o VS Code. Ver, navegar e fazer edições simples no código, sim. Virar uma
-  IDE completa, não, pelo menos no começo (ver [decisoes.md](decisoes.md)).
+- Não substitui o VS Code. Ver, navegar e fazer edições simples no código, sim (D17). Virar
+  uma IDE completa, não, pelo menos no começo (ver [decisoes.md](decisoes.md)).
 - Não é multiusuário.
 
 <details>

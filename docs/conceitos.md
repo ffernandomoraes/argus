@@ -7,68 +7,94 @@ ele tem o significado daqui.
 
 ```
 Canvas
-└── Área ............................ Trabalho · Freela · Pessoal
-    └── Projeto ..................... aponta para uma pasta no disco
-        ├── Conversa ................ chat livre com a IA, no contexto do projeto
-        │   └── Bloco de subagente .. criado quando a IA lança um subagente
-        ├── Instância de agente ◄──── Agente (biblioteca global)
-        │   ├── Tarefa
-        │   └── Bloco de subagente
-        └── Visualizador de código
+└── Grupo ............................ Trabalho - Freela - Pessoal; tem uma conta do Claude
+    ├── Pasta ........................ aponta para uma pasta no disco
+    │   ├── Conversa ................. chat com o Claude Code naquela pasta
+    │   │   └── Subagente ............ aparece embaixo da conversa enquanto roda
+    │   ├── Servidor do projeto ...... botão acima da pasta
+    │   └── Painel de código ......... árvore de arquivos e editor
+    ├── Conversa no canvas ........... a mesma conversa, aberta num bloco
+    ├── Conversa sem projeto ......... card que reabre a conversa
+    └── Terminal ..................... Claude Code ou shell, numa pasta
+
+Agente (biblioteca) ......... ~/.claude/agents, chamado com @nome em qualquer conversa
+Conta ....................... login do Claude; a principal e as adicionadas
 ```
 
 ## Definições
 
 **Canvas.** Área de trabalho infinita, com pan e zoom. Guarda a posição, o tamanho e a
-cor de tudo o que está nela.
+cor de tudo o que está nela. É um só para todos os grupos.
 
-**Área.** Agrupamento de projetos: Trabalho, Freela, Pessoal. Ainda não está decidido se
-a área é uma região desenhada no canvas (como os frames do Figma) ou só uma etiqueta com
-cor na caixa do projeto (ver [decisoes.md](decisoes.md)).
+**Grupo.** Região colorida desenhada no canvas, como os frames do Figma, que junta
+pastas, terminais e conversas: Trabalho, Freela, Pessoal ou o que a pessoa quiser. Pode
+ser recolhido, ter o conteúdo oculto (vira uma área listrada) e se ajustar ao conteúdo. Cada
+grupo usa uma conta do Claude. No código o tipo ainda se chama `area` (`AreaNode`): é o
+nome antigo, de antes de virar grupo.
 
-**Projeto.** Uma pasta no disco representada por uma caixa no canvas. Tem nome, caminho,
-cor, área, posição e tamanho. Dentro dele ficam as conversas e as instâncias de agente.
+**Pasta (projeto).** Uma pasta no disco representada por um bloco no canvas. Mostra o
+nome, o caminho, a branch do git e as conversas mais recentes; as demais ficam no painel
+"Ver todas as conversas". Recolhida, mostra só as conversas rodando ou esperando você.
 
-**Conversa.** Chat livre com a IA, rodando na pasta do projeto: o mesmo que abrir o
-Claude Code ali e conversar, mas com um chat desenhado pelo app. Aceita texto e imagens
-(prints colados). Um projeto pode ter várias conversas abertas ao mesmo tempo.
+**Conversa.** Chat com o Claude Code rodando na pasta: o mesmo que abrir o `claude` ali,
+com o mesmo `CLAUDE.md`, configurações e MCPs, mas com um chat desenhado pelo app. Aceita
+texto, prints colados, arquivos e ditado. Abre no painel lateral, numa janela própria ou
+num bloco dentro do canvas, conforme **Configurações › Geral › Abrir conversas em**. Fica
+em um lugar só de cada vez. Status: rodando, esperando você ou concluída.
 
-**Agente (biblioteca global).** Um modelo reutilizável de agente: nome, descrição,
-instruções, ferramentas permitidas e modelo de IA. Fica numa biblioteca que vale para
-todos os projetos.
+**Conversa sem projeto.** Criada pelo botão direito do canvas. Roda na pasta do usuário
+(`~`) e só entra no canvas no primeiro envio, como um card que reabre a conversa.
 
-**Instância de agente.** Um agente da biblioteca colocado dentro de um projeto para
-executar uma tarefa. Funciona como uma conversa, mas já começa com as instruções do
-agente e com a tarefa definida.
+**Sessão externa.** Conversa do Claude Code aberta fora do app (terminal, VS Code). O app
+lê o histórico e o status dela e mostra na pasta, mas não conversa por ela.
 
-**Tarefa.** O que a instância deve fazer. É o primeiro prompt dela.
+**Agente.** Subagente do Claude Code, em `~/.claude/agents/*.md`: nome, descrição,
+instruções, ferramentas e modelo. A biblioteca do app só lê e grava esses arquivos, então
+o mesmo agente vale no terminal e no VS Code. Numa conversa, é chamado com `@nome` ou
+escolhido pelo próprio Claude pela descrição (ver D10 e D11 em [decisoes.md](decisoes.md)).
 
-**Bloco de subagente.** Aparece sozinho no canvas quando uma conversa ou instância lança
-um subagente. Fica ligado à origem por uma linha e mostra:
+**Subagente.** Agente lançado por uma conversa. Enquanto roda, aparece recuado embaixo
+dela na pasta, com o nome, o que está fazendo agora e o tempo. O registro completo (pedido,
+atividade e o que entregou) fica no chat (D12).
 
-- **Input:** o prompt que o subagente recebeu.
-- **Atividade:** as ferramentas que ele está usando (ler arquivo, buscar, rodar comando).
-- **Output:** o que ele devolveu.
-- **Status:** rodando, concluído ou erro; mais duração e, se der, custo.
+**Terminal.** Bloco no canvas com um terminal real numa pasta, rodando o `claude` ou o
+shell do sistema. Pode retomar uma conversa (`claude --resume`).
 
-**Visualizador de código.** Árvore de arquivos e conteúdo de um arquivo do projeto, com
-o mesmo destaque de sintaxe do VS Code.
+**Servidor do projeto.** Script `dev` ou `start` do `package.json`, iniciado em segundo
+plano pelo botão acima da pasta. A lista de **Servidores rodando** mostra também os que
+foram abertos fora do app.
 
-**Conexão.** Linha visual entre dois itens do canvas, como uma conversa e seus
-subagentes.
+**Painel de código.** Árvore de arquivos e editor da pasta, com a coloração do VS Code e
+os arquivos não comitados marcados com a cor do git (D17).
 
-## Como isso já existe no Claude Code
+**Conta.** Login do Claude. A principal é a do `~/.claude`, a mesma do terminal e do VS
+Code; as outras moram em `~/.argus/accounts/<id>` (D18).
 
-Conferido nesta máquina em 06/10/2026, no Claude Code 2.1.284:
+**Memória.** Os `CLAUDE.md` (global e de cada projeto) e as anotações da memória
+automática do Claude Code, editáveis pelo app.
 
-| Conceito | Onde está hoje |
+### Nomes que saíram
+
+- **Área** virou **grupo**.
+- **Instância de agente** e **tarefa**: o agente roda como subagente da conversa, não
+  como uma instância à parte com tarefa própria (D11).
+- **Bloco de subagente** ligado à origem por uma linha: o subagente aparece embaixo da
+  conversa, na própria pasta (D12).
+- **Visualizador de código** virou **painel de código**, porque também edita (D17).
+
+## Onde isso está no Claude Code
+
+Conferido em 06/10/2026, no Claude Code 2.1.284, e revisto em 07/10/2026:
+
+| Conceito | Onde está |
 |---|---|
-| Projeto | `~/.claude/projects/<caminho-da-pasta>/` (já existem 40) |
+| Pasta | `~/.claude/projects/<caminho-da-pasta-achatado>/` (tudo que não é letra ou número vira `-`) |
 | Conversa | `~/.claude/projects/<projeto>/<id-da-sessao>.jsonl` |
-| Bloco de subagente | `~/.claude/projects/<projeto>/<id-da-sessao>/subagents/agent-<id>.jsonl`, com campos `agentId`, `parentUuid`, `timestamp` e `message` |
-| Agente global | `~/.claude/agents/*.md` (vazio hoje) |
+| Subagente | `~/.claude/projects/<projeto>/<id-da-sessao>/subagents/agent-<id>.jsonl` |
+| Status de cada Claude Code aberto | `~/.claude/sessions/<pid>.json` (`busy`, `waiting`, `idle`) |
+| Agente global | `~/.claude/agents/*.md` |
 | Agente do projeto | `<pasta-do-projeto>/.claude/agents/*.md` |
-| Área | Já está na estrutura de pastas: `~/Desktop/trabalho/` → Trabalho, `~/Desktop/freelas/` → Freela, `~/Desktop/projetos-pessoais/` → Pessoal |
+| Conta adicionada | `~/.argus/accounts/<id>`, passada ao `claude` em `CLAUDE_CONFIG_DIR` |
 
 Esses arquivos são formato interno do Claude Code, não uma API pública: podem mudar de
 uma versão para outra. Ver [integracao-com-agentes.md](integracao-com-agentes.md).

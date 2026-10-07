@@ -1,118 +1,105 @@
-# Integração com agentes e stack
+# Integração com agentes
 
-Esta é a parte de maior risco técnico do projeto. O canvas é trabalho conhecido. Fazer o
-app **conversar com o Claude e enxergar os subagentes** é o que precisa ser provado antes
-de investir no resto.
+Como o app conversa com o Claude e o que ele lê do Claude Code. Era a parte de maior risco
+técnico do projeto; a análise original está no fim deste arquivo, como histórico.
 
-## Requisitos que definem a escolha
+## Requisitos
 
-- **R1. Chat próprio do app**, com colar prints (Cmd+V) como ação principal (D6).
+- **R1. Chat próprio do app**, com colar prints (⌘V) como ação principal (D6).
 - **R2. Usar a assinatura do Claude** (o login do `claude`), não chave de API paga por
   uso (D7).
-- **R3. Ver subagentes** com input, atividade e output, em tempo real.
+- **R3. Ver subagentes** com o que receberam, o que estão fazendo e o que entregaram, em
+  tempo real.
 
-## Opções
+## Como funciona hoje
 
-### Opção A: o app comanda o `claude` em modo sem interface (recomendada)
+### Conversas: Claude Agent SDK rodando o `claude` da máquina
 
-O app abre um processo do `claude` por conversa, em modo sem interface (headless) e com
-entrada e saída em JSON contínuo. O app desenha o chat e o `claude` faz o trabalho, com o
-login que já existe na máquina.
+Cada conversa é um `query()` do [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview)
+(`src/main/chats.ts`) com `pathToClaudeCodeExecutable` apontando para o `claude` instalado
+(`src/main/claudePath.ts`). O SDK não chama a API direto: abre esse `claude` e conversa com
+ele. Por isso a conversa usa o login e a assinatura que já existem na máquina (R2), e se
+comporta como o Claude Code no terminal: `systemPrompt: { preset: 'claude_code' }` carrega
+o mesmo prompt, `CLAUDE.md`, configurações e MCPs.
 
-```bash
-claude -p \
-  --input-format stream-json \
-  --output-format stream-json \
-  --include-partial-messages \
-  --forward-subagent-text
-```
+| Requisito | Como |
+|---|---|
+| R1 Chat e prints | Texto e imagens vão como blocos de conteúdo na entrada da conversa; as respostas chegam aos poucos (`includePartialMessages`) |
+| R2 Assinatura | O `claude` da máquina, com o login dele. O binário que vem com o SDK (~200 MB) fica fora do app (`electron-builder.yml`) |
+| R3 Subagentes | `agentProgressSummaries` faz cada subagente mandar uma frase do que está fazendo; a lista de quem está rodando vem junto do estado do chat (`src/renderer/src/canvas/runningAgents.ts`) |
+| Permissões e perguntas | `canUseTool` devolve cada pedido para o chat, onde a pessoa aprova, nega ou responde |
+| Continuar conversa | `resume` com o id da sessão |
+| Modelo, esforço, modo | Opções do `query()`, por conversa; trocadas com a conversa aberta pelos controles do SDK |
 
-| Requisito | Atende? | Base |
+O mesmo caminho serve para outras três partes do app:
+
+- **Barra de comando do canvas** (`src/main/canvasAgent.ts`): conversa com o Haiku, que
+  recebe as ações do canvas como ferramentas de um MCP do próprio app
+  (`createSdkMcpServer`) e organiza grupos e pastas pelo pedido.
+- **Escrever as instruções de um agente** (`src/main/agentWriter.ts`), com o Sonnet.
+- **Login** (`src/main/auth.ts`): um `claude` aberto só para o login gera o link, recebe o
+  retorno do navegador e grava o login nas Chaves do macOS, como a extensão do VS Code.
+
+### Contas
+
+Cada conta adicionada mora numa pasta própria, passada ao `claude` em `CLAUDE_CONFIG_DIR`
+(`src/main/accounts.ts`). O login dela fica num item separado das Chaves do macOS, então
+as contas rodam ao mesmo tempo. Histórico, `CLAUDE.md`, agentes, skills, comandos,
+plugins e configurações ficam ligados aos da conta principal por link simbólico; login e
+MCPs são de cada conta (D18).
+
+### O que o app lê do Claude Code
+
+Sem passar pelo SDK, só leitura:
+
+| O quê | De onde | Para quê |
 |---|---|---|
-| R1 Chat e prints | Sim. O app envia texto e imagens como blocos de conteúdo pela entrada JSON | [headless](https://code.claude.com/docs/en/headless.md) |
-| R2 Assinatura | Sim. O `claude` usa o login feito com `/login` antes de procurar chave de API | [authentication](https://code.claude.com/docs/en/authentication.md) |
-| R3 Subagentes | Sim. Mensagens de subagente chegam com `parent_tool_use_id` apontando para a chamada que as criou; dá para montar a árvore inteira | [headless](https://code.claude.com/docs/en/headless.md) |
-| Continuar conversa | `--resume <id-da-sessao>` | `claude --help` |
-| Permissões | `--permission-prompts` define quem responde aos pedidos de permissão | `claude --help` |
+| Histórico das conversas | `<conta>/projects/<projeto>/*.jsonl` (`sessions.ts`, `history.ts`) | Lista de conversas da pasta, título, uso de contexto e o chat ao reabrir |
+| Status de cada Claude Code aberto | `<conta>/sessions/<pid>.json` (`liveSessions.ts`) | Status de sessões abertas no terminal ou no VS Code |
+| Mudanças nessas pastas e no git | `sessionWatch.ts` | Atualizar o canvas na hora, sem esperar a próxima conferência |
+| Limite de uso | Pedido de controle `get_usage` a um `claude` em modo `stream-json` aberto por conta (`usageMonitor.ts`) | Indicador de uso, sem enviar mensagem nem gastar uso |
 
-As opções acima foram conferidas no `claude --help` desta máquina (versão 2.1.284) em
-06/10/2026. O formato exato das mensagens ainda precisa ser validado na prova técnica.
+### Outros
 
-- **Contras:** depende do formato de saída do CLI, que pode mudar entre versões. É
-  documentado, mas menos estável que uma SDK.
+- **Terminais** (`src/main/terminals.ts`): terminal real com node-pty, rodando o `claude`
+  ou o shell, com a conta do grupo.
+- **Ditado** (`src/main/speech.ts`): o microfone (`native/speech`) grava e o áudio vai em
+  tempo real para o serviço de voz do Claude, com o login do Claude Code
+  (`claudeAuth.ts`). Sem login ou sem conexão, usa o reconhecimento de fala do macOS.
 
-### Opção B: Claude Agent SDK (descartada por R2)
+## Riscos
 
-A SDK oficial exige chave de API (ou Bedrock/Vertex). A documentação diz:
+- **Formato interno.** Os arquivos de sessão, o status em `sessions/<pid>.json`, o
+  `get_usage` e o item de login nas Chaves por pasta de conta não são API pública do Claude
+  Code. Podem mudar entre versões e quebrar a parte do app que depende deles. Cada um tem
+  a versão em que foi conferido anotada no código.
+- **Assinatura em produto distribuído.** A documentação do Agent SDK diz:
 
-> "Unless previously approved, Anthropic does not allow third party developers to offer
-> claude.ai login or rate limits for their products, including agents built on the
-> Claude Agent SDK."
-> ([overview](https://code.claude.com/docs/en/agent-sdk/overview.md))
+  > "Unless previously approved, Anthropic does not allow third party developers to offer
+  > claude.ai login or rate limits for their products, including agents built on the
+  > Claude Agent SDK."
+  > ([overview](https://code.claude.com/docs/en/agent-sdk/overview.md))
 
-Fica como plano B caso a opção A não funcione e o custo por uso seja aceitável.
+  Quando a análise foi feita, o app era de uso pessoal e este ponto ficou como "rever se o
+  app um dia for distribuído". Hoje ele é distribuído pelo GitHub (D15) e usa o login do
+  `claude` de quem instala. **Em aberto**, ver [decisoes.md](decisoes.md).
 
-### Opção C: observar o que o Claude Code já grava (complemento)
+## Histórico da escolha (06/10/2026)
 
-O app lê em tempo real os arquivos de sessão em `~/.claude/projects/` e recebe eventos
-por hooks (scripts que o Claude Code executa em momentos como "usou uma ferramenta" ou
-"subagente terminou"). Os eventos trazem `session_id` e `transcript_path`.
+A análise original comparou quatro caminhos:
 
-- **Uso:** mostrar no canvas as sessões abertas fora do app (terminal, VS Code). Só
-  leitura.
-- **Contra:** o formato dos arquivos é interno do Claude Code, não uma API pública.
+- **A. Comandar o `claude -p` em modo `stream-json`** e desenhar o chat em cima da saída.
+  Era a recomendação.
+- **B. Claude Agent SDK.** Descartado na época por R2, lendo que o SDK exigia chave de
+  API. Na construção, o SDK foi usado com `pathToClaudeCodeExecutable`: ele roda o
+  `claude` da máquina, que é o caminho A com uma interface tipada por cima, e herda o login
+  da assinatura.
+- **C. Observar o que o Claude Code grava** (`~/.claude/projects`, status das sessões).
+  Virou o complemento descrito em "O que o app lê do Claude Code".
+- **D. Terminal embutido.** Não atendia R1 nem R3 como base; entrou depois como recurso
+  extra (os terminais do canvas).
 
-### Opção D: terminal embutido (fica para depois)
-
-Cada conversa como um terminal real rodando o `claude`. Não atende R1 (o chat seria o do
-terminal) nem R3 (o app só veria texto). Pode entrar depois como recurso extra.
-
-## Recomendação
-
-**A como base, C como complemento.**
-
-### Ponto de atenção sobre a assinatura
-
-A frase da documentação fala de desenvolvedores que oferecem login do claude.ai **em
-produtos para terceiros**. Este app é de uso pessoal e usa o próprio `claude`, logado
-pela própria pessoa. Minha leitura é que isso está dentro do permitido, mas **a
-documentação não trata desse caso de forma explícita**. Confiança média. Se o app um dia
-for distribuído, isso tem que ser revisto.
-
-### Prova técnica
-
-Protótipo descartável, de 1 a 2 dias, logo depois do wireframe. Precisa responder:
-
-1. Uma conversa de várias mensagens funciona pelo modo JSON contínuo, usando a assinatura?
-2. Um print colado chega ao Claude e é entendido?
-3. Os eventos de subagente chegam com input, atividade e output completos e em tempo real?
-4. Dá para aprovar permissões e interromper pelo app?
-5. Quantas conversas simultâneas aguentam sem problema (memória, limites da assinatura)?
-
-## Stack
-
-Não é necessária para o wireframe. Registrada aqui para a decisão posterior.
-
-### 1. Electron + React + TypeScript (recomendada)
-
-- É a base do VS Code: Monaco (o editor do VS Code), xterm.js (o terminal do VS Code) e
-  node-pty rodam sem adaptação.
-- Abrir e controlar processos do `claude` é natural em Node.
-- Colar imagem da área de transferência é API padrão do navegador e do Electron.
-- Canvas: React Flow (licença MIT, feito para nós e conexões) ou tldraw (mais "quadro
-  branco"; a licença para uso comercial precisa ser verificada).
-- **Contra:** consome mais memória e disco, porque cada app Electron carrega o próprio
-  Chromium. Para uso pessoal, aceitável.
-
-### 2. Tauri 2 + React + TypeScript (backend em Rust)
-
-- App leve, instalador pequeno (usa o navegador embutido do sistema).
-- **Contras:** Monaco e xterm.js funcionam, mas node-pty e o controle de processos ficam
-  em Rust. O navegador embutido é diferente no macOS (WebKit) e no Windows (Chromium), o
-  que gera bugs de renderização diferentes no canvas em cada sistema. Exige lidar com
-  Rust.
-
-### 3. Nativo (Swift/SwiftUI)
-
-- Melhor sensação de app de Mac.
-- **Contras:** não roda no Windows e não tem Monaco nem xterm.js. Descartaria.
+A stack também foi decidida nessa análise: Electron + React + TypeScript (D9), por rodar
+xterm.js e node-pty sem adaptação e controlar processos em Node. Tauri e Swift ficaram de
+fora: o primeiro exigiria o controle de processos em Rust e renderiza diferente em cada
+sistema; o segundo não roda no Windows.

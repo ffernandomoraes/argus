@@ -1,64 +1,77 @@
 # Funcionalidades
 
-Separadas por fase. Cada fase tem que funcionar sozinha antes da próxima começar.
-A ordem das fases 2 e 3 depende da integração escolhida
-(ver [integracao-com-agentes.md](integracao-com-agentes.md)).
+O plano saiu em fases, e cada uma tinha que funcionar sozinha antes da próxima. Abaixo, o
+que foi planejado e como está hoje (07/10/2026, versão 0.1.11). Para a lista do que o app
+faz, do ponto de vista de quem usa, ver o [README](../README.md#funcionalidades).
 
-## Fase 0: Wireframe (agora)
+Legenda: **feito**, **mudou** (entrou de outro jeito), **falta**.
 
-Telas de baixa fidelidade, sem código de produto. Telas propostas:
+## Fase 0: Wireframe
 
-1. Canvas, visão geral: as três áreas com os projetos dentro.
-2. Projeto aberto: conversas, instâncias de agente e subagentes ligados entre si.
-3. Conversa: o chat em si (escrever o prompt, colar prints, ver a resposta chegando, ver
-   as ferramentas sendo usadas).
-4. Bloco de subagente detalhado: input, atividade e output.
-5. Biblioteca global de agentes e o fluxo de "instanciar agente neste projeto".
-6. Visualizador de código.
+Substituída por D8: a interface foi montada direto no app.
 
 ## Fase 1: Canvas e projetos
 
-- Canvas infinito com pan e zoom.
-- Caixas de projeto: arrastar, redimensionar, mudar cor.
-- Áreas Trabalho, Freela e Pessoal.
-- Adicionar projeto a partir de uma pasta. Sugestão: importar os projetos que o Claude
-  Code já conhece e sugerir a área pela pasta.
-- O layout é salvo e volta igual ao reabrir o app.
+| Item | Status |
+|---|---|
+| Canvas infinito com pan e zoom | feito, com minimapa e "Ver tudo" |
+| Caixas de projeto: arrastar, redimensionar, mudar cor | feito, com encaixe nos vizinhos e desfazer/refazer |
+| Áreas Trabalho, Freela e Pessoal | mudou: viraram **grupos** livres, com nome, cor e conta do Claude próprios |
+| Adicionar projeto a partir de uma pasta | feito: **Nova pasta** no canvas e `argus .` no terminal |
+| Importar os projetos que o Claude Code já conhece | falta |
+| Layout salvo e restaurado ao reabrir | feito |
 
 ## Fase 2: Conversar
 
-- Criar uma conversa dentro de um projeto e conversar com a IA naquela pasta.
-- **Colar prints** com Cmd+V, arrastar imagens para o chat, ver as miniaturas antes de
-  enviar e remover alguma se precisar.
-- Usar a assinatura do Claude já logada na máquina.
-- Resposta aparecendo em tempo real (streaming: o texto chega aos poucos, enquanto é
-  gerado).
-- Ver as ferramentas que a IA está usando, de forma resumida e expansível.
-- Aprovar ou negar permissões (ex.: "posso rodar este comando?") direto no bloco.
-- Parar a IA no meio.
-- Várias conversas em vários projetos ao mesmo tempo.
-- Indicador de "esperando você" visível com o canvas afastado (zoom out).
+| Item | Status |
+|---|---|
+| Conversa dentro de um projeto, naquela pasta | feito, no painel lateral, em janela ou num bloco do canvas |
+| Colar prints com ⌘V, miniaturas antes de enviar | feito, mais arquivos anexados e ditado |
+| Usar a assinatura já logada na máquina | feito, com login dentro do app e várias contas |
+| Resposta em tempo real | feito |
+| Ferramentas usadas, resumidas e expansíveis | feito, com o diff de cada edição |
+| Aprovar ou negar permissões no chat | feito, mais as perguntas do Claude |
+| Parar a IA no meio | feito |
+| Várias conversas em vários projetos ao mesmo tempo | feito |
+| "Esperando você" visível com o canvas afastado | feito, mais notificação do sistema e ícone na barra de menus |
 
 ## Fase 3: Agentes e subagentes
 
-- Biblioteca global de agentes: criar, editar, duplicar.
-- Instanciar um agente num projeto com uma tarefa.
-- Bloco de subagente criado automaticamente, ligado à origem, com input, atividade,
-  output e status.
-- Ver sessões iniciadas fora do app (terminal, VS Code). Depende da integração.
+| Item | Status |
+|---|---|
+| Biblioteca global de agentes: criar, editar, duplicar | feito, com o Claude escrevendo as instruções |
+| Instanciar um agente num projeto com uma tarefa | mudou: o agente roda como subagente da conversa, chamado com `@nome` (D11) |
+| Bloco de subagente ligado à origem | mudou: o subagente aparece embaixo da conversa enquanto roda e o registro fica no chat (D12) |
+| Ver sessões iniciadas fora do app | feito, com o status de cada uma |
 
 ## Fase 4: Código
 
-- Árvore de arquivos e edição de arquivo (CodeMirror, com as cores do VS Code; ver D17).
-- Ver o que o agente mudou (diff: comparação lado a lado do antes e depois).
-- Botão "abrir no VS Code".
+| Item | Status |
+|---|---|
+| Árvore de arquivos e edição (CodeMirror, cores do VS Code) | feito, com criar, renomear, excluir, copiar e colar (D17) |
+| Ver o que o agente mudou (diff) | feito, no chat, a cada edição |
+| Botão "abrir no VS Code" | falta |
+
+## Entrou sem estar no plano
+
+- Terminais embutidos (Claude Code ou shell) no canvas.
+- Barra de comando por texto ou voz, que organiza o canvas.
+- Botão para iniciar e encerrar o servidor do projeto e lista dos servidores rodando.
+- Indicador de limite de uso, por conta.
+- Anel de uso da janela de contexto em cada conversa.
+- Editor da memória do Claude (`CLAUDE.md` e memória automática).
+- Comandos de barra, painel de MCPs e remote control no chat.
+- Instalador, atualização automática e release a cada push (D15, D16, D20).
+- Confirmação antes de fechar ou atualizar com conversa ou terminal rodando.
 
 ## Depois
 
-- Windows.
-- Terminal embutido.
-- Conexões entre projetos.
-- Notificações do sistema quando um agente termina ou precisa de resposta.
-- Custo e uso de tokens por projeto e por área.
-- Busca global em conversas.
-- Outros agentes além do Claude (Codex, Gemini CLI), se fizer sentido.
+| Item | Status |
+|---|---|
+| Windows | falta |
+| Terminal embutido | feito |
+| Notificações quando um agente termina ou precisa de resposta | feito |
+| Conexões entre projetos | falta |
+| Custo e uso de tokens por projeto e por grupo | falta (existe o limite de uso por conta, não o custo por projeto) |
+| Busca global em conversas | falta |
+| Outros agentes além do Claude (Codex, Gemini CLI) | falta, ver P11 em [decisoes.md](decisoes.md) |

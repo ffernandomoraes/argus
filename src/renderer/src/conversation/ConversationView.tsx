@@ -6,7 +6,12 @@ import type { ConversationSummary } from '../canvas/types'
 import { ChatView } from './ChatView'
 import { liveCommand, type SessionSettings } from './SessionSettings'
 import { McpPanel } from './McpPanel'
-import { moveConversationSettings, setConversationSettings, useConversationSettings } from './conversationSettings'
+import {
+  freezeConversationSettings,
+  moveConversationSettings,
+  setConversationSettings,
+  useConversationSettings
+} from './conversationSettings'
 import { useConversationHistory } from './useConversationHistory'
 import { addLocalEvent, mergeEvents, useLocalEvents } from './localEvents'
 import { EFFORTS } from './ModelEffortPicker'
@@ -242,6 +247,7 @@ export function ConversationView({
     )
     const paths = files.filter((f) => !isSendableImage(f)).map((f) => window.api.filePath(f)).filter(Boolean)
     const full = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
+    freezeConversationSettings(conversation.sessionId ?? conversation.id, settings)
     window.api.chat.send({
       key: conversation.id,
       cwd,

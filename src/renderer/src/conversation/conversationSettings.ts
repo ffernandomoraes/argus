@@ -3,7 +3,8 @@ import { getPreferences, usePreferences } from '../settings/preferences'
 import type { SessionSettings } from './SessionSettings'
 
 // Trocas feitas nos seletores de uma conversa ficam só nela, guardadas neste computador.
-// Só o que foi trocado: o resto segue o padrão das Configurações.
+// Até o primeiro envio, o que não foi trocado segue o padrão das Configurações; depois, fica fixo
+// (ver freezeConversationSettings).
 const key = (id: string) => `chat-settings:${id}`
 const CHANGED = 'chat-settings-changed'
 
@@ -30,6 +31,14 @@ export function getConversationSettings(id: string | undefined): SessionSettings
 
 export function setConversationSettings(id: string, patch: Partial<SessionSettings>): void {
   write(id, { ...read(id), ...patch })
+}
+
+// A sessão do Claude recebe modelo, modo etc. só ao abrir; mudar o padrão nas Configurações
+// depois não chega nela. Guarda o que valia no envio para a tela não mostrar o que não vale.
+export function freezeConversationSettings(id: string, settings: SessionSettings): void {
+  const saved = read(id)
+  if (Object.keys(settings).every((k) => k in saved)) return
+  write(id, { ...settings, ...saved })
 }
 
 // Conversa nova ganha o id da sessão no primeiro envio: o que foi trocado antes vai junto.

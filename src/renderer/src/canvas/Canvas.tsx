@@ -51,12 +51,17 @@ import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
 import {
   addNode,
+  dropIntoGroup,
   findChatSpot,
   fitAfterResize,
   groupAccount,
+  groupUnder,
+  leaveGroup,
   removeNode,
   rename,
+  sizeOf,
   toggleCollapse,
+  toggleObscure,
   toggleProjectCollapse
 } from './operations'
 import { snap, type Guide } from './snapping'
@@ -76,6 +81,9 @@ function projectOf(node: CanvasNode | undefined): ProjectData | null {
 // arrastável, a menos que exista onNodeClick. Sem isso, com o espaço pressionado (nada
 // arrastável nem selecionável), o botão direito nos blocos atravessa para o canvas.
 const keepPointerEvents = () => {}
+
+// Tempo com o bloco em cima de um grupo, durante o arraste, para ele entrar sem precisar soltar.
+const DWELL_MS = 2000
 
 export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme; onOpenSettings: () => void }) {
   const [nodes, setNodes] = useState<CanvasNode[]>(loadNodes)
@@ -104,8 +112,16 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const [openFile, setOpenFile] = useState<{ root: string; path: string; lines?: LineRange; diff?: boolean } | null>(
     null
   )
-  const { screenToFlowPosition, getZoom, fitView } = useReactFlow()
+  const { screenToFlowPosition, getZoom, fitView, setCenter } = useReactFlow()
   const [guides, setGuides] = useState<Guide[]>([])
+  // Grupo que recebe o bloco solto sendo arrastado, se ele for largado agora; fica destacado.
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null)
+  // Contagem do bloco parado em cima do grupo destacado; recomeça ao trocar de grupo ou sair dele.
+  const dwell = useRef<{ groupId: string; timer: number } | null>(null)
+  const stopDwell = () => {
+    if (dwell.current) clearTimeout(dwell.current.timer)
+    dwell.current = null
+  }
   const spaceHeld = useSpaceHeld()
   const auth = useAuth()
 
@@ -121,6 +137,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     // Instância que mudou de tamanho empurra a borda do grupo. Só instância: medida do
     // próprio grupo não entra, senão encolher o grupo na mão seria desfeito na hora.
     const resized = changes.filter((c) => c.type === 'dimensions').map((c) => c.id)
+    // Instância arrastada contra a borda do grupo: o grupo cresce para aquele lado, junto com o arraste.
+    const dragged = changes.flatMap((c) => (c.type === 'position' && c.dragging ? [c.id] : []))
     // Um bloco sendo arrastado encaixa no alinhamento dos vizinhos (vários juntos, não).
     const moves = changes.filter((c) => c.type === 'position' && c.dragging !== undefined)
     const move = moves.length === 1 && moves[0].type === 'position' ? moves[0] : null
@@ -131,7 +149,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     } else if (moves.length) setGuides([])
     setNodes((ns) => {
       const next = applyNodeChanges(changes, ns)
-      return resized.length ? fitAfterResize(ns, next, resized) : next
+      return resized.length || dragged.length ? fitAfterResize(ns, next, [...resized, ...dragged]) : next
     })
   }
 
@@ -226,6 +244,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           )
         ),
       toggleGroup: (id: string) => change((ns) => toggleCollapse(ns, id)),
+      toggleObscure: (id: string) => change((ns) => toggleObscure(ns, id)),
       toggleProject: (id: string) => change((ns) => toggleProjectCollapse(ns, id)),
       activeConversation,
       openConversation: (nodeId: string, conversationId: string) => {
@@ -243,8 +262,18 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       openMemory: (projectPath?: string) => setMemoryOpen(projectPath ?? 'all'),
       openAgents: () => setAgentsOpen(true),
       openDevServers: () => setDevServersOpen(true),
+      dropTargetId,
+      // O bloco sai para fora do grupo e a câmera vai até ele, no zoom em que está.
+      leaveGroup: (id: string) => {
+        const next = leaveGroup(nodesRef.current, id)
+        const node = next.find((n) => n.id === id)
+        if (!node || next === nodesRef.current) return
+        change(next)
+        const { width, height } = sizeOf(node)
+        setCenter(node.position.x + width / 2, node.position.y + height / 2, { zoom: getZoom(), duration: 300 })
+      },
     }),
-    [renamingId, change, nodesRef, activeConversation, poppedOut, onOpenSettings] // eslint-disable-line react-hooks/exhaustive-deps
+    [renamingId, change, nodesRef, activeConversation, poppedOut, onOpenSettings, dropTargetId] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // Clique na notificação do sistema: abre a conversa pelo bloco dela (conversa solta) ou pelo
@@ -382,13 +411,55 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     setMenu({ x: e.clientX, y: e.clientY, items })
   }
 
+  // Só na tela, não vai para o estado salvo:
+  // - instâncias de grupo com o conteúdo oculto somem; o grupo mostra listras no lugar;
+  // - instância de grupo arrastada contra a borda passa dela em vez de travar (expandParent),
+  //   e o grupo cresce até ela em onNodesChange.
+  // A cópia de cada nó é reaproveitada enquanto ele não muda, para o React Flow não redesenhar
+  // todas as instâncias a cada quadro de um arraste.
+  const flowCopies = useRef(new WeakMap<CanvasNode, { obscured: boolean; node: CanvasNode }>())
+  const flowNodes = useMemo(() => {
+    const obscured = new Set(nodes.filter((n) => n.type === 'area' && n.data.obscured).map((n) => n.id))
+    return nodes.map((n) => {
+      if (!n.parentId) return n
+      const hide = obscured.has(n.parentId)
+      const cached = flowCopies.current.get(n)
+      if (cached?.obscured === hide) return cached.node
+      const node: CanvasNode = hide ? { ...n, expandParent: true, hidden: true } : { ...n, expandParent: true }
+      flowCopies.current.set(n, { obscured: hide, node })
+      return node
+    })
+  }, [nodes])
+
   return (
     <CanvasContext.Provider value={actions}>
       <ReactFlow
-        nodes={nodes}
+        nodes={flowNodes}
         onNodeClick={keepPointerEvents}
         zoomOnDoubleClick={false}
         onNodesChange={onNodesChange}
+        // Bloco solto entra no grupo ao ser largado em cima dele, ou antes, se ficar em cima por
+        // DWELL_MS: o arraste continua, já dentro do grupo. Sem histórico próprio: o arraste já
+        // gravou, e desfazer volta o bloco para fora de uma vez.
+        onNodeDrag={(_, __, dragged) => {
+          const target = dragged.map((n) => groupUnder(nodesRef.current, n)).find(Boolean)
+          setDropTargetId(target?.id ?? null)
+          if (dwell.current?.groupId === target?.id) return
+          stopDwell()
+          if (!target) return
+          const ids = dragged.map((n) => n.id)
+          const timer = window.setTimeout(() => {
+            dwell.current = null
+            setDropTargetId(null)
+            setNodes((ns) => dropIntoGroup(ns, ids))
+          }, DWELL_MS)
+          dwell.current = { groupId: target.id, timer }
+        }}
+        onNodeDragStop={(_, __, dragged) => {
+          stopDwell()
+          setDropTargetId(null)
+          setNodes((ns) => dropIntoGroup(ns, dragged.map((n) => n.id)))
+        }}
         nodeTypes={nodeTypes}
         className={spaceHeld ? 'camera-mode' : ''}
         nodesDraggable={!spaceHeld}

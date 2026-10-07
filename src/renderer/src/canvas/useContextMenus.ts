@@ -21,6 +21,7 @@ type Deps = {
   addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => void
   closeTerminal: (nodeId: string, name: string) => void
   toggleGroup: (id: string) => void
+  leaveGroup: (id: string) => void
   newLooseConversation: (position?: XYPosition) => void
   openConversation: (nodeId: string, conversationId: string) => void
 }
@@ -161,7 +162,7 @@ function moveSubmenu(deps: Deps, node: CanvasNode): MenuItem {
         type: 'action',
         label: 'Tirar do grupo',
         icon: FolderOpen,
-        onSelect: () => setNodes((ns) => moveToGroup(ns, node.id, null))
+        onSelect: () => deps.leaveGroup(node.id)
       }
     )
   }

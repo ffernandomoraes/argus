@@ -20,7 +20,12 @@ type CanvasActions = {
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
   toggleGroup: (id: string) => void
+  toggleObscure: (id: string) => void
   toggleProject: (id: string) => void
+  // Grupo destacado: recebe o bloco solto que está sendo arrastado, se ele for largado agora.
+  dropTargetId: string | null
+  // "Tirar do grupo": o grupo encolhe, o bloco vai para fora e a câmera vai até ele.
+  leaveGroup: (id: string) => void
   activeConversation: ActiveConversation | null
   openConversation: (nodeId: string, conversationId: string) => void
   newConversation: (nodeId: string) => void

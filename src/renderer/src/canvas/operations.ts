@@ -1,6 +1,6 @@
 import { AREA_OUTSET, CHAT_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, PROJECT_OUTSET } from './factory'
 import type { XYPosition } from '@xyflow/react'
-import type { CanvasNode } from './types'
+import type { AreaNode, CanvasNode } from './types'
 
 // Funções puras sobre a lista de nós. O React Flow exige que o grupo (pai)
 // venha antes dos filhos no array, por isso nó movido vai para o fim.
@@ -93,6 +93,62 @@ export function moveToGroup(nodes: CanvasNode[], id: string, groupId: string | n
 
   const next = [...rest.map((n) => (n.id === target.id ? resized : n)), moved]
   return collapsed ? next : pushAway(next, [target.id])
+}
+
+// Bloco solto arrastado para cima de um grupo entra nele quando o centro do bloco cai dentro
+// do grupo. Fica onde foi solto; se passar da borda, o grupo cresce até ele. Grupo recolhido não
+// mostra onde soltar: o bloco vai para o lugar livre (moveToGroup). De dentro para fora não
+// existe: levar o bloco até a borda faz o grupo crescer (expandParent, no Canvas).
+export function dropIntoGroup(nodes: CanvasNode[], ids: string[]): CanvasNode[] {
+  let out = nodes
+  for (const id of ids) {
+    const node = out.find((n) => n.id === id)
+    const group = node && groupUnder(out, node)
+    if (!node || !group) continue
+    if (group.data.collapsed) {
+      out = moveToGroup(out, id, group.id)
+      continue
+    }
+    const position = { x: node.position.x - group.position.x, y: node.position.y - group.position.y }
+    const inside = { ...node, parentId: group.id, extent: 'parent', position } as CanvasNode
+    out = pushAway(growGroupsToFit([...out.filter((n) => n.id !== id), inside], [id]), [group.id])
+  }
+  return out
+}
+
+// Grupo que recebe o bloco solto se ele for largado onde está: o que contém o centro do bloco.
+// Grupos sobrepostos: vale o desenhado por cima (o último da lista).
+export function groupUnder(nodes: CanvasNode[], node: CanvasNode): AreaNode | undefined {
+  if (node.parentId || node.type === 'area') return undefined
+  const { width, height } = sizeOf(node)
+  const center = { x: node.position.x + width / 2, y: node.position.y + height / 2 }
+  return [...nodes].reverse().find((g): g is AreaNode => {
+    if (g.type !== 'area' || g.hidden) return false
+    const s = sizeOf(g)
+    const { x, y } = g.position
+    return center.x >= x && center.x <= x + s.width && center.y >= y && center.y <= y + s.height
+  })
+}
+
+// "Tirar do grupo": o grupo encolhe para caber só o que ficou nele e o bloco vai para fora,
+// à direita do grupo e alinhado pelo topo, descendo até achar lugar livre.
+export function leaveGroup(nodes: CanvasNode[], id: string): CanvasNode[] {
+  const node = nodes.find((n) => n.id === id)
+  const group = nodes.find((n) => n.id === node?.parentId)
+  if (!node || !group || group.type !== 'area') return nodes
+  const others = nodes.filter((n) => n.id !== id)
+  // Recolhido, o tamanho na tela é o da barra: encolher pelo conteúdo o abriria pela metade.
+  const rest = group.data.collapsed ? others : fitGroupToContent(others, group.id)
+  const g = boxOf(rest.find((n) => n.id === group.id) ?? group)
+  // O nó fica deslocado do que desenha por fora (PROJECT_OUTSET).
+  const offset = boxOf({ ...node, position: { x: 0, y: 0 } })
+  const { parentId: _p, extent: _e, ...loose } = node
+  const outside = {
+    ...loose,
+    hidden: false,
+    position: { x: g.x + g.width + GAP - offset.x, y: g.y - offset.y }
+  } as CanvasNode
+  return [...rest, { ...outside, position: freeSpot(rest, outside) } as CanvasNode]
 }
 
 // Bloco novo entra na lista: num grupo, no lugar livre dele (o grupo cresce e empurra os
@@ -247,6 +303,13 @@ export function toggleCollapse(nodes: CanvasNode[], id: string): CanvasNode[] {
   return collapse ? next : pushAway(next, [id])
 }
 
+// Conteúdo oculto: as instâncias continuam no lugar, só não aparecem.
+export function toggleObscure(nodes: CanvasNode[], id: string): CanvasNode[] {
+  return nodes.map((n) =>
+    n.id === id && n.type === 'area' ? { ...n, data: { ...n.data, obscured: !n.data.obscured } } : n
+  )
+}
+
 // Pasta recolhida: a lista de conversas encolhe para as que pedem atenção.
 export function toggleProjectCollapse(nodes: CanvasNode[], id: string): CanvasNode[] {
   return nodes.map((n) =>
@@ -303,7 +366,7 @@ export function growGroupsToFit(nodes: CanvasNode[], changedIds: string[]): Canv
   return out
 }
 
-// Depois de uma medição: o grupo cresce para caber o conteúdo e, junto com o bloco solto que
+// Depois de uma medição (ou de um arraste dentro do grupo): o grupo cresce para caber o conteúdo e, junto com o bloco solto que
 // cresceu (pasta com conversa nova, por exemplo), empurra os vizinhos. Grupo redimensionado
 // na mão não entra: é decisão de quem arrasta a borda.
 export function fitAfterResize(before: CanvasNode[], after: CanvasNode[], resizedIds: string[]): CanvasNode[] {

@@ -8,6 +8,8 @@ export type AreaData = {
   // Conta do Claude das pastas, terminais e conversas de dentro. Sem ela (ou removida), a padrão.
   account?: string
   collapsed?: boolean
+  // Conteúdo oculto: as instâncias de dentro somem e o grupo vira uma área listrada (como no FigJam).
+  obscured?: boolean
   // Tamanho antes de recolher, para voltar igual ao expandir.
   expandedSize?: { width: number; height: number }
 }

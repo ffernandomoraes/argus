@@ -160,6 +160,28 @@ export function addNode(nodes: CanvasNode[], node: CanvasNode, groupId?: string)
   return placed.type === 'area' ? [placed, ...nodes] : [...nodes, placed]
 }
 
+// Bloco que nasce de outro (a conversa posta no canvas a partir da pasta): à direita dele,
+// alinhado pelo topo e no mesmo grupo. Se encostar num vizinho, desce até ficar livre; dentro
+// de um grupo, o grupo cresce para caber e empurra os blocos de fora.
+export function placeBeside(nodes: CanvasNode[], anchorId: string, node: CanvasNode): CanvasNode[] {
+  const anchor = nodes.find((n) => n.id === anchorId)
+  if (!anchor) return addNode(nodes, node)
+  const a = boxOf(anchor)
+  const offset = boxOf({ ...node, position: { x: 0, y: 0 } })
+  const box = { ...offset, x: a.x + a.width + GAP, y: a.y }
+  const occupied = nodes.filter((n) => n.parentId === anchor.parentId).map(boxOf)
+  for (let b = occupied.find((o) => overlaps(box, o)); b; b = occupied.find((o) => overlaps(box, o))) {
+    box.y = b.y + b.height + GAP
+  }
+  const position = { x: box.x - offset.x, y: box.y - offset.y }
+  const group = nodes.find((n) => n.id === anchor.parentId)
+  if (group?.type !== 'area') return [...nodes, { ...node, position } as CanvasNode]
+  const collapsed = !!group.data.collapsed
+  const inside = { ...node, parentId: group.id, extent: 'parent', hidden: collapsed, position } as CanvasNode
+  const grown = growGroupsToFit([...nodes, inside], [inside.id])
+  return collapsed ? grown : pushAway(grown, [group.id])
+}
+
 // Posição do nó descida até a caixa dele não encostar em nenhum bloco solto.
 function freeSpot(nodes: CanvasNode[], node: CanvasNode): XYPosition {
   const occupied = nodes.filter((n) => !n.parentId && !n.hidden).map(boxOf)
@@ -213,6 +235,7 @@ export function rename(nodes: CanvasNode[], id: string, name: string): CanvasNod
     if (n.type === 'area') return { ...n, data: { ...n.data, label: name } }
     if (n.type === 'terminal') return { ...n, data: { ...n.data, name } }
     if (n.type === 'chat') return { ...n, data: { ...n.data, name } }
+    if (n.type === 'chatPanel') return { ...n, data: { ...n.data, name } }
     return { ...n, data: { ...n.data, name } }
   })
 }

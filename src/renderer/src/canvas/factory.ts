@@ -1,5 +1,5 @@
 import type { XYPosition } from '@xyflow/react'
-import type { AreaNode, ChatNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
+import type { AreaNode, ChatNode, ChatPanelNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
 
 export const COLORS = [
   '#3b82f6',
@@ -84,5 +84,25 @@ export function createChat(position: XYPosition, sessionId: string): ChatNode {
     type: 'chat',
     position,
     data: { name: 'Conversa', path: looseProject().path, sessionId }
+  }
+}
+
+// Conversa no canvas: perto da largura do painel lateral, e alta o bastante para ler a resposta.
+export const CHAT_PANEL_SIZE = { width: 600, height: 680 }
+
+// A posição é decidida por placeBeside, ao lado de quem abriu a conversa.
+export function createChatPanel(project: ProjectData, loose: boolean, conversation: { id: string; title: string }): ChatPanelNode {
+  return {
+    id: `cp-${crypto.randomUUID()}`,
+    type: 'chatPanel',
+    position: { x: 0, y: 0 },
+    style: { ...CHAT_PANEL_SIZE },
+    dragHandle: '.chat-panel-drag',
+    data: {
+      name: conversation.title,
+      path: project.path,
+      ...(!loose && { projectName: project.name }),
+      sessionId: conversation.id
+    }
   }
 }

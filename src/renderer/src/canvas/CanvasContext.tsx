@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { XYPosition } from '@xyflow/react'
-import type { TerminalKind } from './types'
+import type { LineRange } from '../conversation/fileLinks'
+import type { ProjectData, TerminalKind } from './types'
 
 // draft: conversa nova, que ainda não existe na lista da pasta.
 // sessionId: id que o Claude deu à conversa nova no primeiro envio.
@@ -48,6 +49,13 @@ type CanvasActions = {
   closeTerminal: (nodeId: string, name: string) => void
   // Conversas abertas em janela separada.
   poppedOut: Set<string>
+  // Conversa no canvas (ChatPanelNode): fechar tira o bloco (a conversa continua salva); os outros
+  // dois tiram o bloco e abrem a conversa no painel lateral ou numa janela própria.
+  closeChatPanel: (nodeId: string) => void
+  chatPanelToDrawer: (nodeId: string) => void
+  chatPanelPopout: (nodeId: string) => void
+  // Link de arquivo clicado numa conversa do canvas: abre o código daquela pasta.
+  openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => void
 }
 
 export const CanvasContext = createContext<CanvasActions | null>(null)

@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronDown, ChevronUp, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, Pencil, FolderPlus, SquareDashed, SquareTerminal, Terminal, Trash2, Ungroup } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, Terminal, Trash2, Ungroup, X } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { AuthState } from '../../../shared/auth'
 import { resolveAccount } from '../auth/useAuth'
@@ -7,7 +7,7 @@ import type { ConfirmRequest } from './ConfirmDialog'
 import type { MenuItem } from './ContextMenu'
 import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupAccount, setGroupColor, ungroup } from './operations'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
-import type { AreaNode, CanvasNode, ChatNode, ProjectNode, TerminalKind, TerminalNode } from './types'
+import type { AreaNode, CanvasNode, ChatNode, ChatPanelNode, ProjectNode, TerminalKind, TerminalNode } from './types'
 
 type Deps = {
   nodes: CanvasNode[]
@@ -24,6 +24,9 @@ type Deps = {
   leaveGroup: (id: string) => void
   newLooseConversation: (position?: XYPosition) => void
   openConversation: (nodeId: string, conversationId: string) => void
+  closeChatPanel: (nodeId: string) => void
+  chatPanelToDrawer: (nodeId: string) => void
+  chatPanelPopout: (nodeId: string) => void
 }
 
 const plural = (n: number) => (n === 1 ? '1 instância' : `${n} instâncias`)
@@ -233,5 +236,17 @@ export function chatMenu(deps: Deps, node: ChatNode): MenuItem[] {
           onConfirm: () => setNodes((ns) => removeNode(ns, node.id))
         })
     }
+  ]
+}
+
+// Conversa no canvas: fechar só tira o bloco, sem perguntar, como o X do painel lateral.
+export function chatPanelMenu(deps: Deps, node: ChatPanelNode): MenuItem[] {
+  return [
+    { type: 'action', label: 'Voltar para o painel lateral', icon: PanelRight, onSelect: () => deps.chatPanelToDrawer(node.id) },
+    { type: 'action', label: 'Abrir em janela separada', icon: ExternalLink, onSelect: () => deps.chatPanelPopout(node.id) },
+    { type: 'separator' },
+    moveSubmenu(deps, node),
+    { type: 'separator' },
+    { type: 'action', label: 'Fechar conversa', icon: X, onSelect: () => deps.closeChatPanel(node.id) }
   ]
 }

@@ -26,8 +26,10 @@ import { ConfirmDialog, type ConfirmRequest } from './ConfirmDialog'
 import { ContextMenu, type MenuState } from './ContextMenu'
 import { FolderPicker } from './FolderPicker'
 import { ChatNode } from './ChatNode'
+import { ChatPanelNode } from './ChatPanelNode'
 import {
   createChat,
+  createChatPanel,
   createFolderInstance,
   createGroup,
   createTerminal,
@@ -57,6 +59,7 @@ import {
   groupAccount,
   groupUnder,
   leaveGroup,
+  placeBeside,
   removeNode,
   rename,
   sizeOf,
@@ -66,14 +69,15 @@ import {
 } from './operations'
 import { snap, type Guide } from './snapping'
 import type { CanvasNode, ConversationSummary, ProjectData, TerminalKind } from './types'
-import { chatMenu, groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
+import { chatMenu, chatPanelMenu, groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
 
-const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode }
+const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode, chatPanel: ChatPanelNode }
 
 // Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
 function projectOf(node: CanvasNode | undefined): ProjectData | null {
   if (node?.type === 'project') return node.data
   if (node?.type === 'chat') return looseProject()
+  if (node?.type === 'chatPanel') return { name: node.data.projectName ?? 'Sem projeto', path: node.data.path, color: '#71717a' }
   return null
 }
 
@@ -94,6 +98,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const [poppedOut, setPoppedOut] = useState<Set<string>>(new Set())
   // Código aberto acompanha a pasta da conversa aberta.
   const [codeOpen, setCodeOpen] = useState(false)
+  // Pasta do código aberto por um link numa conversa do canvas (ChatPanelNode); vazio = a do painel.
+  const [codeFor, setCodeFor] = useState<ProjectData | null>(null)
   // Posição e tamanho do painel da conversa; lembrados enquanto o app está aberto.
   const [drawerRect, setDrawerRect] = useState<PanelRect | null>(null)
   // 'all' = todas as pastas; caminho = só a memória daquela pasta.
@@ -248,8 +254,13 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       toggleProject: (id: string) => change((ns) => toggleProjectCollapse(ns, id)),
       activeConversation,
       openConversation: (nodeId: string, conversationId: string) => {
+        const openIn = getPreferences().openIn
+        // Já no canvas: a câmera vai até o bloco dela.
+        const panel = chatPanelOf(conversationId)
+        if (panel) focusNode(panel.id)
         // Em janela separada (já aberta, ou pela preferência): abre ou traz a janela para frente.
-        if (poppedOut.has(conversationId) || getPreferences().openIn === 'window') popoutConversation(nodeId, conversationId)
+        else if (poppedOut.has(conversationId) || openIn === 'window') popoutConversation(nodeId, conversationId)
+        else if (openIn === 'node') pinConversation(nodeId, conversationId)
         else setActiveConversation({ nodeId, conversationId })
       },
       poppedOut,
@@ -272,6 +283,26 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         const { width, height } = sizeOf(node)
         setCenter(node.position.x + width / 2, node.position.y + height / 2, { zoom: getZoom(), duration: 300 })
       },
+      closeChatPanel: (nodeId: string) => change((ns) => removeNode(ns, nodeId)),
+      // O painel abre pela pasta (ou pelo card da conversa solta); sem ela no canvas, não tem por onde.
+      chatPanelToDrawer: (nodeId: string) => {
+        const node = nodesRef.current.find((n) => n.id === nodeId)
+        if (node?.type !== 'chatPanel') return
+        const owner = ownerOf(node.data.path, node.data.sessionId)
+        if (!owner) return
+        change((ns) => removeNode(ns, nodeId))
+        setActiveConversation({ nodeId: owner.id, conversationId: node.data.sessionId })
+      },
+      chatPanelPopout: (nodeId: string) => {
+        const node = nodesRef.current.find((n) => n.id === nodeId)
+        if (node?.type !== 'chatPanel') return
+        popoutConversation(nodeId, node.data.sessionId)
+        change((ns) => removeNode(ns, nodeId))
+      },
+      openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => {
+        setCodeFor(project)
+        openFileLink(project.path, path, lines, diff)
+      }
     }),
     [renamingId, change, nodesRef, activeConversation, poppedOut, onOpenSettings, dropTargetId] // eslint-disable-line react-hooks/exhaustive-deps
   )
@@ -283,10 +314,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       window.api.chat.onOpen((cwd, sessionId) => {
         const open = actions.activeConversation
         if (open && (open.conversationId === sessionId || open.sessionId === sessionId)) return
-        const ns = nodesRef.current
-        const target =
-          ns.find((n) => n.type === 'chat' && n.data.sessionId === sessionId) ??
-          ns.find((n) => n.type === 'project' && n.data.path === displayPath(cwd))
+        const target = ownerOf(displayPath(cwd), sessionId)
         if (target) actions.openConversation(target.id, sessionId)
       }),
     [actions, nodesRef]
@@ -342,6 +370,40 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     return [...seen.values()]
   }, [nodes])
 
+  // Bloco por onde a conversa abre: o card dela, se for solta, ou a pasta dela.
+  function ownerOf(path: string, sessionId: string): CanvasNode | undefined {
+    const ns = nodesRef.current
+    return (
+      ns.find((n) => n.type === 'chat' && n.data.sessionId === sessionId) ??
+      ns.find((n) => n.type === 'project' && n.data.path === path)
+    )
+  }
+
+  function chatPanelOf(conversationId: string): CanvasNode | undefined {
+    return nodesRef.current.find((n) => n.type === 'chatPanel' && n.data.sessionId === conversationId)
+  }
+
+  // Seleciona o bloco e enquadra ele na tela, sem passar de 100%.
+  function focusNode(id: string) {
+    setNodes((ns) => ns.map((n) => (n.selected === (n.id === id) ? n : { ...n, selected: n.id === id })))
+    // Espera o bloco novo ser medido antes de enquadrar.
+    setTimeout(() => fitView({ nodes: [{ id }], padding: 0.15, duration: 300, maxZoom: 1 }), 100)
+  }
+
+  // Põe a conversa no canvas, ao lado da pasta (ou do card) de onde ela abriu. Se já estiver lá,
+  // só vai até ela: a mesma conversa em dois blocos brigaria pela mesma sessão.
+  function pinConversation(nodeId: string, conversationId: string) {
+    const existing = chatPanelOf(conversationId)
+    if (existing) return focusNode(existing.id)
+    const anchor = nodesRef.current.find((n) => n.id === nodeId)
+    const project = projectOf(anchor)
+    const conversation = project && getSessions(project.path).find((c) => c.id === conversationId)
+    if (!anchor || !project || !conversation) return
+    const node = createChatPanel(project, anchor.type === 'chat', conversation)
+    change((ns) => placeBeside(ns, nodeId, node))
+    focusNode(node.id)
+  }
+
   // Abre a conversa numa janela própria (ou foca a que já existe).
   function popoutConversation(nodeId: string, conversationId: string) {
     const node = nodesRef.current.find((n) => n.id === nodeId)
@@ -378,7 +440,11 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const closeCode = () => {
     setCodeOpen(false)
     setOpenFile(null)
+    setCodeFor(null)
   }
+
+  // Pasta do código: a do link clicado numa conversa do canvas ou, sem isso, a do painel.
+  const codeProject = codeFor ?? drawer?.project
 
   // Dentro de um grupo, a pasta entra num lugar livre e o grupo cresce se precisar.
   const pickFolder = (folder: string) => {
@@ -407,7 +473,9 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           ? terminalMenu(deps, node)
           : node.type === 'chat'
             ? chatMenu(deps, node)
-            : instanceMenu(deps, node)
+            : node.type === 'chatPanel'
+              ? chatPanelMenu(deps, node)
+              : instanceMenu(deps, node)
     setMenu({ x: e.clientX, y: e.clientY, items })
   }
 
@@ -494,28 +562,29 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       />
       {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
       <TitleBar windowTitle={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'} />
-      {drawer && codeOpen && (
+      {codeProject && codeOpen && (
         <CodeExplorer
-          root={drawer.project.path}
-          name={drawer.project.name}
-          selected={openFile?.root === drawer.project.path ? openFile.path : null}
-          rightOffset={drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
-          onOpenFile={(path) => setOpenFile({ root: drawer.project.path, path })}
+          root={codeProject.path}
+          name={codeProject.name}
+          selected={openFile?.root === codeProject.path ? openFile.path : null}
+          // Sem o painel aberto, o código vai até a borda direita.
+          rightOffset={!drawer ? 16 : drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
+          onOpenFile={(path) => setOpenFile({ root: codeProject.path, path })}
           onRenamed={(from, to) =>
             setOpenFile((f) =>
-              f && f.root === drawer.project.path && (f.path === from || f.path.startsWith(from + '/'))
+              f && f.root === codeProject.path && (f.path === from || f.path.startsWith(from + '/'))
                 ? { ...f, path: to + f.path.slice(from.length) }
                 : f
             )
           }
           onDeleted={(path) =>
             setOpenFile((f) =>
-              f && f.root === drawer.project.path && (f.path === path || f.path.startsWith(path + '/')) ? null : f
+              f && f.root === codeProject.path && (f.path === path || f.path.startsWith(path + '/')) ? null : f
             )
           }
           onClose={closeCode}
         >
-          {openFile?.root === drawer.project.path && (
+          {openFile?.root === codeProject.path && (
             <FileViewer
               // Outro arquivo começa do zero (rolagem, recargas); o mesmo só recarrega.
               key={`${openFile.root}|${openFile.path}`}
@@ -541,8 +610,14 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           rect={drawerRect}
           onRectChange={setDrawerRect}
           onToggleCode={() => (codeOpen ? closeCode() : setCodeOpen(true))}
-          onOpenFile={(path, lines) => openFileLink(drawer.project.path, path, lines)}
-          onOpenDiff={(path) => openFileLink(drawer.project.path, path, undefined, true)}
+          onOpenFile={(path, lines) => {
+            setCodeFor(null)
+            openFileLink(drawer.project.path, path, lines)
+          }}
+          onOpenDiff={(path) => {
+            setCodeFor(null)
+            openFileLink(drawer.project.path, path, undefined, true)
+          }}
           onSessionStarted={(sessionId) => {
             // Conversa sem projeto entra no canvas no primeiro envio, num lugar livre.
             const node =
@@ -554,6 +629,11 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           }}
           onPopout={() => {
             if (drawer.nodeId) popoutConversation(drawer.nodeId, drawer.conversation.id)
+            setActiveConversation(null)
+            closeCode()
+          }}
+          onPinToCanvas={() => {
+            if (drawer.nodeId) pinConversation(drawer.nodeId, drawer.conversation.id)
             setActiveConversation(null)
             closeCode()
           }}

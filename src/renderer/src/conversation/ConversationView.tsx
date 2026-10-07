@@ -162,7 +162,7 @@ function UncommittedBadge({
 }
 
 // Cabeçalho e chat de uma conversa, sem decidir onde eles moram: servem ao painel lateral
-// (ConversationDrawer) e à janela separada (ConversationWindow).
+// (ConversationDrawer), à janela separada (ConversationWindow) e ao bloco no canvas (ChatPanelNode).
 export function ConversationView({
   cwd,
   account,
@@ -176,6 +176,7 @@ export function ConversationView({
   headerClassName = '',
   headerStyle,
   onHeaderPointerDown,
+  bodyClassName = '',
   onClose
 }: {
   // Pasta onde o Claude roda.
@@ -199,6 +200,8 @@ export function ConversationView({
   headerClassName?: string
   headerStyle?: CSSProperties
   onHeaderPointerDown?: (e: PointerEvent) => void
+  // Classes do corpo (chat). No canvas, tiram o corpo do arraste e do pan para dar para ler e escrever.
+  bodyClassName?: string
   onClose: () => void
 }) {
   const [mcpOpen, setMcpOpen] = useState(false)
@@ -315,7 +318,8 @@ export function ConversationView({
           )}
         </div>
 
-        <div className="no-drag flex shrink-0 items-center gap-1">
+        {/* no-drag: botões fora do arraste da janela; nodrag: fora do arraste do bloco no canvas. */}
+        <div className="no-drag nodrag flex shrink-0 items-center gap-1">
           {!!uncommitted?.length && <UncommittedBadge cwd={cwd} files={uncommitted} onOpenDiff={onOpenDiff} />}
           {actions}
           <HeaderButton label="Fechar" onClick={onClose}>
@@ -326,7 +330,7 @@ export function ConversationView({
 
       {/* key: trocar de conversa recria o conteúdo (rolagem); o rascunho fica guardado por conversa */}
       <FileLinkContext.Provider value={onOpenFile ?? null}>
-        <div className="flex min-h-0 flex-1 flex-col" style={zoom === 1 ? undefined : { zoom }}>
+        <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
           <ChatView
             key={conversation.id}
             draftKey={conversation.id}

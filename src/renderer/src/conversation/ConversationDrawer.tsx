@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Code2, ExternalLink } from 'lucide-react'
+import { Code2, ExternalLink, PictureInPicture2 } from 'lucide-react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { ConversationView, HeaderButton } from './ConversationView'
 import { DRAWER_DEFAULT_WIDTH, ResizeHandles, useFloatingRect, type PanelRect } from './FloatingPanel'
@@ -18,6 +18,7 @@ export function ConversationDrawer({
   codeOpen,
   onToggleCode,
   onPopout,
+  onPinToCanvas,
   onOpenFile,
   onOpenDiff,
   onSessionStarted,
@@ -37,6 +38,8 @@ export function ConversationDrawer({
   onToggleCode: () => void
   // Abre a conversa numa janela própria do sistema.
   onPopout: () => void
+  // Põe a conversa num bloco dentro do canvas, como o terminal.
+  onPinToCanvas: () => void
   // Link de arquivo clicado no chat.
   onOpenFile: (path: string, lines?: LineRange) => void
   // Arquivo da lista de não comitados: abre o diff dele.
@@ -91,10 +94,16 @@ export function ConversationDrawer({
                 <Code2 size={14} />
               </HeaderButton>
             )}
+            {/* Conversa ainda não enviada não tem sessão para abrir em outro lugar. */}
             {!conversation.draft && (
-              <HeaderButton label="Abrir em janela separada" onClick={onPopout}>
-                <ExternalLink size={14} />
-              </HeaderButton>
+              <>
+                <HeaderButton label="Colocar no canvas" onClick={onPinToCanvas}>
+                  <PictureInPicture2 size={14} />
+                </HeaderButton>
+                <HeaderButton label="Abrir em janela separada" onClick={onPopout}>
+                  <ExternalLink size={14} />
+                </HeaderButton>
+              </>
             )}
           </>
         }

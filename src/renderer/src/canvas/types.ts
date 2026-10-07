@@ -58,8 +58,21 @@ export type ChatData = {
   sessionId: string
 }
 
+// Conversa aberta dentro do canvas, como o terminal: o mesmo chat do painel lateral, num bloco
+// que acompanha o zoom e fica onde foi posto. Nasce ao lado da pasta (ou do card da conversa solta).
+export type ChatPanelData = {
+  // Nome de reserva enquanto a conversa não aparece na lista da pasta.
+  name: string
+  path: string
+  // Nome da pasta, para o cabeçalho; sem ele, é conversa sem projeto.
+  projectName?: string
+  sessionId: string
+}
+
 export type AreaNode = Node<AreaData, 'area'>
 export type ProjectNode = Node<ProjectData, 'project'>
 export type TerminalNode = Node<TerminalData, 'terminal'>
 export type ChatNode = Node<ChatData, 'chat'>
-export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode
+// 'chatPanel', e não 'conversation': esse nome ficou com um teste antigo que não volta (persistence).
+export type ChatPanelNode = Node<ChatPanelData, 'chatPanel'>
+export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode | ChatPanelNode

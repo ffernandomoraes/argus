@@ -3,8 +3,8 @@ import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionS
 
 // Preferências do app, salvas neste computador. Valem em todas as janelas.
 export type Preferences = {
-  // Onde a conversa abre ao ser clicada no canvas.
-  openIn: 'panel' | 'window'
+  // Onde a conversa abre ao ser clicada no canvas. 'node' = bloco dentro do canvas, como o terminal.
+  openIn: 'panel' | 'window' | 'node'
   // Escala do conteúdo do drawer, ajustada com ⌘+ / ⌘- (ver useDrawerZoom).
   drawerZoom: number
   // Modelo, esforço, modo etc. de cada conversa, até ser trocado no próprio chat (conversationSettings).
@@ -22,8 +22,9 @@ function read(): Preferences {
     return {
       ...DEFAULTS,
       ...saved,
-      // 'canvas' veio de uma versão de teste em que a conversa abria como nó no canvas.
-      openIn: saved.openIn === 'window' ? 'window' : 'panel',
+      // 'canvas' veio de uma versão de teste em que a conversa abria como nó no canvas; não volta
+      // sozinho. A opção de hoje é 'node', escolhida de novo nas configurações.
+      openIn: saved.openIn === 'window' || saved.openIn === 'node' ? saved.openIn : 'panel',
       conversation: { ...DEFAULT_SETTINGS, ...saved.conversation }
     }
   } catch {

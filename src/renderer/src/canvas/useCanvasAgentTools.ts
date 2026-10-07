@@ -29,7 +29,7 @@ const round = (n: number) => Math.round(n)
 
 const nameOf = (n: CanvasNode) => (n.type === 'area' ? n.data.label : n.data.name)
 
-const KIND = { area: 'grupo', project: 'pasta', terminal: 'terminal', chat: 'conversa' } as const
+const KIND = { area: 'grupo', project: 'pasta', terminal: 'terminal', chat: 'conversa', chatPanel: 'conversa aberta' } as const
 const kindOf = (n: CanvasNode) => KIND[n.type]
 
 // O que o bloco desenha acima de si (botões da pasta); conta como espaço ocupado.

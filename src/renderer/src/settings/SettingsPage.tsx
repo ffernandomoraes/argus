@@ -9,6 +9,7 @@ import {
   Palette,
   PanelRight,
   Pencil,
+  PictureInPicture2,
   Plus,
   Settings2,
   Sun,
@@ -142,7 +143,8 @@ function GeneralSection() {
           onChange={(openIn) => setPreferences({ openIn })}
           options={[
             { value: 'panel', label: 'Painel lateral', icon: <PanelRight size={13} /> },
-            { value: 'window', label: 'Janela separada', icon: <AppWindow size={13} /> }
+            { value: 'window', label: 'Janela separada', icon: <AppWindow size={13} /> },
+            { value: 'node', label: 'No canvas', icon: <PictureInPicture2 size={13} /> }
           ]}
         />
       </Row>

@@ -17,7 +17,7 @@ import type { UpdateState } from '../shared/updates'
 const run = promisify(execFile)
 const REPO = 'ffernandomoraes/argus'
 const FIRST_CHECK_MS = 10_000
-const EVERY_MS = 60 * 60_000
+const EVERY_MS = 5 * 60 * 60_000
 
 type Release = {
   tag_name: string

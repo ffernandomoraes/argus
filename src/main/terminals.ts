@@ -1,17 +1,18 @@
 import { existsSync, statSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { basename, dirname } from 'node:path'
 import { spawn, type IPty } from 'node-pty'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
 import { applyAccount } from './accounts'
 import { CLI_BIN } from './cli'
 import { claudePath } from './claudePath'
+import { liveStatusByPid } from './liveSessions'
 import { expandHome } from './paths'
 
 // Guarda o fim da saída de cada terminal para redesenhar a tela ao reconectar.
 const BUFFER_LIMIT = 200_000
 
-// account: conta do Claude com que o terminal abriu.
-type Session = { pty: IPty; buffer: string; account: string }
+// account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
+type Session = { pty: IPty; buffer: string; account: string; cwd: string; shell?: string }
 
 export class Terminals {
   private sessions = new Map<string, Session>()
@@ -64,7 +65,7 @@ export class Terminals {
         cwd,
         env
       })
-      const session: Session = { pty, buffer: '', account }
+      const session: Session = { pty, buffer: '', account, cwd, shell: req.shell ? basename(shell) : undefined }
       pty.onData((data) => {
         session.buffer = (session.buffer + data).slice(-BUFFER_LIMIT)
         this.onData(req.key, data)
@@ -114,6 +115,15 @@ export class Terminals {
         // já saiu
       }
     }, 2000).unref()
+  }
+
+  // Pastas dos terminais com algo em andamento: o `claude` trabalhando ou esperando resposta, ou
+  // um comando rodando no shell (o processo da frente não é mais o próprio shell).
+  busy(): string[] {
+    const status = liveStatusByPid()
+    return [...this.sessions.values()]
+      .filter((s) => (s.shell ? s.pty.process !== s.shell : (status.get(s.pty.pid) ?? 'idle') !== 'idle'))
+      .map((s) => s.cwd)
   }
 
   killAll(): void {

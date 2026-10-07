@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { LiveStatus } from '../shared/history'
@@ -47,4 +48,28 @@ async function readStatusDir(dir: string, out: Map<string, LiveStatus>): Promise
       }
     })
   )
+}
+
+// pid → status, lido na hora: o terminal do app roda o `claude` direto e sabe o pid dele. Síncrono
+// porque serve à pergunta de fechar o app, que precisa ser decidida no mesmo instante.
+export function liveStatusByPid(): Map<number, LiveStatus> {
+  const out = new Map<number, LiveStatus>()
+  for (const dir of statusDirs()) {
+    let names: string[]
+    try {
+      names = readdirSync(dir).filter((n) => /^\d+\.json$/.test(n))
+    } catch {
+      continue
+    }
+    for (const name of names) {
+      try {
+        const info = JSON.parse(readFileSync(join(dir, name), 'utf8'))
+        const pid = Number(info.pid)
+        if (alive(pid)) out.set(pid, STATUS[info.status] ?? 'idle')
+      } catch {
+        // arquivo sendo regravado
+      }
+    }
+  }
+  return out
 }

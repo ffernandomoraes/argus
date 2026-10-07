@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, screen, shell } from 'electron'
 import type { AgentDraftRequest, AgentSaveRequest } from '../shared/agents'
 import type { CanvasToolResult } from '../shared/canvasAgent'
@@ -204,7 +204,7 @@ async function checkForUpdates(): Promise<void> {
       defaultId: 0,
       cancelId: 1
     })
-    if (response === 0) updater.install(true)
+    if (response === 0) void restartToUpdate()
     return
   }
   const message =
@@ -388,7 +388,7 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:get', () => loadAppSettings())
   ipcMain.handle('updates:get', () => ({ version: app.getVersion(), state: updater.state }))
   ipcMain.handle('updates:check', () => updater.check())
-  ipcMain.on('updates:install', () => updater.install(true))
+  ipcMain.on('updates:install', () => void restartToUpdate())
   ipcMain.handle('settings:menuBarIcon', (_e, on: boolean) => {
     setMenuBarIcon(on)
     return saveAppSettings({ menuBarIcon: on })
@@ -435,7 +435,59 @@ function shutdown(): void {
   updater.install(false)
 }
 
-app.on('before-quit', shutdown)
+// Fechar o app derruba as conversas e os terminais no meio do que estão fazendo. Com algo em
+// andamento, pede confirmação antes; sem nada rodando, fecha direto.
+let quitConfirmed = false
+let asking: Promise<boolean> | null = null
+
+function inProgress(): string[] {
+  const chatting = chats
+    .list()
+    .filter((c) => c.state.status !== 'idle' || c.state.agents.length > 0)
+    .map((c) => `Conversa em ${basename(c.cwd)}`)
+  const running = terminals.busy().map((cwd) => `Terminal em ${basename(cwd)}`)
+  return [...chatting, ...running]
+}
+
+async function askToClose(update: boolean, items: string[]): Promise<boolean> {
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    message: update
+      ? 'Atualizar agora interrompe o que está rodando.'
+      : 'Fechar o Argus interrompe o que está rodando.',
+    detail: `${items.map((i) => `- ${i}`).join('\n')}\n\nO que estiver no meio para e não continua sozinho.`,
+    buttons: [update ? 'Atualizar mesmo assim' : 'Fechar mesmo assim', 'Cancelar'],
+    defaultId: 1,
+    cancelId: 1
+  })
+  return response === 0
+}
+
+// ⌘Q repetido com a pergunta aberta não abre outra.
+function confirmClose(update: boolean, items: string[]): Promise<boolean> {
+  asking ??= askToClose(update, items).finally(() => (asking = null))
+  return asking
+}
+
+// Só troca o app depois do sim: o script da troca reabre o Argus assim que o processo sai.
+async function restartToUpdate(): Promise<void> {
+  const items = inProgress()
+  if (!updater.pending || (items.length && !(await confirmClose(true, items)))) return
+  quitConfirmed = true
+  updater.install(true)
+}
+
+// Decidido na hora: adiar a saída sem motivo faria o macOS acusar o Argus de travar o desligamento.
+app.on('before-quit', (e) => {
+  const items = quitConfirmed ? [] : inProgress()
+  if (!items.length) return shutdown()
+  e.preventDefault()
+  void confirmClose(false, items).then((ok) => {
+    if (!ok) return
+    quitConfirmed = true
+    app.quit()
+  })
+})
 
 // O modo de desenvolvimento reinicia o app com SIGTERM a cada mudança no processo principal.
 // Sem tratar o sinal, um app ainda abrindo podia ignorá-lo e ficar aberto ao lado do novo.

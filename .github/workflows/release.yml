@@ -1,6 +1,6 @@
 # Gera uma versão nova: sobe o número no package.json, cria a tag, monta o .dmg e o .zip
 # (Apple Silicon) e publica tudo num release do GitHub.
-# Rodar pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=patch
+# Rodar pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=patch -f notas="- item"
 # Com publicar=false só monta e guarda o .dmg no run, sem tag nem release.
 name: Release
 
@@ -16,6 +16,10 @@ on:
         description: Publicar o release (desmarcado = só monta o app, para testar)
         type: boolean
         default: true
+      notas:
+        description: O que mudou, em tópicos ("- item" por linha). Vazio = lista os commits desde a última tag
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -116,8 +120,17 @@ jobs:
         if: ${{ inputs.publicar }}
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTAS: ${{ inputs.notas }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
+          notas="$RUNNER_TEMP/notas.md"
+          if [ -n "$NOTAS" ]; then
+            printf '%s\n' "$NOTAS" > "$notas"
+          else
+            prev=$(git tag --sort=-v:refname | grep -vx "v$VERSION" | head -1)
+            git log --format='- %s' "$prev..HEAD" | grep -v '^- Versão ' > "$notas" || echo "- Ajustes internos" > "$notas"
+          fi
+          gh release create "v$VERSION" \
             dist/*.dmg dist/*.zip \
-            --title "Argus ${{ steps.version.outputs.version }}" \
-            --generate-notes
+            --title "Argus $VERSION" \
+            --notes-file "$notas"

@@ -18,6 +18,7 @@ import { DevServersModal } from '../devServers/DevServersModal'
 import type { PanelRect } from '../conversation/FloatingPanel'
 import type { LineRange } from '../conversation/fileLinks'
 import { getPreferences } from '../settings/preferences'
+import { useAuth } from '../auth/useAuth'
 import { AreaNode } from './AreaNode'
 import { CanvasContext, type ActiveConversation } from './CanvasContext'
 import { CommandBar } from './CommandBar'
@@ -48,7 +49,16 @@ import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
-import { addNode, findChatSpot, fitAfterResize, removeNode, rename, toggleCollapse, toggleProjectCollapse } from './operations'
+import {
+  addNode,
+  findChatSpot,
+  fitAfterResize,
+  groupAccount,
+  removeNode,
+  rename,
+  toggleCollapse,
+  toggleProjectCollapse
+} from './operations'
 import { snap, type Guide } from './snapping'
 import type { CanvasNode, ConversationSummary, ProjectData, TerminalKind } from './types'
 import { chatMenu, groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
@@ -97,6 +107,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const { screenToFlowPosition, getZoom, fitView } = useReactFlow()
   const [guides, setGuides] = useState<Guide[]>([])
   const spaceHeld = useSpaceHeld()
+  const auth = useAuth()
 
   const { nodesRef, change, trackGesture, undo, redo } = useHistory(nodes, setNodes)
   useSaveNodes(nodes)
@@ -288,7 +299,9 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           draft: true
         }
       : sessions.find((c) => c.id === activeConversation.conversationId)
-    return conversation ? { nodeId: node?.id, parentId: node?.parentId, project, loose, conversation } : null
+    // Conta do grupo da pasta (ou do card da conversa solta); fora de grupo, a padrão.
+    const account = groupAccount(nodes, node)
+    return conversation ? { nodeId: node?.id, parentId: node?.parentId, project, loose, conversation, account } : null
   }, [nodes, activeConversation, sessionsVersion])
 
   // Tom do grupo que contém o projeto aberto no drawer.
@@ -313,11 +326,12 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
 
   // Abre a conversa numa janela própria (ou foca a que já existe).
   function popoutConversation(nodeId: string, conversationId: string) {
-    const project = projectOf(nodesRef.current.find((n) => n.id === nodeId))
+    const node = nodesRef.current.find((n) => n.id === nodeId)
+    const project = projectOf(node)
     if (!project) return
     const conversation = getSessions(project.path).find((c) => c.id === conversationId)
     if (!conversation) return
-    window.api.popout.open(conversationId, { project, conversation })
+    window.api.popout.open(conversationId, { project, conversation, account: groupAccount(nodesRef.current, node) })
     setPoppedOut((s) => new Set(s).add(conversationId))
   }
 
@@ -357,7 +371,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     setFolderPicker(null)
   }
 
-  const deps = { nodes, setNodes: change, confirm: setConfirm, ...actions }
+  const deps = { nodes, setNodes: change, confirm: setConfirm, auth, ...actions }
   const closeMenu = useCallback(() => setMenu(null), [])
 
   const onPaneContextMenu = (e: ReactMouseEvent | MouseEvent) => {
@@ -460,6 +474,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       {drawer && (
         <ConversationDrawer
           project={drawer.project}
+          account={drawer.account}
           loose={drawer.loose}
           tint={groupTint}
           conversation={drawer.conversation}

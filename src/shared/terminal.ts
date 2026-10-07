@@ -4,6 +4,9 @@ export type TerminalOpenRequest = {
   cwd: string
   // Shell do sistema (zsh) em vez do `claude`; os campos do Claude abaixo não valem.
   shell?: boolean
+  // Conta do Claude do grupo onde o terminal está; vazia = a padrão. Vale também para o
+  // `claude` digitado no shell.
+  account?: string
   // ID da sessão do Claude Code; com ele o terminal abre com `claude --resume <id>`.
   sessionId?: string
   // Só valem ao abrir; numa sessão já aberta a troca vai como /model e /effort.

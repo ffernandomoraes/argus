@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Panel } from '@xyflow/react'
+import type { ClaudeAccount } from '../../../shared/auth'
 import type { Usage, UsageWindow } from '../../../shared/usage'
+import { useAuth } from '../auth/useAuth'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { useEscape } from '../useEscape'
 
@@ -62,20 +64,40 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
   )
 }
 
+// Uso de cada conta logada; some quando a conta sai ou é removida.
+function useUsages(): Record<string, Usage> {
+  const [usages, setUsages] = useState<Record<string, Usage>>({})
+  useEffect(() => {
+    let alive = true
+    window.api.usage.get().then((all) => alive && setUsages((u) => ({ ...all, ...u })))
+    const off = window.api.usage.onUpdate((account, usage) =>
+      setUsages((u) => {
+        const next = { ...u }
+        if (usage) next[account] = usage
+        else delete next[account]
+        return next
+      })
+    )
+    return () => {
+      alive = false
+      off()
+    }
+  }, [])
+  return usages
+}
+
+// Limites do Claude no canto do canvas. Com mais de uma conta, o botão mostra a sessão de cada
+// uma, com o nome, e o painel traz sessão e semanal de todas.
 export function UsageIndicator() {
-  const [usage, setUsage] = useState<Usage | null>(null)
+  const usages = useUsages()
+  const auth = useAuth()
   const [now, setNow] = useState(Date.now())
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    window.api.usage.get().then((u) => u && setUsage(u))
-    const off = window.api.usage.onUpdate(setUsage)
     const tick = setInterval(() => setNow(Date.now()), 30_000)
-    return () => {
-      off()
-      clearInterval(tick)
-    }
+    return () => clearInterval(tick)
   }, [])
 
   useEffect(() => {
@@ -89,26 +111,40 @@ export function UsageIndicator() {
   }, [open])
   useEscape(() => setOpen(false), open)
 
-  const session = usage?.session
-  if (!session) return null
-  const percent = Math.round(session.percent)
+  // Na ordem das configurações: a principal primeiro.
+  const shown = (auth?.accounts ?? [])
+    .map((account) => ({ account, usage: usages[account.id] }))
+    .filter((x): x is { account: ClaudeAccount; usage: Usage } => !!x.usage?.session)
+  if (!shown.length) return null
+  const named = shown.length > 1
+  const updatedAt = Math.max(...shown.map((x) => x.usage.updatedAt))
 
   return (
     <Panel position="bottom-left" className="!m-4">
       <div ref={ref} className="relative">
         {open && (
-          <div className="absolute bottom-full left-0 mb-2 w-72 rounded-xl border border-line bg-surface p-4 shadow-xl shadow-black/40">
+          <div className="absolute bottom-full left-0 mb-2 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-4 shadow-xl shadow-black/40">
             <div className="mb-4 flex items-center gap-2">
               <ClaudeIcon size={14} />
               <span className="text-xs font-medium text-text">Limites do Claude</span>
             </div>
-            <div className="flex flex-col gap-4">
-              <WindowDetail title="Sessão (5 horas)" window={session} now={now} />
-              <WindowDetail title="Semanal" window={usage.weekly} now={now} />
+            <div className="flex flex-col gap-5">
+              {shown.map(({ account, usage }) => (
+                <div key={account.id}>
+                  {named && (
+                    <div className="mb-3 truncate text-[10px] font-semibold uppercase tracking-widest text-faint">
+                      {account.name}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-4">
+                    <WindowDetail title="Sessão (5 horas)" window={usage.session} now={now} />
+                    <WindowDetail title="Semanal" window={usage.weekly} now={now} />
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="mt-4 border-t border-line pt-2 text-[10px] text-faint">
-              Atualizado às{' '}
-              {new Date(usage.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         )}
@@ -120,8 +156,17 @@ export function UsageIndicator() {
           }`}
         >
           <ClaudeIcon size={12} />
-          <Bar percent={percent} className="h-1 w-10" />
-          <span className="font-mono text-muted">{percent}%</span>
+          {shown.map(({ account, usage }, i) => {
+            const percent = Math.round(usage.session!.percent)
+            return (
+              <span key={account.id} className="flex items-center gap-2">
+                {i > 0 && <span>-</span>}
+                {named && <span className="max-w-24 truncate">{account.name}</span>}
+                <Bar percent={percent} className="h-1 w-10" />
+                <span className="font-mono text-muted">{percent}%</span>
+              </span>
+            )
+          })}
         </button>
       </div>
     </Panel>

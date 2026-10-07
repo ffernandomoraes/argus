@@ -47,21 +47,27 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener('popout:closed', listener)
     }
   },
+  // Modelos e modo padrão que o `claude` de cada conta informa; sem conta, a padrão.
   claude: {
-    info: (): Promise<ClaudeInfo | null> => ipcRenderer.invoke('claude:info'),
-    onInfo: (cb: (info: ClaudeInfo) => void) => {
-      const listener = (_e: IpcRendererEvent, info: ClaudeInfo) => cb(info)
+    info: (account?: string): Promise<ClaudeInfo | null> => ipcRenderer.invoke('claude:info', account),
+    onInfo: (cb: (account: string, info: ClaudeInfo) => void) => {
+      const listener = (_e: IpcRendererEvent, account: string, info: ClaudeInfo) => cb(account, info)
       ipcRenderer.on('claude:info', listener)
       return () => ipcRenderer.removeListener('claude:info', listener)
     }
   },
-  // Login do Claude Code, o mesmo do terminal e do VS Code.
+  // Contas do Claude Code: a principal (a mesma do terminal e do VS Code) e as que têm pasta própria.
   auth: {
     state: (): Promise<AuthState> => ipcRenderer.invoke('auth:state'),
-    login: (method: LoginMethod) => ipcRenderer.send('auth:login', method),
+    refresh: () => ipcRenderer.send('auth:refresh'),
+    login: (accountId: string, method: LoginMethod) => ipcRenderer.send('auth:login', accountId, method),
+    add: (method: LoginMethod) => ipcRenderer.send('auth:add', method),
     submitCode: (code: string) => ipcRenderer.send('auth:code', code),
     cancel: () => ipcRenderer.send('auth:cancel'),
     logout: (): Promise<boolean> => ipcRenderer.invoke('auth:logout'),
+    remove: (accountId: string): Promise<boolean> => ipcRenderer.invoke('auth:remove', accountId),
+    rename: (accountId: string, name: string) => ipcRenderer.send('auth:rename', accountId, name),
+    setDefault: (accountId: string) => ipcRenderer.send('auth:setDefault', accountId),
     open: (url: string) => ipcRenderer.send('auth:open', url),
     onState: (cb: (state: AuthState) => void) => {
       const listener = (_e: IpcRendererEvent, state: AuthState) => cb(state)
@@ -78,7 +84,8 @@ contextBridge.exposeInMainWorld('api', {
     answer: (key: string, id: string, answer: PermissionAnswer) => ipcRenderer.send('chat:answer', key, id, answer),
     interrupt: (key: string) => ipcRenderer.send('chat:interrupt', key),
     retain: (key: string) => ipcRenderer.send('chat:retain', key),
-    mcpStatus: (key: string, cwd: string): Promise<McpStatus> => ipcRenderer.invoke('mcp:status', key, cwd),
+    mcpStatus: (key: string, cwd: string, account?: string): Promise<McpStatus> =>
+      ipcRenderer.invoke('mcp:status', key, cwd, account),
     release: (key: string) => ipcRenderer.send('chat:release', key),
     configure: (key: string, patch: Partial<ChatSettings>) => ipcRenderer.send('chat:configure', key, patch),
     onState: (cb: (key: string, state: ChatState) => void) => {
@@ -224,10 +231,11 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener('updates:state', listener)
     }
   },
+  // Limites de cada conta logada; nulo quando a conta sai ou é removida.
   usage: {
-    get: (): Promise<Usage | null> => ipcRenderer.invoke('usage:get'),
-    onUpdate: (cb: (usage: Usage) => void) => {
-      const listener = (_e: IpcRendererEvent, usage: Usage) => cb(usage)
+    get: (): Promise<Record<string, Usage>> => ipcRenderer.invoke('usage:get'),
+    onUpdate: (cb: (account: string, usage: Usage | null) => void) => {
+      const listener = (_e: IpcRendererEvent, account: string, usage: Usage | null) => cb(account, usage)
       ipcRenderer.on('usage:update', listener)
       return () => ipcRenderer.removeListener('usage:update', listener)
     }

@@ -34,18 +34,29 @@ function ServerRow({ server }: { server: McpServer }) {
   )
 }
 
-// Lista dos servidores MCP da pasta, no lugar do /mcp que abriria uma tela no terminal.
-export function McpPanel({ conversationKey, cwd, onClose }: { conversationKey: string; cwd: string; onClose: () => void }) {
+// Lista dos servidores MCP da pasta, no lugar do /mcp que abriria uma tela no terminal. Cada conta
+// tem os seus: sem conversa aberta, a consulta usa a conta do grupo.
+export function McpPanel({
+  conversationKey,
+  cwd,
+  account,
+  onClose
+}: {
+  conversationKey: string
+  cwd: string
+  account?: string
+  onClose: () => void
+}) {
   const [status, setStatus] = useState<McpStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
     setLoading(true)
-    window.api.chat.mcpStatus(conversationKey, cwd).then((s) => {
+    window.api.chat.mcpStatus(conversationKey, cwd, account).then((s) => {
       setStatus(s)
       setLoading(false)
     })
-  }, [conversationKey, cwd])
+  }, [conversationKey, cwd, account])
 
   useEffect(load, [load])
 

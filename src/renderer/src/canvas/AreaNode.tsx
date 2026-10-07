@@ -1,5 +1,7 @@
 import { NodeResizer, useNodes, type NodeProps } from '@xyflow/react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
+import { findAccount, useAuth } from '../auth/useAuth'
+import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
 import { getSessions, useSessionsVersion } from './sessionsStore'
@@ -22,6 +24,24 @@ function CollapsedSummary({ id }: { id: string }) {
   )
 }
 
+// Conta do Claude que vale no grupo (a escolhida ou a padrão), ao lado do nome. Com uma conta
+// só, não há o que mostrar.
+function AccountTag({ account, color }: { account?: string; color: string }) {
+  const auth = useAuth()
+  const current = auth && auth.accounts.length > 1 ? findAccount(auth, account) : undefined
+  if (!current) return null
+  return (
+    <span
+      title={`Conta do Claude deste grupo: ${current.name}`}
+      className="flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium"
+      style={{ color, borderColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
+    >
+      <ClaudeIcon size={10} />
+      <span className="truncate">{current.name}</span>
+    </span>
+  )
+}
+
 export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
   const { toggleGroup } = useCanvasActions()
   const color = data.color
@@ -40,11 +60,14 @@ export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
 
       {/* Nome e setinha ficam acima do grupo, fora da borda */}
       <div className="absolute bottom-full left-0 right-0 mb-1.5 flex items-end justify-between gap-2">
-        <div
-          className="flex min-w-0 max-w-full items-center rounded-md px-2 py-0.5"
-          style={{ color, background: `color-mix(in srgb, ${color} 22%, var(--color-bg))` }}
-        >
-          <EditableName id={id} value={data.label} className="text-[11px] font-semibold uppercase tracking-widest" />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <div
+            className="flex min-w-0 max-w-full items-center rounded-md px-2 py-0.5"
+            style={{ color, background: `color-mix(in srgb, ${color} 22%, var(--color-bg))` }}
+          >
+            <EditableName id={id} value={data.label} className="text-[11px] font-semibold uppercase tracking-widest" />
+          </div>
+          <AccountTag account={data.account} color={color} />
         </div>
         <button
           aria-label={collapsed ? 'Expandir grupo' : 'Recolher grupo'}

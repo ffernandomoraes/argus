@@ -1,12 +1,11 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { LiveStatus } from '../shared/history'
+import { statusDirs } from './accounts'
 
-// Cada Claude Code aberto (VS Code, terminal, este app) mantém ~/.claude/sessions/<pid>.json
+// Cada Claude Code aberto (VS Code, terminal, este app) mantém <pasta da conta>/sessions/<pid>.json
 // com a sessão e o status: "busy" rodando, "waiting" pedindo permissão ou resposta, "idle" parado.
 // Formato interno do Claude Code, não documentado: pode mudar entre versões.
-const DIR = join(homedir(), '.claude', 'sessions')
 
 const STATUS: Record<string, LiveStatus> = { busy: 'running', waiting: 'needs-you', idle: 'idle' }
 
@@ -20,19 +19,24 @@ function alive(pid: number): boolean {
   }
 }
 
-// sessionId → status, só de processos que ainda estão rodando.
+// sessionId → status, só de processos que ainda estão rodando, de todas as contas.
 export async function liveSessions(): Promise<Map<string, LiveStatus>> {
   const out = new Map<string, LiveStatus>()
+  await Promise.all(statusDirs().map((dir) => readStatusDir(dir, out)))
+  return out
+}
+
+async function readStatusDir(dir: string, out: Map<string, LiveStatus>): Promise<void> {
   let names: string[]
   try {
-    names = (await readdir(DIR)).filter((n) => /^\d+\.json$/.test(n))
+    names = (await readdir(dir)).filter((n) => /^\d+\.json$/.test(n))
   } catch {
-    return out
+    return
   }
   await Promise.all(
     names.map(async (name) => {
       try {
-        const info = JSON.parse(await readFile(join(DIR, name), 'utf8'))
+        const info = JSON.parse(await readFile(join(dir, name), 'utf8'))
         if (typeof info.sessionId !== 'string' || !alive(Number(info.pid))) return
         const status = STATUS[info.status] ?? 'idle'
         // A mesma sessão aberta em dois lugares: vale o status mais urgente.
@@ -43,5 +47,4 @@ export async function liveSessions(): Promise<Map<string, LiveStatus>> {
       }
     })
   )
-  return out
 }

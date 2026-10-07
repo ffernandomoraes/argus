@@ -9,10 +9,13 @@ const TRAFFIC_LIGHTS = 80
 // com escala própria (⌘+ / ⌘-) e sem o visualizador de código ao lado.
 export function ConversationWindow({
   project,
+  account,
   conversation,
   onClose
 }: {
   project: ProjectData
+  // Conta do Claude do grupo da pasta; vazia = a padrão.
+  account?: string
   conversation: ConversationSummary
   onClose: () => void
 }) {
@@ -22,6 +25,7 @@ export function ConversationWindow({
     <div className="absolute inset-0 flex flex-col overflow-hidden bg-bg">
       <ConversationView
         cwd={project.path}
+        account={account}
         project={project.name}
         conversation={conversation}
         zoom={zoom}

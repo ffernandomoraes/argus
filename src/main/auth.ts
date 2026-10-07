@@ -3,13 +3,27 @@ import { homedir } from 'node:os'
 import { promisify } from 'node:util'
 import { shell } from 'electron'
 import { query, type Query } from '@anthropic-ai/claude-agent-sdk'
-import type { Account, AuthState, LoginMethod } from '../shared/auth'
+import { MAIN_ACCOUNT, type Account, type AuthState, type LoginMethod, type LoginState } from '../shared/auth'
+import {
+  accountDir,
+  accountIds,
+  addAccount,
+  createPendingAccount,
+  customName,
+  defaultAccount,
+  discardAccount,
+  removeAccount,
+  renameAccount,
+  setDefaultAccount,
+  suggestedName
+} from './accounts'
 import { claudeEnv, Inbox } from './chats'
 import { claudePath } from './claudePath'
 
 // Mesmo caminho da extensão do VS Code: um `claude` aberto só para o login gera o link,
-// recebe o retorno do navegador e grava o login nas Chaves do macOS, onde o Claude Code
-// inteiro (terminal, VS Code, este app) passa a usar.
+// recebe o retorno do navegador e grava o login nas Chaves do macOS. Na principal, onde o
+// Claude Code inteiro (terminal, VS Code, este app) passa a usar; nas outras, no item da pasta
+// da conta (ver accounts.ts).
 
 const run = promisify(execFile)
 
@@ -20,10 +34,10 @@ type LoginQuery = Query & {
   claudeOAuthWaitForCompletion(): Promise<unknown>
 }
 
-async function readAccount(): Promise<Account | null> {
+async function readAccount(id: string): Promise<Account | null> {
   const claude = claudePath()
   try {
-    const { stdout } = await run(claude, ['auth', 'status', '--json'], { env: claudeEnv(claude), timeout: 15_000 })
+    const { stdout } = await run(claude, ['auth', 'status', '--json'], { env: claudeEnv(claude, id), timeout: 15_000 })
     const s = JSON.parse(stdout) as Record<string, unknown>
     const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined)
     return {
@@ -49,26 +63,68 @@ async function readAccount(): Promise<Account | null> {
   }
 }
 
+// adding: conta nova, cuja pasta some se o login não terminar.
+type LoginSession = { q: LoginQuery; inbox: Inbox; accountId: string; adding: boolean }
+
 export class Auth {
-  state: AuthState = { account: null, login: { status: 'idle' } }
-  private session: { q: LoginQuery; inbox: Inbox } | null = null
+  private statuses = new Map<string, Account | null>()
+  private loginState: LoginState = { status: 'idle' }
+  private session: LoginSession | null = null
+  state: AuthState
 
   constructor(
     private onState: (state: AuthState) => void,
-    // Entrou ou saiu: o que roda com o login antigo precisa recomeçar.
-    private onAccountChanged: () => void
-  ) {}
+    // Entrou ou saiu de uma conta: o que roda com o login antigo dela precisa recomeçar.
+    private onAccountChanged: (id: string) => void,
+    // Conta removida: o que roda com ela é encerrado antes de a pasta sumir.
+    private onAccountRemoved: (id: string) => void
+  ) {
+    this.state = this.build()
+  }
 
-  private set(patch: Partial<AuthState>): void {
-    this.state = { ...this.state, ...patch }
+  private build(): AuthState {
+    const taken = new Set<string>()
+    const accounts = accountIds().map((id) => {
+      const status = this.statuses.get(id) ?? null
+      const custom = customName(id)
+      const name = custom ?? suggestedName(id, status, taken)
+      taken.add(name)
+      return { id, name, customName: !!custom, dir: accountDir(id), status }
+    })
+    return { accounts, defaultId: defaultAccount(), login: this.loginState }
+  }
+
+  private emit(): void {
+    this.state = this.build()
     this.onState(this.state)
   }
 
-  async refresh(): Promise<void> {
-    this.set({ account: await readAccount() })
+  private setLogin(login: LoginState): void {
+    this.loginState = login
+    this.emit()
   }
 
-  async login(method: LoginMethod): Promise<void> {
+  // Confere de novo o login de uma conta ou, sem ela, de todas.
+  async refresh(id?: string): Promise<void> {
+    const ids = id ? [id] : accountIds()
+    const found = await Promise.all(ids.map(readAccount))
+    ids.forEach((a, i) => this.statuses.set(a, found[i]))
+    this.emit()
+  }
+
+  // Entra de novo numa conta da lista, ou em outra no lugar dela.
+  login(accountId: string, method: LoginMethod): void {
+    if (!accountIds().includes(accountId)) return
+    void this.start(accountId, false, method)
+  }
+
+  // Conta nova: ganha a pasta agora e só entra na lista quando o login termina.
+  add(method: LoginMethod): void {
+    this.stop()
+    void this.start(createPendingAccount(), true, method)
+  }
+
+  private async start(accountId: string, adding: boolean, method: LoginMethod): Promise<void> {
     this.stop()
     const claude = claudePath()
     const inbox = new Inbox()
@@ -77,36 +133,53 @@ export class Auth {
       options: {
         cwd: homedir(),
         pathToClaudeCodeExecutable: claude,
-        env: claudeEnv(claude),
+        env: claudeEnv(claude, accountId),
         settingSources: [],
         strictMcpConfig: true,
         persistSession: false,
         canUseTool: async () => ({ behavior: 'deny', message: 'Só login' })
       }
     }) as LoginQuery
-    const session = { q, inbox }
+    const session: LoginSession = { q, inbox, accountId, adding }
     this.session = session
     const current = () => this.session === session
-    this.set({ login: { status: 'starting', method } })
+    const target = { accountId, adding }
+    this.setLogin({ status: 'starting', method, ...target })
 
     try {
       const { manualUrl, automaticUrl } = await q.claudeAuthenticate(method === 'claudeai')
       if (!current()) return
       // Pede antes de abrir o navegador, para não perder um retorno rápido.
       const done = q.claudeOAuthWaitForCompletion()
-      this.set({ login: { status: 'waiting', method, automaticUrl, manualUrl } })
+      this.setLogin({ status: 'waiting', method, automaticUrl, manualUrl, ...target })
       void shell.openExternal(automaticUrl)
       await done
       if (!current()) return
       // Confere a conta antes de sair da espera, para a tela não voltar às opções por um instante.
-      await this.refresh()
+      const status = await readAccount(accountId)
       if (!current()) return
-      this.stop()
-      this.onAccountChanged()
+      if (adding) {
+        const twin =
+          status?.loggedIn &&
+          this.state.accounts.find(
+            (a) => a.status?.loggedIn && a.status.email === status.email && a.status.organization === status.organization
+          )
+        if (twin) {
+          // A mesma conta duas vezes: a nova some com o login dela.
+          this.stop()
+          this.setLogin({ status: 'error', message: `essa conta já está no app, como "${twin.name}".`, ...target })
+          return
+        }
+        addAccount(accountId)
+      }
+      this.statuses.set(accountId, status)
+      this.stop(false)
+      this.onAccountChanged(accountId)
+      this.setLogin({ status: 'idle' })
     } catch (err) {
       if (!current()) return
       this.stop()
-      this.set({ login: { status: 'error', message: (err as Error).message || 'Não deu para entrar.' } })
+      this.setLogin({ status: 'error', message: (err as Error).message || 'Não deu para entrar.', ...target })
     }
   }
 
@@ -116,37 +189,68 @@ export class Auth {
     if (!s) return
     const [authorizationCode, state = ''] = code.trim().split('#')
     s.q.claudeOAuthCallback(authorizationCode, state).catch((err: Error) => {
-      if (this.session === s) this.set({ login: { status: 'error', message: err.message || 'Código recusado.' } })
+      if (this.session === s) {
+        this.setLogin({ status: 'error', message: err.message || 'Código recusado.', accountId: s.accountId, adding: s.adding })
+      }
     })
   }
 
   cancel(): void {
+    const busy = !!this.session || this.loginState.status !== 'idle'
     this.stop()
+    if (busy) this.setLogin({ status: 'idle' })
   }
 
-  // Sai do Claude Code neste Mac, como o "Sign out" da extensão do VS Code.
+  // Sai da principal neste Mac, como o "Sign out" da extensão do VS Code: vale também para o
+  // terminal e o VS Code.
   async logout(): Promise<boolean> {
-    this.stop()
+    this.cancel()
     const claude = claudePath()
     let ok = true
     try {
-      await run(claude, ['auth', 'logout'], { env: claudeEnv(claude), timeout: 15_000 })
+      await run(claude, ['auth', 'logout'], { env: claudeEnv(claude, MAIN_ACCOUNT), timeout: 15_000 })
     } catch (err) {
       console.warn('[auth] claude auth logout falhou:', (err as Error).message)
       ok = false
     }
-    await this.refresh()
-    this.onAccountChanged()
+    await this.refresh(MAIN_ACCOUNT)
+    this.onAccountChanged(MAIN_ACCOUNT)
     return ok
   }
 
-  private stop(): void {
+  // Tira uma conta do app: sai dela e apaga o login guardado e a pasta. O que é seu continua na
+  // principal, que nunca sai por aqui.
+  async remove(id: string): Promise<boolean> {
+    if (id === MAIN_ACCOUNT || !accountIds().includes(id)) return false
+    if (this.session?.accountId === id) this.cancel()
+    this.onAccountRemoved(id)
+    const claude = claudePath()
+    await run(claude, ['auth', 'logout'], { env: claudeEnv(claude, id), timeout: 15_000 }).catch(() => {})
+    removeAccount(id)
+    this.statuses.delete(id)
+    this.emit()
+    return true
+  }
+
+  rename(id: string, name: string): void {
+    if (!accountIds().includes(id)) return
+    renameAccount(id, name)
+    this.emit()
+  }
+
+  setDefault(id: string): void {
+    setDefaultAccount(id)
+    this.emit()
+  }
+
+  // Encerra o login em andamento. A conta nova que não chegou a entrar some junto, a não ser que
+  // o login tenha acabado de dar certo (discard = false).
+  private stop(discard = true): void {
     const s = this.session
     this.session = null
-    if (s) {
-      s.inbox.close()
-      s.q.close()
-    }
-    if (this.state.login.status !== 'idle') this.set({ login: { status: 'idle' } })
+    if (!s) return
+    s.inbox.close()
+    s.q.close()
+    if (s.adding && discard) discardAccount(s.accountId)
   }
 }

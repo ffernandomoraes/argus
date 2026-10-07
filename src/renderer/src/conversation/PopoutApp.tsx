@@ -6,6 +6,8 @@ import { ConversationWindow } from './ConversationWindow'
 export type PopoutPayload = {
   project: ProjectData
   conversation: ConversationSummary
+  // Conta do grupo da pasta quando a janela abriu.
+  account?: string
 }
 
 // Janela própria de uma conversa (aberta pelo botão ↗ do painel).
@@ -27,6 +29,7 @@ export function PopoutApp({ id }: { id: string }) {
     <div className="relative h-full">
       <ConversationWindow
         project={payload.project}
+        account={payload.account}
         conversation={payload.conversation}
         onClose={() => window.close()}
       />

@@ -19,6 +19,7 @@ import type {
   RemoteControl
 } from '../shared/chat'
 import type { McpServer, McpStatus } from '../shared/mcp'
+import { applyAccount, resolveAccount } from './accounts'
 import { claudePath } from './claudePath'
 import { learnContextWindow } from './contextWindows'
 import { diffFromInput } from './diffs'
@@ -70,18 +71,22 @@ type Line = Record<string, any> // eslint-disable-line @typescript-eslint/no-exp
 type Waiting = { resolve: (r: PermissionResult) => void; input: Record<string, unknown>; suggestions?: PermissionUpdate[] }
 
 // O app aberto pelo Finder não herda o PATH do terminal, e as variáveis do Electron
-// fariam o `claude` subir como Node puro.
-export function claudeEnv(claude: string): Record<string, string> {
+// fariam o `claude` subir como Node puro. A conta escolhe a pasta de configuração; sem ela,
+// vale a padrão (ver accounts.ts).
+export function claudeEnv(claude: string, account?: string): Record<string, string> {
   const env = { ...process.env } as Record<string, string>
   delete env.ELECTRON_RUN_AS_NODE
   delete env.ELECTRON_NO_ATTACH_CONSOLE
   env.PATH = [dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+  applyAccount(env, account)
   return env
 }
 
 class ChatSession {
   readonly keys = new Set<string>()
   readonly cwd: string
+  // Conta com que a sessão abriu. Trocar a do grupo não mexe nela: a próxima abertura já usa a nova.
+  readonly account: string
   // Conversa já fechada na tela: encerrar assim que o Claude parar.
   closeWhenIdle = false
   // Parada pedida por você: o fim do pedido não é erro.
@@ -104,8 +109,9 @@ class ChatSession {
   ) {
     this.keys.add(key)
     this.cwd = req.cwd
+    this.account = resolveAccount(req.account)
     const claude = claudePath()
-    const env = claudeEnv(claude)
+    const env = claudeEnv(claude, this.account)
     const s = req.settings
     const flags: Record<string, boolean> = {}
     if (!s.thinking) flags.alwaysThinkingEnabled = false
@@ -439,8 +445,8 @@ async function settled(ask: () => Promise<McpServer[]>): Promise<McpServer[]> {
 }
 
 // Status dos MCPs sem conversa aberta: sobe um `claude` só para perguntar e o encerra.
-// Os servidores dependem da pasta, por isso não dá para usar um processo genérico.
-async function mcpStatusFor(cwd: string): Promise<McpServer[]> {
+// Os servidores dependem da pasta e da conta, por isso não dá para usar um processo genérico.
+async function mcpStatusFor(cwd: string, account?: string): Promise<McpServer[]> {
   const claude = claudePath()
   const inbox = new Inbox()
   const q = query({
@@ -448,7 +454,7 @@ async function mcpStatusFor(cwd: string): Promise<McpServer[]> {
     options: {
       cwd: expandHome(cwd),
       pathToClaudeCodeExecutable: claude,
-      env: claudeEnv(claude),
+      env: claudeEnv(claude, account),
       systemPrompt: { type: 'preset', preset: 'claude_code' },
       persistSession: false
     }
@@ -500,13 +506,19 @@ export class Chats {
     )
   }
 
-  // Nenhuma janela aberta: nada precisa das sessões de chat.
-  releaseAll(): void {
+  // Nenhuma janela aberta: nada precisa das sessões de chat. Com a conta, só as dela (o login dela
+  // mudou e as conversas paradas precisam abrir de novo com o novo).
+  releaseAll(account?: string): void {
     new Set(this.sessions.values()).forEach((s) => {
-      if (s.remoteOn) return
+      if (s.remoteOn || (account && s.account !== account)) return
       if (!s.busy) this.closeSession(s)
       else s.closeWhenIdle = true
     })
+  }
+
+  // Conta removida: as conversas dela fecham na hora, mesmo trabalhando.
+  closeAccount(account: string): void {
+    new Set(this.sessions.values()).forEach((s) => s.account === account && this.closeSession(s))
   }
 
   private closeSession(session: ChatSession): void {
@@ -570,11 +582,11 @@ export class Chats {
     this.sessions.get(key)?.answer(id, answer)
   }
 
-  // Conversa aberta responde pela própria sessão; sem ela, uma consulta avulsa.
-  async mcpStatus(key: string, cwd: string): Promise<McpStatus> {
+  // Conversa aberta responde pela própria sessão; sem ela, uma consulta avulsa com a conta do grupo.
+  async mcpStatus(key: string, cwd: string, account?: string): Promise<McpStatus> {
     try {
       const session = this.sessions.get(key)
-      return { ok: true, servers: session ? await session.mcpServers() : await mcpStatusFor(cwd) }
+      return { ok: true, servers: session ? await session.mcpServers() : await mcpStatusFor(cwd, account) }
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }

@@ -12,10 +12,11 @@ export function App() {
   const openSettings = useCallback(() => setSettingsOpen(true), [])
   const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const auth = useAuth()
-  // Só depois de conferir: sem resposta (claude não instalado) o canvas abre normal.
-  const loggedOut = auth?.account?.loggedIn === false
+  // Nenhuma conta logada, depois de conferir todas: sem resposta (claude não instalado) o canvas
+  // abre normal. Com outra conta logada, a principal sem login aparece só em Configurações.
+  const loggedOut = !!auth?.accounts.length && auth.accounts.every((a) => a.status?.loggedIn === false)
 
-  // Saiu pela tela de Conta: as configurações fecham e fica a tela de login.
+  // Saiu de todas as contas: as configurações fecham e fica a tela de login.
   useEffect(() => {
     if (loggedOut) setSettingsOpen(false)
   }, [loggedOut])

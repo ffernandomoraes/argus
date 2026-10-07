@@ -1,4 +1,4 @@
-import type { LoginState } from '../../../shared/auth'
+import { MAIN_ACCOUNT, type LoginState } from '../../../shared/auth'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { LoginPanel } from './LoginPanel'
 
@@ -15,7 +15,7 @@ export function WelcomeScreen({ login }: { login: LoginState }) {
           O Argus usa o login do Claude Code, o mesmo do terminal e do VS Code. Entre com sua assinatura do Claude ou
           pague pelo uso da API.
         </p>
-        <LoginPanel login={login} />
+        <LoginPanel login={login} onStart={(method) => window.api.auth.login(MAIN_ACCOUNT, method)} />
       </div>
     </div>
   )

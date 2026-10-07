@@ -5,6 +5,7 @@ import type { CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
 import type { TerminalOpenRequest } from '../shared/terminal'
 import type { LoginMethod } from '../shared/auth'
+import { cleanupAccounts, resolveAccount } from './accounts'
 import { listAgents, removeAgent, saveAgent } from './agents'
 import { loadAppSettings, saveAppSettings } from './appSettings'
 import { Auth } from './auth'
@@ -38,7 +39,7 @@ import { currentBranch, fileDiff, uncommittedFiles } from './gitBranch'
 import { Speech } from './speech'
 import { StatusTray } from './statusTray'
 import { Terminals } from './terminals'
-import { UsageMonitor } from './usageMonitor'
+import { UsageMonitors } from './usageMonitor'
 import { Updater } from './updater'
 
 // O pnpm dev tem dados próprios: com a mesma pasta do instalado, um sobrescreveria o canvas e as
@@ -82,18 +83,29 @@ const notifier = new ChatNotifier(
   }
 )
 
-const usage = new UsageMonitor(
-  (data) => broadcast('usage:update', data),
-  (info) => broadcast('claude:info', info)
+// Limites de cada conta logada.
+const usage = new UsageMonitors(
+  (account, data) => broadcast('usage:update', account, data),
+  (account, info) => broadcast('claude:info', account, info)
 )
 
-// Login do Claude Code. Trocou de conta: o monitor de uso e as conversas paradas abrem de novo
-// com o login novo; as que estão trabalhando terminam o pedido e fecham em seguida.
+// Contas do Claude Code. O login de uma conta trocou: o monitor de uso e as conversas paradas
+// dela abrem de novo com o login novo; as que estão trabalhando terminam o pedido e fecham em
+// seguida. Conta removida: tudo que roda com ela fecha na hora.
 const auth = new Auth(
-  (state) => broadcast('auth:state', state),
-  () => {
-    usage.reconnect()
-    chats.releaseAll()
+  (state) => {
+    broadcast('auth:state', state)
+    usage.sync(state.accounts.filter((a) => a.status?.loggedIn).map((a) => a.id))
+    sessionWatch.refreshStatusDirs()
+  },
+  (id) => {
+    usage.reconnect(id)
+    chats.releaseAll(id)
+  },
+  (id) => {
+    usage.remove(id)
+    chats.closeAccount(id)
+    terminals.killAccount(id)
   }
 )
 
@@ -272,13 +284,18 @@ function setAppMenu(): void {
 
 app.whenReady().then(() => {
   setAppMenu()
-  ipcMain.handle('usage:get', () => usage.last)
-  ipcMain.handle('claude:info', () => usage.info)
+  ipcMain.handle('usage:get', () => usage.all())
+  ipcMain.handle('claude:info', (_e, account?: string) => usage.info(resolveAccount(account)))
   ipcMain.handle('auth:state', () => auth.state)
-  ipcMain.on('auth:login', (_e, method: LoginMethod) => void auth.login(method))
+  ipcMain.on('auth:refresh', () => void auth.refresh())
+  ipcMain.on('auth:login', (_e, accountId: string, method: LoginMethod) => auth.login(accountId, method))
+  ipcMain.on('auth:add', (_e, method: LoginMethod) => auth.add(method))
   ipcMain.on('auth:code', (_e, code: string) => auth.submitCode(code))
   ipcMain.on('auth:cancel', () => auth.cancel())
   ipcMain.handle('auth:logout', () => auth.logout())
+  ipcMain.handle('auth:remove', (_e, accountId: string) => auth.remove(accountId))
+  ipcMain.on('auth:rename', (_e, accountId: string, name: string) => auth.rename(accountId, name))
+  ipcMain.on('auth:setDefault', (_e, accountId: string) => auth.setDefault(accountId))
   ipcMain.on('auth:open', (_e, url: string) => /^https:/.test(url) && void shell.openExternal(url))
   ipcMain.on('speech:start', (e) => speech.start(e.sender))
   ipcMain.on('speech:stop', () => speech.stop())
@@ -346,7 +363,7 @@ app.whenReady().then(() => {
     chats.remoteControl(req)
   })
   ipcMain.on('chat:answer', (_e, key: string, id: string, answer: PermissionAnswer) => chats.answer(key, id, answer))
-  ipcMain.handle('mcp:status', (_e, key: string, cwd: string) => chats.mcpStatus(key, cwd))
+  ipcMain.handle('mcp:status', (_e, key: string, cwd: string, account?: string) => chats.mcpStatus(key, cwd, account))
   ipcMain.on('chat:retain', (_e, key: string) => chats.retain(key))
   ipcMain.on('chat:release', (_e, key: string) => chats.release(key))
   ipcMain.on('chat:interrupt', (_e, key: string) => chats.interrupt(key))
@@ -387,7 +404,8 @@ app.whenReady().then(() => {
     const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
     return result.canceled ? null : result.filePaths[0]
   })
-  usage.start()
+  // Os monitores de uso sobem quando o login de cada conta é conferido.
+  cleanupAccounts()
   void auth.refresh()
   cli.start()
   updater.start()

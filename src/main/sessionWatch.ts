@@ -1,15 +1,14 @@
 import { watch, type FSWatcher } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { statusDirs } from './accounts'
 import { gitDir } from './gitBranch'
 import { sessionsDir } from './sessions'
 
 // Avisa na hora que uma conversa mudou, em vez de esperar a próxima conferência:
 // - a pasta de sessões de cada projeto (o .jsonl cresce a cada mensagem);
-// - ~/.claude/sessions, onde todo Claude Code aberto grava o status (rodando, parado...);
+// - a pasta de status de cada conta (~/.claude/sessions e a das outras), onde todo Claude Code
+//   aberto grava o status (rodando, parado...);
 // - o HEAD e o index do git de cada projeto, para a branch e os arquivos não comitados
 //   mudarem junto com um checkout, um add ou um commit.
-const STATUS_DIR = join(homedir(), '.claude', 'sessions')
 // Várias gravações seguidas viram um aviso só.
 const SETTLE_MS = 60
 
@@ -17,7 +16,7 @@ type Watchers = { sessions: FSWatcher | null; head: FSWatcher | null }
 
 export class SessionWatch {
   private projects = new Map<string, Watchers>()
-  private status: FSWatcher | null = null
+  private status = new Map<string, FSWatcher | null>()
   private timers = new Map<string, NodeJS.Timeout>()
 
   constructor(private onChange: (projectPath: string) => void) {}
@@ -62,9 +61,21 @@ export class SessionWatch {
       if (git) w.head = this.open(git, (file) => (file?.startsWith('HEAD') || file?.startsWith('index')) && this.notify(path))
       this.projects.set(path, w)
     }
-    if (!this.status) {
+    this.refreshStatusDirs()
+  }
+
+  // Uma pasta de status por conta; chamada de novo quando uma conta entra ou sai.
+  refreshStatusDirs(): void {
+    const wanted = new Set(statusDirs())
+    for (const [dir, w] of this.status) {
+      if (wanted.has(dir)) continue
+      w?.close()
+      this.status.delete(dir)
+    }
+    for (const dir of wanted) {
+      if (this.status.get(dir)) continue
       // Status mudou em algum Claude Code: não dá para saber de qual projeto sem ler; avisa todos.
-      this.status = this.open(STATUS_DIR, () => this.projects.forEach((_, p) => this.notify(p)))
+      this.status.set(dir, this.open(dir, () => this.projects.forEach((_, p) => this.notify(p))))
     }
   }
 
@@ -74,8 +85,8 @@ export class SessionWatch {
       w.head?.close()
     })
     this.projects.clear()
-    this.status?.close()
-    this.status = null
+    this.status.forEach((w) => w?.close())
+    this.status.clear()
     this.timers.forEach((t) => clearTimeout(t))
   }
 }

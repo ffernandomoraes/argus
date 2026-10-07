@@ -21,6 +21,7 @@ const FONT_SIZE = 12
 export function TerminalView({
   sessionKey,
   cwd,
+  account,
   shell,
   sessionId,
   model,
@@ -31,6 +32,8 @@ export function TerminalView({
 }: {
   sessionKey: string
   cwd: string
+  // Conta do Claude do grupo; vazia = a padrão. Como modelo e esforço, só entra ao abrir.
+  account?: string
   shell?: boolean
   sessionId?: string
   model?: string
@@ -46,8 +49,8 @@ export function TerminalView({
   const scale = useRef(fontScale)
   scale.current = fontScale
   // Modelo e esforço só entram ao abrir; mudar depois não recria o terminal.
-  const launch = useRef({ model, effort, settingsJson, permissionMode })
-  launch.current = { model, effort, settingsJson, permissionMode }
+  const launch = useRef({ account, model, effort, settingsJson, permissionMode })
+  launch.current = { account, model, effort, settingsJson, permissionMode }
   const [error, setError] = useState<string | null>(null)
   const [exitCode, setExitCode] = useState<number | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -84,6 +87,7 @@ export function TerminalView({
       .open({
         key: sessionKey,
         cwd,
+        account: launch.current.account,
         shell,
         sessionId,
         model: launch.current.model || undefined,

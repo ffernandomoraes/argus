@@ -165,6 +165,16 @@ export function setGroupColor(nodes: CanvasNode[], id: string, color: string): C
   return nodes.map((n) => (n.id === id && n.type === 'area' ? { ...n, data: { ...n.data, color } } : n))
 }
 
+export function setGroupAccount(nodes: CanvasNode[], id: string, account: string): CanvasNode[] {
+  return nodes.map((n) => (n.id === id && n.type === 'area' ? { ...n, data: { ...n.data, account } } : n))
+}
+
+// Conta escolhida no grupo onde o bloco está; fora de grupo, nenhuma (vale a padrão).
+export function groupAccount(nodes: CanvasNode[], node: CanvasNode | undefined): string | undefined {
+  const group = node?.parentId ? nodes.find((n) => n.id === node.parentId) : undefined
+  return group?.type === 'area' ? group.data.account : undefined
+}
+
 export const COLLAPSED_SIZE = { width: 280, height: 40 }
 
 

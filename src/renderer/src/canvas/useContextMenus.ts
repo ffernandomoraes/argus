@@ -1,15 +1,18 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { ChevronDown, ChevronUp, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, Pencil, FolderPlus, SquareDashed, SquareTerminal, Terminal, Trash2, Ungroup } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
+import type { AuthState } from '../../../shared/auth'
+import { resolveAccount } from '../auth/useAuth'
 import type { ConfirmRequest } from './ConfirmDialog'
 import type { MenuItem } from './ContextMenu'
-import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupColor, ungroup } from './operations'
+import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupAccount, setGroupColor, ungroup } from './operations'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import type { AreaNode, CanvasNode, ChatNode, ProjectNode, TerminalKind, TerminalNode } from './types'
 
 type Deps = {
   nodes: CanvasNode[]
   setNodes: Dispatch<SetStateAction<CanvasNode[]>>
+  auth: AuthState | null
   confirm: (req: ConfirmRequest) => void
   startRename: (id: string) => void
   addGroup: (position: XYPosition) => void
@@ -51,6 +54,27 @@ export function paneMenu(deps: Deps, position: XYPosition): MenuItem[] {
   ]
 }
 
+// "Conta do Claude ▸", só com mais de uma conta. O visto fica na que vale: a escolhida ou, sem
+// escolha, a padrão.
+function accountSubmenu(deps: Deps, group: AreaNode): MenuItem[] {
+  const { auth } = deps
+  if (!auth || auth.accounts.length < 2) return []
+  const current = resolveAccount(auth, group.data.account)
+  return [
+    {
+      type: 'submenu',
+      label: 'Conta do Claude',
+      icon: ClaudeIcon,
+      items: auth.accounts.map((a) => ({
+        type: 'action',
+        label: a.status?.loggedIn === false ? `${a.name} - sem login` : a.name,
+        checked: a.id === current,
+        onSelect: () => deps.setNodes((ns) => setGroupAccount(ns, group.id, a.id))
+      }))
+    }
+  ]
+}
+
 export function groupMenu(deps: Deps, group: AreaNode): MenuItem[] {
   const { setNodes } = deps
   const count = childrenOf(deps.nodes, group.id).length
@@ -62,6 +86,7 @@ export function groupMenu(deps: Deps, group: AreaNode): MenuItem[] {
       value: group.data.color,
       onSelect: (color) => setNodes((ns) => setGroupColor(ns, group.id, color))
     },
+    ...accountSubmenu(deps, group),
     { type: 'separator' },
     {
       type: 'action',

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { NodeResizer, type NodeProps } from '@xyflow/react'
+import { NodeResizer, useNodesData, type NodeProps } from '@xyflow/react'
 import { SquareTerminal, Terminal, X } from 'lucide-react'
 import { TerminalView } from '../conversation/TerminalView'
 import { getConversationSettings } from '../conversation/conversationSettings'
@@ -8,12 +8,15 @@ import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
 import { useSessions } from './sessionsStore'
 import { PathLabel } from './PathLabel'
-import type { TerminalNode as TerminalNodeType } from './types'
+import type { AreaNode, TerminalNode as TerminalNodeType } from './types'
 
 // Terminal de verdade morando no canvas, ao lado das pastas: o `claude` ou o shell do sistema.
 // O processo vive no processo principal: mover, recolher o grupo ou fechar o app não derruba a sessão.
-export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>) {
+export function TerminalNode({ id, data, selected, parentId }: NodeProps<TerminalNodeType>) {
   const shell = data.kind === 'shell'
+  // Conta do grupo onde o terminal está. Vale ao abrir: o terminal aberto segue na dele.
+  const group = useNodesData<AreaNode>(parentId ?? '')
+  const account = group?.type === 'area' ? group.data.account : undefined
   // Modelo, esforço e modo valem ao abrir, como no terminal comum; os da conversa que ele retoma.
   const settings = getConversationSettings(data.sessionId)
   const { bindTerminalSession, closeTerminal } = useCanvasActions()
@@ -72,6 +75,7 @@ export function TerminalNode({ id, data, selected }: NodeProps<TerminalNodeType>
           <TerminalView
             sessionKey={id}
             cwd={data.path}
+            account={account}
             shell={shell}
             sessionId={data.sessionId}
             model={settings.model}

@@ -36,15 +36,26 @@ declare global {
         onClosed: (cb: (id: string) => void) => () => void
       }
       claude: {
-        info: () => Promise<ClaudeInfo | null>
-        onInfo: (cb: (info: ClaudeInfo) => void) => () => void
+        info: (account?: string) => Promise<ClaudeInfo | null>
+        onInfo: (cb: (account: string, info: ClaudeInfo) => void) => () => void
       }
       auth: {
         state: () => Promise<AuthState>
-        login: (method: LoginMethod) => void
+        // Confere de novo o login de todas as contas (um login feito no terminal, por exemplo).
+        refresh: () => void
+        // Entra de novo numa conta da lista (ou em outra no lugar dela).
+        login: (accountId: string, method: LoginMethod) => void
+        // Conta nova; entra na lista quando o login termina.
+        add: (method: LoginMethod) => void
         submitCode: (code: string) => void
         cancel: () => void
+        // Sai da principal, inclusive no terminal e no VS Code.
         logout: () => Promise<boolean>
+        // Tira uma conta que não é a principal: sai dela e apaga a pasta.
+        remove: (accountId: string) => Promise<boolean>
+        // Apelido vazio volta para o nome sugerido.
+        rename: (accountId: string, name: string) => void
+        setDefault: (accountId: string) => void
         open: (url: string) => void
         onState: (cb: (state: AuthState) => void) => () => void
       }
@@ -56,7 +67,7 @@ declare global {
         answer: (key: string, id: string, answer: PermissionAnswer) => void
         interrupt: (key: string) => void
         retain: (key: string) => void
-        mcpStatus: (key: string, cwd: string) => Promise<McpStatus>
+        mcpStatus: (key: string, cwd: string, account?: string) => Promise<McpStatus>
         release: (key: string) => void
         configure: (key: string, patch: Partial<ChatSettings>) => void
         onState: (cb: (key: string, state: ChatState) => void) => () => void
@@ -155,8 +166,8 @@ declare global {
         onState: (cb: (state: UpdateState) => void) => () => void
       }
       usage: {
-        get: () => Promise<Usage | null>
-        onUpdate: (cb: (usage: Usage) => void) => () => void
+        get: () => Promise<Record<string, Usage>>
+        onUpdate: (cb: (account: string, usage: Usage | null) => void) => () => void
       }
     }
   }

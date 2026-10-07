@@ -2,6 +2,7 @@ import { existsSync, statSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { spawn, type IPty } from 'node-pty'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
+import { applyAccount } from './accounts'
 import { CLI_BIN } from './cli'
 import { claudePath } from './claudePath'
 import { expandHome } from './paths'
@@ -9,7 +10,8 @@ import { expandHome } from './paths'
 // Guarda o fim da saída de cada terminal para redesenhar a tela ao reconectar.
 const BUFFER_LIMIT = 200_000
 
-type Session = { pty: IPty; buffer: string }
+// account: conta do Claude com que o terminal abriu.
+type Session = { pty: IPty; buffer: string; account: string }
 
 export class Terminals {
   private sessions = new Map<string, Session>()
@@ -40,6 +42,8 @@ export class Terminals {
     // App aberto pelo Finder não tem o PATH do terminal; o claude e o node precisam dele.
     // O `argus` entra em todo terminal do app, mesmo sem ter sido instalado no PATH.
     env.PATH = [CLI_BIN, dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+    // A conta do grupo vale também no shell: o `claude` digitado nele entra com ela.
+    const account = applyAccount(env, req.account)
 
     // Shell de login, como o Terminal do macOS: carrega .zprofile e .zshrc.
     const shell = process.env.SHELL || '/bin/zsh'
@@ -60,7 +64,7 @@ export class Terminals {
         cwd,
         env
       })
-      const session: Session = { pty, buffer: '' }
+      const session: Session = { pty, buffer: '', account }
       pty.onData((data) => {
         session.buffer = (session.buffer + data).slice(-BUFFER_LIMIT)
         this.onData(req.key, data)
@@ -114,5 +118,10 @@ export class Terminals {
 
   killAll(): void {
     for (const key of [...this.sessions.keys()]) this.kill(key)
+  }
+
+  // Conta removida: o login dela some, então os terminais dela também.
+  killAccount(account: string): void {
+    for (const [key, s] of [...this.sessions]) if (s.account === account) this.kill(key)
   }
 }

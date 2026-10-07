@@ -11,6 +11,7 @@ import { useEscape } from '../useEscape'
 // e abrir outra conversa troca o conteúdo deste mesmo painel.
 export function ConversationDrawer({
   project,
+  account,
   loose = false,
   tint,
   conversation,
@@ -25,6 +26,8 @@ export function ConversationDrawer({
   onClose
 }: {
   project: ProjectData
+  // Conta do Claude do grupo da pasta; vazia = a padrão.
+  account?: string
   // Conversa sem projeto: roda na pasta do usuário, sem nome de projeto nem explorador de código.
   loose?: boolean
   // Cor do grupo onde o projeto está; o painel puxa esse tom de leve.
@@ -65,6 +68,7 @@ export function ConversationDrawer({
       <ResizeHandles onResizeStart={floating.onResizeStart} />
       <ConversationView
         cwd={project.path}
+        account={account}
         project={loose ? undefined : project.name}
         conversation={conversation}
         onOpenFile={onOpenFile}

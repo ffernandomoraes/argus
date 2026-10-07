@@ -79,9 +79,17 @@ function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl:
   )
 }
 
-// Escolha da forma de entrar e acompanhamento do login. Usado na tela de boas-vindas e em Conta.
-export function LoginPanel({ login, onCancel }: { login: LoginState; onCancel?: () => void }) {
-  const start = (method: LoginMethod) => window.api.auth.login(method)
+// Escolha da forma de entrar e acompanhamento do login. Usado na tela de boas-vindas e em Contas;
+// onStart diz em qual conta entrar (ou se é uma nova).
+export function LoginPanel({
+  login,
+  onStart,
+  onCancel
+}: {
+  login: LoginState
+  onStart: (method: LoginMethod) => void
+  onCancel?: () => void
+}) {
   const busy = login.status === 'starting' || login.status === 'waiting'
   const cancel = () => {
     if (login.status !== 'idle') window.api.auth.cancel()
@@ -97,7 +105,7 @@ export function LoginPanel({ login, onCancel }: { login: LoginState; onCancel?: 
           <Option
             primary
             disabled={busy}
-            onClick={() => start('claudeai')}
+            onClick={() => onStart('claudeai')}
             title={
               login.status === 'starting' && login.method === 'claudeai' ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -109,7 +117,7 @@ export function LoginPanel({ login, onCancel }: { login: LoginState; onCancel?: 
           />
           <Option
             disabled={busy}
-            onClick={() => start('console')}
+            onClick={() => onStart('console')}
             title={
               login.status === 'starting' && login.method === 'console' ? (
                 <Loader2 size={14} className="animate-spin" />

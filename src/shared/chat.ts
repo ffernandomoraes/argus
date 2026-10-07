@@ -66,6 +66,8 @@ export type ChatImage = { mediaType: string; data: string }
 export type ChatSendRequest = {
   key: string
   cwd: string
+  // Conta do Claude escolhida no grupo da pasta. Vazia, removida ou desconhecida: a padrão.
+  account?: string
   // Conversa existente: retoma a sessão. Vazio: conversa nova.
   sessionId?: string
   settings: ChatSettings

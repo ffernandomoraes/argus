@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 import { COLORS } from './factory'
 import { useEscape } from '../useEscape'
 
 type Icon = ComponentType<{ size?: number }>
 
 export type MenuItem =
-  | { type: 'action'; label: string; icon?: Icon; onSelect: () => void; danger?: boolean; disabled?: boolean }
+  // checked: a opção que está valendo numa lista de escolha (ex.: a conta do grupo).
+  | { type: 'action'; label: string; icon?: Icon; onSelect: () => void; danger?: boolean; disabled?: boolean; checked?: boolean }
   | { type: 'submenu'; label: string; icon?: Icon; items: MenuItem[] }
   | { type: 'colors'; label: string; value: string; onSelect: (color: string) => void }
   | { type: 'separator' }
@@ -76,6 +77,7 @@ function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () => void }
           >
             {Icon && <Icon size={14} />}
             {item.label}
+            {item.checked && <Check size={14} className="ml-auto shrink-0 text-muted" />}
           </button>
         )
       })}

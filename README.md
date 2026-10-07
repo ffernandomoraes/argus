@@ -29,6 +29,7 @@ esperando por você.
 - O layout fica salvo e volta igual ao reabrir o app.
 - Comando `argus .` no terminal: abre a pasta atual no canvas, como o `code .` do VS Code.
 - Barra de comando por texto ou voz: peça "cria um grupo Freela com essas duas pastas" e o Claude organiza o canvas.
+- Uma conta do Claude por grupo: a pessoal num grupo, a da empresa em outro. Pastas, terminais e conversas do grupo usam a conta dele.
 
 **Conversas com o Claude Code**
 - Chat completo no painel lateral ou em janela própria, com respostas em tempo real.
@@ -45,7 +46,7 @@ esperando por você.
 - Status de cada conversa no canvas: rodando, esperando você, concluída.
 - Notificação do sistema quando uma conversa termina ou precisa de resposta.
 - Ícone na barra de menus com o resumo do que está rodando.
-- Indicador do limite de uso do Claude.
+- Indicador do limite de uso do Claude, de cada conta.
 - Lista dos servidores locais que algum agente deixou rodando, com atalho para abrir ou encerrar.
 
 **Ferramentas**
@@ -57,7 +58,7 @@ esperando por você.
 ## Requisitos
 
 - Mac com Apple Silicon (M1 ou mais novo).
-- [Claude Code](https://docs.claude.com/claude-code) instalado e com login feito. O Argus usa o `claude` da sua máquina e a sua assinatura.
+- [Claude Code](https://docs.claude.com/claude-code) instalado e com login feito. O Argus usa o `claude` da sua máquina e a sua assinatura. Outras contas entram por **Configurações › Contas**.
 
 ## Instalação
 

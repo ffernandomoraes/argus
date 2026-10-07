@@ -5,6 +5,8 @@ export type SessionStatus = 'idle' | 'running' | 'needs-you' | 'done'
 export type AreaData = {
   label: string
   color: string
+  // Conta do Claude das pastas, terminais e conversas de dentro. Sem ela (ou removida), a padrão.
+  account?: string
   collapsed?: boolean
   // Tamanho antes de recolher, para voltar igual ao expandir.
   expandedSize?: { width: number; height: number }

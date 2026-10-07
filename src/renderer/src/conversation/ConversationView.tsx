@@ -18,6 +18,7 @@ import { agentHint, mentionedAgents } from './AgentMenu'
 import type { AgentDef } from '../../../shared/agents'
 import type { UncommittedFile } from '../../../shared/sessions'
 import { useEscape } from '../useEscape'
+import { AccountContext } from '../auth/useAuth'
 
 export function HeaderButton({
   label,
@@ -159,6 +160,7 @@ function UncommittedBadge({
 // (ConversationDrawer) e à janela separada (ConversationWindow).
 export function ConversationView({
   cwd,
+  account,
   project,
   conversation,
   onOpenFile,
@@ -173,6 +175,9 @@ export function ConversationView({
 }: {
   // Pasta onde o Claude roda.
   cwd: string
+  // Conta do Claude do grupo da pasta; vazia = a padrão. Só vale ao abrir a sessão: a conversa já
+  // aberta segue na conta com que abriu.
+  account?: string
   // Nome da pasta, mostrado no cabeçalho.
   project?: ReactNode
   conversation: ConversationSummary
@@ -240,6 +245,7 @@ export function ConversationView({
     window.api.chat.send({
       key: conversation.id,
       cwd,
+      account,
       sessionId: conversation.sessionId,
       settings,
       text: full,
@@ -277,7 +283,7 @@ export function ConversationView({
   }
 
   return (
-    <>
+    <AccountContext.Provider value={account}>
       <header
         onPointerDown={onHeaderPointerDown}
         className={`flex shrink-0 items-start gap-3 border-b border-line px-4 py-3 ${headerClassName}`}
@@ -328,7 +334,14 @@ export function ConversationView({
             }
             onOpenMcp={() => setMcpOpen(true)}
             onRemoteControl={(enabled) =>
-              window.api.chat.remoteControl({ key: conversation.id, cwd, sessionId: conversation.sessionId, settings, enabled })
+              window.api.chat.remoteControl({
+                key: conversation.id,
+                cwd,
+                account,
+                sessionId: conversation.sessionId,
+                settings,
+                enabled
+              })
             }
             onInterrupt={() => window.api.chat.interrupt(conversation.id)}
             onAnswer={(id, answer) => window.api.chat.answer(conversation.id, id, answer)}
@@ -339,7 +352,9 @@ export function ConversationView({
           />
         </div>
       </FileLinkContext.Provider>
-      {mcpOpen && <McpPanel conversationKey={conversation.id} cwd={cwd} onClose={() => setMcpOpen(false)} />}
-    </>
+      {mcpOpen && (
+        <McpPanel conversationKey={conversation.id} cwd={cwd} account={account} onClose={() => setMcpOpen(false)} />
+      )}
+    </AccountContext.Provider>
   )
 }

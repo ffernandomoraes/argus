@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   AppWindow,
+  Check,
+  Copy,
   MessagesSquare,
   Monitor,
   Moon,
   Palette,
   PanelRight,
+  Pencil,
+  Plus,
   Settings2,
   Sun,
-  User,
+  Users,
   X
 } from 'lucide-react'
 import { EFFORTS, groupByFamily } from '../conversation/ModelEffortPicker'
@@ -16,21 +20,23 @@ import { MODES } from '../conversation/PermissionModePicker'
 import type { SessionSettings } from '../conversation/SessionSettings'
 import { useClaudeInfo } from '../conversation/useModels'
 import { LoginPanel } from '../auth/LoginPanel'
-import { useAuth } from '../auth/useAuth'
+import { findAccount, useAuth } from '../auth/useAuth'
 import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
+import { displayPath } from '../canvas/factory'
+import { MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '../../../shared/auth'
 import type { CliStatus } from '../../../shared/cli'
 import type { ThemePreference } from '../theme/useTheme'
 import { Row, Segmented, Select, Switch } from './controls'
 import { setPreferences, usePreferences } from './preferences'
 import { useUpdates } from '../updates/useUpdates'
 
-type Section = 'general' | 'conversations' | 'appearance' | 'account'
+type Section = 'general' | 'conversations' | 'appearance' | 'accounts'
 
 const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
   { id: 'general', label: 'Geral', icon: <Settings2 size={15} /> },
   { id: 'conversations', label: 'Conversas', icon: <MessagesSquare size={15} /> },
   { id: 'appearance', label: 'Aparência', icon: <Palette size={15} /> },
-  { id: 'account', label: 'Conta', icon: <User size={15} /> }
+  { id: 'accounts', label: 'Contas', icon: <Users size={15} /> }
 ]
 
 // `argus .` em qualquer terminal abre a pasta no canvas, como o `code .` do VS Code.
@@ -239,109 +245,260 @@ const PROVIDERS: Record<string, string> = {
   gateway: 'gateway da empresa'
 }
 
-// Conta do Claude Code, a mesma do terminal e do VS Code: entrar, trocar e sair valem para o Mac todo.
-function AccountSection() {
-  const auth = useAuth()
-  const [switching, setSwitching] = useState(false)
-  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+const BUTTON = 'whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs'
+
+function Badge({ children }: { children: ReactNode }) {
+  return <span className="shrink-0 rounded border border-line px-1.5 py-px text-[10px] text-faint">{children}</span>
+}
+
+// Apelido editável no próprio card: Enter grava, Esc desiste. Vazio volta para o nome sugerido.
+function AccountName({ account }: { account: ClaudeAccount }) {
+  const [value, setValue] = useState<string | null>(null)
+  // O campo some ao terminar, e sumir também tira o foco: o blur que vem junto não grava de novo
+  // (nem grava depois de um Esc).
+  const finished = useRef(false)
+
+  if (value === null) {
+    return (
+      <button
+        onClick={() => {
+          finished.current = false
+          setValue(account.name)
+        }}
+        title="Trocar o apelido"
+        className="group/name flex min-w-0 items-center gap-1.5 text-left"
+      >
+        <span className="truncate text-sm text-text">{account.name}</span>
+        <Pencil size={11} className="shrink-0 text-faint opacity-0 group-hover/name:opacity-100" />
+      </button>
+    )
+  }
+
+  const done = (save: boolean) => {
+    if (finished.current) return
+    finished.current = true
+    setValue(null)
+    if (save && value.trim() !== account.name) window.api.auth.rename(account.id, value)
+  }
+  return (
+    <input
+      autoFocus
+      value={value}
+      maxLength={40}
+      aria-label="Apelido da conta"
+      onChange={(e) => setValue(e.target.value)}
+      onFocus={(e) => e.target.select()}
+      onBlur={() => done(true)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') done(true)
+        if (e.key === 'Escape') {
+          // O Esc fica aqui: não fecha as configurações.
+          e.preventDefault()
+          done(false)
+        }
+      }}
+      className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-0.5 text-sm text-text outline-none focus:border-line-strong"
+    />
+  )
+}
+
+// Comando para usar a conta num terminal qualquer, fora do app.
+function CopyTerminalCommand({ dir }: { dir: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      title={`CLAUDE_CONFIG_DIR=${displayPath(dir)} claude`}
+      onClick={() => {
+        void navigator.clipboard.writeText(`CLAUDE_CONFIG_DIR=${displayPath(dir)} claude`)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
+      }}
+      className={`${BUTTON} flex items-center gap-1.5 text-muted hover:bg-surface-2 hover:text-text`}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? 'Copiado' : 'Comando para o terminal'}
+    </button>
+  )
+}
+
+function AccountCard({
+  account,
+  auth,
+  onLogin,
+  onConfirm
+}: {
+  account: ClaudeAccount
+  auth: AuthState
+  onLogin: () => void
+  onConfirm: (req: ConfirmRequest) => void
+}) {
   const [logoutFailed, setLogoutFailed] = useState(false)
-  const account = auth?.account
-  const login = auth?.login
-
-  // Login terminou ou foi cancelado: volta para o resumo da conta.
-  const status = login?.status
-  const prevStatus = useRef(status)
-  useEffect(() => {
-    if ((prevStatus.current === 'starting' || prevStatus.current === 'waiting') && status === 'idle') setSwitching(false)
-    prevStatus.current = status
-  }, [status])
-
-  if (!auth) return <p className="text-xs text-faint">Conferindo a conta…</p>
-
-  if (!account) {
-    return (
-      <p className="text-xs leading-relaxed text-faint">
-        Não deu para conferir a conta: o Claude Code não respondeu. Confira se ele está instalado rodando{' '}
-        <code className="font-mono text-muted">claude</code> no Terminal.
-      </p>
-    )
-  }
-
-  const loggingIn = login!.status !== 'idle'
-  if (!account.loggedIn || switching || loggingIn) {
-    return (
-      <div className="max-w-sm">
-        {account.loggedIn && (
-          <p className="mb-4 text-xs leading-relaxed text-faint">
-            Entre com a outra conta. Ela substitui {account.email ?? 'a atual'} no Claude Code deste Mac.
-          </p>
-        )}
-        <LoginPanel login={login!} onCancel={account.loggedIn ? () => setSwitching(false) : undefined} />
-      </div>
-    )
-  }
-
-  const external = account.provider && account.provider !== 'firstParty'
-  const plan = account.subscriptionType && account.subscriptionType[0].toUpperCase() + account.subscriptionType.slice(1)
-  const name = account.email ?? (external ? PROVIDERS[account.provider!] ?? account.provider! : 'Conta conectada')
+  const multiple = auth.accounts.length > 1
+  const main = account.id === MAIN_ACCOUNT
+  const isDefault = auth.defaultId === account.id
+  const s = account.status
+  const loggedIn = !!s?.loggedIn
+  const external = !!s?.provider && s.provider !== 'firstParty'
+  const plan = s?.subscriptionType && s.subscriptionType[0].toUpperCase() + s.subscriptionType.slice(1)
+  const who = s?.email ?? (external ? PROVIDERS[s.provider!] ?? s.provider! : 'Conta conectada')
+  const details = [s?.organization, plan, s?.method === 'console' && 'Anthropic Console'].filter(Boolean).join(' - ')
+  // Quem passa a valer nos grupos desta conta, se ela sair.
+  const fallback = isDefault ? auth.accounts.find((a) => a.id === MAIN_ACCOUNT)?.name : findAccount(auth)?.name
 
   return (
-    <>
-      <div className="flex items-center gap-4 rounded-lg border border-line p-4">
+    <div className="rounded-lg border border-line p-4">
+      <div className="flex items-start gap-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-medium text-text">
-          {name[0].toUpperCase()}
+          {account.name[0]?.toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm text-text">{name}</div>
-          <div className="mt-0.5 text-xs text-faint">
-            {[account.organization, plan, account.method === 'console' && 'Anthropic Console'].filter(Boolean).join(' - ')}
+          <div className="flex min-w-0 items-center gap-2">
+            <AccountName account={account} />
+            {multiple && main && <Badge>Principal</Badge>}
+            {multiple && isDefault && <Badge>Padrão</Badge>}
           </div>
+          <div className="mt-0.5 truncate text-xs text-muted">
+            {s === null ? 'O Claude Code não respondeu.' : loggedIn ? who : 'Sem login'}
+          </div>
+          {loggedIn && details && <div className="mt-0.5 truncate text-xs text-faint">{details}</div>}
         </div>
-        <span className="flex items-center gap-1.5 text-xs text-done">
-          <span className="size-1.5 rounded-full bg-done" />
-          Conectada
-        </span>
+        {s && (
+          <span className={`flex shrink-0 items-center gap-1.5 text-xs ${loggedIn ? 'text-done' : 'text-needs-you'}`}>
+            <span className={`size-1.5 rounded-full ${loggedIn ? 'bg-done' : 'bg-needs-you'}`} />
+            {loggedIn ? 'Conectada' : 'Sem login'}
+          </span>
+        )}
       </div>
 
       {external ? (
-        <p className="mt-4 text-xs leading-relaxed text-faint">
+        <p className="mt-3 pl-14 text-xs leading-relaxed text-faint">
           O acesso vem das variáveis de ambiente ou das configurações do Claude Code, não de um login. Para trocar,
           mude por lá.
         </p>
       ) : (
-        <div className="mt-2">
-          <Row label="Trocar de conta" description="Entra com outra conta no lugar desta.">
-            <button
-              onClick={() => setSwitching(true)}
-              className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
-            >
-              Trocar
+        <div className="mt-3 flex flex-wrap gap-2 pl-14">
+          <button onClick={onLogin} className={`${BUTTON} text-text hover:bg-surface-2`}>
+            {loggedIn ? 'Entrar de novo' : 'Entrar'}
+          </button>
+          {multiple && !isDefault && (
+            <button onClick={() => window.api.auth.setDefault(account.id)} className={`${BUTTON} text-text hover:bg-surface-2`}>
+              Usar como padrão
             </button>
-          </Row>
-          <Row
-            label="Sair"
-            description={
-              logoutFailed
-                ? 'Não deu para sair. Tente de novo ou rode "claude auth logout" no Terminal.'
-                : 'Desconecta o Claude Code deste Mac: vale também para o terminal e o VS Code.'
-            }
-          >
-            <button
-              onClick={() =>
-                setConfirm({
-                  title: 'Sair da conta?',
-                  description: `O Claude Code deste Mac sai de ${name}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
-                  confirmLabel: 'Sair',
-                  onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok))
-                })
-              }
-              className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
-            >
-              Sair
-            </button>
-          </Row>
+          )}
+          {account.dir && <CopyTerminalCommand dir={account.dir} />}
+          {main
+            ? loggedIn && (
+                <button
+                  onClick={() =>
+                    onConfirm({
+                      title: 'Sair da conta?',
+                      description: `O Claude Code deste Mac sai de ${who}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
+                      confirmLabel: 'Sair',
+                      onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok))
+                    })
+                  }
+                  className={`${BUTTON} text-red-400 hover:bg-red-500/10`}
+                >
+                  Sair
+                </button>
+              )
+            : (
+                <button
+                  onClick={() =>
+                    onConfirm({
+                      title: `Remover "${account.name}"?`,
+                      description: `O Argus sai dessa conta e apaga a pasta dela. Conversas e terminais abertos com ela fecham agora, e os grupos que usavam ela passam a usar ${fallback ?? 'a padrão'}. O histórico das conversas continua.`,
+                      confirmLabel: 'Remover',
+                      onConfirm: () => void window.api.auth.remove(account.id)
+                    })
+                  }
+                  className={`${BUTTON} text-red-400 hover:bg-red-500/10`}
+                >
+                  Remover
+                </button>
+              )}
         </div>
       )}
+      {logoutFailed && (
+        <p role="alert" className="mt-2 pl-14 text-xs text-red-400">
+          Não deu para sair. Tente de novo ou rode "claude auth logout" no Terminal.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Contas do Claude Code. A principal é a do terminal e do VS Code: entrar e sair nela valem para o
+// Mac todo. As outras ficam só no Argus, cada uma com a pasta e o login dela, e cada grupo do
+// canvas escolhe a sua.
+function AccountsSection() {
+  const auth = useAuth()
+  // Login aberto aqui: numa conta da lista ou numa nova (adding).
+  const [target, setTarget] = useState<{ accountId?: string } | null>(null)
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+  const login = auth?.login
+
+  // Abrir a seção confere de novo: o login pode ter mudado fora do app.
+  useEffect(() => window.api.auth.refresh(), [])
+
+  // Login terminou ou foi cancelado: volta para a lista.
+  const status = login?.status
+  const prevStatus = useRef(status)
+  useEffect(() => {
+    if ((prevStatus.current === 'starting' || prevStatus.current === 'waiting') && status === 'idle') setTarget(null)
+    prevStatus.current = status
+  }, [status])
+
+  if (!auth || !login) return <p className="text-xs text-faint">Conferindo as contas…</p>
+
+  // Login em andamento, mesmo que tenha começado na tela de boas-vindas.
+  const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId } : target
+  if (active) {
+    const account = active.accountId ? auth.accounts.find((a) => a.id === active.accountId) : undefined
+    return (
+      <div className="max-w-sm">
+        <p className="mb-4 text-xs leading-relaxed text-faint">
+          {!account
+            ? 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.'
+            : account.id === MAIN_ACCOUNT
+              ? 'Entre de novo na principal, ou em outra conta no lugar dela. Vale também para o terminal e o VS Code deste Mac.'
+              : `Entre de novo em ${account.name}, ou em outra conta no lugar dela.`}
+        </p>
+        <LoginPanel
+          login={login}
+          onStart={(method) => (account ? window.api.auth.login(account.id, method) : window.api.auth.add(method))}
+          onCancel={() => setTarget(null)}
+        />
+      </div>
+    )
+  }
+
+  const multiple = auth.accounts.length > 1
+  return (
+    <>
+      <p className="mb-4 text-xs leading-relaxed text-faint">
+        {multiple
+          ? 'Cada grupo do canvas usa uma conta: botão direito no grupo > Conta do Claude. Fora de grupo vale a padrão. Histórico, CLAUDE.md, agentes, skills, plugins e configurações são os mesmos em todas; o login e os MCPs são de cada conta.'
+          : 'Para usar outra conta em alguns grupos (uma pessoal e uma da empresa, por exemplo), adicione aqui. A principal continua sendo a do terminal e do VS Code.'}
+      </p>
+      <div className="flex flex-col gap-3">
+        {auth.accounts.map((account) => (
+          <AccountCard
+            key={account.id}
+            account={account}
+            auth={auth}
+            onLogin={() => setTarget({ accountId: account.id })}
+            onConfirm={setConfirm}
+          />
+        ))}
+      </div>
+      <button
+        onClick={() => setTarget({})}
+        className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-2 text-xs text-muted hover:bg-surface-2 hover:text-text"
+      >
+        <Plus size={13} />
+        Adicionar conta
+      </button>
       {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
     </>
   )
@@ -392,7 +549,7 @@ export function SettingsPage({
           {section === 'general' && <GeneralSection />}
           {section === 'conversations' && <ConversationsSection />}
           {section === 'appearance' && <AppearanceSection theme={theme} onThemeChange={onThemeChange} />}
-          {section === 'account' && <AccountSection />}
+          {section === 'accounts' && <AccountsSection />}
         </div>
       </section>
     </div>

@@ -1,6 +1,9 @@
 import { execFile } from 'node:child_process'
+import { realpathSync } from 'node:fs'
+import { resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import type { DevServer } from '../shared/devServers'
+import { expandHome } from './paths'
 
 const run = promisify(execFile)
 
@@ -42,6 +45,21 @@ function parsePs(text: string): Map<number, { pgid: number; rest: string }> {
 
 const MARK = /(^|\s)CLAUDECODE=1(\s|$)/
 const CLAUDE_BIN = /(^|\/)claude$|\/claude\/versions\//
+// Marca do que o play em cima da pasta iniciou (ver startProjectServer).
+export const APP_MARK = 'ARGUS_SERVER'
+const APP = new RegExp(`(^|\\s)${APP_MARK}=1(\\s|$)`)
+
+// O lsof devolve a pasta real (sem atalhos); a do projeto precisa estar igual para comparar.
+export function realRoot(path: string): string {
+  const full = resolve(expandHome(path))
+  try {
+    return realpathSync.native(full)
+  } catch {
+    return full
+  }
+}
+
+export const inside = (root: string, cwd: string) => cwd === root || cwd.startsWith(root + sep)
 
 let ownGroup: Promise<number> | null = null
 function ownPgid(): Promise<number> {
@@ -65,7 +83,7 @@ async function claudeGroups(): Promise<Set<number>> {
 export type Listening = Omit<DevServer, 'port'> & { ports: number[]; claude: boolean }
 
 // `only` filtra pelo ambiente antes das consultas mais caras (cwd, comando sem ambiente).
-export async function scanListening(only?: (env: string) => boolean): Promise<Listening[]> {
+export async function scanListening(only?: (env: string) => boolean): Promise<(Listening & { env: string })[]> {
   const ports = parseFields(await output(LSOF, ['-nP', '-iTCP', '-sTCP:LISTEN', '-Fpn']), 'n')
   if (ports.size === 0) return []
   const pids = [...ports.keys()].join(',')
@@ -83,7 +101,7 @@ export async function scanListening(only?: (env: string) => boolean): Promise<Li
     claudeGroups()
   ])
 
-  const found: Listening[] = []
+  const found: (Listening & { env: string })[] = []
   for (const pid of chosen) {
     const info = plain.get(pid)
     if (!info) continue
@@ -98,17 +116,25 @@ export async function scanListening(only?: (env: string) => boolean): Promise<Li
       command: info.rest,
       sessionId: env.match(/(?:^|\s)CLAUDE_CODE_SESSION_ID=([\w-]+)/)?.[1],
       locked: info.pgid === self ? 'app' : withClaude.has(info.pgid) ? 'claude' : undefined,
-      claude: withClaude.has(info.pgid) || CLAUDE_BIN.test(info.rest.split(' ')[0])
+      claude: withClaude.has(info.pgid) || CLAUDE_BIN.test(info.rest.split(' ')[0]),
+      env
     })
   }
   return found
 }
 
-// Todo comando que o Claude Code roda herda CLAUDECODE=1. Seguir a árvore de processos não
-// serve: rodando em segundo plano, o servidor perde o pai e é adotado pelo sistema.
-export async function listDevServers(): Promise<DevServer[]> {
+// Todo comando que o Claude Code roda herda CLAUDECODE=1; o que o play iniciou leva a marca do
+// app. Seguir a árvore de processos não serve: rodando em segundo plano, o servidor perde o pai
+// e é adotado pelo sistema. Fora isso, qualquer porta aberta dentro de uma pasta do canvas
+// (`paths`), venha de onde vier, menos o Claude Code e o grupo dele.
+export async function listDevServers(paths: string[] = []): Promise<DevServer[]> {
+  const roots = paths.map(realRoot)
+  const marked = (env: string) => MARK.test(env) || APP.test(env)
+  // Sem pastas, dá para filtrar pelo ambiente antes das consultas mais caras.
+  const listening = await scanListening(roots.length ? undefined : marked)
   const servers: DevServer[] = []
-  for (const p of await scanListening((env) => MARK.test(env))) {
+  for (const p of listening) {
+    if (!marked(p.env) && (p.claude || !roots.some((root) => inside(root, p.cwd)))) continue
     for (const port of p.ports) {
       servers.push({ port, pid: p.pid, pgid: p.pgid, cwd: p.cwd, command: p.command, sessionId: p.sessionId, locked: p.locked })
     }
@@ -127,8 +153,8 @@ export function groupAlive(pgid: number): boolean {
 
 // Encerra o grupo inteiro do servidor. Confere de novo na hora: só grupos que a lista mostra,
 // e nunca um travado.
-export async function killDevServer(pgid: number): Promise<boolean> {
-  const target = (await listDevServers()).find((s) => s.pgid === pgid)
+export async function killDevServer(pgid: number, paths: string[] = []): Promise<boolean> {
+  const target = (await listDevServers(paths)).find((s) => s.pgid === pgid)
   if (!target || target.locked) return false
   return terminate(pgid)
 }

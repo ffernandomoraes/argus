@@ -1,10 +1,9 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { existsSync, realpathSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { dirname, join, resolve, sep } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { ProjectServer } from '../shared/devServers'
-import { scanListening, terminate, type Listening } from './devServers'
-import { expandHome } from './paths'
+import { APP_MARK, inside, realRoot, scanListening, terminate, type Listening } from './devServers'
 
 // Scripts do package.json, na ordem de preferência.
 const SCRIPTS = ['dev', 'start']
@@ -23,18 +22,6 @@ type Started = { child: ChildProcess; output: string; stopping: boolean }
 // Servidores iniciados por este app, pela pasta real do projeto.
 const started = new Map<string, Started>()
 const errors = new Map<string, string>()
-
-// O lsof devolve a pasta real (sem atalhos); a do projeto precisa estar igual para comparar.
-function realRoot(path: string): string {
-  const full = resolve(expandHome(path))
-  try {
-    return realpathSync.native(full)
-  } catch {
-    return full
-  }
-}
-
-const inside = (root: string, cwd: string) => cwd === root || cwd.startsWith(root + sep)
 
 // Em monorepo, a trava do gerenciador fica numa pasta acima do pacote.
 function packageManager(root: string, declared: unknown): string {
@@ -109,8 +96,9 @@ export async function startProjectServer(path: string): Promise<boolean> {
   // Sem isso um projeto Electron abriria como Node puro.
   delete env.ELECTRON_RUN_AS_NODE
   delete env.ELECTRON_NO_ATTACH_CONSOLE
-  // Não foi o Claude Code que rodou: fica fora do painel de servidores dele.
+  // Não foi o Claude Code que rodou; a marca do app põe o servidor no painel mesmo assim.
   delete env.CLAUDECODE
+  env[APP_MARK] = '1'
   env.PATH = ['/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
 
   errors.delete(root)

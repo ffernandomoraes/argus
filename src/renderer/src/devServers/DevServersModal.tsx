@@ -15,16 +15,17 @@ const tildify = (path: string) => {
   return path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
 }
 
-// Servidores locais que algum Claude Code deixou rodando: abrir no navegador ou encerrar.
-export function DevServersModal({ onClose }: { onClose: () => void }) {
-  const { servers, loaded, refresh } = useDevServers()
+// Servidores locais que o Claude Code ou o play deixou rodando, ou que rodam dentro de uma pasta
+// do canvas (`paths`): abrir no navegador ou encerrar.
+export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: () => void }) {
+  const { servers, loaded, refresh, kill: killGroup } = useDevServers(paths)
   const [killing, setKilling] = useState<Set<number>>(new Set())
 
   useEscape(onClose)
 
   const kill = async (pgid: number) => {
     setKilling((s) => new Set(s).add(pgid))
-    await window.api.devServers.kill(pgid)
+    await killGroup(pgid)
     await refresh()
     setKilling((s) => {
       const next = new Set(s)
@@ -48,7 +49,7 @@ export function DevServersModal({ onClose }: { onClose: () => void }) {
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">Servidores rodando</div>
             <div className="mt-0.5 truncate text-[11px] text-faint">
-              Portas abertas por comandos que o Claude Code rodou e deixou de pé
+              Portas abertas pelo Claude Code, pelo play ou dentro das pastas do canvas
             </div>
           </div>
           <button

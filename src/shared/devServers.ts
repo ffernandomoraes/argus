@@ -1,4 +1,5 @@
-// Servidor local (porta aberta) que algum Claude Code subiu e deixou rodando.
+// Servidor local (porta aberta) que o Claude Code ou o play subiu, ou que roda dentro de uma
+// pasta do canvas.
 export type DevServer = {
   port: number
   pid: number

@@ -22,7 +22,7 @@ export function SettingsModal({
       <div
         role="dialog"
         aria-label="Configurações"
-        className="h-[min(600px,100%)] w-[min(860px,100%)] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="h-[min(640px,100%)] w-[min(880px,100%)] overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
         <SettingsPage theme={theme} onThemeChange={onThemeChange} onClose={onClose} />
       </div>

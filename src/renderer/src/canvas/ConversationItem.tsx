@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { Bot, ExternalLink, MessageCircle } from 'lucide-react'
 import { Elapsed } from '../conversation/turnInfo'
 import { relativeTime } from './relativeTime'
@@ -15,7 +15,8 @@ export function ConversationItem({
   now,
   card = false,
   draggable = false,
-  onOpen
+  onOpen,
+  onContextMenu
 }: {
   conversation: ConversationSummary
   // Aberta no painel lateral agora.
@@ -27,11 +28,13 @@ export function ConversationItem({
   // O próprio card é o bloco no canvas (conversa solta): arrastar move o bloco.
   draggable?: boolean
   onOpen: () => void
+  onContextMenu?: (e: ReactMouseEvent) => void
 }) {
   return (
     <li
       role="button"
       onClick={onOpen}
+      onContextMenu={onContextMenu}
       className={
         card
           ? `${draggable ? '' : 'nodrag '}flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-xs shadow-lg shadow-black/30 hover:bg-surface-2 ${

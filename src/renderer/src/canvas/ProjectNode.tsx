@@ -76,8 +76,15 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
     return color && color !== DEFAULT_GROUP_COLOR ? color : 'var(--color-running)'
   })
   const now = useNow()
-  const { activeConversation, openConversation, newConversation, openAllConversations, poppedOut, toggleProject } =
-    useCanvasActions()
+  const {
+    activeConversation,
+    openConversation,
+    openConversationMenu,
+    newConversation,
+    openAllConversations,
+    poppedOut,
+    toggleProject
+  } = useCanvasActions()
 
   const rootRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef<HTMLDivElement>(null)
@@ -232,6 +239,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
                   (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)
                 }
                 onOpen={() => openConversation(id, c.id)}
+                onContextMenu={(e) => openConversationMenu(e, id, c)}
               />
             )
           })}

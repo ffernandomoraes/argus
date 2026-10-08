@@ -1,10 +1,11 @@
 import { useEscape } from '../useEscape'
 
+// Sem onConfirm, é um aviso de bloqueio: só o botão de fechar.
 export type ConfirmRequest = {
   title: string
   description: string
-  confirmLabel: string
-  onConfirm: () => void
+  confirmLabel?: string
+  onConfirm?: () => void
 }
 
 export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; onClose: () => void }) {
@@ -28,17 +29,19 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
             onClick={onClose}
             className="rounded-lg px-3 py-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text"
           >
-            Cancelar
+            {request.onConfirm ? 'Cancelar' : 'Entendi'}
           </button>
-          <button
-            onClick={() => {
-              request.onConfirm()
-              onClose()
-            }}
-            className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600"
-          >
-            {request.confirmLabel}
-          </button>
+          {request.onConfirm && (
+            <button
+              onClick={() => {
+                request.onConfirm?.()
+                onClose()
+              }}
+              className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600"
+            >
+              {request.confirmLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

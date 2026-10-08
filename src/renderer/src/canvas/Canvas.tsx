@@ -11,6 +11,8 @@ import {
 import { CodeExplorer } from '../code/CodeExplorer'
 import { FileViewer } from '../code/FileViewer'
 import { TitleBar } from './TitleBar'
+import { Presence } from '../motion'
+import { useNodeMotion } from './useNodeMotion'
 import { ConversationDrawer } from '../conversation/ConversationDrawer'
 import { MemoryModal } from '../memory/MemoryModal'
 import { AgentsModal } from '../agents/AgentsModal'
@@ -46,7 +48,7 @@ import { TerminalNode } from './TerminalNode'
 import { AllConversationsPanel } from './AllConversationsPanel'
 import { AlignmentGuides } from './AlignmentGuides'
 import { loadNodes, useSaveNodes } from './persistence'
-import { getSessions, useSessionsVersion } from './sessionsStore'
+import { getSessions, refreshNow, useSessionsVersion } from './sessionsStore'
 import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
@@ -69,7 +71,16 @@ import {
 } from './operations'
 import { snap, type Guide } from './snapping'
 import type { CanvasNode, ConversationSummary, ProjectData, TerminalKind } from './types'
-import { chatMenu, chatPanelMenu, groupMenu, instanceMenu, paneMenu, terminalMenu } from './useContextMenus'
+import {
+  chatMenu,
+  chatPanelMenu,
+  conversationMenu,
+  groupMenu,
+  instanceMenu,
+  paneMenu,
+  terminalMenu,
+  type Deps
+} from './useContextMenus'
 
 const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode, chatPanel: ChatPanelNode }
 
@@ -136,7 +147,12 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   useCanvasAgentTools(nodesRef, change)
   const sessionsVersion = useSessionsVersion()
 
-  const onNodesChange = (changes: NodeChange<CanvasNode>[]) => {
+  // Blocos apagados ainda sumindo na tela (useNodeMotion): o que o React Flow mandar sobre eles
+  // não volta para o estado.
+  const leavingRef = useRef<Set<string>>(new Set())
+  const onNodesChange = (all: NodeChange<CanvasNode>[]) => {
+    const changes = leavingRef.current.size ? all.filter((c) => !('id' in c) || !leavingRef.current.has(c.id)) : all
+    if (!changes.length) return
     trackGesture(
       changes.some((c) => (c.type === 'position' && c.dragging) || (c.type === 'dimensions' && c.resizing))
     )
@@ -203,6 +219,9 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // O menu de uma conversa nasce no ProjectNode, pelo contexto, e precisa dos deps desta renderização.
+  const depsRef = useRef<Deps | null>(null)
+
   const actions = useMemo(
     () => ({
       renamingId,
@@ -268,6 +287,14 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         setActiveConversation({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true }),
       newLooseConversation: (position?: XYPosition) =>
         setActiveConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position }),
+      openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => {
+        e.preventDefault()
+        // Sem isso, o botão direito sobe até a pasta e abre o menu dela.
+        e.stopPropagation()
+        const node = nodesRef.current.find((n) => n.id === nodeId)
+        if (node?.type !== 'project' || !depsRef.current) return
+        setMenu({ x: e.clientX, y: e.clientY, items: conversationMenu(depsRef.current, node, conversation) })
+      },
       openAllConversations: (nodeId: string) => setAllConversationsNodeId(nodeId),
       openSettings: onOpenSettings,
       openMemory: (projectPath?: string) => setMemoryOpen(projectPath ?? 'all'),
@@ -455,7 +482,20 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     setFolderPicker(null)
   }
 
-  const deps = { nodes, setNodes: change, confirm: setConfirm, auth, ...actions }
+  // Conversa na Lixeira: some do painel lateral e do canvas, se estiver aberta neles.
+  const trashConversation = async (path: string, conversationId: string) => {
+    const error = await window.api.sessions.trash(path, conversationId)
+    if (error) return setConfirm({ title: 'Não deu para mover a conversa para a Lixeira', description: error })
+    setActiveConversation((cur) =>
+      cur && (cur.conversationId === conversationId || cur.sessionId === conversationId) ? null : cur
+    )
+    const panel = chatPanelOf(conversationId)
+    if (panel) change((ns) => removeNode(ns, panel.id))
+    refreshNow(path)
+  }
+
+  const deps: Deps = { nodes, setNodes: change, confirm: setConfirm, auth, trashConversation, ...actions }
+  depsRef.current = deps
   const closeMenu = useCallback(() => setMenu(null), [])
 
   const onPaneContextMenu = (e: ReactMouseEvent | MouseEvent) => {
@@ -498,11 +538,13 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       return node
     })
   }, [nodes])
+  const motion = useNodeMotion(flowNodes)
+  leavingRef.current = motion.leaving
 
   return (
     <CanvasContext.Provider value={actions}>
       <ReactFlow
-        nodes={flowNodes}
+        nodes={motion.shown}
         onNodeClick={keepPointerEvents}
         zoomOnDoubleClick={false}
         onNodesChange={onNodesChange}
@@ -529,7 +571,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           setNodes((ns) => dropIntoGroup(ns, dragged.map((n) => n.id)))
         }}
         nodeTypes={nodeTypes}
-        className={spaceHeld ? 'camera-mode' : ''}
+        className={`${spaceHeld ? 'camera-mode' : ''} ${motion.booting ? 'canvas-booting' : ''}`}
         nodesDraggable={!spaceHeld}
         elementsSelectable={!spaceHeld}
         onPaneContextMenu={onPaneContextMenu}
@@ -562,127 +604,149 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       />
       {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
       <TitleBar windowTitle={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'} />
-      {codeProject && codeOpen && (
-        <CodeExplorer
-          root={codeProject.path}
-          name={codeProject.name}
-          selected={openFile?.root === codeProject.path ? openFile.path : null}
-          // Sem o painel aberto, o código vai até a borda direita.
-          rightOffset={!drawer ? 16 : drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
-          onOpenFile={(path) => setOpenFile({ root: codeProject.path, path })}
-          onRenamed={(from, to) =>
-            setOpenFile((f) =>
-              f && f.root === codeProject.path && (f.path === from || f.path.startsWith(from + '/'))
-                ? { ...f, path: to + f.path.slice(from.length) }
-                : f
-            )
-          }
-          onDeleted={(path) =>
-            setOpenFile((f) =>
-              f && f.root === codeProject.path && (f.path === path || f.path.startsWith(path + '/')) ? null : f
-            )
-          }
-          onClose={closeCode}
-        >
-          {openFile?.root === codeProject.path && (
-            <FileViewer
-              // Outro arquivo começa do zero (rolagem, recargas); o mesmo só recarrega.
-              key={`${openFile.root}|${openFile.path}`}
-              root={openFile.root}
-              path={openFile.path}
-              lines={openFile.lines}
-              diff={!!openFile.diff}
-              onDiffChange={(diff) => setOpenFile({ ...openFile, diff })}
-              onClose={() => setOpenFile(null)}
-              onCloseCode={closeCode}
-            />
-          )}
-        </CodeExplorer>
-      )}
-      {drawer && (
-        <ConversationDrawer
-          project={drawer.project}
-          account={drawer.account}
-          loose={drawer.loose}
-          tint={groupTint}
-          conversation={drawer.conversation}
-          codeOpen={codeOpen}
-          rect={drawerRect}
-          onRectChange={setDrawerRect}
-          onToggleCode={() => (codeOpen ? closeCode() : setCodeOpen(true))}
-          onOpenFile={(path, lines) => {
-            setCodeFor(null)
-            openFileLink(drawer.project.path, path, lines)
-          }}
-          onOpenDiff={(path) => {
-            setCodeFor(null)
-            openFileLink(drawer.project.path, path, undefined, true)
-          }}
-          onSessionStarted={(sessionId) => {
-            // Conversa sem projeto entra no canvas no primeiro envio, num lugar livre.
-            const node =
-              activeConversation?.nodeId === null
-                ? createChat(findChatSpot(nodesRef.current, activeConversation.at), sessionId)
-                : undefined
-            if (node) change((ns) => [...ns, node])
-            setActiveConversation((a) => (a?.draft ? { ...a, sessionId, ...(node && { nodeId: node.id }) } : a))
-          }}
-          onPopout={() => {
-            if (drawer.nodeId) popoutConversation(drawer.nodeId, drawer.conversation.id)
-            setActiveConversation(null)
-            closeCode()
-          }}
-          onPinToCanvas={() => {
-            if (drawer.nodeId) pinConversation(drawer.nodeId, drawer.conversation.id)
-            setActiveConversation(null)
-            closeCode()
-          }}
-          onClose={() => {
-            setActiveConversation(null)
-            closeCode()
-          }}
-        />
-      )}
+      <Presence>
+        {codeProject && codeOpen && (
+          <CodeExplorer
+            root={codeProject.path}
+            name={codeProject.name}
+            selected={openFile?.root === codeProject.path ? openFile.path : null}
+            // Sem o painel aberto, o código vai até a borda direita.
+            rightOffset={!drawer ? 16 : drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
+            onOpenFile={(path) => setOpenFile({ root: codeProject.path, path })}
+            onRenamed={(from, to) =>
+              setOpenFile((f) =>
+                f && f.root === codeProject.path && (f.path === from || f.path.startsWith(from + '/'))
+                  ? { ...f, path: to + f.path.slice(from.length) }
+                  : f
+              )
+            }
+            onDeleted={(path) =>
+              setOpenFile((f) =>
+                f && f.root === codeProject.path && (f.path === path || f.path.startsWith(path + '/')) ? null : f
+              )
+            }
+            onClose={closeCode}
+          >
+            {openFile?.root === codeProject.path && (
+              <FileViewer
+                // Outro arquivo começa do zero (rolagem, recargas); o mesmo só recarrega.
+                key={`${openFile.root}|${openFile.path}`}
+                root={openFile.root}
+                path={openFile.path}
+                lines={openFile.lines}
+                diff={!!openFile.diff}
+                onDiffChange={(diff) => setOpenFile({ ...openFile, diff })}
+                onClose={() => setOpenFile(null)}
+                onCloseCode={closeCode}
+              />
+            )}
+          </CodeExplorer>
+        )}
+      </Presence>
+      <Presence>
+        {drawer && (
+          <ConversationDrawer
+            project={drawer.project}
+            account={drawer.account}
+            loose={drawer.loose}
+            tint={groupTint}
+            conversation={drawer.conversation}
+            codeOpen={codeOpen}
+            rect={drawerRect}
+            onRectChange={setDrawerRect}
+            onToggleCode={() => (codeOpen ? closeCode() : setCodeOpen(true))}
+            onOpenFile={(path, lines) => {
+              setCodeFor(null)
+              openFileLink(drawer.project.path, path, lines)
+            }}
+            onOpenDiff={(path) => {
+              setCodeFor(null)
+              openFileLink(drawer.project.path, path, undefined, true)
+            }}
+            onSessionStarted={(sessionId) => {
+              // Conversa sem projeto entra no canvas no primeiro envio, num lugar livre.
+              const node =
+                activeConversation?.nodeId === null
+                  ? createChat(findChatSpot(nodesRef.current, activeConversation.at), sessionId)
+                  : undefined
+              if (node) change((ns) => [...ns, node])
+              setActiveConversation((a) => (a?.draft ? { ...a, sessionId, ...(node && { nodeId: node.id }) } : a))
+            }}
+            onPopout={() => {
+              if (drawer.nodeId) popoutConversation(drawer.nodeId, drawer.conversation.id)
+              setActiveConversation(null)
+              closeCode()
+            }}
+            onPinToCanvas={() => {
+              if (drawer.nodeId) pinConversation(drawer.nodeId, drawer.conversation.id)
+              setActiveConversation(null)
+              closeCode()
+            }}
+            onClose={() => {
+              setActiveConversation(null)
+              closeCode()
+            }}
+          />
+        )}
+      </Presence>
       {/* Depois do drawer: os dois nascem no mesmo lugar, e a lista tem que aparecer por cima. */}
-      {allConversations && (
-        <AllConversationsPanel
-          project={allConversations.data}
-          nodeId={allConversations.id}
-          active={activeConversation}
-          poppedOut={poppedOut}
-          rect={allConversationsRect}
-          onRectChange={setAllConversationsRect}
-          onOpen={(conversationId) => {
-            actions.openConversation(allConversations.id, conversationId)
-            setAllConversationsNodeId(null)
-          }}
-          onNew={() => {
-            actions.newConversation(allConversations.id)
-            setAllConversationsNodeId(null)
-          }}
-          onClose={() => setAllConversationsNodeId(null)}
-        />
-      )}
-      {memoryOpen && (
-        <MemoryModal
-          projects={memoryProjects}
-          only={memoryOpen === 'all' ? undefined : memoryOpen}
-          initialProject={drawer && !drawer.loose ? drawer.project.path : undefined}
-          onClose={() => setMemoryOpen(null)}
-        />
-      )}
-      {agentsOpen && <AgentsModal onClose={() => setAgentsOpen(false)} />}
-      {devServersOpen && <DevServersModal onClose={() => setDevServersOpen(false)} />}
-      {folderPicker && (
-        <FolderPicker
-          onCanvas={new Set(memoryProjects.map((p) => p.path))}
-          onPick={pickFolder}
-          onClose={() => setFolderPicker(null)}
-        />
-      )}
-      {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
-      {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
-      {commandBar && <CommandBar voice={commandBar.voice} onClose={closeCommandBar} />}
+      <Presence>
+        {allConversations && (
+          <AllConversationsPanel
+            project={allConversations.data}
+            nodeId={allConversations.id}
+            active={activeConversation}
+            poppedOut={poppedOut}
+            rect={allConversationsRect}
+            onRectChange={setAllConversationsRect}
+            onOpen={(conversationId) => {
+              actions.openConversation(allConversations.id, conversationId)
+              setAllConversationsNodeId(null)
+            }}
+            onNew={() => {
+              actions.newConversation(allConversations.id)
+              setAllConversationsNodeId(null)
+            }}
+            onClose={() => setAllConversationsNodeId(null)}
+          />
+        )}
+      </Presence>
+      <Presence kind="modal">
+        {memoryOpen && (
+          <MemoryModal
+            projects={memoryProjects}
+            only={memoryOpen === 'all' ? undefined : memoryOpen}
+            initialProject={drawer && !drawer.loose ? drawer.project.path : undefined}
+            onClose={() => setMemoryOpen(null)}
+          />
+        )}
+      </Presence>
+      <Presence kind="modal">
+        {agentsOpen && <AgentsModal onClose={() => setAgentsOpen(false)} />}
+      </Presence>
+      <Presence kind="modal">
+        {devServersOpen && (
+          <DevServersModal paths={memoryProjects.map((p) => p.path)} onClose={() => setDevServersOpen(false)} />
+        )}
+      </Presence>
+      <Presence kind="modal">
+        {folderPicker && (
+          <FolderPicker
+            onCanvas={new Set(memoryProjects.map((p) => p.path))}
+            onPick={pickFolder}
+            onClose={() => setFolderPicker(null)}
+          />
+        )}
+      </Presence>
+      <Presence kind="menu">
+        {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
+      </Presence>
+      <Presence kind="modal">
+        {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
+      </Presence>
+      <Presence kind="modal">
+        {commandBar && <CommandBar voice={commandBar.voice} onClose={closeCommandBar} />}
+      </Presence>
     </CanvasContext.Provider>
   )
 }

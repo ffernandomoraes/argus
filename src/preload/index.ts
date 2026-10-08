@@ -140,6 +140,7 @@ contextBridge.exposeInMainWorld('api', {
   sessions: {
     list: (path: string): Promise<SessionSummary[]> => ipcRenderer.invoke('sessions:list', path),
     folders: (): Promise<KnownFolder[]> => ipcRenderer.invoke('sessions:folders'),
+    trash: (path: string, id: string): Promise<string | null> => ipcRenderer.invoke('sessions:trash', path, id),
     branch: (path: string): Promise<string | null> => ipcRenderer.invoke('sessions:branch', path),
     changes: (path: string): Promise<UncommittedFile[] | null> => ipcRenderer.invoke('sessions:changes', path),
     history: (path: string, id: string): Promise<Message[]> => ipcRenderer.invoke('sessions:history', path, id),
@@ -152,10 +153,11 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener('sessions:changed', listener)
     }
   },
-  // Servidores locais que algum Claude Code deixou rodando.
+  // Servidores locais: os que o Claude Code ou o play deixaram rodando e qualquer porta aberta
+  // dentro das pastas do canvas (`paths`).
   devServers: {
-    list: (): Promise<DevServer[]> => ipcRenderer.invoke('devServers:list'),
-    kill: (pgid: number): Promise<boolean> => ipcRenderer.invoke('devServers:kill', pgid)
+    list: (paths: string[]): Promise<DevServer[]> => ipcRenderer.invoke('devServers:list', paths),
+    kill: (pgid: number, paths: string[]): Promise<boolean> => ipcRenderer.invoke('devServers:kill', pgid, paths)
   },
   // Servidor de cada pasta do canvas: rodando (venha de onde vier) e iniciar/encerrar.
   projectServers: {

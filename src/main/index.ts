@@ -34,7 +34,7 @@ import { readHistory, readImages } from './history'
 import { listMemory, readMemory, writeMemory } from './memory'
 import type { MemoryProject } from '../shared/memory'
 import { SessionWatch } from './sessionWatch'
-import { listKnownFolders, listSessions } from './sessions'
+import { listKnownFolders, listSessions, trashSession } from './sessions'
 import { currentBranch, fileDiff, uncommittedFiles } from './gitBranch'
 import { Speech } from './speech'
 import { StatusTray } from './statusTray'
@@ -325,13 +325,14 @@ app.whenReady().then(() => {
   ipcMain.handle('agents:draft', (_e, req: AgentDraftRequest) => draftAgent(req))
   ipcMain.handle('sessions:list', (_e, path: string) => listSessions(path))
   ipcMain.handle('sessions:folders', () => listKnownFolders())
+  ipcMain.handle('sessions:trash', (_e, path: string, id: string) => trashSession(path, id))
   ipcMain.handle('sessions:branch', (_e, path: string) => currentBranch(path))
   ipcMain.handle('sessions:changes', (_e, path: string) => uncommittedFiles(path))
   ipcMain.on('sessions:watch', (_e, paths: string[]) => sessionWatch.setProjects(paths))
   ipcMain.handle('sessions:history', (_e, path: string, id: string) => readHistory(path, id))
   ipcMain.handle('sessions:images', (_e, path: string, id: string, messageId: string) => readImages(path, id, messageId))
-  ipcMain.handle('devServers:list', () => listDevServers())
-  ipcMain.handle('devServers:kill', (_e, pgid: number) => killDevServer(pgid))
+  ipcMain.handle('devServers:list', (_e, paths: string[]) => listDevServers(paths))
+  ipcMain.handle('devServers:kill', (_e, pgid: number, paths: string[]) => killDevServer(pgid, paths))
   ipcMain.handle('projectServers:status', (_e, paths: string[]) => projectServers(paths))
   ipcMain.handle('projectServers:start', (_e, path: string) => startProjectServer(path))
   ipcMain.handle('projectServers:stop', (_e, path: string) => stopProjectServer(path))

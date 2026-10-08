@@ -100,6 +100,8 @@ declare global {
         list: (path: string) => Promise<SessionSummary[]>
         // Pastas onde o Claude Code já conversou, da mais recente para a mais antiga.
         folders: () => Promise<KnownFolder[]>
+        // Move a conversa para a Lixeira; devolve o erro ou nulo.
+        trash: (path: string, id: string) => Promise<string | null>
         // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.
         branch: (path: string) => Promise<string | null>
         // Arquivos não comitados do repositório da pasta; nulo fora de repositório.
@@ -111,8 +113,8 @@ declare global {
         onChanged: (cb: (path: string) => void) => () => void
       }
       devServers: {
-        list: () => Promise<DevServer[]>
-        kill: (pgid: number) => Promise<boolean>
+        list: (paths: string[]) => Promise<DevServer[]>
+        kill: (pgid: number, paths: string[]) => Promise<boolean>
       }
       projectServers: {
         status: (paths: string[]) => Promise<Record<string, ProjectServer>>

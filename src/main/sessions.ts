@@ -1,6 +1,7 @@
-import { open, readdir, stat } from 'node:fs/promises'
+import { access, open, readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { shell } from 'electron'
 import type { KnownFolder, SessionSummary } from '../shared/sessions'
 import { contextWindowFor } from './contextWindows'
 import { liveSessions } from './liveSessions'
@@ -130,6 +131,27 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
     })
   )
   return results.filter((s): s is SessionSummary => s !== null).map((s) => ({ ...s, live: live.get(s.id) ?? null }))
+}
+
+// Conversa vai para a Lixeira do macOS: o .jsonl e, se houver, a pasta com o mesmo id (os
+// subagentes dela). Some também do `claude --resume`; volta restaurando pela Lixeira.
+// Recusa conversa aberta em algum Claude Code: ele regravaria o arquivo na hora.
+export async function trashSession(projectPath: string, id: string): Promise<string | null> {
+  if (!/^[\w-]+$/.test(id)) return 'Conversa inválida.'
+  const live = (await liveSessions()).get(id)
+  if (live === 'running' || live === 'needs-you')
+    return 'A conversa está em andamento. Interrompa antes de mover para a Lixeira.'
+  const base = join(sessionsDir(projectPath), id)
+  try {
+    await shell.trashItem(`${base}.jsonl`)
+    await access(base).then(
+      () => shell.trashItem(base),
+      () => undefined
+    )
+    return null
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err)
+  }
 }
 
 // Caminho de cada pasta de ~/.claude/projects; não muda, então fica guardado.

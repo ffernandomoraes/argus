@@ -1,7 +1,7 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, type MouseEvent as ReactMouseEvent } from 'react'
 import type { XYPosition } from '@xyflow/react'
 import type { LineRange } from '../conversation/fileLinks'
-import type { ProjectData, TerminalKind } from './types'
+import type { ConversationSummary, ProjectData, TerminalKind } from './types'
 
 // draft: conversa nova, que ainda não existe na lista da pasta.
 // sessionId: id que o Claude deu à conversa nova no primeiro envio.
@@ -33,6 +33,8 @@ type CanvasActions = {
   // Conversa sem projeto: abre o painel em branco e só entra no canvas no primeiro envio.
   // Sem posição, o card procura sozinho um lugar livre.
   newLooseConversation: (position?: XYPosition) => void
+  // Botão direito numa conversa da lista da pasta: menu dela, não o da pasta.
+  openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => void
   // Painel flutuante com todas as conversas da pasta.
   openAllConversations: (nodeId: string) => void
   openSettings: () => void

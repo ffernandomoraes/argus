@@ -7,9 +7,19 @@ import type { ConfirmRequest } from './ConfirmDialog'
 import type { MenuItem } from './ContextMenu'
 import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupAccount, setGroupColor, ungroup } from './operations'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
-import type { AreaNode, CanvasNode, ChatNode, ChatPanelNode, ProjectNode, TerminalKind, TerminalNode } from './types'
+import { getSessions } from './sessionsStore'
+import type {
+  AreaNode,
+  CanvasNode,
+  ChatNode,
+  ChatPanelNode,
+  ConversationSummary,
+  ProjectNode,
+  TerminalKind,
+  TerminalNode
+} from './types'
 
-type Deps = {
+export type Deps = {
   nodes: CanvasNode[]
   setNodes: Dispatch<SetStateAction<CanvasNode[]>>
   auth: AuthState | null
@@ -27,9 +37,17 @@ type Deps = {
   closeChatPanel: (nodeId: string) => void
   chatPanelToDrawer: (nodeId: string) => void
   chatPanelPopout: (nodeId: string) => void
+  poppedOut: Set<string>
+  trashConversation: (path: string, conversationId: string) => void
 }
 
 const plural = (n: number) => (n === 1 ? '1 instância' : `${n} instâncias`)
+
+// Rodando ou esperando resposta: tirar do canvas ou apagar agora atropelaria a sessão.
+const isBusy = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'
+
+// Lista de títulos para o aviso de bloqueio, entre aspas.
+const titles = (cs: ConversationSummary[]) => cs.map((c) => `"${c.title}"`).join(', ')
 
 // Pasta de um grupo, para o terminal já abrir no lugar certo.
 function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
@@ -180,18 +198,75 @@ export function instanceMenu(deps: Deps, node: ProjectNode): MenuItem[] {
     moveSubmenu(deps, node),
     { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
+    // Só sai do canvas: pasta e conversas ficam no disco. Com conversa em andamento, bloqueia
+    // e diz qual é, para a pessoa interromper antes.
     {
       type: 'action',
-      label: 'Excluir',
+      label: 'Tirar projeto do canvas',
       icon: Trash2,
       danger: true,
-      onSelect: () =>
+      onSelect: () => {
+        const conversations = getSessions(node.data.path)
+        const busy = conversations.filter(isBusy)
+        if (busy.length > 0) {
+          return deps.confirm({
+            title: `O projeto "${node.data.name}" tem conversa em andamento`,
+            description: `${busy.length === 1 ? 'A conversa' : 'As conversas'} ${titles(busy)} ${
+              busy.length === 1 ? 'ainda está rodando ou esperando sua resposta' : 'ainda estão rodando ou esperando sua resposta'
+            }. Interrompa ou termine antes de tirar o projeto do canvas.`
+          })
+        }
+        const count = conversations.length
         deps.confirm({
-          title: `Excluir "${node.data.name}"?`,
-          description: 'A instância sai do canvas.',
-          confirmLabel: 'Excluir',
+          title: `Tirar o projeto "${node.data.name}" do canvas?`,
+          description: `${
+            count === 0 ? 'O card do projeto' : count === 1 ? 'O card do projeto e a conversa dele' : `O card do projeto e as ${count} conversas dele`
+          } saem do canvas. Nada é apagado do disco: a pasta e as conversas continuam lá, e o projeto pode voltar pelo "Nova pasta".`,
+          confirmLabel: 'Tirar do canvas',
           onConfirm: () => setNodes((ns) => removeNode(ns, node.id))
         })
+      }
+    }
+  ]
+}
+
+// Conversa na lista de uma pasta. A Lixeira leva o arquivo do Claude Code: some também do
+// `claude --resume` e só volta restaurando pela Lixeira do macOS.
+export function conversationMenu(deps: Deps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
+  return [
+    {
+      type: 'action',
+      label: 'Abrir conversa',
+      icon: MessageCircle,
+      onSelect: () => deps.openConversation(node.id, conversation.id)
+    },
+    { type: 'separator' },
+    {
+      type: 'action',
+      label: 'Mover conversa para a Lixeira',
+      icon: Trash2,
+      danger: true,
+      onSelect: () => {
+        if (isBusy(conversation)) {
+          return deps.confirm({
+            title: 'Conversa em andamento',
+            description: `"${conversation.title}" ainda está rodando ou esperando sua resposta. Interrompa ou termine antes de mover para a Lixeira.`
+          })
+        }
+        if (deps.poppedOut.has(conversation.id)) {
+          return deps.confirm({
+            title: 'Conversa aberta em janela separada',
+            description: `Feche a janela de "${conversation.title}" antes de mover a conversa para a Lixeira.`
+          })
+        }
+        deps.confirm({
+          title: `Mover "${conversation.title}" para a Lixeira?`,
+          description:
+            'O arquivo da conversa vai para a Lixeira do macOS. Ela some do Argus e do `claude --resume`; para recuperar, restaure pela Lixeira. O projeto não é afetado.',
+          confirmLabel: 'Mover para a Lixeira',
+          onConfirm: () => deps.trashConversation(node.data.path, conversation.id)
+        })
+      }
     }
   ]
 }

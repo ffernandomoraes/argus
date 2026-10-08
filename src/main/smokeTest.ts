@@ -5,14 +5,16 @@ import { app, type BrowserWindow } from 'electron'
 import type { Terminals } from './terminals'
 
 // Teste de fumaça do instalador: `Argus --smoke-test` abre o app, espera o canvas montar, abre um
-// terminal com o shell do sistema (pelo node-pty, a parte nativa que mais quebra) e sai com 0 se
-// tudo subiu, 1 se não. Roda no GitHub Actions, numa máquina Windows, antes de o .exe ir para o
-// release: ninguém do projeto tem Windows para conferir à mão. O relato fica em argus-smoke.log, na
-// pasta temporária.
+// terminal com o shell do sistema (pelo node-pty, a parte nativa que mais quebra) e fecha o app pelo
+// caminho normal, com o terminal aberto. Sai com 0 se tudo subiu e fechou sem cair, outro código se
+// não. Roda no GitHub Actions, numa máquina Windows, antes de o .exe ir para o release: ninguém do
+// projeto tem Windows para conferir à mão. O relato fica em argus-smoke.log, na pasta temporária.
 export const SMOKE_TEST = process.argv.includes('--smoke-test')
 
 const LOG = join(tmpdir(), 'argus-smoke.log')
 const TIMEOUT_MS = 120_000
+// Fechar leva uns 2 s no Windows (espera os terminais); mais que isso é travamento.
+const QUIT_TIMEOUT_MS = 15_000
 const KEY = 'smoke-test'
 
 function log(line: string): void {
@@ -25,7 +27,8 @@ function log(line: string): void {
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasReady: () => boolean): void {
+// quit: fecha o app como quem fecha a janela, sem a pergunta de confirmação.
+export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasReady: () => boolean, quit: () => void): void {
   try {
     writeFileSync(LOG, '')
   } catch {
@@ -36,9 +39,18 @@ export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasRea
     if (finished) return
     finished = true
     log(`${ok ? 'OK' : 'FALHOU'}: ${why}`)
-    terminals.kill(KEY)
-    app.exit(ok ? 0 : 1)
+    if (!ok) return app.exit(1)
+    // O terminal fica aberto: fechar com ele é o que quem usa faz. Cair aqui também reprova.
+    log('fechando o app')
+    setTimeout(() => {
+      log('FALHOU: o app não terminou de fechar')
+      app.exit(2)
+    }, QUIT_TIMEOUT_MS)
+    quit()
   }
+  app.on('before-quit', () => log('before-quit'))
+  app.on('will-quit', () => log('will-quit'))
+  app.on('quit', (_e, code) => log(`quit (código ${code})`))
   setTimeout(() => finish(false, 'tempo esgotado'), TIMEOUT_MS)
   process.on('uncaughtException', (err) => finish(false, `erro no processo principal: ${err.stack ?? err}`))
   win.webContents.on('preload-error', (_e, path, err) => finish(false, `preload ${path}: ${err.stack ?? err.message}`))

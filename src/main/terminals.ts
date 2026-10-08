@@ -16,8 +16,12 @@ const BUFFER_LIMIT = 200_000
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
 type Session = { pty: IPty; buffer: string; account: string; cwd: string; shell?: string }
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 export class Terminals {
   private sessions = new Map<string, Session>()
+  // Windows: terminais encerrados que ainda não terminaram de fechar (ver closed()).
+  private closing = new Set<Promise<void>>()
 
   constructor(
     private onData: (key: string, data: string) => void,
@@ -104,8 +108,14 @@ export class Terminals {
     const session = this.sessions.get(key)
     if (!session) return
     this.sessions.delete(key)
-    const { pid } = session.pty
-    session.pty.kill()
+    const { pty } = session
+    const { pid } = pty
+    if (IS_WIN) {
+      const done = new Promise<void>((resolve) => pty.onExit(() => resolve()))
+      this.closing.add(done)
+      void done.then(() => this.closing.delete(done))
+    }
+    pty.kill()
     // Se não sair com o pedido educado, encerra à força: nada pode ficar rodando atrás.
     setTimeout(() => {
       try {
@@ -144,6 +154,20 @@ export class Terminals {
 
   killAll(): void {
     for (const key of [...this.sessions.keys()]) this.kill(key)
+  }
+
+  // Windows: o kill do node-pty fecha o terminal aos poucos. Uma thread ainda esvazia a saída do
+  // ConPTY por cerca de 1 s, e o app que sai antes disso cai ao sair (código 0xC0000409, visto no
+  // teste do GitHub). Quem vai sair espera aqui: o aviso de fim de cada terminal (no máximo 3 s),
+  // mais um respiro para a thread parar.
+  hasClosing(): boolean {
+    return this.closing.size > 0
+  }
+
+  async closed(): Promise<void> {
+    if (!this.closing.size) return
+    await Promise.race([Promise.all(this.closing), wait(3000)])
+    await wait(300)
   }
 
   // Conta removida: o login dela some, então os terminais dela também.

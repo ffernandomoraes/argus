@@ -507,7 +507,13 @@ app.whenReady().then(() => {
   setMenuBarIcon(loadAppSettings().menuBarIcon)
   app.on('browser-window-focus', () => tray?.seen())
   createWindow()
-  if (SMOKE_TEST && mainWindow) runSmokeTest(mainWindow, terminals, () => canvasReady)
+  if (SMOKE_TEST && mainWindow) {
+    // Sai pelo mesmo caminho de quem fecha a janela, já confirmado.
+    runSmokeTest(mainWindow, terminals, () => canvasReady, () => {
+      quitConfirmed = true
+      app.quit()
+    })
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -581,14 +587,43 @@ async function restartToUpdate(): Promise<void> {
   if (!updater.install(true)) quitConfirmed = false
 }
 
+// Windows: depois do shutdown, a saída espera os terminais terminarem de fechar (ver
+// Terminals.closed); as janelas somem na hora. No Mac não há o que esperar.
+let draining = false
+let drained = false
+function finishQuit(e: { preventDefault: () => void }): void {
+  shutdown()
+  if (!terminals.hasClosing()) return
+  e.preventDefault()
+  draining = true
+  for (const w of BrowserWindow.getAllWindows()) w.hide()
+  void terminals.closed().then(() => {
+    drained = true
+    app.quit()
+  })
+}
+
+// Para os sinais do modo de desenvolvimento: sai na hora, depois de os terminais fecharem. Um
+// segundo sinal no meio disso não repete o shutdown.
+function exitNow(): void {
+  if (draining) return
+  shutdown()
+  if (!terminals.hasClosing()) return app.exit(0)
+  draining = true
+  void terminals.closed().then(() => app.exit(0))
+}
+
 // Decidido na hora: adiar a saída sem motivo faria o macOS acusar o Argus de travar o desligamento.
 // No Windows, saber se o shell de um terminal está rodando algo leva um instante; com terminal
 // aberto, a saída espera essa conferência.
 let checkingShells = false
 app.on('before-quit', (e) => {
+  if (drained) return
+  // Fechar de novo enquanto os terminais fecham não repete o shutdown.
+  if (draining) return e.preventDefault()
   const items = quitConfirmed ? [] : inProgress()
   const checkShells = !quitConfirmed && terminals.hasShells()
-  if (!items.length && !checkShells) return shutdown()
+  if (!items.length && !checkShells) return finishQuit(e)
   e.preventDefault()
   // Fechar de novo enquanto a conferência roda não abre outra.
   if (checkingShells) return
@@ -604,10 +639,7 @@ app.on('before-quit', (e) => {
 
 // O modo de desenvolvimento reinicia o app com SIGTERM a cada mudança no processo principal.
 // Sem tratar o sinal, um app ainda abrindo podia ignorá-lo e ficar aberto ao lado do novo.
-process.on('SIGTERM', () => {
-  shutdown()
-  app.exit(0)
-})
+process.on('SIGTERM', exitNow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') return app.quit()
@@ -616,7 +648,4 @@ app.on('window-all-closed', () => {
 })
 
 // Ctrl+C no terminal que subiu o app também encerra tudo que ele abriu.
-process.on('SIGINT', () => {
-  shutdown()
-  app.exit(0)
-})
+process.on('SIGINT', exitNow)

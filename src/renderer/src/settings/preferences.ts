@@ -9,10 +9,12 @@ export type Preferences = {
   drawerZoom: number
   // Modelo, esforço, modo etc. de cada conversa, até ser trocado no próprio chat (conversationSettings).
   conversation: SessionSettings
+  // Boas-vindas vistas até o fim neste computador. Falso abre o passo a passo de novo.
+  welcomeSeen: boolean
 }
 
 const KEY = 'preferences'
-const DEFAULTS: Preferences = { openIn: 'panel', drawerZoom: 1, conversation: DEFAULT_SETTINGS }
+const DEFAULTS: Preferences = { openIn: 'panel', drawerZoom: 1, conversation: DEFAULT_SETTINGS, welcomeSeen: false }
 
 function read(): Preferences {
   try {

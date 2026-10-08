@@ -60,8 +60,16 @@ export function gitPath(): string {
   const installs = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA && join(process.env.LOCALAPPDATA, 'Programs')]
     .filter((d): d is string => !!d)
     .map((d) => join(d, 'Git', 'cmd', 'git.exe'))
-  git = findInPath('git') ?? installs.find((p) => existsSync(p)) ?? 'git'
-  return git
+  // Só guarda quando acha: instalado com o app aberto, aparece na próxima conferência.
+  const found = findInPath('git') ?? installs.find((p) => existsSync(p))
+  if (found) git = found
+  return found ?? 'git'
+}
+
+// Windows: o Git for Windows está instalado? O Claude Code roda os comandos dele pelo Git Bash.
+// No Mac o git vem com o sistema.
+export function gitFound(): boolean {
+  return !IS_WIN || gitPath() !== 'git'
 }
 
 // Shell dos terminais. No Mac, o de login da pessoa (carrega .zprofile e .zshrc, como o Terminal).

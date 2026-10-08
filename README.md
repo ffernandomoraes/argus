@@ -71,8 +71,9 @@ esperando por você.
 
 - Mac com Apple Silicon (M1 ou mais novo), ou PC com Windows 10 ou 11 de 64 bits.
 - [Claude Code](https://docs.claude.com/claude-code). O Argus usa o `claude` da sua máquina e a sua assinatura.
-  Sem ele, o app abre numa tela que instala com um clique (o instalador oficial da Anthropic);
-  sem login, numa tela para entrar na conta. Outras contas entram por
+  Na primeira vez, as boas-vindas explicam o app em 5 etapas e a última configura tudo: instala o
+  Claude Code com um clique (o instalador oficial da Anthropic), confere o Git no Windows e faz o
+  login. Outras contas entram por
   **Configurações › Contas**.
 - No Windows, também o [Git for Windows](https://git-scm.com/download/win), que o app usa para mostrar os
   arquivos alterados e o diff.

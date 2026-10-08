@@ -20,6 +20,7 @@ import {
 import { claudeEnv, Inbox } from './chats'
 import { claudeCommand, claudeFound, claudePath } from './claudePath'
 import { INSTALL_COMMAND, runClaudeInstaller } from './claudeInstall'
+import { gitFound } from './platform'
 
 // Mesmo caminho da extensão do VS Code: um `claude` aberto só para o login gera o link,
 // recebe o retorno do navegador e grava o login, nas Chaves do macOS (no Windows, num arquivo da
@@ -71,13 +72,18 @@ async function readAccount(id: string): Promise<Account | null> {
   }
 }
 
+// O Git é conferido junto: no Windows, a etapa de configuração mostra se falta.
+function installState(status: ClaudeInstall['status'], message?: string): ClaudeInstall {
+  return { status, message, command: INSTALL_COMMAND, git: gitFound() }
+}
+
 // adding: conta nova, cuja pasta some se o login não terminar.
 type LoginSession = { q: LoginQuery; inbox: Inbox; accountId: string; adding: boolean }
 
 export class Auth {
   private statuses = new Map<string, Account | null>()
   private loginState: LoginState = { status: 'idle' }
-  private install: ClaudeInstall = { status: claudeFound() ? 'found' : 'missing', command: INSTALL_COMMAND }
+  private install = installState(claudeFound() ? 'found' : 'missing')
   private session: LoginSession | null = null
   state: AuthState
 
@@ -117,8 +123,9 @@ export class Auth {
   async refresh(id?: string): Promise<void> {
     // Instalado por fora (no terminal) enquanto o app estava aberto, ou desinstalado.
     if (this.install.status !== 'installing') {
-      if (claudeFound()) this.install = { status: 'found', command: INSTALL_COMMAND }
-      else if (this.install.status === 'found') this.install = { status: 'missing', command: INSTALL_COMMAND }
+      const { status, message } = this.install
+      if (claudeFound()) this.install = installState('found')
+      else this.install = installState(status === 'found' ? 'missing' : status, message)
     }
     const ids = id ? [id] : accountIds()
     const found = await Promise.all(ids.map(readAccount))
@@ -130,16 +137,12 @@ export class Auth {
   // guardado na máquina, o app entra direto.
   async installClaude(): Promise<void> {
     if (this.install.status === 'installing') return
-    this.install = { status: 'installing', command: INSTALL_COMMAND }
+    this.install = installState('installing')
     this.emit()
     const error = await runClaudeInstaller()
     this.install = claudeFound()
-      ? { status: 'found', command: INSTALL_COMMAND }
-      : {
-          status: 'failed',
-          command: INSTALL_COMMAND,
-          message: error ?? 'O instalador terminou, mas o Claude Code não apareceu na pasta esperada.'
-        }
+      ? installState('found')
+      : installState('failed', error ?? 'O instalador terminou, mas o Claude Code não apareceu na pasta esperada.')
     await this.refresh()
   }
 

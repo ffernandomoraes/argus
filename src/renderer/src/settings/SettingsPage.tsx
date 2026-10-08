@@ -12,6 +12,7 @@ import {
   PictureInPicture2,
   Plus,
   Settings2,
+  Sparkles,
   Sun,
   Users,
   X
@@ -548,6 +549,17 @@ export function SettingsPage({
             {s.label}
           </button>
         ))}
+        {/* Não é uma seção: fecha as configurações e abre o passo a passo das boas-vindas. */}
+        <button
+          onClick={() => {
+            onClose()
+            setPreferences({ welcomeSeen: false })
+          }}
+          className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-muted hover:bg-surface-2 hover:text-text"
+        >
+          <Sparkles size={15} />
+          Boas-vindas
+        </button>
       </nav>
 
       <section className="relative min-w-0 flex-1 overflow-y-auto">

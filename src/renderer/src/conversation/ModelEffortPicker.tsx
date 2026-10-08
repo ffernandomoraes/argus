@@ -5,6 +5,7 @@ import type { SessionSettings } from './SessionSettings'
 import { useModels } from './useModels'
 import { useEscape } from '../useEscape'
 import { Presence } from '../motion'
+import { MENU_ACTIVE, MENU_HOVER } from '../canvas/ContextMenu'
 
 // Igual à extensão do VS Code: botão com modelo e esforço embaixo do campo; o menu abre
 // para cima com os modelos agrupados por família, a régua de esforço e as opções de
@@ -63,21 +64,21 @@ export function Toggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-surface-2"
+      className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-fill"
     >
       <span className="flex-1">
         <span className="flex items-center gap-1.5 text-xs text-text">
           {icon}
           {label}
         </span>
-        <span className="mt-0.5 block text-[11px] leading-snug text-faint">{description}</span>
+        <span className="mt-0.5 block text-[12px] leading-snug text-faint">{description}</span>
       </span>
       <span
         className={`mt-0.5 flex h-4 w-7 shrink-0 items-center rounded-full p-0.5 transition-colors ${
-          checked ? 'bg-text' : 'bg-line-strong'
+          checked ? 'bg-accent' : 'bg-line-strong'
         }`}
       >
-        <span className={`size-3 rounded-full bg-surface transition-transform ${checked ? 'translate-x-3' : ''}`} />
+        <span className={`size-3 rounded-full bg-white shadow-sm shadow-black/30 transition-transform ${checked ? 'translate-x-3' : ''}`} />
       </span>
     </button>
   )
@@ -116,14 +117,14 @@ export function ModelEffortPicker({
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
   useEscape(() => setOpen(false), open)
 
-  const row = 'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text hover:bg-surface-2'
+  const row = `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text ${MENU_HOVER}`
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
         title={`Modelo: ${currentName} - Esforço: ${allowed.length ? effortLabel(settings.effort) : 'não se aplica'}`}
-        className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
+        className={`flex items-center gap-2 rounded-full px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : 'text-muted'
         }`}
       >
@@ -140,10 +141,10 @@ export function ModelEffortPicker({
 
       <Presence kind="menu">
         {open && (
-          <div className="absolute bottom-full left-0 z-10 mb-2 w-72 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+          <div className="absolute bottom-full left-0 z-10 mb-2 w-72 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
             {/* Sem rolagem aqui: o submenu das versões sai para o lado e seria cortado */}
             <div>
-              <div className="px-2 pb-1 pt-1.5 text-[11px] text-faint">Modelo</div>
+              <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modelo</div>
               {models.length === 0 && <div className="px-2 py-1.5 text-xs text-faint">Carregando modelos…</div>}
 
               {defaultModel && (
@@ -168,10 +169,10 @@ export function ModelEffortPicker({
                   >
                     <button
                       onClick={() => setExpanded(isOpen ? null : family)}
-                      className={`${row} ${isOpen ? 'bg-surface-2' : ''}`}
+                      className={`${row} ${isOpen ? MENU_ACTIVE : ''}`}
                     >
                       <span className="flex-1">{family}</span>
-                      {selected && <span className="text-[11px] text-faint">{selected.displayName}</span>}
+                      {selected && <span className="text-[12px] text-faint">{selected.displayName}</span>}
                       {selected && <Check size={13} className="text-muted" />}
                       <ChevronRight size={12} className="shrink-0 text-faint" />
                     </button>
@@ -179,7 +180,7 @@ export function ModelEffortPicker({
                     <Presence kind="menu">
                       {isOpen && (
                         <div className="absolute left-full top-0 z-10 pl-1">
-                          <div className="w-44 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+                          <div className="w-44 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
                             {versions.map((v) => (
                               <button key={v.value} onClick={() => onChange({ model: v.value })} className={row}>
                                 <span className="flex-1">{v.displayName}</span>
@@ -199,7 +200,7 @@ export function ModelEffortPicker({
               <>
                 <div className="my-1 h-px bg-line" />
                 <div className="px-2 pb-2 pt-1.5">
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-[12px]">
                     <span className="text-faint">Esforço</span>
                     <span className="text-text">{effortLabel(settings.effort)}</span>
                   </div>
@@ -222,7 +223,7 @@ export function ModelEffortPicker({
                       />
                     ))}
                   </div>
-                  {settings.effort === 'max' && <p className="mt-2 text-[11px] leading-snug text-needs-you">{MAX_WARNING}</p>}
+                  {settings.effort === 'max' && <p className="mt-2 text-[12px] leading-snug text-needs-you">{MAX_WARNING}</p>}
                 </div>
               </>
             )}

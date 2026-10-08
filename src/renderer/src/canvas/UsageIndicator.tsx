@@ -46,7 +46,7 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
     return (
       <div>
         <div className="text-xs text-text">{title}</div>
-        <div className="mt-1 text-[11px] text-faint">Sem dados</div>
+        <div className="mt-1 text-[12px] text-faint">Sem dados</div>
       </div>
     )
   }
@@ -58,7 +58,7 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
         <span className="font-mono text-xs text-text">{percent}%</span>
       </div>
       <Bar percent={percent} className="mt-1.5 h-1.5 w-full" />
-      <div className="mt-1.5 text-[11px] text-faint">
+      <div className="mt-1.5 text-[12px] text-faint">
         Reseta em {timeLeft(window.resetsAt, now)} - {resetLabel(window.resetsAt)}
       </div>
     </div>
@@ -125,7 +125,7 @@ export function UsageIndicator() {
       <div ref={ref} className="relative">
         <Presence kind="menu">
           {open && (
-            <div className="absolute bottom-full left-0 mb-2 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-4 shadow-xl shadow-black/40">
+            <div className="absolute bottom-full left-0 mb-2 max-h-[70vh] w-72 overflow-y-auto rounded-2xl border border-line bg-surface/90 p-4 shadow-xl shadow-black/40 backdrop-blur-xl">
               <div className="mb-4 flex items-center gap-2">
                 <ClaudeIcon size={14} />
                 <span className="text-xs font-medium text-text">Limites do Claude</span>
@@ -134,7 +134,7 @@ export function UsageIndicator() {
                 {shown.map(({ account, usage }) => (
                   <div key={account.id}>
                     {named && (
-                      <div className="mb-3 truncate text-[10px] font-semibold uppercase tracking-widest text-faint">
+                      <div className="mb-3 truncate text-[11px] font-semibold uppercase tracking-widest text-faint">
                         {account.name}
                       </div>
                     )}
@@ -145,7 +145,7 @@ export function UsageIndicator() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 border-t border-line pt-2 text-[10px] text-faint">
+              <div className="mt-4 border-t border-line pt-2 text-[11px] text-faint">
                 Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
@@ -154,7 +154,7 @@ export function UsageIndicator() {
         <button
           aria-label="Ver limites do Claude"
           onClick={() => setOpen((o) => !o)}
-          className={`flex h-[34px] items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[10px] text-faint shadow-md shadow-black/20 hover:text-muted ${
+          className={`flex h-[34px] items-center gap-2 rounded-full border border-line bg-surface/90 px-3.5 backdrop-blur-xl text-[11px] text-faint shadow-md shadow-black/20 hover:text-muted ${
             open ? 'text-muted' : ''
           }`}
         >

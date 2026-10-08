@@ -72,7 +72,7 @@ const UserBubble = memo(function UserBubble({
   return (
     <div className="flex flex-col gap-1">
       {(at || queued) && (
-        <span className="self-end px-1 text-[12px] text-faint">
+        <span className="self-end px-1 text-[13px] text-faint">
           {queued && 'enviada durante a resposta'}
           {queued && at && ' - '}
           {at && formatClock(at)}
@@ -88,7 +88,7 @@ const UserBubble = memo(function UserBubble({
                 onClick={() => imageView?.open(0)}
                 disabled={!imageView}
                 title={imageView ? (images === 1 ? 'Ver imagem' : 'Ver imagens') : undefined}
-                className="flex items-center gap-1.5 self-start rounded text-[12px] text-muted enabled:hover:text-text enabled:hover:underline"
+                className="flex items-center gap-1.5 self-start rounded text-[13px] text-muted enabled:hover:text-text enabled:hover:underline"
               >
                 <ImageIcon size={12} className="shrink-0" />
                 {images === 1 ? '1 imagem enviada' : `${images} imagens enviadas`}
@@ -138,7 +138,7 @@ const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, {
         )}
       </summary>
       {message.detail && message.detail !== message.input && (
-        <div className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[12px] text-muted">
+        <div className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[13px] text-muted">
           {message.detail}
         </div>
       )}
@@ -147,7 +147,7 @@ const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, {
           <DiffView hunks={message.diff} />
         </div>
       ) : message.result && (
-        <div className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 font-mono text-[12px] text-faint">
+        <div className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 font-mono text-[13px] text-faint">
           {message.result}
         </div>
       )}
@@ -178,7 +178,7 @@ const BashRow = memo(function BashRow({ message }: { message: Extract<Message, {
       {/* Arrastar para copiar um trecho não conta como clique. */}
       <div
         onClick={() => !window.getSelection()?.toString() && setOpen((o) => !o)}
-        className="mt-1 grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 rounded-md border border-line bg-bg font-mono text-[12px]"
+        className="mt-1 grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 rounded-md border border-line bg-bg font-mono text-[13px]"
       >
         <span className="px-2 py-1.5 text-faint">IN</span>
         <div className={`whitespace-pre-wrap break-all py-1.5 pr-2 text-muted ${clamp}`}>{command}</div>
@@ -218,18 +218,18 @@ const AgentToolRow = memo(function AgentToolRow({ message }: { message: Extract<
       </summary>
       {message.detail && (
         <div className="mt-1.5">
-          <div className="mb-1 px-1 text-[12px] uppercase tracking-wide text-faint">Pedido</div>
-          <div className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 text-[12px] text-muted">
+          <div className="mb-1 px-1 text-[13px] uppercase tracking-wide text-faint">Pedido</div>
+          <div className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 text-[13px] text-muted">
             {message.detail}
           </div>
         </div>
       )}
       {steps.length > 0 && (
         <div className="mt-1.5">
-          <div className="mb-1 px-1 text-[12px] uppercase tracking-wide text-faint">
+          <div className="mb-1 px-1 text-[13px] uppercase tracking-wide text-faint">
             Atividade - {running?.toolUses || steps.length} ferramentas
           </div>
-          <ul className="max-h-48 overflow-auto rounded-md bg-bg px-2 py-1.5 text-[12px]">
+          <ul className="max-h-48 overflow-auto rounded-md bg-bg px-2 py-1.5 text-[13px]">
             {steps.map((s, i) => (
               <li key={i} className="flex gap-2 py-0.5">
                 <span className="shrink-0 text-text">{s.label}</span>
@@ -241,8 +241,8 @@ const AgentToolRow = memo(function AgentToolRow({ message }: { message: Extract<
       )}
       {message.result && (
         <div className="mt-1.5">
-          <div className="mb-1 px-1 text-[12px] uppercase tracking-wide text-faint">Entregou</div>
-          <div className="max-h-96 overflow-auto rounded-md bg-bg px-3 py-2 text-[12px] leading-relaxed text-text">
+          <div className="mb-1 px-1 text-[13px] uppercase tracking-wide text-faint">Entregou</div>
+          <div className="max-h-96 overflow-auto rounded-md bg-bg px-3 py-2 text-[13px] leading-relaxed text-text">
             <Markdown text={message.result} />
           </div>
         </div>
@@ -551,7 +551,7 @@ export function ChatView({
           kind: 'divider',
           key: m.id,
           node: (
-            <div className="flex items-center gap-2 py-1 text-[12px] text-faint">
+            <div className="flex items-center gap-2 py-1 text-[13px] text-faint">
               <span className="h-px flex-1 bg-line" />
               <span className="shrink-0">
                 {m.text}
@@ -589,7 +589,7 @@ export function ChatView({
         <div className="text-[15px] leading-relaxed text-text">
           <Markdown text={m.text} />
           {footer && (
-            <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-faint">
+            <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-faint">
               <span>
                 {formatClock(footer.at)}
                 {footer.duration !== undefined && ` - levou ${formatDuration(footer.duration)}`}
@@ -679,7 +679,7 @@ export function ChatView({
             {pinnedPrompt.text ? (
               <span className="line-clamp-2 whitespace-pre-wrap break-words">{pinnedPrompt.text}</span>
             ) : (
-              <span className="flex items-center gap-1.5 text-[12px] text-muted">
+              <span className="flex items-center gap-1.5 text-[13px] text-muted">
                 <ImageIcon size={12} className="shrink-0" />
                 {pinnedPrompt.images === 1 ? '1 imagem enviada' : `${pinnedPrompt.images} imagens enviadas`}
               </span>
@@ -771,7 +771,7 @@ export function ChatView({
               aria-label="Anexar imagem"
               title="Anexar imagem"
               onClick={() => imageInput.current?.click()}
-              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
             >
               <ImagePlus size={15} />
             </button>
@@ -779,13 +779,13 @@ export function ChatView({
               aria-label="Anexar arquivo"
               title="Anexar arquivo"
               onClick={() => fileInput.current?.click()}
-              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
             >
               <Paperclip size={15} />
             </button>
             <span className="flex-1" />
             {dictation.state !== 'idle' && (
-              <span className="mr-1 flex items-center gap-2 text-[11px] text-running">
+              <span className="mr-1 flex items-center gap-2 text-[12px] text-running">
                 {dictation.state === 'listening' ? <VoiceWave /> : 'Ligando…'}
               </span>
             )}
@@ -793,7 +793,7 @@ export function ChatView({
               aria-label={dictation.state === 'idle' ? 'Ditar por voz' : 'Parar ditado'}
               title={dictation.state === 'idle' ? 'Ditar por voz' : 'Parar ditado'}
               onClick={toggleDictation}
-              className={`mr-1 flex size-7 items-center justify-center rounded-md ${
+              className={`mr-1 flex size-7 items-center justify-center rounded-full ${
                 dictation.state === 'idle'
                   ? 'text-muted hover:bg-surface-2 hover:text-text'
                   : 'bg-running/15 text-running hover:bg-running/25'
@@ -806,7 +806,7 @@ export function ChatView({
                 aria-label="Parar"
                 title="Parar"
                 onClick={onInterrupt}
-                className="flex size-7 items-center justify-center rounded-md bg-text text-bg hover:opacity-85"
+                className="flex size-7 items-center justify-center rounded-full bg-accent text-white hover:brightness-110"
               >
                 <Square size={11} fill="currentColor" />
               </button>
@@ -816,7 +816,7 @@ export function ChatView({
                 title="Enviar (Enter)"
                 onClick={send}
                 disabled={!canSend && dictation.state === 'idle'}
-                className="flex size-7 items-center justify-center rounded-md bg-text text-bg hover:opacity-85 disabled:opacity-40"
+                className="flex size-7 items-center justify-center rounded-full bg-accent text-white hover:brightness-110 disabled:opacity-40"
               >
                 <SendHorizontal size={14} />
               </button>
@@ -871,9 +871,10 @@ export function ChatView({
   )
 }
 
-// O que o Claude está fazendo agora, no lugar de um "Trabalhando…" parado.
+// O que o Claude está fazendo agora, no lugar de um "Trabalhando…" parado. Só o tipo da ação:
+// o detalhe (comando, arquivo) já aparece na linha da ferramenta logo acima.
 function activityLabel(activity: ChatActivity | undefined, agents: RunningAgent[]): string {
-  const target = activity?.tool && `${activity.tool}${activity.summary ? ` - ${activity.summary}` : ''}`
+  const tool = activity?.tool
   const foreground = agents.filter((a) => !a.background).length
   switch (activity?.kind) {
     case 'thinking':
@@ -881,10 +882,10 @@ function activityLabel(activity: ChatActivity | undefined, agents: RunningAgent[
     case 'writing':
       return 'Escrevendo a resposta…'
     case 'preparing':
-      return `Montando: ${target}…`
+      return tool === 'Comando' ? 'Montando comando…' : `Montando: ${tool}…`
     case 'running':
       if (foreground) return foreground === 1 ? 'Esperando o subagente…' : `Esperando ${foreground} subagentes…`
-      return `Executando: ${target}…`
+      return tool === 'Comando' ? 'Executando comando…' : `Executando: ${tool}…`
     default:
       return 'Trabalhando…'
   }

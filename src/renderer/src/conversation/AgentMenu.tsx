@@ -1,5 +1,6 @@
 import { Bot, FolderOpen } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
+import { MENU_ACTIVE } from '../canvas/ContextMenu'
 
 export type AgentMention = { start: number; items: AgentDef[] }
 
@@ -38,7 +39,7 @@ export function AgentMenu({
   onSelect: (agent: AgentDef) => void
 }) {
   return (
-    <div className="absolute bottom-full left-0 right-0 z-10 mb-2 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+    <div className="absolute bottom-full left-0 right-0 z-10 mb-2 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
       {items.map((a, i) => (
         <button
           key={a.path}
@@ -48,7 +49,7 @@ export function AgentMenu({
             onSelect(a)
           }}
           onMouseEnter={() => onHover(i)}
-          className={`flex w-full items-baseline gap-3 rounded-md px-2 py-1.5 text-left ${i === active ? 'bg-surface-2' : ''}`}
+          className={`flex w-full items-baseline gap-3 rounded-md px-2 py-1.5 text-left ${i === active ? MENU_ACTIVE : ''}`}
         >
           <span className="flex w-40 shrink-0 items-center gap-1.5 self-center text-xs text-text">
             <Bot size={12} className="shrink-0 text-muted" />
@@ -57,7 +58,7 @@ export function AgentMenu({
               <FolderOpen size={11} className="shrink-0 text-faint" aria-label="Agente deste projeto" />
             )}
           </span>
-          <span className="truncate text-[11px] text-faint">{a.description}</span>
+          <span className="truncate text-[12px] text-faint">{a.description}</span>
         </button>
       ))}
     </div>

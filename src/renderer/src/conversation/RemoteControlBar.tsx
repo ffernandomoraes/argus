@@ -29,7 +29,7 @@ export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl;
         : 'Ligando remote control…'
 
   return (
-    <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[11px] text-faint">
+    <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[12px] text-faint">
       {remote.status === 'connecting' ? (
         <Loader2 size={11} className="shrink-0 animate-spin" />
       ) : (

@@ -23,8 +23,8 @@ function Option({
       <button
         disabled={disabled}
         onClick={onClick}
-        className={`flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm disabled:opacity-50 ${
-          primary ? 'bg-text font-medium text-bg hover:opacity-90' : 'border border-line text-text hover:bg-surface-2'
+        className={`flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm disabled:opacity-50 ${
+          primary ? 'bg-accent font-medium text-white hover:brightness-110' : 'border border-line text-text hover:bg-surface-2'
         }`}
       >
         {title}
@@ -70,7 +70,7 @@ function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl:
         <button
           disabled={!code.trim()}
           onClick={submit}
-          className="rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
+          className="rounded-full border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
         >
           Enviar
         </button>
@@ -148,7 +148,7 @@ export function LoginPanel({
       )}
 
       {(busy || onCancel) && (
-        <button onClick={cancel} className="self-center rounded-md px-3 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text">
+        <button onClick={cancel} className="self-center rounded-full px-3 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text">
           Cancelar
         </button>
       )}

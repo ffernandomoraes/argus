@@ -36,8 +36,8 @@ function Item({ state, title, detail, children }: { state: 'done' | 'busy' | 'to
   )
 }
 
-const BUTTON = 'flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm disabled:opacity-50'
-const PRIMARY = `${BUTTON} bg-text font-medium text-bg hover:opacity-90`
+const BUTTON = 'flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm disabled:opacity-50'
+const PRIMARY = `${BUTTON} bg-accent font-medium text-white hover:brightness-110`
 const SECONDARY = `${BUTTON} border border-line text-text hover:bg-surface-2`
 
 // Comando do instalador para rodar na mão, com botão de copiar.
@@ -75,7 +75,7 @@ function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
       detail={failed ? 'Não deu para instalar.' : 'Ainda não está instalado. O instalador é o oficial da Anthropic e fica na sua pasta de usuário.'}
     >
       {failed && claude.message && (
-        <pre className="mb-3 max-h-24 overflow-auto whitespace-pre-wrap rounded-md border border-line bg-bg px-2.5 py-1.5 font-mono text-[11px] text-red-400">
+        <pre className="mb-3 max-h-24 overflow-auto whitespace-pre-wrap rounded-md border border-line bg-bg px-2.5 py-1.5 font-mono text-[12px] text-red-400">
           {claude.message}
         </pre>
       )}

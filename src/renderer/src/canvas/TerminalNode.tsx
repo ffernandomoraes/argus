@@ -49,8 +49,8 @@ export function TerminalNode({ id, data, selected, parentId }: NodeProps<Termina
         handleStyle={{ background: 'var(--color-muted)', border: 'none', width: 8, height: 8 }}
       />
       <div
-        className="flex h-full flex-col overflow-hidden rounded-[10px] border bg-surface shadow-lg shadow-black/30"
-        style={{ borderColor: selected ? 'var(--color-muted)' : 'var(--color-line)' }}
+        className="flex h-full flex-col overflow-hidden rounded-xl border bg-surface shadow-lg shadow-black/30"
+        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line)' }}
       >
         <header className="flex shrink-0 items-center gap-2 border-b border-line bg-surface-2 px-3 py-2">
           {shell ? (
@@ -59,7 +59,7 @@ export function TerminalNode({ id, data, selected, parentId }: NodeProps<Termina
             <SquareTerminal size={14} className="shrink-0 text-muted" />
           )}
           <EditableName id={id} value={data.name} className="shrink-0 text-sm font-medium" />
-          <PathLabel path={data.path} className="ml-auto min-w-0 pl-2 text-[11px] text-faint" />
+          <PathLabel path={data.path} className="ml-auto min-w-0 pl-2 text-[12px] text-faint" />
           <button
             aria-label="Fechar terminal"
             title="Fechar terminal"

@@ -77,11 +77,11 @@ export function ProjectServerButton({ path }: { path: string }) {
         ) : (
           <>
             <span className="size-1.5 rounded-full" style={{ background: 'var(--color-done)' }} />
-            {server.ports[0] && <span className="font-mono text-[11px]">:{server.ports[0]}</span>}
+            {server.ports[0] && <span className="font-mono text-[12px]">:{server.ports[0]}</span>}
           </>
         )}
         {stopped && server.error ? (
-          <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden w-72 -translate-x-1/2 flex-col gap-1 rounded-md border border-line bg-surface-2 px-2 py-1.5 text-left text-[11px] text-text shadow-lg group-hover:flex">
+          <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden w-72 -translate-x-1/2 flex-col gap-1 rounded-md border border-line bg-surface-2 px-2 py-1.5 text-left text-[12px] text-text shadow-lg group-hover:flex">
             O servidor parou com erro - clique para tentar de novo
             <span className="break-words font-mono text-faint">{server.error}</span>
           </span>

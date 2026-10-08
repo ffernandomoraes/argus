@@ -15,6 +15,7 @@ import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { useEscape } from '../useEscape'
 import { Presence } from '../motion'
 import { IS_WIN, keys } from '../platform'
+import { MENU_PANEL, MENU_ROW } from './ContextMenu'
 
 const TOOLTIP_SIDE = {
   top: 'bottom-full left-1/2 mb-2 -translate-x-1/2',
@@ -27,7 +28,7 @@ const TOOLTIP_SIDE = {
 export function Tooltip({ label, shortcut, side = 'top' }: { label: string; shortcut?: string; side?: keyof typeof TOOLTIP_SIDE }) {
   return (
     <span
-      className={`pointer-events-none absolute hidden items-center gap-2 whitespace-nowrap rounded-md border border-line bg-surface-2 px-2 py-1 text-[11px] text-text shadow-lg group-hover:flex ${TOOLTIP_SIDE[side]}`}
+      className={`pointer-events-none absolute hidden items-center gap-2 whitespace-nowrap rounded-lg border border-line bg-surface/90 px-2 py-1 text-[12px] text-text shadow-lg backdrop-blur-xl group-hover:flex ${TOOLTIP_SIDE[side]}`}
     >
       {label}
       {/* Escrito como no Mac ("⌘ ,"); no Windows aparece "Ctrl+,". */}
@@ -59,17 +60,18 @@ export function NavButton({
   side?: keyof typeof TOOLTIP_SIDE
   children: ReactNode
 }) {
+  // O principal (Novo bloco) na cor de destaque, como o botão padrão do macOS.
   const tone = primary
-    ? 'bg-text text-bg hover:opacity-85'
+    ? 'bg-accent text-white hover:brightness-110'
     : active || selected
-      ? 'bg-surface-2 text-text'
-      : 'text-muted hover:bg-surface-2 hover:text-text'
+      ? 'bg-fill text-text ring-1 ring-line ring-inset'
+      : 'text-muted hover:bg-fill hover:text-text'
 
   return (
     <button
       aria-label={label}
       onClick={onClick}
-      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-md' : 'size-8 rounded-lg'} ${tone}`}
+      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-full' : 'size-8 rounded-full'} ${tone}`}
     >
       {children}
       {!active && <Tooltip label={label} shortcut={shortcut} side={side} />}
@@ -113,7 +115,7 @@ function NewBlockMenu() {
       </NavButton>
       <Presence kind="menu">
         {open && (
-          <div className="absolute left-full top-0 ml-2 w-44 rounded-lg border border-line bg-surface p-1 shadow-xl shadow-black/40">
+          <div className={`absolute left-full top-0 ml-2 w-44 ${MENU_PANEL}`}>
             {items.map(({ label, icon: Icon, onClick }) => (
               <button
                 key={label}
@@ -121,7 +123,7 @@ function NewBlockMenu() {
                   onClick()
                   setOpen(false)
                 }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text hover:bg-surface-2"
+                className={`${MENU_ROW} text-text hover:bg-accent hover:text-white`}
               >
                 <Icon size={14} />
                 {label}
@@ -140,8 +142,9 @@ export function NavBar({ zoomShortcuts = true }: { zoomShortcuts?: boolean }) {
 
   return (
     // Na lateral esquerda, no meio da altura: embaixo ela disputava espaço com o drawer aberto.
+    // Em cápsula, como os grupos de botões da barra de ferramentas do macOS.
     <Panel position="center-left" className="!ml-4">
-      <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface p-1.5 shadow-xl shadow-black/40">
+      <div className="flex flex-col items-center gap-1 rounded-full border border-line bg-surface/90 p-1 shadow-xl shadow-black/40 backdrop-blur-xl">
         <NewBlockMenu />
 
         <Divider />

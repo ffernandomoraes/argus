@@ -51,14 +51,14 @@ export function AllConversationsPanel({
           <div className="truncate text-sm font-medium">
             {conversations.length} conversa{conversations.length === 1 ? '' : 's'}
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-faint">
+          <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
             <Folder size={12} className="shrink-0" />
             <span className="truncate">{project.name}</span>
           </div>
         </div>
         <button
           onClick={onNew}
-          className="flex items-center gap-1.5 rounded-md border border-line-strong bg-surface-2 px-2 py-1.5 text-xs font-medium text-text hover:bg-line"
+          className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface-2 px-2 py-1.5 text-xs font-medium text-text hover:bg-line"
         >
           <Plus size={13} />
           Nova

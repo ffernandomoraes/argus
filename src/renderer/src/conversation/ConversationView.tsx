@@ -43,7 +43,7 @@ export function HeaderButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`flex size-7 items-center justify-center rounded-md ${
+      className={`flex size-7 items-center justify-center rounded-full ${
         active ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
       }`}
     >
@@ -109,12 +109,12 @@ function UncommittedBadge({
         title={label}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex size-7 items-center justify-center rounded-md ${
+        className={`relative flex size-7 items-center justify-center rounded-full ${
           open ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
         }`}
       >
         <GitBranch size={16} aria-hidden="true" />
-        <span className="absolute -right-1 bottom-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[10px] font-semibold leading-none text-white">
+        <span className="absolute -right-1 bottom-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[11px] font-semibold leading-none text-white">
           {n > 999 ? '999+' : n}
         </span>
       </button>
@@ -126,7 +126,7 @@ function UncommittedBadge({
             onPointerDown={(e) => e.stopPropagation()}
             className="absolute right-0 top-full z-50 mt-1 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
           >
-            <div className="shrink-0 border-b border-line px-3 py-2 text-[11px] text-faint">{label}</div>
+            <div className="shrink-0 border-b border-line px-3 py-2 text-[12px] text-faint">{label}</div>
             <ul className="min-h-0 overflow-y-auto p-1">
               {files.map((f) => {
                 const rel = shown(f.path)
@@ -147,8 +147,8 @@ function UncommittedBadge({
                       className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs enabled:hover:bg-surface-2"
                     >
                       <span className={`min-w-0 truncate text-text ${f.kind === 'D' ? 'line-through' : ''}`}>{name}</span>
-                      <span className="min-w-0 flex-1 truncate text-[11px] text-faint">{dir}</span>
-                      <span title={KIND_LABEL[f.kind]} className={`shrink-0 font-mono text-[11px] font-semibold ${KIND_COLOR[f.kind]}`}>
+                      <span className="min-w-0 flex-1 truncate text-[12px] text-faint">{dir}</span>
+                      <span title={KIND_LABEL[f.kind]} className={`shrink-0 font-mono text-[12px] font-semibold ${KIND_COLOR[f.kind]}`}>
                         {f.kind}
                       </span>
                     </button>
@@ -311,7 +311,7 @@ export function ConversationView({
           <div className="truncate text-sm font-medium">{conversation.title}</div>
           {/* Conversa sem projeto, fora de repositório: não tem o que mostrar aqui. */}
           {!minimalHeader && (project || branch) && (
-            <div className="mt-1 flex items-center gap-2 text-[11px] text-faint">
+            <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
               {project && (
                 <span className={`${TAG} min-w-0 gap-1`}>
                   <Folder size={12} className="shrink-0" />

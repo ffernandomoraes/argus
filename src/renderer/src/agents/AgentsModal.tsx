@@ -97,7 +97,7 @@ function Field({ label, hint, action, children }: { label: string; hint?: string
         {action}
       </span>
       {children}
-      {hint && <span className="text-[11px] leading-snug text-faint">{hint}</span>}
+      {hint && <span className="text-[12px] leading-snug text-faint">{hint}</span>}
     </label>
   )
 }
@@ -270,7 +270,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
       <div
         role="dialog"
         aria-label="Agentes"
-        className="flex h-[min(720px,100%)] w-[min(980px,100%)] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="flex h-[min(720px,100%)] w-[min(980px,100%)] overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
         <nav className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-2/40 p-3">
           <div className="mb-3 flex items-center gap-2 px-2 pt-1 text-sm font-semibold">
@@ -280,7 +280,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
           <div className="mb-3 flex gap-1.5">
             <button
               onClick={create}
-              className="flex flex-1 items-center gap-2 rounded-md border border-line px-2 py-1.5 text-xs text-text hover:bg-surface-2"
+              className="flex flex-1 items-center gap-2 rounded-full border border-line px-2 py-1.5 text-xs text-text hover:bg-surface-2"
             >
               <Plus size={13} />
               Novo agente
@@ -289,7 +289,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
               onClick={createByVoice}
               aria-label="Novo agente por voz"
               title="Novo agente por voz: conte o que ele faz"
-              className="flex size-[30px] shrink-0 items-center justify-center rounded-md border border-line text-text hover:bg-surface-2"
+              className="flex size-[30px] shrink-0 items-center justify-center rounded-full border border-line text-text hover:bg-surface-2"
             >
               <Mic size={13} />
             </button>
@@ -300,15 +300,15 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
               onClick={() => select(a)}
               title={a.description}
               className={`flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left ${
-                draft?.previousName === a.name ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
+                draft?.previousName === a.name ? 'bg-selection text-white [&_.text-faint]:text-white/70 [&_.text-muted]:text-white/80' : 'text-muted hover:bg-fill hover:text-text'
               }`}
             >
               <span className="w-full truncate text-xs">{a.name}</span>
-              <span className="w-full truncate text-[10px] text-faint">{a.description}</span>
+              <span className="w-full truncate text-[11px] text-faint">{a.description}</span>
             </button>
           ))}
           {draft && !draft.previousName && (
-            <div className="flex w-full flex-col items-start rounded-md bg-surface-2 px-2 py-1.5 text-xs italic text-text">
+            <div className="flex w-full flex-col items-start rounded-md bg-selection px-2 py-1.5 text-xs italic text-white">
               {draft.name || 'novo agente'}
             </div>
           )}
@@ -320,7 +320,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
               <div className="truncate text-sm font-medium">
                 {draft ? draft.previousName ?? 'Novo agente' : 'Agentes globais'}
               </div>
-              <div className="mt-0.5 truncate font-mono text-[11px] text-faint">
+              <div className="mt-0.5 truncate font-mono text-[12px] text-faint">
                 {current ? tildify(current.path) : IS_WIN ? '~\\.claude\\agents\\' : '~/.claude/agents/'}
               </div>
             </div>
@@ -329,7 +329,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                 <button
                   onClick={duplicate}
                   title="Duplicar"
-                  className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
                 >
                   <Copy size={12} />
                   Duplicar
@@ -337,7 +337,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                 <button
                   onClick={() => void remove()}
                   title="Excluir"
-                  className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
                 >
                   <Trash2 size={12} />
                   Excluir
@@ -349,7 +349,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                 onClick={() => void save()}
                 disabled={!dirty}
                 title={`Salvar (${keys('⌘S')})`}
-                className="rounded-md bg-text px-2.5 py-1 text-xs font-medium text-bg hover:opacity-85 disabled:opacity-40"
+                className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
               >
                 Salvar
               </button>
@@ -358,7 +358,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
               aria-label="Fechar"
               title="Fechar"
               onClick={close}
-              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
             >
               <X size={15} />
             </button>
@@ -377,14 +377,14 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                 <div className="mt-4 flex justify-center gap-2">
                   <button
                     onClick={createByVoice}
-                    className="flex items-center gap-1.5 rounded-md bg-text px-3 py-1.5 text-xs font-medium text-bg hover:opacity-85"
+                    className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white hover:brightness-110"
                   >
                     <Mic size={12} />
                     Criar por voz
                   </button>
                   <button
                     onClick={create}
-                    className="rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2"
+                    className="rounded-full border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2"
                   >
                     Preencher à mão
                   </button>
@@ -420,13 +420,13 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                 <div className="flex items-center gap-2">
                   <MicButton listening={listeningTo === 'brief'} onClick={() => toggleVoice('brief', brief)} />
                   {listeningTo === 'brief' && <VoiceWave />}
-                  {dictation.error && <span className="truncate text-[11px] text-red-400">{dictation.error.message}</span>}
+                  {dictation.error && <span className="truncate text-[12px] text-red-400">{dictation.error.message}</span>}
                   <span className="flex-1" />
                   <button
                     onClick={() => void fill()}
                     disabled={!brief.trim() || drafting || listening}
                     title={listening ? 'Pare o microfone para preencher' : `Preencher os campos (${keys('⌘Enter')})`}
-                    className="flex items-center gap-1.5 rounded-md bg-text px-2.5 py-1 text-xs font-medium text-bg hover:opacity-85 disabled:opacity-40"
+                    className="flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
                   >
                     {drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                     {drafting ? 'Escrevendo…' : draft.description || draft.prompt ? 'Ajustar campos' : 'Preencher campos'}
@@ -473,7 +473,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                   rows={14}
                   spellCheck={false}
                   placeholder={'Você clona páginas da web dentro do projeto atual.\n\n1. Abra a referência e tire prints de cada seção.\n2. Leia o projeto: stack, componentes e tokens existentes.\n3. ...'}
-                  className={`${input} min-h-56 resize-y font-mono text-[12px] leading-relaxed`}
+                  className={`${input} min-h-56 resize-y font-mono text-[13px] leading-relaxed`}
                 />
               </Field>
 
@@ -504,7 +504,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                         <label key={t.name} className="flex items-center gap-2 text-xs text-text">
                           <input type="checkbox" checked={draft.tools.includes(t.name)} onChange={() => toggleTool(t.name)} />
                           {t.label}
-                          <span className="font-mono text-[10px] text-faint">{t.name}</span>
+                          <span className="font-mono text-[11px] text-faint">{t.name}</span>
                         </label>
                       ))}
                     </div>
@@ -513,7 +513,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                       onChange={(e) => set({ extraTools: e.target.value })}
                       placeholder="Outras, separadas por vírgula: mcp__playwright__browser_navigate, ..."
                       spellCheck={false}
-                      className={`${input} font-mono text-[12px]`}
+                      className={`${input} font-mono text-[13px]`}
                     />
                   </div>
                 )}

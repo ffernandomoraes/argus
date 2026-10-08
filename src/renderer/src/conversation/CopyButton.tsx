@@ -18,7 +18,7 @@ export function CopyButton({ text, label, className = '' }: { text: string; labe
       aria-label={copied ? 'Copiado' : label}
       title={copied ? 'Copiado' : label}
       onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true))}
-      className={`inline-flex size-5 items-center justify-center rounded text-faint hover:bg-surface-2 hover:text-text ${className}`}
+      className={`inline-flex size-5 items-center justify-center rounded-md text-faint hover:bg-surface-2 hover:text-text ${className}`}
     >
       {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
     </button>

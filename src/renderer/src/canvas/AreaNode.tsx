@@ -17,7 +17,7 @@ function CollapsedSummary({ id }: { id: string }) {
   const running = sessions.some((c) => c.status === 'running')
 
   return (
-    <span className="flex items-center gap-2 text-[11px] text-faint">
+    <span className="flex items-center gap-2 text-[12px] text-faint">
       <span>{children.length === 1 ? '1 instância' : `${children.length} instâncias`}</span>
       {needsYou && <span className="size-1.5 rounded-full bg-needs-you" title="Alguma instância precisa de você" />}
       {running && <span className="size-1.5 animate-pulse rounded-full bg-running" title="Alguma instância rodando" />}
@@ -63,7 +63,7 @@ function AccountTag({ account, color }: { account?: string; color: string }) {
   return (
     <span
       title={`Conta do Claude deste grupo: ${current.name}`}
-      className="flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium"
+      className="flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
       style={{ color, borderColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
     >
       <ClaudeIcon size={10} />
@@ -103,7 +103,7 @@ export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
             className="flex min-w-0 max-w-full items-center rounded-md px-2 py-0.5"
             style={{ color, background: `color-mix(in srgb, ${color} 22%, var(--color-bg))` }}
           >
-            <EditableName id={id} value={data.label} className="text-[11px] font-semibold uppercase tracking-widest" />
+            <EditableName id={id} value={data.label} className="text-[12px] font-semibold uppercase tracking-widest" />
           </div>
           <AccountTag account={data.account} color={color} />
         </div>

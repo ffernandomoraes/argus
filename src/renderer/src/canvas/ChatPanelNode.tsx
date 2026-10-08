@@ -40,8 +40,8 @@ export function ChatPanelNode({ id, data, selected, parentId }: NodeProps<ChatPa
       />
       {/* nowheel: rolar em cima do bloco rola o chat, não o canvas */}
       <div
-        className="nowheel relative flex h-full flex-col overflow-hidden rounded-[10px] border bg-bg shadow-lg shadow-black/30"
-        style={{ borderColor: selected ? 'var(--color-muted)' : 'var(--color-line)' }}
+        className="nowheel relative flex h-full flex-col overflow-hidden rounded-xl border bg-bg shadow-lg shadow-black/30"
+        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line)' }}
       >
         <ConversationView
           cwd={data.path}

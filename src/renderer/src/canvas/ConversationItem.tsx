@@ -37,10 +37,10 @@ export function ConversationItem({
       onContextMenu={onContextMenu}
       className={
         card
-          ? `${draggable ? '' : 'nodrag '}flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-xs shadow-lg shadow-black/30 hover:bg-surface-2 ${
-              active ? 'border-muted bg-surface-2' : 'border-line bg-surface'
+          ? `${draggable ? '' : 'nodrag '}flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs shadow-lg shadow-black/30 hover:bg-card-hover ${
+              active ? 'border-accent bg-card-hover ring-1 ring-accent' : 'border-line bg-card'
             }`
-          : `flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-surface-2 ${active ? 'bg-surface-2' : ''}`
+          : `flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ${active ? 'bg-selection text-white [&_svg]:text-white/80 [&_.text-faint]:text-white/70' : 'hover:bg-fill'}`
       }
     >
       <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
@@ -52,7 +52,7 @@ export function ConversationItem({
       )}
       <span
         title={new Date(c.updatedAt).toLocaleString('pt-BR')}
-        className="ml-auto shrink-0 pl-1 text-[10px] text-faint"
+        className="ml-auto shrink-0 pl-1 text-[11px] text-faint"
       >
         {relativeTime(c.updatedAt, now)}
       </span>
@@ -69,12 +69,12 @@ export function AgentItem({ agent: a, style, onOpen }: { agent: RunningAgent; st
       onClick={onOpen}
       title={a.description}
       style={style}
-      className="nodrag flex cursor-pointer items-center gap-2 rounded-[10px] border border-running/40 bg-surface px-3 py-1.5 text-xs shadow-lg shadow-black/30 hover:bg-surface-2"
+      className="nodrag flex cursor-pointer items-center gap-2 rounded-xl border border-running/40 bg-card px-3 py-1.5 text-xs shadow-lg shadow-black/30 hover:bg-card-hover"
     >
       <Bot size={13} className="shrink-0 text-running" aria-hidden="true" />
       <span className="shrink-0 font-medium">{a.agent}</span>
       <span className="min-w-0 truncate text-muted">{agentActivity(a)}</span>
-      <span className="ml-auto shrink-0 pl-1 text-[10px] tabular-nums text-faint">
+      <span className="ml-auto shrink-0 pl-1 text-[11px] tabular-nums text-faint">
         <Elapsed since={a.startedAt} />
       </span>
     </li>

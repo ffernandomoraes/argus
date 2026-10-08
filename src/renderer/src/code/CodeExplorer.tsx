@@ -148,7 +148,7 @@ function TreeItem({ entry, depth, ...p }: TreeProps & { entry: FileEntry; depth:
         data-path={entry.path}
         style={{ paddingLeft: indent(depth) }}
         className={`flex w-full items-center gap-1.5 rounded py-1 pr-2 text-left text-xs outline-none ${
-          p.focused === entry.path ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
+          p.focused === entry.path ? 'bg-selection text-white [&_span]:text-white [&_svg]:text-white' : 'text-muted hover:bg-fill hover:text-text'
         } ${entry.ignored ? 'opacity-50' : ''}`}
       >
         <ChevronRight
@@ -165,7 +165,7 @@ function TreeItem({ entry, depth, ...p }: TreeProps & { entry: FileEntry; depth:
           (entry.isDir ? (
             <span title="Tem mudanças não comitadas" className={`size-1.5 shrink-0 rounded-full bg-current ${KIND_COLOR[change]}`} />
           ) : (
-            <span title={KIND_LABEL[change]} className={`shrink-0 font-mono text-[11px] font-semibold ${KIND_COLOR[change]}`}>
+            <span title={KIND_LABEL[change]} className={`shrink-0 font-mono text-[12px] font-semibold ${KIND_COLOR[change]}`}>
               {change}
             </span>
           ))}
@@ -186,7 +186,7 @@ function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: string; entr
       )}
       {entries?.map((e) => <TreeItem key={e.path} entry={e} depth={depth} {...p} />)}
       {entries?.length === 0 && !creating && (
-        <li style={{ paddingLeft: indent(depth) + 24 }} className="py-1 text-[11px] text-faint">
+        <li style={{ paddingLeft: indent(depth) + 24 }} className="py-1 text-[12px] text-faint">
           vazia
         </li>
       )}
@@ -473,7 +473,7 @@ export function CodeExplorer({
           {rootEntries && <TreeList dir="" entries={rootEntries} depth={0} {...treeProps} />}
         </div>
         {error && (
-          <p role="alert" className="border-t border-line px-3 py-2 text-[11px] text-red-400">
+          <p role="alert" className="border-t border-line px-3 py-2 text-[12px] text-red-400">
             {error}
           </p>
         )}
@@ -498,7 +498,7 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick: ()
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+      className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
     >
       {children}
     </button>
@@ -511,7 +511,7 @@ export function CloseCodeButton({ onClick }: { onClick: () => void }) {
       aria-label="Fechar código"
       title="Fechar código"
       onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+      className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
     >
       <X size={15} />
     </button>

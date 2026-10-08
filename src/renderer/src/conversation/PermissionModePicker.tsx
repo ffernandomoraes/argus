@@ -3,6 +3,7 @@ import { Check, ChevronUp, FilePen, Hand, ListChecks, ShieldCheck, ShieldOff, ty
 import { useClaudeInfo } from './useModels'
 import { useEscape } from '../useEscape'
 import { Presence } from '../motion'
+import { MENU_HOVER } from '../canvas/ContextMenu'
 
 // Modos de permissão do --permission-mode, com nomes e descrições da extensão do VS Code, traduzidos.
 export const MODES: { value: string; label: string; description: string; icon: LucideIcon; danger?: boolean }[] = [
@@ -47,7 +48,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
       <button
         onClick={() => setOpen((o) => !o)}
         title={`Modo: ${current.label}${value ? '' : ' (padrão)'}`}
-        className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
+        className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : current.danger ? 'text-red-400' : 'text-muted'
         }`}
       >
@@ -58,8 +59,8 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
 
       <Presence kind="menu">
         {open && (
-          <div className="absolute bottom-full right-0 z-10 mb-2 w-80 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
-            <div className="px-2 pb-1 pt-1.5 text-[11px] text-faint">Modo</div>
+          <div className="absolute bottom-full right-0 z-10 mb-2 w-80 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
+            <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modo</div>
             {MODES.map((m) => {
               const ModeIcon = m.icon
               return (
@@ -69,7 +70,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
                     onChange(m.value)
                     setOpen(false)
                   }}
-                  className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-surface-2"
+                  className={`flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left ${MENU_HOVER}`}
                 >
                   <ModeIcon size={14} className={`mt-0.5 shrink-0 ${m.danger ? 'text-red-400' : 'text-muted'}`} />
                   <span className="flex-1">
@@ -77,7 +78,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
                       {m.label}
                       {m.value === info?.defaultPermissionMode && <span className="text-faint"> - padrão</span>}
                     </span>
-                    <span className="mt-0.5 block text-[11px] leading-snug text-faint">{m.description}</span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-faint">{m.description}</span>
                   </span>
                   {effective === m.value && <Check size={13} className="mt-0.5 shrink-0 text-muted" />}
                 </button>

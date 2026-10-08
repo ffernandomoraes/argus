@@ -145,7 +145,7 @@ export function MemoryModal({
       <div
         role="dialog"
         aria-label="Memória do Claude"
-        className="flex h-[min(680px,100%)] w-[min(980px,100%)] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="flex h-[min(680px,100%)] w-[min(980px,100%)] overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
         <nav className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-2/40 p-3">
           <div className="mb-3 flex items-center gap-2 px-2 pt-1 text-sm font-semibold">
@@ -159,7 +159,7 @@ export function MemoryModal({
                 <button
                   onClick={() => toggleGroup(g.id)}
                   aria-expanded={expanded.has(g.id)}
-                  className="mb-1 flex w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-left text-[11px] font-medium uppercase tracking-wide text-faint hover:text-muted"
+                  className="mb-1 flex w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-left text-[12px] font-medium uppercase tracking-wide text-faint hover:text-muted"
                 >
                   <ChevronRight
                     size={11}
@@ -176,12 +176,12 @@ export function MemoryModal({
                     onClick={() => select(f.path)}
                     title={f.description ?? tildify(f.path)}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
-                      selected === f.path ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
+                      selected === f.path ? 'bg-selection text-white [&_.text-faint]:text-white/70 [&_.text-muted]:text-white/80' : 'text-muted hover:bg-fill hover:text-text'
                     } ${f.kind === 'memory' ? 'pl-5' : ''}`}
                   >
                     {f.kind === 'index' ? <ListTree size={13} className="shrink-0" /> : <FileText size={13} className="shrink-0" />}
                     <span className={`truncate ${f.exists ? '' : 'italic text-faint'}`}>{fileLabel(f)}</span>
-                    {!f.exists && <span className="ml-auto shrink-0 text-[10px] text-faint">criar</span>}
+                    {!f.exists && <span className="ml-auto shrink-0 text-[11px] text-faint">criar</span>}
                   </button>
                 ))}
             </div>
@@ -192,12 +192,12 @@ export function MemoryModal({
           <header className="flex items-start gap-3 border-b border-line px-5 py-3">
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{current ? fileLabel(current) : ''}</div>
-              <div className="mt-0.5 truncate font-mono text-[11px] text-faint">{current ? tildify(current.path) : ''}</div>
+              <div className="mt-0.5 truncate font-mono text-[12px] text-faint">{current ? tildify(current.path) : ''}</div>
             </div>
             {current && !editing && (
               <button
                 onClick={() => setDraft(text ?? '')}
-                className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+                className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
               >
                 <Pencil size={12} />
                 {current.exists ? 'Editar' : 'Criar'}
@@ -207,7 +207,7 @@ export function MemoryModal({
               <>
                 <button
                   onClick={() => setDraft(null)}
-                  className="rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+                  className="rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
                 >
                   Cancelar
                 </button>
@@ -215,7 +215,7 @@ export function MemoryModal({
                   onClick={() => void save()}
                   disabled={!dirty}
                   title={`Salvar (${keys('⌘S')})`}
-                  className="rounded-md bg-text px-2.5 py-1 text-xs font-medium text-bg hover:opacity-85 disabled:opacity-40"
+                  className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
                 >
                   Salvar
                 </button>
@@ -225,7 +225,7 @@ export function MemoryModal({
               aria-label="Fechar"
               title="Fechar"
               onClick={close}
-              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
             >
               <X size={15} />
             </button>
@@ -239,7 +239,7 @@ export function MemoryModal({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               spellCheck={false}
-              className="min-h-0 flex-1 resize-none bg-bg px-5 py-4 font-mono text-[12px] leading-relaxed text-text outline-none"
+              className="min-h-0 flex-1 resize-none bg-bg px-5 py-4 font-mono text-[13px] leading-relaxed text-text outline-none"
             />
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 select-text">
@@ -252,7 +252,7 @@ export function MemoryModal({
               {meta && (meta.description || meta.type) && (
                 <div className="mb-4 rounded-lg border border-line bg-surface-2/60 px-3 py-2 text-xs">
                   {meta.type && (
-                    <span className="mr-2 rounded bg-bg px-1.5 py-0.5 text-[10px] text-muted">
+                    <span className="mr-2 rounded bg-bg px-1.5 py-0.5 text-[11px] text-muted">
                       {TYPE_LABEL[meta.type] ?? meta.type}
                     </span>
                   )}

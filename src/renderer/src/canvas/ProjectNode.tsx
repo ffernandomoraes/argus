@@ -8,6 +8,7 @@ import { PathLabel } from './PathLabel'
 import { BranchLabel } from './BranchLabel'
 import { ProjectServerButton } from '../devServers/ProjectServerButton'
 import { Tooltip } from './NavBar'
+import { IconTile } from '../settings/controls'
 import { AgentItem, ConversationItem, useNow } from './ConversationItem'
 import { getRunningAgents, useRunningAgentsVersion } from './runningAgents'
 import { useBranch, useSessions } from './sessionsStore'
@@ -69,12 +70,12 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
   const running = conversations.some((c) => c.status === 'running')
   useRunningAgentsVersion()
   const rows = withAgents(shown)
-  // Linha e loader da conversa rodando na cor do grupo; grupo cinza (o padrão) conta como sem cor.
-  const flowColor = useStore((s) => {
+  const groupColor = useStore((s) => {
     const group = parentId ? s.nodeLookup.get(parentId) : undefined
-    const color = group?.type === 'area' ? (group.data.color as string) : undefined
-    return color && color !== DEFAULT_GROUP_COLOR ? color : 'var(--color-running)'
+    return group?.type === 'area' ? (group.data.color as string) : undefined
   })
+  // Linha da conversa rodando na cor do grupo; grupo cinza (o padrão) conta como sem cor.
+  const flowColor = groupColor && groupColor !== DEFAULT_GROUP_COLOR ? groupColor : 'var(--color-running)'
   const now = useNow()
   const {
     activeConversation,
@@ -156,7 +157,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
 
       {/* Branch atual, fora do card: acima do canto esquerdo, na mesma altura e no mesmo estilo das ações. */}
       {branch && (
-        <div className="absolute bottom-full left-0 mb-1.5 flex h-6 max-w-[calc(100%-40px)] items-center rounded-md border border-line bg-surface px-2 text-[11px] text-muted shadow-sm">
+        <div className="absolute bottom-full left-0 mb-1.5 flex h-6 max-w-[calc(100%-40px)] items-center rounded-md border border-line bg-surface px-2 text-[12px] text-muted shadow-sm">
           <BranchLabel branch={branch} />
         </div>
       )}
@@ -177,23 +178,24 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
       <div
         ref={blockRef}
         // Destaque da pasta sobre as conversas: borda mais forte, cabeçalho mais alto,
-        // nome maior e o ícone num quadradinho.
-        className="flex flex-col overflow-hidden rounded-[10px] border bg-surface-2 shadow-xl shadow-black/40"
-        style={{ borderColor: selected ? 'var(--color-muted)' : 'var(--color-line-strong)' }}
+        // nome maior e o ícone num quadradinho tingido de leve: na cor do grupo, para não brigar com ele;
+        // fora de grupo, no azul de pasta do Finder. Selecionada, a borda vai para a cor de destaque.
+        className="flex flex-col overflow-hidden rounded-xl border bg-project shadow-xl shadow-black/40"
+        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line-strong)' }}
       >
         <header
           className={`flex items-center gap-2.5 px-3 py-2.5 ${conversations.length === 0 ? 'border-b border-line' : ''}`}
         >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-line text-text">
+          <IconTile color={groupColor ?? '#3d9df5'} size={28} soft>
             {running ? (
-              <Loader2 size={15} aria-label="Conversa em andamento" className="animate-spin" style={{ color: flowColor }} />
+              <Loader2 size={15} aria-label="Conversa em andamento" className="animate-spin" />
             ) : (
               <Folder size={15} />
             )}
-          </span>
+          </IconTile>
           <div className="flex min-w-0 flex-1 flex-col">
             <EditableName id={id} value={data.name} className="text-[15px] font-semibold leading-tight" />
-            <PathLabel path={data.path} className="text-[11px] text-faint" />
+            <PathLabel path={data.path} className="text-[12px] text-faint" />
           </div>
           {conversations.length > 0 && (
             <button
@@ -210,7 +212,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
           )}
         </header>
 
-        {conversations.length === 0 && <p className="bg-surface px-3 py-2.5 text-xs text-faint">Nenhuma conversa ainda</p>}
+        {conversations.length === 0 && <p className="bg-card px-3 py-2.5 text-xs text-faint">Nenhuma conversa ainda</p>}
       </div>
 
       {shown.length > 0 && (
@@ -250,7 +252,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
       {conversations.length > 0 && !collapsed && (
         <button
           onClick={() => openAllConversations(id)}
-          className="nodrag flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text"
+          className="nodrag flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text"
           style={{ marginLeft: INDENT }}
         >
           <List size={13} />

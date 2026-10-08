@@ -38,13 +38,13 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
       <div
         role="dialog"
         aria-label="Servidores rodando"
-        className="flex max-h-[min(640px,100%)] w-[min(640px,100%)] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="flex max-h-[min(640px,100%)] w-[min(640px,100%)] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
         <header className="flex items-start gap-3 border-b border-line px-5 py-3">
           <Server size={15} className="mt-0.5 shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">Servidores rodando</div>
-            <div className="mt-0.5 truncate text-[11px] text-faint">
+            <div className="mt-0.5 truncate text-[12px] text-faint">
               Portas abertas pelo Claude Code, pelo play ou dentro das pastas do canvas
             </div>
           </div>
@@ -52,7 +52,7 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
             aria-label="Fechar"
             title="Fechar"
             onClick={onClose}
-            className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+            className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
           >
             <X size={15} />
           </button>
@@ -72,17 +72,17 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                     <span className="truncate text-sm text-text">{folderName(s.cwd)}</span>
                     <span className="shrink-0 font-mono text-xs text-muted">:{s.port}</span>
                   </div>
-                  <div className="mt-0.5 truncate font-mono text-[11px] text-faint" title={s.cwd}>
+                  <div className="mt-0.5 truncate font-mono text-[12px] text-faint" title={s.cwd}>
                     {tildify(s.cwd)}
                   </div>
-                  <div className="truncate font-mono text-[11px] text-faint" title={s.command}>
+                  <div className="truncate font-mono text-[12px] text-faint" title={s.command}>
                     {s.command}
                   </div>
                 </div>
                 <button
                   onClick={() => window.open(`http://localhost:${s.port}`)}
                   title={`Abrir localhost:${s.port} no navegador`}
-                  className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+                  className="flex shrink-0 items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
                 >
                   <ExternalLink size={12} />
                   Abrir
@@ -100,7 +100,7 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                     onClick={() => kill(s.pgid)}
                     disabled={killing.has(s.pgid)}
                     title="Encerrar o processo"
-                    className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10 disabled:animate-pulse"
+                    className="flex shrink-0 items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10 disabled:animate-pulse"
                   >
                     <Power size={12} />
                     {killing.has(s.pgid) ? 'Encerrando' : 'Encerrar'}

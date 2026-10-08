@@ -256,15 +256,15 @@ export function FileViewer({
           {path}
         </span>
         {dirty && (
-          <span className="shrink-0 text-[11px] text-faint" title="Alterações não salvas">
+          <span className="shrink-0 text-[12px] text-faint" title="Alterações não salvas">
             ● não salvo - {keys('⌘S')}
           </span>
         )}
         <span className="flex-1" />
         {!diff && content?.ok && content.truncated && (
-          <span className="text-[11px] text-needs-you">mostrando só o primeiro 1 MB, sem edição</span>
+          <span className="text-[12px] text-needs-you">mostrando só o primeiro 1 MB, sem edição</span>
         )}
-        <div className="flex rounded-md border border-line p-0.5 text-[11px]">
+        <div className="flex rounded-full border border-line p-0.5 text-[12px]">
           {[
             { value: true, label: 'Diff' },
             { value: false, label: 'Arquivo' }
@@ -273,7 +273,7 @@ export function FileViewer({
               key={o.label}
               onClick={() => onDiffChange(o.value)}
               aria-pressed={diff === o.value}
-              className={`rounded px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
+              className={`rounded-full px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
             >
               {o.label}
             </button>
@@ -282,15 +282,15 @@ export function FileViewer({
         <CloseCodeButton onClick={onCloseCode} />
       </header>
       {!diff && conflict && (
-        <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[11px] text-needs-you">
+        <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[12px] text-needs-you">
           <span className="flex-1">O arquivo mudou no disco depois da sua edição. Salvar sobrescreve a versão do disco.</span>
-          <button onClick={reloadFromDisk} className="rounded px-2 py-0.5 text-text hover:bg-surface-2">
+          <button onClick={reloadFromDisk} className="rounded-full px-2 py-0.5 text-text hover:bg-surface-2">
             Descartar a minha e recarregar
           </button>
         </div>
       )}
       {!diff && saveError && (
-        <p role="alert" className="border-b border-line bg-surface px-3 py-2 text-[11px] text-red-400">
+        <p role="alert" className="border-b border-line bg-surface px-3 py-2 text-[12px] text-red-400">
           Não consegui salvar: {saveError}
         </p>
       )}

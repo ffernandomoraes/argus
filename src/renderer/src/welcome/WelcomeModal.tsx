@@ -12,7 +12,7 @@ function Tip({ children }: { children: ReactNode }) {
 }
 
 const Code = ({ children }: { children: ReactNode }) => (
-  <code className="rounded bg-bg px-1 py-0.5 font-mono text-[11px] text-text">{children}</code>
+  <code className="rounded bg-bg px-1 py-0.5 font-mono text-[12px] text-text">{children}</code>
 )
 
 function steps(auth: AuthState): Step[] {
@@ -122,7 +122,7 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
           >
             {step.art}
           </div>
-          <p className="mt-5 text-[11px] font-medium uppercase tracking-wide text-faint">
+          <p className="mt-5 text-[12px] font-medium uppercase tracking-wide text-faint">
             {index + 1} de {list.length}
           </p>
           <h1 className="mt-1 text-lg font-semibold text-text">{step.title}</h1>
@@ -150,12 +150,12 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
             </button>
           )}
           {index > 0 && (
-            <button onClick={() => setIndex(index - 1)} className="rounded-lg border border-line px-3 py-1.5 text-sm text-text hover:bg-surface-2">
+            <button onClick={() => setIndex(index - 1)} className="rounded-full border border-line px-3 py-1.5 text-sm text-text hover:bg-surface-2">
               Voltar
             </button>
           )}
           {index < last ? (
-            <button onClick={() => setIndex(index + 1)} className="rounded-lg bg-text px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90">
+            <button onClick={() => setIndex(index + 1)} className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white hover:brightness-110">
               Próximo
             </button>
           ) : (
@@ -163,7 +163,7 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
               disabled={!ready}
               onClick={onDone}
               title={ready ? undefined : 'Termine a configuração acima'}
-              className="rounded-lg bg-text px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-40"
+              className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-40"
             >
               Começar
             </button>

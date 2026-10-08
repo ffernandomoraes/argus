@@ -26,7 +26,7 @@ export function ContextRing({ percent }: { percent: number }) {
           strokeLinecap="round"
         />
       </svg>
-      <span className="font-mono text-[10px] text-faint">{Math.round(value)}%</span>
+      <span className="font-mono text-[11px] text-faint">{Math.round(value)}%</span>
     </span>
   )
 }

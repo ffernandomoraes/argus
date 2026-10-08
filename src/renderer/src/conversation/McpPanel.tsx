@@ -23,13 +23,13 @@ function ServerRow({ server }: { server: McpServer }) {
       <div className="flex items-center gap-2">
         <span className="truncate text-xs text-text">{server.name}</span>
         {server.tools > 0 && (
-          <span className="shrink-0 text-[10px] text-faint">
+          <span className="shrink-0 text-[11px] text-faint">
             {server.tools} {server.tools === 1 ? 'ferramenta' : 'ferramentas'}
           </span>
         )}
-        {server.scope && <span className="ml-auto shrink-0 text-[10px] text-faint">{server.scope}</span>}
+        {server.scope && <span className="ml-auto shrink-0 text-[11px] text-faint">{server.scope}</span>}
       </div>
-      {server.error && <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted">{server.error}</p>}
+      {server.error && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-muted">{server.error}</p>}
     </li>
   )
 }
@@ -72,19 +72,19 @@ export function McpPanel({
       <div
         role="dialog"
         aria-label="Servidores MCP"
-        className="flex h-[min(560px,100%)] w-[min(520px,100%)] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="flex h-[min(560px,100%)] w-[min(520px,100%)] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
         <header className="flex items-center gap-2 border-b border-line px-4 py-3">
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium">Servidores MCP</div>
-            <div className="mt-0.5 truncate font-mono text-[11px] text-faint">{cwd}</div>
+            <div className="mt-0.5 truncate font-mono text-[12px] text-faint">{cwd}</div>
           </div>
           <button
             aria-label="Atualizar"
             title="Atualizar"
             onClick={load}
             disabled={loading}
-            className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text disabled:opacity-40"
+            className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text disabled:opacity-40"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -92,7 +92,7 @@ export function McpPanel({
             aria-label="Fechar"
             title="Fechar"
             onClick={onClose}
-            className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+            className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
           >
             <X size={15} />
           </button>
@@ -116,10 +116,10 @@ export function McpPanel({
               <section key={s} className="mb-4 last:mb-0">
                 <div className="mb-1 flex items-center gap-2 px-2">
                   <Icon size={12} className={`shrink-0 ${tone} ${s === 'pending' ? 'animate-spin' : ''}`} />
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</span>
-                  <span className="text-[11px] text-faint">{list.length}</span>
+                  <span className="text-[12px] font-medium uppercase tracking-wide text-muted">{label}</span>
+                  <span className="text-[12px] text-faint">{list.length}</span>
                 </div>
-                {HINT[s] && <p className="mb-1 px-2 text-[11px] leading-snug text-faint">{HINT[s]}</p>}
+                {HINT[s] && <p className="mb-1 px-2 text-[12px] leading-snug text-faint">{HINT[s]}</p>}
                 <ul className="flex flex-col">
                   {list.map((server) => (
                     <ServerRow key={server.name} server={server} />

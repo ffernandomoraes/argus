@@ -153,7 +153,7 @@ export function TerminalView({
           {!error && (
             <button
               onClick={() => setAttempt((a) => a + 1)}
-              className="rounded-md border border-line px-2 py-1 text-text hover:bg-surface-2"
+              className="rounded-full border border-line px-2 py-1 text-text hover:bg-surface-2"
             >
               Abrir de novo
             </button>

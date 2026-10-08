@@ -1,3 +1,5 @@
+import { MENU_ACTIVE } from '../canvas/ContextMenu'
+
 // Comandos de barra básicos do Claude Code, com descrições traduzidas das do próprio `claude`.
 export const SLASH_COMMANDS = [
   { name: 'clear', description: 'Começa do zero. A conversa anterior fica salva e pode ser retomada.' },
@@ -32,7 +34,7 @@ export function SlashMenu({
   onSelect: (command: SlashCommand) => void
 }) {
   return (
-    <div className="absolute bottom-full left-0 right-0 z-10 mb-2 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+    <div className="absolute bottom-full left-0 right-0 z-10 mb-2 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
       {items.length === 0 ? (
         <div className="px-2 py-1.5 text-xs text-faint">Nenhum comando encontrado</div>
       ) : (
@@ -45,10 +47,10 @@ export function SlashMenu({
               onSelect(c)
             }}
             onMouseEnter={() => onHover(i)}
-            className={`flex w-full items-baseline gap-3 rounded-md px-2 py-1.5 text-left ${i === active ? 'bg-surface-2' : ''}`}
+            className={`flex w-full items-baseline gap-3 rounded-md px-2 py-1.5 text-left ${i === active ? MENU_ACTIVE : ''}`}
           >
             <span className="w-28 shrink-0 font-mono text-xs text-text">/{c.name}</span>
-            <span className="truncate text-[11px] text-faint">{c.description}</span>
+            <span className="truncate text-[12px] text-faint">{c.description}</span>
           </button>
         ))
       )}

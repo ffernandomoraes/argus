@@ -14,8 +14,8 @@ export const DiffView = memo(function DiffView({ hunks, full = false }: { hunks:
     <div
       className={
         full
-          ? 'min-w-full w-max py-2 font-mono text-[12px] leading-[1.6]'
-          : 'max-h-72 overflow-auto rounded-md border border-line bg-bg font-mono text-[11px] leading-[1.55]'
+          ? 'min-w-full w-max py-2 font-mono text-[13px] leading-[1.6]'
+          : 'max-h-72 overflow-auto rounded-md border border-line bg-bg font-mono text-[12px] leading-[1.55]'
       }
     >
       {hunks.map((h, i) => {

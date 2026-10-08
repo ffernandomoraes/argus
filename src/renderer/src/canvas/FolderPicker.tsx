@@ -96,18 +96,18 @@ export function FolderPicker({
                     onMouseMove={() => setHighlight(i)}
                     title={path}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
-                      i === highlight ? 'bg-surface-2' : ''
+                      i === highlight ? 'bg-accent [&_span]:border-white/40 [&_span]:text-white [&_svg]:text-white' : ''
                     }`}
                   >
                     <Folder size={14} className="shrink-0 text-muted" />
                     <span className="shrink-0 font-medium text-text">{path.slice(lastSep(path) + 1)}</span>
                     <span className="min-w-0 truncate text-faint">{parent}</span>
                     {onCanvas.has(path) && (
-                      <span className="shrink-0 rounded border border-line px-1 text-[10px] text-faint">no canvas</span>
+                      <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] text-faint">no canvas</span>
                     )}
                     <span
                       title={new Date(f.updatedAt).toLocaleString('pt-BR')}
-                      className="ml-auto shrink-0 pl-2 text-[10px] text-faint"
+                      className="ml-auto shrink-0 pl-2 text-[11px] text-faint"
                     >
                       {relativeTime(f.updatedAt, now)}
                     </span>

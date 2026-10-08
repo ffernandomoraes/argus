@@ -29,7 +29,7 @@ export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRem
               <FileText size={16} className="shrink-0 text-muted" />
               <div className="min-w-0">
                 <div className="truncate text-xs text-text">{a.file.name}</div>
-                <div className="text-[10px] text-faint">{formatSize(a.file.size)}</div>
+                <div className="text-[11px] text-faint">{formatSize(a.file.size)}</div>
               </div>
             </div>
           )}

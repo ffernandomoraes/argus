@@ -46,6 +46,15 @@ contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
   homeDir: homedir(),
   setTheme: (theme: 'dark' | 'light' | 'system') => ipcRenderer.send('theme:set', theme),
+  // Cor de destaque do sistema, "#rrggbb"; nula quando o sistema não informa.
+  accent: {
+    get: (): string | null => ipcRenderer.sendSync('accent:get'),
+    onChange: (cb: (color: string | null) => void) => {
+      const listener = (_e: IpcRendererEvent, color: string | null) => cb(color)
+      ipcRenderer.on('accent:changed', listener)
+      return () => ipcRenderer.removeListener('accent:changed', listener)
+    }
+  },
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickFolder'),
   onEdit: (cb: (action: EditAction) => void) => {
     editListeners.add(cb)

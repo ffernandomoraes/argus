@@ -117,7 +117,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint"
         />
         {listening && (
-          <span className="flex items-center text-[11px] text-running">
+          <span className="flex items-center text-[12px] text-running">
             {dictation.state === 'listening' ? <VoiceWave /> : 'Ligando…'}
           </span>
         )}
@@ -125,7 +125,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
           aria-label={listening ? 'Parar ditado' : 'Falar'}
           title={listening ? 'Parar ditado' : 'Falar'}
           onClick={toggleDictation}
-          className={`flex size-7 shrink-0 items-center justify-center rounded-md ${
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
             listening ? 'bg-running/15 text-running hover:bg-running/25' : 'text-muted hover:bg-surface-2 hover:text-text'
           }`}
         >
@@ -136,7 +136,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
             aria-label="Parar"
             title="Parar"
             onClick={() => window.api.canvasAgent.interrupt()}
-            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-text text-bg hover:opacity-85"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:brightness-110"
           >
             <Square size={11} fill="currentColor" />
           </button>
@@ -146,7 +146,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
             title="Enviar (Enter)"
             onClick={send}
             disabled={!draft.trim() || running}
-            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-text text-bg hover:opacity-85 disabled:opacity-40"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:brightness-110 disabled:opacity-40"
           >
             <SendHorizontal size={14} />
           </button>
@@ -154,12 +154,12 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
       </div>
 
       {dictation.error && (
-        <p className="flex items-center gap-2 border-t border-line px-3 py-2 text-[11px] text-red-400">
+        <p className="flex items-center gap-2 border-t border-line px-3 py-2 text-[12px] text-red-400">
           <span>{dictation.error.message}</span>
           {dictation.error.action === 'dictation-settings' && (
             <button
               onClick={() => window.api.speech.openSettings()}
-              className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
+              className="shrink-0 rounded-full border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
             >
               Abrir {SYSTEM_SETTINGS}
             </button>

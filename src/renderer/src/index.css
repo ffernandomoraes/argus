@@ -1,17 +1,36 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Tema escuro (padrão). Os tons são mais afastados entre si para as camadas
-     continuarem distintas em monitores com menos contraste. */
-  --color-bg: #161618;
-  --color-surface: #222226;
-  --color-surface-2: #2c2c31;
-  --color-line: #393940;
-  --color-line-strong: #4d4d56;
-  --color-text: #f0f0f2;
-  --color-muted: #a8a8b2;
-  --color-faint: #7c7c87;
-  --color-dots: #3c3c44;
+  /* Tema escuro (padrão), nos cinzas neutros do macOS: o canvas é o fundo mais escuro (como a
+     lateral do Ajustes do Sistema), os painéis ficam um tom acima (o conteúdo do Ajustes). */
+  --color-bg: #1c1c1c;
+  --color-surface: #282828;
+  --color-surface-2: #333333;
+  --color-line: #3a3a3a;
+  --color-line-strong: #4c4c4c;
+  --color-text: #f4f4f4;
+  --color-muted: #a5a5a5;
+  --color-faint: #7a7a7a;
+  --color-dots: #383838;
+
+  /* Fundo das listas agrupadas (cartões do Ajustes do Sistema): translúcido, para clarear um
+     pouco qualquer superfície em que estiver. */
+  --color-fill: rgb(255 255 255 / 0.05);
+
+  /* Cartão do projeto e cartões das conversas embaixo dele. No escuro o projeto é o mais claro;
+     no claro inverte: projeto branco, conversas acinzentadas. `card-hover` é o passar do mouse. */
+  --color-project: var(--color-surface-2);
+  --color-card: var(--color-surface);
+  --color-card-hover: var(--color-surface-2);
+
+  /* Cor de destaque do sistema (Ajustes > Aparência no Mac, Cores no Windows). O valor aqui é o
+     azul padrão; o app troca pela do sistema ao abrir (main.tsx). `selection` é o fundo do item
+     selecionado: mais fechado no escuro, como o do macOS. */
+  --color-accent: #0a84ff;
+  --color-selection: color-mix(in srgb, var(--color-accent) 78%, black);
+
+  /* Parte clara de um controle: o segmento escolhido e a bolinha do interruptor. */
+  --color-control: #5e5e5e;
 
   --color-area-trabalho: #3b82f6;
   --color-area-freela: #f59e0b;
@@ -31,7 +50,18 @@
      instalado aberto ao lado. */
   --color-dev: #f59e0b;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Fonte do sistema: SF Pro no Mac, Segoe UI no Windows (a Variable no Windows 11). */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  /* Texto base de 13px, como o do macOS (o text-xs do Tailwind tem 12px). */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
+
+  /* Cantos mais arredondados, no desenho do macOS. Os nomes seguem os do Tailwind, um degrau acima. */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+
   /* No Windows, sem as do Mac, ficam a Cascadia Mono (do Terminal do Windows) e a Consolas. */
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace;
 }
@@ -43,15 +73,22 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --color-bg: #f3f3f5;
+  --color-bg: #ececec;
   --color-surface: #ffffff;
-  --color-surface-2: #ececef;
-  --color-line: #dcdce1;
-  --color-line-strong: #c3c3cb;
-  --color-text: #18181b;
-  --color-muted: #52525b;
-  --color-faint: #85858f;
-  --color-dots: #c9c9d0;
+  --color-surface-2: #ebebeb;
+  --color-line: #dedede;
+  --color-line-strong: #c6c6c6;
+  --color-text: #1d1d1f;
+  --color-muted: #6e6e73;
+  --color-faint: #8e8e93;
+  --color-dots: #cbcbcb;
+
+  --color-fill: rgb(0 0 0 / 0.035);
+  --color-project: #ffffff;
+  --color-card: #f5f5f5;
+  --color-card-hover: #ebebeb;
+  --color-selection: var(--color-accent);
+  --color-control: #ffffff;
 
   --color-running: #2563eb;
   --color-needs-you: #d97706;
@@ -60,6 +97,12 @@
   --color-guide: #db2777;
 
   --color-dev: #b45309;
+}
+
+/* As sombras (shadow-black/50 e afins) foram dosadas para o fundo escuro; no claro gritam.
+   Aqui todas ficam com metade da opacidade. A variável não é herdada, por isso o `*`. */
+:root[data-theme='light'] * {
+  --tw-shadow-alpha: 50%;
 }
 
 html,
@@ -92,7 +135,7 @@ button:not(:disabled),
 /* React Flow no tema do app */
 .react-flow {
   --xy-background-color: var(--color-bg);
-  --xy-node-border-radius: 10px;
+  --xy-node-border-radius: 14px;
   --xy-minimap-background-color: var(--color-surface);
   --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-bg) 70%, transparent);
   --xy-minimap-node-background-color: var(--color-line-strong);
@@ -192,8 +235,11 @@ button:not(:disabled),
 .react-flow__node > * {
   animation: node-in 280ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
+/* Na abertura, a entrada roda com duração zero, e não `animation: none`: tirar o `none` depois
+   cria a animação de novo e todo bloco piscava uma segunda vez ao fim do boot. Trocar só a
+   duração mantém a mesma animação, que a essa altura já passou do fim e não volta. */
 .canvas-booting .react-flow__node > * {
-  animation: none;
+  animation-duration: 0s;
 }
 .react-flow__node.node-leaving {
   pointer-events: none;

@@ -33,7 +33,7 @@ export function PermissionCard({
           </div>
           {/* Para permitir, o detalhe técnico importa: o comando exato que vai rodar. */}
           {request.detail && (
-            <div className="mt-1.5 max-h-28 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[11px] text-muted">
+            <div className="mt-1.5 max-h-28 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[12px] text-muted">
               {request.detail}
             </div>
           )}
@@ -47,19 +47,19 @@ export function PermissionCard({
       <div className="mt-2.5 flex flex-wrap justify-end gap-1.5">
         <button
           onClick={() => onAnswer('deny')}
-          className="rounded-md border border-line px-2.5 py-1 text-text hover:bg-surface-2"
+          className="rounded-full border border-line px-2.5 py-1 text-text hover:bg-surface-2"
         >
           Negar
         </button>
         {request.canAlwaysAllow && (
           <button
             onClick={() => onAnswer('always')}
-            className="rounded-md border border-line px-2.5 py-1 text-text hover:bg-surface-2"
+            className="rounded-full border border-line px-2.5 py-1 text-text hover:bg-surface-2"
           >
             Sempre permitir
           </button>
         )}
-        <button onClick={() => onAnswer('allow')} className="rounded-md bg-text px-2.5 py-1 font-medium text-bg hover:opacity-85">
+        <button onClick={() => onAnswer('allow')} className="rounded-full bg-accent px-2.5 py-1 font-medium text-white hover:brightness-110">
           Permitir
         </button>
       </div>

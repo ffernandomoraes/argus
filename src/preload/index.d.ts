@@ -22,6 +22,10 @@ declare global {
       platform: string
       homeDir: string
       setTheme: (theme: 'dark' | 'light' | 'system') => void
+      accent: {
+        get: () => string | null
+        onChange: (cb: (color: string | null) => void) => () => void
+      }
       pickFolder: () => Promise<string | null>
       onEdit: (cb: (action: 'undo' | 'redo') => void) => () => void
       speech: {

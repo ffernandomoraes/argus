@@ -1,5 +1,5 @@
 import { basename, join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, screen, shell, systemPreferences } from 'electron'
 import type { AgentDraftRequest, AgentSaveRequest } from '../shared/agents'
 import type { CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
@@ -146,8 +146,18 @@ function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
 
 function overlay(kind: WindowKind): Electron.TitleBarOverlay {
   const dark = nativeTheme.shouldUseDarkColors
-  const color = kind === 'main' ? (dark ? '#222226' : '#ffffff') : dark ? '#161618' : '#f3f3f5'
-  return { color, symbolColor: dark ? '#a8a8b2' : '#52525b', height: TITLE_BAR_HEIGHT }
+  const color = kind === 'main' ? (dark ? '#282828' : '#ffffff') : dark ? '#1c1c1c' : '#ececec'
+  return { color, symbolColor: dark ? '#a5a5a5' : '#6e6e73', height: TITLE_BAR_HEIGHT }
+}
+
+// Vem como "rrggbbaa"; nulo onde o sistema não informa (aí fica o azul padrão do index.css).
+function accentColor(): string | null {
+  try {
+    const c = systemPreferences.getAccentColor()
+    return /^[0-9a-f]{6}/i.test(c) ? `#${c.slice(0, 6)}` : null
+  } catch {
+    return null
+  }
 }
 
 // Tema trocado, no app ou no sistema: os botões do Windows acompanham.
@@ -202,7 +212,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     ...frame('main'),
-    backgroundColor: '#161618',
+    backgroundColor: '#1c1c1c',
     webPreferences
   })
   windowKinds.set(win, 'main')
@@ -248,7 +258,7 @@ function createConversationWindow(hash: string): BrowserWindow {
     minWidth: 420,
     minHeight: 480,
     ...frame('conversation'),
-    backgroundColor: '#161618',
+    backgroundColor: '#1c1c1c',
     webPreferences
   })
   windowKinds.set(win, 'conversation')
@@ -401,6 +411,14 @@ app.whenReady().then(() => {
     repaintOverlays()
   })
   nativeTheme.on('updated', repaintOverlays)
+  // Cor de destaque do sistema (Ajustes > Aparência no Mac, Personalização > Cores no Windows): a
+  // interface usa nela o item selecionado e os botões ligados.
+  ipcMain.on('accent:get', (e) => {
+    e.returnValue = accentColor()
+  })
+  const sendAccent = () => broadcast('accent:changed', accentColor())
+  if (IS_MAC) systemPreferences.subscribeNotification('AppleColorPreferencesChangedNotification', sendAccent)
+  else systemPreferences.on('accent-color-changed', sendAccent)
   ipcMain.on('canvas:load', (e) => {
     e.returnValue = loadCanvas()
   })

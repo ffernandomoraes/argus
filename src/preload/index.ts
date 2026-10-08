@@ -176,6 +176,8 @@ contextBridge.exposeInMainWorld('api', {
     folders: (): Promise<KnownFolder[]> => ipcRenderer.invoke('sessions:folders'),
     trash: (path: string, id: string): Promise<string | null> => ipcRenderer.invoke('sessions:trash', path, id),
     branch: (path: string): Promise<string | null> => ipcRenderer.invoke('sessions:branch', path),
+    repoUrl: (path: string): Promise<string | null> => ipcRenderer.invoke('sessions:repoUrl', path),
+    openRepo: (path: string) => ipcRenderer.send('sessions:openRepo', path),
     changes: (path: string): Promise<UncommittedFile[] | null> => ipcRenderer.invoke('sessions:changes', path),
     history: (path: string, id: string): Promise<Message[]> => ipcRenderer.invoke('sessions:history', path, id),
     images: (path: string, id: string, messageId: string): Promise<string[]> =>

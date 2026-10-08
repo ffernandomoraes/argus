@@ -33,6 +33,7 @@ export type Deps = {
   closeTerminal: (nodeId: string, name: string) => void
   toggleGroup: (id: string) => void
   leaveGroup: (id: string) => void
+  newConversation: (nodeId: string) => void
   newLooseConversation: (position?: XYPosition) => void
   openConversation: (nodeId: string, conversationId: string) => void
   closeChatPanel: (nodeId: string) => void
@@ -191,10 +192,20 @@ function moveSubmenu(deps: Deps, node: CanvasNode): MenuItem {
   return { type: 'submenu', label: 'Mover para grupo', icon: FolderInput, items: moveItems }
 }
 
-export function instanceMenu(deps: Deps, node: ProjectNode): MenuItem[] {
+// "Abrir no GitHub" quando o remoto é do GitHub; outro host (GitLab, Bitbucket...) leva o nome
+// genérico. Sem remoto, a opção não aparece.
+function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
+  if (!repoUrl) return []
+  const label = new URL(repoUrl).hostname === 'github.com' ? 'Abrir no GitHub' : 'Abrir repositório'
+  return [{ type: 'action', label, icon: ExternalLink, onSelect: () => window.api.sessions.openRepo(node.data.path) }]
+}
+
+export function instanceMenu(deps: Deps, node: ProjectNode, repoUrl: string | null): MenuItem[] {
   const { setNodes } = deps
   return [
+    { type: 'action', label: 'Nova conversa', icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
     terminalSubmenu('Novo terminal aqui', (kind) => deps.addTerminal(node.position, node.parentId, node.data.path, kind)),
+    ...repoItem(node, repoUrl),
     { type: 'separator' },
     moveSubmenu(deps, node),
     { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => deps.startRename(node.id) },

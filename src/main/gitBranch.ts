@@ -48,6 +48,41 @@ export function currentBranch(folder: string): string | null {
   }
 }
 
+// Endereço do remoto (o origin; sem ele, o primeiro) em forma de página web. O SSH
+// (git@github.com:dono/repo.git ou ssh://git@host/dono/repo) vira https. Pasta fora de
+// repositório, sem remoto ou com remoto local: nulo.
+export async function repoUrl(folder: string): Promise<string | null> {
+  const repo = findRepo(folder)
+  if (!repo) return null
+  const git = (args: string[]) =>
+    run(gitPath(), args, { cwd: repo.root, timeout: 5000, windowsHide: true }).then((r) => r.stdout.trim())
+  try {
+    const remotes = (await git(['remote'])).split(/\r?\n/).filter(Boolean)
+    const name = remotes.includes('origin') ? 'origin' : remotes[0]
+    if (!name) return null
+    return toWebUrl(await git(['remote', 'get-url', name]))
+  } catch {
+    return null
+  }
+}
+
+function toWebUrl(remote: string): string | null {
+  const scp = /^[\w.-]+@([^:/]+):(.+)$/.exec(remote)
+  const raw = scp ? `https://${scp[1]}/${scp[2]}` : remote.replace(/^(ssh|git):\/\//, 'https://')
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+    // Usuário e token do remoto não vão para o navegador; a porta do SSH também não vale no https.
+    url.username = ''
+    url.password = ''
+    if (/^(ssh|git):/.test(remote)) url.port = ''
+    url.pathname = url.pathname.replace(/\.git\/?$/, '')
+    return url.toString().replace(/\/$/, '')
+  } catch {
+    return null
+  }
+}
+
 // Letra do VS Code para o par XY do `git status --porcelain` (X: preparado, Y: na pasta).
 function changeKind(xy: string): UncommittedFile['kind'] {
   if (xy === '??') return 'U'

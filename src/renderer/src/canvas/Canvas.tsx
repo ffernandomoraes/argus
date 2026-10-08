@@ -506,6 +506,15 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
 
   const onNodeContextMenu = (e: ReactMouseEvent, node: CanvasNode) => {
     e.preventDefault()
+    // O projeto lê o remoto do git antes, para o menu já abrir com "Abrir no GitHub".
+    if (node.type === 'project') {
+      const { clientX: x, clientY: y } = e
+      void window.api.sessions
+        .repoUrl(node.data.path)
+        .catch(() => null)
+        .then((url) => setMenu({ x, y, items: instanceMenu(depsRef.current ?? deps, node, url) }))
+      return
+    }
     const items =
       node.type === 'area'
         ? groupMenu(deps, node)
@@ -513,9 +522,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           ? terminalMenu(deps, node)
           : node.type === 'chat'
             ? chatMenu(deps, node)
-            : node.type === 'chatPanel'
-              ? chatPanelMenu(deps, node)
-              : instanceMenu(deps, node)
+            : chatPanelMenu(deps, node)
     setMenu({ x: e.clientX, y: e.clientY, items })
   }
 

@@ -35,7 +35,7 @@ import { listMemory, readMemory, writeMemory } from './memory'
 import type { MemoryProject } from '../shared/memory'
 import { SessionWatch } from './sessionWatch'
 import { listKnownFolders, listSessions, trashSession } from './sessions'
-import { currentBranch, fileDiff, uncommittedFiles } from './gitBranch'
+import { currentBranch, fileDiff, repoUrl, uncommittedFiles } from './gitBranch'
 import { Speech } from './speech'
 import { StatusTray } from './statusTray'
 import { Terminals } from './terminals'
@@ -422,6 +422,13 @@ app.whenReady().then(() => {
   ipcMain.handle('sessions:folders', () => listKnownFolders())
   ipcMain.handle('sessions:trash', (_e, path: string, id: string) => trashSession(path, id))
   ipcMain.handle('sessions:branch', (_e, path: string) => currentBranch(path))
+  ipcMain.handle('sessions:repoUrl', (_e, path: string) => repoUrl(path))
+  // Abre o endereço calculado aqui, não um que venha da tela.
+  ipcMain.on('sessions:openRepo', (_e, path: string) => {
+    void repoUrl(path).then((url) => {
+      if (url) void shell.openExternal(url)
+    })
+  })
   ipcMain.handle('sessions:changes', (_e, path: string) => uncommittedFiles(path))
   ipcMain.on('sessions:watch', (_e, paths: string[]) => sessionWatch.setProjects(paths))
   ipcMain.handle('sessions:history', (_e, path: string, id: string) => readHistory(path, id))

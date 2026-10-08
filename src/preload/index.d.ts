@@ -106,6 +106,10 @@ declare global {
         trash: (path: string, id: string) => Promise<string | null>
         // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.
         branch: (path: string) => Promise<string | null>
+        // Página do repositório no GitHub (ou outro host) a partir do remoto; nulo sem remoto.
+        repoUrl: (path: string) => Promise<string | null>
+        // Abre essa página no navegador.
+        openRepo: (path: string) => void
         // Arquivos não comitados do repositório da pasta; nulo fora de repositório.
         changes: (path: string) => Promise<UncommittedFile[] | null>
         history: (path: string, id: string) => Promise<Message[]>

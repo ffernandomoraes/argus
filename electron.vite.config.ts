@@ -11,6 +11,8 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
+    // Porta fora das comuns (3000, 5173...) para não brigar com outros projetos em dev
+    server: { port: 10100 },
     resolve: {
       alias: { '@': resolve('src/renderer/src') }
     },

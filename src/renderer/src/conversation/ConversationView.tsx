@@ -24,6 +24,7 @@ import type { AgentDef } from '../../../shared/agents'
 import type { UncommittedFile } from '../../../shared/sessions'
 import { useEscape } from '../useEscape'
 import { AccountContext } from '../auth/useAuth'
+import { Presence } from '../motion'
 
 export function HeaderButton({
   label,
@@ -119,44 +120,46 @@ function UncommittedBadge({
         </span>
       </button>
 
-      {open && (
-        // pointerdown não sobe: o cabeçalho arrasta o painel.
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          className="absolute right-0 top-full z-50 mt-1 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
-        >
-          <div className="shrink-0 border-b border-line px-3 py-2 text-[11px] text-faint">{label}</div>
-          <ul className="min-h-0 overflow-y-auto p-1">
-            {files.map((f) => {
-              const rel = shown(f.path)
-              const slash = rel.lastIndexOf('/')
-              const name = rel.slice(slash + 1)
-              const dir = slash > 0 ? rel.slice(0, slash) : ''
-              // Fora da pasta, o visualizador não alcança.
-              const canOpen = !!onOpenDiff && f.path.startsWith(base)
-              return (
-                <li key={f.path}>
-                  <button
-                    disabled={!canOpen}
-                    title={rel}
-                    onClick={() => {
-                      onOpenDiff?.(f.path)
-                      setOpen(false)
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs enabled:hover:bg-surface-2"
-                  >
-                    <span className={`min-w-0 truncate text-text ${f.kind === 'D' ? 'line-through' : ''}`}>{name}</span>
-                    <span className="min-w-0 flex-1 truncate text-[11px] text-faint">{dir}</span>
-                    <span title={KIND_LABEL[f.kind]} className={`shrink-0 font-mono text-[11px] font-semibold ${KIND_COLOR[f.kind]}`}>
-                      {f.kind}
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      )}
+      <Presence kind="menu">
+        {open && (
+          // pointerdown não sobe: o cabeçalho arrasta o painel.
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute right-0 top-full z-50 mt-1 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
+          >
+            <div className="shrink-0 border-b border-line px-3 py-2 text-[11px] text-faint">{label}</div>
+            <ul className="min-h-0 overflow-y-auto p-1">
+              {files.map((f) => {
+                const rel = shown(f.path)
+                const slash = rel.lastIndexOf('/')
+                const name = rel.slice(slash + 1)
+                const dir = slash > 0 ? rel.slice(0, slash) : ''
+                // Fora da pasta, o visualizador não alcança.
+                const canOpen = !!onOpenDiff && f.path.startsWith(base)
+                return (
+                  <li key={f.path}>
+                    <button
+                      disabled={!canOpen}
+                      title={rel}
+                      onClick={() => {
+                        onOpenDiff?.(f.path)
+                        setOpen(false)
+                      }}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs enabled:hover:bg-surface-2"
+                    >
+                      <span className={`min-w-0 truncate text-text ${f.kind === 'D' ? 'line-through' : ''}`}>{name}</span>
+                      <span className="min-w-0 flex-1 truncate text-[11px] text-faint">{dir}</span>
+                      <span title={KIND_LABEL[f.kind]} className={`shrink-0 font-mono text-[11px] font-semibold ${KIND_COLOR[f.kind]}`}>
+                        {f.kind}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </Presence>
     </div>
   )
 }
@@ -177,6 +180,7 @@ export function ConversationView({
   headerStyle,
   onHeaderPointerDown,
   bodyClassName = '',
+  minimalHeader = false,
   onClose
 }: {
   // Pasta onde o Claude roda.
@@ -202,6 +206,9 @@ export function ConversationView({
   onHeaderPointerDown?: (e: PointerEvent) => void
   // Classes do corpo (chat). No canvas, tiram o corpo do arraste e do pan para dar para ler e escrever.
   bodyClassName?: string
+  // Modo foco do drawer: cabeçalho numa linha só, com o título e o fechar (sem pasta, branch,
+  // não comitados nem a borda de baixo), e a caixa de escrever sem a linha de cima.
+  minimalHeader?: boolean
   onClose: () => void
 }) {
   const [mcpOpen, setMcpOpen] = useState(false)
@@ -295,13 +302,16 @@ export function ConversationView({
     <AccountContext.Provider value={account}>
       <header
         onPointerDown={onHeaderPointerDown}
-        className={`flex shrink-0 items-start gap-3 border-b border-line px-4 py-3 ${headerClassName}`}
+        // Mínimo: uma linha só, sem a borda de baixo (no foco ela parava no meio da tela).
+        className={`flex shrink-0 gap-3 px-4 ${
+          minimalHeader ? 'items-center py-1.5' : 'items-start border-b border-line py-3'
+        } ${headerClassName}`}
         style={headerStyle}
       >
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{conversation.title}</div>
           {/* Conversa sem projeto, fora de repositório: não tem o que mostrar aqui. */}
-          {(project || branch) && (
+          {!minimalHeader && (project || branch) && (
             <div className="mt-1 flex items-center gap-2 text-[11px] text-faint">
               {project && (
                 <span className={`${TAG} min-w-0 gap-1`}>
@@ -320,7 +330,7 @@ export function ConversationView({
 
         {/* no-drag: botões fora do arraste da janela; nodrag: fora do arraste do bloco no canvas. */}
         <div className="no-drag nodrag flex shrink-0 items-center gap-1">
-          {!!uncommitted?.length && <UncommittedBadge cwd={cwd} files={uncommitted} onOpenDiff={onOpenDiff} />}
+          {!minimalHeader && !!uncommitted?.length && <UncommittedBadge cwd={cwd} files={uncommitted} onOpenDiff={onOpenDiff} />}
           {actions}
           <HeaderButton label="Fechar" onClick={onClose}>
             <X size={15} />
@@ -359,12 +369,15 @@ export function ConversationView({
             onSettingChange={change}
             contextPercent={conversation.contextPercent}
             agents={agents}
+            composerBorder={!minimalHeader}
           />
         </div>
       </FileLinkContext.Provider>
-      {mcpOpen && (
-        <McpPanel conversationKey={conversation.id} cwd={cwd} account={account} onClose={() => setMcpOpen(false)} />
-      )}
+      <Presence kind="modal">
+        {mcpOpen && (
+          <McpPanel conversationKey={conversation.id} cwd={cwd} account={account} onClose={() => setMcpOpen(false)} />
+        )}
+      </Presence>
     </AccountContext.Provider>
   )
 }

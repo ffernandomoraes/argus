@@ -25,6 +25,7 @@ import { moveDrafts, useDraftPaths } from './drafts'
 import { refreshNow, useUncommitted } from '../canvas/sessionsStore'
 import { KIND_COLOR, KIND_LABEL } from '../conversation/ConversationView'
 import type { UncommittedFile } from '../../../shared/sessions'
+import { Presence } from '../motion'
 
 type Kind = UncommittedFile['kind']
 // Pasta com mudanças dentro: o tipo mais importante entre elas dá a cor, como no VS Code.
@@ -475,8 +476,14 @@ export function CodeExplorer({
       </div>
       {children}
       {/* No body: o painel da conversa, na mesma camada e depois no DOM, cobriria os dois. */}
-      {menu && createPortal(<ContextMenu menu={menu} onClose={() => setMenu(null)} />, document.body)}
-      {confirm && createPortal(<ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />, document.body)}
+      {createPortal(
+        <Presence kind="menu">{menu && <ContextMenu menu={menu} onClose={() => setMenu(null)} />}</Presence>,
+        document.body
+      )}
+      {createPortal(
+        <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>,
+        document.body
+      )}
     </aside>
   )
 }

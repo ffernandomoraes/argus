@@ -649,12 +649,6 @@ export function ChatView({
         <span className="min-w-0 truncate">{activityLabel(live?.activity, live?.agents ?? [])}</span>
         {turnStartedAt !== undefined && (
           <span className="shrink-0 tabular-nums text-faint">
-            {live?.activity && (
-              <>
-                <Elapsed since={live.activity.since} />
-                {' - total '}
-              </>
-            )}
             <Elapsed since={turnStartedAt} />
             {turnTokens > 0 && ` - ${formatTokens(turnTokens)}`}
           </span>
@@ -831,15 +825,15 @@ export function ChatView({
         </div>
 
         {dictation.warning && !dictation.error && (
-          <p className="mt-1.5 px-1 text-[11px] text-faint">{dictation.warning}</p>
+          <p className="mt-1.5 px-1 text-[12px] text-faint">{dictation.warning}</p>
         )}
         {dictation.error && (
-          <p className="mt-1.5 flex items-center gap-2 px-1 text-[11px] text-red-400">
+          <p className="mt-1.5 flex items-center gap-2 px-1 text-[12px] text-red-400">
             <span>{dictation.error.message}</span>
             {dictation.error.action === 'dictation-settings' && (
               <button
                 onClick={() => window.api.speech.openSettings()}
-                className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
+                className="shrink-0 rounded-full border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
               >
                 Abrir {SYSTEM_SETTINGS}
               </button>
@@ -859,7 +853,7 @@ export function ChatView({
               /
             </button>
             <ModelEffortPicker settings={settings} onChange={onSettingChange} />
-            <span className="flex items-center gap-1 px-1 text-[10px] text-faint">
+            <span className="flex items-center gap-1 px-1 text-[11px] text-faint">
               <ContextRing percent={contextPercent} />
               contexto
             </span>

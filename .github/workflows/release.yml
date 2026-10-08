@@ -1,8 +1,9 @@
 # Gera uma versão nova: sobe o número no package.json, cria a tag, monta o .dmg e o .zip
-# (Apple Silicon) e publica tudo num release do GitHub.
+# (Apple Silicon) e publica tudo num release do GitHub. Em seguida, numa máquina Windows, monta o
+# instalador .exe, confere se o app abre e o anexa ao mesmo release.
 # Roda sozinho a cada push na main (sobe o patch; notas = commits desde a última tag).
 # Na mão, pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=minor -f notas="- item"
-# Com publicar=false só monta e guarda o .dmg no run, sem tag nem release.
+# Com publicar=false só monta e guarda o .dmg e o .exe no run, sem tag nem release.
 name: Release
 
 on:
@@ -39,6 +40,10 @@ jobs:
     # dispara com pushes feitos pelo próprio Actions; isto é só a garantia.
     if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Versão ') }}
     runs-on: macos-15
+    # Para o job do Windows montar a mesma versão, do mesmo commit.
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
     env:
       # No push não há as opções do disparo manual: publica sempre e sobe o patch.
       PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
@@ -73,6 +78,7 @@ jobs:
             exit 1
           fi
           echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           npm pkg set version="$next"
 
       - name: Instalar dependências
@@ -152,3 +158,68 @@ jobs:
             dist/*.dmg dist/*.zip \
             --title "Argus $VERSION" \
             --notes-file "$notas"
+
+  # Instalador do Windows (.exe), numa máquina Windows do GitHub, depois que o release do Mac sai.
+  # Antes de anexar, abre o app em modo de teste (--smoke-test, ver src/main/smokeTest.ts): se ele
+  # nem abrir, o instalador não vai, e quem usa no Windows continua na versão anterior.
+  windows:
+    needs: release
+    runs-on: windows-latest
+    # Ocupa a mesma fila dos releases (concurrency): travado, não pode segurar o próximo do Mac.
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      # Publicando: a tag que o job do Mac acabou de criar, já com a versão nova no package.json.
+      # Testando: o mesmo commit que ele montou; a versão é trocada aqui, sem tag.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ (github.event_name == 'push' || inputs.publicar) && format('v{0}', needs.release.outputs.version) || needs.release.outputs.sha }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Versão (teste)
+        if: env.PUBLICAR != 'true'
+        run: npm pkg set version="$VERSION"
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      # Sem certificado de assinatura: o Windows avisa na primeira instalação (ver electron-builder.yml).
+      - name: Montar o instalador
+        run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish never
+
+      - name: Testar se o app abre
+        shell: pwsh
+        run: |
+          $app = Start-Process -FilePath 'dist\win-unpacked\Argus.exe' -ArgumentList '--smoke-test' -PassThru
+          # Sem guardar o handle, o PowerShell perde o código de saída do processo.
+          $null = $app.Handle
+          $done = $app.WaitForExit(180000)
+          Get-Content "$env:TEMP\argus-smoke.log" -ErrorAction SilentlyContinue
+          if (-not $done) { $app.Kill(); throw 'O app não terminou o teste a tempo.' }
+          if ($app.ExitCode -ne 0) { throw "O app falhou no teste (código $($app.ExitCode))." }
+
+      - name: Guardar o instalador (teste)
+        if: env.PUBLICAR != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Argus-Setup-${{ env.VERSION }}
+          path: dist/Argus-Setup-*.exe
+
+      - name: Anexar ao release
+        if: env.PUBLICAR == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "v$VERSION" dist/Argus-Setup-*.exe --clobber

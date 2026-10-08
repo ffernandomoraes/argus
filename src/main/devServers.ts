@@ -4,6 +4,8 @@ import { resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import type { DevServer } from '../shared/devServers'
 import { expandHome } from './paths'
+import { IS_WIN } from './platform'
+import { ancestors, killTree, listeningPorts, processTable, type WinProcess } from './winProcesses'
 
 const run = promisify(execFile)
 
@@ -79,11 +81,13 @@ async function claudeGroups(): Promise<Set<number>> {
 }
 
 // Processo com porta aberta, com todas as portas dele. `claude`: o próprio Claude Code ou algo
-// no grupo dele (servidor MCP); não é servidor de projeto nenhum.
-export type Listening = Omit<DevServer, 'port'> & { ports: number[]; claude: boolean }
+// no grupo dele (servidor MCP); não é servidor de projeto nenhum. Só no Windows: `name`, o
+// executável (node.exe...), e `chain`, os processos acima dele, do pai ao mais antigo.
+export type Listening = Omit<DevServer, 'port'> & { ports: number[]; claude: boolean; name?: string; chain?: number[] }
 
 // `only` filtra pelo ambiente antes das consultas mais caras (cwd, comando sem ambiente).
 export async function scanListening(only?: (env: string) => boolean): Promise<(Listening & { env: string })[]> {
+  if (IS_WIN) return scanWindows()
   const ports = parseFields(await output(LSOF, ['-nP', '-iTCP', '-sTCP:LISTEN', '-Fpn']), 'n')
   if (ports.size === 0) return []
   const pids = [...ports.keys()].join(',')
@@ -123,11 +127,54 @@ export async function scanListening(only?: (env: string) => boolean): Promise<(L
   return found
 }
 
+// Windows: sem o lsof e o ps, as portas vêm do netstat e os processos, do PowerShell. A pasta
+// (cwd) de outro processo o Windows não informa: fica vazia, e quem procura o servidor de uma
+// pasta olha a linha de comando (ver projectServers.ts). Sem grupo de processo, o "grupo" é o
+// próprio processo, encerrado com tudo que ele abriu. O ambiente também não: `env` fica vazio.
+const TOOL_SHELL = /^(bash|sh|zsh|powershell|pwsh)\.exe$/i
+const isClaude = (p: WinProcess) => /^claude\.exe$/i.test(p.name) || /claude-code[\\/]cli\.js/i.test(p.command)
+
+async function scanWindows(): Promise<(Listening & { env: string })[]> {
+  const ports = await listeningPorts()
+  if (ports.size === 0) return []
+  // A tabela de processos é lida de novo só quando aparece processo novo com porta aberta (ou a
+  // cada 5 minutos): o PowerShell pesa, e o botão do servidor pergunta a cada 5 segundos.
+  const table = await processTable(5 * 60_000, [...ports.keys(), process.pid])
+  // No pnpm dev, o servidor deste app é um dos processos acima dele.
+  const own = new Set(ancestors(table, process.pid).map((p) => p.pid))
+  const found: (Listening & { env: string })[] = []
+  for (const [pid, list] of ports) {
+    const proc = table.get(pid)
+    const chain = ancestors(table, pid)
+    // Do Claude Code: ele mesmo ou o que ele abriu direto (servidores MCP). O que passou pelo shell
+    // de um comando dele (a ferramenta Bash) é servidor de projeto, como no Mac.
+    const family = [proc, ...chain].filter((p): p is WinProcess => !!p)
+    const at = family.findIndex(isClaude)
+    const claude = at >= 0 && !family.slice(0, at).some((p) => TOOL_SHELL.test(p.name))
+    found.push({
+      pid,
+      pgid: pid,
+      ports: [...list].sort((a, b) => a - b),
+      cwd: '',
+      command: proc?.command || proc?.name || '',
+      locked: own.has(pid) ? 'app' : claude ? 'claude' : undefined,
+      claude,
+      name: proc?.name,
+      chain: chain.map((p) => p.pid),
+      env: ''
+    })
+  }
+  return found
+}
+
 // Todo comando que o Claude Code roda herda CLAUDECODE=1; o que o play iniciou leva a marca do
 // app. Seguir a árvore de processos não serve: rodando em segundo plano, o servidor perde o pai
 // e é adotado pelo sistema. Fora isso, qualquer porta aberta dentro de uma pasta do canvas
 // (`paths`), venha de onde vier, menos o Claude Code e o grupo dele.
+// No Windows não dá para ler o ambiente nem a pasta de outro processo: a lista fica vazia, e a
+// interface esconde o painel.
 export async function listDevServers(paths: string[] = []): Promise<DevServer[]> {
+  if (IS_WIN) return []
   const roots = paths.map(realRoot)
   const marked = (env: string) => MARK.test(env) || APP.test(env)
   // Sem pastas, dá para filtrar pelo ambiente antes das consultas mais caras.
@@ -154,14 +201,17 @@ export function groupAlive(pgid: number): boolean {
 // Encerra o grupo inteiro do servidor. Confere de novo na hora: só grupos que a lista mostra,
 // e nunca um travado.
 export async function killDevServer(pgid: number, paths: string[] = []): Promise<boolean> {
+  if (IS_WIN) return false
   const target = (await listDevServers(paths)).find((s) => s.pgid === pgid)
   if (!target || target.locked) return false
   return terminate(pgid)
 }
 
-// Quem ignorar o SIGTERM leva SIGKILL depois de alguns segundos.
+// Quem ignorar o SIGTERM leva SIGKILL depois de alguns segundos. No Windows, o processo e tudo
+// que ele abriu saem de uma vez (taskkill).
 export async function terminate(pgid: number): Promise<boolean> {
   if (pgid <= 1) return false
+  if (IS_WIN) return killTree(pgid)
   try {
     process.kill(-pgid, 'SIGTERM')
   } catch {

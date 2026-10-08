@@ -2,13 +2,16 @@ import { useEffect } from 'react'
 import { CircleArrowUp } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { useUpdates } from '../updates/useUpdates'
+import { useWindowControls } from '../useWindowControls'
 
-// Barra de título, como a do VS Code: sem a barra do sistema (titleBarStyle: hiddenInset), é
-// ela que guarda os semáforos, arrasta a janela e maximiza no duplo clique. Tem fundo próprio,
-// para o título não brigar com o canvas; os painéis começam abaixo dela (PANEL_TOP).
+// Barra de título, como a do VS Code: sem a barra do sistema, é ela que guarda os botões da janela
+// (os semáforos do Mac à esquerda; minimizar, maximizar e fechar do Windows à direita), arrasta a
+// janela e maximiza no duplo clique. Tem fundo próprio, para o título não brigar com o canvas; os
+// painéis começam abaixo dela (PANEL_TOP).
 // Mostra sempre o nome do app; a conversa aberta fica só no título da janela (windowTitle).
 export function TitleBar({ windowTitle }: { windowTitle: string }) {
   const updates = useUpdates()
+  const controls = useWindowControls()
   const state = updates?.state
   const ready = state?.status === 'ready' ? state : null
   // Sutil, ao lado da versão: só enquanto procura ou baixa, para saber que a conferência rodou.
@@ -37,7 +40,7 @@ export function TitleBar({ windowTitle }: { windowTitle: string }) {
         </span>
       )}
       {updates && (
-        <div className="absolute inset-y-0 right-3 flex items-center gap-2.5">
+        <div className="absolute inset-y-0 flex items-center gap-2.5" style={{ right: 12 + controls.right }}>
           {ready && (
             <button
               onClick={() => window.api.updates.install()}

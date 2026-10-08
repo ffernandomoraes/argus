@@ -24,6 +24,7 @@ import type { AgentDef, RunningAgent } from '../../../shared/agents'
 import type { ChatActivity, ChatState, PermissionAnswer } from '../../../shared/chat'
 import type { Message } from './types'
 import { Presence } from '../motion'
+import { keys, SYSTEM_SETTINGS } from '../platform'
 
 // Texto digitado e não enviado, por conversa: fechar o drawer (ESC, X) ou trocar de conversa
 // não perde o que estava escrito. Vale enquanto o app está aberto.
@@ -764,8 +765,8 @@ export function ChatView({
                 : dictation.state === 'starting'
                   ? 'Ligando o microfone…'
                   : agents.length
-                    ? 'Escreva, fale, cole um print (⌘V), / para comandos ou @ para agentes'
-                    : 'Escreva, fale, cole um print (⌘V) ou digite / para comandos'
+                    ? `Escreva, fale, cole um print (${keys('⌘V')}), / para comandos ou @ para agentes`
+                    : `Escreva, fale, cole um print (${keys('⌘V')}) ou digite / para comandos`
             }
             className="mb-1.5 block w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-faint"
           />
@@ -840,7 +841,7 @@ export function ChatView({
                 onClick={() => window.api.speech.openSettings()}
                 className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
               >
-                Abrir Ajustes
+                Abrir {SYSTEM_SETTINGS}
               </button>
             )}
           </p>

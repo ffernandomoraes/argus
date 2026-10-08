@@ -4,6 +4,7 @@ import type { MemoryFile, MemoryGroup, MemoryProject } from '../../../shared/mem
 import { FileLinkContext } from '../conversation/fileLinks'
 import { Markdown } from '../conversation/Markdown'
 import { useEscape } from '../useEscape'
+import { isMod, keys, parentDir, relativeTo, tildify } from '../platform'
 
 const TYPE_LABEL: Record<string, string> = {
   user: 'sobre você',
@@ -25,11 +26,6 @@ function splitFrontmatter(text: string): string {
 
 // [[nome]] liga uma anotação a outra; vira link para abrir aqui mesmo.
 const linkMemories = (text: string) => text.replace(/\[\[([^\]\n]+)\]\]/g, '[$1](memory:$1)')
-
-const tildify = (path: string) => {
-  const home = window.api.homeDir
-  return path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
-}
 
 // Memória do Claude Code: instruções (CLAUDE.md) e o que ele anotou sozinho, por pasta do canvas.
 export function MemoryModal({
@@ -114,7 +110,7 @@ export function MemoryModal({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === 's' && editing) {
+      if (isMod(e) && e.key === 's' && editing) {
         e.preventDefault()
         void save()
       }
@@ -131,10 +127,10 @@ export function MemoryModal({
   // Links entre anotações: [[nome]] ou arquivo.md, dentro da mesma pasta de memória.
   const openLink = (target: string) => {
     if (!current) return
-    const dir = current.path.slice(0, current.path.lastIndexOf('/'))
+    const dir = parentDir(current.path)
     const slug = target.replace(/^memory:/, '').replace(/^\.\//, '')
     const found =
-      files.find((f) => f.path.startsWith(dir + '/') && (f.name === slug || f.fileName === slug || f.fileName === `${slug}.md`)) ??
+      files.find((f) => !!relativeTo(f.path, dir) && (f.name === slug || f.fileName === slug || f.fileName === `${slug}.md`)) ??
       files.find((f) => f.name === slug)
     if (found) select(found.path)
   }
@@ -218,7 +214,7 @@ export function MemoryModal({
                 <button
                   onClick={() => void save()}
                   disabled={!dirty}
-                  title="Salvar (⌘S)"
+                  title={`Salvar (${keys('⌘S')})`}
                   className="rounded-md bg-text px-2.5 py-1 text-xs font-medium text-bg hover:opacity-85 disabled:opacity-40"
                 >
                   Salvar

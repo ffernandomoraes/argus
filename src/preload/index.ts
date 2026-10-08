@@ -17,25 +17,58 @@ import type { KnownFolder, SessionSummary, UncommittedFile } from '../shared/ses
 import type { SpeechEvent } from '../shared/speech'
 import type { UpdateInfo, UpdateState } from '../shared/updates'
 import type { Usage } from '../shared/usage'
+import { winMic } from './winMic'
+
+const IS_WIN = process.platform === 'win32'
+
+// Desfazer e refazer. No Mac chegam pelo menu Editar (⌘Z, ⇧⌘Z). O Windows não tem menu: Ctrl+Z,
+// Ctrl+Shift+Z e Ctrl+Y fazem o papel dele e chegam do mesmo jeito. Sem ninguém escutando (janela
+// de conversa) ou no terminal e no editor de código, que têm o desfazer deles, a tecla segue normal.
+type EditAction = 'undo' | 'redo'
+const editListeners = new Set<(action: EditAction) => void>()
+ipcRenderer.on('edit', (_e, action: EditAction) => editListeners.forEach((l) => l(action)))
+if (IS_WIN) {
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (!e.ctrlKey || e.altKey || e.metaKey || !editListeners.size) return
+      const key = e.key.toLowerCase()
+      const action: EditAction | null = key === 'z' ? (e.shiftKey ? 'redo' : 'undo') : key === 'y' && !e.shiftKey ? 'redo' : null
+      if (!action || (e.target as Element | null)?.closest?.('.xterm, .cm-editor')) return
+      e.preventDefault()
+      editListeners.forEach((l) => l(action))
+    },
+    true
+  )
+}
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
   homeDir: homedir(),
   setTheme: (theme: 'dark' | 'light' | 'system') => ipcRenderer.send('theme:set', theme),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickFolder'),
-  onEdit: (cb: (action: 'undo' | 'redo') => void) => {
-    const listener = (_e: IpcRendererEvent, action: 'undo' | 'redo') => cb(action)
-    ipcRenderer.on('edit', listener)
-    return () => ipcRenderer.removeListener('edit', listener)
+  onEdit: (cb: (action: EditAction) => void) => {
+    editListeners.add(cb)
+    return () => {
+      editListeners.delete(cb)
+    }
   },
+  // No Windows o microfone é gravado aqui mesmo (winMic); no Mac, pelo programa native/speech.
   speech: {
-    start: () => ipcRenderer.send('speech:start'),
-    stop: () => ipcRenderer.send('speech:stop'),
+    start: () => (IS_WIN ? void winMic.start() : ipcRenderer.send('speech:start')),
+    stop: () => {
+      if (IS_WIN) winMic.stop()
+      ipcRenderer.send('speech:stop')
+    },
     openSettings: () => ipcRenderer.send('speech:openSettings'),
     onEvent: (cb: (event: SpeechEvent) => void) => {
       const listener = (_e: IpcRendererEvent, event: SpeechEvent) => cb(event)
       ipcRenderer.on('speech:event', listener)
-      return () => ipcRenderer.removeListener('speech:event', listener)
+      const offMic = IS_WIN ? winMic.onEvent(cb) : () => {}
+      return () => {
+        ipcRenderer.removeListener('speech:event', listener)
+        offMic()
+      }
     }
   },
   popout: {

@@ -1,5 +1,5 @@
 import { memo, useContext, type ReactNode } from 'react'
-import ReactMarkdown, { type Components } from 'react-markdown'
+import ReactMarkdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FileLinkContext, parseFileLink } from './fileLinks'
 
@@ -67,10 +67,14 @@ const components: Components = {
   td: ({ children }) => <td className="border border-line px-2 py-1 align-top">{children}</td>
 }
 
+// Por padrão o markdown descarta link com protocolo que não seja da web, e "C:\proj\a.ts" parece
+// ter o protocolo "c". Caminho do Windows e file:// passam: viram link de arquivo (ver Link).
+const urlTransform = (url: string) => (/^([a-zA-Z]:[\\/]|file:)/.test(url) ? url : defaultUrlTransform(url))
+
 export const Markdown = memo(function Markdown({ text }: { text: string }) {
   return (
     <div className="break-words">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components} urlTransform={urlTransform}>
         {text}
       </ReactMarkdown>
     </div>

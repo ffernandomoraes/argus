@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, sep } from 'node:path'
 import { createSdkMcpServer, query, tool, type Query } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
@@ -8,6 +8,7 @@ import { loadCanvas } from './canvasStore'
 import { claudeEnv, Inbox } from './chats'
 import { claudePath } from './claudePath'
 import { expandHome } from './paths'
+import { IS_WIN } from './platform'
 
 // Comandos de canvas são simples: o Haiku responde rápido, o que conta muito na voz.
 const MODEL = 'haiku'
@@ -18,7 +19,11 @@ const IDLE_CLOSE_MS = 15 * 60_000
 // A janela do canvas tem esse tempo para executar a ação (inclui escolher pasta no seletor).
 const CALL_TIMEOUT_MS = 3 * 60_000
 
-const SYSTEM_PROMPT = `Você é o assistente do canvas de um app de macOS que organiza projetos do Claude Code.
+// O que muda no texto entre os sistemas: o nome dele e a tecla de desfazer.
+const SYSTEM_NAME = IS_WIN ? 'Windows' : 'macOS'
+const UNDO = IS_WIN ? 'Ctrl+Z' : '⌘Z'
+
+const SYSTEM_PROMPT = `Você é o assistente do canvas de um app de ${SYSTEM_NAME} que organiza projetos do Claude Code.
 O canvas tem blocos:
 - grupo: área colorida com nome, que contém outros blocos;
 - pasta: um projeto (uma pasta do disco) com as conversas do Claude;
@@ -30,14 +35,15 @@ Como agir:
 - Sempre chame ver_canvas antes de agir, para saber ids, nomes e posições atuais. Não confie em posições de pedidos anteriores.
 - Coordenadas absolutas em pixels: x cresce para a direita, y para baixo. Deixe uns 40px entre blocos.
 - Para enfileirar, ordenar ou alinhar vários blocos, prefira organizar_em_grade a calcular posições uma a uma.
-- Execute direto, inclusive exclusões: tudo pode ser desfeito com ⌘Z.
+- Execute direto, inclusive exclusões: tudo pode ser desfeito com ${UNDO}.
 - Pedido ambíguo (dois blocos com nome parecido, grupo que não existe): pergunte em uma frase curta, sem agir.
-- Nova pasta com nome falado: use procurar_pasta. Um resultado: use. Vários: pergunte qual. Nenhum, ou sem nome: chame adicionar_pasta sem caminho, que abre o seletor do macOS.
+- Nova pasta com nome falado: use procurar_pasta. Um resultado: use. Vários: pergunte qual. Nenhum, ou sem nome: chame adicionar_pasta sem caminho, que abre o seletor de pastas do ${SYSTEM_NAME}.
 - Você só mexe no canvas. Não lê arquivos, não roda comandos e não conversa com as sessões do Claude.
 
-Resposta: português do Brasil, uma frase curta dizendo o que fez (ou a pergunta). Sem markdown. Se excluiu algo, lembre que ⌘Z desfaz.`
+Resposta: português do Brasil, uma frase curta dizendo o que fez (ou a pergunta). Sem markdown. Se excluiu algo, lembre que ${UNDO} desfaz.`
 
-const NO_DIR = /^(\.|node_modules$|Library$|Applications$|Pictures$|Music$|Movies$)/
+const WINDOWS_ROOTS = [join('OneDrive', 'Desktop'), join('OneDrive', 'Documents'), join('source', 'repos')]
+const NO_DIR = /^(\.|node_modules$|Library$|Applications$|Pictures$|Music$|Movies$|AppData$)/
 
 const normalize = (s: string) =>
   s
@@ -48,7 +54,7 @@ const normalize = (s: string) =>
 
 const display = (path: string) => {
   const home = homedir()
-  return path === home || path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
+  return path === home || path.startsWith(home + sep) ? '~' + path.slice(home.length) : path
 }
 
 // Procura pastas pelo nome nos lugares onde costuma haver projeto, até 3 níveis abaixo.
@@ -63,7 +69,14 @@ function findFolders(name: string): string[] {
         .map((n) => dirname(expandHome(n.data!.path!)))
     : []
   const roots = [
-    ...new Set([...known, ...['Desktop', 'Documents', 'Developer', 'Projects', 'projects', 'code', 'dev'].map((d) => join(home, d))])
+    ...new Set([
+      ...known,
+      // No Windows a Área de Trabalho e os Documentos costumam estar dentro do OneDrive, e o Visual
+      // Studio cria os projetos em source\repos.
+      ...['Desktop', 'Documents', 'Developer', 'Projects', 'projects', 'code', 'dev', ...(IS_WIN ? WINDOWS_ROOTS : [])].map((d) =>
+        join(home, d)
+      )
+    ])
   ]
   const found = new Set<string>()
   const seen = new Set<string>()
@@ -206,7 +219,7 @@ export class CanvasAgent {
       ),
       tool(
         'adicionar_pasta',
-        'Adiciona uma pasta de projeto ao canvas. Sem caminho, abre o seletor de pasta do macOS para a pessoa escolher.',
+        `Adiciona uma pasta de projeto ao canvas. Sem caminho, abre o seletor de pasta do ${SYSTEM_NAME} para a pessoa escolher.`,
         {
           caminho: z.string().optional().describe('caminho absoluto ou começando com ~/'),
           grupo_id: z.string().optional().describe('grupo onde a pasta entra'),

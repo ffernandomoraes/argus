@@ -14,6 +14,7 @@ import { useCanvasActions } from './CanvasContext'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { useEscape } from '../useEscape'
 import { Presence } from '../motion'
+import { IS_WIN, keys } from '../platform'
 
 const TOOLTIP_SIDE = {
   top: 'bottom-full left-1/2 mb-2 -translate-x-1/2',
@@ -29,7 +30,8 @@ export function Tooltip({ label, shortcut, side = 'top' }: { label: string; shor
       className={`pointer-events-none absolute hidden items-center gap-2 whitespace-nowrap rounded-md border border-line bg-surface-2 px-2 py-1 text-[11px] text-text shadow-lg group-hover:flex ${TOOLTIP_SIDE[side]}`}
     >
       {label}
-      {shortcut && <kbd className="font-mono text-faint">{shortcut}</kbd>}
+      {/* Escrito como no Mac ("⌘ ,"); no Windows aparece "Ctrl+,". */}
+      {shortcut && <kbd className="font-mono text-faint">{keys(shortcut)}</kbd>}
     </span>
   )
 }
@@ -147,9 +149,12 @@ export function NavBar({ zoomShortcuts = true }: { zoomShortcuts?: boolean }) {
         <NavButton label="Agentes" onClick={openAgents}>
           <Bot size={16} />
         </NavButton>
-        <NavButton label="Servidores rodando" onClick={openDevServers}>
-          <Server size={16} />
-        </NavButton>
+        {/* No Windows não dá para saber quais servidores um agente abriu (ver devServers.ts). */}
+        {!IS_WIN && (
+          <NavButton label="Servidores rodando" onClick={openDevServers}>
+            <Server size={16} />
+          </NavButton>
+        )}
         <NavButton label="Memória do Claude" onClick={() => openMemory()}>
           <Brain size={16} />
         </NavButton>

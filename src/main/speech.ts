@@ -6,10 +6,13 @@ import { app, type WebContents } from 'electron'
 import WebSocket from 'ws'
 import type { SpeechEvent } from '../shared/speech'
 import { claudeAccessToken } from './claudeAuth'
+import { IS_WIN } from './platform'
 
 // Ditado. Igual à extensão do Claude Code no VS Code: o microfone (native/speech, modo
 // "capture") grava e o áudio vai em tempo real para o serviço de voz do Claude, com o login
 // do Claude Code. Sem login ou sem conexão, cai no reconhecimento de fala do macOS.
+// No Windows, quem grava é a própria janela (ver o preload) e o áudio chega por audio(). Lá não há
+// reconhecimento de fala do sistema como reserva: sem o Claude, o ditado avisa e para.
 // Um de cada vez: começar um novo descarta o anterior.
 
 const VOICE_URL = 'wss://api.anthropic.com/api/ws/speech_to_text/voice_stream'
@@ -54,21 +57,28 @@ type Send = (event: SpeechEvent) => void
 // stop: para de gravar e ainda entrega o fim do texto (até o "done"). abort: descarta tudo.
 type Session = { stop: () => void; abort: () => void }
 
+// Microfone: o programa do Mac ou a janela, no Windows. stop: para de gravar. kill: descarta.
+type MicEvent = SpeechEvent | { type: 'audio'; chunk: Buffer }
+type Mic = { stop: () => void; kill: () => void }
+type OpenMic = (onEvent: (e: MicEvent) => void, onExit: (reason: string) => void) => Mic
+
 type HelperEvent = SpeechEvent | { type: 'audio'; data: string }
 
-function spawnHelper(helper: string, args: string[], onEvent: (e: HelperEvent) => void, onExit: (reason: string) => void) {
+function spawnHelper(helper: string, args: string[], onEvent: (e: MicEvent) => void, onExit: (reason: string) => void): Mic {
   const proc = spawn(helper, args)
   // Mandar "stop" para um processo que já saiu não pode derrubar o app.
   proc.stdin.on('error', () => {})
   let ended = false
   createInterface({ input: proc.stdout }).on('line', (line) => {
+    let event: HelperEvent
     try {
-      const event = JSON.parse(line) as HelperEvent
-      if (event.type === 'done' || event.type === 'error') ended = true
-      onEvent(event)
+      event = JSON.parse(line) as HelperEvent
     } catch {
       // Linha que não é JSON: ignora.
+      return
     }
+    if (event.type === 'done' || event.type === 'error') ended = true
+    onEvent(event.type === 'audio' ? { type: 'audio', chunk: Buffer.from(event.data, 'base64') } : event)
   })
   // Encerrado sem avisar (ex.: derrubado pelo macOS por falta de permissão).
   proc.on('exit', (code, signal) => !ended && onExit(signal ?? `código ${code}`))
@@ -98,7 +108,8 @@ function appleSession(helper: string, send: Send, warning?: string): Session {
 }
 
 // Serviço de voz do Claude. Mesmos parâmetros da extensão do VS Code, em português.
-function claudeSession(helper: string, token: string, send: Send, fallback: (reason: string) => void): Session {
+// fallback: o serviço falhou antes da primeira palavra; recebe o motivo.
+function claudeSession(openMic: OpenMic, token: string, send: Send, fallback: (reason: string) => void): Session {
   const params = new URLSearchParams({
     encoding: 'linear16',
     sample_rate: '16000',
@@ -190,8 +201,7 @@ function claudeSession(helper: string, token: string, send: Send, fallback: (rea
       // Antes da primeira palavra, qualquer falha vira o ditado do Mac: melhor que nada.
       if (!heard && !stopping) {
         abort()
-        const why = status === '401' || status === '403' ? 'login do Claude recusado' : `sem conexão (${status ?? err.message})`
-        fallback(`Transcrição do Claude indisponível (${why}); usando o ditado do Mac, que erra mais.`)
+        fallback(status === '401' || status === '403' ? 'login do Claude recusado' : `sem conexão (${status ?? err.message})`)
       }
     })
     ws.on('close', () => {
@@ -204,16 +214,13 @@ function claudeSession(helper: string, token: string, send: Send, fallback: (rea
     })
   }
 
-  const mic = spawnHelper(
-    helper,
-    ['capture'],
+  const mic = openMic(
     (e) => {
       if (e.type === 'audio') {
-        const chunk = Buffer.from(e.data, 'base64')
-        if (ws.readyState === WebSocket.OPEN) ws.send(chunk)
+        if (ws.readyState === WebSocket.OPEN) ws.send(e.chunk)
         else if (pendingBytes < MAX_PENDING_BYTES) {
-          pending.push(chunk)
-          pendingBytes += chunk.length
+          pending.push(e.chunk)
+          pendingBytes += e.chunk.length
         }
       } else if (e.type === 'error') fail(e.message)
       else send(e)
@@ -238,12 +245,25 @@ function claudeSession(helper: string, token: string, send: Send, fallback: (rea
 export class Speech {
   private session: Session | null = null
   private seq = 0
+  // Windows: a janela que está gravando e para onde vai o áudio dela.
+  private target: WebContents | null = null
+  private feed: ((chunk: Buffer) => void) | null = null
 
   start(target: WebContents): void {
+    const previous = this.target
     this.abort()
     const seq = this.seq
     // Sessão descartada não fala mais com a tela.
     const send: Send = (event) => seq === this.seq && !target.isDestroyed() && target.send('speech:event', event)
+    if (IS_WIN) {
+      // Ditado começado em outra janela: a anterior desliga o microfone dela (no Mac, o programa
+      // que grava é encerrado no abort).
+      if (previous && previous !== target && !previous.isDestroyed()) previous.send('speech:micStop')
+      this.target = target
+      // Daqui em diante, fim e erro que chegarem são desta sessão (ver preload/winMic.ts).
+      target.send('speech:started')
+      return this.startWindows(seq, send)
+    }
 
     // Empacotado, vem fora do app.asar (de dentro dele não dá para executar).
     const helper = app.isPackaged
@@ -261,21 +281,65 @@ export class Speech {
         this.session = appleSession(helper, send, 'Sem login no Claude Code; usando o ditado do Mac, que erra mais.')
         return
       }
-      this.session = claudeSession(helper, token, send, (reason) => {
+      const openMic: OpenMic = (onEvent, onExit) => spawnHelper(helper, ['capture'], onEvent, onExit)
+      this.session = claudeSession(openMic, token, send, (why) => {
+        const reason = `Transcrição do Claude indisponível (${why}); usando o ditado do Mac, que erra mais.`
         if (seq === this.seq) this.session = appleSession(helper, send, reason)
       })
     })
   }
 
+  // A janela já está gravando quando isto roda: o áudio que chega enquanto o login é lido fica
+  // guardado e entra na sessão quando ela abre.
+  private startWindows(seq: number, send: Send): void {
+    let early: Buffer[] = []
+    let earlyBytes = 0
+    this.feed = (chunk) => {
+      if (earlyBytes >= MAX_PENDING_BYTES) return
+      early.push(chunk)
+      earlyBytes += chunk.length
+    }
+    void claudeAccessToken().then((token) => {
+      if (seq !== this.seq || this.session) return
+      if (!token) {
+        this.feed = null
+        send({ type: 'error', message: 'O ditado usa a transcrição do Claude: entre no Claude Code para usar.' })
+        return
+      }
+      const openMic: OpenMic = (onEvent) => {
+        const flush = early
+        early = []
+        // Depois de a sessão terminar de montar: o primeiro áudio já encontra a conexão criada.
+        queueMicrotask(() => flush.forEach((chunk) => onEvent({ type: 'audio', chunk })))
+        this.feed = (chunk) => onEvent({ type: 'audio', chunk })
+        const off = () => (this.feed = null)
+        return { stop: off, kill: off }
+      }
+      this.session = claudeSession(openMic, token, send, (why) =>
+        send({ type: 'error', message: `A transcrição do Claude não está disponível (${why}).` })
+      )
+    })
+  }
+
+  // Windows: um pedaço do áudio gravado pela janela (16 kHz, mono, 16 bits). Só vale o da janela
+  // que começou o ditado.
+  audio(from: WebContents, chunk: Buffer): void {
+    if (from === this.target) this.feed?.(chunk)
+  }
+
   // Para de gravar; o fim do texto ainda chega.
   stop(): void {
     if (this.session) this.session.stop()
-    // Ainda buscando o login: não há o que entregar.
-    else this.seq++
+    else {
+      // Ainda buscando o login: não há o que entregar.
+      this.seq++
+      this.feed = null
+    }
   }
 
   private abort(): void {
     this.seq++
+    this.feed = null
     this.session?.abort()
     this.session = null
   }

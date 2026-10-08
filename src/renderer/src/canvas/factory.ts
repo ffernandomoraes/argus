@@ -1,5 +1,6 @@
 import type { XYPosition } from '@xyflow/react'
 import type { AreaNode, ChatNode, ChatPanelNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
+import { baseName, tildify } from '../platform'
 
 export const COLORS = [
   '#3b82f6',
@@ -37,9 +38,9 @@ export const PROJECT_OUTSET = { left: 0, top: 30 }
 // O grupo desenha o nome e a setinha acima da borda (24px + 6px de respiro).
 export const AREA_OUTSET = { left: 0, top: 30 }
 
+// "~/Desktop/proj" (no Windows, "~\Desktop\proj"): é assim que o canvas guarda as pastas.
 export function displayPath(path: string): string {
-  const home = window.api.homeDir
-  return path === home || path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
+  return tildify(path)
 }
 
 // Tamanho que dá para trabalhar sem ocupar o canvas inteiro.
@@ -52,7 +53,7 @@ export function createTerminal(position: XYPosition, folder: string, kind: Termi
     type: 'terminal',
     position,
     style: { ...TERMINAL_SIZE },
-    data: { name: path.split('/').filter(Boolean).pop() ?? path, path, kind }
+    data: { name: baseName(path), path, kind }
   }
 }
 
@@ -62,7 +63,7 @@ export function createFolderInstance(position: XYPosition, folder: string): Proj
     type: 'project',
     position,
     data: {
-      name: folder.split('/').filter(Boolean).pop() ?? folder,
+      name: baseName(folder),
       path: displayPath(folder),
       color: '#71717a'
     }

@@ -31,6 +31,7 @@ import { Row, Segmented, Select, Switch } from './controls'
 import { setPreferences, usePreferences } from './preferences'
 import { useUpdates } from '../updates/useUpdates'
 import { Presence } from '../motion'
+import { IS_WIN, SYSTEM_NAME, THIS_COMPUTER } from '../platform'
 
 type Section = 'general' | 'conversations' | 'appearance' | 'accounts'
 
@@ -72,6 +73,11 @@ function CliRow() {
   )
 }
 
+// Na barra de menus do Mac; no Windows, na área de notificação, perto do relógio.
+const TRAY = IS_WIN
+  ? { label: 'Ícone na área de notificação', where: 'perto do relógio do Windows' }
+  : { label: 'Ícone na barra de menus', where: 'no topo do macOS' }
+
 // Guardada no processo principal: o ícone é criado antes de a janela abrir.
 function MenuBarIconRow() {
   const [on, setOn] = useState<boolean | null>(null)
@@ -79,12 +85,12 @@ function MenuBarIconRow() {
 
   return (
     <Row
-      label="Ícone na barra de menus"
-      description="Mostra no topo do macOS quando uma conversa está rodando, precisa de você ou terminou."
+      label={TRAY.label}
+      description={`Mostra ${TRAY.where} quando uma conversa está rodando, precisa de você ou terminou.`}
     >
       {on !== null && (
         <Switch
-          label="Ícone na barra de menus"
+          label={TRAY.label}
           checked={on}
           onChange={(next) => {
             setOn(next)
@@ -227,7 +233,7 @@ function ConversationsSection() {
 
 function AppearanceSection({ theme, onThemeChange }: { theme: ThemePreference; onThemeChange: (t: ThemePreference) => void }) {
   return (
-    <Row label="Tema" description="Sistema acompanha o modo claro ou escuro do macOS.">
+    <Row label="Tema" description={`Sistema acompanha o modo claro ou escuro do ${SYSTEM_NAME}.`}>
       <Segmented
         value={theme}
         onChange={onThemeChange}
@@ -306,13 +312,17 @@ function AccountName({ account }: { account: ClaudeAccount }) {
 }
 
 // Comando para usar a conta num terminal qualquer, fora do app.
+// No Mac, para o zsh/bash. No Windows, para o PowerShell (lá a variável vale até fechar o terminal).
+const terminalCommand = (dir: string) =>
+  IS_WIN ? `$env:CLAUDE_CONFIG_DIR="${dir}"; claude` : `CLAUDE_CONFIG_DIR=${displayPath(dir)} claude`
+
 function CopyTerminalCommand({ dir }: { dir: string }) {
   const [copied, setCopied] = useState(false)
   return (
     <button
-      title={`CLAUDE_CONFIG_DIR=${displayPath(dir)} claude`}
+      title={terminalCommand(dir)}
       onClick={() => {
-        void navigator.clipboard.writeText(`CLAUDE_CONFIG_DIR=${displayPath(dir)} claude`)
+        void navigator.clipboard.writeText(terminalCommand(dir))
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
       }}
@@ -395,7 +405,7 @@ function AccountCard({
                   onClick={() =>
                     onConfirm({
                       title: 'Sair da conta?',
-                      description: `O Claude Code deste Mac sai de ${who}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
+                      description: `O Claude Code ${THIS_COMPUTER} sai de ${who}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
                       confirmLabel: 'Sair',
                       onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok))
                     })
@@ -424,7 +434,7 @@ function AccountCard({
       )}
       {logoutFailed && (
         <p role="alert" className="mt-2 pl-14 text-xs text-red-400">
-          Não deu para sair. Tente de novo ou rode "claude auth logout" no Terminal.
+          Não deu para sair. Tente de novo ou rode "claude auth logout" no {IS_WIN ? 'PowerShell' : 'Terminal'}.
         </p>
       )}
     </div>
@@ -464,7 +474,7 @@ function AccountsSection() {
           {!account
             ? 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.'
             : account.id === MAIN_ACCOUNT
-              ? 'Entre de novo na principal, ou em outra conta no lugar dela. Vale também para o terminal e o VS Code deste Mac.'
+              ? `Entre de novo na principal, ou em outra conta no lugar dela. Vale também para o terminal e o VS Code ${THIS_COMPUTER}.`
               : `Entre de novo em ${account.name}, ou em outra conta no lugar dela.`}
         </p>
         <LoginPanel

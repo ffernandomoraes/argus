@@ -25,8 +25,9 @@ const LABELS: Record<string, string> = {
   ExitPlanMode: 'Plano pronto'
 }
 
-const firstLine = (s: unknown) => (typeof s === 'string' ? s.trim().split('\n')[0] : '')
-const fileName = (p: string) => p.split('/').filter(Boolean).pop() ?? p
+const firstLine = (s: unknown) => (typeof s === 'string' ? s.trim().split(/\r?\n/)[0] : '')
+// O Claude no Windows manda caminhos com "\".
+const fileName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? p
 const host = (url: string) => {
   try {
     return new URL(url).hostname.replace(/^www\./, '')

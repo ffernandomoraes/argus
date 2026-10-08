@@ -53,6 +53,7 @@ import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
+import { IS_WIN, isAbsolutePath, relativeTo, untildify } from '../platform'
 import {
   addNode,
   dropIntoGroup,
@@ -455,11 +456,10 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   // Link de arquivo no chat: abre o código da pasta já com o arquivo. Aceita caminho relativo
   // à pasta ou absoluto dentro dela; fora da pasta, o visualizador não tem acesso.
   const openFileLink = (root: string, path: string, lines?: LineRange, diff?: boolean) => {
-    const home = window.api.homeDir
-    const base = (root.startsWith('~/') ? home + root.slice(1) : root).replace(/\/$/, '')
-    let rel = path.startsWith('~/') ? home + path.slice(1) : path
-    if (rel.startsWith(base + '/')) rel = rel.slice(base.length + 1)
-    else if (rel.startsWith('/')) return
+    const full = untildify(path)
+    // Relativo: já é o caminho na árvore, com "/" (o Claude no Windows pode mandar com barra invertida).
+    const rel = isAbsolutePath(full) ? relativeTo(full, untildify(root)) : IS_WIN ? full.replace(/\\/g, '/') : full
+    if (!rel) return
     setCodeOpen(true)
     setOpenFile({ root, path: rel.replace(/^\.\//, ''), lines, diff })
   }

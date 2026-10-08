@@ -1,13 +1,18 @@
 import { execFile, spawn } from 'node:child_process'
-import { userInfo } from 'node:os'
+import { readFile, writeFile } from 'node:fs/promises'
+import { homedir, userInfo } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
+import { IS_MAC } from './platform'
 
-// Login do Claude Code (o mesmo que o Agent SDK usa), guardado nas Chaves do macOS.
+// Login do Claude Code (o mesmo que o Agent SDK usa): nas Chaves do macOS no Mac; no Windows, o
+// Claude Code guarda num arquivo, ~/.claude/.credentials.json.
 // Serve para chamadas que não passam pelo SDK, como a transcrição do ditado. Renova o
 // acesso como o Claude Code faz e grava o novo de volta, para o Claude Code seguir usando.
 
 const run = promisify(execFile)
 const SERVICE = 'Claude Code-credentials'
+const CREDENTIALS_FILE = join(homedir(), '.claude', '.credentials.json')
 const TOKEN_URL = 'https://platform.claude.com/v1/oauth/token'
 const CLIENT_ID = '22422756-60c9-4084-8eb7-27705fd5cf9a'
 // Renova um pouco antes de vencer, para não cair no meio de um ditado.
@@ -26,6 +31,7 @@ type Stored = { claudeAiOauth?: OAuth } & Record<string, unknown>
 
 async function read(): Promise<Stored | null> {
   try {
+    if (!IS_MAC) return JSON.parse(await readFile(CREDENTIALS_FILE, 'utf8')) as Stored
     const { stdout } = await run('security', ['find-generic-password', '-a', userInfo().username, '-s', SERVICE, '-w'])
     return JSON.parse(stdout.trim()) as Stored
   } catch {
@@ -33,8 +39,14 @@ async function read(): Promise<Stored | null> {
   }
 }
 
-// Pelo stdin do `security`, para o login não aparecer na lista de processos.
-function write(data: Stored): Promise<boolean> {
+// No Mac, pelo stdin do `security`, para o login não aparecer na lista de processos.
+async function write(data: Stored): Promise<boolean> {
+  if (!IS_MAC) {
+    return writeFile(CREDENTIALS_FILE, JSON.stringify(data), { mode: 0o600 }).then(
+      () => true,
+      () => false
+    )
+  }
   const hex = Buffer.from(JSON.stringify(data), 'utf-8').toString('hex')
   return new Promise((resolve) => {
     const proc = spawn('security', ['-i'], { stdio: ['pipe', 'ignore', 'ignore'] })

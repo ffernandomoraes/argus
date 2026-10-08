@@ -8,6 +8,7 @@ import type { MenuItem } from './ContextMenu'
 import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupAccount, setGroupColor, ungroup } from './operations'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { getSessions } from './sessionsStore'
+import { SYSTEM_NAME } from '../platform'
 import type {
   AreaNode,
   CanvasNode,
@@ -231,7 +232,7 @@ export function instanceMenu(deps: Deps, node: ProjectNode): MenuItem[] {
 }
 
 // Conversa na lista de uma pasta. A Lixeira leva o arquivo do Claude Code: some também do
-// `claude --resume` e só volta restaurando pela Lixeira do macOS.
+// `claude --resume` e só volta restaurando pela Lixeira do sistema.
 export function conversationMenu(deps: Deps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
   return [
     {
@@ -261,8 +262,7 @@ export function conversationMenu(deps: Deps, node: ProjectNode, conversation: Co
         }
         deps.confirm({
           title: `Mover "${conversation.title}" para a Lixeira?`,
-          description:
-            'O arquivo da conversa vai para a Lixeira do macOS. Ela some do Argus e do `claude --resume`; para recuperar, restaure pela Lixeira. O projeto não é afetado.',
+          description: `O arquivo da conversa vai para a Lixeira do ${SYSTEM_NAME}. Ela some do Argus e do \`claude --resume\`; para recuperar, restaure pela Lixeira. O projeto não é afetado.`,
           confirmLabel: 'Mover para a Lixeira',
           onConfirm: () => deps.trashConversation(node.data.path, conversation.id)
         })

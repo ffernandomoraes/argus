@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ProjectServer } from '../shared/devServers'
 import { APP_MARK, inside, realRoot, scanListening, terminate, type Listening } from './devServers'
+import { childEnv, IS_WIN, prependPath, SYSTEM32 } from './platform'
+import { killTreeSync } from './winProcesses'
 
 // Scripts do package.json, na ordem de preferência.
 const SCRIPTS = ['dev', 'start']
@@ -22,6 +24,29 @@ type Started = { child: ChildProcess; output: string; stopping: boolean }
 // Servidores iniciados por este app, pela pasta real do projeto.
 const started = new Map<string, Started>()
 const errors = new Map<string, string>()
+
+// Windows: a pasta de outro processo não é informada. O servidor da pasta é o que o botão abriu,
+// ou um programa de servidor (node, python...) que cita a pasta na linha de comando (o node do
+// vite roda "C:\proj\node_modules\..."). Só esses: um IDE aberto na pasta também a cita e também
+// escuta numa porta, e o botão de encerrar o fecharia à força. O que vem depois do nome evita que
+// "C:\proj" pegue "C:\projeto".
+const SERVER_RUNTIME = /^(node|bun|deno|python[\d.]*|pythonw|py|ruby|php|dotnet|java)\.exe$/i
+
+function mentions(command: string, root: string): boolean {
+  const cmd = command.replace(/\//g, '\\').toLowerCase()
+  const dir = root.replace(/\//g, '\\').replace(/\\$/, '').toLowerCase()
+  for (let i = cmd.indexOf(dir); i !== -1; i = cmd.indexOf(dir, i + 1)) {
+    if (/^($|[\\"' ])/.test(cmd.slice(i + dir.length, i + dir.length + 1))) return true
+  }
+  return false
+}
+
+function belongs(root: string, p: Listening): boolean {
+  if (!IS_WIN) return inside(root, p.cwd)
+  const pid = started.get(root)?.child.pid
+  if (pid && (p.pid === pid || p.chain?.includes(pid))) return true
+  return SERVER_RUNTIME.test(p.name ?? '') && mentions(p.command, root)
+}
 
 // Em monorepo, a trava do gerenciador fica numa pasta acima do pacote.
 function packageManager(root: string, declared: unknown): string {
@@ -59,7 +84,7 @@ function lastLine(output: string): string {
 // Processos com porta aberta dentro da pasta. Fora o Claude Code e o grupo dele: as portas
 // deles não são o servidor do projeto.
 const ofProject = (root: string, listening: Listening[]) =>
-  listening.filter((p) => !p.claude && p.ports.length > 0 && inside(root, p.cwd))
+  listening.filter((p) => !p.claude && p.ports.length > 0 && belongs(root, p))
 
 async function statusOf(path: string, listening: Listening[]): Promise<ProjectServer> {
   const root = realRoot(path)
@@ -92,23 +117,29 @@ export async function startProjectServer(path: string): Promise<boolean> {
   const run = await projectScript(root)
   if (!run) return false
 
-  const env = { ...process.env }
-  // Sem isso um projeto Electron abriria como Node puro.
-  delete env.ELECTRON_RUN_AS_NODE
-  delete env.ELECTRON_NO_ATTACH_CONSOLE
+  // Sem as variáveis do Electron: um projeto Electron abriria como Node puro.
+  const env = childEnv()
   // Não foi o Claude Code que rodou; a marca do app põe o servidor no painel mesmo assim.
   delete env.CLAUDECODE
   env[APP_MARK] = '1'
-  env.PATH = ['/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+  prependPath(env, [])
 
   errors.delete(root)
-  // -i também: nvm e afins costumam ficar no .zshrc, que o shell só lê quando é interativo.
-  const child = spawn(process.env.SHELL || '/bin/zsh', ['-ilc', `exec ${run.command}`], {
-    cwd: root,
-    env,
-    detached: true,
-    stdio: ['ignore', 'pipe', 'pipe']
-  })
+  // Mac: -i também, porque nvm e afins costumam ficar no .zshrc, que o shell só lê quando é
+  // interativo. Windows: pelo cmd, que acha o pnpm/npm (.cmd) no PATH do usuário; sem janela.
+  const child = IS_WIN
+    ? spawn(process.env.ComSpec || join(SYSTEM32, 'cmd.exe'), ['/d', '/s', '/c', run.command], {
+        cwd: root,
+        env,
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
+    : spawn(process.env.SHELL || '/bin/zsh', ['-ilc', `exec ${run.command}`], {
+        cwd: root,
+        env,
+        detached: true,
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
   const entry: Started = { child, output: '', stopping: false }
   const keep = (data: Buffer | string) => {
     entry.output = (entry.output + data.toString()).slice(-OUTPUT_LIMIT)
@@ -151,6 +182,10 @@ export function stopStartedServers(): void {
   for (const entry of started.values()) {
     entry.stopping = true
     if (!entry.child.pid) continue
+    if (IS_WIN) {
+      killTreeSync(entry.child.pid)
+      continue
+    }
     try {
       process.kill(-entry.child.pid, 'SIGTERM')
     } catch {

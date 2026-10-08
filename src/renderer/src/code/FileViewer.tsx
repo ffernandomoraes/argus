@@ -13,6 +13,7 @@ import { useEscape } from '../useEscape'
 import { CloseCodeButton } from './CodeExplorer'
 import { getDraft, setDraft } from './drafts'
 import { refreshNow } from '../canvas/sessionsStore'
+import { keys } from '../platform'
 
 const ALIASES: Record<string, string> = { mjs: 'js', cjs: 'js', mts: 'ts', cts: 'ts', zsh: 'sh' }
 
@@ -256,7 +257,7 @@ export function FileViewer({
         </span>
         {dirty && (
           <span className="shrink-0 text-[11px] text-faint" title="Alterações não salvas">
-            ● não salvo - ⌘S
+            ● não salvo - {keys('⌘S')}
           </span>
         )}
         <span className="flex-1" />

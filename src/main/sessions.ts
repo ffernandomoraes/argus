@@ -1,6 +1,6 @@
 import { access, open, readdir, stat } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { homedir, tmpdir } from 'node:os'
+import { join, sep } from 'node:path'
 import { shell } from 'electron'
 import type { KnownFolder, SessionSummary } from '../shared/sessions'
 import { contextWindowFor } from './contextWindows'
@@ -133,7 +133,7 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
   return results.filter((s): s is SessionSummary => s !== null).map((s) => ({ ...s, live: live.get(s.id) ?? null }))
 }
 
-// Conversa vai para a Lixeira do macOS: o .jsonl e, se houver, a pasta com o mesmo id (os
+// Conversa vai para a Lixeira do sistema: o .jsonl e, se houver, a pasta com o mesmo id (os
 // subagentes dela). Some também do `claude --resume`; volta restaurando pela Lixeira.
 // Recusa conversa aberta em algum Claude Code: ele regravaria o arquivo na hora.
 export async function trashSession(projectPath: string, id: string): Promise<string | null> {
@@ -157,8 +157,9 @@ export async function trashSession(projectPath: string, id: string): Promise<str
 // Caminho de cada pasta de ~/.claude/projects; não muda, então fica guardado.
 const folderPaths = new Map<string, string>()
 
-// Pastas temporárias (rascunhos de sessões) não são projetos.
+// Pastas temporárias (rascunhos de sessões) não são projetos. No Windows, a Temp do usuário.
 const TEMP = /^\/(private\/)?(tmp|var\/folders)\//
+const isTemp = (path: string) => TEMP.test(path) || path.toLowerCase().startsWith(tmpdir().toLowerCase() + sep)
 
 // O nome achatado não volta ao caminho ("a-b" pode ser "a/b"): o caminho vem do `cwd` gravado
 // nas conversas. Vale o que, achatado, dá o próprio nome da pasta; os outros são `cd` no meio.
@@ -214,7 +215,7 @@ export async function listKnownFolders(): Promise<KnownFolder[]> {
         const used = files.filter((f) => f.info.size > 0).sort((a, b) => b.info.mtimeMs - a.info.mtimeMs)
         if (!used.length) return null
         const path = await folderPath(dir, used.map((f) => f.name))
-        if (!path || path === home || TEMP.test(path)) return null
+        if (!path || path === home || isTemp(path)) return null
         if (!(await stat(path)).isDirectory()) return null
         return { path, updatedAt: used[0].info.mtime.toISOString() }
       } catch {

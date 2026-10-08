@@ -17,11 +17,12 @@ const exists = (path: string) =>
 const memoryDir = (projectPath: string) => join(sessionsDir(projectPath), 'memory')
 
 // Cabeçalho "---\nname: ...\n---" das anotações da memória automática.
+// Aceita a quebra de linha do Windows (\r\n), de arquivo editado lá.
 function frontmatter(text: string): Record<string, string> {
-  const m = /^---\n([\s\S]*?)\n---/.exec(text)
+  const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)
   if (!m) return {}
   const out: Record<string, string> = {}
-  for (const line of m[1].split('\n')) {
+  for (const line of m[1].split(/\r?\n/)) {
     const kv = /^\s*(name|description|type):\s*(.*)$/.exec(line)
     if (kv) out[kv[1]] = kv[2].trim()
   }

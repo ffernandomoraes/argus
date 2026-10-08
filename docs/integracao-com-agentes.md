@@ -38,13 +38,14 @@ O mesmo caminho serve para outras três partes do app:
   (`createSdkMcpServer`) e organiza grupos e pastas pelo pedido.
 - **Escrever as instruções de um agente** (`src/main/agentWriter.ts`), com o Sonnet.
 - **Login** (`src/main/auth.ts`): um `claude` aberto só para o login gera o link, recebe o
-  retorno do navegador e grava o login nas Chaves do macOS, como a extensão do VS Code.
+  retorno do navegador e grava o login nas Chaves do macOS, como a extensão do VS Code. No
+  Windows, o Claude Code guarda o login num arquivo, `~/.claude/.credentials.json`.
 
 ### Contas
 
 Cada conta adicionada mora numa pasta própria, passada ao `claude` em `CLAUDE_CONFIG_DIR`
-(`src/main/accounts.ts`). O login dela fica num item separado das Chaves do macOS, então
-as contas rodam ao mesmo tempo. Histórico, `CLAUDE.md`, agentes, skills, comandos,
+(`src/main/accounts.ts`). O login dela fica num item separado das Chaves do macOS (no
+Windows, num arquivo dentro da pasta da conta), então as contas rodam ao mesmo tempo. Histórico, `CLAUDE.md`, agentes, skills, comandos,
 plugins e configurações ficam ligados aos da conta principal por link simbólico; login e
 MCPs são de cada conta (D18).
 
@@ -65,7 +66,9 @@ Sem passar pelo SDK, só leitura:
   ou o shell, com a conta do grupo.
 - **Ditado** (`src/main/speech.ts`): o microfone (`native/speech`) grava e o áudio vai em
   tempo real para o serviço de voz do Claude, com o login do Claude Code
-  (`claudeAuth.ts`). Sem login ou sem conexão, usa o reconhecimento de fala do macOS.
+  (`claudeAuth.ts`). Sem login ou sem conexão, usa o reconhecimento de fala do macOS. No
+  Windows, quem grava o microfone é a própria janela (`src/preload/winMic.ts`), e não há
+  essa reserva: sem o serviço do Claude, o ditado avisa e para.
 
 ## Riscos
 

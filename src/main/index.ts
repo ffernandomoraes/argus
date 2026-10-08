@@ -11,7 +11,7 @@ import { loadAppSettings, saveAppSettings } from './appSettings'
 import { Auth } from './auth'
 import { draftAgent } from './agentWriter'
 import { CanvasAgent } from './canvasAgent'
-import { Cli, cliStatus, installCli, uninstallCli } from './cli'
+import { Cli, cliStatus, installCli, openArg, uninstallCli, validFolder } from './cli'
 import { Chats } from './chats'
 import { ChatNotifier } from './notifications'
 import { loadCanvas, saveCanvas } from './canvasStore'
@@ -41,10 +41,21 @@ import { StatusTray } from './statusTray'
 import { Terminals } from './terminals'
 import { UsageMonitors } from './usageMonitor'
 import { Updater } from './updater'
+import { IS_MAC, IS_WIN } from './platform'
+import { runSmokeTest, SMOKE_TEST } from './smokeTest'
 
 // O pnpm dev tem dados próprios: com a mesma pasta do instalado, um sobrescreveria o canvas e as
 // configurações do outro.
 if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')} Dev`)
+
+// No Windows cada clique no atalho abriria outro Argus com os mesmos dados: fica um só, e o
+// segundo entrega ao primeiro a pasta do `argus .` (ver cli.ts) antes de sair. No Mac o próprio
+// sistema não abre o app duas vezes.
+const firstInstance = IS_MAC || app.requestSingleInstanceLock({ open: openArg(process.argv) })
+if (!firstInstance) app.exit(0)
+
+// Windows: identifica o app nas notificações, com o mesmo id do atalho que o instalador cria.
+if (IS_WIN) app.setAppUserModelId(app.isPackaged ? 'dev.argus.app' : process.execPath)
 
 function broadcast(channel: string, ...args: unknown[]): void {
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send(channel, ...args)
@@ -120,6 +131,50 @@ function loadRenderer(win: BrowserWindow, hash = ''): void {
 
 const webPreferences = { preload: join(__dirname, '../preload/index.js'), sandbox: false }
 
+// Altura da barra de título do app (TITLE_BAR_HEIGHT, em FloatingPanel.tsx).
+const TITLE_BAR_HEIGHT = 40
+type WindowKind = 'main' | 'conversation'
+const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
+
+// Sem a barra do sistema. No Mac, os semáforos ficam dentro da barra do app. No Windows,
+// minimizar, maximizar e fechar são desenhados pelo sistema por cima da barra do app, na cor dela:
+// a barra de título do canvas (surface) ou o cabeçalho da conversa (bg), como no index.css.
+function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
+  if (IS_MAC) return { titleBarStyle: 'hiddenInset' }
+  return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind) }
+}
+
+function overlay(kind: WindowKind): Electron.TitleBarOverlay {
+  const dark = nativeTheme.shouldUseDarkColors
+  const color = kind === 'main' ? (dark ? '#222226' : '#ffffff') : dark ? '#161618' : '#f3f3f5'
+  return { color, symbolColor: dark ? '#a8a8b2' : '#52525b', height: TITLE_BAR_HEIGHT }
+}
+
+// Tema trocado, no app ou no sistema: os botões do Windows acompanham.
+function repaintOverlays(): void {
+  if (IS_MAC) return
+  for (const win of BrowserWindow.getAllWindows()) {
+    const kind = windowKinds.get(win)
+    if (kind && !win.isDestroyed()) win.setTitleBarOverlay(overlay(kind))
+  }
+}
+
+// Windows: sem o menu Ver, o F12 (ou Ctrl+Shift+I) abre as ferramentas de desenvolvedor e o F11
+// põe em tela cheia.
+function windowShortcuts(win: BrowserWindow): void {
+  if (IS_MAC) return
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown') return
+    if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+      e.preventDefault()
+      win.webContents.toggleDevTools()
+    } else if (input.key === 'F11') {
+      e.preventDefault()
+      win.setFullScreen(!win.isFullScreen())
+    }
+  })
+}
+
 // Links das conversas abrem no navegador do sistema, não numa janela do app.
 function openLinksOutside(win: BrowserWindow): void {
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -146,14 +201,26 @@ function createWindow(): void {
     height: workArea.height,
     minWidth: 900,
     minHeight: 600,
-    titleBarStyle: 'hiddenInset',
+    ...frame('main'),
     backgroundColor: '#161618',
     webPreferences
   })
+  windowKinds.set(win, 'main')
   win.maximize()
   openLinksOutside(win)
+  windowShortcuts(win)
   loadRenderer(win)
   mainWindow = win
+  // No Windows não há Dock para reabrir o canvas: fechar a janela fecha o app, passando pela mesma
+  // pergunta de quando há algo rodando.
+  if (!IS_MAC) {
+    win.on('close', (e) => {
+      if (quitting) return
+      e.preventDefault()
+      // Fora deste evento: cancelar o fechamento da janela também cancelaria um quit pedido aqui dentro.
+      setImmediate(() => app.quit())
+    })
+  }
   // Recarregar a página derruba quem escuta o `argus`; ele avisa de novo quando o canvas montar.
   win.webContents.on('did-start-loading', () => mainWindow === win && (canvasReady = false))
   win.on('closed', () => {
@@ -168,6 +235,8 @@ function showApp(): void {
   if (!mainWindow) return createWindow()
   if (mainWindow.isMinimized()) mainWindow.restore()
   mainWindow.show()
+  // No Windows o foco não vem junto (o "steal" é só do Mac).
+  if (!IS_MAC) mainWindow.focus()
   app.focus({ steal: true })
 }
 
@@ -178,11 +247,13 @@ function createConversationWindow(hash: string): BrowserWindow {
     height: 860,
     minWidth: 420,
     minHeight: 480,
-    titleBarStyle: 'hiddenInset',
+    ...frame('conversation'),
     backgroundColor: '#161618',
     webPreferences
   })
+  windowKinds.set(win, 'conversation')
   openLinksOutside(win)
+  windowShortcuts(win)
   loadRenderer(win, hash)
   return win
 }
@@ -223,10 +294,21 @@ async function checkForUpdates(): Promise<void> {
 // ainda abrindo, a pasta espera o canvas avisar que está pronto.
 let canvasReady = false
 const pendingOpens: string[] = []
-const cli = new Cli((path) => {
+function openFolder(path: string): void {
   showApp()
   if (canvasReady && mainWindow) mainWindow.webContents.send('cli:open', path)
   else pendingOpens.push(path)
+}
+const cli = new Cli(openFolder)
+
+// Windows: o argus.cmd abre o Argus.exe com a pasta. Com o app fechado, ela vem na abertura; com
+// ele aberto, a segunda instância entrega a pasta a esta e sai.
+const startFolder = !IS_MAC && validFolder(openArg(process.argv))
+if (startFolder) pendingOpens.push(startFolder)
+app.on('second-instance', (_e, argv, _cwd, data) => {
+  const path = validFolder((data as { open?: string | null } | undefined)?.open ?? openArg(argv))
+  if (path) openFolder(path)
+  else showApp()
 })
 
 // Janela de conversa fechada: a sessão dela não fica rodando atrás (a limpeza do React
@@ -238,11 +320,14 @@ const popouts = new Popouts(createConversationWindow, (id) => {
 
 // Menu sem os itens de zoom padrão: ⌘+ / ⌘- / ⌘0 ficam para o canvas.
 // O menu Editar é mantido porque copiar e colar (prints no chat) dependem dele.
+// No Windows não há menu: a barra de título é a do app. Copiar e colar o navegador já faz sozinho,
+// e Ctrl+Z / Ctrl+Shift+Z chegam à interface pelo preload, como os do menu Editar.
 function sendEdit(win: Electron.BaseWindow | undefined, action: 'undo' | 'redo'): void {
   if (win instanceof BrowserWindow) win.webContents.send('edit', action)
 }
 
 function setAppMenu(): void {
+  if (!IS_MAC) return Menu.setApplicationMenu(null)
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
@@ -283,6 +368,7 @@ function setAppMenu(): void {
 }
 
 app.whenReady().then(() => {
+  if (!firstInstance) return
   setAppMenu()
   ipcMain.handle('usage:get', () => usage.all())
   ipcMain.handle('claude:info', (_e, account?: string) => usage.info(resolveAccount(account)))
@@ -299,13 +385,21 @@ app.whenReady().then(() => {
   ipcMain.on('auth:open', (_e, url: string) => /^https:/.test(url) && void shell.openExternal(url))
   ipcMain.on('speech:start', (e) => speech.start(e.sender))
   ipcMain.on('speech:stop', () => speech.stop())
-  // Abre Ajustes do Sistema > Teclado, onde fica o Ditado.
-  ipcMain.on('speech:openSettings', () => shell.openExternal('x-apple.systempreferences:com.apple.Keyboard-Settings.extension'))
+  // Windows: o áudio do microfone, gravado pela janela (ver preload/winMic.ts).
+  ipcMain.on('speech:audio', (e, chunk: Uint8Array) =>
+    speech.audio(e.sender, Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength))
+  )
+  // Abre Ajustes do Sistema > Teclado, onde fica o Ditado. No Windows, a permissão do microfone.
+  ipcMain.on('speech:openSettings', () =>
+    shell.openExternal(IS_WIN ? 'ms-settings:privacy-microphone' : 'x-apple.systempreferences:com.apple.Keyboard-Settings.extension')
+  )
   ipcMain.on('popout:open', (_e, id: string, payload: unknown) => popouts.show(id, payload))
   ipcMain.handle('popout:payload', (_e, id: string) => popouts.payload(id))
   ipcMain.on('theme:set', (_e, theme: 'dark' | 'light' | 'system') => {
     nativeTheme.themeSource = theme
+    repaintOverlays()
   })
+  nativeTheme.on('updated', repaintOverlays)
   ipcMain.on('canvas:load', (e) => {
     e.returnValue = loadCanvas()
   })
@@ -413,13 +507,23 @@ app.whenReady().then(() => {
   setMenuBarIcon(loadAppSettings().menuBarIcon)
   app.on('browser-window-focus', () => tray?.seen())
   createWindow()
+  if (SMOKE_TEST && mainWindow) {
+    // Sai pelo mesmo caminho de quem fecha a janela, já confirmado.
+    runSmokeTest(mainWindow, terminals, () => canvasReady, () => {
+      quitConfirmed = true
+      app.quit()
+    })
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
 // Encerra tudo que o app abriu (claude, terminais, ditado, servidores de projeto) para não sobrar processo solto.
+// quitting: o app está fechando de verdade; a janela do canvas já pode fechar (ver createWindow).
+let quitting = false
 function shutdown(): void {
+  quitting = true
   usage.stop()
   auth.cancel()
   speech.stop()
@@ -470,32 +574,72 @@ function confirmClose(update: boolean, items: string[]): Promise<boolean> {
   return asking
 }
 
+// Windows: os shells dos terminais com algum comando rodando (ver Terminals.busyShells).
+async function busyShells(): Promise<string[]> {
+  return (await terminals.busyShells()).map((cwd) => `Terminal em ${basename(cwd)}`)
+}
+
 // Só troca o app depois do sim: o script da troca reabre o Argus assim que o processo sai.
 async function restartToUpdate(): Promise<void> {
-  const items = inProgress()
+  const items = [...inProgress(), ...(await busyShells())]
   if (!updater.pending || (items.length && !(await confirmClose(true, items)))) return
   quitConfirmed = true
-  updater.install(true)
+  if (!updater.install(true)) quitConfirmed = false
+}
+
+// Windows: depois do shutdown, a saída espera os terminais terminarem de fechar (ver
+// Terminals.closed); as janelas somem na hora. No Mac não há o que esperar.
+let draining = false
+let drained = false
+function finishQuit(e: { preventDefault: () => void }): void {
+  shutdown()
+  if (!terminals.hasClosing()) return
+  e.preventDefault()
+  draining = true
+  for (const w of BrowserWindow.getAllWindows()) w.hide()
+  void terminals.closed().then(() => {
+    drained = true
+    app.quit()
+  })
+}
+
+// Para os sinais do modo de desenvolvimento: sai na hora, depois de os terminais fecharem. Um
+// segundo sinal no meio disso não repete o shutdown.
+function exitNow(): void {
+  if (draining) return
+  shutdown()
+  if (!terminals.hasClosing()) return app.exit(0)
+  draining = true
+  void terminals.closed().then(() => app.exit(0))
 }
 
 // Decidido na hora: adiar a saída sem motivo faria o macOS acusar o Argus de travar o desligamento.
+// No Windows, saber se o shell de um terminal está rodando algo leva um instante; com terminal
+// aberto, a saída espera essa conferência.
+let checkingShells = false
 app.on('before-quit', (e) => {
+  if (drained) return
+  // Fechar de novo enquanto os terminais fecham não repete o shutdown.
+  if (draining) return e.preventDefault()
   const items = quitConfirmed ? [] : inProgress()
-  if (!items.length) return shutdown()
+  const checkShells = !quitConfirmed && terminals.hasShells()
+  if (!items.length && !checkShells) return finishQuit(e)
   e.preventDefault()
-  void confirmClose(false, items).then((ok) => {
-    if (!ok) return
+  // Fechar de novo enquanto a conferência roda não abre outra.
+  if (checkingShells) return
+  checkingShells = true
+  void (async () => {
+    const all = checkShells ? [...items, ...(await busyShells())] : items
+    checkingShells = false
+    if (all.length && !(await confirmClose(false, all))) return
     quitConfirmed = true
     app.quit()
-  })
+  })()
 })
 
 // O modo de desenvolvimento reinicia o app com SIGTERM a cada mudança no processo principal.
 // Sem tratar o sinal, um app ainda abrindo podia ignorá-lo e ficar aberto ao lado do novo.
-process.on('SIGTERM', () => {
-  shutdown()
-  app.exit(0)
-})
+process.on('SIGTERM', exitNow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') return app.quit()
@@ -504,7 +648,4 @@ app.on('window-all-closed', () => {
 })
 
 // Ctrl+C no terminal que subiu o app também encerra tudo que ele abriu.
-process.on('SIGINT', () => {
-  shutdown()
-  app.exit(0)
-})
+process.on('SIGINT', exitNow)

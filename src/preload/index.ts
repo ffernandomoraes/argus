@@ -93,6 +93,7 @@ contextBridge.exposeInMainWorld('api', {
   auth: {
     state: (): Promise<AuthState> => ipcRenderer.invoke('auth:state'),
     refresh: () => ipcRenderer.send('auth:refresh'),
+    install: () => ipcRenderer.send('auth:install'),
     login: (accountId: string, method: LoginMethod) => ipcRenderer.send('auth:login', accountId, method),
     add: (method: LoginMethod) => ipcRenderer.send('auth:add', method),
     submitCode: (code: string) => ipcRenderer.send('auth:code', code),

@@ -460,7 +460,7 @@ class ChatSession {
         }
       }
     } catch (err) {
-      this.update({ error: (err as Error).message })
+      this.update({ error: friendlyError((err as Error).message) })
     } finally {
       this.update({
         status: 'idle',
@@ -476,6 +476,13 @@ class ChatSession {
 }
 
 const TOOL_INPUT_SCAN = 4000
+
+// O SDK avisa em inglês quando não acha o `claude`; a tela de boas-vindas instala.
+function friendlyError(message: string): string {
+  return /native binary not found/i.test(message)
+    ? 'O Claude Code não está instalado neste computador. Feche e abra o Argus para instalar.'
+    : message
+}
 
 function unescapeJson(s: string): string {
   try {

@@ -14,14 +14,15 @@ export function App() {
   const openSettings = useCallback(() => setSettingsOpen(true), [])
   const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const auth = useAuth()
-  // Nenhuma conta logada, depois de conferir todas: sem resposta (claude não instalado) o canvas
-  // abre normal. Com outra conta logada, a principal sem login aparece só em Configurações.
+  // Nenhuma conta logada, depois de conferir todas. Com outra conta logada, a principal sem login
+  // aparece só em Configurações. Sem o Claude Code na máquina, a mesma tela oferece instalar.
   const loggedOut = !!auth?.accounts.length && auth.accounts.every((a) => a.status?.loggedIn === false)
+  const welcome = !!auth && (auth.claude.status !== 'found' || loggedOut)
 
   // Saiu de todas as contas: as configurações fecham e fica a tela de login.
   useEffect(() => {
-    if (loggedOut) setSettingsOpen(false)
-  }, [loggedOut])
+    if (welcome) setSettingsOpen(false)
+  }, [welcome])
 
   // ⌘, abre as configurações, como nos apps do Mac (Ctrl+, no Windows, como no VS Code).
   useEffect(() => {
@@ -40,9 +41,9 @@ export function App() {
       <ReactFlowProvider>
         <Canvas colorMode={theme.resolved} onOpenSettings={openSettings} />
       </ReactFlowProvider>
-      {loggedOut && auth && <WelcomeScreen login={auth.login} />}
+      {welcome && auth && <WelcomeScreen login={auth.login} claude={auth.claude} />}
       <Presence kind="modal">
-        {settingsOpen && !loggedOut && (
+        {settingsOpen && !welcome && (
           <SettingsModal theme={theme.preference} onThemeChange={theme.setPreference} onClose={closeSettings} />
         )}
       </Presence>

@@ -43,6 +43,8 @@ declare global {
         state: () => Promise<AuthState>
         // Confere de novo o login de todas as contas (um login feito no terminal, por exemplo).
         refresh: () => void
+        // Claude Code não achado: roda o instalador oficial (o andamento chega em state.claude).
+        install: () => void
         // Entra de novo numa conta da lista (ou em outra no lugar dela).
         login: (accountId: string, method: LoginMethod) => void
         // Conta nova; entra na lista quando o login termina.

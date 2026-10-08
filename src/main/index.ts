@@ -374,6 +374,7 @@ app.whenReady().then(() => {
   ipcMain.handle('claude:info', (_e, account?: string) => usage.info(resolveAccount(account)))
   ipcMain.handle('auth:state', () => auth.state)
   ipcMain.on('auth:refresh', () => void auth.refresh())
+  ipcMain.on('auth:install', () => void auth.installClaude())
   ipcMain.on('auth:login', (_e, accountId: string, method: LoginMethod) => auth.login(accountId, method))
   ipcMain.on('auth:add', (_e, method: LoginMethod) => auth.add(method))
   ipcMain.on('auth:code', (_e, code: string) => auth.submitCode(code))

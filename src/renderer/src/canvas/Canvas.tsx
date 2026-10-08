@@ -47,6 +47,7 @@ import { ProjectNode } from './ProjectNode'
 import { TerminalNode } from './TerminalNode'
 import { AllConversationsPanel } from './AllConversationsPanel'
 import { AlignmentGuides } from './AlignmentGuides'
+import { EdgeFade } from './EdgeFade'
 import { loadNodes, useSaveNodes } from './persistence'
 import { getSessions, refreshNow, useSessionsVersion } from './sessionsStore'
 import { UsageIndicator } from './UsageIndicator'
@@ -597,6 +598,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--color-dots)" />
         <AlignmentGuides guides={guides} />
+        <EdgeFade />
         <ViewBar />
         {/* Com o drawer aberto, ⌘+ / ⌘- escalam o drawer em vez do canvas. */}
         <NavBar zoomShortcuts={!drawer} />

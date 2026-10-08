@@ -1,15 +1,21 @@
 import { useCallback, useEffect } from 'react'
 import { getViewportForBounds, useReactFlow, useStoreApi } from '@xyflow/react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { FADE_SIZE } from './EdgeFade'
 
 export const ZOOM_DURATION = 200
 const FIT_DURATION = 300
 // Nome do grupo e do projeto ficam acima da borda (bottom-full + mb-1.5 + h-6), fora da caixa
 // do nó; o enquadramento precisa contar com eles.
 const LABEL_SPACE = 32
-// Em px de tela: a barra de título cobre o topo do canvas, e as barras de zoom, uso e navegação
-// ficam por cima das bordas.
-const FIT_PADDING = { top: `${TITLE_BAR_HEIGHT + 24}px`, bottom: '64px', left: '72px', right: '72px' } as const
+// Em px de tela: a barra de título cobre o topo do canvas, as barras de zoom, uso e navegação
+// ficam por cima das bordas, e as bordas são esfumaçadas (EdgeFade): nada pode cair no borrão.
+const FIT_PADDING = {
+  top: `${TITLE_BAR_HEIGHT + FADE_SIZE + 12}px`,
+  bottom: '64px',
+  left: '72px',
+  right: '72px'
+} as const
 
 // "Ver tudo": enquadra todos os blocos visíveis, com os nomes acima deles inteiros.
 export function useFitAll() {

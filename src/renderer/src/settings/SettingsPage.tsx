@@ -158,6 +158,14 @@ function GeneralSection() {
       <MenuBarIconRow />
       <CliRow />
       <UpdatesRow />
+      <Row label="Boas-vindas" description="O passo a passo do começo: o que o Argus faz e a configuração do Claude Code.">
+        <button
+          onClick={() => setPreferences({ welcomeSeen: false })}
+          className="rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2"
+        >
+          Ver de novo
+        </button>
+      </Row>
     </>
   )
 }

@@ -45,6 +45,8 @@ export type ClaudeInstall = {
   status: 'found' | 'missing' | 'installing' | 'failed'
   message?: string
   command: string
+  // Windows: o Git for Windows, que o Claude Code usa para rodar comandos. Sempre true no Mac.
+  git: boolean
 }
 
 export type AuthState = {

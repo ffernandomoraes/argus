@@ -2,7 +2,7 @@
 export type SessionSettings = {
   model: string
   effort: string
-  // Pensamento estendido antes de responder. Ligado por padrão, como na extensão do VS Code.
+  // Pensamento estendido antes de responder. Desligado por padrão; liga nas Configurações ou no chat.
   thinking: boolean
   // Workflows dinâmicos (vários subagentes) em toda tarefa, só nesta sessão.
   ultracode: boolean
@@ -13,17 +13,15 @@ export type SessionSettings = {
 export const DEFAULT_SETTINGS: SessionSettings = {
   model: '',
   effort: '',
-  thinking: true,
+  thinking: false,
   ultracode: false,
   permissionMode: ''
 }
 
-// Configurações do Claude Code para o --settings ao abrir o terminal; só o que difere do padrão.
-export function launchSettings(s: SessionSettings): string | undefined {
-  const out: Record<string, boolean> = {}
-  if (!s.thinking) out.alwaysThinkingEnabled = false
-  if (s.ultracode) out.ultracode = true
-  return Object.keys(out).length ? JSON.stringify(out) : undefined
+// Configurações do Claude Code para o --settings ao abrir o terminal. Vão sempre explícitas para
+// o settings.json do Claude Code não ligar thinking ou Ultracode por conta própria.
+export function launchSettings(s: SessionSettings): string {
+  return JSON.stringify({ alwaysThinkingEnabled: s.thinking, ultracode: s.ultracode })
 }
 
 // Comando para aplicar a mudança numa sessão de terminal já aberta (thinking não tem).

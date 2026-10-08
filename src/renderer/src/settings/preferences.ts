@@ -11,10 +11,19 @@ export type Preferences = {
   conversation: SessionSettings
   // Boas-vindas vistas até o fim neste computador. Falso abre o passo a passo de novo.
   welcomeSeen: boolean
+  // Versão dos padrões da conversa já aplicada. Até a 2, thinking vinha ligado e ficava salvo.
+  conversationDefaults: number
 }
 
 const KEY = 'preferences'
-const DEFAULTS: Preferences = { openIn: 'panel', drawerZoom: 1, conversation: DEFAULT_SETTINGS, welcomeSeen: false }
+const CONVERSATION_DEFAULTS = 2
+const DEFAULTS: Preferences = {
+  openIn: 'panel',
+  drawerZoom: 1,
+  conversation: DEFAULT_SETTINGS,
+  welcomeSeen: false,
+  conversationDefaults: CONVERSATION_DEFAULTS
+}
 
 function read(): Preferences {
   try {
@@ -27,7 +36,13 @@ function read(): Preferences {
       // 'canvas' veio de uma versão de teste em que a conversa abria como nó no canvas; não volta
       // sozinho. A opção de hoje é 'node', escolhida de novo nas configurações.
       openIn: saved.openIn === 'window' || saved.openIn === 'node' ? saved.openIn : 'panel',
-      conversation: { ...DEFAULT_SETTINGS, ...saved.conversation }
+      // Preferência salva antes da versão 2 tinha thinking ligado sem a pessoa escolher: volta a
+      // desligar uma vez, junto com o Ultracode.
+      conversation:
+        saved.conversationDefaults === CONVERSATION_DEFAULTS
+          ? { ...DEFAULT_SETTINGS, ...saved.conversation }
+          : { ...DEFAULT_SETTINGS, ...saved.conversation, thinking: false, ultracode: false },
+      conversationDefaults: CONVERSATION_DEFAULTS
     }
   } catch {
     return DEFAULTS

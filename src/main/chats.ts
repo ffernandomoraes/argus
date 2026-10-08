@@ -117,9 +117,8 @@ class ChatSession {
     const claude = claudePath()
     const env = claudeEnv(claude, this.account)
     const s = req.settings
-    const flags: Record<string, boolean> = {}
-    if (!s.thinking) flags.alwaysThinkingEnabled = false
-    if (s.ultracode) flags.ultracode = true
+    // Sempre explícitas: sem elas, vale o que estiver no settings.json do Claude Code.
+    const flags = { alwaysThinkingEnabled: s.thinking, ultracode: s.ultracode }
 
     this.q = query({
       prompt: this.inbox,
@@ -136,7 +135,7 @@ class ChatSession {
         permissionMode: toPermissionMode(s.permissionMode),
         // Sem isso o SDK recusa o "Ignorar permissões", na abertura e na troca com a conversa aberta.
         allowDangerouslySkipPermissions: true,
-        settings: Object.keys(flags).length ? (flags as never) : undefined,
+        settings: flags as never,
         // Cada subagente manda uma frase do que está fazendo agora; aparece no ramo dele no canvas.
         agentProgressSummaries: true,
         canUseTool: this.canUseTool

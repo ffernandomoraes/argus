@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { shell } from 'electron'
 import { query, type Query } from '@anthropic-ai/claude-agent-sdk'
@@ -43,6 +45,21 @@ type LoginQuery = Query & {
   claudeOAuthWaitForCompletion(): Promise<unknown>
 }
 
+// Nome da pessoa na conta. O `claude auth status` não traz; o Claude Code guarda no .claude.json da
+// conta (fora do formato documentado: se mudar, o cartão só deixa de mostrar o nome). Só vale se o
+// e-mail de lá for o da conta conectada, para nunca mostrar o nome de um login anterior.
+function readUserName(id: string, email: string | undefined): string | undefined {
+  try {
+    const file = join(accountDir(id) ?? homedir(), '.claude.json')
+    const a = (JSON.parse(readFileSync(file, 'utf8')) as { oauthAccount?: Record<string, unknown> }).oauthAccount
+    if (!a || !email || a.emailAddress !== email) return undefined
+    const name = [a.displayName, a.fullName].find((v): v is string => typeof v === 'string' && !!v.trim())
+    return name?.trim()
+  } catch {
+    return undefined
+  }
+}
+
 async function readAccount(id: string): Promise<Account | null> {
   const claude = claudePath()
   try {
@@ -54,6 +71,7 @@ async function readAccount(id: string): Promise<Account | null> {
       method: str(s.authMethod),
       provider: str(s.apiProvider),
       email: str(s.email),
+      userName: s.loggedIn === true ? readUserName(id, str(s.email)) : undefined,
       organization: str(s.orgName),
       subscriptionType: str(s.subscriptionType)
     }

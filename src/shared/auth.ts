@@ -9,6 +9,8 @@ export type Account = {
   // "firstParty" é o login da Anthropic; Bedrock, Vertex e Foundry vêm com o nome deles.
   provider?: string
   email?: string
+  // Nome da pessoa na conta da Anthropic. Não vem do `auth status`: o Argus lê do .claude.json.
+  userName?: string
   organization?: string
   subscriptionType?: string
 }
@@ -19,7 +21,7 @@ export const MAIN_ACCOUNT = 'main'
 
 export type ClaudeAccount = {
   id: string
-  // Apelido escolhido ou, sem ele, o sugerido pela conta (nome da organização ou "Pessoal").
+  // Apelido escolhido ou, sem ele, o sugerido pela conta (nome da pessoa, da organização ou "Pessoal").
   name: string
   customName: boolean
   // Pasta da conta; só nas que não são a principal. No terminal: CLAUDE_CONFIG_DIR=<pasta> claude.

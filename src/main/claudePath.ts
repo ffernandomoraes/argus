@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join } from 'node:path'
 import { findInPath, IS_WIN } from './platform'
 
 // App aberto pelo Finder não herda o PATH do terminal; procura nos lugares comuns.
@@ -43,6 +43,12 @@ function windowsClaude(): string {
 export function claudePath(): string {
   if (IS_WIN) return windowsClaude()
   return MAC_CANDIDATES.find((p) => existsSync(p)) ?? 'claude'
+}
+
+// O `claude` existe de verdade? Sem achar, claudePath devolve só o nome, na esperança do PATH.
+export function claudeFound(): boolean {
+  const claude = claudePath()
+  return isAbsolute(claude) ? existsSync(claude) : !!findInPath(claude.replace(/\.exe$/i, ''))
 }
 
 // Programa e argumentos para abrir o `claude` fora do SDK (terminal, login, uso). O cli.js do npm

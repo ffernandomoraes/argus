@@ -38,7 +38,17 @@ export type LoginState =
   | ({ status: 'waiting'; method: LoginMethod; automaticUrl: string; manualUrl: string } & LoginTarget)
   | ({ status: 'error'; message: string } & LoginTarget)
 
+// O `claude` desta máquina. missing: não achado (a tela de boas-vindas oferece instalar).
+// installing: o Argus está rodando o instalador oficial. failed: deu erro (message); `command` é o
+// mesmo instalador, para rodar na mão no terminal.
+export type ClaudeInstall = {
+  status: 'found' | 'missing' | 'installing' | 'failed'
+  message?: string
+  command: string
+}
+
 export type AuthState = {
+  claude: ClaudeInstall
   // A principal primeiro; as outras na ordem em que foram adicionadas.
   accounts: ClaudeAccount[]
   // Usada fora de grupo e nos grupos sem conta escolhida.

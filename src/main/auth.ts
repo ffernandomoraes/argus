@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import { promisify } from 'node:util'
 import { shell } from 'electron'
 import { query, type Query } from '@anthropic-ai/claude-agent-sdk'
-import { MAIN_ACCOUNT, type Account, type AuthState, type LoginMethod, type LoginState } from '../shared/auth'
+import { MAIN_ACCOUNT, type Account, type AuthState, type ClaudeInstall, type LoginMethod, type LoginState } from '../shared/auth'
 import {
   accountDir,
   accountIds,
@@ -18,7 +18,8 @@ import {
   suggestedName
 } from './accounts'
 import { claudeEnv, Inbox } from './chats'
-import { claudeCommand, claudePath } from './claudePath'
+import { claudeCommand, claudeFound, claudePath } from './claudePath'
+import { INSTALL_COMMAND, runClaudeInstaller } from './claudeInstall'
 
 // Mesmo caminho da extensão do VS Code: um `claude` aberto só para o login gera o link,
 // recebe o retorno do navegador e grava o login, nas Chaves do macOS (no Windows, num arquivo da
@@ -76,6 +77,7 @@ type LoginSession = { q: LoginQuery; inbox: Inbox; accountId: string; adding: bo
 export class Auth {
   private statuses = new Map<string, Account | null>()
   private loginState: LoginState = { status: 'idle' }
+  private install: ClaudeInstall = { status: claudeFound() ? 'found' : 'missing', command: INSTALL_COMMAND }
   private session: LoginSession | null = null
   state: AuthState
 
@@ -98,7 +100,7 @@ export class Auth {
       taken.add(name)
       return { id, name, customName: !!custom, dir: accountDir(id), status }
     })
-    return { accounts, defaultId: defaultAccount(), login: this.loginState }
+    return { claude: this.install, accounts, defaultId: defaultAccount(), login: this.loginState }
   }
 
   private emit(): void {
@@ -113,10 +115,32 @@ export class Auth {
 
   // Confere de novo o login de uma conta ou, sem ela, de todas.
   async refresh(id?: string): Promise<void> {
+    // Instalado por fora (no terminal) enquanto o app estava aberto, ou desinstalado.
+    if (this.install.status !== 'installing') {
+      if (claudeFound()) this.install = { status: 'found', command: INSTALL_COMMAND }
+      else if (this.install.status === 'found') this.install = { status: 'missing', command: INSTALL_COMMAND }
+    }
     const ids = id ? [id] : accountIds()
     const found = await Promise.all(ids.map(readAccount))
     ids.forEach((a, i) => this.statuses.set(a, found[i]))
     this.emit()
+  }
+
+  // Claude Code não achado: roda o instalador oficial e confere as contas de novo. Com um login já
+  // guardado na máquina, o app entra direto.
+  async installClaude(): Promise<void> {
+    if (this.install.status === 'installing') return
+    this.install = { status: 'installing', command: INSTALL_COMMAND }
+    this.emit()
+    const error = await runClaudeInstaller()
+    this.install = claudeFound()
+      ? { status: 'found', command: INSTALL_COMMAND }
+      : {
+          status: 'failed',
+          command: INSTALL_COMMAND,
+          message: error ?? 'O instalador terminou, mas o Claude Code não apareceu na pasta esperada.'
+        }
+    await this.refresh()
   }
 
   // Entra de novo numa conta da lista, ou em outra no lugar dela.

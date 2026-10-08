@@ -158,15 +158,15 @@ export class Terminals {
 
   // Windows: o kill do node-pty fecha o terminal aos poucos. Uma thread ainda esvazia a saída do
   // ConPTY por cerca de 1 s, e o app que sai antes disso cai ao sair (código 0xC0000409, visto no
-  // teste do GitHub). Quem vai sair espera aqui: o aviso de fim de cada terminal (no máximo 3 s),
-  // mais um respiro para a thread parar.
+  // teste do GitHub). Quem vai sair espera aqui: o aviso de fim de cada terminal e esse 1 s da
+  // thread (no máximo 3 s), mais um respiro.
   hasClosing(): boolean {
     return this.closing.size > 0
   }
 
   async closed(): Promise<void> {
     if (!this.closing.size) return
-    await Promise.race([Promise.all(this.closing), wait(3000)])
+    await Promise.race([Promise.all([...this.closing, wait(1100)]), wait(3000)])
     await wait(300)
   }
 

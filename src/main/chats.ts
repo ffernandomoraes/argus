@@ -10,6 +10,7 @@ import {
 } from '@anthropic-ai/claude-agent-sdk'
 import type { RunningAgent } from '../shared/agents'
 import type {
+  ChatActivity,
   ChatRemoteRequest,
   ChatSendRequest,
   ChatSettings,
@@ -99,6 +100,10 @@ class ChatSession {
   // Tokens do pedido em andamento: respostas já fechadas + a que está sendo escrita.
   private closedTokens = 0
   private currentTokens = 0
+  // Bloco sendo escrito agora e, se for ferramenta, o pedido dela chegando aos pedaços.
+  private block = ''
+  private toolName = ''
+  private toolInput = ''
 
   constructor(
     key: string,
@@ -252,7 +257,7 @@ class ChatSession {
   async interrupt(): Promise<void> {
     // A tela reage na hora, sem esperar o Claude confirmar.
     this.interrupted = true
-    this.update({ status: 'idle', partial: '', error: undefined, turnStartedAt: undefined })
+    this.update({ status: 'idle', partial: '', error: undefined, turnStartedAt: undefined, activity: undefined })
     try {
       await this.q.interrupt()
     } catch {
@@ -339,6 +344,43 @@ class ChatSession {
     )
   }
 
+  // Mesma etapa continua contando do começo dela (ex.: pensando antes e durante o raciocínio).
+  private activity(kind: ChatActivity['kind'], tool?: string, summary?: string): ChatActivity {
+    const a = this.state.activity
+    const since = a?.kind === kind && a.tool === tool ? a.since : Date.now()
+    return { kind, tool, summary, since }
+  }
+
+  private onBlockStart(b: Line): void {
+    this.block = b?.type ?? ''
+    if (b?.type === 'thinking' || b?.type === 'redacted_thinking') {
+      this.update({ activity: this.activity('thinking') })
+    } else if (b?.type === 'text') {
+      this.update({ activity: this.activity('writing') })
+    } else if (b?.type === 'tool_use') {
+      this.toolName = b.name
+      this.toolInput = ''
+      this.update({ activity: { kind: 'preparing', tool: describeTool(b.name, {}).label, since: Date.now() } })
+    }
+  }
+
+  // O pedido da ferramenta chega como JSON incompleto: tira dele os campos que já fecharam
+  // (caminho, comando, descrição...) para mostrar o alvo antes de o pedido terminar.
+  private onToolInput(chunk: string): void {
+    // O caminho e o comando vêm no começo; o resto (conteúdo de arquivo) não muda o resumo.
+    if (this.toolInput.length > TOOL_INPUT_SCAN) return
+    this.toolInput += chunk
+    const input: Line = {}
+    for (const [, key, value] of this.toolInput.matchAll(/"(\w+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)) {
+      if (!(key in input)) input[key] = unescapeJson(value)
+    }
+    if (!Object.keys(input).length) return
+    const summary = describeTool(this.toolName, input).summary
+    if (summary && summary !== this.state.activity?.summary) {
+      this.update({ activity: { ...this.state.activity!, summary } }, false)
+    }
+  }
+
   private async run(): Promise<void> {
     try {
       for await (const m of this.q) {
@@ -368,7 +410,15 @@ class ChatSession {
             }
             this.closedTokens += this.currentTokens
             this.currentTokens = 0
-            this.update({ partial: '' }, false)
+            this.update({ partial: '', activity: this.activity('thinking') }, false)
+          } else if (e.type === 'content_block_start') {
+            this.onBlockStart(e.content_block as Line)
+          } else if (e.type === 'content_block_delta' && e.delta.type === 'input_json_delta') {
+            this.onToolInput(e.delta.partial_json)
+          } else if (e.type === 'content_block_stop') {
+            // Pedido da ferramenta pronto: daqui ela roda.
+            if (this.block === 'tool_use') this.update({ activity: { ...this.state.activity!, kind: 'running', since: Date.now() } })
+            this.block = ''
           } else if (e.type === 'content_block_delta' && e.delta.type === 'text_delta') {
             this.update({ partial: this.state.partial + e.delta.text }, false)
           } else if (e.type === 'message_delta' && typeof e.usage?.output_tokens === 'number') {
@@ -385,6 +435,8 @@ class ChatSession {
               (m.message.content as Line[]).filter((c) => c?.type === 'tool_result').map((c) => c.tool_use_id as string)
             )
             this.dropAgents((a) => !a.background && !!a.toolUseId && done.has(a.toolUseId))
+            // Resultado entregue: o Claude volta a pensar no próximo passo.
+            if (done.size) this.update({ activity: this.activity('thinking') }, false)
           }
           // Já gravado no arquivo: o chat relê o histórico.
           this.update({ revision: this.state.revision + 1 })
@@ -401,6 +453,7 @@ class ChatSession {
             agents: this.state.agents.filter((a) => a.background),
             status: this.waiting.size ? 'needs-you' : 'idle',
             turnStartedAt: undefined,
+            activity: undefined,
             partial: '',
             revision: this.state.revision + 1,
             error: failed ? ('result' in m && m.result ? m.result : 'O Claude parou com erro.') : undefined
@@ -410,9 +463,26 @@ class ChatSession {
     } catch (err) {
       this.update({ error: (err as Error).message })
     } finally {
-      this.update({ status: 'idle', partial: '', permissions: [], agents: [], revision: this.state.revision + 1 })
+      this.update({
+        status: 'idle',
+        partial: '',
+        permissions: [],
+        agents: [],
+        activity: undefined,
+        revision: this.state.revision + 1
+      })
       this.onEnd(this)
     }
+  }
+}
+
+const TOOL_INPUT_SCAN = 4000
+
+function unescapeJson(s: string): string {
+  try {
+    return JSON.parse(`"${s}"`)
+  } catch {
+    return s
   }
 }
 

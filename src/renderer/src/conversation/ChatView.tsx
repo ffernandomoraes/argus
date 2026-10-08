@@ -20,9 +20,10 @@ import { useDictation } from './useDictation'
 import { VoiceWave } from './VoiceWave'
 import type { SessionSettings } from './SessionSettings'
 import type { SessionStatus } from '../canvas/types'
-import type { AgentDef } from '../../../shared/agents'
-import type { ChatState, PermissionAnswer } from '../../../shared/chat'
+import type { AgentDef, RunningAgent } from '../../../shared/agents'
+import type { ChatActivity, ChatState, PermissionAnswer } from '../../../shared/chat'
 import type { Message } from './types'
+import { Presence } from '../motion'
 
 // Texto digitado e não enviado, por conversa: fechar o drawer (ESC, X) ou trocar de conversa
 // não perde o que estava escrito. Vale enquanto o app está aberto.
@@ -264,7 +265,8 @@ export function ChatView({
   settings,
   onSettingChange,
   contextPercent,
-  agents = []
+  agents = [],
+  composerBorder = true
 }: {
   // Conversa dona do rascunho guardado.
   draftKey: string
@@ -287,6 +289,8 @@ export function ChatView({
   onSettingChange: (patch: Partial<SessionSettings>) => void
   // Agentes que dá para chamar com @nome: globais e os do projeto.
   agents?: AgentDef[]
+  // Linha separando a caixa de escrever da conversa; o modo foco do drawer tira.
+  composerBorder?: boolean
 }) {
   const attachments = useAttachments()
   const imageInput = useRef<HTMLInputElement>(null)
@@ -475,6 +479,14 @@ export function ChatView({
     const base = dictationBase.current
     setDraft(base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken)
   })
+  // O texto ditado entra por código, e o navegador não rola o campo sozinho:
+  // sem isso as últimas palavras ficam escondidas abaixo da segunda linha.
+  useEffect(() => {
+    const el = textarea.current
+    if (!el || dictation.state === 'idle') return
+    el.setSelectionRange(el.value.length, el.value.length)
+    el.scrollTop = el.scrollHeight
+  }, [draft, dictation.state])
   const toggleDictation = () => {
     if (dictation.state === 'idle') {
       dictationBase.current = draft
@@ -632,10 +644,16 @@ export function ChatView({
     step(
       'working',
       'bg-running animate-pulse',
-      <div className="flex items-center gap-2 py-0.5 text-[13px] text-muted">
-        Trabalhando…
+      <div className="flex min-w-0 items-center gap-2 py-0.5 text-[13px] text-muted">
+        <span className="min-w-0 truncate">{activityLabel(live?.activity, live?.agents ?? [])}</span>
         {turnStartedAt !== undefined && (
-          <span className="tabular-nums text-faint">
+          <span className="shrink-0 tabular-nums text-faint">
+            {live?.activity && (
+              <>
+                <Elapsed since={live.activity.since} />
+                {' - total '}
+              </>
+            )}
             <Elapsed since={turnStartedAt} />
             {turnTokens > 0 && ` - ${formatTokens(turnTokens)}`}
           </span>
@@ -718,15 +736,19 @@ export function ChatView({
         </div>
       </div>
 
-      <div className="border-t border-line px-3 pb-2 pt-3">
+      <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
         {live?.remote && <RemoteControlBar remote={live.remote} onTurnOff={() => onRemoteControl(false)} />}
         <div className="relative rounded-lg border border-line bg-surface focus-within:border-line-strong">
-          {commands && (
-            <SlashMenu items={commands} active={activeCommand} onHover={setActiveCommand} onSelect={selectCommand} />
-          )}
-          {mention && (
-            <AgentMenu items={mention.items} active={activeCommand} onHover={setActiveCommand} onSelect={selectAgent} />
-          )}
+          <Presence kind="menu">
+            {commands && (
+              <SlashMenu items={commands} active={activeCommand} onHover={setActiveCommand} onSelect={selectCommand} />
+            )}
+          </Presence>
+          <Presence kind="menu">
+            {mention && (
+              <AgentMenu items={mention.items} active={activeCommand} onHover={setActiveCommand} onSelect={selectAgent} />
+            )}
+          </Presence>
           <AttachmentList items={attachments.items} onRemove={attachments.remove} />
           <textarea
             ref={textarea}
@@ -745,7 +767,7 @@ export function ChatView({
                     ? 'Escreva, fale, cole um print (⌘V), / para comandos ou @ para agentes'
                     : 'Escreva, fale, cole um print (⌘V) ou digite / para comandos'
             }
-            className="block w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-faint"
+            className="mb-1.5 block w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-faint"
           />
           <div className="flex items-center gap-1 px-2 pb-2">
             <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={onPick} />
@@ -847,7 +869,28 @@ export function ChatView({
           />
         </div>
       </div>
-      {viewer && <ImageViewer load={viewer.load} start={viewer.start} onClose={() => setViewer(null)} />}
+      <Presence kind="modal">
+        {viewer && <ImageViewer load={viewer.load} start={viewer.start} onClose={() => setViewer(null)} />}
+      </Presence>
     </div>
   )
+}
+
+// O que o Claude está fazendo agora, no lugar de um "Trabalhando…" parado.
+function activityLabel(activity: ChatActivity | undefined, agents: RunningAgent[]): string {
+  const target = activity?.tool && `${activity.tool}${activity.summary ? ` - ${activity.summary}` : ''}`
+  const foreground = agents.filter((a) => !a.background).length
+  switch (activity?.kind) {
+    case 'thinking':
+      return 'Pensando…'
+    case 'writing':
+      return 'Escrevendo a resposta…'
+    case 'preparing':
+      return `Montando: ${target}…`
+    case 'running':
+      if (foreground) return foreground === 1 ? 'Esperando o subagente…' : `Esperando ${foreground} subagentes…`
+      return `Executando: ${target}…`
+    default:
+      return 'Trabalhando…'
+  }
 }

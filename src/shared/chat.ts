@@ -44,10 +44,23 @@ export type ChatState = {
   // Pedido em andamento: quando começou (ms) e quantos tokens o Claude já gerou nele.
   turnStartedAt?: number
   turnTokens: number
+  // Etapa do pedido em andamento, para o rótulo "Pensando…", "Executando…" etc.
+  activity?: ChatActivity
   // Remote control ligado: a conversa também pode ser continuada pelo claude.ai ou pelo celular.
   remote?: RemoteControl
   // Subagentes trabalhando agora, lançados por esta conversa.
   agents: RunningAgent[]
+}
+
+// thinking: pensando ou esperando o modelo. writing: escrevendo a resposta. preparing: montando o
+// pedido de uma ferramenta (o resumo chega aos poucos). running: ferramenta rodando.
+export type ChatActivity = {
+  kind: 'thinking' | 'writing' | 'preparing' | 'running'
+  // Nome amigável da ferramenta e o alvo dela (arquivo, comando...), como na linha do chat.
+  tool?: string
+  summary?: string
+  // Quando a etapa começou (ms).
+  since: number
 }
 
 // connecting: ligando ou reconectando. failed: não conectou (detail diz o motivo).

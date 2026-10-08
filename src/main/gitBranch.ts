@@ -6,10 +6,9 @@ import type { FileDiff } from '../shared/files'
 import type { DiffHunk } from '../shared/history'
 import type { UncommittedFile } from '../shared/sessions'
 import { expandHome, insideRoot } from './paths'
+import { gitPath } from './platform'
 
 const run = promisify(execFile)
-// Caminho absoluto: aberto pelo Dock, o app não herda o PATH do terminal.
-const GIT = '/usr/bin/git'
 
 // Checkout que contém a pasta: sobe até achar o `.git`. `root` é a raiz dos arquivos;
 // `gitDir`, onde o git guarda o HEAD. Em worktree, o `.git` é um arquivo que aponta
@@ -68,10 +67,11 @@ export async function uncommittedFiles(folder: string): Promise<UncommittedFile[
   try {
     // --no-optional-locks: o status não regrava o index; senão o aviso de mudança no .git
     // dispararia outra leitura, e assim por diante.
-    const { stdout } = await run(GIT, ['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'], {
+    const { stdout } = await run(gitPath(), ['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'], {
       cwd: repo.root,
       timeout: 5000,
-      maxBuffer: 16 * 1024 * 1024
+      maxBuffer: 16 * 1024 * 1024,
+      windowsHide: true
     })
     // Cada entrada é "XY caminho", relativo à raiz; renomeado ou copiado traz o caminho
     // antigo na entrada seguinte.
@@ -93,7 +93,7 @@ export async function uncommittedFiles(folder: string): Promise<UncommittedFile[
 // git diff sai com código 1 quando há diferença (--no-index); a saída ainda serve.
 async function gitOutput(cwd: string, args: string[]): Promise<string> {
   try {
-    return (await run(GIT, args, { cwd, timeout: 10_000, maxBuffer: 32 * 1024 * 1024 })).stdout
+    return (await run(gitPath(), args, { cwd, timeout: 10_000, maxBuffer: 32 * 1024 * 1024, windowsHide: true })).stdout
   } catch (err) {
     const out = (err as { stdout?: string; code?: number }).stdout
     if ((err as { code?: number }).code === 1 && out) return out

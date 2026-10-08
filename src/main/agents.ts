@@ -24,7 +24,9 @@ function scalar(raw: string): string {
   return v
 }
 
-function parse(text: string, path: string, scope: AgentDef['scope']): AgentDef | null {
+function parse(raw: string, path: string, scope: AgentDef['scope']): AgentDef | null {
+  // Arquivo editado no Windows vem com \r\n.
+  const text = raw.replace(/\r\n/g, '\n')
   const m = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text)
   if (!m) return null
   const head: Record<string, string> = {}

@@ -4,6 +4,7 @@ import { useDictation } from '../conversation/useDictation'
 import { VoiceWave } from '../conversation/VoiceWave'
 import type { AgentDef } from '../../../shared/agents'
 import { useEscape } from '../useEscape'
+import { IS_WIN, isMod, keys, tildify } from '../platform'
 
 // Ferramentas do Claude Code que dá para marcar uma a uma. Outras (MCPs, por exemplo) vão no
 // campo de texto, pelo nome completo.
@@ -64,11 +65,6 @@ function toolList(d: Draft): string[] | undefined {
     .map((t) => t.trim())
     .filter(Boolean)
   return [...d.tools, ...extra]
-}
-
-const tildify = (path: string) => {
-  const home = window.api.homeDir
-  return path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
 }
 
 // Campos que aceitam ditado: a descrição para o Claude preencher e os textos do agente.
@@ -249,7 +245,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === 's') {
+      if (isMod(e) && e.key === 's') {
         e.preventDefault()
         void save()
       }
@@ -325,7 +321,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                 {draft ? draft.previousName ?? 'Novo agente' : 'Agentes globais'}
               </div>
               <div className="mt-0.5 truncate font-mono text-[11px] text-faint">
-                {current ? tildify(current.path) : '~/.claude/agents/'}
+                {current ? tildify(current.path) : IS_WIN ? '~\\.claude\\agents\\' : '~/.claude/agents/'}
               </div>
             </div>
             {draft?.previousName && (
@@ -352,7 +348,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={() => void save()}
                 disabled={!dirty}
-                title="Salvar (⌘S)"
+                title={`Salvar (${keys('⌘S')})`}
                 className="rounded-md bg-text px-2.5 py-1 text-xs font-medium text-bg hover:opacity-85 disabled:opacity-40"
               >
                 Salvar
@@ -406,7 +402,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                   value={brief}
                   onChange={(e) => setBrief(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.metaKey) {
+                    if (e.key === 'Enter' && isMod(e)) {
                       e.preventDefault()
                       void fill()
                     }
@@ -429,7 +425,7 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
                   <button
                     onClick={() => void fill()}
                     disabled={!brief.trim() || drafting || listening}
-                    title={listening ? 'Pare o microfone para preencher' : 'Preencher os campos (⌘Enter)'}
+                    title={listening ? 'Pare o microfone para preencher' : `Preencher os campos (${keys('⌘Enter')})`}
                     className="flex items-center gap-1.5 rounded-md bg-text px-2.5 py-1 text-xs font-medium text-bg hover:opacity-85 disabled:opacity-40"
                   >
                     {drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}

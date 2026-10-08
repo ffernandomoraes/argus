@@ -18,14 +18,21 @@ import {
   suggestedName
 } from './accounts'
 import { claudeEnv, Inbox } from './chats'
-import { claudePath } from './claudePath'
+import { claudeCommand, claudePath } from './claudePath'
 
 // Mesmo caminho da extensão do VS Code: um `claude` aberto só para o login gera o link,
-// recebe o retorno do navegador e grava o login nas Chaves do macOS. Na principal, onde o
-// Claude Code inteiro (terminal, VS Code, este app) passa a usar; nas outras, no item da pasta
-// da conta (ver accounts.ts).
+// recebe o retorno do navegador e grava o login, nas Chaves do macOS (no Windows, num arquivo da
+// pasta de configuração). Na principal, onde o Claude Code inteiro (terminal, VS Code, este app)
+// passa a usar; nas outras, no item da pasta da conta (ver accounts.ts).
 
 const run = promisify(execFile)
+
+// Comando do `claude` fora do SDK. windowsHide: sem ele, o Windows pisca uma janela de terminal a
+// cada conferência de login.
+function runClaude(claude: string, args: string[], account: string) {
+  const cmd = claudeCommand(args, claude)
+  return run(cmd.file, cmd.args, { env: claudeEnv(claude, account), timeout: 15_000, windowsHide: true })
+}
 
 // O SDK tem os pedidos de login, mas não os publica nos tipos. Conferido na 0.3.289.
 type LoginQuery = Query & {
@@ -37,7 +44,7 @@ type LoginQuery = Query & {
 async function readAccount(id: string): Promise<Account | null> {
   const claude = claudePath()
   try {
-    const { stdout } = await run(claude, ['auth', 'status', '--json'], { env: claudeEnv(claude, id), timeout: 15_000 })
+    const { stdout } = await runClaude(claude, ['auth', 'status', '--json'], id)
     const s = JSON.parse(stdout) as Record<string, unknown>
     const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined)
     return {
@@ -208,7 +215,7 @@ export class Auth {
     const claude = claudePath()
     let ok = true
     try {
-      await run(claude, ['auth', 'logout'], { env: claudeEnv(claude, MAIN_ACCOUNT), timeout: 15_000 })
+      await runClaude(claude, ['auth', 'logout'], MAIN_ACCOUNT)
     } catch (err) {
       console.warn('[auth] claude auth logout falhou:', (err as Error).message)
       ok = false
@@ -225,7 +232,7 @@ export class Auth {
     if (this.session?.accountId === id) this.cancel()
     this.onAccountRemoved(id)
     const claude = claudePath()
-    await run(claude, ['auth', 'logout'], { env: claudeEnv(claude, id), timeout: 15_000 }).catch(() => {})
+    await runClaude(claude, ['auth', 'logout'], id).catch(() => {})
     removeAccount(id)
     this.statuses.delete(id)
     this.emit()

@@ -68,7 +68,7 @@ Substituída por D8: a interface foi montada direto no app.
 
 | Item | Status |
 |---|---|
-| Windows | falta |
+| Windows | feito: Windows 10 e 11 (64 bits), com instalador e atualização automática; sem o painel de servidores dos agentes (D21) |
 | Terminal embutido | feito |
 | Notificações quando um agente termina ou precisa de resposta | feito |
 | Conexões entre projetos | falta |

@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline'
 import type { ClaudeInfo, ClaudeModel } from '../shared/models'
 import type { Usage, UsageWindow } from '../shared/usage'
 import { claudeEnv } from './chats'
-import { claudePath } from './claudePath'
+import { claudeCommand, claudePath } from './claudePath'
 
 // Mesmo caminho da extensão do VS Code: um `claude` em modo stream-json fica aberto
 // e responde ao pedido de controle `get_usage`, sem enviar mensagem nem gastar uso.
@@ -54,11 +54,12 @@ export class UsageMonitor {
   start(): void {
     this.stopped = false
     const claude = claudePath()
-    const proc = spawn(
-      claude,
+    const cmd = claudeCommand(
       ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--no-session-persistence'],
-      { cwd: homedir(), env: claudeEnv(claude, this.account) }
+      claude
     )
+    // windowsHide: sem ele, o Windows mostraria uma janela de terminal para este `claude` escondido.
+    const proc = spawn(cmd.file, cmd.args, { cwd: homedir(), env: claudeEnv(claude, this.account), windowsHide: true })
     this.proc = proc
 
     createInterface({ input: proc.stdout }).on('line', (line) => this.onLine(line))

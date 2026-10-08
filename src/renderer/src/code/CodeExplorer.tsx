@@ -26,6 +26,10 @@ import { refreshNow, useUncommitted } from '../canvas/sessionsStore'
 import { KIND_COLOR, KIND_LABEL } from '../conversation/ConversationView'
 import type { UncommittedFile } from '../../../shared/sessions'
 import { Presence } from '../motion'
+import { FILE_MANAGER, IS_WIN, isMod, relativeTo, untildify } from '../platform'
+
+// A Lixeira do Windows abre direto da Área de Trabalho; a do Mac, pelo Finder.
+const RECOVER = IS_WIN ? 'Dá para recuperar pela Lixeira.' : 'Dá para recuperar pelo Finder.'
 
 type Kind = UncommittedFile['kind']
 // Pasta com mudanças dentro: o tipo mais importante entre elas dá a cor, como no VS Code.
@@ -36,11 +40,10 @@ const KIND_RANK: Kind[] = ['!', 'M', 'R', 'D', 'A', 'U']
 function changesInTree(root: string, files: UncommittedFile[] | null): Map<string, Kind> {
   const out = new Map<string, Kind>()
   if (!files) return out
-  const home = window.api.homeDir
-  const base = (root === '~' || root.startsWith('~/') ? home + root.slice(1) : root).replace(/\/$/, '') + '/'
+  const base = untildify(root)
   for (const f of files) {
-    if (!f.path.startsWith(base)) continue
-    const rel = f.path.slice(base.length)
+    const rel = relativeTo(f.path, base)
+    if (!rel) continue
     out.set(rel, f.kind)
     for (let dir = parentOf(rel); dir; dir = parentOf(dir)) {
       const current = out.get(dir)
@@ -334,8 +337,8 @@ export function CodeExplorer({
     setConfirm({
       title: `Excluir ${entry.isDir ? 'a pasta' : 'o arquivo'} "${entry.name}"?`,
       description: entry.isDir
-        ? 'A pasta e tudo o que há dentro dela vão para a Lixeira. Dá para recuperar pelo Finder.'
-        : 'O arquivo vai para a Lixeira. Dá para recuperar pelo Finder.',
+        ? `A pasta e tudo o que há dentro dela vão para a Lixeira. ${RECOVER}`
+        : `O arquivo vai para a Lixeira. ${RECOVER}`,
       confirmLabel: 'Mover para a Lixeira',
       onConfirm: async () => {
         if (done(await window.api.files.trash(root, entry.path)) === null) return
@@ -382,7 +385,7 @@ export function CodeExplorer({
     }
     items.push({
       type: 'action',
-      label: 'Mostrar no Finder',
+      label: `Mostrar no ${FILE_MANAGER}`,
       icon: FolderSearch,
       onSelect: () => window.api.files.reveal(root, entry?.path ?? '')
     })
@@ -397,21 +400,22 @@ export function CodeExplorer({
     setMenu({ x: e.clientX, y: e.clientY, items: menuFor(entry) })
   }
 
-  // Atalhos com a árvore em foco: ⌘C copia, ⌘V cola, Enter renomeia, ⌘⌫ exclui.
+  // Atalhos com a árvore em foco: ⌘C copia, ⌘V cola, Enter renomeia, ⌘⌫ exclui. No Windows,
+  // Ctrl+C e Ctrl+V, e também o F2 para renomear e o Delete para excluir, como no Explorador.
   // O preventDefault impede que o menu Editar do app trate o mesmo ⌘C / ⌘V.
   const onKeyDown = (e: KeyboardEvent) => {
     if (editing) return
     const entry = entryOf(focused)
-    if (e.metaKey && e.key === 'v') {
+    if (isMod(e) && e.key === 'v') {
       e.preventDefault()
       paste(targetDir(focused))
-    } else if (e.metaKey && e.key === 'c' && entry) {
+    } else if (isMod(e) && e.key === 'c' && entry) {
       e.preventDefault()
       window.api.files.copy(root, [entry.path])
-    } else if (e.key === 'Enter' && entry) {
+    } else if ((e.key === 'Enter' || (IS_WIN && e.key === 'F2')) && entry) {
       e.preventDefault()
       setEditing({ kind: 'rename', path: entry.path })
-    } else if (e.metaKey && e.key === 'Backspace' && entry) {
+    } else if ((IS_WIN ? e.key === 'Delete' : e.metaKey && e.key === 'Backspace') && entry) {
       e.preventDefault()
       askDelete(entry)
     }

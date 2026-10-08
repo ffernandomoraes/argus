@@ -2,18 +2,14 @@ import { useState } from 'react'
 import { ExternalLink, Lock, Power, Server, X } from 'lucide-react'
 import { useDevServers } from './useDevServers'
 import { useEscape } from '../useEscape'
+import { baseName, tildify } from '../platform'
 
 const LOCK_REASON = {
   app: 'Servidor de dev deste app: encerrar fecharia o editor',
   claude: 'Roda junto com uma sessão do Claude Code: encerrar derrubaria a sessão'
 }
 
-const folderName = (cwd: string) => cwd.split('/').filter(Boolean).pop() || cwd
-
-const tildify = (path: string) => {
-  const home = window.api.homeDir
-  return path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
-}
+const folderName = (cwd: string) => baseName(cwd) || cwd
 
 // Servidores locais que o Claude Code ou o play deixou rodando, ou que rodam dentro de uma pasta
 // do canvas (`paths`): abrir no navegador ou encerrar.

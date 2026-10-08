@@ -4,6 +4,7 @@ import type { CanvasAgentState } from '../../../shared/canvasAgent'
 import { useDictation } from '../conversation/useDictation'
 import { VoiceWave } from '../conversation/VoiceWave'
 import { useEscape } from '../useEscape'
+import { SYSTEM_SETTINGS } from '../platform'
 
 // Depois de cumprir o pedido, a resposta fica um pouco na tela e a barra some sozinha.
 const AUTO_CLOSE_MS = 4000
@@ -160,7 +161,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
               onClick={() => window.api.speech.openSettings()}
               className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
             >
-              Abrir Ajustes
+              Abrir {SYSTEM_SETTINGS}
             </button>
           )}
         </p>

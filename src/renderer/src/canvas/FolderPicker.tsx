@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Folder, FolderOpen, Search } from 'lucide-react'
 import type { KnownFolder } from '../../../shared/sessions'
 import { useEscape } from '../useEscape'
+import { lastSep, parentDir } from '../platform'
 import { displayPath } from './factory'
 import { relativeTime } from './relativeTime'
 
@@ -87,7 +88,7 @@ export function FolderPicker({
           <ul ref={list} className="min-h-0 flex-1 overflow-y-auto p-1">
             {shown.map((f, i) => {
               const path = displayPath(f.path)
-              const parent = path.slice(0, path.lastIndexOf('/')) || '/'
+              const parent = parentDir(path) || path.slice(0, lastSep(path) + 1)
               return (
                 <li key={f.path}>
                   <button
@@ -99,7 +100,7 @@ export function FolderPicker({
                     }`}
                   >
                     <Folder size={14} className="shrink-0 text-muted" />
-                    <span className="shrink-0 font-medium text-text">{path.slice(path.lastIndexOf('/') + 1)}</span>
+                    <span className="shrink-0 font-medium text-text">{path.slice(lastSep(path) + 1)}</span>
                     <span className="min-w-0 truncate text-faint">{parent}</span>
                     {onCanvas.has(path) && (
                       <span className="shrink-0 rounded border border-line px-1 text-[10px] text-faint">no canvas</span>

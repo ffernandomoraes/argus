@@ -1,16 +1,30 @@
 import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  linkSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app } from 'electron'
 import { MAIN_ACCOUNT, type Account } from '../shared/auth'
+import { IS_MAC, IS_WIN } from './platform'
 
 // Contas do Claude no app. A principal é a do ~/.claude, a mesma do terminal e do VS Code. Cada
 // outra mora numa pasta própria, passada ao `claude` em CLAUDE_CONFIG_DIR (a pasta de configuração
 // do Claude Code): o .claude.json dela fica lá dentro, e o login vai para outro item das Chaves do
-// macOS, "Claude Code-credentials-" mais o hash da pasta (conferido na 2.1.291). Assim as contas
-// rodam ao mesmo tempo sem uma derrubar a outra.
+// macOS, "Claude Code-credentials-" mais o hash da pasta (conferido na 2.1.291). No Windows o login
+// fica num arquivo dentro da própria pasta (.credentials.json). Assim as contas rodam ao mesmo
+// tempo sem uma derrubar a outra.
 // O que é seu fica ligado à principal por link simbólico; o login e os MCPs, não.
 
 const MAIN_DIR = join(homedir(), '.claude')
@@ -171,10 +185,32 @@ function link(dir: string): void {
     const path = join(dir, name)
     if (!existsSync(target) || exists(path)) continue
     try {
-      symlinkSync(target, path)
+      linkItem(target, path)
     } catch {
       // o próprio `claude` criou o item no mesmo instante
     }
+  }
+}
+
+// No Windows, link simbólico pede administrador (ou o Modo de Desenvolvedor ligado). Pasta vira
+// junction, que não pede; arquivo tenta o link simbólico e, sem permissão, vira link físico: o
+// mesmo arquivo no disco com dois nomes. O físico se desfaz se um programa trocar o arquivo da
+// principal por outro (gravar numa cópia e renomear), e aí cada conta fica com a sua versão.
+function linkItem(target: string, path: string): void {
+  if (!IS_WIN) return symlinkSync(target, path)
+  if (statSync(target).isDirectory()) return symlinkSync(target, path, 'junction')
+  try {
+    symlinkSync(target, path, 'file')
+  } catch {
+    linkSync(target, path)
+  }
+}
+
+function isLink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
   }
 }
 
@@ -260,16 +296,21 @@ function keychainService(dir: string): string {
 function erase(id: string): void {
   const dir = accountDir(id)
   if (!dir || !ID.test(id)) return
-  // O login fica nas Chaves, fora da pasta. Cobre o caso de o `claude auth logout` ter falhado
-  // ou nem ter rodado.
-  execFile('security', ['delete-generic-password', '-s', keychainService(dir)], () => {})
-  // Os links saem um a um antes: apagar a pasta nunca pode alcançar o que é da principal.
+  // No Mac o login fica nas Chaves, fora da pasta. Cobre o caso de o `claude auth logout` ter
+  // falhado ou nem ter rodado. No Windows ele mora num arquivo da pasta e sai junto com ela.
+  if (IS_MAC) execFile('security', ['delete-generic-password', '-s', keychainService(dir)], () => {})
+  // Os links saem um a um antes: apagar a pasta nunca pode alcançar o que é da principal. Se algum
+  // não sair, a pasta fica (o link físico do Windows sai junto com ela sem tocar no original).
   for (const name of SHARED) {
     const path = join(dir, name)
     try {
-      if (lstatSync(path).isSymbolicLink()) unlinkSync(path)
+      if (isLink(path)) unlinkSync(path)
     } catch {
-      // não existe
+      // segue para a conferência abaixo
+    }
+    if (isLink(path)) {
+      console.warn('[accounts] link não saiu; a pasta da conta fica:', path)
+      return
     }
   }
   rmSync(dir, { recursive: true, force: true })

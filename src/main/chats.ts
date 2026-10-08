@@ -26,6 +26,7 @@ import { learnContextWindow } from './contextWindows'
 import { diffFromInput } from './diffs'
 import { describeTool } from './toolLabels'
 import { expandHome } from './paths'
+import { childEnv, prependPath } from './platform'
 
 // Fila que alimenta a sessão: cada envio do chat vira uma mensagem para o Claude.
 export class Inbox implements AsyncIterable<SDKUserMessage> {
@@ -75,10 +76,8 @@ type Waiting = { resolve: (r: PermissionResult) => void; input: Record<string, u
 // fariam o `claude` subir como Node puro. A conta escolhe a pasta de configuração; sem ela,
 // vale a padrão (ver accounts.ts).
 export function claudeEnv(claude: string, account?: string): Record<string, string> {
-  const env = { ...process.env } as Record<string, string>
-  delete env.ELECTRON_RUN_AS_NODE
-  delete env.ELECTRON_NO_ATTACH_CONSOLE
-  env.PATH = [dirname(claude), '/opt/homebrew/bin', '/usr/local/bin', env.PATH].filter(Boolean).join(':')
+  const env = childEnv()
+  prependPath(env, [dirname(claude)])
   applyAccount(env, account)
   return env
 }

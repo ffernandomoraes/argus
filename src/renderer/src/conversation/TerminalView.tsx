@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
+import { IS_WIN } from '../platform'
 
 const THEME = {
   background: '#0c0c0d',
@@ -62,7 +63,7 @@ export function TerminalView({
     setExitCode(null)
 
     const term = new Terminal({
-      fontFamily: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
+      fontFamily: "'JetBrains Mono', 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace",
       fontSize: Math.round(FONT_SIZE * scale.current),
       lineHeight: 1.2,
       cursorBlink: true,
@@ -73,6 +74,22 @@ export function TerminalView({
     const fit = new FitAddon()
     term.loadAddon(fit)
     term.open(el)
+    // Windows: Ctrl+C copia quando há texto selecionado (sem seleção, interrompe, como sempre) e
+    // Ctrl+V cola, como no Terminal do Windows e no VS Code. No Mac, ⌘C e ⌘V passam pelo menu Editar.
+    if (IS_WIN) {
+      term.attachCustomKeyEventHandler((e) => {
+        if (e.type !== 'keydown' || !e.ctrlKey || e.altKey) return true
+        const key = e.key.toLowerCase()
+        if (key === 'c' && (e.shiftKey || term.hasSelection())) {
+          e.preventDefault()
+          void navigator.clipboard.writeText(term.getSelection())
+          term.clearSelection()
+          return false
+        }
+        // O xterm não trata a tecla: o navegador cola, e o texto chega pelo evento de colar.
+        return key !== 'v'
+      })
+    }
     fit.fit()
     term.focus()
     live.current = { term, fit }

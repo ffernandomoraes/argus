@@ -3,6 +3,7 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { useAuth } from './auth/useAuth'
 import { WelcomeScreen } from './auth/WelcomeScreen'
 import { Canvas } from './canvas/Canvas'
+import { isMod } from './platform'
 import { SettingsModal } from './settings/SettingsModal'
 import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
@@ -22,10 +23,10 @@ export function App() {
     if (loggedOut) setSettingsOpen(false)
   }, [loggedOut])
 
-  // ⌘, abre as configurações, como nos apps do Mac.
+  // ⌘, abre as configurações, como nos apps do Mac (Ctrl+, no Windows, como no VS Code).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === ',') {
+      if (isMod(e) && e.key === ',') {
         e.preventDefault()
         setSettingsOpen(true)
       }

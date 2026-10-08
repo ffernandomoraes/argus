@@ -10,6 +10,8 @@
 
 <p align="center">
   <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para macOS (Apple Silicon)</b></a>
+  -
+  <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para Windows</b></a>
 </p>
 
 ![Canvas do Argus com projetos agrupados em Trabalho e Pessoal](docs/prints/canvas.png)
@@ -27,7 +29,7 @@ esperando por você.
 - Canvas infinito com zoom, minimapa e grupos coloridos (Trabalho, Pessoal, o que você quiser).
 - Grupos: arraste blocos para dentro, renomeie com dois cliques no nome, recolha ou oculte o conteúdo.
 - Cada pasta de projeto vira um bloco com a branch do git e as conversas mais recentes; as demais ficam em **Ver todas as conversas**. Dá para recolher a lista e deixar só as que estão rodando.
-- Blocos se encaixam pela borda ou pelo meio dos vizinhos ao arrastar, e ⌘Z / ⇧⌘Z desfazem e refazem o layout.
+- Blocos se encaixam pela borda ou pelo meio dos vizinhos ao arrastar, e ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Shift+Z no Windows) desfazem e refazem o layout.
 - O layout fica salvo e volta igual ao reabrir o app.
 - Comando `argus .` no terminal: abre a pasta atual no canvas, como o `code .` do VS Code.
 - Barra de comando por texto ou voz: peça "cria um grupo Freela com essas duas pastas" e o Claude organiza o canvas.
@@ -36,7 +38,7 @@ esperando por você.
 **Conversas com o Claude Code**
 - Chat completo, com respostas em tempo real, onde você preferir: painel lateral, janela própria ou um bloco dentro do canvas.
 - Conversa sem projeto, pelo botão direito do canvas: roda na sua pasta pessoal e vira um card no primeiro envio.
-- Cole prints com ⌘V, anexe arquivos e dite em vez de digitar.
+- Cole prints com ⌘V (Ctrl+V no Windows), anexe arquivos e dite em vez de digitar.
 - Edições aparecem como diff (o antes e depois de cada arquivo).
 - Aprove ou negue permissões e responda às perguntas do Claude direto no chat.
 - Troque modelo, nível de esforço, thinking e modo de permissão por conversa; cada conversa guarda os dela.
@@ -48,15 +50,15 @@ esperando por você.
 - Status de cada conversa no canvas: rodando, esperando você, concluída.
 - Subagentes aparecem embaixo da conversa que os lançou enquanto trabalham, com o que estão fazendo agora.
 - Notificação do sistema quando uma conversa termina ou precisa de resposta.
-- Ícone na barra de menus com o resumo do que está rodando.
+- Ícone na barra de menus (no Windows, na área de notificação) com o resumo do que está rodando.
 - Indicador do limite de uso do Claude, de cada conta.
-- Lista dos servidores locais que algum agente deixou rodando, com atalho para abrir ou encerrar.
+- Lista dos servidores locais que algum agente deixou rodando, com atalho para abrir ou encerrar (só no Mac).
 - Fechar ou atualizar o app com conversa ou terminal rodando pede confirmação antes.
 
 **Ferramentas**
 - Terminais embutidos (Claude Code ou shell) soltos no canvas.
 - Botão acima da pasta para iniciar e encerrar o servidor do projeto (script `dev` ou `start` do `package.json`).
-- Explorador de arquivos e editor de código do projeto: criar, renomear, excluir, colar arquivos copiados no Finder e editar com ⌘S para salvar. Arquivos não comitados aparecem com a cor do git.
+- Explorador de arquivos e editor de código do projeto: criar, renomear, excluir, colar arquivos copiados no Finder ou no Explorador de Arquivos e editar com ⌘S (Ctrl+S no Windows) para salvar. Arquivos não comitados aparecem com a cor do git.
 - Biblioteca de agentes (subagentes do Claude Code): criar, editar e deixar o Claude escrever as instruções.
 - Editor da memória do Claude: `CLAUDE.md` global, de cada projeto e as anotações da memória automática.
 
@@ -67,14 +69,16 @@ esperando por você.
 
 ## Requisitos
 
-- Mac com Apple Silicon (M1 ou mais novo).
+- Mac com Apple Silicon (M1 ou mais novo), ou PC com Windows 10 ou 11 de 64 bits.
 - [Claude Code](https://docs.claude.com/claude-code) instalado. O Argus usa o `claude` da sua máquina e a sua assinatura.
   Sem login, o app abre numa tela para entrar na conta. Outras contas entram por
   **Configurações › Contas**.
+- No Windows, também o [Git for Windows](https://git-scm.com/download/win), que o app usa para mostrar os
+  arquivos alterados e o diff.
 
 ## Instalação
 
-### Pelo terminal (recomendado)
+### macOS: pelo terminal (recomendado)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.sh | sh
@@ -87,19 +91,33 @@ Baixa a última versão, coloca em `/Applications` e abre. Rodar de novo atualiz
 O Argus se atualiza sozinho: procura versão nova ao abrir e a cada 5 horas, e baixa em
 segundo plano. Quando ela está pronta, aparece **Atualizar para x.y.z** no canto direito da
 barra de título. Um clique reinicia o app já atualizado; se preferir não clicar, a versão
-nova entra quando você fechar o app. Também dá para procurar na hora pelo menu
-**Argus › Procurar atualizações…** ou em **Configurações › Geral**.
+nova entra quando você fechar o app. Também dá para procurar na hora em
+**Configurações › Geral** (no Mac, também pelo menu **Argus › Procurar atualizações…**).
+No Windows, a atualização roda o instalador da versão nova em modo silencioso, sem perguntar nada.
 
-As permissões que você der ao app (microfone, ditado, notificações) continuam valendo nas
-versões seguintes: todas saem assinadas com o mesmo certificado, e o app só aceita uma
-atualização assinada por ele.
+No Mac, as permissões que você der ao app (microfone, ditado, notificações) continuam
+valendo nas versões seguintes: todas saem assinadas com o mesmo certificado, e o app só
+aceita uma atualização assinada por ele.
 
-### Pelo .dmg
+### macOS: pelo .dmg
 
 1. Baixe o `Argus-<versão>-arm64.dmg` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest).
 2. Arraste o Argus para a pasta Aplicativos.
 3. Na primeira vez, o macOS bloqueia a abertura, porque o app não é notarizado pela Apple.
    Vá em **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir Mesmo Assim**.
+
+### Windows
+
+1. Baixe o `Argus-Setup-<versão>.exe` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest).
+2. Abra o arquivo. Na primeira vez, o Windows mostra **O Windows protegeu o computador**, porque
+   o app não tem certificado pago de assinatura: clique em **Mais informações › Executar assim mesmo**.
+3. O Argus instala na sua pasta de usuário, sem pedir administrador, cria atalhos no Menu Iniciar e
+   na Área de Trabalho e abre.
+
+No Windows o app funciona como no Mac, com duas diferenças: não há a lista de servidores que os
+agentes deixaram rodando (o Windows não deixa um programa ler as variáveis de outro), e o ditado
+usa só a transcrição do Claude, sem a reserva do reconhecimento de fala do macOS. Os terminais
+abrem no PowerShell.
 
 ### Comando `argus`
 
@@ -109,6 +127,9 @@ Em **Configurações › Geral**, ative o comando `argus` no terminal. Depois, e
 argus .
 ```
 
+No Windows ele funciona no PowerShell e no Prompt de Comando. Se a pasta
+`%USERPROFILE%\.local\bin` não estiver no PATH, o Argus a acrescenta ao ativar o comando.
+
 ## Desenvolvimento
 
 ```bash
@@ -116,6 +137,7 @@ pnpm install   # também compila o ditado (precisa das Command Line Tools da App
 pnpm dev       # abre o app com recarga automática
 pnpm typecheck
 pnpm dist      # gera o .dmg e o .zip em dist/
+pnpm dist:win  # gera o instalador do Windows em dist/ (rode num Windows: no Mac falta o ícone do .exe)
 ```
 
 A versão de desenvolvimento usa uma pasta de dados própria (`Argus Dev`) e um comando
@@ -136,7 +158,9 @@ xterm.js com node-pty e o [Claude Agent SDK](https://docs.claude.com/en/api/agen
 
 Todo push na `main` vira uma versão: o workflow **Release** sobe o patch no `package.json`,
 cria a tag, monta o `.dmg` e o `.zip`, publica o release e usa os títulos dos commits desde
-a última versão como notas. Pushes que só mexem em `.md` não geram versão. Como os títulos
+a última versão como notas. Em seguida, numa máquina Windows do GitHub, monta o instalador
+`.exe`, abre o app em modo de teste (`--smoke-test`) e, se ele subir, anexa o instalador ao
+mesmo release. Pushes que só mexem em `.md` não geram versão. Como os títulos
 viram as notas, escreva-os para quem usa o app.
 
 Para subir minor ou major, ou escrever as notas à mão, dispare pela aba
@@ -147,8 +171,8 @@ gh workflow run release.yml -f bump=minor -f notas="- item 1
 - item 2"
 ```
 
-Com `publicar` desmarcado, o workflow só monta o app e guarda o `.dmg` no run, sem tag nem
-release.
+Com `publicar` desmarcado, o workflow só monta o app e guarda o `.dmg` e o `.exe` no run,
+sem tag nem release.
 
 A assinatura usa o certificado autoassinado guardado nos secrets do repositório
 (`MAC_CERT_P12`, `MAC_CERT_PASSWORD`, `MAC_SIGN_IDENTITY`). Sem eles, o app sai com

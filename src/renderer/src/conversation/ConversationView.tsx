@@ -25,6 +25,7 @@ import type { UncommittedFile } from '../../../shared/sessions'
 import { useEscape } from '../useEscape'
 import { AccountContext } from '../auth/useAuth'
 import { Presence } from '../motion'
+import { lastSep, relativeTo, tildify, untildify } from '../platform'
 
 export function HeaderButton({
   label,
@@ -98,10 +99,8 @@ function UncommittedBadge({
   const n = files.length
   const label = `${n} ${n === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`
   // Caminhos relativos à pasta da conversa; fora dela (pasta é parte do repo), com ~.
-  const home = window.api.homeDir
-  const base = (cwd.startsWith('~/') ? home + cwd.slice(1) : cwd).replace(/\/$/, '') + '/'
-  const shown = (path: string) =>
-    path.startsWith(base) ? path.slice(base.length) : path.startsWith(home + '/') ? '~' + path.slice(home.length) : path
+  const root = untildify(cwd)
+  const shown = (path: string) => relativeTo(path, root) || tildify(path)
 
   return (
     <div ref={ref} className="relative">
@@ -131,11 +130,11 @@ function UncommittedBadge({
             <ul className="min-h-0 overflow-y-auto p-1">
               {files.map((f) => {
                 const rel = shown(f.path)
-                const slash = rel.lastIndexOf('/')
+                const slash = lastSep(rel)
                 const name = rel.slice(slash + 1)
                 const dir = slash > 0 ? rel.slice(0, slash) : ''
                 // Fora da pasta, o visualizador não alcança.
-                const canOpen = !!onOpenDiff && f.path.startsWith(base)
+                const canOpen = !!onOpenDiff && !!relativeTo(f.path, root)
                 return (
                   <li key={f.path}>
                     <button

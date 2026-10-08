@@ -1,22 +1,25 @@
 import { execFile } from 'node:child_process'
 import { cp, lstat, mkdir, open, readdir, rename, stat, writeFile as write } from 'node:fs/promises'
-import { basename, dirname, extname, join, relative, resolve } from 'node:path'
+import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { clipboard, ClipboardItem, shell } from 'electron'
 import type { FileContent, FileEntry, FileOpResult } from '../shared/files'
 import { expandHome, insideRoot } from './paths'
+import { gitPath, IS_WIN } from './platform'
+import { powershell } from './winProcesses'
 
-const HIDDEN = new Set(['.git', '.DS_Store'])
-// Caminho absoluto: aberto pelo Dock, o app não herda o PATH do terminal.
-const GIT = '/usr/bin/git'
+// Arquivos que o sistema cria sozinho nas pastas (Finder e Explorador do Windows).
+const HIDDEN = new Set(['.git', '.DS_Store', 'Thumbs.db', 'desktop.ini'])
 const READ_LIMIT = 1_000_000
+// Caracteres que o Windows não aceita em nome de arquivo.
+const INVALID_NAME = IS_WIN ? /[\\/<>:"|?*]/ : /\//
 
 // Quais destes nomes da pasta o .gitignore ignora. O git também responde pelo que está dentro
 // de uma pasta ignorada; arquivo já versionado nunca conta. Fora de repositório: nenhum.
 function ignoredNames(dir: string, names: string[]): Promise<Set<string>> {
   return new Promise((done) => {
     if (!names.length) return done(new Set())
-    const child = execFile(GIT, ['-C', dir, 'check-ignore', '-z', '--stdin'], (_err, stdout) =>
+    const child = execFile(gitPath(), ['-C', dir, 'check-ignore', '-z', '--stdin'], { windowsHide: true }, (_err, stdout) =>
       // Sai com 1 quando nada é ignorado e 128 fora de repositório: os dois viram lista vazia.
       done(new Set(String(stdout ?? '').split('\0').filter(Boolean)))
     )
@@ -104,12 +107,12 @@ export async function createItem(root: string, dirRel: string, name: string, isD
 }
 
 export async function renameItem(root: string, rel: string, name: string): Promise<FileOpResult> {
-  if (!name || name.includes('/')) return { ok: false, error: 'Nome inválido.' }
+  if (!name || INVALID_NAME.test(name)) return { ok: false, error: 'Nome inválido.' }
   const from = rel ? insideRoot(root, rel) : null
   const to = from && insideRoot(root, join(dirname(rel), name))
   if (!from || !to) return { ok: false, error: 'Caminho fora do projeto.' }
   try {
-    // Só muda maiúscula/minúscula: no disco do macOS é o mesmo arquivo, não um conflito.
+    // Só muda maiúscula/minúscula: no disco do macOS e do Windows é o mesmo arquivo, não um conflito.
     if (from.toLowerCase() !== to.toLowerCase() && (await exists(to)))
       return { ok: false, error: 'Já existe um item com esse nome.' }
     await rename(from, to)
@@ -119,7 +122,7 @@ export async function renameItem(root: string, rel: string, name: string): Promi
   }
 }
 
-// Vai para a Lixeira do macOS: dá para recuperar pelo Finder.
+// Vai para a Lixeira (do macOS ou do Windows): dá para recuperar depois.
 export async function trashItem(root: string, rel: string): Promise<FileOpResult> {
   const full = rel ? insideRoot(root, rel) : null
   if (!full) return { ok: false, error: 'Caminho fora do projeto.' }
@@ -136,23 +139,37 @@ export function revealItem(root: string, rel: string): void {
   if (full) shell.showItemInFolder(full)
 }
 
-// Caminhos copiados no Finder (⌘C): vêm todos em text/uri-list, um file:// por linha.
+// Caminhos copiados no Finder (⌘C): vêm todos em text/uri-list, um file:// por linha. O Explorador
+// do Windows grava os arquivos em outro formato (lista de arquivos), lido pelo PowerShell.
 async function clipboardPaths(): Promise<string[]> {
   for (const item of await clipboard.read()) {
     if (!item.types.includes('text/uri-list')) continue
     const list = await (item.getType('text/uri-list') as Promise<Blob>).then((b) => b.text())
-    return list
+    const paths = list
       .split(/\r?\n/)
       .filter((l) => l.startsWith('file://'))
-      .map((l) => fileURLToPath(l).replace(/\/$/, ''))
+      .map((l) => fileURLToPath(l).replace(/[\\/]$/, ''))
+    if (paths.length) return paths
   }
-  return []
+  if (!IS_WIN) return []
+  const out = await powershell('Get-Clipboard -Format FileDropList | ForEach-Object { $_.FullName }')
+  return out
+    .split(/\r?\n/)
+    .map((l) => l.trim().replace(/\\$/, ''))
+    .filter(Boolean)
 }
 
-// ⌘C num item da árvore: grava como o Finder grava, para colar aqui ou no próprio Finder.
+// ⌘C num item da árvore: grava como o Finder grava, para colar aqui ou no próprio Finder. No
+// Windows, como o Explorador grava, para colar nele também.
 export async function copyToClipboard(root: string, rels: string[]): Promise<void> {
-  const urls = rels.map((r) => insideRoot(root, r)).filter((p): p is string => !!p).map((p) => pathToFileURL(p).href)
-  if (urls.length) await clipboard.write([new ClipboardItem({ 'text/uri-list': urls.join('\r\n') })])
+  const paths = rels.map((r) => insideRoot(root, r)).filter((p): p is string => !!p)
+  if (!paths.length) return
+  if (IS_WIN) {
+    await powershell('Set-Clipboard -LiteralPath ($env:ARGUS_PATHS -split "`n")', { ARGUS_PATHS: paths.join('\n') })
+    return
+  }
+  const urls = paths.map((p) => pathToFileURL(p).href)
+  await clipboard.write([new ClipboardItem({ 'text/uri-list': urls.join('\r\n') })])
 }
 
 // Nome livre na pasta de destino, como o Finder ao duplicar: "nome cópia.ext", "nome cópia 2.ext".
@@ -171,12 +188,15 @@ export async function pasteFromClipboard(root: string, dirRel: string): Promise<
   const dir = insideRoot(root, dirRel)
   if (!dir) return { ok: false, error: 'Caminho fora do projeto.' }
   const sources = await clipboardPaths()
-  if (!sources.length) return { ok: false, error: 'Nada copiado para colar. Copie arquivos no Finder com ⌘C.' }
+  if (!sources.length) {
+    const hint = IS_WIN ? 'no Explorador de Arquivos com Ctrl+C' : 'no Finder com ⌘C'
+    return { ok: false, error: `Nada copiado para colar. Copie arquivos ${hint}.` }
+  }
   let last = ''
   try {
     for (const src of sources) {
       // Pasta colada dentro dela mesma copiaria sem fim.
-      if (dir === src || dir.startsWith(src + '/')) return { ok: false, error: 'Não dá para colar uma pasta dentro dela mesma.' }
+      if (dir === src || dir.startsWith(src + sep)) return { ok: false, error: 'Não dá para colar uma pasta dentro dela mesma.' }
       const target = join(dir, await freeName(dir, basename(src)))
       await cp(src, target, { recursive: true, errorOnExist: true, force: false, preserveTimestamps: true })
       last = relOf(root, target)

@@ -1,10 +1,21 @@
 import { basename } from 'node:path'
-import { app, BrowserWindow, Menu, nativeImage, Tray, type MenuItemConstructorOptions, type NativeImage } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  Menu,
+  nativeImage,
+  nativeTheme,
+  Tray,
+  type MenuItemConstructorOptions,
+  type NativeImage
+} from 'electron'
 import type { ChatState } from '../shared/chat'
+import { IS_MAC } from './platform'
 import { listSessions } from './sessions'
 
-// Ícone na barra de menus do macOS com o estado das conversas abertas neste app.
-// "Concluído" e "erro" ficam marcados até você voltar ao app.
+// Ícone com o estado das conversas abertas neste app: na barra de menus do macOS, ou na área de
+// notificação do Windows (perto do relógio). "Concluído" e "erro" ficam marcados até você voltar
+// ao app.
 
 type Kind = 'running' | 'needs-you' | 'done' | 'error' | 'idle'
 type Entry = { id: string; cwd: string; state: ChatState }
@@ -23,7 +34,8 @@ const PRIORITY: Kind[] = ['needs-you', 'running', 'error', 'done', 'idle']
 
 // --- Desenho dos ícones ---
 // Desenhados aqui mesmo, sem arquivos de imagem: formas simples em 18×18 pontos, rasterizadas
-// a 2x com antisserrilhado. São "template": o macOS pinta de claro ou escuro conforme a barra.
+// a 2x com antisserrilhado. No Mac são "template": o macOS pinta de claro ou escuro conforme a
+// barra. No Windows saem em 16 pontos, já na cor que contrasta com a barra de tarefas.
 //
 // O desenho é o do ícone do app em miniatura: o cartão do projeto e duas conversas ligadas em
 // árvore. O estado vai num selo redondo no canto de baixo; parado, sem selo.
@@ -31,6 +43,8 @@ const PRIORITY: Kind[] = ['needs-you', 'running', 'error', 'done', 'idle']
 const SIZE = 18
 const SCALE = 2
 const SAMPLES = 4
+// Pixels do ícone: 18 pontos no Mac; no Windows, 16 (o tamanho da área de notificação), a 2x.
+const PIXELS = IS_MAC ? SIZE * SCALE : 16 * SCALE
 
 // No pnpm dev os cartões ficam só no contorno, para não confundir com o Argus instalado aberto
 // ao mesmo tempo.
@@ -107,25 +121,31 @@ const arc =
     return rel <= 1.5 * Math.PI
   }
 
+// Barra de tarefas escura no Windows: ícone branco. No Mac, preto (o sistema recolore).
+const light = () => !IS_MAC && nativeTheme.shouldUseDarkColorsForSystemIntegratedUI
+
 function draw(shape: Shape): NativeImage {
-  const px = SIZE * SCALE
-  // Pixels pretos: só o alfa importa (a ordem BGRA/RGBA não muda nada).
+  const px = PIXELS
+  // Cinza (branco ou preto): só o alfa muda o desenho, então a ordem BGRA/RGBA não importa.
+  const tone = light() ? 255 : 0
   const buffer = Buffer.alloc(px * px * 4)
   for (let py = 0; py < px; py++) {
     for (let qx = 0; qx < px; qx++) {
       let hits = 0
       for (let sy = 0; sy < SAMPLES; sy++) {
         for (let sx = 0; sx < SAMPLES; sx++) {
-          const x = (qx + (sx + 0.5) / SAMPLES) / SCALE
-          const y = (py + (sy + 0.5) / SAMPLES) / SCALE
+          const x = ((qx + (sx + 0.5) / SAMPLES) * SIZE) / px
+          const y = ((py + (sy + 0.5) / SAMPLES) * SIZE) / px
           if (shape(x, y)) hits++
         }
       }
-      buffer[(py * px + qx) * 4 + 3] = Math.round((hits / (SAMPLES * SAMPLES)) * 255)
+      const i = (py * px + qx) * 4
+      buffer[i] = buffer[i + 1] = buffer[i + 2] = tone
+      buffer[i + 3] = Math.round((hits / (SAMPLES * SAMPLES)) * 255)
     }
   }
   const img = nativeImage.createFromBitmap(buffer, { width: px, height: px, scaleFactor: SCALE })
-  img.setTemplateImage(true)
+  if (IS_MAC) img.setTemplateImage(true)
   return img
 }
 
@@ -180,7 +200,15 @@ export class StatusTray {
     const open = (): void => void this.openMenu()
     this.tray.on('click', open)
     this.tray.on('right-click', open)
+    // Windows: a barra de tarefas trocou de tema claro para escuro (ou o contrário).
+    if (!IS_MAC) nativeTheme.on('updated', this.redraw)
     this.refresh()
+  }
+
+  private redraw = (): void => {
+    this.icons = drawIcons()
+    this.shown = null
+    this.paint()
   }
 
   // Chamado a cada mudança de estado de uma conversa.
@@ -210,6 +238,7 @@ export class StatusTray {
 
   destroy(): void {
     this.stopSpinner()
+    nativeTheme.off('updated', this.redraw)
     this.tray.destroy()
   }
 
@@ -285,14 +314,17 @@ export class StatusTray {
         const title = (r.sessionId && titles.get(r.sessionId)) || 'Conversa nova'
         items.push({
           label: `${shorten(title)}  -  ${LABEL[r.kind]}`,
-          icon: this.icons.kinds[r.kind],
+          // No Windows o menu tem fundo próprio, que não combina com a cor do ícone da barra.
+          icon: IS_MAC ? this.icons.kinds[r.kind] : undefined,
           click: this.showApp
         })
       }
     }
     if (!items.length) items.push({ type: 'separator' }, { label: 'Nenhuma conversa aberta', enabled: false })
-    // Título no topo, para saber de qual Argus é o menu: o instalado ou o do pnpm dev.
-    items.unshift({ type: 'header', label: DEV ? `${app.name} - Desenvolvimento` : `${app.name} ${app.getVersion()}` })
+    // Título no topo, para saber de qual Argus é o menu: o instalado ou o do pnpm dev. Cabeçalho
+    // de menu só existe no macOS; no Windows é uma linha apagada.
+    const title = DEV ? `${app.name} - Desenvolvimento` : `${app.name} ${app.getVersion()}`
+    items.unshift(IS_MAC ? { type: 'header', label: title } : { label: title, enabled: false })
     items.push(
       { type: 'separator' },
       { label: `Abrir ${app.name}`, click: this.showApp },

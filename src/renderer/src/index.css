@@ -32,7 +32,8 @@
   --color-dev: #f59e0b;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* No Windows, sem as do Mac, ficam a Cascadia Mono (do Terminal do Windows) e a Consolas. */
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace;
 }
 
 /* Tema claro: as mesmas variáveis, trocadas. Terminal e código continuam escuros. */
@@ -80,7 +81,7 @@ button:not(:disabled),
   cursor: pointer;
 }
 
-/* Faixa invisível ao lado dos semáforos arrasta a janela (titleBarStyle: hiddenInset) */
+/* Faixa invisível que arrasta a janela: ao lado dos semáforos no Mac, sob os botões no Windows */
 .drag {
   -webkit-app-region: drag;
 }

@@ -16,10 +16,6 @@ files:
 asarUnpack:
   - node_modules/node-pty/**
 
-extraResources:
-  - from: native/speech/build/speech-helper
-    to: speech-helper
-
 npmRebuild: false
 
 mac:
@@ -33,9 +29,33 @@ mac:
   icon: build/icon.icns
   # A assinatura é feita no afterPack (scripts/sign.mjs), com certificado próprio ou ad-hoc.
   identity: null
+  # Programa do ditado (native/speech), só no Mac. No Windows o microfone é gravado pela janela.
+  extraResources:
+    - from: native/speech/build/speech-helper
+      to: speech-helper
   extendInfo:
     NSMicrophoneUsageDescription: O microfone é usado para ditar mensagens para o Claude.
     NSSpeechRecognitionUsageDescription: O reconhecimento de fala transforma o que você diz em texto no campo da conversa.
+
+# Windows: instalador de um clique, só para PCs Intel/AMD (os com processador ARM rodam por emulação).
+# Sem certificado de assinatura (é pago por ano): na primeira instalação o Windows avisa que o
+# programa não é reconhecido, e as atualizações seguintes, feitas pelo próprio app, não avisam.
+win:
+  target:
+    - target: nsis
+      arch: x64
+  icon: build/icon.ico
+
+# Instala na pasta do usuário, sem pedir administrador, e abre o app no fim. O nome do arquivo é o
+# que o atualizador procura no release (src/main/updater.ts).
+nsis:
+  oneClick: true
+  perMachine: false
+  artifactName: Argus-Setup-${version}.${ext}
+  shortcutName: Argus
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  deleteAppDataOnUninstall: false
 
 afterPack: scripts/sign.mjs
 

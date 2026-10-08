@@ -171,3 +171,38 @@ button:not(:disabled),
   content-visibility: auto;
   contain-intrinsic-block-size: auto 4rem;
 }
+
+/* Blocos do canvas aparecendo e sumindo, com o efeito padrão (motion.tsx; durações e curvas
+   iguais às de MOTION.panel). Vai no conteúdo do bloco: o próprio bloco é posicionado com
+   transform pelo React Flow. `backwards` só segura o início: depois da entrada, nada fica
+   preso no conteúdo. Ver useNodeMotion. */
+@keyframes node-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985) translateY(8px);
+  }
+}
+@keyframes node-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+.react-flow__node > * {
+  animation: node-in 280ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.canvas-booting .react-flow__node > * {
+  animation: none;
+}
+.react-flow__node.node-leaving {
+  pointer-events: none;
+}
+.react-flow__node.node-leaving > * {
+  animation: node-out 130ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-flow__node > *,
+  .react-flow__node.node-leaving > * {
+    animation: none;
+  }
+}

@@ -13,6 +13,7 @@ import {
 import { useCanvasActions } from './CanvasContext'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { useEscape } from '../useEscape'
+import { Presence } from '../motion'
 
 const TOOLTIP_SIDE = {
   top: 'bottom-full left-1/2 mb-2 -translate-x-1/2',
@@ -108,23 +109,25 @@ function NewBlockMenu() {
       <NavButton label="Novo bloco" onClick={() => setOpen((o) => !o)} active={open} primary>
         <Plus size={16} strokeWidth={2.5} />
       </NavButton>
-      {open && (
-        <div className="absolute left-full top-0 ml-2 w-44 rounded-lg border border-line bg-surface p-1 shadow-xl shadow-black/40">
-          {items.map(({ label, icon: Icon, onClick }) => (
-            <button
-              key={label}
-              onClick={() => {
-                onClick()
-                setOpen(false)
-              }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text hover:bg-surface-2"
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+      <Presence kind="menu">
+        {open && (
+          <div className="absolute left-full top-0 ml-2 w-44 rounded-lg border border-line bg-surface p-1 shadow-xl shadow-black/40">
+            {items.map(({ label, icon: Icon, onClick }) => (
+              <button
+                key={label}
+                onClick={() => {
+                  onClick()
+                  setOpen(false)
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text hover:bg-surface-2"
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </Presence>
     </div>
   )
 }

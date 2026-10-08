@@ -5,6 +5,7 @@ import type { Usage, UsageWindow } from '../../../shared/usage'
 import { useAuth } from '../auth/useAuth'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { useEscape } from '../useEscape'
+import { Presence } from '../motion'
 
 function timeLeft(resetsAt: string, now: number): string {
   const min = Math.max(0, Math.round((new Date(resetsAt).getTime() - now) / 60_000))
@@ -122,32 +123,34 @@ export function UsageIndicator() {
   return (
     <Panel position="bottom-left" className="!m-4">
       <div ref={ref} className="relative">
-        {open && (
-          <div className="absolute bottom-full left-0 mb-2 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-4 shadow-xl shadow-black/40">
-            <div className="mb-4 flex items-center gap-2">
-              <ClaudeIcon size={14} />
-              <span className="text-xs font-medium text-text">Limites do Claude</span>
-            </div>
-            <div className="flex flex-col gap-5">
-              {shown.map(({ account, usage }) => (
-                <div key={account.id}>
-                  {named && (
-                    <div className="mb-3 truncate text-[10px] font-semibold uppercase tracking-widest text-faint">
-                      {account.name}
+        <Presence kind="menu">
+          {open && (
+            <div className="absolute bottom-full left-0 mb-2 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-4 shadow-xl shadow-black/40">
+              <div className="mb-4 flex items-center gap-2">
+                <ClaudeIcon size={14} />
+                <span className="text-xs font-medium text-text">Limites do Claude</span>
+              </div>
+              <div className="flex flex-col gap-5">
+                {shown.map(({ account, usage }) => (
+                  <div key={account.id}>
+                    {named && (
+                      <div className="mb-3 truncate text-[10px] font-semibold uppercase tracking-widest text-faint">
+                        {account.name}
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-4">
+                      <WindowDetail title="Sessão (5 horas)" window={usage.session} now={now} />
+                      <WindowDetail title="Semanal" window={usage.weekly} now={now} />
                     </div>
-                  )}
-                  <div className="flex flex-col gap-4">
-                    <WindowDetail title="Sessão (5 horas)" window={usage.session} now={now} />
-                    <WindowDetail title="Semanal" window={usage.weekly} now={now} />
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="mt-4 border-t border-line pt-2 text-[10px] text-faint">
+                Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
-            <div className="mt-4 border-t border-line pt-2 text-[10px] text-faint">
-              Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </div>
-          </div>
-        )}
+          )}
+        </Presence>
         <button
           aria-label="Ver limites do Claude"
           onClick={() => setOpen((o) => !o)}

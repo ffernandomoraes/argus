@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronUp, FilePen, Hand, ListChecks, ShieldCheck, ShieldOff, type LucideIcon } from 'lucide-react'
 import { useClaudeInfo } from './useModels'
 import { useEscape } from '../useEscape'
+import { Presence } from '../motion'
 
 // Modos de permissão do --permission-mode, com nomes e descrições da extensão do VS Code, traduzidos.
 export const MODES: { value: string; label: string; description: string; icon: LucideIcon; danger?: boolean }[] = [
@@ -55,34 +56,36 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
         <ChevronUp size={12} className="text-faint" />
       </button>
 
-      {open && (
-        <div className="absolute bottom-full right-0 z-10 mb-2 w-80 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
-          <div className="px-2 pb-1 pt-1.5 text-[11px] text-faint">Modo</div>
-          {MODES.map((m) => {
-            const ModeIcon = m.icon
-            return (
-              <button
-                key={m.value}
-                onClick={() => {
-                  onChange(m.value)
-                  setOpen(false)
-                }}
-                className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-surface-2"
-              >
-                <ModeIcon size={14} className={`mt-0.5 shrink-0 ${m.danger ? 'text-red-400' : 'text-muted'}`} />
-                <span className="flex-1">
-                  <span className={`block text-xs ${m.danger ? 'text-red-400' : 'text-text'}`}>
-                    {m.label}
-                    {m.value === info?.defaultPermissionMode && <span className="text-faint"> - padrão</span>}
+      <Presence kind="menu">
+        {open && (
+          <div className="absolute bottom-full right-0 z-10 mb-2 w-80 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+            <div className="px-2 pb-1 pt-1.5 text-[11px] text-faint">Modo</div>
+            {MODES.map((m) => {
+              const ModeIcon = m.icon
+              return (
+                <button
+                  key={m.value}
+                  onClick={() => {
+                    onChange(m.value)
+                    setOpen(false)
+                  }}
+                  className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-surface-2"
+                >
+                  <ModeIcon size={14} className={`mt-0.5 shrink-0 ${m.danger ? 'text-red-400' : 'text-muted'}`} />
+                  <span className="flex-1">
+                    <span className={`block text-xs ${m.danger ? 'text-red-400' : 'text-text'}`}>
+                      {m.label}
+                      {m.value === info?.defaultPermissionMode && <span className="text-faint"> - padrão</span>}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-faint">{m.description}</span>
                   </span>
-                  <span className="mt-0.5 block text-[11px] leading-snug text-faint">{m.description}</span>
-                </span>
-                {effective === m.value && <Check size={13} className="mt-0.5 shrink-0 text-muted" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
+                  {effective === m.value && <Check size={13} className="mt-0.5 shrink-0 text-muted" />}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </Presence>
     </div>
   )
 }

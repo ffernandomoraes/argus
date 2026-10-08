@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, Copy, ExternalLink, Loader2, Smartphone, X } from 'lucide-react'
 import { ConfirmDialog } from '../canvas/ConfirmDialog'
 import type { RemoteControl } from '../../../shared/chat'
+import { Presence } from '../motion'
 
 const ACTION = 'flex items-center gap-1 rounded px-1 text-faint hover:text-text'
 
@@ -52,18 +53,20 @@ export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl;
       <button onClick={turnOff} aria-label="Desligar remote control" title="Desligar remote control" className={ACTION}>
         <X size={11} />
       </button>
-      {confirming && (
-        <ConfirmDialog
-          request={{
-            title: 'Desligar o remote control?',
-            description:
-              'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote-control liga de novo.',
-            confirmLabel: 'Desligar',
-            onConfirm: onTurnOff
-          }}
-          onClose={() => setConfirming(false)}
-        />
-      )}
+      <Presence kind="modal">
+        {confirming && (
+          <ConfirmDialog
+            request={{
+              title: 'Desligar o remote control?',
+              description:
+                'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote-control liga de novo.',
+              confirmLabel: 'Desligar',
+              onConfirm: onTurnOff
+            }}
+            onClose={() => setConfirming(false)}
+          />
+        )}
+      </Presence>
     </div>
   )
 }

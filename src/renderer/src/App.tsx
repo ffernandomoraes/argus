@@ -5,6 +5,7 @@ import { WelcomeScreen } from './auth/WelcomeScreen'
 import { Canvas } from './canvas/Canvas'
 import { SettingsModal } from './settings/SettingsModal'
 import { useTheme } from './theme/useTheme'
+import { Presence } from './motion'
 
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -39,9 +40,11 @@ export function App() {
         <Canvas colorMode={theme.resolved} onOpenSettings={openSettings} />
       </ReactFlowProvider>
       {loggedOut && auth && <WelcomeScreen login={auth.login} />}
-      {settingsOpen && !loggedOut && (
-        <SettingsModal theme={theme.preference} onThemeChange={theme.setPreference} onClose={closeSettings} />
-      )}
+      <Presence kind="modal">
+        {settingsOpen && !loggedOut && (
+          <SettingsModal theme={theme.preference} onThemeChange={theme.setPreference} onClose={closeSettings} />
+        )}
+      </Presence>
     </main>
   )
 }

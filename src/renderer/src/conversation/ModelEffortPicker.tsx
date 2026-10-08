@@ -4,6 +4,7 @@ import type { ClaudeModel } from '../../../shared/models'
 import type { SessionSettings } from './SessionSettings'
 import { useModels } from './useModels'
 import { useEscape } from '../useEscape'
+import { Presence } from '../motion'
 
 // Igual à extensão do VS Code: botão com modelo e esforço embaixo do campo; o menu abre
 // para cima com os modelos agrupados por família, a régua de esforço e as opções de
@@ -137,108 +138,112 @@ export function ModelEffortPicker({
         <ChevronUp size={12} className="text-faint" />
       </button>
 
-      {open && (
-        <div className="absolute bottom-full left-0 z-10 mb-2 w-72 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
-          {/* Sem rolagem aqui: o submenu das versões sai para o lado e seria cortado */}
-          <div>
-            <div className="px-2 pb-1 pt-1.5 text-[11px] text-faint">Modelo</div>
-            {models.length === 0 && <div className="px-2 py-1.5 text-xs text-faint">Carregando modelos…</div>}
+      <Presence kind="menu">
+        {open && (
+          <div className="absolute bottom-full left-0 z-10 mb-2 w-72 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+            {/* Sem rolagem aqui: o submenu das versões sai para o lado e seria cortado */}
+            <div>
+              <div className="px-2 pb-1 pt-1.5 text-[11px] text-faint">Modelo</div>
+              {models.length === 0 && <div className="px-2 py-1.5 text-xs text-faint">Carregando modelos…</div>}
 
-            {defaultModel && (
-              <button onClick={() => onChange({ model: '' })} className={row}>
-                <span className="flex-1">
-                  Padrão
-                  {defaultModel.resolvedName && <span className="text-faint"> - {defaultModel.resolvedName}</span>}
-                </span>
-                {settings.model === '' && <Check size={13} className="text-muted" />}
-              </button>
+              {defaultModel && (
+                <button onClick={() => onChange({ model: '' })} className={row}>
+                  <span className="flex-1">
+                    Padrão
+                    {defaultModel.resolvedName && <span className="text-faint"> - {defaultModel.resolvedName}</span>}
+                  </span>
+                  {settings.model === '' && <Check size={13} className="text-muted" />}
+                </button>
+              )}
+
+              {families.map(([family, versions]) => {
+                const selected = versions.find((v) => v.value === settings.model)
+                const isOpen = expanded === family
+                return (
+                  <div
+                    key={family}
+                    className="relative"
+                    onMouseEnter={() => setExpanded(family)}
+                    onMouseLeave={() => setExpanded((f) => (f === family ? null : f))}
+                  >
+                    <button
+                      onClick={() => setExpanded(isOpen ? null : family)}
+                      className={`${row} ${isOpen ? 'bg-surface-2' : ''}`}
+                    >
+                      <span className="flex-1">{family}</span>
+                      {selected && <span className="text-[11px] text-faint">{selected.displayName}</span>}
+                      {selected && <Check size={13} className="text-muted" />}
+                      <ChevronRight size={12} className="shrink-0 text-faint" />
+                    </button>
+                    {/* Submenu ao lado; o pl-1 mantém o mouse "dentro" ao atravessar o vão */}
+                    <Presence kind="menu">
+                      {isOpen && (
+                        <div className="absolute left-full top-0 z-10 pl-1">
+                          <div className="w-44 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
+                            {versions.map((v) => (
+                              <button key={v.value} onClick={() => onChange({ model: v.value })} className={row}>
+                                <span className="flex-1">{v.displayName}</span>
+                                {settings.model === v.value && <Check size={13} className="text-muted" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </Presence>
+                  </div>
+                )
+              })}
+            </div>
+
+            {allowed.length > 0 && (
+              <>
+                <div className="my-1 h-px bg-line" />
+                <div className="px-2 pb-2 pt-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-faint">Esforço</span>
+                    <span className="text-text">{effortLabel(settings.effort)}</span>
+                  </div>
+                  {/* Régua com uma marca por nível aceito; clicar na marca atual volta para Auto */}
+                  <div className="relative mt-2.5 flex h-4 items-center justify-between">
+                    <div className="absolute inset-x-1.5 h-0.5 rounded-full bg-line" />
+                    <div
+                      className="absolute left-1.5 h-0.5 rounded-full bg-muted"
+                      style={{ width: `calc((100% - 12px) * ${Math.max(0, index) / Math.max(1, allowed.length - 1)})` }}
+                    />
+                    {allowed.map((e, i) => (
+                      <button
+                        key={e.value}
+                        aria-label={e.label}
+                        title={e.label}
+                        onClick={() => onChange({ effort: settings.effort === e.value ? '' : e.value })}
+                        className={`relative size-3 rounded-full border-2 ${
+                          i <= index ? 'border-text bg-text' : 'border-line-strong bg-surface hover:border-muted'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  {settings.effort === 'max' && <p className="mt-2 text-[11px] leading-snug text-needs-you">{MAX_WARNING}</p>}
+                </div>
+              </>
             )}
 
-            {families.map(([family, versions]) => {
-              const selected = versions.find((v) => v.value === settings.model)
-              const isOpen = expanded === family
-              return (
-                <div
-                  key={family}
-                  className="relative"
-                  onMouseEnter={() => setExpanded(family)}
-                  onMouseLeave={() => setExpanded((f) => (f === family ? null : f))}
-                >
-                  <button
-                    onClick={() => setExpanded(isOpen ? null : family)}
-                    className={`${row} ${isOpen ? 'bg-surface-2' : ''}`}
-                  >
-                    <span className="flex-1">{family}</span>
-                    {selected && <span className="text-[11px] text-faint">{selected.displayName}</span>}
-                    {selected && <Check size={13} className="text-muted" />}
-                    <ChevronRight size={12} className="shrink-0 text-faint" />
-                  </button>
-                  {/* Submenu ao lado; o pl-1 mantém o mouse "dentro" ao atravessar o vão */}
-                  {isOpen && (
-                    <div className="absolute left-full top-0 z-10 pl-1">
-                      <div className="w-44 rounded-lg border border-line bg-surface p-1 shadow-2xl shadow-black/30">
-                        {versions.map((v) => (
-                          <button key={v.value} onClick={() => onChange({ model: v.value })} className={row}>
-                            <span className="flex-1">{v.displayName}</span>
-                            {settings.model === v.value && <Check size={13} className="text-muted" />}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            <div className="my-1 h-px bg-line" />
+            <Toggle
+              label="Thinking"
+              description="Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas."
+              checked={settings.thinking}
+              onChange={(thinking) => onChange({ thinking })}
+            />
+            <Toggle
+              label="Ultracode"
+              icon={<Workflow size={12} />}
+              description="Usa vários subagentes em paralelo em toda tarefa, só nesta sessão. Gasta bem mais tokens."
+              checked={settings.ultracode}
+              onChange={(ultracode) => onChange({ ultracode })}
+            />
           </div>
-
-          {allowed.length > 0 && (
-            <>
-              <div className="my-1 h-px bg-line" />
-              <div className="px-2 pb-2 pt-1.5">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-faint">Esforço</span>
-                  <span className="text-text">{effortLabel(settings.effort)}</span>
-                </div>
-                {/* Régua com uma marca por nível aceito; clicar na marca atual volta para Auto */}
-                <div className="relative mt-2.5 flex h-4 items-center justify-between">
-                  <div className="absolute inset-x-1.5 h-0.5 rounded-full bg-line" />
-                  <div
-                    className="absolute left-1.5 h-0.5 rounded-full bg-muted"
-                    style={{ width: `calc((100% - 12px) * ${Math.max(0, index) / Math.max(1, allowed.length - 1)})` }}
-                  />
-                  {allowed.map((e, i) => (
-                    <button
-                      key={e.value}
-                      aria-label={e.label}
-                      title={e.label}
-                      onClick={() => onChange({ effort: settings.effort === e.value ? '' : e.value })}
-                      className={`relative size-3 rounded-full border-2 ${
-                        i <= index ? 'border-text bg-text' : 'border-line-strong bg-surface hover:border-muted'
-                      }`}
-                    />
-                  ))}
-                </div>
-                {settings.effort === 'max' && <p className="mt-2 text-[11px] leading-snug text-needs-you">{MAX_WARNING}</p>}
-              </div>
-            </>
-          )}
-
-          <div className="my-1 h-px bg-line" />
-          <Toggle
-            label="Thinking"
-            description="Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas."
-            checked={settings.thinking}
-            onChange={(thinking) => onChange({ thinking })}
-          />
-          <Toggle
-            label="Ultracode"
-            icon={<Workflow size={12} />}
-            description="Usa vários subagentes em paralelo em toda tarefa, só nesta sessão. Gasta bem mais tokens."
-            checked={settings.ultracode}
-            onChange={(ultracode) => onChange({ ultracode })}
-          />
-        </div>
-      )}
+        )}
+      </Presence>
     </div>
   )
 }

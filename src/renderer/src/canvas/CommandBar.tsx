@@ -83,6 +83,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
     <div className="fixed inset-0 z-50 bg-black/55" onMouseDown={onClose}>
     <div
       ref={box}
+      data-motion-card
       onMouseDown={(e) => e.stopPropagation()}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

@@ -30,6 +30,7 @@ import type { ThemePreference } from '../theme/useTheme'
 import { Row, Segmented, Select, Switch } from './controls'
 import { setPreferences, usePreferences } from './preferences'
 import { useUpdates } from '../updates/useUpdates'
+import { Presence } from '../motion'
 
 type Section = 'general' | 'conversations' | 'appearance' | 'accounts'
 
@@ -501,7 +502,9 @@ function AccountsSection() {
         <Plus size={13} />
         Adicionar conta
       </button>
-      {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
+      <Presence kind="modal">
+        {confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}
+      </Presence>
     </>
   )
 }

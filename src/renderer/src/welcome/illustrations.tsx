@@ -2,17 +2,11 @@ import type { ReactNode } from 'react'
 import { IS_WIN } from '../platform'
 
 // Ilustrações das boas-vindas: esquemas do próprio app, nas cores do tema (claro ou escuro).
-// Todas no mesmo quadro, 360 x 160.
+// Todas no mesmo quadro, 360 x 160; os pontos do canvas são o fundo da moldura (WelcomeModal).
 
 function Art({ children, label }: { children: ReactNode; label: string }) {
   return (
     <svg viewBox="0 0 360 160" role="img" aria-label={label} className="h-full w-full" fontFamily="inherit">
-      <defs>
-        <pattern id="welcome-dots" width="12" height="12" patternUnits="userSpaceOnUse">
-          <circle cx="1.5" cy="1.5" r="1" className="fill-dots" />
-        </pattern>
-      </defs>
-      <rect width="360" height="160" fill="url(#welcome-dots)" />
       {children}
     </svg>
   )

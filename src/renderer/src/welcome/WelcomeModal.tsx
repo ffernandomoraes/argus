@@ -115,7 +115,13 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
         className="flex max-h-full w-[min(540px,100%)] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
         <div key={index} className="welcome-step min-h-0 flex-1 overflow-y-auto p-6 pb-4">
-          <div className="h-[170px] overflow-hidden rounded-xl border border-line bg-bg">{step.art}</div>
+          {/* Pontos do canvas em toda a moldura, também nas laterais que a ilustração não cobre. */}
+          <div
+            className="h-[170px] overflow-hidden rounded-xl border border-line bg-bg"
+            style={{ backgroundImage: 'radial-gradient(var(--color-dots) 1px, transparent 1.2px)', backgroundSize: '12px 12px' }}
+          >
+            {step.art}
+          </div>
           <p className="mt-5 text-[11px] font-medium uppercase tracking-wide text-faint">
             {index + 1} de {list.length}
           </p>

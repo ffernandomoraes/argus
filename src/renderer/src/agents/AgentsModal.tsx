@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Bot, Copy, Loader2, Mic, Plus, Sparkles, Trash2, X } from 'lucide-react'
-import { useDictation } from '../conversation/useDictation'
-import { VoiceWave } from '../conversation/VoiceWave'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ArrowLeft, ArrowRight, Bot, Plus, Trash2, X } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
 import { useEscape } from '../useEscape'
 import { IS_WIN, isMod, keys, tildify } from '../platform'
+import { Group, Row, Segmented, Select } from '../settings/controls'
 
 // Ferramentas do Claude Code que dá para marcar uma a uma. Outras (MCPs, por exemplo) vão no
 // campo de texto, pelo nome completo.
@@ -28,6 +27,10 @@ const MODELS = [
   { value: 'sonnet', label: 'Sonnet' },
   { value: 'haiku', label: 'Haiku' }
 ]
+
+// Criar um agente vai passo a passo; um agente salvo abre com os passos livres, como abas.
+const STEPS = ['Instruções', 'Ferramentas e modelo']
+const LAST_STEP = STEPS.length - 1
 
 type Draft = {
   name: string
@@ -67,43 +70,71 @@ function toolList(d: Draft): string[] | undefined {
   return [...d.tools, ...extra]
 }
 
-// Campos que aceitam ditado: a descrição para o Claude preencher e os textos do agente.
-type VoiceTarget = 'brief' | 'description' | 'prompt'
-
-function MicButton({ listening, onClick }: { listening: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-label={listening ? 'Parar ditado' : 'Ditar por voz'}
-      title={listening ? 'Parar ditado' : 'Ditar por voz'}
-      onClick={(e) => {
-        e.preventDefault()
-        onClick()
-      }}
-      className={`flex size-6 items-center justify-center rounded-md ${
-        listening ? 'bg-running/15 text-running hover:bg-running/25' : 'text-muted hover:bg-surface-2 hover:text-text'
-      }`}
-    >
-      <Mic size={13} />
-    </button>
+// Campos obrigatórios ainda vazios, com o nome que aparece na tela.
+function missing(d: Draft): string[] {
+  return [!d.name.trim() && 'nome', !d.description.trim() && 'quando usar', !d.prompt.trim() && 'instruções'].filter(
+    (m): m is string => !!m
   )
 }
 
-function Field({ label, hint, action, children }: { label: string; hint?: string; action?: ReactNode; children: ReactNode }) {
+function Field({
+  label,
+  hint,
+  className = '',
+  children
+}: {
+  label: string
+  hint?: string
+  className?: string
+  children: ReactNode
+}) {
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className="flex items-center justify-between text-xs font-medium text-text">
-        {label}
-        {action}
-      </span>
+    <label className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-xs font-medium text-text">{label}</span>
       {children}
       {hint && <span className="text-[12px] leading-snug text-faint">{hint}</span>}
     </label>
   )
 }
 
+// Abas do agente. No agente novo, a seguinte só abre depois desta.
+function StepTabs({ step, reached, onGo }: { step: number; reached: number; onGo: (step: number) => void }) {
+  return (
+    <div role="tablist" className="flex gap-6 border-b border-line px-5">
+      {STEPS.map((label, i) => {
+        const active = i === step
+        const enabled = i <= reached
+        return (
+          <button
+            key={label}
+            role="tab"
+            aria-selected={active}
+            disabled={!enabled}
+            onClick={() => onGo(i)}
+            title={enabled ? undefined : 'Preencha as instruções primeiro'}
+            className={`-mb-px border-b-2 py-2.5 text-[13px] ${
+              active
+                ? 'border-accent font-medium text-text'
+                : enabled
+                  ? 'border-transparent text-muted hover:text-text'
+                  : 'border-transparent text-faint'
+            }`}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 const input =
   'rounded-md border border-line bg-bg px-2.5 py-1.5 text-sm text-text outline-none placeholder:text-faint focus:border-line-strong'
+const PRIMARY =
+  'flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40'
+const SECONDARY =
+  'flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-fill disabled:opacity-40'
+const GHOST = 'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted hover:bg-fill hover:text-text'
 
 // Biblioteca de agentes globais: os arquivos de ~/.claude/agents, que valem em todo projeto
 // (aqui, no terminal e no VS Code). O app só lê e grava esses arquivos.
@@ -114,41 +145,13 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
   // Como o rascunho estava ao abrir: compara para saber se há mudança.
   const [saved, setSaved] = useState<Draft | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // Descrição livre (falada ou escrita) que o Claude transforma nos campos.
-  const [brief, setBrief] = useState('')
-  const [drafting, setDrafting] = useState(false)
-
-  // Ditado vai para um campo por vez: o texto falado entra depois do que já estava nele.
-  const voiceTarget = useRef<VoiceTarget | null>(null)
-  const [listeningTo, setListeningTo] = useState<VoiceTarget | null>(null)
-  const voiceBase = useRef('')
-  const dictation = useDictation((spoken) => {
-    const target = voiceTarget.current
-    if (!target) return
-    const base = voiceBase.current
-    const value = base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken
-    if (target === 'brief') setBrief(value)
-    else setDraft((d) => d && { ...d, [target]: value })
-  })
-  const listening = dictation.state !== 'idle'
-  useEffect(() => {
-    if (!listening) setListeningTo(null)
-  }, [listening])
-
-  const toggleVoice = (target: VoiceTarget, current: string) => {
-    if (listening) {
-      dictation.stop(true)
-      // Outro campo: o próximo clique liga nele.
-      return
-    }
-    voiceTarget.current = target
-    voiceBase.current = current
-    setListeningTo(target)
-    dictation.start()
-  }
-
+  const [step, setStep] = useState(0)
+  // Até onde o agente novo já chegou: os passos seguintes ficam travados.
+  const [reached, setReached] = useState(0)
   const dirty = !!draft && JSON.stringify(draft) !== JSON.stringify(saved)
   const current = agents.find((a) => a.name === draft?.previousName)
+  const lacking = draft ? missing(draft) : []
+  const canSave = dirty && !lacking.length
 
   const reload = async () => {
     const list = await window.api.agents.list()
@@ -158,64 +161,38 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
   }
 
   useEffect(() => {
-    reload().then((list) => {
-      if (list[0]) open(toDraft(list[0]))
-    })
+    void reload()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const confirmDiscard = () => !dirty || window.confirm('Descartar as alterações deste agente?')
 
   const open = (d: Draft, base: Draft | null = d) => {
-    if (listening) dictation.stop()
+    const existing = !!d.previousName
     setDraft(d)
     setSaved(base)
     setError(null)
-    setBrief('')
+    setStep(0)
+    setReached(existing ? LAST_STEP : 0)
   }
 
-  // O Claude preenche os campos com o que você contou. Agente com conteúdo: vale como ajuste.
-  const fill = async () => {
-    if (!draft || !brief.trim() || drafting) return
-    setDrafting(true)
-    setError(null)
-    const r = await window.api.agents.draft({
-      brief,
-      current: { name: draft.name, description: draft.description, prompt: draft.prompt, model: draft.model || undefined }
-    })
-    setDrafting(false)
-    if (!r.ok) return setError(r.error)
-    setDraft((d) =>
-      d && {
-        ...d,
-        // Agente já salvo mantém o nome: renomear muda o @ que você usa.
-        name: d.previousName ? d.name : r.fields.name,
-        description: r.fields.description,
-        prompt: r.fields.prompt,
-        model: r.fields.model ?? ''
-      }
-    )
-    setBrief('')
+  const go = (to: number) => {
+    setStep(to)
+    setReached((r) => Math.max(r, to))
   }
 
-  // Agente novo já ouvindo: é só contar o que ele faz.
-  const createByVoice = () => {
+  const select = (a: AgentDef) => open(toDraft(a))
+  const create = () => open({ ...EMPTY }, null)
+
+  // Volta para a lista de agentes.
+  const back = () => {
     if (!confirmDiscard()) return
-    open({ ...EMPTY }, null)
-    voiceTarget.current = 'brief'
-    voiceBase.current = ''
-    setListeningTo('brief')
-    dictation.start()
-  }
-
-  const select = (a: AgentDef) => confirmDiscard() && open(toDraft(a))
-  const create = () => confirmDiscard() && open({ ...EMPTY }, null)
-  const duplicate = () => {
-    if (!draft || !confirmDiscard()) return
-    open({ ...draft, name: `${draft.name}-copia`, previousName: undefined }, null)
+    setDraft(null)
+    setSaved(null)
+    setError(null)
   }
 
   const save = async () => {
-    if (!draft || !dirty) return
+    if (!draft || !canSave) return
     const r = await window.api.agents.save({
       name: draft.name,
       description: draft.description,
@@ -226,19 +203,21 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
     })
     if (!r.ok) return setError(r.error)
     await reload()
-    open(toDraft(r.agent))
+    // Continua no passo em que estava.
+    setDraft(toDraft(r.agent))
+    setSaved(toDraft(r.agent))
+    setReached(LAST_STEP)
+    setError(null)
   }
 
   const remove = async () => {
     if (!draft?.previousName) return
     if (!window.confirm(`Excluir o agente ${draft.previousName}? O arquivo dele é apagado.`)) return
     await window.api.agents.remove(draft.previousName)
-    const list = await reload()
-    if (list[0]) open(toDraft(list[0]))
-    else {
-      setDraft(null)
-      setSaved(null)
-    }
+    await reload()
+    setDraft(null)
+    setSaved(null)
+    setError(null)
   }
 
   const close = () => confirmDiscard() && onClose()
@@ -253,8 +232,9 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
+  // ESC volta uma camada: do agente aberto para a lista, depois fecha a janela.
   useEscape(() => {
-    if (listening) dictation.stop(true)
+    if (draft) back()
     else close()
   })
 
@@ -264,261 +244,220 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16"
       onMouseDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
         role="dialog"
         aria-label="Agentes"
-        className="flex h-[min(720px,100%)] w-[min(980px,100%)] overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="flex h-[min(760px,100%)] w-[min(1040px,100%)] overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
-        <nav className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-2/40 p-3">
-          <div className="mb-3 flex items-center gap-2 px-2 pt-1 text-sm font-semibold">
-            <Bot size={15} />
-            Agentes
-          </div>
-          <div className="mb-3 flex gap-1.5">
-            <button
-              onClick={create}
-              className="flex flex-1 items-center gap-2 rounded-full border border-line px-2 py-1.5 text-xs text-text hover:bg-surface-2"
-            >
-              <Plus size={13} />
-              Novo agente
-            </button>
-            <button
-              onClick={createByVoice}
-              aria-label="Novo agente por voz"
-              title="Novo agente por voz: conte o que ele faz"
-              className="flex size-[30px] shrink-0 items-center justify-center rounded-full border border-line text-text hover:bg-surface-2"
-            >
-              <Mic size={13} />
-            </button>
-          </div>
-          {agents.map((a) => (
-            <button
-              key={a.path}
-              onClick={() => select(a)}
-              title={a.description}
-              className={`flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left ${
-                draft?.previousName === a.name ? 'bg-selection text-white [&_.text-faint]:text-white/70 [&_.text-muted]:text-white/80' : 'text-muted hover:bg-fill hover:text-text'
-              }`}
-            >
-              <span className="w-full truncate text-xs">{a.name}</span>
-              <span className="w-full truncate text-[11px] text-faint">{a.description}</span>
-            </button>
-          ))}
-          {draft && !draft.previousName && (
-            <div className="flex w-full flex-col items-start rounded-md bg-selection px-2 py-1.5 text-xs italic text-white">
-              {draft.name || 'novo agente'}
-            </div>
-          )}
-        </nav>
-
         <section className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-start gap-3 border-b border-line px-5 py-3">
+            {draft ? (
+              <button
+                onClick={back}
+                aria-label="Voltar para os agentes"
+                title="Voltar para os agentes"
+                className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
+              >
+                <ArrowLeft size={15} />
+              </button>
+            ) : (
+              <span className="flex size-7 shrink-0 items-center justify-center text-muted">
+                <Bot size={16} />
+              </span>
+            )}
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">
-                {draft ? draft.previousName ?? 'Novo agente' : 'Agentes globais'}
-              </div>
+              <div className="truncate text-sm font-medium">{draft ? draft.previousName ?? 'Novo agente' : 'Agentes'}</div>
               <div className="mt-0.5 truncate font-mono text-[12px] text-faint">
                 {current ? tildify(current.path) : IS_WIN ? '~\\.claude\\agents\\' : '~/.claude/agents/'}
               </div>
             </div>
-            {draft?.previousName && (
-              <>
-                <button
-                  onClick={duplicate}
-                  title="Duplicar"
-                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
-                >
-                  <Copy size={12} />
-                  Duplicar
-                </button>
-                <button
-                  onClick={() => void remove()}
-                  title="Excluir"
-                  className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
-                >
-                  <Trash2 size={12} />
-                  Excluir
-                </button>
-              </>
+            {!draft && loaded && agents.length > 0 && (
+              <button onClick={create} className={PRIMARY}>
+                <Plus size={12} />
+                Novo agente
+              </button>
             )}
-            {draft && (
+            {draft?.previousName && (
               <button
-                onClick={() => void save()}
-                disabled={!dirty}
-                title={`Salvar (${keys('⌘S')})`}
-                className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
+                onClick={() => void remove()}
+                title="Excluir"
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
               >
-                Salvar
+                <Trash2 size={12} />
+                Excluir
               </button>
             )}
             <button
               aria-label="Fechar"
               title="Fechar"
               onClick={close}
-              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
             >
               <X size={15} />
             </button>
           </header>
 
-          {error && <p className="border-b border-line px-5 py-2 text-xs text-red-400">{error}</p>}
-
           {!draft ? (
-            loaded && (
+            loaded &&
+            (agents.length ? (
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                  {agents.map((a) => (
+                    <button
+                      key={a.path}
+                      onClick={() => select(a)}
+                      className="flex min-h-28 flex-col items-start gap-1.5 rounded-xl border border-line bg-fill p-4 text-left hover:border-line-strong hover:bg-surface-2"
+                    >
+                      <span className="flex w-full items-center gap-2 text-[13px] font-medium text-text">
+                        <Bot size={14} className="shrink-0 text-muted" />
+                        <span className="truncate">{a.name}</span>
+                      </span>
+                      <span className="line-clamp-3 text-[12px] leading-relaxed text-muted">
+                        {a.description || 'Sem descrição'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <div className="m-auto max-w-sm text-center">
                 <p className="text-sm text-text">Nenhum agente ainda</p>
                 <p className="mt-1 text-xs leading-relaxed text-faint">
                   Um agente é um especialista que você chama em qualquer conversa com @nome, ou que o Claude chama
                   sozinho quando o pedido combina com a descrição dele. Vale em todos os projetos.
                 </p>
-                <div className="mt-4 flex justify-center gap-2">
-                  <button
-                    onClick={createByVoice}
-                    className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white hover:brightness-110"
-                  >
-                    <Mic size={12} />
-                    Criar por voz
-                  </button>
-                  <button
-                    onClick={create}
-                    className="rounded-full border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2"
-                  >
-                    Preencher à mão
-                  </button>
-                </div>
+                <button onClick={create} className={`${PRIMARY} mx-auto mt-4`}>
+                  <Plus size={12} />
+                  Criar agente
+                </button>
               </div>
-            )
+            ))
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
-              <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface-2/60 p-3">
-                <div className="flex items-center gap-2 text-xs font-medium text-text">
-                  <Sparkles size={13} className="shrink-0" />
-                  {draft.description || draft.prompt ? 'Ajustar com o Claude' : 'Descreva o agente e o Claude preenche'}
-                </div>
-                <textarea
-                  value={brief}
-                  onChange={(e) => setBrief(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && isMod(e)) {
-                      e.preventDefault()
-                      void fill()
-                    }
-                  }}
-                  rows={3}
-                  placeholder={
-                    listeningTo === 'brief'
-                      ? 'Ouvindo… conte o que ele faz, como trabalha e o que entrega'
-                      : draft.description || draft.prompt
-                        ? 'O que mudar? Ex.: "ele também deve conferir a versão mobile"'
-                        : 'Fale ou escreva: o que ele faz, como trabalha, que ferramentas usa e o que entrega.'
-                  }
-                  className={`${input} resize-none text-[13px]`}
-                />
-                <div className="flex items-center gap-2">
-                  <MicButton listening={listeningTo === 'brief'} onClick={() => toggleVoice('brief', brief)} />
-                  {listeningTo === 'brief' && <VoiceWave />}
-                  {dictation.error && <span className="truncate text-[12px] text-red-400">{dictation.error.message}</span>}
-                  <span className="flex-1" />
-                  <button
-                    onClick={() => void fill()}
-                    disabled={!brief.trim() || drafting || listening}
-                    title={listening ? 'Pare o microfone para preencher' : `Preencher os campos (${keys('⌘Enter')})`}
-                    className="flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
-                  >
-                    {drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                    {drafting ? 'Escrevendo…' : draft.description || draft.prompt ? 'Ajustar campos' : 'Preencher campos'}
-                  </button>
-                </div>
-              </div>
+            <>
+              <StepTabs step={step} reached={reached} onGo={go} />
+              {error && <p className="border-b border-line px-5 py-2 text-xs text-red-400">{error}</p>}
 
-              <Field label="Nome" hint="Letras minúsculas, números e hífen. É como você chama no chat: @nome.">
-                <input
-                  value={draft.name}
-                  onChange={(e) => set({ name: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                  placeholder="clone-de-paginas"
-                  spellCheck={false}
-                  className={`${input} font-mono`}
-                />
-              </Field>
-
-              <Field
-                label="Quando usar"
-                hint="O Claude lê isto para decidir sozinho se chama este agente. Diga a tarefa e quando ela aparece."
-                action={
-                  <MicButton
-                    listening={listeningTo === 'description'}
-                    onClick={() => toggleVoice('description', draft.description)}
-                  />
-                }
-              >
-                <input
-                  value={draft.description}
-                  onChange={(e) => set({ description: e.target.value })}
-                  placeholder="Clona uma página de referência no padrão e na stack do projeto, comparando por prints."
-                  className={input}
-                />
-              </Field>
-
-              <Field
-                label="Instruções"
-                hint="O que o agente sabe e como trabalha, passo a passo. Ele não vê a conversa: só o pedido que recebe."
-                action={<MicButton listening={listeningTo === 'prompt'} onClick={() => toggleVoice('prompt', draft.prompt)} />}
-              >
-                <textarea
-                  value={draft.prompt}
-                  onChange={(e) => set({ prompt: e.target.value })}
-                  rows={14}
-                  spellCheck={false}
-                  placeholder={'Você clona páginas da web dentro do projeto atual.\n\n1. Abra a referência e tire prints de cada seção.\n2. Leia o projeto: stack, componentes e tokens existentes.\n3. ...'}
-                  className={`${input} min-h-56 resize-y font-mono text-[13px] leading-relaxed`}
-                />
-              </Field>
-
-              <Field label="Modelo">
-                <select value={draft.model} onChange={(e) => set({ model: e.target.value })} className={`${input} w-56`}>
-                  {MODELS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-text">Ferramentas</span>
-                <label className="flex items-center gap-2 text-xs text-muted">
-                  <input type="radio" checked={draft.allTools} onChange={() => set({ allTools: true })} />
-                  Todas as da conversa, MCPs incluídos (Playwright, Figma...)
-                </label>
-                <label className="flex items-center gap-2 text-xs text-muted">
-                  <input type="radio" checked={!draft.allTools} onChange={() => set({ allTools: false })} />
-                  Só estas
-                </label>
-                {!draft.allTools && (
-                  <div className="ml-5 flex flex-col gap-2">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                      {TOOLS.map((t) => (
-                        <label key={t.name} className="flex items-center gap-2 text-xs text-text">
-                          <input type="checkbox" checked={draft.tools.includes(t.name)} onChange={() => toggleTool(t.name)} />
-                          {t.label}
-                          <span className="font-mono text-[11px] text-faint">{t.name}</span>
-                        </label>
-                      ))}
-                    </div>
+              {step === 0 && (
+                <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
+                  <Field label="Nome" hint="Letras minúsculas, números e hífen. É como você chama no chat: @nome.">
                     <input
-                      value={draft.extraTools}
-                      onChange={(e) => set({ extraTools: e.target.value })}
-                      placeholder="Outras, separadas por vírgula: mcp__playwright__browser_navigate, ..."
+                      value={draft.name}
+                      onChange={(e) => set({ name: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                      placeholder="revisor-de-telas"
                       spellCheck={false}
-                      className={`${input} font-mono text-[13px]`}
+                      autoFocus={!draft.name}
+                      className={`${input} font-mono`}
                     />
-                  </div>
+                  </Field>
+                  <Field
+                    label="Quando usar"
+                    hint="O Claude lê isto para decidir sozinho se chama este agente. Diga a tarefa e quando ela aparece."
+                  >
+                    <textarea
+                      value={draft.description}
+                      onChange={(e) => set({ description: e.target.value })}
+                      rows={2}
+                      placeholder="Revisa telas novas comparando com o Figma. Use depois de implementar ou alterar uma tela."
+                      className={`${input} resize-none`}
+                    />
+                  </Field>
+                  <Field
+                    label="Instruções"
+                    hint="O que o agente sabe e como trabalha, passo a passo. Ele não vê a conversa: só o pedido que recebe."
+                    className="min-h-72 flex-1"
+                  >
+                    <textarea
+                      value={draft.prompt}
+                      onChange={(e) => set({ prompt: e.target.value })}
+                      placeholder={
+                        'Você revisa telas recém-implementadas no projeto atual.\n\n1. Leia o projeto: stack, componentes e tokens existentes.\n2. Abra a tela no navegador e tire prints.\n3. ...'
+                      }
+                      className={`${input} flex-1 resize-none text-[14px] leading-relaxed`}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {step === 1 && (
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
+                  <Group>
+                    <Row label="Modelo" description="Um modelo menor responde mais rápido e gasta menos; um maior pensa melhor.">
+                      <Select value={draft.model} onChange={(model) => set({ model })}>
+                        {MODELS.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Row>
+                    <Row
+                      label="Ferramentas"
+                      description={
+                        draft.allTools
+                          ? 'Todas as da conversa, MCPs incluídos (Playwright, Figma...).'
+                          : 'Só as marcadas abaixo. Menos ferramentas deixa o agente mais focado e mais seguro.'
+                      }
+                    >
+                      <Segmented
+                        value={draft.allTools ? 'all' : 'some'}
+                        options={[
+                          { value: 'all', label: 'Todas' },
+                          { value: 'some', label: 'Só estas' }
+                        ]}
+                        onChange={(v) => set({ allTools: v === 'all' })}
+                      />
+                    </Row>
+                  </Group>
+                  {!draft.allTools && (
+                    <div className="flex flex-col gap-3 rounded-xl bg-fill p-4">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        {TOOLS.map((t) => (
+                          <label key={t.name} className="flex items-center gap-2 text-xs text-text">
+                            <input type="checkbox" checked={draft.tools.includes(t.name)} onChange={() => toggleTool(t.name)} />
+                            {t.label}
+                            <span className="font-mono text-[11px] text-faint">{t.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <input
+                        value={draft.extraTools}
+                        onChange={(e) => set({ extraTools: e.target.value })}
+                        placeholder="Outras, separadas por vírgula: mcp__playwright__browser_navigate, ..."
+                        spellCheck={false}
+                        className={`${input} font-mono text-[13px]`}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <footer className="flex items-center gap-2 border-t border-line px-5 py-3">
+                {/* Na primeira aba, Voltar leva de volta para a lista de agentes. */}
+                <button onClick={() => (step > 0 ? go(step - 1) : back())} className={GHOST}>
+                  <ArrowLeft size={12} />
+                  Voltar
+                </button>
+                <span className="flex-1" />
+                {lacking.length > 0 && <span className="text-[12px] text-faint">Falta preencher: {lacking.join(', ')}</span>}
+                <button
+                  onClick={() => void save()}
+                  disabled={!canSave}
+                  title={lacking.length ? `Falta preencher: ${lacking.join(', ')}` : `Salvar (${keys('⌘S')})`}
+                  className={step < LAST_STEP ? SECONDARY : PRIMARY}
+                >
+                  {draft.previousName && !dirty ? 'Salvo' : 'Salvar'}
+                </button>
+                {step < LAST_STEP && (
+                  <button onClick={() => go(step + 1)} disabled={lacking.length > 0} className={PRIMARY}>
+                    Continuar
+                    <ArrowRight size={12} />
+                  </button>
                 )}
-              </div>
-            </div>
+              </footer>
+            </>
           )}
         </section>
       </div>

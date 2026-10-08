@@ -48,7 +48,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
       <button
         onClick={() => setOpen((o) => !o)}
         title={`Modo: ${current.label}${value ? '' : ' (padrão)'}`}
-        className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
+        className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : current.danger ? 'text-red-400' : 'text-muted'
         }`}
       >

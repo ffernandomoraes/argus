@@ -1,6 +1,7 @@
 import { homedir } from 'node:os'
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 import type { AgentDef, AgentDraftRequest, AgentDraftResult, AgentSaveRequest, AgentSaveResult } from '../shared/agents'
+import type { CanvasViewport } from '../shared/canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
 import type { CliStatus } from '../shared/cli'
@@ -161,7 +162,21 @@ contextBridge.exposeInMainWorld('api', {
   canvas: {
     // Síncrono: o canvas já abre com o que estava salvo, sem piscar vazio.
     load: (): unknown => ipcRenderer.sendSync('canvas:load'),
-    save: (data: unknown): Promise<void> => ipcRenderer.invoke('canvas:save', data)
+    // O canvas é um só em todas as janelas: a mudança feita aqui vai para as outras (e para o arquivo).
+    sync: (nodes: unknown) => ipcRenderer.send('canvas:sync', nodes),
+    onRemote: (cb: (nodes: unknown) => void) => {
+      const listener = (_e: IpcRendererEvent, nodes: unknown) => cb(nodes)
+      ipcRenderer.on('canvas:remote', listener)
+      return () => ipcRenderer.removeListener('canvas:remote', listener)
+    },
+    // Desfazer é um só para todas as janelas: o histórico fica no processo principal.
+    record: () => ipcRenderer.send('canvas:record'),
+    undo: () => ipcRenderer.send('canvas:undo'),
+    redo: () => ipcRenderer.send('canvas:redo'),
+    // Câmera desta janela, para ela reabrir olhando o mesmo lugar.
+    viewport: (): CanvasViewport | null => ipcRenderer.sendSync('canvas:viewport'),
+    setViewport: (viewport: CanvasViewport) => ipcRenderer.send('canvas:setViewport', viewport),
+    newWindow: () => ipcRenderer.send('canvas:newWindow')
   },
   canvasAgent: {
     state: (): Promise<CanvasAgentState> => ipcRenderer.invoke('canvasAgent:state'),

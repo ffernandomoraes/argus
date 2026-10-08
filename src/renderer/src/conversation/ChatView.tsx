@@ -639,7 +639,7 @@ export function ChatView({
     )
   }
   live?.permissions.forEach((p) =>
-    step(`perm-${p.id}`, 'bg-needs-you', <PermissionCard request={p} onAnswer={(answer) => onAnswer(p.id, answer)} />)
+    step(`perm-${p.id}`, 'bg-ask', <PermissionCard request={p} onAnswer={(answer) => onAnswer(p.id, answer)} />)
   )
   if (status === 'running' || waiting.length > 0) {
     step(
@@ -660,8 +660,8 @@ export function ChatView({
   if (status === 'needs-you' && !live?.permissions.length) {
     step(
       'needs-you',
-      'bg-needs-you',
-      <div className="rounded-lg border border-needs-you/40 bg-needs-you/10 px-3 py-2 text-[13px] text-text">
+      'bg-ask',
+      <div className="rounded-lg border border-ask/40 bg-ask/10 px-3 py-2 text-[13px] text-text">
         Esperando você responder onde a conversa está aberta (permissão ou pergunta).
       </div>
     )
@@ -771,7 +771,7 @@ export function ChatView({
               aria-label="Anexar imagem"
               title="Anexar imagem"
               onClick={() => imageInput.current?.click()}
-              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
             >
               <ImagePlus size={15} />
             </button>
@@ -779,7 +779,7 @@ export function ChatView({
               aria-label="Anexar arquivo"
               title="Anexar arquivo"
               onClick={() => fileInput.current?.click()}
-              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
             >
               <Paperclip size={15} />
             </button>
@@ -793,7 +793,7 @@ export function ChatView({
               aria-label={dictation.state === 'idle' ? 'Ditar por voz' : 'Parar ditado'}
               title={dictation.state === 'idle' ? 'Ditar por voz' : 'Parar ditado'}
               onClick={toggleDictation}
-              className={`mr-1 flex size-7 items-center justify-center rounded-full ${
+              className={`mr-1 flex size-7 items-center justify-center rounded-md ${
                 dictation.state === 'idle'
                   ? 'text-muted hover:bg-surface-2 hover:text-text'
                   : 'bg-running/15 text-running hover:bg-running/25'
@@ -806,7 +806,7 @@ export function ChatView({
                 aria-label="Parar"
                 title="Parar"
                 onClick={onInterrupt}
-                className="flex size-7 items-center justify-center rounded-full bg-accent text-white hover:brightness-110"
+                className="flex size-7 items-center justify-center rounded-md bg-accent text-white hover:brightness-110"
               >
                 <Square size={11} fill="currentColor" />
               </button>
@@ -816,7 +816,7 @@ export function ChatView({
                 title="Enviar (Enter)"
                 onClick={send}
                 disabled={!canSend && dictation.state === 'idle'}
-                className="flex size-7 items-center justify-center rounded-full bg-accent text-white hover:brightness-110 disabled:opacity-40"
+                className="flex size-7 items-center justify-center rounded-md bg-accent text-white hover:brightness-110 disabled:opacity-40"
               >
                 <SendHorizontal size={14} />
               </button>
@@ -833,7 +833,7 @@ export function ChatView({
             {dictation.error.action === 'dictation-settings' && (
               <button
                 onClick={() => window.api.speech.openSettings()}
-                className="shrink-0 rounded-full border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
+                className="shrink-0 rounded-md border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
               >
                 Abrir {SYSTEM_SETTINGS}
               </button>

@@ -49,7 +49,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return (
     <button
       onClick={() => navigator.clipboard.writeText(text).then(() => setCopied(true))}
-      className="flex w-full items-center justify-center gap-1.5 rounded-full border border-line bg-fill px-3.5 py-1.5 text-xs text-text hover:bg-surface-2"
+      className="flex w-full items-center justify-center gap-1.5 rounded-md border border-line bg-fill px-3.5 py-1.5 text-xs text-text hover:bg-surface-2"
     >
       {copied ? <Check size={12} className="text-done" /> : <Copy size={12} />}
       {copied ? 'Copiado' : label}
@@ -77,7 +77,7 @@ export function CoffeeDialog({ onClose }: { onClose: () => void }) {
           aria-label="Fechar"
           title="Fechar"
           onClick={onClose}
-          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full text-muted hover:bg-fill hover:text-text"
+          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-md text-muted hover:bg-fill hover:text-text"
         >
           <X size={15} />
         </button>

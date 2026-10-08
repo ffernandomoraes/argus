@@ -35,7 +35,7 @@ export function ViewBar() {
 
   return (
     <Panel position="bottom-right" className="!m-4">
-      <div className={`flex flex-col gap-1 border border-line bg-surface/90 p-1 shadow-md shadow-black/20 backdrop-blur-xl ${mapOpen ? 'rounded-2xl' : 'rounded-full'}`}>
+      <div className={`flex flex-col gap-1 border border-line bg-surface/90 p-1 shadow-md shadow-black/20 backdrop-blur-xl ${mapOpen ? 'rounded-2xl' : 'rounded-xl'}`}>
         {/* Âncoras: um clique leva ao grupo e recolhe o minimapa. */}
         {mapOpen && anchors.length > 0 && (
           <div className="flex max-h-36 w-[196px] flex-col overflow-y-auto">

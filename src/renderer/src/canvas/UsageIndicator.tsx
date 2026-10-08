@@ -154,7 +154,7 @@ export function UsageIndicator() {
         <button
           aria-label="Ver limites do Claude"
           onClick={() => setOpen((o) => !o)}
-          className={`flex h-[34px] items-center gap-2 rounded-full border border-line bg-surface/90 px-3.5 backdrop-blur-xl text-[11px] text-faint shadow-md shadow-black/20 hover:text-muted ${
+          className={`flex h-[34px] items-center gap-2 rounded-md border border-line bg-surface/90 px-3.5 backdrop-blur-xl text-[11px] text-faint shadow-md shadow-black/20 hover:text-muted ${
             open ? 'text-muted' : ''
           }`}
         >

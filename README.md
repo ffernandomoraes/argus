@@ -14,21 +14,25 @@
   <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para Windows</b></a>
 </p>
 
-![Canvas do Argus com projetos agrupados em Trabalho e Pessoal](docs/prints/canvas.png)
+![Canvas do Argus com nove projetos nos grupos Trabalho, Freela e Pessoal, agentes rodando em paralelo com seus subagentes e uma conversa aberta no painel lateral mostrando o diff e um pedido de permissão](docs/prints/argus.png)
 
 Na mitologia grega, Argus era o gigante de cem olhos que via tudo ao mesmo tempo. O app faz
 o mesmo com os seus agentes: cada pasta de projeto vira um bloco no canvas e, dentro dele,
 você vê as conversas do Claude Code, o que cada uma está fazendo agora e quais estão
 esperando por você.
 
-![Conversa aberta no painel lateral, com o diff da edição feita pelo Claude](docs/prints/conversa.png)
+No print acima: três grupos com nove projetos, conversas rodando ao mesmo tempo (com os
+subagentes que cada uma lançou logo abaixo), outras esperando sua resposta, e o painel
+lateral com o diff da edição e o pedido de permissão para o próximo comando.
 
 ## Funcionalidades
 
 **Canvas**
-- Canvas infinito com zoom, minimapa e grupos coloridos (Trabalho, Pessoal, o que você quiser).
+- Canvas infinito com zoom e grupos coloridos (Trabalho, Pessoal, o que você quiser).
+- Minimapa com cada bloco na cor do seu grupo e a lista dos grupos em ordem alfabética: um clique leva direto a cada um.
 - Grupos: arraste blocos para dentro, renomeie com dois cliques no nome, recolha ou oculte o conteúdo.
 - Cada pasta de projeto vira um bloco com a branch do git e as conversas mais recentes; as demais ficam em **Ver todas as conversas**. Dá para recolher a lista e deixar só as que estão rodando.
+- Botão direito na pasta: nova conversa, abrir o repositório no GitHub (ou no host do remoto) e tirar do canvas, que avisa antes se houver conversa em andamento.
 - Blocos se encaixam pela borda ou pelo meio dos vizinhos ao arrastar, e ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Shift+Z no Windows) desfazem e refazem o layout.
 - O layout fica salvo e volta igual ao reabrir o app.
 - Comando `argus .` no terminal: abre a pasta atual no canvas, como o `code .` do VS Code.
@@ -37,14 +41,17 @@ esperando por você.
 
 **Conversas com o Claude Code**
 - Chat completo, com respostas em tempo real, onde você preferir: painel lateral, janela própria ou um bloco dentro do canvas.
+- Modo foco: o painel ocupa a tela e a conversa fica numa coluna central, mais fácil de ler.
+- Enquanto responde, o chat mostra o que o Claude está fazendo (pensando, escrevendo, rodando uma ferramenta) e o tempo total do turno.
 - Conversa sem projeto, pelo botão direito do canvas: roda na sua pasta pessoal e vira um card no primeiro envio.
 - Cole prints com ⌘V (Ctrl+V no Windows), anexe arquivos e dite em vez de digitar.
 - Edições aparecem como diff (o antes e depois de cada arquivo).
 - Aprove ou negue permissões e responda às perguntas do Claude direto no chat.
-- Troque modelo, nível de esforço, thinking e modo de permissão por conversa; cada conversa guarda os dela.
+- Troque modelo, nível de esforço, thinking, Ultracode (vários subagentes em paralelo) e modo de permissão por conversa; cada conversa guarda os dela. Thinking e Ultracode começam desligados.
 - Comandos de barra (`/`), `@nome` para chamar um agente, painel de servidores MCP e remote control.
 - Anel com o quanto da janela de contexto a conversa já ocupa.
 - Também enxerga as sessões abertas fora do app (terminal, VS Code) e o status delas.
+- Conversa que não serve mais vai para a Lixeira pelo botão direito.
 
 **Acompanhamento**
 - Status de cada conversa no canvas: rodando, esperando você, concluída.
@@ -52,7 +59,7 @@ esperando por você.
 - Notificação do sistema quando uma conversa termina ou precisa de resposta.
 - Ícone na barra de menus (no Windows, na área de notificação) com o resumo do que está rodando.
 - Indicador do limite de uso do Claude, de cada conta.
-- Lista dos servidores locais que algum agente deixou rodando, com atalho para abrir ou encerrar (só no Mac).
+- Lista dos servidores locais que algum agente deixou rodando ou que rodam dentro das pastas do canvas, com atalho para abrir ou encerrar (só no Mac).
 - Fechar ou atualizar o app com conversa ou terminal rodando pede confirmação antes.
 
 **Ferramentas**
@@ -62,10 +69,19 @@ esperando por você.
 - Biblioteca de agentes (subagentes do Claude Code): criar, editar e deixar o Claude escrever as instruções.
 - Editor da memória do Claude: `CLAUDE.md` global, de cada projeto e as anotações da memória automática.
 
+**Visual**
+- No estilo do macOS: fonte do sistema (SF Pro no Mac, Segoe UI no Windows), cinzas do sistema e botões em cápsula.
+- Usa a cor de destaque escolhida no Mac (Aparência) ou no Windows (Cores) e acompanha quando você troca.
+- Menus translúcidos e animação suave ao abrir e fechar blocos, painéis, menus e janelas.
+- Bordas do canvas esfumaçadas, para os blocos não brigarem com as barras dos cantos.
+- Tema claro, escuro ou o do sistema.
+
 **App**
 - Login do Claude Code dentro do app, sem passar pelo terminal.
-- Tema claro, escuro ou o do sistema.
+- Configurações no estilo do Ajustes do macOS (Geral, Conversas, Aparência, Contas), com as Boas-vindas sempre à mão no pé da barra lateral.
+- Cada conta do Claude aparece com o nome da pessoa, a organização e o plano.
 - Atualização automática, com a versão em uso sempre no canto da barra de título.
+- Botão **Me pague um café** na barra de título, com QR Code e chave Pix para apoiar o projeto.
 
 ## Requisitos
 

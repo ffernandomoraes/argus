@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
-import { Folder, GitBranch, X } from 'lucide-react'
+import { Folder, X } from 'lucide-react'
 import { BranchLabel } from '../canvas/BranchLabel'
 import { useBranch, useUncommitted } from '../canvas/sessionsStore'
 import type { ConversationSummary } from '../canvas/types'
@@ -43,7 +43,7 @@ export function HeaderButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`flex size-7 items-center justify-center rounded-full ${
+      className={`flex size-7 items-center justify-center rounded-md ${
         active ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
       }`}
     >
@@ -74,16 +74,18 @@ export const KIND_LABEL: Record<UncommittedFile['kind'], string> = {
   '!': 'Em conflito'
 }
 
-// Arquivos do repositório ainda não comitados: o ícone de controle de versão com o
-// contador por cima, como o do VS Code. Clicar abre a lista; clicar num arquivo abre o
-// diff dele no código da pasta.
-function UncommittedBadge({
+// Selo da branch. Com arquivos não comitados, traz o número deles (o mesmo selo de cima do
+// card da pasta no canvas) e vira botão: clicar abre a lista; clicar num arquivo abre o diff
+// dele no código da pasta.
+function BranchTag({
   cwd,
+  branch,
   files,
   onOpenDiff
 }: {
   cwd: string
-  files: UncommittedFile[]
+  branch: string
+  files: UncommittedFile[] | null
   onOpenDiff?: (path: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -96,6 +98,13 @@ function UncommittedBadge({
   }, [open])
   useEscape(() => setOpen(false), open)
 
+  if (!files?.length)
+    return (
+      <span className={`${TAG} max-w-[40%] shrink-0`}>
+        <BranchLabel branch={branch} />
+      </span>
+    )
+
   const n = files.length
   const label = `${n} ${n === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`
   // Caminhos relativos à pasta da conversa; fora dela (pasta é parte do repo), com ~.
@@ -103,20 +112,15 @@ function UncommittedBadge({
   const shown = (path: string) => relativeTo(path, root) || tildify(path)
 
   return (
-    <div ref={ref} className="relative">
+    // Clicar no selo não arrasta a janela (no-drag), o bloco no canvas (nodrag) nem o painel
+    // (o pointerdown não sobe para o cabeçalho).
+    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex max-w-[40%] shrink-0">
       <button
-        aria-label={label}
-        title={label}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex size-7 items-center justify-center rounded-full ${
-          open ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2 hover:text-text'
-        }`}
+        className={`${TAG} min-w-0 ${open ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`}
       >
-        <GitBranch size={16} aria-hidden="true" />
-        <span className="absolute -right-1 bottom-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[11px] font-semibold leading-none text-white">
-          {n > 999 ? '999+' : n}
-        </span>
+        <BranchLabel branch={branch} changes={n} />
       </button>
 
       <Presence kind="menu">
@@ -124,7 +128,7 @@ function UncommittedBadge({
           // pointerdown não sobe: o cabeçalho arrasta o painel.
           <div
             onPointerDown={(e) => e.stopPropagation()}
-            className="absolute right-0 top-full z-50 mt-1 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
+            className="absolute left-0 top-full z-50 mt-1 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
           >
             <div className="shrink-0 border-b border-line px-3 py-2 text-[12px] text-faint">{label}</div>
             <ul className="min-h-0 overflow-y-auto p-1">
@@ -318,18 +322,13 @@ export function ConversationView({
                   <span className="truncate">{project}</span>
                 </span>
               )}
-              {branch && (
-                <span className={`${TAG} max-w-[40%] shrink-0`}>
-                  <BranchLabel branch={branch} />
-                </span>
-              )}
+              {branch && <BranchTag cwd={cwd} branch={branch} files={uncommitted} onOpenDiff={onOpenDiff} />}
             </div>
           )}
         </div>
 
         {/* no-drag: botões fora do arraste da janela; nodrag: fora do arraste do bloco no canvas. */}
         <div className="no-drag nodrag flex shrink-0 items-center gap-1">
-          {!minimalHeader && !!uncommitted?.length && <UncommittedBadge cwd={cwd} files={uncommitted} onOpenDiff={onOpenDiff} />}
           {actions}
           <HeaderButton label="Fechar" onClick={onClose}>
             <X size={15} />

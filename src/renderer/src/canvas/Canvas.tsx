@@ -34,6 +34,7 @@ import {
   createChatPanel,
   createFolderInstance,
   createGroup,
+  createNote,
   createTerminal,
   displayPath,
   INSTANCE_MIN_HEIGHT,
@@ -44,17 +45,18 @@ import type { ResolvedTheme } from '../theme/useTheme'
 import { ViewBar } from './ViewBar'
 import { NavBar } from './NavBar'
 import { ProjectNode } from './ProjectNode'
+import { NoteNode } from './NoteNode'
 import { TerminalNode } from './TerminalNode'
 import { AllConversationsPanel } from './AllConversationsPanel'
 import { AlignmentGuides } from './AlignmentGuides'
 import { EdgeFade } from './EdgeFade'
-import { loadNodes, useSaveNodes } from './persistence'
+import { loadNodes, useCanvasSync } from './persistence'
 import { getSessions, refreshNow, useSessionsVersion } from './sessionsStore'
 import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
-import { IS_WIN, isAbsolutePath, relativeTo, untildify } from '../platform'
+import { IS_WIN, isAbsolutePath, isMod, relativeTo, untildify } from '../platform'
 import {
   addNode,
   dropIntoGroup,
@@ -66,6 +68,8 @@ import {
   placeBeside,
   removeNode,
   rename,
+  setNoteText,
+  setNoteWidth,
   sizeOf,
   toggleCollapse,
   toggleObscure,
@@ -79,12 +83,13 @@ import {
   conversationMenu,
   groupMenu,
   instanceMenu,
+  noteMenu,
   paneMenu,
   terminalMenu,
   type Deps
 } from './useContextMenus'
 
-const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode, chatPanel: ChatPanelNode }
+const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode, chatPanel: ChatPanelNode, note: NoteNode }
 
 // Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
 function projectOf(node: CanvasNode | undefined): ProjectData | null {
@@ -104,6 +109,8 @@ const DWELL_MS = 2000
 
 export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme; onOpenSettings: () => void }) {
   const [nodes, setNodes] = useState<CanvasNode[]>(loadNodes)
+  // Câmera com que esta janela estava ao fechar o app; sem ela, enquadra tudo.
+  const [savedViewport] = useState(() => window.api.canvas.viewport())
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
@@ -143,9 +150,22 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   }
   const spaceHeld = useSpaceHeld()
   const auth = useAuth()
+  // Interface oculta: só os blocos e a barra de título; as barras do canvas (navegação, zoom, uso)
+  // somem até clicar de novo no botão ou repetir ⌘\. Não fica salvo: reabrir o app volta com tudo.
+  const [uiHidden, setUiHidden] = useState(false)
+  const toggleUi = () => setUiHidden((h) => !h)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isMod(e) || e.shiftKey || e.altKey || (e.key !== '\\' && e.code !== 'Backslash')) return
+      e.preventDefault()
+      setUiHidden((h) => !h)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const { nodesRef, change, trackGesture, undo, redo } = useHistory(nodes, setNodes)
-  useSaveNodes(nodes)
+  useCanvasSync(nodes, setNodes)
   useCanvasAgentTools(nodesRef, change)
   const sessionsVersion = useSessionsVersion()
 
@@ -221,6 +241,46 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // C com o mouse no canvas: nota nova ali, já para escrever (como o comentário do Figma).
+  // Fora do canvas (painel, modal, barras) ou digitando, a tecla é de quem está lá.
+  const pointer = useRef<{ x: number; y: number } | null>(null)
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => (pointer.current = { x: e.clientX, y: e.clientY })
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'c' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat) return
+      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) return
+      const at = pointer.current
+      const under = at && document.elementFromPoint(at.x, at.y)
+      if (!at || !under?.closest('.react-flow') || under.closest('.react-flow__panel')) return
+      e.preventDefault()
+      setMenu(null)
+      depsRef.current?.addNote(screenToFlowPosition(at))
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [screenToFlowPosition])
+
+  // Delete (no Mac, a tecla ⌫) apaga as notas selecionadas; ⌘Z traz de volta. Só com o foco
+  // no canvas: num modal ou num campo de texto, a tecla é de quem está lá.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key !== 'Delete' && e.key !== 'Backspace') || e.metaKey || e.ctrlKey || e.altKey) return
+      const target = e.target as HTMLElement
+      if (target.closest('input, textarea, [contenteditable="true"]')) return
+      if (target !== document.body && !target.closest('.react-flow')) return
+      const ids = new Set(nodesRef.current.filter((n) => n.type === 'note' && n.selected).map((n) => n.id))
+      if (!ids.size) return
+      e.preventDefault()
+      change((ns) => ns.filter((n) => !ids.has(n.id)))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [change, nodesRef])
+
   // O menu de uma conversa nasce no ProjectNode, pelo contexto, e precisa dos deps desta renderização.
   const depsRef = useRef<Deps | null>(null)
 
@@ -232,6 +292,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         setRenamingId((cur) => (cur === id ? null : cur))
         const name = value?.trim()
         const node = nodesRef.current.find((n) => n.id === id)
+        // A nota não passa por aqui: ela guarda o texto pelo finishNote.
+        if (node?.type === 'note') return
         const current = node?.type === 'area' ? node.data.label : node?.data.name
         if (name && name !== current) change((ns) => rename(ns, id, name))
       },
@@ -241,6 +303,21 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         change((ns) => addNode(ns, group))
         setRenamingId(group.id)
       },
+      // Diferente dos outros blocos, a nota fica onde foi pedida, mesmo em cima de uma pasta:
+      // ela é um lembrete sobre o que está embaixo. Em cima de um grupo, entra nele.
+      addNote: (position: XYPosition, groupId?: string) => {
+        const note = createNote(position)
+        change((ns) => (groupId ? addNode(ns, note, groupId) : dropIntoGroup([...ns, note], [note.id])))
+        setRenamingId(note.id)
+      },
+      finishNote: (id: string, text: string) => {
+        setRenamingId((cur) => (cur === id ? null : cur))
+        const node = nodesRef.current.find((n) => n.id === id)
+        // Só o fim do texto: quebras de linha no meio são da nota.
+        const value = text.trimEnd()
+        if (node?.type === 'note' && value !== node.data.text) change((ns) => setNoteText(ns, id, value))
+      },
+      setNoteWidth: (id: string, width: number) => change((ns) => setNoteWidth(ns, id, width)),
       // A pasta é escolhida no FolderPicker; ver pickFolder.
       addFolder: (position: XYPosition, groupId?: string) => setFolderPicker({ position, groupId }),
       // Terminal solto no canvas. Sem pasta conhecida, abre na pasta do usuário, sem perguntar.
@@ -510,10 +587,11 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     // O projeto lê o remoto do git antes, para o menu já abrir com "Abrir no GitHub".
     if (node.type === 'project') {
       const { clientX: x, clientY: y } = e
+      const at = screenToFlowPosition({ x, y })
       void window.api.sessions
         .repoUrl(node.data.path)
         .catch(() => null)
-        .then((url) => setMenu({ x, y, items: instanceMenu(depsRef.current ?? deps, node, url) }))
+        .then((url) => setMenu({ x, y, items: instanceMenu(depsRef.current ?? deps, node, url, at) }))
       return
     }
     const items =
@@ -523,7 +601,9 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           ? terminalMenu(deps, node)
           : node.type === 'chat'
             ? chatMenu(deps, node)
-            : chatPanelMenu(deps, node)
+            : node.type === 'note'
+              ? noteMenu(deps, node)
+              : chatPanelMenu(deps, node)
     setMenu({ x: e.clientX, y: e.clientY, items })
   }
 
@@ -579,15 +659,17 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           setNodes((ns) => dropIntoGroup(ns, dragged.map((n) => n.id)))
         }}
         nodeTypes={nodeTypes}
-        className={`${spaceHeld ? 'camera-mode' : ''} ${motion.booting ? 'canvas-booting' : ''}`}
+        className={`${spaceHeld ? 'camera-mode' : ''} ${motion.booting ? 'canvas-booting' : ''} ${uiHidden ? 'ui-hidden' : ''}`}
         nodesDraggable={!spaceHeld}
         elementsSelectable={!spaceHeld}
         onPaneContextMenu={onPaneContextMenu}
         onNodeContextMenu={onNodeContextMenu}
         onMoveStart={closeMenu}
+        onMoveEnd={(_, viewport) => window.api.canvas.setViewport(viewport)}
         deleteKeyCode={null}
         colorMode={colorMode}
-        fitView
+        fitView={!savedViewport}
+        defaultViewport={savedViewport ?? undefined}
         fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
@@ -612,7 +694,11 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         }`}
       />
       {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
-      <TitleBar windowTitle={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'} />
+      <TitleBar
+        windowTitle={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'}
+        uiHidden={uiHidden}
+        onToggleUi={toggleUi}
+      />
       <Presence>
         {codeProject && codeOpen && (
           <CodeExplorer

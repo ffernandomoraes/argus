@@ -1,6 +1,7 @@
 import { basename, join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, screen, shell, systemPreferences } from 'electron'
 import type { AgentDraftRequest, AgentSaveRequest } from '../shared/agents'
+import type { CanvasViewport } from '../shared/canvas'
 import type { CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
 import type { TerminalOpenRequest } from '../shared/terminal'
@@ -11,10 +12,12 @@ import { loadAppSettings, saveAppSettings } from './appSettings'
 import { Auth } from './auth'
 import { draftAgent } from './agentWriter'
 import { CanvasAgent } from './canvasAgent'
+import { CanvasHub } from './canvasHub'
+import { loadCanvasWindows, onScreen, saveCanvasWindows, type SavedCanvasWindow } from './canvasWindows'
 import { Cli, cliStatus, installCli, openArg, uninstallCli, validFolder } from './cli'
+import { ChatHolders } from './chatHolders'
 import { Chats } from './chats'
 import { ChatNotifier } from './notifications'
-import { loadCanvas, saveCanvas } from './canvasStore'
 import { killDevServer, listDevServers } from './devServers'
 import { projectServers, startProjectServer, stopProjectServer, stopStartedServers } from './projectServers'
 import {
@@ -85,12 +88,18 @@ const chats = new Chats((key, state) => {
   notifier.refresh()
 })
 
+const chatHolders = new ChatHolders(
+  (key) => chats.retain(key),
+  (key) => chats.release(key)
+)
+
 // Clique na notificação: traz o app e abre a conversa que avisou.
 const notifier = new ChatNotifier(
   () => chats.list(),
   (cwd, sessionId) => {
     showApp()
-    if (sessionId && canvasReady) mainWindow?.webContents.send('chat:open', cwd, sessionId)
+    const win = readyCanvas()
+    if (sessionId && win) win.webContents.send('chat:open', cwd, sessionId)
   }
 )
 
@@ -133,7 +142,7 @@ const webPreferences = { preload: join(__dirname, '../preload/index.js'), sandbo
 
 // Altura da barra de título do app (TITLE_BAR_HEIGHT, em FloatingPanel.tsx).
 const TITLE_BAR_HEIGHT = 40
-type WindowKind = 'main' | 'conversation'
+type WindowKind = 'canvas' | 'conversation'
 const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
 
 // Sem a barra do sistema. No Mac, os semáforos ficam dentro da barra do app. No Windows,
@@ -146,7 +155,7 @@ function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
 
 function overlay(kind: WindowKind): Electron.TitleBarOverlay {
   const dark = nativeTheme.shouldUseDarkColors
-  const color = kind === 'main' ? (dark ? '#282828' : '#ffffff') : dark ? '#1c1c1c' : '#ececec'
+  const color = kind === 'canvas' ? (dark ? '#282828' : '#ffffff') : dark ? '#1c1c1c' : '#ececec'
   return { color, symbolColor: dark ? '#a5a5a5' : '#6e6e73', height: TITLE_BAR_HEIGHT }
 }
 
@@ -193,60 +202,122 @@ function openLinksOutside(win: BrowserWindow): void {
   })
 }
 
-let mainWindow: BrowserWindow | null = null
+// O canvas pode estar aberto em várias janelas (uma por monitor), todas mostrando o mesmo canvas,
+// cada uma com a própria câmera. Quem guarda o canvas é o CanvasHub.
+const canvasWindows = new Set<BrowserWindow>()
+// Última janela do canvas em uso: é nela que entram o `argus .`, a conversa da notificação e as
+// ações do assistente do canvas.
+let lastCanvas: BrowserWindow | null = null
+// Janelas com o canvas montado, prontas para receber o `argus .`.
+const readyCanvases = new WeakSet<Electron.WebContents>()
+// Câmera de cada janela (pelo id do webContents), guardada ao fechar o app.
+const viewports = new Map<number, CanvasViewport>()
 
-// Assistente do canvas: as ações vão para a janela principal, que é onde o canvas vive.
+const canvasHub = new CanvasHub((nodes, except) => {
+  for (const win of canvasWindows) if (win.webContents !== except) win.webContents.send('canvas:remote', nodes)
+})
+
+function activeCanvas(): BrowserWindow | null {
+  if (lastCanvas && !lastCanvas.isDestroyed()) return lastCanvas
+  return canvasWindows.values().next().value ?? null
+}
+
+function readyCanvas(): BrowserWindow | null {
+  const win = activeCanvas()
+  return win && readyCanvases.has(win.webContents) ? win : null
+}
+
+// Assistente do canvas: as ações vão para a janela do canvas em uso.
 const canvasAgent = new CanvasAgent(
-  () => mainWindow?.webContents ?? null,
+  () => activeCanvas()?.webContents ?? null,
   (state) => broadcast('canvasAgent:state', state)
 )
 
-function createWindow(): void {
-  // Abre ocupando a tela toda (sem cobrir menu e dock).
-  const { workArea } = screen.getPrimaryDisplay()
+// Janela nova sem lugar guardado: ocupa a tela toda (sem cobrir menu e dock) de um monitor que
+// ainda não tem canvas, começando pelo principal. Com todos ocupados, abre menor por cima da
+// janela em uso, para se ver que é outra.
+function newCanvasBounds(): { bounds: Electron.Rectangle; maximize: boolean } {
+  const used = new Set([...canvasWindows].map((w) => screen.getDisplayMatching(w.getBounds()).id))
+  const primary = screen.getPrimaryDisplay()
+  const displays = [primary, ...screen.getAllDisplays().filter((d) => d.id !== primary.id)]
+  const free = displays.find((d) => !used.has(d.id))
+  if (free) return { bounds: free.workArea, maximize: true }
+  const current = activeCanvas()
+  const { workArea: a } = current ? screen.getDisplayMatching(current.getBounds()) : primary
+  const inset = Math.round(Math.min(a.width, a.height) * 0.08)
+  return { bounds: { x: a.x + inset, y: a.y + inset, width: a.width - inset * 2, height: a.height - inset * 2 }, maximize: false }
+}
+
+function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
+  const place = saved && onScreen(saved.bounds) ? { bounds: saved.bounds, maximize: saved.maximized } : newCanvasBounds()
   const win = new BrowserWindow({
-    x: workArea.x,
-    y: workArea.y,
-    width: workArea.width,
-    height: workArea.height,
+    ...place.bounds,
     minWidth: 900,
     minHeight: 600,
-    ...frame('main'),
+    ...frame('canvas'),
     backgroundColor: '#1c1c1c',
     webPreferences
   })
-  windowKinds.set(win, 'main')
-  win.maximize()
+  const wc = win.webContents
+  const id = wc.id
+  windowKinds.set(win, 'canvas')
+  canvasWindows.add(win)
+  lastCanvas = win
+  if (saved?.viewport) viewports.set(id, saved.viewport)
+  if (place.maximize) win.maximize()
   openLinksOutside(win)
   windowShortcuts(win)
   loadRenderer(win)
-  mainWindow = win
-  // No Windows não há Dock para reabrir o canvas: fechar a janela fecha o app, passando pela mesma
-  // pergunta de quando há algo rodando.
+  // No Windows não há Dock para reabrir o canvas: fechar a última janela dele fecha o app,
+  // passando pela mesma pergunta de quando há algo rodando. As outras fecham normalmente.
   if (!IS_MAC) {
     win.on('close', (e) => {
-      if (quitting) return
+      if (quitting || canvasWindows.size > 1) return
       e.preventDefault()
       // Fora deste evento: cancelar o fechamento da janela também cancelaria um quit pedido aqui dentro.
       setImmediate(() => app.quit())
     })
   }
+  win.on('focus', () => (lastCanvas = win))
   // Recarregar a página derruba quem escuta o `argus`; ele avisa de novo quando o canvas montar.
-  win.webContents.on('did-start-loading', () => mainWindow === win && (canvasReady = false))
+  wc.on('did-start-loading', () => readyCanvases.delete(wc))
   win.on('closed', () => {
-    if (mainWindow !== win) return
-    mainWindow = null
-    canvasReady = false
+    canvasWindows.delete(win)
+    viewports.delete(id)
+    if (lastCanvas === win) lastCanvas = null
   })
+  return win
 }
 
-// Traz o canvas para frente (ou abre de novo, se a janela foi fechada).
+// Ao abrir o app: as janelas do canvas como estavam ao fechar; sem nada guardado, uma só.
+function restoreCanvasWindows(): void {
+  const saved = loadCanvasWindows()
+  if (!saved.length) return void createCanvasWindow()
+  for (const w of saved) createCanvasWindow(w)
+}
+
+// Ao fechar o app; a janela em uso vai por último, para voltar na frente.
+function saveCanvasWindowLayout(): void {
+  const active = activeCanvas()
+  const open = [...canvasWindows].filter((w) => !w.isDestroyed())
+  const ordered = [...open.filter((w) => w !== active), ...open.filter((w) => w === active)]
+  saveCanvasWindows(
+    ordered.map((w) => ({
+      bounds: w.getNormalBounds(),
+      maximized: w.isMaximized(),
+      viewport: viewports.get(w.webContents.id) ?? null
+    }))
+  )
+}
+
+// Traz o canvas para frente (ou abre de novo, se as janelas foram fechadas).
 function showApp(): void {
-  if (!mainWindow) return createWindow()
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.show()
+  const win = activeCanvas()
+  if (!win) return void createCanvasWindow()
+  if (win.isMinimized()) win.restore()
+  win.show()
   // No Windows o foco não vem junto (o "steal" é só do Mac).
-  if (!IS_MAC) mainWindow.focus()
+  if (!IS_MAC) win.focus()
   app.focus({ steal: true })
 }
 
@@ -302,11 +373,11 @@ async function checkForUpdates(): Promise<void> {
 
 // `argus .` num terminal: traz o app para frente e manda a pasta para o canvas. Com o app
 // ainda abrindo, a pasta espera o canvas avisar que está pronto.
-let canvasReady = false
 const pendingOpens: string[] = []
 function openFolder(path: string): void {
   showApp()
-  if (canvasReady && mainWindow) mainWindow.webContents.send('cli:open', path)
+  const win = readyCanvas()
+  if (win) win.webContents.send('cli:open', path)
   else pendingOpens.push(path)
 }
 const cli = new Cli(openFolder)
@@ -321,12 +392,9 @@ app.on('second-instance', (_e, argv, _cwd, data) => {
   else showApp()
 })
 
-// Janela de conversa fechada: a sessão dela não fica rodando atrás (a limpeza do React
-// não chega a rodar quando a janela é destruída).
-const popouts = new Popouts(createConversationWindow, (id) => {
-  chats.release(id)
-  broadcast('popout:closed', id)
-})
+// Janela de conversa fechada: a sessão dela é solta pelo ChatHolders (a limpeza do React não chega
+// a rodar quando a janela é destruída).
+const popouts = new Popouts(createConversationWindow, (id) => broadcast('popout:closed', id))
 
 // Menu sem os itens de zoom padrão: ⌘+ / ⌘- / ⌘0 ficam para o canvas.
 // O menu Editar é mantido porque copiar e colar (prints no chat) dependem dele.
@@ -354,6 +422,11 @@ function setAppMenu(): void {
           { type: 'separator' },
           { role: 'quit' }
         ]
+      },
+      {
+        label: 'Arquivo',
+        // Outra janela do mesmo canvas, para levar a outro monitor.
+        submenu: [{ label: 'Nova janela do canvas', accelerator: 'Shift+CmdOrCtrl+N', click: () => void createCanvasWindow() }]
       },
       {
         label: 'Editar',
@@ -420,9 +493,17 @@ app.whenReady().then(() => {
   if (IS_MAC) systemPreferences.subscribeNotification('AppleColorPreferencesChangedNotification', sendAccent)
   else systemPreferences.on('accent-color-changed', sendAccent)
   ipcMain.on('canvas:load', (e) => {
-    e.returnValue = loadCanvas()
+    e.returnValue = canvasHub.load()
   })
-  ipcMain.handle('canvas:save', (_e, data: unknown) => saveCanvas(data))
+  ipcMain.on('canvas:sync', (e, nodes: unknown) => canvasHub.sync(nodes, e.sender))
+  ipcMain.on('canvas:record', () => canvasHub.record())
+  ipcMain.on('canvas:undo', () => canvasHub.undo())
+  ipcMain.on('canvas:redo', () => canvasHub.redo())
+  ipcMain.on('canvas:viewport', (e) => {
+    e.returnValue = viewports.get(e.sender.id) ?? null
+  })
+  ipcMain.on('canvas:setViewport', (e, viewport: CanvasViewport) => viewports.set(e.sender.id, viewport))
+  ipcMain.on('canvas:newWindow', () => void createCanvasWindow())
   ipcMain.handle('canvasAgent:state', () => canvasAgent.state)
   ipcMain.on('canvasAgent:send', (_e, text: string) => canvasAgent.send(text))
   ipcMain.on('canvasAgent:interrupt', () => void canvasAgent.interrupt())
@@ -485,8 +566,8 @@ app.whenReady().then(() => {
   })
   ipcMain.on('chat:answer', (_e, key: string, id: string, answer: PermissionAnswer) => chats.answer(key, id, answer))
   ipcMain.handle('mcp:status', (_e, key: string, cwd: string, account?: string) => chats.mcpStatus(key, cwd, account))
-  ipcMain.on('chat:retain', (_e, key: string) => chats.retain(key))
-  ipcMain.on('chat:release', (_e, key: string) => chats.release(key))
+  ipcMain.on('chat:retain', (e, key: string) => chatHolders.hold(key, e.sender))
+  ipcMain.on('chat:release', (e, key: string) => chatHolders.drop(key, e.sender.id))
   ipcMain.on('chat:interrupt', (_e, key: string) => chats.interrupt(key))
   ipcMain.on('chat:configure', (_e, key: string, patch: Partial<ChatSettings>) => chats.configure(key, patch))
   ipcMain.handle('terminal:open', (_e, req: TerminalOpenRequest) => {
@@ -499,8 +580,9 @@ app.whenReady().then(() => {
   ipcMain.on('terminal:resize', (_e, key: string, cols: number, rows: number) => terminals.resize(key, cols, rows))
   ipcMain.on('terminal:kill', (_e, key: string) => terminals.kill(key))
   ipcMain.on('cli:ready', (e) => {
-    if (e.sender !== mainWindow?.webContents) return
-    canvasReady = true
+    const win = BrowserWindow.fromWebContents(e.sender)
+    if (!win || !canvasWindows.has(win)) return
+    readyCanvases.add(e.sender)
     for (const path of pendingOpens.splice(0)) e.sender.send('cli:open', path)
   })
   ipcMain.handle('cli:status', () => cliStatus())
@@ -532,24 +614,27 @@ app.whenReady().then(() => {
   updater.start()
   setMenuBarIcon(loadAppSettings().menuBarIcon)
   app.on('browser-window-focus', () => tray?.seen())
-  createWindow()
-  if (SMOKE_TEST && mainWindow) {
+  restoreCanvasWindows()
+  const firstCanvas = activeCanvas()
+  if (SMOKE_TEST && firstCanvas) {
     // Sai pelo mesmo caminho de quem fecha a janela, já confirmado.
-    runSmokeTest(mainWindow, terminals, () => canvasReady, () => {
+    runSmokeTest(firstCanvas, terminals, () => readyCanvases.has(firstCanvas.webContents), () => {
       quitConfirmed = true
       app.quit()
     })
   }
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createCanvasWindow()
   })
 })
 
 // Encerra tudo que o app abriu (claude, terminais, ditado, servidores de projeto) para não sobrar processo solto.
-// quitting: o app está fechando de verdade; a janela do canvas já pode fechar (ver createWindow).
+// quitting: o app está fechando de verdade; as janelas do canvas já podem fechar (ver createCanvasWindow).
 let quitting = false
 function shutdown(): void {
+  if (!quitting) saveCanvasWindowLayout()
   quitting = true
+  canvasHub.flush()
   usage.stop()
   auth.cancel()
   speech.stop()

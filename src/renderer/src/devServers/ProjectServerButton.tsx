@@ -28,7 +28,7 @@ export function ProjectServerButton({ path }: { path: string }) {
   }
 
   const stopItem: MenuItem = server.locked
-    ? { type: 'action', label: 'Servidor deste app: encerrar fecharia o editor', icon: Lock, disabled: true, onSelect: () => {} }
+    ? { type: 'action', label: 'Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão', icon: Lock, disabled: true, onSelect: () => {} }
     : { type: 'action', label: 'Encerrar servidor', icon: Power, danger: true, onSelect: () => void act('stopping') }
   const items: MenuItem[] = [
     ...server.ports.map(

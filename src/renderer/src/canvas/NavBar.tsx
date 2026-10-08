@@ -8,7 +8,8 @@ import {
   Plus,
   Server,
   Settings,
-  SquareDashed
+  SquareDashed,
+  StickyNote
 } from 'lucide-react'
 import { useCanvasActions } from './CanvasContext'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
@@ -21,7 +22,9 @@ const TOOLTIP_SIDE = {
   top: 'bottom-full left-1/2 mb-2 -translate-x-1/2',
   // Alinhado à direita do botão, para não sair da janela no canto direito.
   'top-end': 'bottom-full right-0 mb-2',
-  right: 'left-full top-1/2 ml-2 -translate-y-1/2'
+  right: 'left-full top-1/2 ml-2 -translate-y-1/2',
+  // Na barra de título: abre para baixo, alinhado à direita do botão.
+  'bottom-end': 'top-full right-0 mt-2'
 }
 
 // Também usado nos botões que flutuam acima da pasta (ProjectNode). Na barra lateral, abre à direita.
@@ -71,7 +74,7 @@ export function NavButton({
     <button
       aria-label={label}
       onClick={onClick}
-      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-full' : 'size-8 rounded-full'} ${tone}`}
+      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-md' : 'size-8 rounded-md'} ${tone}`}
     >
       {children}
       {!active && <Tooltip label={label} shortcut={shortcut} side={side} />}
@@ -85,7 +88,7 @@ function NewBlockMenu() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { screenToFlowPosition } = useReactFlow()
-  const { addGroup, addFolder, newLooseConversation } = useCanvasActions()
+  const { addGroup, addFolder, addNote, newLooseConversation } = useCanvasActions()
 
   useEffect(() => {
     if (!open) return
@@ -105,7 +108,8 @@ function NewBlockMenu() {
   const items = [
     { label: 'Grupo', icon: SquareDashed, onClick: () => addGroup(center()) },
     { label: 'Nova pasta', icon: FolderPlus, onClick: () => addFolder(center()) },
-    { label: 'Nova conversa', icon: MessageCirclePlus, onClick: () => newLooseConversation() }
+    { label: 'Nova conversa', icon: MessageCirclePlus, onClick: () => newLooseConversation() },
+    { label: 'Nota', icon: StickyNote, shortcut: 'C', onClick: () => addNote(center()) }
   ]
 
   return (
@@ -116,17 +120,18 @@ function NewBlockMenu() {
       <Presence kind="menu">
         {open && (
           <div className={`absolute left-full top-0 ml-2 w-44 ${MENU_PANEL}`}>
-            {items.map(({ label, icon: Icon, onClick }) => (
+            {items.map(({ label, icon: Icon, shortcut, onClick }) => (
               <button
                 key={label}
                 onClick={() => {
                   onClick()
                   setOpen(false)
                 }}
-                className={`${MENU_ROW} text-text hover:bg-accent hover:text-white`}
+                className={`group ${MENU_ROW} text-text hover:bg-accent hover:text-white`}
               >
                 <Icon size={14} />
                 {label}
+                {shortcut && <kbd className="ml-auto font-mono text-faint group-hover:text-white">{shortcut}</kbd>}
               </button>
             ))}
           </div>
@@ -142,9 +147,9 @@ export function NavBar({ zoomShortcuts = true }: { zoomShortcuts?: boolean }) {
 
   return (
     // Na lateral esquerda, no meio da altura: embaixo ela disputava espaço com o drawer aberto.
-    // Em cápsula, como os grupos de botões da barra de ferramentas do macOS.
+    // Grupo de botões: raio do contêiner = raio do botão (md) + o respiro (p-1), para os cantos acompanharem.
     <Panel position="center-left" className="!ml-4">
-      <div className="flex flex-col items-center gap-1 rounded-full border border-line bg-surface/90 p-1 shadow-xl shadow-black/40 backdrop-blur-xl">
+      <div className="flex flex-col items-center gap-1 rounded-xl border border-line bg-surface/90 p-1 shadow-xl shadow-black/40 backdrop-blur-xl">
         <NewBlockMenu />
 
         <Divider />

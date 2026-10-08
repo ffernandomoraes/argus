@@ -1,17 +1,18 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useStore, type NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronUp, Folder, List, Loader2, Plus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Folder, List, Plus } from 'lucide-react'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
 import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH } from './factory'
 import { PathLabel } from './PathLabel'
 import { BranchLabel } from './BranchLabel'
+import { CodeTyping } from './CodeTyping'
 import { ProjectServerButton } from '../devServers/ProjectServerButton'
 import { Tooltip } from './NavBar'
 import { IconTile } from '../settings/controls'
 import { AgentItem, ConversationItem, useNow } from './ConversationItem'
 import { getRunningAgents, useRunningAgentsVersion } from './runningAgents'
-import { useBranch, useSessions } from './sessionsStore'
+import { useBranch, useSessions, useUncommitted } from './sessionsStore'
 import type { RunningAgent } from '../../../shared/agents'
 import type { ConversationSummary, ProjectNode as ProjectNodeType } from './types'
 
@@ -61,12 +62,13 @@ function withAgents(conversations: ConversationSummary[]): Row[] {
 export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectNodeType>) {
   const conversations = useSessions(data.path)
   const branch = useBranch(data.path)
+  const uncommitted = useUncommitted(data.path)
   const collapsed = !!data.collapsed
   const shown = [...conversations]
     .filter((c) => !collapsed || isActive(c))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, MAX_CONVERSATIONS)
-  // Qualquer conversa do projeto rodando (não só as visíveis na lista) troca a pasta pelo loader.
+  // Qualquer conversa do projeto rodando (não só as visíveis na lista) troca a pasta pelas linhas de código animadas.
   const running = conversations.some((c) => c.status === 'running')
   useRunningAgentsVersion()
   const rows = withAgents(shown)
@@ -158,7 +160,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
       {/* Branch atual, fora do card: acima do canto esquerdo, na mesma altura e no mesmo estilo das ações. */}
       {branch && (
         <div className="absolute bottom-full left-0 mb-1.5 flex h-6 max-w-[calc(100%-40px)] items-center rounded-md border border-line bg-surface px-2 text-[12px] text-muted shadow-sm">
-          <BranchLabel branch={branch} />
+          <BranchLabel branch={branch} changes={uncommitted?.length} />
         </div>
       )}
 
@@ -188,7 +190,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
         >
           <IconTile color={groupColor ?? '#3d9df5'} size={28} soft>
             {running ? (
-              <Loader2 size={15} aria-label="Conversa em andamento" className="animate-spin" />
+              <CodeTyping size={16} label="Conversa em andamento" />
             ) : (
               <Folder size={15} />
             )}
@@ -252,7 +254,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
       {conversations.length > 0 && !collapsed && (
         <button
           onClick={() => openAllConversations(id)}
-          className="nodrag flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text"
+          className="nodrag flex items-center gap-1.5 self-start rounded-md px-2.5 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text"
           style={{ marginLeft: INDENT }}
         >
           <List size={13} />

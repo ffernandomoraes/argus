@@ -20,6 +20,12 @@ type CanvasActions = {
   finishRename: (id: string, value: string | null) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
+  // Nota nova já abre para escrever.
+  addNote: (position: XYPosition, groupId?: string) => void
+  // Fim da edição da nota (NoteNode): guarda o texto e sai da edição.
+  finishNote: (id: string, text: string) => void
+  // Fim do arraste do puxador da nota: guarda a largura escolhida.
+  setNoteWidth: (id: string, width: number) => void
   toggleGroup: (id: string) => void
   toggleObscure: (id: string) => void
   toggleProject: (id: string) => void

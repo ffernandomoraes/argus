@@ -540,7 +540,7 @@ function AccountsSection() {
       </div>
       <button
         onClick={() => setTarget({})}
-        className="mt-3 flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text"
+        className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text"
       >
         <Plus size={13} />
         Adicionar conta
@@ -605,7 +605,7 @@ export function SettingsPage({
           aria-label="Fechar"
           title="Fechar"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-full text-muted hover:bg-fill hover:text-text"
+          className="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-md text-muted hover:bg-fill hover:text-text"
         >
           <X size={15} />
         </button>

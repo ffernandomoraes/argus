@@ -36,7 +36,7 @@ function Item({ state, title, detail, children }: { state: 'done' | 'busy' | 'to
   )
 }
 
-const BUTTON = 'flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm disabled:opacity-50'
+const BUTTON = 'flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm disabled:opacity-50'
 const PRIMARY = `${BUTTON} bg-accent font-medium text-white hover:brightness-110`
 const SECONDARY = `${BUTTON} border border-line text-text hover:bg-surface-2`
 

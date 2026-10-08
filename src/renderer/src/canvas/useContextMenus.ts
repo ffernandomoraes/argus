@@ -1,11 +1,11 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronDown, ChevronUp, ExternalLink, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, Terminal, Trash2, Ungroup, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, StickyNote, Terminal, Trash2, Ungroup, X } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { AuthState } from '../../../shared/auth'
 import { resolveAccount } from '../auth/useAuth'
 import type { ConfirmRequest } from './ConfirmDialog'
 import type { MenuItem } from './ContextMenu'
-import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupAccount, setGroupColor, ungroup } from './operations'
+import { childrenOf, fitGroupToContent, moveToGroup, removeGroup, removeNode, setGroupAccount, setGroupColor, setNoteColor, ungroup } from './operations'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { getSessions } from './sessionsStore'
 import { SYSTEM_NAME } from '../platform'
@@ -15,6 +15,7 @@ import type {
   ChatNode,
   ChatPanelNode,
   ConversationSummary,
+  NoteNode,
   ProjectNode,
   TerminalKind,
   TerminalNode
@@ -28,6 +29,7 @@ export type Deps = {
   startRename: (id: string) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
+  addNote: (position: XYPosition, groupId?: string) => void
   // folder vazio = pasta do usuário.
   addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => void
   closeTerminal: (nodeId: string, name: string) => void
@@ -70,11 +72,15 @@ function terminalSubmenu(label: string, open: (kind: TerminalKind) => void): Men
 }
 
 export function paneMenu(deps: Deps, position: XYPosition): MenuItem[] {
+  // Mesma ordem do menu da pasta: nota; conversa e terminal; e o que organiza o canvas.
   return [
-    { type: 'action', label: 'Criar grupo', icon: SquareDashed, onSelect: () => deps.addGroup(position) },
-    { type: 'action', label: 'Nova pasta', icon: FolderPlus, onSelect: () => deps.addFolder(position) },
+    { type: 'action', label: 'Adicionar nota', icon: StickyNote, onSelect: () => deps.addNote(position) },
+    { type: 'separator' },
     { type: 'action', label: 'Nova conversa', icon: MessageCirclePlus, onSelect: () => deps.newLooseConversation(position) },
-    terminalSubmenu('Novo terminal', (kind) => deps.addTerminal(position, undefined, undefined, kind))
+    terminalSubmenu('Novo terminal', (kind) => deps.addTerminal(position, undefined, undefined, kind)),
+    { type: 'separator' },
+    { type: 'action', label: 'Nova pasta', icon: FolderPlus, onSelect: () => deps.addFolder(position) },
+    { type: 'action', label: 'Criar grupo', icon: SquareDashed, onSelect: () => deps.addGroup(position) }
   ]
 }
 
@@ -122,6 +128,7 @@ export function groupMenu(deps: Deps, group: AreaNode): MenuItem[] {
     terminalSubmenu('Novo terminal', (kind) =>
       deps.addTerminal(group.position, group.id, folderOf(deps.nodes, group.id), kind)
     ),
+    { type: 'action', label: 'Adicionar nota', icon: StickyNote, onSelect: () => deps.addNote(group.position, group.id) },
     { type: 'separator' },
     {
       type: 'action',
@@ -200,13 +207,17 @@ function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
   return [{ type: 'action', label, icon: ExternalLink, onSelect: () => window.api.sessions.openRepo(node.data.path) }]
 }
 
-export function instanceMenu(deps: Deps, node: ProjectNode, repoUrl: string | null): MenuItem[] {
+// `at`: onde foi o clique; a nota nasce ali, em cima da pasta.
+export function instanceMenu(deps: Deps, node: ProjectNode, repoUrl: string | null, at: XYPosition): MenuItem[] {
   const { setNodes } = deps
+  const repo = repoItem(node, repoUrl)
   return [
+    { type: 'action', label: 'Adicionar nota', icon: StickyNote, onSelect: () => deps.addNote(at) },
+    { type: 'separator' },
     { type: 'action', label: 'Nova conversa', icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
     terminalSubmenu('Novo terminal aqui', (kind) => deps.addTerminal(node.position, node.parentId, node.data.path, kind)),
-    ...repoItem(node, repoUrl),
     { type: 'separator' },
+    ...(repo.length ? [...repo, { type: 'separator' } as const] : []),
     moveSubmenu(deps, node),
     { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
@@ -334,5 +345,29 @@ export function chatPanelMenu(deps: Deps, node: ChatPanelNode): MenuItem[] {
     moveSubmenu(deps, node),
     { type: 'separator' },
     { type: 'action', label: 'Fechar conversa', icon: X, onSelect: () => deps.closeChatPanel(node.id) }
+  ]
+}
+
+// Nota: excluir não pergunta, porque ⌘Z traz de volta.
+export function noteMenu(deps: Deps, node: NoteNode): MenuItem[] {
+  const { setNodes } = deps
+  return [
+    {
+      type: 'colors',
+      label: 'Cor',
+      value: node.data.color,
+      onSelect: (color) => setNodes((ns) => setNoteColor(ns, node.id, color))
+    },
+    { type: 'separator' },
+    { type: 'action', label: 'Editar nota', icon: Pencil, onSelect: () => deps.startRename(node.id) },
+    moveSubmenu(deps, node),
+    { type: 'separator' },
+    {
+      type: 'action',
+      label: 'Excluir nota',
+      icon: Trash2,
+      danger: true,
+      onSelect: () => setNodes((ns) => removeNode(ns, node.id))
+    }
   ]
 }

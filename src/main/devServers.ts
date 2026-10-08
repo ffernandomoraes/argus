@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { realpathSync } from 'node:fs'
-import { resolve, sep } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import type { DevServer } from '../shared/devServers'
 import { expandHome } from './paths'
@@ -69,15 +70,23 @@ function ownPgid(): Promise<number> {
   return ownGroup
 }
 
-// Grupos com um binário do Claude Code dentro. O Claude põe cada comando num grupo próprio,
-// mas os servidores MCP ficam no grupo dele: encerrar um desses derrubaria a sessão.
-async function claudeGroups(): Promise<Set<number>> {
-  const groups = new Set<number>()
-  for (const line of (await output(PS, ['-ax', '-o', 'pgid=,comm='])).split('\n')) {
-    const m = line.match(/^\s*(\d+)\s+(.*)$/)
-    if (m && CLAUDE_BIN.test(m[2].trim())) groups.add(Number(m[1]))
+// Processos que uma sessão do Claude Code abriu no grupo dela (os servidores MCP): o próprio
+// Claude ou um pai dele, no mesmo grupo. Encerrar o grupo derrubaria a sessão. Os comandos da
+// ferramenta Bash ficam fora, porque o Claude põe cada um num grupo próprio. Ter um Claude
+// *dentro* do grupo não conta: é o caso do Argus, que abre as sessões no grupo dele.
+async function claudeOwned(): Promise<(pid: number) => boolean> {
+  const table = new Map<number, { ppid: number; pgid: number; comm: string }>()
+  for (const line of (await output(PS, ['-ax', '-o', 'pid=,ppid=,pgid=,comm='])).split('\n')) {
+    const m = line.match(/^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/)
+    if (m) table.set(Number(m[1]), { ppid: Number(m[2]), pgid: Number(m[3]), comm: m[4].trim() })
   }
-  return groups
+  return (pid) => {
+    const pgid = table.get(pid)?.pgid
+    for (let at = table.get(pid), seen = 0; at && at.pgid === pgid && seen < 64; at = table.get(at.ppid), seen++) {
+      if (CLAUDE_BIN.test(at.comm)) return true
+    }
+    return false
+  }
 }
 
 // Processo com porta aberta, com todas as portas dele. `claude`: o próprio Claude Code ou algo
@@ -98,11 +107,11 @@ export async function scanListening(only?: (env: string) => boolean): Promise<(L
   if (chosen.length === 0) return []
 
   const list = chosen.join(',')
-  const [plain, cwds, self, withClaude] = await Promise.all([
+  const [plain, cwds, ofClaude, self] = await Promise.all([
     output(PS, ['-ww', '-o', 'pid=,pgid=,command=', '-p', list]).then(parsePs),
     output(LSOF, ['-a', '-d', 'cwd', '-p', list, '-Fpn']).then((s) => parseFields(s, 'n')),
-    ownPgid(),
-    claudeGroups()
+    claudeOwned(),
+    ownPgid()
   ])
 
   const found: (Listening & { env: string })[] = []
@@ -112,6 +121,7 @@ export async function scanListening(only?: (env: string) => boolean): Promise<(L
     const env = withEnv.get(pid)!.rest
     // IPv4 e IPv6 da mesma porta viram uma linha só.
     const unique = new Set(ports.get(pid)!.map((addr) => Number(addr.slice(addr.lastIndexOf(':') + 1))))
+    const claude = ofClaude(pid)
     found.push({
       pid,
       pgid: info.pgid,
@@ -119,8 +129,9 @@ export async function scanListening(only?: (env: string) => boolean): Promise<(L
       cwd: cwds.get(pid)?.[0] ?? '',
       command: info.rest,
       sessionId: env.match(/(?:^|\s)CLAUDE_CODE_SESSION_ID=([\w-]+)/)?.[1],
-      locked: info.pgid === self ? 'app' : withClaude.has(info.pgid) ? 'claude' : undefined,
-      claude: withClaude.has(info.pgid) || CLAUDE_BIN.test(info.rest.split(' ')[0]),
+      current: info.pgid === self || undefined,
+      locked: claude ? 'claude' : undefined,
+      claude,
       env
     })
   }
@@ -157,7 +168,8 @@ async function scanWindows(): Promise<(Listening & { env: string })[]> {
       ports: [...list].sort((a, b) => a - b),
       cwd: '',
       command: proc?.command || proc?.name || '',
-      locked: own.has(pid) ? 'app' : claude ? 'claude' : undefined,
+      current: own.has(pid) || undefined,
+      locked: claude ? 'claude' : undefined,
       claude,
       name: proc?.name,
       chain: chain.map((p) => p.pid),
@@ -165,6 +177,22 @@ async function scanWindows(): Promise<(Listening & { env: string })[]> {
     })
   }
   return found
+}
+
+// Nome do app no package.json da pasta (`productName`, o mesmo que aparece na janela), quando a
+// pasta tem um nome diferente do app: a do Argus ainda se chama canva-agent-editor.
+const names = new Map<string, string | undefined>()
+async function productName(cwd: string): Promise<string | undefined> {
+  if (!cwd) return undefined
+  if (!names.has(cwd)) {
+    try {
+      const pkg = JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8'))
+      names.set(cwd, typeof pkg.productName === 'string' && pkg.productName.trim() ? pkg.productName.trim() : undefined)
+    } catch {
+      names.set(cwd, undefined)
+    }
+  }
+  return names.get(cwd)
 }
 
 // Todo comando que o Claude Code roda herda CLAUDECODE=1; o que o play iniciou leva a marca do
@@ -182,8 +210,9 @@ export async function listDevServers(paths: string[] = []): Promise<DevServer[]>
   const servers: DevServer[] = []
   for (const p of listening) {
     if (!marked(p.env) && (p.claude || !roots.some((root) => inside(root, p.cwd)))) continue
+    const appName = await productName(p.cwd)
     for (const port of p.ports) {
-      servers.push({ port, pid: p.pid, pgid: p.pgid, cwd: p.cwd, command: p.command, sessionId: p.sessionId, locked: p.locked })
+      servers.push({ port, pid: p.pid, pgid: p.pgid, cwd: p.cwd, appName, command: p.command, sessionId: p.sessionId, current: p.current, locked: p.locked })
     }
   }
   return servers.sort((a, b) => a.port - b.port)

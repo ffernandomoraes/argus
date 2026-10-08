@@ -20,7 +20,7 @@ export type AgentSaveRequest = Omit<AgentDef, 'scope' | 'path'> & {
   previousName?: string
 }
 
-// Campos que o Claude preenche a partir de uma descrição falada ou escrita.
+// Campos que o Claude preenche a partir de uma descrição.
 export type AgentDraftFields = { name: string; description: string; prompt: string; model?: string }
 
 export type AgentDraftRequest = {

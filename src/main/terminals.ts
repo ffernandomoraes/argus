@@ -31,7 +31,7 @@ export class Terminals {
   open(req: TerminalOpenRequest): TerminalOpenResult {
     const existing = this.sessions.get(req.key)
     if (existing) {
-      existing.pty.resize(req.cols, req.rows)
+      if (!req.keepSize) existing.pty.resize(req.cols, req.rows)
       return { ok: true, buffer: existing.buffer }
     }
 

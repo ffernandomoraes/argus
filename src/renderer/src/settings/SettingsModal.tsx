@@ -16,7 +16,7 @@ export function SettingsModal({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div

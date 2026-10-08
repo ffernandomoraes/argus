@@ -112,22 +112,30 @@ export function TerminalView({
         settingsJson: launch.current.settingsJson,
         permissionMode: launch.current.permissionMode || undefined,
         cols: term.cols,
-        rows: term.rows
+        rows: term.rows,
+        keepSize: !document.hasFocus()
       }).then((res) => {
       if (disposed) return
       if (!res.ok) setError(res.error)
       else if (res.buffer) term.write(res.buffer)
     })
 
+    // Só a janela em uso muda o tamanho do processo (ver takeSize).
     const resize = new ResizeObserver(() => {
       fit.fit()
-      api.resize(sessionKey, term.cols, term.rows)
+      if (document.hasFocus()) api.resize(sessionKey, term.cols, term.rows)
     })
     resize.observe(el)
+
+    // O mesmo terminal pode estar no canvas de duas janelas, mas o processo tem um tamanho só: fica
+    // com o da janela em que se está digitando.
+    const takeSize = () => api.resize(sessionKey, term.cols, term.rows)
+    term.textarea?.addEventListener('focus', takeSize)
 
     return () => {
       disposed = true
       live.current = null
+      term.textarea?.removeEventListener('focus', takeSize)
       resize.disconnect()
       input.dispose()
       offData()
@@ -153,7 +161,7 @@ export function TerminalView({
           {!error && (
             <button
               onClick={() => setAttempt((a) => a + 1)}
-              className="rounded-full border border-line px-2 py-1 text-text hover:bg-surface-2"
+              className="rounded-md border border-line px-2 py-1 text-text hover:bg-surface-2"
             >
               Abrir de novo
             </button>

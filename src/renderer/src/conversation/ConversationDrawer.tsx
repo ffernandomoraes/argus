@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Code2, ExternalLink, Maximize2, PictureInPicture2 } from 'lucide-react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
+import { askColors } from './askColors'
 import { ConversationView, HeaderButton } from './ConversationView'
 import {
   DRAWER_DEFAULT_WIDTH,
@@ -177,7 +178,8 @@ export function ConversationDrawer({
             : { visibility: 'hidden', inset: 0 }),
         ...(tint && {
           borderColor: `color-mix(in srgb, ${tint} 35%, var(--color-line))`,
-          background: `color-mix(in srgb, ${tint} 3%, var(--color-bg))`
+          background: `color-mix(in srgb, ${tint} 3%, var(--color-bg))`,
+          ...askColors(tint)
         }),
         ...(focus && { borderColor: 'transparent' })
       }}

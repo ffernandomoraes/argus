@@ -264,7 +264,7 @@ export function FileViewer({
         {!diff && content?.ok && content.truncated && (
           <span className="text-[12px] text-needs-you">mostrando só o primeiro 1 MB, sem edição</span>
         )}
-        <div className="flex rounded-full border border-line p-0.5 text-[12px]">
+        <div className="flex rounded-lg border border-line p-0.5 text-[12px]">
           {[
             { value: true, label: 'Diff' },
             { value: false, label: 'Arquivo' }
@@ -273,7 +273,7 @@ export function FileViewer({
               key={o.label}
               onClick={() => onDiffChange(o.value)}
               aria-pressed={diff === o.value}
-              className={`rounded-full px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
+              className={`rounded-md px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
             >
               {o.label}
             </button>
@@ -284,7 +284,7 @@ export function FileViewer({
       {!diff && conflict && (
         <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[12px] text-needs-you">
           <span className="flex-1">O arquivo mudou no disco depois da sua edição. Salvar sobrescreve a versão do disco.</span>
-          <button onClick={reloadFromDisk} className="rounded-full px-2 py-0.5 text-text hover:bg-surface-2">
+          <button onClick={reloadFromDisk} className="rounded-md px-2 py-0.5 text-text hover:bg-surface-2">
             Descartar a minha e recarregar
           </button>
         </div>

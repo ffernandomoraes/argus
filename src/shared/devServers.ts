@@ -8,12 +8,16 @@ export type DevServer = {
   pgid: number
   // Pasta onde o processo roda; o nome do projeto vem dela.
   cwd: string
+  // productName do package.json da pasta, quando tem; senão a interface usa o nome da pasta.
+  appName?: string
   command: string
   // Conversa do Claude Code que rodou o comando.
   sessionId?: string
-  // Grupos que não dá para encerrar daqui. app: o servidor de dev deste próprio app (derrubaria
-  // o editor). claude: o grupo tem um Claude Code rodando (um servidor MCP, por exemplo).
-  locked?: 'app' | 'claude'
+  // Servidor deste Argus que está aberto (o pnpm dev dele): encerrar fecha o app.
+  current?: boolean
+  // Não dá para encerrar daqui: uma sessão do Claude Code abriu o processo no grupo dela (um
+  // servidor MCP) e encerrar derrubaria a sessão. Instâncias do Argus, inclusive esta, podem.
+  locked?: 'claude'
 }
 
 // Servidor de uma pasta do canvas, para o botão de iniciar e encerrar acima dela. Conta

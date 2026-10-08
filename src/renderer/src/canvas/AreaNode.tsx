@@ -40,7 +40,7 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
           e.stopPropagation()
           toggleObscure(id)
         }}
-        className="nodrag group relative flex size-10 items-center justify-center rounded-full border hover:brightness-110"
+        className="nodrag group relative flex size-10 items-center justify-center rounded-md border hover:brightness-110"
         style={{
           color,
           background: `color-mix(in srgb, ${color} 10%, var(--color-surface))`,

@@ -139,7 +139,7 @@ export function MemoryModal({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16"
       onMouseDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
@@ -197,7 +197,7 @@ export function MemoryModal({
             {current && !editing && (
               <button
                 onClick={() => setDraft(text ?? '')}
-                className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+                className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
               >
                 <Pencil size={12} />
                 {current.exists ? 'Editar' : 'Criar'}
@@ -207,7 +207,7 @@ export function MemoryModal({
               <>
                 <button
                   onClick={() => setDraft(null)}
-                  className="rounded-full border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
+                  className="rounded-md border border-line px-2.5 py-1 text-xs text-text hover:bg-surface-2"
                 >
                   Cancelar
                 </button>
@@ -215,7 +215,7 @@ export function MemoryModal({
                   onClick={() => void save()}
                   disabled={!dirty}
                   title={`Salvar (${keys('⌘S')})`}
-                  className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
+                  className="rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-white hover:brightness-110 disabled:opacity-40"
                 >
                   Salvar
                 </button>
@@ -225,7 +225,7 @@ export function MemoryModal({
               aria-label="Fechar"
               title="Fechar"
               onClick={close}
-              className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
             >
               <X size={15} />
             </button>

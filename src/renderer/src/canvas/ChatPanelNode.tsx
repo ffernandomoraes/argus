@@ -1,5 +1,6 @@
 import { NodeResizer, useNodesData, type NodeProps } from '@xyflow/react'
 import { ExternalLink, PanelRight } from 'lucide-react'
+import { askColors } from '../conversation/askColors'
 import { ConversationView, HeaderButton } from '../conversation/ConversationView'
 import { useCanvasActions } from './CanvasContext'
 import { useNow } from './ConversationItem'
@@ -14,6 +15,8 @@ export function ChatPanelNode({ id, data, selected, parentId }: NodeProps<ChatPa
   // Conta do grupo onde o bloco está. Vale ao abrir a sessão, como no painel.
   const group = useNodesData<AreaNode>(parentId ?? '')
   const account = group?.type === 'area' ? group.data.account : undefined
+  // Perguntas e permissões no chat, na cor do grupo.
+  const tint = group?.type === 'area' ? group.data.color : undefined
   const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom } = useCanvasActions()
   const project = { name: data.projectName ?? 'Sem projeto', path: data.path, color: '#71717a' }
 
@@ -41,7 +44,7 @@ export function ChatPanelNode({ id, data, selected, parentId }: NodeProps<ChatPa
       {/* nowheel: rolar em cima do bloco rola o chat, não o canvas */}
       <div
         className="nowheel relative flex h-full flex-col overflow-hidden rounded-xl border bg-bg shadow-lg shadow-black/30"
-        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line)' }}
+        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line)', ...(tint && askColors(tint)) }}
       >
         <ConversationView
           cwd={data.path}

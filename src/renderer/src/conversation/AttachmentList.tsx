@@ -36,7 +36,7 @@ export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRem
           <button
             aria-label={`Remover ${a.file.name}`}
             onClick={() => onRemove(a.id)}
-            className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-line bg-surface text-muted opacity-0 shadow hover:text-text group-hover:opacity-100"
+            className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-md border border-line bg-surface text-muted opacity-0 shadow hover:text-text group-hover:opacity-100"
           >
             <X size={11} />
           </button>

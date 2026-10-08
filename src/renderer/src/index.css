@@ -40,6 +40,11 @@
   --color-needs-you: #fbbf24;
   --color-done: #34d399;
 
+  /* Pergunta ou permissão no chat: na cor do grupo da conversa, que o painel e o bloco do canvas
+     trocam no style. Fora de grupo, o amarelo do "precisa de você". */
+  --color-ask: var(--color-needs-you);
+  --color-ask-text: #1c1c1c;
+
   /* Contador por cima de ícone, no azul do VS Code; o mesmo nos dois temas, sempre com texto branco. */
   --color-badge: #0078d4;
 
@@ -167,6 +172,16 @@ button:not(:disabled),
   cursor: grabbing;
 }
 
+/* Interface oculta (botão na barra de título, ⌘\): as barras do canvas somem, mas continuam
+   montadas, porque a NavBar é quem liga os atalhos de zoom. */
+.react-flow__panel {
+  transition: opacity 200ms ease;
+}
+.react-flow.ui-hidden .react-flow__panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Barra de rolagem fina, nas cores do tema. O polegar fica mais visível ao passar o mouse. */
 ::-webkit-scrollbar {
   width: 10px;
@@ -205,6 +220,36 @@ button:not(:disabled),
 .conversation-flow {
   stroke-dasharray: 4 4;
   animation: conversation-flow 0.6s linear infinite;
+}
+
+/* CodeTyping: cada linha cresce da esquerda aos saltos, como letras digitadas, fica um tempo
+   e some; o atraso de cada uma (no componente) faz as linhas se revezarem. */
+@keyframes code-typing {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+    animation-timing-function: steps(5, end);
+  }
+  25%,
+  75% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  90%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+.code-typing rect {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: code-typing 1.8s linear infinite both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .code-typing rect {
+    animation: none;
+  }
 }
 
 /* Item da conversa (ChatView): fora da tela, o navegador não calcula nem desenha o conteúdo,

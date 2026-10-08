@@ -150,12 +150,12 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
             </button>
           )}
           {index > 0 && (
-            <button onClick={() => setIndex(index - 1)} className="rounded-full border border-line px-3 py-1.5 text-sm text-text hover:bg-surface-2">
+            <button onClick={() => setIndex(index - 1)} className="rounded-md border border-line px-3 py-1.5 text-sm text-text hover:bg-surface-2">
               Voltar
             </button>
           )}
           {index < last ? (
-            <button onClick={() => setIndex(index + 1)} className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white hover:brightness-110">
+            <button onClick={() => setIndex(index + 1)} className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-white hover:brightness-110">
               Próximo
             </button>
           ) : (
@@ -163,7 +163,7 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
               disabled={!ready}
               onClick={onDone}
               title={ready ? undefined : 'Termine a configuração acima'}
-              className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-40"
+              className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-40"
             >
               Começar
             </button>

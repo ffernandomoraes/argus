@@ -164,7 +164,7 @@ export async function startProjectServer(path: string): Promise<boolean> {
 }
 
 // Encerra tudo da pasta com porta aberta, venha de onde vier, e o que foi iniciado daqui e
-// ainda não abriu porta. O servidor de dev deste próprio app fica de fora.
+// ainda não abriu porta. O que uma sessão do Claude Code abriu no grupo dela fica de fora.
 export async function stopProjectServer(path: string): Promise<boolean> {
   const root = realRoot(path)
   const entry = started.get(root)

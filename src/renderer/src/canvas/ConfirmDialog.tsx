@@ -27,7 +27,7 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
           <button
             autoFocus
             onClick={onClose}
-            className="rounded-full border border-line bg-fill px-3.5 py-1 text-xs text-text hover:bg-surface-2"
+            className="rounded-md border border-line bg-fill px-3.5 py-1 text-xs text-text hover:bg-surface-2"
           >
             {request.onConfirm ? 'Cancelar' : 'Entendi'}
           </button>
@@ -37,7 +37,7 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
                 request.onConfirm?.()
                 onClose()
               }}
-              className="rounded-full bg-red-500 px-3.5 py-1 text-xs font-medium text-white hover:bg-red-600"
+              className="rounded-md bg-red-500 px-3.5 py-1 text-xs font-medium text-white hover:bg-red-600"
             >
               {request.confirmLabel}
             </button>

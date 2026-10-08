@@ -1,4 +1,4 @@
-import { AREA_OUTSET, CHAT_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, PROJECT_OUTSET } from './factory'
+import { AREA_OUTSET, CHAT_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, NOTE_SIZE, PROJECT_OUTSET } from './factory'
 import type { XYPosition } from '@xyflow/react'
 import type { AreaNode, CanvasNode } from './types'
 
@@ -236,12 +236,25 @@ export function rename(nodes: CanvasNode[], id: string, name: string): CanvasNod
     if (n.type === 'terminal') return { ...n, data: { ...n.data, name } }
     if (n.type === 'chat') return { ...n, data: { ...n.data, name } }
     if (n.type === 'chatPanel') return { ...n, data: { ...n.data, name } }
+    if (n.type === 'note') return { ...n, data: { ...n.data, text: name } }
     return { ...n, data: { ...n.data, name } }
   })
 }
 
 export function setGroupColor(nodes: CanvasNode[], id: string, color: string): CanvasNode[] {
   return nodes.map((n) => (n.id === id && n.type === 'area' ? { ...n, data: { ...n.data, color } } : n))
+}
+
+export function setNoteText(nodes: CanvasNode[], id: string, text: string): CanvasNode[] {
+  return nodes.map((n) => (n.id === id && n.type === 'note' ? { ...n, data: { ...n.data, text } } : n))
+}
+
+export function setNoteWidth(nodes: CanvasNode[], id: string, width: number): CanvasNode[] {
+  return nodes.map((n) => (n.id === id && n.type === 'note' ? { ...n, data: { ...n.data, width } } : n))
+}
+
+export function setNoteColor(nodes: CanvasNode[], id: string, color: string): CanvasNode[] {
+  return nodes.map((n) => (n.id === id && n.type === 'note' ? { ...n, data: { ...n.data, color } } : n))
 }
 
 export function setGroupAccount(nodes: CanvasNode[], id: string, account: string): CanvasNode[] {
@@ -263,6 +276,7 @@ export function sizeOf(node: CanvasNode): { width: number; height: number } {
     return { width: INSTANCE_WIDTH, height: INSTANCE_MIN_HEIGHT }
   }
   if (node.type === 'chat' && !node.measured?.height) return { ...CHAT_SIZE }
+  if (node.type === 'note' && !node.measured?.height) return { ...NOTE_SIZE }
   return {
     width: node.width ?? node.measured?.width ?? Number(node.style?.width ?? 480),
     height: node.height ?? node.measured?.height ?? Number(node.style?.height ?? 320)

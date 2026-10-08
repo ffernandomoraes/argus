@@ -1,9 +1,16 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { NodeResizer, useNodesData, type NodeProps } from '@xyflow/react'
-import { SquareTerminal, Terminal, X } from 'lucide-react'
+import { Maximize2, Minimize2, SquareTerminal, Terminal, X } from 'lucide-react'
 import { TerminalView } from '../conversation/TerminalView'
 import { getConversationSettings } from '../conversation/conversationSettings'
 import { launchSettings } from '../conversation/SessionSettings'
+import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { drawerZoomKey } from '../conversation/useDrawerZoom'
+import { usePreferences } from '../settings/preferences'
+import { MOTION, reduced } from '../motion'
+import { useEscape } from '../useEscape'
+import { IS_WIN } from '../platform'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
 import { useSessions } from './sessionsStore'
@@ -39,6 +46,63 @@ export function TerminalNode({ id, data, selected, parentId }: NodeProps<Termina
     if (started) bindTerminalSession(id, started.id)
   }, [sessions, data.sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Modo foco: o terminal cobre a área toda abaixo da barra de título, como a conversa no drawer.
+  // O bloco não sai do lugar no canvas; enquanto isso, o terminal mora só na camada de cima. Trocar
+  // de lugar recria a tela do xterm, mas o processo é o mesmo e devolve o que já tinha escrito.
+  const [focus, setFocus] = useState(false)
+  const focusRef = useRef<HTMLDivElement>(null)
+  const leaving = useRef(false)
+  // No foco, ⌘+ e ⌘- mudam a fonte, na mesma escala do drawer.
+  const zoom = usePreferences().drawerZoom
+  useLayoutEffect(() => {
+    if (!focus || reduced()) return
+    focusRef.current?.animate([{ opacity: 0, transform: MOTION.panel.from }, { opacity: 1, transform: 'none' }], MOTION.panel.in)
+  }, [focus])
+  const exitFocus = async () => {
+    const panel = focusRef.current
+    if (leaving.current) return
+    if (panel && !reduced()) {
+      leaving.current = true
+      const out = panel.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: MOTION.panel.to }], {
+        ...MOTION.panel.out,
+        fill: 'forwards'
+      })
+      await out.finished.catch(() => {})
+      leaving.current = false
+    }
+    setFocus(false)
+  }
+  // Só vale com o foco fora do terminal (no cabeçalho): dentro dele, o ESC é do programa (useEscape).
+  useEscape(exitFocus, focus)
+
+  const header = (actions: ReactNode) => (
+    <header className="flex shrink-0 items-center gap-2 border-b border-line bg-surface-2 px-3 py-2">
+      {shell ? (
+        <Terminal size={14} className="shrink-0 text-muted" />
+      ) : (
+        <SquareTerminal size={14} className="shrink-0 text-muted" />
+      )}
+      <EditableName id={id} value={data.name} className="shrink-0 text-sm font-medium" />
+      <PathLabel path={data.path} className="ml-auto min-w-0 pl-2 text-[12px] text-faint" />
+      {actions}
+    </header>
+  )
+
+  const terminal = (fontScale?: number) => (
+    <TerminalView
+      sessionKey={id}
+      cwd={data.path}
+      account={account}
+      shell={shell}
+      sessionId={data.sessionId}
+      model={settings.model}
+      effort={settings.effort}
+      settingsJson={launchSettings(settings)}
+      permissionMode={settings.permissionMode}
+      fontScale={fontScale}
+    />
+  )
+
   return (
     <>
       <NodeResizer
@@ -52,39 +116,75 @@ export function TerminalNode({ id, data, selected, parentId }: NodeProps<Termina
         className="flex h-full flex-col overflow-hidden rounded-xl border bg-surface shadow-lg shadow-black/30"
         style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line)' }}
       >
-        <header className="flex shrink-0 items-center gap-2 border-b border-line bg-surface-2 px-3 py-2">
-          {shell ? (
-            <Terminal size={14} className="shrink-0 text-muted" />
-          ) : (
-            <SquareTerminal size={14} className="shrink-0 text-muted" />
-          )}
-          <EditableName id={id} value={data.name} className="shrink-0 text-sm font-medium" />
-          <PathLabel path={data.path} className="ml-auto min-w-0 pl-2 text-[12px] text-faint" />
-          <button
-            aria-label="Fechar terminal"
-            title="Fechar terminal"
-            onClick={() => closeTerminal(id, data.name)}
-            className="nodrag -mr-1 flex size-6 shrink-0 items-center justify-center rounded-md text-muted hover:bg-line hover:text-text"
-          >
-            <X size={14} />
-          </button>
-        </header>
+        {header(
+          <>
+            <HeaderIcon label="Modo foco" onClick={() => setFocus(true)}>
+              <Maximize2 size={13} />
+            </HeaderIcon>
+            <HeaderIcon label="Fechar terminal" onClick={() => closeTerminal(id, data.name)}>
+              <X size={14} />
+            </HeaderIcon>
+          </>
+        )}
 
         {/* nodrag/nowheel: digitar e rolar valem para o terminal, não para o canvas */}
         <div className="nodrag nowheel flex min-h-0 flex-1 flex-col">
-          <TerminalView
-            sessionKey={id}
-            cwd={data.path}
-            account={account}
-            shell={shell}
-            sessionId={data.sessionId}
-            model={settings.model}
-            effort={settings.effort}
-            settingsJson={launchSettings(settings)}
-            permissionMode={settings.permissionMode}
-          />
+          {focus ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 bg-surface text-xs text-muted">
+              Em modo foco
+              <button
+                onClick={exitFocus}
+                className="rounded-md border border-line px-2 py-1 text-text hover:bg-surface-2"
+              >
+                Sair do modo foco
+              </button>
+            </div>
+          ) : (
+            terminal()
+          )}
         </div>
       </div>
+
+      {focus &&
+        createPortal(
+          // Na captura: ⌘+ e ⌘- não chegam ao xterm nem ao zoom do canvas. No Mac, o Ctrl fica com
+          // o programa (Ctrl+- desfaz no nano). O portal repassa os eventos ao bloco no canvas; os
+          // de mouse param aqui (selecionar, menu do bloco).
+          <div
+            ref={focusRef}
+            onKeyDownCapture={(e) => (IS_WIN || e.metaKey) && drawerZoomKey(e.nativeEvent) && e.stopPropagation()}
+            onClick={stop}
+            onDoubleClick={stop}
+            onContextMenu={stop}
+            onPointerDown={stop}
+            onMouseDown={stop}
+            className="fixed inset-x-0 bottom-0 z-40 flex flex-col bg-surface"
+            style={{ top: TITLE_BAR_HEIGHT }}
+          >
+            {header(
+              <HeaderIcon label="Sair do modo foco" onClick={exitFocus}>
+                <Minimize2 size={13} />
+              </HeaderIcon>
+            )}
+            {terminal(zoom)}
+          </div>,
+          document.body
+        )}
     </>
+  )
+}
+
+const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
+
+function HeaderIcon({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="nodrag flex size-6 shrink-0 items-center justify-center rounded-md text-muted last:-mr-1 hover:bg-line hover:text-text"
+    >
+      {children}
+    </button>
   )
 }

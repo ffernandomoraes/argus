@@ -1,4 +1,5 @@
 import type { AgentDef, AgentDraftRequest, AgentDraftResult, AgentSaveRequest, AgentSaveResult } from '../shared/agents'
+import type { CanvasViewport } from '../shared/canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
 import type { McpStatus } from '../shared/mcp'
@@ -92,7 +93,14 @@ declare global {
       }
       canvas: {
         load: () => unknown
-        save: (data: unknown) => Promise<void>
+        sync: (nodes: unknown) => void
+        onRemote: (cb: (nodes: unknown) => void) => () => void
+        record: () => void
+        undo: () => void
+        redo: () => void
+        viewport: () => CanvasViewport | null
+        setViewport: (viewport: CanvasViewport) => void
+        newWindow: () => void
       }
       canvasAgent: {
         state: () => Promise<CanvasAgentState>

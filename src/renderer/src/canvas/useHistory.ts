@@ -1,42 +1,30 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 import type { CanvasNode } from './types'
 
-const LIMIT = 100
-
-// Desfazer/refazer do layout do canvas: guarda a lista de nós antes de cada ação.
+// Desfazer/refazer do layout do canvas. O histórico fica no processo principal, um só para
+// todas as janelas: ⌘Z desfaz a última ação, feita em qualquer uma (ver main/canvasHub.ts).
 // Conteúdo de conversa não entra aqui, só posição, tamanho, nome, cor e estrutura.
 export function useHistory(nodes: CanvasNode[], setNodes: Dispatch<SetStateAction<CanvasNode[]>>) {
   const nodesRef = useRef(nodes)
   nodesRef.current = nodes
-  const past = useRef<CanvasNode[][]>([])
-  const future = useRef<CanvasNode[][]>([])
   const inGesture = useRef(false)
-
-  const record = useCallback(() => {
-    past.current.push(nodesRef.current)
-    if (past.current.length > LIMIT) past.current.shift()
-    future.current = []
-  }, [])
 
   // Ação discreta (menu, renomear, criar): grava o estado anterior e aplica.
   const change = useCallback(
     (update: SetStateAction<CanvasNode[]>) => {
-      record()
+      window.api.canvas.record()
       setNodes(update)
     },
-    [record, setNodes]
+    [setNodes]
   )
 
   // Arrastar e redimensionar geram várias mudanças por gesto: grava só no início.
-  const trackGesture = useCallback(
-    (active: boolean) => {
-      if (active && !inGesture.current) {
-        inGesture.current = true
-        record()
-      }
-    },
-    [record]
-  )
+  const trackGesture = useCallback((active: boolean) => {
+    if (active && !inGesture.current) {
+      inGesture.current = true
+      window.api.canvas.record()
+    }
+  }, [])
 
   useEffect(() => {
     const end = () => (inGesture.current = false)
@@ -44,18 +32,9 @@ export function useHistory(nodes: CanvasNode[], setNodes: Dispatch<SetStateActio
     return () => window.removeEventListener('pointerup', end, true)
   }, [])
 
-  const step = useCallback(
-    (from: typeof past, to: typeof past) => {
-      const snapshot = from.current.pop()
-      if (!snapshot) return
-      to.current.push(nodesRef.current)
-      setNodes(snapshot.map((n) => ({ ...n, selected: false })))
-    },
-    [setNodes]
-  )
-
-  const undo = useCallback(() => step(past, future), [step])
-  const redo = useCallback(() => step(future, past), [step])
+  // O estado desfeito volta pelo processo principal, para esta e para as outras janelas.
+  const undo = useCallback(() => window.api.canvas.undo(), [])
+  const redo = useCallback(() => window.api.canvas.redo(), [])
 
   return { nodesRef, change, trackGesture, undo, redo }
 }

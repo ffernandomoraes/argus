@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app } from 'electron'
@@ -23,4 +23,15 @@ export function saveCanvas(data: unknown): Promise<void> {
     await rename(tmp, file())
   }).catch(() => {})
   return pending
+}
+
+// Fechando o app: grava na hora, sem esperar a fila (o processo sai logo em seguida).
+export function saveCanvasNow(data: unknown): void {
+  try {
+    const tmp = file() + '.tmp'
+    writeFileSync(tmp, JSON.stringify(data))
+    renameSync(tmp, file())
+  } catch {
+    // Sem gravar, fica o último salvamento.
+  }
 }

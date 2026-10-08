@@ -498,7 +498,7 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick: ()
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+      className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
     >
       {children}
     </button>
@@ -511,7 +511,7 @@ export function CloseCodeButton({ onClick }: { onClick: () => void }) {
       aria-label="Fechar código"
       title="Fechar código"
       onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+      className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
     >
       <X size={15} />
     </button>

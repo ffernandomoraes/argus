@@ -69,10 +69,21 @@ export type ChatPanelData = {
   sessionId: string
 }
 
+// Nota solta no canvas: um lembrete em texto ("testar o login depois"), sem pasta nem sessão.
+// Posta em cima de um grupo, entra nele e anda junto; em cima de uma pasta, só fica ali.
+// Como o comentário do Figma: nasce pequena, alarga com o texto até NOTE_MAX_WIDTH e depois
+// cresce para baixo. `width`: largura escolhida pela pessoa no puxador; a altura segue o texto.
+export type NoteData = {
+  text: string
+  color: string
+  width?: number
+}
+
 export type AreaNode = Node<AreaData, 'area'>
 export type ProjectNode = Node<ProjectData, 'project'>
 export type TerminalNode = Node<TerminalData, 'terminal'>
 export type ChatNode = Node<ChatData, 'chat'>
 // 'chatPanel', e não 'conversation': esse nome ficou com um teste antigo que não volta (persistence).
 export type ChatPanelNode = Node<ChatPanelData, 'chatPanel'>
-export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode | ChatPanelNode
+export type NoteNode = Node<NoteData, 'note'>
+export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode | ChatPanelNode | NoteNode

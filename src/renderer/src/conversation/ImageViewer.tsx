@@ -45,14 +45,14 @@ export function ImageViewer({
     return () => window.removeEventListener('keydown', onKey, true)
   }, [count]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const navButton = 'flex size-8 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text'
+  const navButton = 'flex size-8 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text'
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8" onMouseDown={onClose}>
       <button
         aria-label="Fechar"
         onClick={onClose}
-        className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full border border-line bg-surface text-muted hover:text-text"
+        className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-md border border-line bg-surface text-muted hover:text-text"
       >
         <X size={15} />
       </button>
@@ -75,7 +75,7 @@ export function ImageViewer({
           {count > 1 && (
             <div
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-2 rounded-full border border-line bg-surface px-1 py-1 text-xs text-muted"
+              className="flex items-center gap-2 rounded-xl border border-line bg-surface px-1 py-1 text-xs text-muted"
             >
               <button aria-label="Imagem anterior" onClick={() => go(-1)} className={navButton}>
                 <ChevronLeft size={15} />

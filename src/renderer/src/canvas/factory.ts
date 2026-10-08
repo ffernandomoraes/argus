@@ -1,5 +1,5 @@
 import type { XYPosition } from '@xyflow/react'
-import type { AreaNode, ChatNode, ChatPanelNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
+import type { AreaNode, ChatNode, ChatPanelNode, NoteNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
 import { baseName, tildify } from '../platform'
 
 export const COLORS = [
@@ -105,5 +105,22 @@ export function createChatPanel(project: ProjectData, loose: boolean, conversati
       ...(!loose && { projectName: project.name }),
       sessionId: conversation.id
     }
+  }
+}
+
+// Amarelo de post-it: se destaca das pastas e dos grupos, que nascem cinza.
+export const DEFAULT_NOTE_COLOR = '#f59e0b'
+// Sem tamanho no nó: o React Flow mede o balão, que acompanha o texto.
+export const NOTE_MAX_WIDTH = 280
+export const NOTE_MIN_WIDTH = 120
+// Tamanho do balão vazio, antes de o React Flow medir (para achar um lugar livre).
+export const NOTE_SIZE = { width: 160, height: 38 }
+
+export function createNote(position: XYPosition): NoteNode {
+  return {
+    id: `n-${crypto.randomUUID()}`,
+    type: 'note',
+    position,
+    data: { text: '', color: DEFAULT_NOTE_COLOR }
   }
 }

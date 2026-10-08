@@ -22,9 +22,9 @@ export function PermissionCard({
   }
 
   return (
-    <div className="rounded-lg border border-needs-you/40 bg-needs-you/10 p-3 text-xs">
+    <div className="rounded-lg border border-ask/40 bg-ask/10 p-3 text-xs">
       <div className="flex items-start gap-2">
-        <ShieldQuestion size={14} className="mt-px shrink-0 text-needs-you" />
+        <ShieldQuestion size={14} className="mt-px shrink-0 text-ask" />
         <div className="min-w-0 flex-1">
           {/* A frase pronta do Claude Code vem em inglês; fica só como dica ao passar o mouse. */}
           <div className="font-medium text-text" title={request.title}>
@@ -47,19 +47,19 @@ export function PermissionCard({
       <div className="mt-2.5 flex flex-wrap justify-end gap-1.5">
         <button
           onClick={() => onAnswer('deny')}
-          className="rounded-full border border-line px-2.5 py-1 text-text hover:bg-surface-2"
+          className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg"
         >
           Negar
         </button>
         {request.canAlwaysAllow && (
           <button
             onClick={() => onAnswer('always')}
-            className="rounded-full border border-line px-2.5 py-1 text-text hover:bg-surface-2"
+            className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg"
           >
             Sempre permitir
           </button>
         )}
-        <button onClick={() => onAnswer('allow')} className="rounded-full bg-accent px-2.5 py-1 font-medium text-white hover:brightness-110">
+        <button onClick={() => onAnswer('allow')} className="rounded-md bg-ask px-2.5 py-1 font-medium text-ask-text hover:brightness-110">
           Permitir
         </button>
       </div>

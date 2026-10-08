@@ -125,7 +125,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
           aria-label={listening ? 'Parar ditado' : 'Falar'}
           title={listening ? 'Parar ditado' : 'Falar'}
           onClick={toggleDictation}
-          className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
+          className={`flex size-7 shrink-0 items-center justify-center rounded-md ${
             listening ? 'bg-running/15 text-running hover:bg-running/25' : 'text-muted hover:bg-surface-2 hover:text-text'
           }`}
         >
@@ -136,7 +136,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
             aria-label="Parar"
             title="Parar"
             onClick={() => window.api.canvasAgent.interrupt()}
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:brightness-110"
+            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-white hover:brightness-110"
           >
             <Square size={11} fill="currentColor" />
           </button>
@@ -146,7 +146,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
             title="Enviar (Enter)"
             onClick={send}
             disabled={!draft.trim() || running}
-            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:brightness-110 disabled:opacity-40"
+            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-white hover:brightness-110 disabled:opacity-40"
           >
             <SendHorizontal size={14} />
           </button>
@@ -159,7 +159,7 @@ export function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => 
           {dictation.error.action === 'dictation-settings' && (
             <button
               onClick={() => window.api.speech.openSettings()}
-              className="shrink-0 rounded-full border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
+              className="shrink-0 rounded-md border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
             >
               Abrir {SYSTEM_SETTINGS}
             </button>

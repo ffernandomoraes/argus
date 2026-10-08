@@ -27,9 +27,11 @@ type Args = Record<string, unknown>
 
 const round = (n: number) => Math.round(n)
 
-const nameOf = (n: CanvasNode) => (n.type === 'area' ? n.data.label : n.data.name)
+// Nota não tem nome: vale a primeira linha do texto.
+const nameOf = (n: CanvasNode) =>
+  n.type === 'area' ? n.data.label : n.type === 'note' ? (n.data.text.split('\n')[0] ?? '') : n.data.name
 
-const KIND = { area: 'grupo', project: 'pasta', terminal: 'terminal', chat: 'conversa', chatPanel: 'conversa aberta' } as const
+const KIND = { area: 'grupo', project: 'pasta', terminal: 'terminal', chat: 'conversa', chatPanel: 'conversa aberta', note: 'nota' } as const
 const kindOf = (n: CanvasNode) => KIND[n.type]
 
 // O que o bloco desenha acima de si (botões da pasta); conta como espaço ocupado.
@@ -100,7 +102,8 @@ export function useCanvasAgentTools(
             id: n.id,
             tipo: kindOf(n),
             nome: nameOf(n),
-            ...(n.type !== 'area' && { caminho: n.data.path }),
+            ...(n.type !== 'area' && n.type !== 'note' && { caminho: n.data.path }),
+            ...(n.type === 'note' && { texto: n.data.text, cor: n.data.color }),
             ...(parent && { grupo: { id: parent.id, nome: nameOf(parent) } }),
             ...(n.type === 'area' && { cor: n.data.color, recolhido: !!n.data.collapsed }),
             ...(n.hidden && { escondido: true }),

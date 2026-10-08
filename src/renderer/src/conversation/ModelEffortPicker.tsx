@@ -124,7 +124,7 @@ export function ModelEffortPicker({
       <button
         onClick={() => setOpen((o) => !o)}
         title={`Modelo: ${currentName} - Esforço: ${allowed.length ? effortLabel(settings.effort) : 'não se aplica'}`}
-        className={`flex items-center gap-2 rounded-full px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
+        className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : 'text-muted'
         }`}
       >

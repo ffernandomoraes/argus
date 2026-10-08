@@ -1,17 +1,29 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CircleArrowUp, Coffee } from 'lucide-react'
+import { AppWindow, CircleArrowUp, Coffee, Eye, EyeOff } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { useUpdates } from '../updates/useUpdates'
+import { IS_WIN } from '../platform'
 import { useWindowControls } from '../useWindowControls'
 import { CoffeeDialog } from './CoffeeDialog'
+import { NavButton } from './NavBar'
+
+const Divider = () => <span className="h-4 w-px bg-line" />
 
 // Barra de título, como a do VS Code: sem a barra do sistema, é ela que guarda os botões da janela
 // (os semáforos do Mac à esquerda; minimizar, maximizar e fechar do Windows à direita), arrasta a
 // janela e maximiza no duplo clique. Tem fundo próprio, para o título não brigar com o canvas; os
 // painéis começam abaixo dela (PANEL_TOP).
 // Mostra sempre o nome do app; a conversa aberta fica só no título da janela (windowTitle).
-export function TitleBar({ windowTitle }: { windowTitle: string }) {
+export function TitleBar({
+  windowTitle,
+  uiHidden,
+  onToggleUi
+}: {
+  windowTitle: string
+  uiHidden: boolean
+  onToggleUi: () => void
+}) {
   const updates = useUpdates()
   const controls = useWindowControls()
   const [coffeeOpen, setCoffeeOpen] = useState(false)
@@ -23,6 +35,19 @@ export function TitleBar({ windowTitle }: { windowTitle: string }) {
     : state?.status === 'downloading' ? `Baixando ${state.version} - ${Math.round(state.progress * 100)}%`
     : null
 
+  // Outra janela do mesmo canvas, para levar a outro monitor. No Mac o ⇧⌘N vem pelo menu Arquivo;
+  // no Windows, sem menu, a tecla é tratada aqui.
+  useEffect(() => {
+    if (!IS_WIN) return
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'n') return
+      e.preventDefault()
+      window.api.canvas.newWindow()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   // Aparece no menu Janela e no Mission Control.
   useEffect(() => {
     document.title = windowTitle
@@ -30,11 +55,11 @@ export function TitleBar({ windowTitle }: { windowTitle: string }) {
 
   return (
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50).
-    // O recuo acompanha o grupo da direita (café, versão e, às vezes, atualizar) dos dois lados:
+    // O recuo acompanha o grupo da direita (café, nova janela, versão e, às vezes, atualizar) dos dois lados:
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface ${ready || progress ? 'px-96' : 'px-56'}`}
+      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface ${ready || progress ? 'px-[29rem]' : 'px-[19rem]'}`}
     >
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
@@ -49,7 +74,7 @@ export function TitleBar({ windowTitle }: { windowTitle: string }) {
             <button
               onClick={() => window.api.updates.install()}
               title={`Reinicia o Argus na versão ${ready.version}`}
-              className="no-drag flex items-center gap-1.5 rounded-full border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
+              className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
             >
               <CircleArrowUp size={12} className="text-running" />
               Atualizar para {ready.version}
@@ -58,11 +83,29 @@ export function TitleBar({ windowTitle }: { windowTitle: string }) {
           {progress && <span className="text-[12px] tabular-nums text-faint">{progress}</span>}
           <button
             onClick={() => setCoffeeOpen(true)}
-            className="no-drag flex items-center gap-1.5 rounded-full border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
+            className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
           >
             <Coffee size={12} className="text-needs-you" />
             Me pague um café
           </button>
+          <Divider />
+          {/* Fora da área que arrasta a janela, senão o botão não recebe o mouse. */}
+          <span className="no-drag flex items-center gap-0.5">
+            <NavButton
+              label={uiHidden ? 'Mostrar interface' : 'Ocultar interface'}
+              shortcut={'⌘ \\'}
+              compact
+              selected={uiHidden}
+              side="bottom-end"
+              onClick={onToggleUi}
+            >
+              {uiHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+            </NavButton>
+            <NavButton label="Nova janela do canvas" shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
+              <AppWindow size={14} />
+            </NavButton>
+          </span>
+          <Divider />
           <span className="text-[12px] tabular-nums text-faint">v{updates.version}</span>
         </div>
       )}

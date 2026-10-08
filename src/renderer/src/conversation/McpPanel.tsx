@@ -66,7 +66,7 @@ export function McpPanel({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -84,7 +84,7 @@ export function McpPanel({
             title="Atualizar"
             onClick={load}
             disabled={loading}
-            className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text disabled:opacity-40"
+            className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text disabled:opacity-40"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -92,7 +92,7 @@ export function McpPanel({
             aria-label="Fechar"
             title="Fechar"
             onClick={onClose}
-            className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+            className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-text"
           >
             <X size={15} />
           </button>

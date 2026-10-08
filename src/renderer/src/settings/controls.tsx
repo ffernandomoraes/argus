@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-// Botão com borda das configurações, em cápsula como os do macOS.
-export const BUTTON = 'whitespace-nowrap rounded-full border border-line bg-fill px-3 py-1 text-xs'
+// Botão com borda das configurações. Todo botão do app usa rounded-md, o mesmo raio dos de cima do card.
+export const BUTTON = 'whitespace-nowrap rounded-md border border-line bg-fill px-3 py-1 text-xs'
 
 // Ícone num quadradinho colorido, como os do Ajustes do Sistema. `color` é o fundo; o ícone é branco.
 // `soft`: versão discreta, com o fundo só tingido da cor e o ícone na própria cor.
@@ -62,12 +62,12 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="flex rounded-full bg-fill p-0.5 ring-1 ring-line ring-inset">
+    <div className="flex rounded-lg bg-fill p-0.5 ring-1 ring-line ring-inset">
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12px] ${
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-[12px] ${
             value === o.value ? 'bg-control text-text shadow-sm shadow-black/20' : 'text-muted hover:text-text'
           }`}
         >

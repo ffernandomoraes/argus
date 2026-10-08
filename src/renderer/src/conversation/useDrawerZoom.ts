@@ -16,24 +16,24 @@ function step(zoom: number, direction: 1 | -1): number {
   return DRAWER_ZOOM_STEPS[next]
 }
 
+// ⌘+, ⌘- e ⌘0 mudam a escala; devolve se a tecla era uma delas.
+export function drawerZoomKey(e: KeyboardEvent): boolean {
+  if (!(e.metaKey || e.ctrlKey)) return false
+  // '+' e '_' aparecem quando o teclado manda a tecla já com shift.
+  const direction = e.key === '=' || e.key === '+' ? 1 : e.key === '-' || e.key === '_' ? -1 : 0
+  if (direction) setPreferences({ drawerZoom: step(getPreferences().drawerZoom, direction) })
+  else if (e.key === '0') setPreferences({ drawerZoom: 1 })
+  else return false
+  e.preventDefault()
+  return true
+}
+
 export function useDrawerZoom(): number {
   const zoom = usePreferences().drawerZoom
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return
-      // '+' e '_' aparecem quando o teclado manda a tecla já com shift.
-      const direction = e.key === '=' || e.key === '+' ? 1 : e.key === '-' || e.key === '_' ? -1 : 0
-      if (direction) {
-        e.preventDefault()
-        setPreferences({ drawerZoom: step(getPreferences().drawerZoom, direction) })
-      } else if (e.key === '0') {
-        e.preventDefault()
-        setPreferences({ drawerZoom: 1 })
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', drawerZoomKey)
+    return () => window.removeEventListener('keydown', drawerZoomKey)
   }, [])
 
   return zoom

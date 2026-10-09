@@ -8,7 +8,9 @@ import { useLayoutEffect, useRef, type PointerEvent, type RefObject } from 'reac
 export type PanelRect = { x: number; y: number; width: number; height: number; area?: AreaSize }
 type AreaSize = { width: number; height: number }
 
-const MARGIN = 16
+// Folga mínima entre o painel e as bordas da área (laterais, embaixo e abaixo da barra de título).
+export const PANEL_MARGIN = 8
+const MARGIN = PANEL_MARGIN
 // Barra de título transparente no topo da janela (TitleBar): os painéis começam abaixo dela.
 export const TITLE_BAR_HEIGHT = 40
 export const PANEL_TOP = TITLE_BAR_HEIGHT + MARGIN

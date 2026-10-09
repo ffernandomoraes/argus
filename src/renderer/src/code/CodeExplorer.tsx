@@ -441,7 +441,7 @@ export function CodeExplorer({
   return (
     <aside
       style={{ top: PANEL_TOP, ...(children ? { right: rightOffset } : { width: 280 }) }}
-      className="absolute bottom-4 left-4 z-40 flex overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+      className="absolute bottom-2 left-2 z-40 flex overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
     >
       <div className={`flex w-[280px] shrink-0 flex-col ${children ? 'border-r border-line' : ''}`}>
         <header className="flex h-12 items-center gap-1 border-b border-line pr-3 pl-3">

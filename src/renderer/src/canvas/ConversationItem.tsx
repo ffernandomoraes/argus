@@ -64,7 +64,8 @@ export function ConversationItem({
   )
 }
 
-// Conversa como linha dentro da caixa da pasta: bolinha de status, título e, à direita,
+// Conversa como linha dentro da caixa da pasta: ícone (conversa ou design), título com a bolinha
+// de status logo depois e, à direita,
 // "esperando você" quando ela pede atenção ou há quanto tempo mexeu (rodando, a bolinha já diz).
 export function ConversationRow({
   conversation: c,
@@ -91,11 +92,13 @@ export function ConversationRow({
         active ? 'bg-accent/15' : 'bg-fill hover:bg-text/10'
       }`}
     >
-      <StatusDot status={c.status} large />
-      <span className="min-w-0 truncate">{c.title}</span>
-      {(c.design || c.kind === 'design') && (
-        <PenTool size={11} className="shrink-0 text-faint" aria-label="Modo design" />
+      {c.design || c.kind === 'design' ? (
+        <PenTool size={13} className="shrink-0 text-muted" aria-label="Modo design" />
+      ) : (
+        <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
       )}
+      <span className="min-w-0 truncate">{c.title}</span>
+      <StatusDot status={c.status} />
       {c.kind === 'agente' && <Bot size={11} className="shrink-0 text-faint" aria-label="Agente" />}
       {poppedOut && (
         <ExternalLink size={11} className="shrink-0 text-faint" aria-label="Aberta em janela separada" />
@@ -116,13 +119,13 @@ export function ConversationRow({
   )
 }
 
-// Linha de um subagente: o tronco desce da bolinha de cima (a da conversa, no primeiro; a
-// do subagente anterior, nos outros) e entra pela esquerda, um nível para dentro.
-// Os números seguem a ConversationRow: bolinha no x 14, conversa com 32px e subagente com 24px,
-// com 4px entre as linhas (ROW_GAP da ProjectNode). O primeiro sai logo abaixo da bolinha da
-// conversa (meio dela a 20px acima, menos o raio com o halo); os outros, de onde a linha do
-// anterior faz a curva (8px do topo dele, 28px acima).
-const TRUNK_X = 14
+// Linha de um subagente: o tronco desce do ícone da conversa, no primeiro, ou da linha do
+// subagente anterior, nos outros, e entra pela esquerda, um nível para dentro.
+// Os números seguem a ConversationRow: ícone de 13px no x 16,5 (10 de respiro + metade dele),
+// conversa com 32px e subagente com 24px, com 4px entre as linhas (ROW_GAP da ProjectNode). O
+// primeiro sai logo abaixo do ícone da conversa (meio dele a 20px acima, menos metade do ícone);
+// os outros, de onde a linha do anterior faz a curva (8px do topo dele, 28px acima).
+const TRUNK_X = 16.5
 const agentRoute = (first: boolean) => `M ${TRUNK_X} ${first ? -13 : -20} V 8 Q ${TRUNK_X} 12 ${TRUNK_X + 4} 12 H 25`
 
 // Subagente rodando, pendurado embaixo da conversa que o lançou: qual agente, o que está
@@ -134,7 +137,7 @@ export function AgentItem({
   onOpen
 }: {
   agent: RunningAgent
-  // Primeiro subagente da conversa: a linha sai da bolinha dela.
+  // Primeiro subagente da conversa: a linha sai do ícone dela.
   first: boolean
   color: string
   onOpen: () => void

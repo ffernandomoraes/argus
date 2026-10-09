@@ -5,6 +5,34 @@ import { ConversationItem, useNow } from './ConversationItem'
 import { useSessions } from './sessionsStore'
 import type { ActiveConversation } from './CanvasContext'
 import { useEscape } from '../useEscape'
+import type { ConversationSummary } from './types'
+
+// Agrupa por dia (local). As de hoje ficam no topo sem título; as mais antigas ganham a
+// data ("19/10", ou "19/10/2025" se for de outro ano).
+function groupByDay(conversations: ConversationSummary[], now: number) {
+  const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  const today = new Date(now)
+  const groups: { key: string; label: string | null; items: ConversationSummary[] }[] = []
+  for (const c of conversations) {
+    const d = new Date(c.updatedAt)
+    const key = dayKey(d)
+    let group = groups[groups.length - 1]
+    if (group?.key !== key) {
+      const label =
+        key === dayKey(today)
+          ? null
+          : d.toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              ...(d.getFullYear() !== today.getFullYear() && { year: 'numeric' })
+            })
+      group = { key, label, items: [] }
+      groups.push(group)
+    }
+    group.items.push(c)
+  }
+  return groups
+}
 
 // Todas as conversas de uma pasta, num painel flutuante: no canvas só as mais recentes
 // viram card.
@@ -69,17 +97,26 @@ export function AllConversationsPanel({
       </header>
 
       <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {shown.map((c) => (
-          <ConversationItem
-            key={c.id}
-            conversation={c}
-            now={now}
-            poppedOut={poppedOut.has(c.id)}
-            active={
-              active?.nodeId === nodeId && (active.conversationId === c.id || active.sessionId === c.id)
-            }
-            onOpen={() => onOpen(c.id)}
-          />
+        {groupByDay(shown, now).map((g, i) => (
+          <li key={g.key} className="flex flex-col gap-1">
+            {g.label && (
+              <div className={`px-2 pb-0.5 text-[11px] font-medium text-faint ${i > 0 ? 'pt-3' : ''}`}>{g.label}</div>
+            )}
+            <ul className="flex flex-col gap-1">
+              {g.items.map((c) => (
+                <ConversationItem
+                  key={c.id}
+                  conversation={c}
+                  now={now}
+                  poppedOut={poppedOut.has(c.id)}
+                  active={
+                    active?.nodeId === nodeId && (active.conversationId === c.id || active.sessionId === c.id)
+                  }
+                  onOpen={() => onOpen(c.id)}
+                />
+              ))}
+            </ul>
+          </li>
         ))}
         {conversations.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">Nenhuma conversa ainda</li>}
       </ul>

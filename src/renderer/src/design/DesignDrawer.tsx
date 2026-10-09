@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Code2, Eye, FileCode2, Folder, Loader2, Monitor, PenTool, Play, Smartphone, X } from 'lucide-react'
+import { Code2, FileCode2, Folder, Loader2, Monitor, PenTool, Play, Smartphone, X } from 'lucide-react'
 import { DESIGN_VERSION, type Design, type DesignDevice } from '../../../shared/design'
 import { HeaderButton } from '../conversation/ConversationView'
 import { PANEL_MARGIN, PANEL_TOP } from '../conversation/FloatingPanel'
@@ -7,7 +7,7 @@ import { startProjectServer, useProjectServer } from '../devServers/projectServe
 import { BUTTON, Segmented } from '../settings/controls'
 import { useEscape } from '../useEscape'
 import { PrototypePane } from './PrototypePane'
-import { normalizeRoute, rememberRoute, RouteField, visitedRoutes } from './RouteField'
+import { appLabel, normalizeRoute, pageApps, rememberRoute, RouteField, routesKey, useKnownRoutes } from './RouteField'
 
 const SECONDARY = `${BUTTON} shrink-0 hover:bg-surface-2`
 
@@ -57,7 +57,7 @@ function ServerStatus({ projectPath }: { projectPath: string }) {
     return (
       <p className="flex items-center gap-1.5 text-[12px] text-muted">
         <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
-        Servidor rodando em {server.ports.map((p) => `localhost:${p}`).join(', ')}
+        Servidor rodando: {(server.apps?.length ? server.apps.map(appLabel) : server.ports.map((p) => `localhost:${p}`)).join(', ')}
       </p>
     )
   if (server.state === 'starting')
@@ -75,7 +75,7 @@ function ServerStatus({ projectPath }: { projectPath: string }) {
         {server.error ? `O servidor não subiu: ${server.error}` : 'O servidor do projeto está parado.'}
       </p>
       <button
-        onClick={() => void startProjectServer(projectPath)}
+        onClick={() => void startProjectServer(projectPath, true)}
         title={server.command ?? undefined}
         className={`${SECONDARY} flex shrink-0 items-center gap-1.5`}
       >
@@ -99,11 +99,20 @@ function StartChoice({
   projectName: string
   device: DesignDevice
   onDevice: (device: DesignDevice) => void
-  onOpenExisting: (route: string) => void
+  onOpenExisting: (route: string, port?: number) => void
 }) {
   const [kind, setKind] = useState<StartKind>('new')
   const [route, setRoute] = useState('')
   const server = useProjectServer(projectPath)
+  // Monorepo: o `dev` sobe vários apps (site, admin, app); a tela é de um deles.
+  const running = server?.state === 'running' ? (server.apps ?? []) : []
+  const apps = pageApps(running)
+  // Até saber quais portas mostram página, sem escolha nem Abrir: a primeira porta pode ser a API.
+  const checking = running.some((a) => a.page === undefined)
+  const [port, setPort] = useState<number | null>(null)
+  const app = apps.find((a) => a.port === port) ?? apps[0]
+  const routes = useKnownRoutes(projectPath, app)
+  const open = (r: string) => !checking && onOpenExisting(r, app?.port)
   const noScript = !!server && server.state === 'stopped' && !server.script
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-14">
@@ -136,16 +145,30 @@ function StartChoice({
       {kind === 'existing' ? (
         <>
           <ServerStatus projectPath={projectPath} />
+          {checking && (
+            <p className="flex items-center gap-1.5 text-[12px] text-muted">
+              <Loader2 size={12} className="shrink-0 animate-spin" />
+              Conferindo quais portas mostram página…
+            </p>
+          )}
+          {!checking && apps.length > 1 && app && (
+            <div className="flex max-w-full flex-col items-center gap-1.5">
+              <p className="text-[12px] text-muted">Qual app você quer ajustar?</p>
+              <div className="max-w-full overflow-x-auto">
+                <Segmented
+                  value={String(app.port)}
+                  onChange={(v) => setPort(Number(v))}
+                  options={apps.map((a) => ({ value: String(a.port), label: appLabel(a) }))}
+                />
+              </div>
+            </div>
+          )}
           <div className="flex w-full max-w-md items-center gap-2">
-            <RouteField
-              value={route}
-              onChange={setRoute}
-              onGo={onOpenExisting}
-              options={visitedRoutes(projectPath).map((r) => ({ route: r }))}
-            />
+            <RouteField value={route} onChange={setRoute} onGo={open} options={routes} />
             <button
-              onClick={() => onOpenExisting(normalizeRoute(route))}
-              className="flex h-6 shrink-0 items-center rounded-md bg-accent px-3 text-[12px] font-medium text-white hover:brightness-110"
+              onClick={() => open(normalizeRoute(route))}
+              disabled={checking}
+              className="flex h-6 shrink-0 items-center rounded-md bg-accent px-3 text-[12px] font-medium text-white enabled:hover:brightness-110 disabled:opacity-40"
             >
               Abrir
             </button>
@@ -167,7 +190,7 @@ function StartChoice({
 
 // Drawer do modo design: o canvas inteiro, com uma margem para ainda se ver o canvas. À esquerda, a
 // conversa do protótipo; à direita, a página. Uma barra só em cima: o nome, a largura da página
-// (desktop ou celular), Visualizar e fechar.
+// (desktop ou celular) e fechar. Visualizar fica na barra de endereço da página.
 export function DesignDrawer({
   target,
   account,
@@ -239,7 +262,8 @@ export function DesignDrawer({
       }}
     >
       {viewing ? (
-        <div className="absolute right-2 top-2 z-30 flex items-center gap-1.5 opacity-60 hover:opacity-100">
+        // Na altura da barra de endereço da página, à direita dela.
+        <div className="absolute right-2 top-1 z-30 flex items-center gap-1.5 opacity-60 hover:opacity-100">
           <div className="flex rounded-full bg-black/55 p-0.5 shadow-lg backdrop-blur">
             {(['desktop', 'mobile'] as const).map((dv) => (
               <button
@@ -294,15 +318,6 @@ export function DesignDrawer({
           />
 
           <div className="flex min-w-0 items-center justify-self-end gap-1">
-            <button
-              onClick={() => setViewing(true)}
-              disabled={!started}
-              title="Visualizar: ver só a página, sem o chat"
-              aria-label="Visualizar"
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted disabled:opacity-40 enabled:hover:bg-fill enabled:hover:text-text"
-            >
-              <Eye size={14} />
-            </button>
             <HeaderButton label="Fechar" onClick={onClose}>
               <X size={15} />
             </HeaderButton>
@@ -318,15 +333,16 @@ export function DesignDrawer({
             onUpdate={update}
             device={shownDevice}
             viewing={viewing}
+            onViewing={() => setViewing((v) => !v)}
             start={
               <StartChoice
                 projectPath={projectPath}
                 projectName={projectName}
                 device={design.device}
                 onDevice={(device) => update({ device })}
-                onOpenExisting={(route) => {
-                  rememberRoute(projectPath, route)
-                  update({ existing: true, route, name: route })
+                onOpenExisting={(route, port) => {
+                  rememberRoute(routesKey(projectPath, port), route)
+                  update({ existing: true, route, name: route, ...(port && { port }) })
                 }}
               />
             }

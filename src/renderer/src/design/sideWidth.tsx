@@ -3,7 +3,7 @@ import { useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 're
 // Largura da coluna do chat no modo design, lembrada entre
 // aberturas. Arrasta pela borda direita da coluna; dois cliques voltam ao padrão.
 const KEY = 'argus.design.sideWidth'
-const DEFAULT = 400
+const DEFAULT = 460
 const MIN = 300
 // Sobra sempre espaço para a tela ao lado.
 const max = () => Math.max(MIN, Math.round(window.innerWidth * 0.6))

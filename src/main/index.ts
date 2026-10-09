@@ -19,8 +19,9 @@ import { Cli, cliStatus, installCli, openArg, uninstallCli, validFolder } from '
 import { ChatHolders } from './chatHolders'
 import { Chats } from './chats'
 import { ChatNotifier } from './notifications'
-import { escapeInPage, pickInPage, trackInPage } from './designPicker'
+import { commentInPage, escapeInPage, snapshotPage, trackInPage, type CommentAction } from './designPicker'
 import { liveSessions } from './liveSessions'
+import { projectRoutes } from './projectRoutes'
 import { designSessionIds, listDesigns, loadDesign, saveDesign, trashDesign } from './designStore'
 import { killDevServer, listDevServers } from './devServers'
 import { projectServers, startProjectServer, stopProjectServer, stopStartedServers } from './projectServers'
@@ -447,7 +448,17 @@ function setAppMenu(): void {
       },
       {
         label: 'Ver',
-        submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' }, { role: 'togglefullscreen' }]
+        submenu: [
+          // A interface decide: com a página do protótipo aberta, recarrega só ela (ver preload).
+          {
+            label: 'Recarregar',
+            accelerator: 'CmdOrCtrl+R',
+            click: (_i, win) => win instanceof BrowserWindow && win.webContents.send('reload-request')
+          },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' }
+        ]
       },
       { role: 'windowMenu' }
     ])
@@ -530,9 +541,11 @@ app.whenReady().then(() => {
     if (ok && projectPath) broadcast('sessions:changed', projectPath)
     return ok
   })
-  ipcMain.on('design:pick', (e, origin: string, on: boolean, accent: string) => pickInPage(e.sender, origin, on, accent))
   ipcMain.on('design:escape', (e, origin: string, on: boolean) => escapeInPage(e.sender, origin, on))
   ipcMain.on('design:track', (e, origin: string) => trackInPage(e.sender, origin))
+  ipcMain.on('design:comment', (e, origin: string, action: CommentAction, id?: number) => commentInPage(e.sender, origin, action, id))
+  ipcMain.handle('design:snapshot', (e, origin: string) => snapshotPage(e.sender, origin))
+  ipcMain.handle('design:routes', (_e, path: string) => projectRoutes(path))
   ipcMain.handle('memory:list', (_e, projects: MemoryProject[]) => listMemory(projects))
   ipcMain.handle('memory:read', (_e, path: string, projects: MemoryProject[]) => readMemory(path, projects))
   ipcMain.handle('memory:write', (_e, path: string, text: string, projects: MemoryProject[]) =>
@@ -566,7 +579,7 @@ app.whenReady().then(() => {
   ipcMain.handle('devServers:list', (_e, paths: string[]) => listDevServers(paths))
   ipcMain.handle('devServers:kill', (_e, pgid: number, paths: string[]) => killDevServer(pgid, paths))
   ipcMain.handle('projectServers:status', (_e, paths: string[]) => projectServers(paths))
-  ipcMain.handle('projectServers:start', (_e, path: string) => startProjectServer(path))
+  ipcMain.handle('projectServers:start', (_e, path: string, noBrowser?: boolean) => startProjectServer(path, !!noBrowser))
   ipcMain.handle('projectServers:stop', (_e, path: string) => stopProjectServer(path))
   ipcMain.handle('files:list', (_e, root: string, rel: string) => listDir(root, rel))
   ipcMain.handle('files:read', (_e, root: string, rel: string) => readFile(root, rel))

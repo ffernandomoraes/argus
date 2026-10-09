@@ -30,6 +30,8 @@ declare global {
       }
       pickFolder: () => Promise<string | null>
       onEdit: (cb: (action: 'undo' | 'redo') => void) => () => void
+      // ⌘R / Ctrl+R: quem escuta (o último) recarrega o que é seu em vez da janela inteira.
+      onReloadKey: (cb: () => void) => () => void
       speech: {
         start: () => void
         stop: () => void
@@ -119,12 +121,16 @@ declare global {
         list: (projectPath: string) => Promise<DesignSummary[]>
         // Pasta do design para a Lixeira.
         trash: (id: string) => Promise<boolean>
-        // Seletor de seção na página do protótipo (servidor local em `origin`) aberta no drawer.
-        pick: (origin: string, on: boolean, accent: string) => void
         // Visualizar: o Esc dentro da página do protótipo chega ao drawer (mensagem 'escape').
         escape: (origin: string, on: boolean) => void
         // A página do protótipo passa a avisar o endereço a cada navegação (mensagem 'location').
         track: (origin: string) => void
+        // Retrato da tela em texto (título, modais, avisos, campos, botões à vista); nulo se não deu.
+        snapshot: (origin: string) => Promise<string | null>
+        // Comentários na página: liga ou desliga o clique que marca o ponto, tira um ponto ou todos.
+        comment: (origin: string, action: 'on' | 'off' | 'remove' | 'clear', id?: number) => void
+        // Rotas do projeto lidas do código (pastas de páginas, rotas escritas), para a lista do endereço.
+        routes: (projectPath: string) => Promise<{ route: string; from: string }[]>
       }
       sessions: {
         list: (path: string) => Promise<SessionSummary[]>
@@ -154,7 +160,8 @@ declare global {
       }
       projectServers: {
         status: (paths: string[]) => Promise<Record<string, ProjectServer>>
-        start: (path: string) => Promise<boolean>
+        // noBrowser: o servidor não abre o navegador sozinho (BROWSER=none), como no modo design.
+        start: (path: string, noBrowser?: boolean) => Promise<boolean>
         stop: (path: string) => Promise<boolean>
       }
       files: {

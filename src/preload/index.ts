@@ -44,6 +44,29 @@ if (IS_WIN) {
   )
 }
 
+// Recarregar (⌘R no menu Ver; no Windows, Ctrl+R). Com alguém escutando (a página do protótipo
+// aberta no modo design), recarrega só ela; sem ninguém, no Mac recarrega a janela, como antes.
+const reloadListeners: (() => void)[] = []
+const reloadKey = (): boolean => {
+  const top = reloadListeners[reloadListeners.length - 1]
+  if (!top) return false
+  top()
+  return true
+}
+ipcRenderer.on('reload-request', () => {
+  if (!reloadKey()) location.reload()
+})
+if (IS_WIN) {
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (!e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || e.key.toLowerCase() !== 'r') return
+      if (reloadKey()) e.preventDefault()
+    },
+    true
+  )
+}
+
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
   homeDir: homedir(),
@@ -58,6 +81,13 @@ contextBridge.exposeInMainWorld('api', {
     }
   },
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickFolder'),
+  onReloadKey: (cb: () => void) => {
+    reloadListeners.push(cb)
+    return () => {
+      const i = reloadListeners.lastIndexOf(cb)
+      if (i >= 0) reloadListeners.splice(i, 1)
+    }
+  },
   onEdit: (cb: (action: EditAction) => void) => {
     editListeners.add(cb)
     return () => {
@@ -202,9 +232,12 @@ contextBridge.exposeInMainWorld('api', {
     save: (design: Design): Promise<boolean> => ipcRenderer.invoke('design:save', design),
     list: (projectPath: string): Promise<DesignSummary[]> => ipcRenderer.invoke('design:list', projectPath),
     trash: (id: string): Promise<boolean> => ipcRenderer.invoke('design:trash', id),
-    pick: (origin: string, on: boolean, accent: string) => ipcRenderer.send('design:pick', origin, on, accent),
     escape: (origin: string, on: boolean) => ipcRenderer.send('design:escape', origin, on),
-    track: (origin: string) => ipcRenderer.send('design:track', origin)
+    track: (origin: string) => ipcRenderer.send('design:track', origin),
+    snapshot: (origin: string): Promise<string | null> => ipcRenderer.invoke('design:snapshot', origin),
+    comment: (origin: string, action: 'on' | 'off' | 'remove' | 'clear', id?: number) =>
+      ipcRenderer.send('design:comment', origin, action, id),
+    routes: (projectPath: string): Promise<{ route: string; from: string }[]> => ipcRenderer.invoke('design:routes', projectPath)
   },
   sessions: {
     list: (path: string): Promise<SessionSummary[]> => ipcRenderer.invoke('sessions:list', path),
@@ -235,7 +268,7 @@ contextBridge.exposeInMainWorld('api', {
   projectServers: {
     status: (paths: string[]): Promise<Record<string, ProjectServer>> =>
       ipcRenderer.invoke('projectServers:status', paths),
-    start: (path: string): Promise<boolean> => ipcRenderer.invoke('projectServers:start', path),
+    start: (path: string, noBrowser?: boolean): Promise<boolean> => ipcRenderer.invoke('projectServers:start', path, noBrowser),
     stop: (path: string): Promise<boolean> => ipcRenderer.invoke('projectServers:stop', path)
   },
   files: {

@@ -1,20 +1,23 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { Code2, Crosshair, ExternalLink, Loader2, RotateCw, X } from 'lucide-react'
+import { Code2, ExternalLink, Eye, Loader2, MessageSquarePlus, RotateCw, X } from 'lucide-react'
 import { DEVICE_WIDTH, type Design, type DesignDevice } from '../../../shared/design'
 import type { ProjectServer } from '../../../shared/devServers'
 import { moveConversationSettings, setConversationSettings, useConversationSettings } from '../conversation/conversationSettings'
 import { AccountContext } from '../auth/useAuth'
 import { ChatView } from '../conversation/ChatView'
 import { McpPanel } from '../conversation/McpPanel'
+import { agentHint, mentionedAgents } from '../conversation/AgentMenu'
+import type { AgentDef } from '../../../shared/agents'
 import { Presence } from '../motion'
 import { useConversationHistory } from '../conversation/useConversationHistory'
 import { isSendableImage, toBase64, useChat } from '../conversation/useChat'
 import { startProjectServer, useProjectServer } from '../devServers/projectServers'
 import { BUTTON } from '../settings/controls'
 import { pressEscape } from '../useEscape'
-import { chatKeyOf, draftKeyOf, existingHint, followHint, nameIn, routeIn, routesIn, sendPrototype, startHint, type PrototypePick } from './prototype'
+import { chatKeyOf, draftKeyOf, existingHint, followHint, markOf, withoutAppLines, type PageInView, nameIn, routeIn, routesIn, sendPrototype, startHint } from './prototype'
 import { SideResizer, useSideWidth } from './sideWidth'
-import { rememberRoute, RouteField, visitedRoutes, type RouteOption } from './RouteField'
+import { CommentLayer, commentsHint, commentsText, type CommentPositions, type PageComment } from './comments'
+import { appLabel, dedupe, rememberLinks, rememberRoute, RouteField, routesKey, useKnownRoutes, pageApps, type ProjectApp } from './RouteField'
 
 // Coluna da esquerda do drawer: os pedidos e o campo, como uma conversa. A direita fica para a tela.
 // A largura vem de useSideWidth (arrastando a borda).
@@ -24,8 +27,9 @@ const ICON_BUTTON = 'flex size-6 shrink-0 items-center justify-center rounded-md
 
 // O servidor do projeto, no lugar da página enquanto ela não aparece. O que o Claude está fazendo
 // fica só no chat.
-function serverText(server: ProjectServer | null, running: boolean): string {
+function serverText(server: ProjectServer | null, running: boolean, checking: boolean): string {
   if (!server) return 'Conferindo o servidor do projeto…'
+  if (checking) return 'Conferindo quais portas do projeto mostram página…'
   if (server.state !== 'running') {
     if (server.error) return `O servidor do projeto não subiu: ${server.error}`
     return server.script ? 'Subindo o servidor do projeto…' : 'Esta pasta não tem script dev ou start para mostrar a página.'
@@ -41,13 +45,16 @@ function PrototypeFrame({
   device,
   reload,
   frameRef,
-  onLoad
+  onLoad,
+  overlay
 }: {
   url: string
   device: DesignDevice
   reload: number
   frameRef: RefObject<HTMLIFrameElement | null>
   onLoad: () => void
+  // Por cima da página, nas medidas dela (pixels da página), com a mesma redução do quadro.
+  overlay?: (scale: number) => ReactNode
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
@@ -77,6 +84,14 @@ function PrototypeFrame({
           style={{ width, height: size.height / scale, transform: `translateX(-50%) scale(${scale})` }}
         />
       )}
+      {size.width > 0 && overlay && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 z-10 origin-top overflow-visible"
+          style={{ width, height: size.height / scale, transform: `translateX(-50%) scale(${scale})` }}
+        >
+          {overlay(scale)}
+        </div>
+      )}
     </div>
   )
 }
@@ -90,7 +105,8 @@ export function PrototypePane({
   onUpdate,
   device,
   start,
-  viewing = false
+  viewing = false,
+  onViewing
 }: {
   design: Design
   account?: string
@@ -100,8 +116,9 @@ export function PrototypePane({
   device?: DesignDevice
   // Design que ainda não começou: no lugar da página, a escolha de como começar.
   start?: ReactNode
-  // Visualizar: só a página, sem o chat nem a barra de endereço.
+  // Visualizar: só a página e a barra de endereço, sem o chat. O botão fica na barra de endereço.
   viewing?: boolean
+  onViewing?: () => void
 }) {
   const projectPath = design.projectPath
   const key = chatKeyOf(design)
@@ -169,88 +186,145 @@ export function PrototypePane({
   useEffect(() => {
     if (fresh || server?.state !== 'stopped' || !server.script || server.error || tried.current) return
     tried.current = true
-    void startProjectServer(projectPath)
+    void startProjectServer(projectPath, true)
   }, [server?.state, fresh]) // eslint-disable-line react-hooks/exhaustive-deps
   const ports = server?.state === 'running' ? server.ports : []
-  const [portChoice, setPortChoice] = useState<number | null>(null)
-  const port = portChoice && ports.includes(portChoice) ? portChoice : ports[0]
-  const origin = port ? `http://localhost:${port}` : null
-  // Página que a pessoa está vendo: muda ao navegar dentro dela (a própria página avisa, ver
-  // trackInPage). `opening` é o caminho que o quadro carrega; sem ele, o endereço da tela. Endereço
-  // novo da tela (digitado ou na linha ROTA) volta a abrir nele.
-  const [current, setCurrent] = useState<string | null>(null)
-  const [opening, setOpening] = useState<string | null>(null)
+  // Monorepo: o `dev` sobe vários apps, um por porta. A escolha fica no design.
+  const allApps: ProjectApp[] = server?.state === 'running' ? (server.apps ?? ports.map((p) => ({ port: p, dir: '' }))) : []
+  // Só os que mostram página entram na escolha; sem escolha, abre o primeiro deles (não a API).
+  const apps = pageApps(allApps)
+  // Até saber quais portas mostram página, nada abre: senão a primeira porta (às vezes a API)
+  // apareceria antes do app certo.
+  const checking = allApps.some((a) => a.page === undefined)
+  const [portChoice, setPortChoice] = useState<number | null>(design.port ?? null)
+  // A porta escolhida ao abrir a tela que já existe chega pelo design, depois de montado.
   useEffect(() => {
-    setCurrent(null)
-    setOpening(null)
-  }, [route])
-  const here = current ?? route
-  const path = opening ?? route
-  const url = origin && path ? origin + path : null
+    if (design.port) setPortChoice(design.port)
+  }, [design.port])
+  const port = portChoice && ports.includes(portChoice) ? portChoice : (apps[0]?.port ?? ports[0])
+  const app = allApps.find((a) => a.port === port)
+  const origin = port && !checking ? `http://localhost:${port}` : null
+  const rkey = routesKey(projectPath, port)
+  const rkeyRef = useRef(rkey)
+  rkeyRef.current = rkey
+  // Página que a pessoa está vendo: muda ao navegar dentro dela (a própria página avisa, ver
+  // trackInPage). `opening` é o caminho que o quadro carrega e só muda pela pessoa: o endereço
+  // digitado, o recarregar. A linha ROTA do Claude só abre a página quando ainda não há nenhuma
+  // (protótipo novo); depois, muda o endereço guardado da tela sem tirar a pessoa de onde ela está.
+  const [current, setCurrent] = useState<string | null>(null)
+  const [pageTitle, setPageTitle] = useState('')
+  const [opening, setOpening] = useState<string | null>(route ?? null)
+  useEffect(() => {
+    if (!opening && route) setOpening(route)
+  }, [route]) // eslint-disable-line react-hooks/exhaustive-deps
+  const here = current ?? opening ?? route
+  const url = origin && opening ? origin + opening : null
 
   // Recarregar (e o fim de cada pedido) abre de novo a página em que a pessoa está.
   const [reload, setReload] = useState(0)
   const reloadHere = () => {
-    setOpening(here ?? null)
+    if (here) setOpening(here)
     setReload((n) => n + 1)
   }
+  // ⌘R / Ctrl+R com a página aberta: recarrega ela, não o app.
+  const reloadRef = useRef(reloadHere)
+  reloadRef.current = reloadHere
+  useEffect(() => (url ? window.api.onReloadKey(() => reloadRef.current()) : undefined), [url])
   const wasRunning = useRef(false)
   useEffect(() => {
     if (wasRunning.current && !running) reloadHere()
     wasRunning.current = running
   }, [running]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // O campo mostra onde a pessoa está (ou o que ela digita), não a ROTA que o Claude informou.
   const [routeDraft, setRouteDraft] = useState(route ?? '')
-  useEffect(() => setRouteDraft(route ?? ''), [route])
+  useEffect(() => {
+    if (!current) setRouteDraft(opening ?? '')
+  }, [opening]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Seletor de seção: roda dentro da página (designPicker.ts) e devolve a escolha por postMessage.
+  // Avisos da página (scripts de designPicker.ts), por postMessage: endereço, links, comentários.
   const frameRef = useRef<HTMLIFrameElement>(null)
-  const [picking, setPicking] = useState(false)
-  const [pick, setPick] = useState<PrototypePick | null>(null)
-  const accent = useMemo(() => getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim(), [])
-  const picker = (on: boolean) => origin && window.api.design.pick(origin, on, accent)
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (!frameRef.current || e.source !== frameRef.current.contentWindow) return
-      const data = e.data as { argus?: string } & Partial<PrototypePick>
-      if (data?.argus === 'pick') {
-        // O seletor continua ligado: o clique seguinte, dentro da seção, escolhe um elemento dela.
-        setPick({
-          name: String(data.name ?? ''),
-          secao: data.secao ?? null,
-          section: data.section ?? null,
-          text: String(data.text ?? ''),
-          html: String(data.html ?? '')
-        })
-      } else if (data?.argus === 'location' && typeof (data as { path?: unknown }).path === 'string') {
+      const data = e.data as { argus?: string }
+      if (data?.argus === 'location' && typeof (data as { path?: unknown }).path === 'string') {
         const next = (data as { path: string }).path
+        const title = (data as { title?: unknown }).title
+        setPageTitle(typeof title === 'string' ? title.slice(0, 120) : '')
         setCurrent(next)
         setRouteDraft(next)
-      } else if (data?.argus === 'pick-cancel') setPicking(false)
+        rememberRoute(rkeyRef.current, next)
+      } else if (data?.argus === 'links' && Array.isArray((data as { paths?: unknown }).paths)) {
+        rememberLinks(rkeyRef.current, ((data as { paths: unknown[] }).paths).filter((p): p is string => typeof p === 'string'))
+      } else if (data?.argus === 'reload') reloadRef.current()
       else if (data?.argus === 'escape' && viewingRef.current) pressEscape()
+      else if (data?.argus === 'comment-add') addCommentRef.current(e.data as Record<string, unknown>)
+      else if (data?.argus === 'comment-pos') setCommentPos(((e.data as { pos?: CommentPositions }).pos ?? {}) as CommentPositions)
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [])
-  const togglePick = () => {
-    if (picking) {
-      setPicking(false)
-      picker(false)
-      return
-    }
-    setPick(null)
-    setPicking(true)
-    picker(true)
-  }
-  const clearPick = () => {
-    setPick(null)
-    setPicking(false)
-    picker(false)
-  }
 
-  // Visualizar: o seletor desliga junto, e o Esc dado dentro da página sai da visualização.
+  // Comentários: ligado, cada clique na página marca um ponto e abre um balão para escrever o que
+  // mudar ali. Vários se juntam e vão no próximo envio do chat; depois, somem.
+  const [commenting, setCommenting] = useState(false)
+  const [comments, setComments] = useState<PageComment[]>([])
+  const [commentPos, setCommentPos] = useState<CommentPositions>({})
+  const [editingComment, setEditingComment] = useState<number | null>(null)
+  const commentApi = (action: 'on' | 'off' | 'remove' | 'clear', id?: number) => origin && window.api.design.comment(origin, action, id)
+  const stopCommenting = () => {
+    if (!commenting) return
+    setCommenting(false)
+    commentApi('off')
+  }
+  const toggleCommenting = () => {
+    if (commenting) return stopCommenting()
+    setCommenting(true)
+    commentApi('on')
+  }
+  const addCommentRef = useRef((_data: Record<string, unknown>) => {})
+  addCommentRef.current = (data) => {
+    const str = (k: string) => (typeof data[k] === 'string' ? (data[k] as string) : '')
+    const id = Number(data.id)
+    if (!id) return
+    setComments((all) => [
+      ...all.filter((c) => c.note.trim() || c.id === editingComment),
+      {
+        id,
+        note: '',
+        route: here ?? '/',
+        name: str('name') || 'elemento',
+        text: str('text'),
+        html: str('html'),
+        path: str('path'),
+        source: str('source'),
+        x: Number(data.x) || 0,
+        y: Number(data.y) || 0
+      }
+    ])
+    setEditingComment(id)
+  }
+  const removeComment = (id: number) => {
+    setComments((all) => all.filter((c) => c.id !== id))
+    setEditingComment((e) => (e === id ? null : e))
+    commentApi('remove', id)
+  }
+  const saveComment = (id: number, note: string) => {
+    setComments((all) => all.map((c) => (c.id === id ? { ...c, note } : c)))
+    setEditingComment((e) => (e === id ? null : e))
+  }
+  const discardComments = () => {
+    setComments([])
+    setEditingComment(null)
+    commentApi('clear')
+    stopCommenting()
+  }
+  const ready = comments.filter((c) => c.note.trim())
+
+  // Visualizar: os comentários desligam junto, e o Esc dado dentro da página sai da visualização.
   useEffect(() => {
-    if (viewing) clearPick()
+    if (viewing) stopCommenting()
   }, [viewing]) // eslint-disable-line react-hooks/exhaustive-deps
   const viewingRef = useRef(viewing)
   viewingRef.current = viewing
@@ -262,22 +336,32 @@ export function PrototypePane({
 
   // Lista do campo de endereço: o da tela, as rotas que o Claude informou nesta conversa e as já
   // abertas no projeto (enquanto o app está aberto).
-  const routeOptions = useMemo(() => {
-    const said = routesIn(history.messages.filter((m) => m.role === 'assistant').map((m) => m.text).join('\n'))
-    const all: RouteOption[] = [
-      ...(design.route ? [{ route: design.route, name: design.name }] : []),
-      ...said.map((r) => ({ route: r })),
-      ...visitedRoutes(projectPath).map((r) => ({ route: r }))
-    ]
-    const seen = new Set<string>()
-    return all.filter((o) => !seen.has(o.route) && !!seen.add(o.route))
-  }, [design.route, design.name, history.messages, projectPath])
+  const known = useKnownRoutes(projectPath, app)
+  const said = useMemo(
+    () => routesIn(history.messages.filter((m) => m.role === 'assistant').map((m) => m.text).join('\n')),
+    [history.messages]
+  )
+  const routeOptions = dedupe([
+    ...(design.route ? [{ route: design.route, name: design.name }] : []),
+    ...said.map((r) => ({ route: r, name: 'do Claude' })),
+    ...known
+  ])
   const goTo = (next: string) => {
-    rememberRoute(projectPath, next)
+    rememberRoute(rkey, next)
     setRouteDraft(next)
     setCurrent(null)
-    setOpening(null)
+    setOpening(next)
     onUpdate({ route: next })
+    setReload((n) => n + 1)
+  }
+
+  // Outro app do projeto: abre na página inicial dele, e a escolha fica no design.
+  const switchApp = (next: number) => {
+    setPortChoice(next)
+    setCurrent(null)
+    setOpening('/')
+    setRouteDraft('/')
+    onUpdate({ port: next, route: '/' })
     setReload((n) => n + 1)
   }
 
@@ -295,45 +379,54 @@ export function PrototypePane({
   // /mcp abre a lista de servidores aqui no app, como na conversa.
   const [mcpOpen, setMcpOpen] = useState(false)
 
+  // Agentes para o @, como na conversa: relidos ao abrir o design, para pegar os criados na biblioteca.
+  const [agents, setAgents] = useState<AgentDef[]>([])
+  useEffect(() => {
+    let alive = true
+    void window.api.agents.list(projectPath).then((list) => alive && setAgents(list))
+    return () => {
+      alive = false
+    }
+  }, [projectPath])
+
   const send = async (text: string, files: File[]) => {
     const images = await Promise.all(
       files.filter(isSendableImage).map(async (f) => ({ mediaType: f.type, data: await toBase64(f) }))
     )
     // A primeira mensagem da conversa leva o que fazer: criar a tela do zero, ou ajustar a que já
-    // existe. As seguintes, a parte escolhida e o lembrete do endereço. Comando (/compact, /clear...)
-    // vai sozinho: com texto junto, o Claude Code não o reconhece como comando.
+    // existe. Todas, a página que a pessoa está vendo. Comando (/compact, /clear...) vai sozinho:
+    // com texto junto, o Claude Code não o reconhece como comando.
     const command = text.trimStart().startsWith('/')
-    const hint = command
-      ? ''
-      : sessionId
-        ? followHint(here, pick)
-        : design.existing
-          ? existingHint(design, pick, here)
-          : startHint(design)
+    // Comentários escritos vão junto (o texto deles já veio montado pelo chat, ver extraSend).
+    const withComments = !command && ready.length > 0
+    const marks = withComments ? markOf('comentarios', ready.length === 1 ? '1 comentário' : `${ready.length} comentários`) : ''
+    // O estado da tela, lido na hora (no máximo 0,8s de espera).
+    const state = !command && url && origin ? await window.api.design.snapshot(origin) : null
+    const hint = command ? '' : contextHint(state) + (withComments ? commentsHint(ready) : '') + (agentHint(mentionedAgents(text, agents)) ?? '') + marks
     sendPrototype({ design, cwd: projectPath, account, text, images, hint })
-    // O pedido já foi: a seleção desliga, com ou sem parte escolhida.
-    clearPick()
+    // O pedido já foi: os comentários somem e o modo comentar desliga.
+    if (withComments) discardComments()
   }
+
+  // O contexto de todo pedido: a página que a pessoa vê (e, no primeiro, o que fazer).
+  const contextHint = (state: string | null) => {
+    const page: PageInView | undefined = here
+      ? {
+          path: here,
+          title: pageTitle || undefined,
+          url: origin ? origin + here : undefined,
+          device: device ?? design.device,
+          state,
+          app: apps.length > 1 && app?.dir ? app.dir : undefined
+        }
+      : undefined
+    return sessionId ? followHint(page) : design.existing ? existingHint(design, here, page) : startHint(design)
+  }
+
 
   return (
     <AccountContext.Provider value={account}>
       <section className={`${SIDE} ${viewing ? 'hidden' : ''}`} style={{ width: sideWidth }}>
-        {/* A parte escolhida na página; a conversa vem embaixo. */}
-        {pick && (
-        <div className="shrink-0 border-b border-line px-3 py-2">
-            <span className="flex w-fit max-w-full items-center gap-1 rounded-md bg-accent/15 py-0.5 pl-2 pr-1 text-[12px] text-accent">
-              <span className="truncate">{pick.section ? `${pick.section} › ${pick.name}` : `Parte: ${pick.name}`}</span>
-              <button
-                aria-label="Soltar a parte escolhida"
-                title="Soltar a parte escolhida"
-                onClick={clearPick}
-                className="flex size-4 shrink-0 items-center justify-center rounded hover:bg-accent/20"
-              >
-                <X size={11} />
-              </button>
-            </span>
-        </div>
-        )}
         <div className="flex min-h-0 flex-1 flex-col">
           <ChatView
             draftKey={key}
@@ -353,44 +446,88 @@ export function PrototypePane({
             onSettingChange={changeSettings}
             contextPercent={contextPercent}
             compact
+            agents={agents}
+            composerAbove={
+              <div className="mb-1.5 flex items-center gap-1">
+                <button
+                  onClick={toggleCommenting}
+                  disabled={!url}
+                  aria-pressed={commenting}
+                  title={url ? 'Clicar na página para deixar comentários, como no Figma' : 'A página ainda não abriu'}
+                  className={`flex h-6 items-center gap-1.5 rounded-md px-2 text-[12px] disabled:opacity-40 ${
+                    commenting ? 'bg-accent/15 text-accent' : 'text-muted enabled:hover:bg-fill enabled:hover:text-text'
+                  }`}
+                >
+                  <MessageSquarePlus size={13} />
+                  {commenting ? 'Comentando…' : 'Comentar'}
+                </button>
+              </div>
+            }
+            cleanText={withoutAppLines}
+            extraSend={ready.length ? { compose: (typed) => (typed ? `${typed}\n\n` : '') + commentsText(ready) } : undefined}
+            composerChips={
+              comments.length > 0 && (
+                <div className="flex flex-wrap gap-1 px-2 pt-2">
+                  {comments.length > 0 && (
+                    <span
+                      title={ready.length ? 'Vão junto com o próximo envio' : 'Escreva nos balões da página'}
+                      className="flex min-w-0 max-w-full items-center gap-1 rounded-md bg-accent/15 py-0.5 pl-2 pr-1 text-[12px] text-accent"
+                    >
+                      <MessageSquarePlus size={11} className="shrink-0" />
+                      <span className="truncate">{ready.length === 1 ? '1 comentário' : `${ready.length} comentários`}</span>
+                      <button
+                        aria-label="Descartar os comentários"
+                        title="Descartar os comentários"
+                        onClick={discardComments}
+                        className="flex size-4 shrink-0 items-center justify-center rounded hover:bg-accent/20"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )
+            }
           />
         </div>
         <SideResizer />
       </section>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {origin && !viewing && !fresh && (
-          <div className="flex shrink-0 items-center gap-1.5 border-b border-line px-3 py-1.5">
-            {ports.length > 1 ? (
+        {/* Barra de endereço: também em Visualizar, com folga à direita para os botões dela. */}
+        {origin && !fresh && (
+          <div className={`flex shrink-0 items-center gap-1.5 border-b border-line py-1.5 pl-3 ${viewing ? 'pr-28' : 'pr-3'}`}>
+            {apps.length > 1 ? (
               <select
                 value={port}
-                onChange={(e) => setPortChoice(Number(e.target.value))}
-                className="rounded-md bg-fill px-1.5 py-0.5 text-[12px] text-muted outline-none"
+                onChange={(e) => switchApp(Number(e.target.value))}
+                title="App do projeto (o comando dev sobe vários)"
+                className="h-6 max-w-40 shrink-0 rounded-md bg-fill px-1.5 text-[12px] text-text outline-none"
               >
-                {ports.map((p) => (
-                  <option key={p} value={p}>
-                    localhost:{p}
+                {allApps.filter((a) => apps.includes(a) || a.port === port).map((a) => (
+                  <option key={a.port} value={a.port}>
+                    {appLabel(a)}
                   </option>
                 ))}
               </select>
             ) : (
-              <span className="shrink-0 text-[12px] text-faint">localhost:{port}</span>
+              <span className="shrink-0 text-[12px] text-faint">{app ? appLabel(app) : `localhost:${port}`}</span>
             )}
             <RouteField value={routeDraft} onChange={setRouteDraft} onGo={goTo} options={routeOptions} />
             <button aria-label="Recarregar a página" title="Recarregar a página" onClick={reloadHere} className={ICON_BUTTON}>
               <RotateCw size={13} />
             </button>
-            <button
-              onClick={togglePick}
-              disabled={!url}
-              title="Escolher uma parte da página para mudar (Esc cancela)"
-              className={`flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-[12px] disabled:opacity-40 ${
-                picking ? 'bg-accent text-white' : 'text-muted hover:bg-fill hover:text-text'
-              }`}
-            >
-              <Crosshair size={13} />
-              Selecionar
-            </button>
+            {onViewing && (
+              <button
+                aria-label="Visualizar"
+                aria-pressed={viewing}
+                title={viewing ? 'Voltar ao chat (Esc)' : 'Visualizar: ver só a página, sem o chat'}
+                onClick={onViewing}
+                className={`${ICON_BUTTON} ${viewing ? 'bg-accent/15 text-accent' : ''}`}
+              >
+                <Eye size={13} />
+              </button>
+            )}
             {url && (
               <button aria-label="Abrir no navegador" title="Abrir no navegador" onClick={() => window.open(origin && here ? origin + here : url)} className={ICON_BUTTON}>
                 <ExternalLink size={13} />
@@ -405,10 +542,24 @@ export function PrototypePane({
             device={device ?? design.device}
             reload={reload}
             frameRef={frameRef}
-            // Página recarregada: o seletor que estava ligado volta a ela.
+            overlay={(scale) =>
+              comments.length > 0 && (
+                <CommentLayer
+                  comments={comments}
+                  route={here ?? '/'}
+                  pos={commentPos}
+                  scale={scale}
+                  editing={editingComment}
+                  onEdit={setEditingComment}
+                  onSave={saveComment}
+                  onRemove={removeComment}
+                />
+              )
+            }
+            // Página recarregada: os scripts do app (endereço, comentários, Esc) voltam a ela.
             onLoad={() => {
               if (origin) window.api.design.track(origin)
-              if (picking) picker(true)
+              if (commenting) commentApi('on')
               if (origin && viewing) window.api.design.escape(origin, true)
             }}
           />
@@ -416,16 +567,16 @@ export function PrototypePane({
           <div className="min-h-0 flex-1 overflow-y-auto">{start}</div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
-            {running || server?.state === 'starting' ? (
+            {!server || checking || running || server.state === 'starting' ? (
               <Loader2 size={20} className="animate-spin text-faint" />
             ) : (
               <Code2 size={20} className="text-faint" />
             )}
             <p className={`max-w-sm text-xs leading-relaxed ${server?.error ? 'text-red-400' : 'text-faint'}`}>
-              {serverText(server, running)}
+              {serverText(server, running, checking)}
             </p>
             {server?.state === 'stopped' && server.error && (
-              <button onClick={() => void startProjectServer(projectPath)} className={`${BUTTON} hover:bg-surface-2`}>
+              <button onClick={() => void startProjectServer(projectPath, true)} className={`${BUTTON} hover:bg-surface-2`}>
                 Tentar de novo
               </button>
             )}

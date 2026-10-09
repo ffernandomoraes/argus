@@ -56,7 +56,9 @@ function withAgents(conversations: ConversationSummary[]): Row[] {
   for (const conversation of conversations) {
     const parent = rows.length
     rows.push({ kind: 'conversation', conversation })
-    for (const agent of getRunningAgents(conversation.id)) rows.push({ kind: 'agent', agent, conversation, parent })
+    // Design: os agentes são da conversa do protótipo dele (a sessão), não do item da lista.
+    const key = conversation.kind === 'design' ? conversation.sessionId : conversation.id
+    for (const agent of key ? getRunningAgents(key) : []) rows.push({ kind: 'agent', agent, conversation, parent })
   }
   return rows
 }

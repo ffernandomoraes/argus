@@ -43,7 +43,9 @@ function designToConversation(d: DesignSummary): ConversationSummary {
     status: d.live ?? 'idle',
     updatedAt: d.updatedAt,
     contextPercent: 0,
-    designId: d.id
+    designId: d.id,
+    // A conversa do protótipo: os agentes dela aparecem embaixo do item, como numa conversa comum.
+    ...(d.sessionId && { sessionId: d.sessionId })
   }
 }
 

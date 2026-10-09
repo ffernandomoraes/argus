@@ -106,6 +106,13 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
 
   return (
     <div className="relative" style={{ width: INSTANCE_WIDTH }}>
+      {/* Branch atual, fora do card: acima do canto esquerdo, na mesma altura e no mesmo estilo das ações. */}
+      {branch && (
+        <div className="absolute bottom-full left-0 mb-1.5 flex h-6 max-w-[calc(100%-64px)] items-center rounded-md border border-line bg-surface px-2 text-[12px] text-muted shadow-sm">
+          <BranchLabel branch={branch} changes={uncommitted?.length} highlight />
+        </div>
+      )}
+
       {/* Ações da pasta, fora do card: acima do canto direito. */}
       <div className="nodrag absolute bottom-full right-0 mb-1.5 flex items-center gap-1">
         <ProjectServerButton path={data.path} />
@@ -134,7 +141,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
         {newMenu && createPortal(<ContextMenu menu={newMenu} onClose={() => setNewMenu(null)} />, document.body)}
       </div>
 
-      {/* Uma caixa só: cabeçalho com a pasta e a branch, e as conversas como linhas dentro dela.
+      {/* Uma caixa só: cabeçalho com a pasta, e as conversas como linhas dentro dela.
           O ícone fica num quadradinho tingido de leve: na cor do grupo, para não brigar com ele;
           fora de grupo, no azul de pasta do Finder. Selecionada, a borda vai para a cor de destaque. */}
       <div
@@ -149,14 +156,6 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
             <EditableName id={id} value={data.name} className="text-[15px] font-semibold leading-tight" />
             <PathLabel path={data.path} className="text-[12px] text-faint" />
           </div>
-          {branch && (
-            <BranchLabel
-              branch={branch}
-              changes={uncommitted?.length}
-              highlight
-              className="max-w-[40%] shrink text-[12px] text-muted"
-            />
-          )}
           {conversations.length > 0 && (
             <button
               aria-label={collapsed ? 'Mostrar conversas' : 'Recolher conversas'}

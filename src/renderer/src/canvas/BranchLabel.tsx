@@ -2,7 +2,7 @@ import { GitBranch } from 'lucide-react'
 
 // Branch do git: ícone e nome, cortado no fim quando falta espaço (o nome inteiro fica no title).
 // Com arquivos não comitados, o número deles vem depois do nome, numa pílula cinza discreta
-// (ou âmbar, com `highlight`, no cabeçalho da pasta).
+// (ou âmbar, com `highlight`, na etiqueta acima da pasta).
 export function BranchLabel({
   branch,
   changes,

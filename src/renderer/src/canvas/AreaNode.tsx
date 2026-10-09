@@ -104,9 +104,11 @@ export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
             startRename(id)
           }}
           className="flex h-6 min-w-0 max-w-full items-center rounded-full px-3 text-white shadow-sm [&_input]:text-text"
-          style={{ background: color }}
+          // Escurecida para o branco ler bem: com 35% de preto toda a paleta passa de 4,5:1 (o âmbar fica em ~4,7).
+          style={{ background: `color-mix(in srgb, ${color} 65%, black)` }}
         >
-          <EditableName id={id} value={data.label} className="text-[12px] font-semibold" />
+          {/* Sempre em maiúsculas, também ao renomear; o nome salvo fica como foi digitado. */}
+          <EditableName id={id} value={data.label} className="text-[12px] font-semibold uppercase tracking-wide" />
         </div>
         <AccountTag account={data.account} color={color} />
       </div>

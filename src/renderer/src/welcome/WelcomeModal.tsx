@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import type { AuthState } from '../../../shared/auth'
 import { IS_WIN, keys } from '../platform'
@@ -96,7 +97,7 @@ function steps(auth: AuthState): Step[] {
 
 // Boas-vindas em até 5 etapas: o que o Argus faz e, por último, a configuração do Claude Code.
 // startAtSetup: já viu o passo a passo e só falta configurar (sem login, Claude desinstalado).
-// Só fecha com a configuração pronta: sem ela, o canvas não funciona.
+// Só fecha com a configuração pronta: sem ela, o canvas não funciona. Antes disso, o X leva à configuração.
 export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; startAtSetup: boolean; onDone: () => void }) {
   const list = steps(auth)
   const last = list.length - 1
@@ -104,6 +105,7 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
   const ready = setupReady(auth)
   useEscape(onDone, ready)
   const step = list[index]
+  const closeBlocked = !ready && index === last
 
   return (
     <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 px-6 pb-6 pt-12 backdrop-blur-[2px]">
@@ -112,9 +114,19 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
       <div
         role="dialog"
         aria-label="Boas-vindas ao Argus"
-        className="flex max-h-full w-[min(540px,100%)] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
+        className="relative flex max-h-full w-[min(540px,100%)] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
       >
-        <div key={index} className="welcome-step min-h-0 flex-1 overflow-y-auto p-6 pb-4">
+        <button
+          aria-label="Fechar"
+          title={ready ? 'Fechar' : closeBlocked ? 'Termine a configuração para fechar' : 'Ir para a configuração'}
+          disabled={closeBlocked}
+          onClick={() => (ready ? onDone() : setIndex(last))}
+          className="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-md text-muted hover:bg-fill hover:text-text disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+        >
+          <X size={15} />
+        </button>
+        {/* Topo com folga para o X não cobrir a ilustração. */}
+        <div key={index} className="welcome-step min-h-0 flex-1 overflow-y-auto px-6 pt-12 pb-4">
           {/* Pontos do canvas em toda a moldura, também nas laterais que a ilustração não cobre. */}
           <div
             className="h-[170px] overflow-hidden rounded-xl border border-line bg-bg"
@@ -144,11 +156,6 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
             ))}
           </div>
           <div className="flex-1" />
-          {index < last && (
-            <button onClick={() => setIndex(last)} className="px-2 text-xs text-muted hover:text-text">
-              Pular
-            </button>
-          )}
           {index > 0 && (
             <button onClick={() => setIndex(index - 1)} className="rounded-md border border-line px-3 py-1.5 text-sm text-text hover:bg-surface-2">
               Voltar

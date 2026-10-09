@@ -11,6 +11,18 @@ import { powershell } from './winProcesses'
 // Arquivos que o sistema cria sozinho nas pastas (Finder e Explorador do Windows).
 const HIDDEN = new Set(['.git', '.DS_Store', 'Thumbs.db', 'desktop.ini'])
 const READ_LIMIT = 1_000_000
+// Acima disso nem o primeiro 1 MB aparece: arquivo desse tamanho quase nunca é código.
+const PREVIEW_LIMIT = 5_000_000
+// Documentos, imagens, mídia, fontes e compactados: nem chega a ler, o editor só mostraria lixo.
+const NO_PREVIEW = new Set(
+  (
+    'pdf doc docx xls xlsx ppt pptx odt ods odp rtf pages numbers key epub ' +
+    'png jpg jpeg gif webp bmp ico icns tif tiff heic avif psd ai sketch fig ' +
+    'mp3 wav ogg flac m4a aac mp4 mov avi mkv webm ' +
+    'woff woff2 ttf otf eot ' +
+    'zip gz tgz tar rar 7z bz2 xz dmg pkg iso exe msi dll so dylib bin wasm jar class pyc o a sqlite db'
+  ).split(' ')
+)
 // Caracteres que o Windows não aceita em nome de arquivo.
 const INVALID_NAME = IS_WIN ? /[\\/<>:"|?*]/ : /\//
 
@@ -45,11 +57,22 @@ export async function listDir(root: string, rel: string): Promise<FileEntry[]> {
     .sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name))
 }
 
+// Por que o arquivo não aparece (no editor ou no diff), decidido só pelo nome e tamanho. null = pode mostrar.
+export function noPreview(file: string, size: number, limit: number, what: string): string | null {
+  const ext = extname(file).slice(1).toLowerCase()
+  if (NO_PREVIEW.has(ext)) return `Sem ${what} para arquivos .${ext}.`
+  if (size <= limit) return null
+  const mb = (size / 1_000_000).toFixed(1).replace('.', ',')
+  return `Arquivo muito grande (${mb} MB), sem ${what}.`
+}
+
 export async function readFile(root: string, rel: string): Promise<FileContent> {
   const file = insideRoot(root, rel)
   if (!file) return { ok: false, error: 'Caminho fora do projeto.' }
   try {
     const { size } = await stat(file)
+    const blocked = noPreview(file, size, PREVIEW_LIMIT, 'pré-visualização')
+    if (blocked) return { ok: false, error: blocked }
     const handle = await open(file, 'r')
     const buffer = Buffer.alloc(Math.min(size, READ_LIMIT))
     await handle.read(buffer, 0, buffer.length, 0)

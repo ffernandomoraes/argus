@@ -5,6 +5,7 @@ import { promisify } from 'node:util'
 import type { FileDiff } from '../shared/files'
 import type { DiffHunk } from '../shared/history'
 import type { UncommittedFile } from '../shared/sessions'
+import { noPreview } from './files'
 import { expandHome, insideRoot } from './paths'
 import { gitPath } from './platform'
 
@@ -152,6 +153,7 @@ function parseDiff(text: string): DiffHunk[] {
 }
 
 const BINARY = /^Binary files .* differ$/m
+const DIFF_LIMIT = 1_000_000
 
 // Mudanças do arquivo contra o último commit, juntando o que já foi preparado e o que não.
 export async function fileDiff(root: string, rel: string): Promise<FileDiff> {
@@ -159,6 +161,10 @@ export async function fileDiff(root: string, rel: string): Promise<FileDiff> {
   if (!file) return { ok: false, error: 'Caminho fora do projeto.' }
   const repo = findRepo(file)
   if (!repo) return { ok: false, error: 'A pasta não é um repositório git.' }
+  // A tela de diff desenha todas as linhas de uma vez: arquivo grande travaria o app. Arquivo
+  // excluído não tem tamanho no disco e segue para o diff.
+  const blocked = noPreview(file, statSync(file, { throwIfNoEntry: false })?.size ?? 0, DIFF_LIMIT, 'diff')
+  if (blocked) return { ok: false, error: blocked }
   try {
     const flags = ['--no-optional-locks', 'diff', '--no-color', '--no-ext-diff']
     let out = await gitOutput(repo.root, [...flags, 'HEAD', '--', file]).catch(() => '')

@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 690" width="1200" height="690" role="img" aria-label="Canvas do Argus com projetos agrupados, conversas rodando e o painel da conversa pedindo permissão">
+<title>Canvas do Argus com projetos agrupados, conversas rodando e o painel da conversa pedindo permissão</title>
+<style>
+svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+--bg:#ececec;--surface:#fff;--surface2:#ebebeb;--line:#dedede;--line2:#c6c6c6;--text:#1d1d1f;--muted:#6e6e73;
+--faint:#8e8e93;--dots:#c4c4c4;--accent:#0a84ff;--run:#2563eb;--need:#d97706;--done:#059669;--add:#dcfce7;--del:#fee2e2;
+--addtx:#047857;--deltx:#b91c1c;--shadow:#000;--shadowop:.10}
+@media (prefers-color-scheme:dark){svg{--bg:#1c1c1c;--surface:#282828;--surface2:#333;--line:#3a3a3a;--line2:#4c4c4c;
+--text:#f4f4f4;--muted:#a5a5a5;--faint:#7a7a7a;--dots:#3c3c3c;--run:#60a5fa;--need:#fbbf24;--done:#34d399;
+--add:#10391f;--del:#3f1d1d;--addtx:#6ee7b7;--deltx:#fca5a5;--shadowop:.45}}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.bg{fill:var(--bg)}.sf{fill:var(--surface);stroke:var(--line)}.sf2{fill:var(--surface);stroke:var(--line2)}
+.s2{fill:var(--surface2)}.sl{stroke:var(--line)}.sl2{stroke:var(--line2)}.tx{fill:var(--text)}.mu{fill:var(--muted)}
+.fa{fill:var(--faint)}.dot{fill:var(--dots)}.acc{fill:var(--accent)}.run{fill:var(--run)}.need{fill:var(--need)}
+.done{fill:var(--done)}.add{fill:var(--add)}.del{fill:var(--del)}.addtx{fill:var(--addtx)}.deltx{fill:var(--deltx)}
+.stx{stroke:var(--text)}.smu{stroke:var(--muted)}.sfa{stroke:var(--faint)}.srun{stroke:var(--run)}.sacc{stroke:var(--accent)}
+.shadow{flood-color:var(--shadow);flood-opacity:var(--shadowop)}
+</style>
+<defs>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.1" class="dot"/></pattern>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="10" class="shadow"/></filter>
+</defs>
+<clipPath id="win"><rect x="1" y="1" width="1198" height="688" rx="14"/></clipPath>
+<g clip-path="url(#win)">
+<rect width="1200" height="690" class="bg"/>
+<rect y="38" width="1200" height="652" fill="url(#dots)"/>
+<rect width="1200" height="38" class="bg"/>
+<path d="M0 38.5 H1200" class="sl"/>
+</g>
+<rect x="1" y="1" width="1198" height="688" rx="14" fill="none" class="sl2"/>
+<circle cx="20" cy="19" r="6" fill="#ff5f57"/><circle cx="40" cy="19" r="6" fill="#febc2e"/><circle cx="60" cy="19" r="6" fill="#28c840"/>
+<text x="600.0" y="24" font-size="13" class="tx" font-weight="600" text-anchor="middle">Argus</text>
+<text x="1182" y="24" font-size="11" class="fa" text-anchor="end">0.1.21</text><rect x="1030" y="15" width="70" height="6" rx="3" class="s2"/><rect x="1030" y="15" width="44" height="6" rx="3" class="done"/><text x="1022" y="22" font-size="10.5" class="mu" text-anchor="end">Uso 62%</text>
+<rect x="34" y="92" width="528" height="316" rx="18" fill="#3b82f6" fill-opacity=".07" stroke="#3b82f6" stroke-opacity=".5"/><rect x="50" y="80" width="79.6" height="24" rx="12" fill="#3b82f6"/><text x="89.8" y="96.5" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">Trabalho</text>
+<g transform="translate(52 114)">
+<rect width="246" height="180" rx="14" class="sf" filter="url(#sh)"/>
+<rect x="12" y="12" width="22" height="22" rx="6" fill="#3b82f6" fill-opacity=".16"/><path d="M17 19.5 h4 l1.6 1.8 h6.4 v7.2 h-12 z" fill="none" stroke="#3b82f6" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="42" y="28" font-size="13" class="tx" font-weight="600">site</text>
+<path d="M167.96 17 v10 M167.96 24 c0-4 6-3 6-7" fill="none" class="sfa" stroke-width="1.3"/><circle cx="173.96" cy="16" r="1.8" fill="none" class="sfa" stroke-width="1.3"/>
+<text x="179.96" y="27" font-size="10.5" class="mu mono">main</text>
+<rect x="212" y="16" width="22" height="16" rx="8" class="need" fill-opacity=".18"/><text x="223" y="28" font-size="10" class="need" font-weight="600" text-anchor="middle">3</text>
+<rect x="6" y="44" width="234" height="28" rx="8" class="acc" fill-opacity=".14"/>
+<circle cx="20" cy="58" r="7" class="run" fill-opacity=".18"/><circle cx="20" cy="58" r="3.6" class="run"/>
+<text x="32" y="62" font-size="12" class="tx">Refatorar checkout</text>
+<path d="M20 66 v10 q0 4 4 4 h6" fill="none" class="sl2" stroke-width="1.2"/>
+<circle cx="35" cy="80" r="2.6" class="run" fill-opacity=".7"/>
+<text x="43" y="84" font-size="11" class="mu">revisor - lendo cart.ts</text>
+<path d="M20 88 v10 q0 4 4 4 h6" fill="none" class="sl2" stroke-width="1.2"/>
+<circle cx="35" cy="102" r="2.6" class="run" fill-opacity=".7"/>
+<text x="43" y="106" font-size="11" class="mu">testador - pnpm test</text>
+<circle cx="20" cy="130" r="4" class="done"/>
+<text x="32" y="134" font-size="12" class="tx">Ajustar header</text>
+<text x="232" y="134" font-size="10.5" class="fa" text-anchor="end">2 min</text>
+<circle cx="20" cy="158" r="4" class="done"/>
+<text x="32" y="162" font-size="12" class="tx">Nova landing</text>
+<text x="232" y="162" font-size="10.5" class="fa" text-anchor="end">1 h</text>
+</g>
+<g transform="translate(312 114)">
+<rect width="232" height="108" rx="14" class="sf" filter="url(#sh)"/>
+<rect x="12" y="12" width="22" height="22" rx="6" fill="#3b82f6" fill-opacity=".16"/><path d="M17 19.5 h4 l1.6 1.8 h6.4 v7.2 h-12 z" fill="none" stroke="#3b82f6" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="42" y="28" font-size="13" class="tx" font-weight="600">api</text>
+<path d="M186.47 17 v10 M186.47 24 c0-4 6-3 6-7" fill="none" class="sfa" stroke-width="1.3"/><circle cx="192.47" cy="16" r="1.8" fill="none" class="sfa" stroke-width="1.3"/>
+<text x="198.47" y="27" font-size="10.5" class="mu mono">dev</text>
+<circle cx="20" cy="58" r="4" class="need"/>
+<text x="32" y="62" font-size="12" class="tx">Migrar o banco</text>
+<text x="218" y="62" font-size="10.5" class="need" font-weight="600" text-anchor="end">esperando você</text>
+<circle cx="20" cy="86" r="4" class="done"/>
+<text x="32" y="90" font-size="12" class="tx">Rate limit</text>
+<text x="218" y="90" font-size="10.5" class="fa" text-anchor="end">ontem</text>
+</g>
+<g transform="translate(312 254)">
+<rect width="232" height="108" rx="14" class="sf" filter="url(#sh)"/>
+<rect x="12" y="12" width="22" height="22" rx="6" fill="#3b82f6" fill-opacity=".16"/><path d="M17 19.5 h4 l1.6 1.8 h6.4 v7.2 h-12 z" fill="none" stroke="#3b82f6" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="42" y="28" font-size="13" class="tx" font-weight="600">design-system</text>
+<path d="M179.96 17 v10 M179.96 24 c0-4 6-3 6-7" fill="none" class="sfa" stroke-width="1.3"/><circle cx="185.96" cy="16" r="1.8" fill="none" class="sfa" stroke-width="1.3"/>
+<text x="191.96" y="27" font-size="10.5" class="mu mono">main</text>
+<circle cx="20" cy="58" r="7" class="run" fill-opacity=".18"/><circle cx="20" cy="58" r="3.6" class="run"/>
+<text x="32" y="62" font-size="12" class="tx">Tokens de cor</text>
+<circle cx="20" cy="86" r="4" class="done"/>
+<text x="32" y="90" font-size="12" class="tx">Botão secundário</text>
+<text x="218" y="90" font-size="10.5" class="fa" text-anchor="end">3 h</text>
+</g>
+<g transform="translate(52 314)">
+<rect width="246" height="80" rx="14" class="sf" filter="url(#sh)"/>
+<rect x="12" y="12" width="22" height="22" rx="6" fill="#3b82f6" fill-opacity=".16"/><path d="M17 19.5 h4 l1.6 1.8 h6.4 v7.2 h-12 z" fill="none" stroke="#3b82f6" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="42" y="28" font-size="13" class="tx" font-weight="600">app-mobile</text>
+<path d="M193.96 17 v10 M193.96 24 c0-4 6-3 6-7" fill="none" class="sfa" stroke-width="1.3"/><circle cx="199.96" cy="16" r="1.8" fill="none" class="sfa" stroke-width="1.3"/>
+<text x="205.96" y="27" font-size="10.5" class="mu mono">main</text>
+<circle cx="20" cy="58" r="4" class="done"/>
+<text x="32" y="62" font-size="12" class="tx">Push de pedidos</text>
+<text x="232" y="62" font-size="10.5" class="fa" text-anchor="end">5 h</text>
+</g>
+<rect x="34" y="452" width="374" height="142" rx="18" fill="#10b981" fill-opacity=".07" stroke="#10b981" stroke-opacity=".5"/><rect x="50" y="440" width="72.4" height="24" rx="12" fill="#10b981"/><text x="86.2" y="456.5" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">Pessoal</text>
+<g transform="translate(52 476)">
+<rect width="164" height="80" rx="14" class="sf" filter="url(#sh)"/>
+<rect x="12" y="12" width="22" height="22" rx="6" fill="#10b981" fill-opacity=".16"/><path d="M17 19.5 h4 l1.6 1.8 h6.4 v7.2 h-12 z" fill="none" stroke="#10b981" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="42" y="28" font-size="13" class="tx" font-weight="600">blog</text>
+<circle cx="20" cy="58" r="4" class="done"/>
+<text x="32" y="62" font-size="12" class="tx">Post novo</text>
+</g>
+<g transform="translate(228 476)">
+<rect width="164" height="80" rx="14" class="sf" filter="url(#sh)"/>
+<rect x="12" y="12" width="22" height="22" rx="6" fill="#10b981" fill-opacity=".16"/><path d="M17 19.5 h4 l1.6 1.8 h6.4 v7.2 h-12 z" fill="none" stroke="#10b981" stroke-width="1.4" stroke-linejoin="round"/>
+<text x="42" y="28" font-size="13" class="tx" font-weight="600">receitas</text>
+<circle cx="20" cy="58" r="7" class="run" fill-opacity=".18"/><circle cx="20" cy="58" r="3.6" class="run"/>
+<text x="32" y="62" font-size="12" class="tx">Busca</text>
+</g>
+<path d="M448 470 h176 a16 16 0 0 1 16 16 v28 a16 16 0 0 1 -16 16 h-188 a4 4 0 0 1 -4 -4 v-40 a16 16 0 0 1 16 -16 z" class="sf" filter="url(#sh)"/><path d="M448 470 h176 a16 16 0 0 1 16 16 v28 a16 16 0 0 1 -16 16 h-188 a4 4 0 0 1 -4 -4 v-40 a16 16 0 0 1 16 -16 z" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-opacity=".45"/><text x="446" y="493" font-size="12.5" class="tx">Revisar o checkout antes</text><text x="446" y="511" font-size="12.5" class="tx">da reunião de sexta</text>
+<g transform="translate(580 92)">
+<rect width="214" height="150" rx="12" fill="#141416" stroke="#3a3a3f" filter="url(#sh)"/>
+<path d="M0 30.5 H214" stroke="#2c2c31"/>
+<text x="14" y="20" font-size="11" fill="#a8a8b2">Terminal - site</text>
+<text x="14" y="52" font-size="11" class="mono" fill="#f0f0f2">~/site ❯ pnpm dev</text>
+<text x="14" y="70" font-size="11" class="mono" fill="#34d399">ready  localhost:3000</text>
+<text x="14" y="88" font-size="11" class="mono" fill="#a8a8b2">~/site ❯</text>
+<rect x="14" y="95" width="7" height="13" fill="#34d399"/>
+</g>
+<rect x="620" y="556" width="174" height="96" rx="12" class="sf" filter="url(#sh)"/>
+<rect x="632" y="570" width="34" height="26" rx="3" fill="#3b82f6" fill-opacity=".55"/>
+<rect x="670" y="570" width="30" height="16" rx="3" fill="#3b82f6" fill-opacity=".55"/>
+<rect x="670" y="590" width="30" height="16" rx="3" fill="#3b82f6" fill-opacity=".55"/>
+<rect x="632" y="600" width="34" height="10" rx="3" fill="#3b82f6" fill-opacity=".55"/>
+<rect x="632" y="620" width="22" height="14" rx="3" fill="#10b981" fill-opacity=".55"/>
+<rect x="658" y="620" width="22" height="14" rx="3" fill="#10b981" fill-opacity=".55"/>
+<rect x="708" y="570" width="18" height="14" rx="3" fill="#6b7280" fill-opacity=".55"/>
+<rect x="628" y="565" width="80" height="54" rx="4" fill="none" class="sacc" stroke-width="1.4"/>
+<text x="738" y="586" font-size="10" class="mu">Pessoal</text><text x="738" y="604" font-size="10" class="mu">Trabalho</text>
+<rect x="156" y="628" width="420" height="40" rx="12" class="sf2" filter="url(#sh)"/><path d="M176 639 l2.4 6.6 l6.6 2.4 l-6.6 2.4 l-2.4 6.6 l-2.4 -6.6 l-6.6 -2.4 l6.6 -2.4 z" class="acc"/><text x="194" y="653" font-size="12.5" class="mu">Cria um grupo Freela com essas duas pastas</text><g fill="none" class="smu" stroke-width="1.5" stroke-linecap="round"><rect x="550.5" y="640" width="7" height="11" rx="3.5"/><path d="M547.5 648 a6.5 6.5 0 0 0 13 0 M554 654.5 v3"/></g>
+<rect x="818" y="52" width="368" height="624" rx="16" class="sf" filter="url(#sh)"/>
+<text x="836" y="82" font-size="14" class="tx" font-weight="600">Refatorar checkout</text><text x="836" y="100" font-size="11" class="mu">site - main</text>
+<circle cx="1134" cy="84" r="9" fill="none" class="sl2" stroke-width="3"/><circle cx="1134" cy="84" r="9" fill="none" stroke="#ef4444" stroke-opacity="0.60" stroke-width="3" stroke-dasharray="23.8 56.5" transform="rotate(-90 1134 84)" stroke-linecap="round"/>
+<g class="mu"><circle cx="1162" cy="84" r="1.6"/><circle cx="1168" cy="84" r="1.6"/><circle cx="1156" cy="84" r="1.6"/></g>
+<path d="M818 116.5 H1186" class="sl"/>
+<rect x="922" y="134" width="246" height="52" rx="14" class="s2"/><text x="936" y="156" font-size="12.5" class="tx">Separa o cálculo do frete num</text><text x="936" y="174" font-size="12.5" class="tx">módulo e cobre com testes.</text>
+<text x="836" y="214" font-size="12.5" class="tx">Movi o cálculo para frete.ts e troquei a</text><text x="836" y="232" font-size="12.5" class="tx">chamada no carrinho:</text>
+<path d="M840 250 l-4 4 l4 4 M848 250 l4 4 l-4 4" fill="none" class="smu" stroke-width="1.4"/><text x="860" y="258" font-size="11.5" class="mu mono">Editou src/cart/frete.ts</text><text x="1168" y="258" font-size="11" class="done mono" text-anchor="end">+12 -3</text>
+<rect x="836" y="268" width="332" height="78" rx="10" class="bg" stroke="var(--line)"/><rect x="837" y="276" width="330" height="20" class="del"/><rect x="837" y="297" width="330" height="40" class="add"/><text x="846" y="290" font-size="11" class="deltx mono">- const frete = peso * 1.2</text><text x="846" y="311" font-size="11" class="addtx mono">+ import { calcularFrete } from './frete'</text><text x="846" y="331" font-size="11" class="addtx mono">+ const frete = calcularFrete(pedido)</text>
+<rect x="836" y="370" width="332" height="118" rx="12" class="sf"/><rect x="836" y="370" width="332" height="118" rx="12" fill="#3b82f6" fill-opacity=".08" stroke="#3b82f6" stroke-opacity=".7"/><text x="850" y="394" font-size="12.5" class="tx" font-weight="600">Permitir este comando?</text><rect x="850" y="406" width="304" height="28" rx="7" class="bg"/><text x="860" y="424" font-size="11.5" class="tx mono">$ pnpm test src/cart</text>
+<rect x="984" y="446" width="80" height="30" rx="8" class="s2"/><text x="1024" y="465" font-size="12" class="tx" font-weight="500" text-anchor="middle">Negar</text><rect x="1072" y="446" width="82" height="30" rx="8" fill="#3b82f6"/><text x="1113" y="465" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">Permitir</text>
+<circle cx="842" cy="514" r="3.5" class="need"/><text x="852" y="518" font-size="11" class="mu">Esperando você - 1:12</text>
+<rect x="830" y="584" width="344" height="78" rx="14" class="sf2"/>
+<text x="844" y="609" font-size="12.5" class="fa">Responder…</text>
+<rect x="844" y="630" width="43.519999999999996" height="22" rx="7" class="s2"/><text x="865.76" y="644.96" font-size="11" class="mu" text-anchor="middle">Opus</text>
+<rect x="893.52" y="630" width="94.55999999999999" height="22" rx="7" class="s2"/><text x="940.8" y="644.96" font-size="11" class="mu" text-anchor="middle">Esforço alto</text>
+<circle cx="1008.0799999999999" cy="641" r="7" fill="none" class="sl2" stroke-width="3"/><circle cx="1008.0799999999999" cy="641" r="7" fill="none" stroke="#ef4444" stroke-opacity="0.58" stroke-width="3" stroke-dasharray="16.7 44.0" transform="rotate(-90 1008.0799999999999 641)" stroke-linecap="round"/>
+<g fill="none" class="smu" stroke-width="1.5" stroke-linecap="round"><rect x="1108.5" y="634" width="7" height="11" rx="3.5"/><path d="M1105.5 642 a6.5 6.5 0 0 0 13 0 M1112 648.5 v3"/></g>
+<rect x="1132" y="626" width="30" height="30" rx="8" class="acc"/><path d="M1147 647 v-12 M1142 640 l5 -5 l5 5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

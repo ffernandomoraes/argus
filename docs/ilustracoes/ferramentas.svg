@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" width="1200" height="460" role="img" aria-label="Explorador de arquivos com as mudanças do git, editor de código, terminal embutido e a biblioteca de agentes">
+<title>Explorador de arquivos com as mudanças do git, editor de código, terminal embutido e a biblioteca de agentes</title>
+<style>
+svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+--bg:#ececec;--surface:#fff;--surface2:#ebebeb;--line:#dedede;--line2:#c6c6c6;--text:#1d1d1f;--muted:#6e6e73;
+--faint:#8e8e93;--dots:#c4c4c4;--accent:#0a84ff;--run:#2563eb;--need:#d97706;--done:#059669;--add:#dcfce7;--del:#fee2e2;
+--addtx:#047857;--deltx:#b91c1c;--shadow:#000;--shadowop:.10}
+@media (prefers-color-scheme:dark){svg{--bg:#1c1c1c;--surface:#282828;--surface2:#333;--line:#3a3a3a;--line2:#4c4c4c;
+--text:#f4f4f4;--muted:#a5a5a5;--faint:#7a7a7a;--dots:#3c3c3c;--run:#60a5fa;--need:#fbbf24;--done:#34d399;
+--add:#10391f;--del:#3f1d1d;--addtx:#6ee7b7;--deltx:#fca5a5;--shadowop:.45}}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.bg{fill:var(--bg)}.sf{fill:var(--surface);stroke:var(--line)}.sf2{fill:var(--surface);stroke:var(--line2)}
+.s2{fill:var(--surface2)}.sl{stroke:var(--line)}.sl2{stroke:var(--line2)}.tx{fill:var(--text)}.mu{fill:var(--muted)}
+.fa{fill:var(--faint)}.dot{fill:var(--dots)}.acc{fill:var(--accent)}.run{fill:var(--run)}.need{fill:var(--need)}
+.done{fill:var(--done)}.add{fill:var(--add)}.del{fill:var(--del)}.addtx{fill:var(--addtx)}.deltx{fill:var(--deltx)}
+.stx{stroke:var(--text)}.smu{stroke:var(--muted)}.sfa{stroke:var(--faint)}.srun{stroke:var(--run)}.sacc{stroke:var(--accent)}
+.shadow{flood-color:var(--shadow);flood-opacity:var(--shadowop)}
+</style>
+<defs>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.1" class="dot"/></pattern>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="10" class="shadow"/></filter>
+</defs>
+<rect x="1" y="1" width="760" height="458" rx="16" class="sf" stroke="var(--line2)"/><path d="M221.5 1 V459" class="sl"/>
+<path d="M19 27 l4 4 l4 -4" fill="none" class="smu" stroke-width="1.4"/>
+<text x="33" y="35" font-size="12.5" class="tx">site</text>
+<path d="M35 55 l4 4 l4 -4" fill="none" class="smu" stroke-width="1.4"/>
+<text x="49" y="63" font-size="12.5" class="tx">src</text>
+<path d="M51 83 l4 4 l4 -4" fill="none" class="smu" stroke-width="1.4"/>
+<text x="65" y="91" font-size="12.5" class="tx">cart</text>
+<text x="81" y="119" font-size="12.5" class="need">cart.ts</text>
+<text x="205" y="119" font-size="11" class="need" font-weight="600" text-anchor="end">M</text>
+<rect x="9" y="129" width="204" height="26" rx="7" class="acc" fill-opacity=".14"/>
+<text x="81" y="147" font-size="12.5" class="done">frete.ts</text>
+<text x="205" y="147" font-size="11" class="done" font-weight="600" text-anchor="end">U</text>
+<text x="81" y="175" font-size="12.5" class="done">frete.test.ts</text>
+<text x="205" y="175" font-size="11" class="done" font-weight="600" text-anchor="end">U</text>
+<path d="M51 195 l4 4 l4 -4" fill="none" class="smu" stroke-width="1.4"/>
+<text x="65" y="203" font-size="12.5" class="tx">components</text>
+<text x="65" y="231" font-size="12.5" class="tx">app.tsx</text>
+<text x="49" y="259" font-size="12.5" class="tx">package.json</text>
+<text x="49" y="287" font-size="12.5" class="tx">README.md</text>
+<rect x="234" y="13" width="112" height="30" rx="8" class="s2"/><text x="248" y="33" font-size="12" class="tx" font-weight="500">frete.ts</text><circle cx="330" cy="28" r="3.5" class="mu"/><rect x="632" y="13" width="112" height="30" rx="8" class="s2"/><text x="688" y="33" font-size="12" class="mu" text-anchor="middle">⌘S salva</text>
+<text x="256" y="81" font-size="12" class="fa mono" text-anchor="end">1</text>
+<text x="272.0" y="81" font-size="12.5" class="mono" xml:space="preserve" style="fill:var(--faint)">// Frete por peso, com mínimo por região</text>
+<text x="256" y="105" font-size="12" class="fa mono" text-anchor="end">2</text>
+<text x="272.0" y="105" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">import</text>
+<text x="317.2" y="105" font-size="12.5" class="tx mono" xml:space="preserve"> { REGIOES } </text>
+<text x="415.1" y="105" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">from</text>
+<text x="445.2" y="105" font-size="12.5" class="mono" xml:space="preserve" style="fill:#16a34a"> './regioes'</text>
+<text x="256" y="129" font-size="12" class="fa mono" text-anchor="end">3</text>
+<text x="256" y="153" font-size="12" class="fa mono" text-anchor="end">4</text>
+<text x="272.0" y="153" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">export function</text>
+<text x="384.9" y="153" font-size="12.5" class="mono" xml:space="preserve" style="fill:#2563eb"> calcularFrete</text>
+<text x="490.4" y="153" font-size="12.5" class="tx mono" xml:space="preserve">(pedido: Pedido) {</text>
+<text x="256" y="177" font-size="12" class="fa mono" text-anchor="end">5</text>
+<text x="272.0" y="177" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">  const</text>
+<text x="324.7" y="177" font-size="12.5" class="tx mono" xml:space="preserve"> regiao = REGIOES[pedido.uf]</text>
+<text x="256" y="201" font-size="12" class="fa mono" text-anchor="end">6</text>
+<text x="272.0" y="201" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">  const</text>
+<text x="324.7" y="201" font-size="12.5" class="tx mono" xml:space="preserve"> porPeso = pedido.peso * regiao.taxa</text>
+<text x="256" y="225" font-size="12" class="fa mono" text-anchor="end">7</text>
+<text x="272.0" y="225" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">  return</text>
+<text x="332.2" y="225" font-size="12.5" class="tx mono" xml:space="preserve"> Math.max(porPeso, regiao.minimo)</text>
+<text x="256" y="249" font-size="12" class="fa mono" text-anchor="end">8</text>
+<text x="272.0" y="249" font-size="12.5" class="tx mono" xml:space="preserve">}</text>
+<text x="256" y="273" font-size="12" class="fa mono" text-anchor="end">9</text>
+<text x="256" y="297" font-size="12" class="fa mono" text-anchor="end">10</text>
+<text x="272.0" y="297" font-size="12.5" class="mono" xml:space="preserve" style="fill:#c678dd">export const</text>
+<text x="362.4" y="297" font-size="12.5" class="mono" xml:space="preserve" style="fill:#2563eb"> FRETE_GRATIS_A_PARTIR</text>
+<text x="528.0" y="297" font-size="12.5" class="tx mono" xml:space="preserve"> = </text>
+<text x="550.6" y="297" font-size="12.5" class="mono" xml:space="preserve" style="fill:#d97706">299</text>
+<g transform="translate(780 1)">
+<rect width="418" height="200" rx="12" fill="#141416" stroke="#3a3a3f" />
+<path d="M0 30.5 H418" stroke="#2c2c31"/>
+<text x="14" y="20" font-size="11" fill="#a8a8b2">Terminal - site</text>
+<text x="14" y="52" font-size="11" class="mono" fill="#f0f0f2">~/site ❯ pnpm test src/cart</text>
+<text x="14" y="70" font-size="11" class="mono" fill="#34d399">✓ frete.test.ts (6)</text>
+<text x="14" y="88" font-size="11" class="mono" fill="#34d399">✓ cart.test.ts (14)</text>
+<text x="14" y="106" font-size="11" class="mono" fill="#f0f0f2">Tests  20 passed</text>
+<text x="14" y="124" font-size="11" class="mono" fill="#a8a8b2">~/site ❯</text>
+<rect x="14" y="131" width="7" height="13" fill="#34d399"/>
+</g>
+<rect x="781" y="218" width="417" height="240" rx="16" class="sf" stroke="var(--line2)"/><text x="800" y="250" font-size="13" class="tx" font-weight="600">Agentes</text><rect x="1076" y="232" width="104" height="28" rx="8" class="acc"/><text x="1128" y="250" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">Novo agente</text>
+<rect x="796" y="276" width="386" height="48" rx="10" class="s2" fill-opacity=".6"/><rect x="808" y="287" width="26" height="26" rx="7" fill="#3b82f6" fill-opacity=".18"/><rect x="814" y="294" width="14" height="11" rx="3" fill="none" stroke="#3b82f6" stroke-width="1.5"/><circle cx="818.5" cy="299.5" r="1.2" fill="#3b82f6"/><circle cx="823.5" cy="299.5" r="1.2" fill="#3b82f6"/><text x="846" y="297" font-size="12.5" class="tx" font-weight="600">@revisor</text><text x="846" y="314" font-size="11.5" class="mu">Revisa o diff antes do commit</text>
+<rect x="796" y="334" width="386" height="48" rx="10" class="s2" fill-opacity=".6"/><rect x="808" y="345" width="26" height="26" rx="7" fill="#10b981" fill-opacity=".18"/><rect x="814" y="352" width="14" height="11" rx="3" fill="none" stroke="#10b981" stroke-width="1.5"/><circle cx="818.5" cy="357.5" r="1.2" fill="#10b981"/><circle cx="823.5" cy="357.5" r="1.2" fill="#10b981"/><text x="846" y="355" font-size="12.5" class="tx" font-weight="600">@testador</text><text x="846" y="372" font-size="11.5" class="mu">Roda os testes e corrige o que quebrar</text>
+<rect x="796" y="392" width="386" height="48" rx="10" class="s2" fill-opacity=".6"/><rect x="808" y="403" width="26" height="26" rx="7" fill="#f59e0b" fill-opacity=".18"/><rect x="814" y="410" width="14" height="11" rx="3" fill="none" stroke="#f59e0b" stroke-width="1.5"/><circle cx="818.5" cy="415.5" r="1.2" fill="#f59e0b"/><circle cx="823.5" cy="415.5" r="1.2" fill="#f59e0b"/><text x="846" y="413" font-size="12.5" class="tx" font-weight="600">@redator</text><text x="846" y="430" font-size="11.5" class="mu">Escreve textos de interface e release</text>
+</svg>

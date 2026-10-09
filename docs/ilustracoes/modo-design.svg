@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="Modo design: a página do projeto aberta no Argus, com comentários presos aos elementos e o chat ao lado">
+<title>Modo design: a página do projeto aberta no Argus, com comentários presos aos elementos e o chat ao lado</title>
+<style>
+svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+--bg:#ececec;--surface:#fff;--surface2:#ebebeb;--line:#dedede;--line2:#c6c6c6;--text:#1d1d1f;--muted:#6e6e73;
+--faint:#8e8e93;--dots:#c4c4c4;--accent:#0a84ff;--run:#2563eb;--need:#d97706;--done:#059669;--add:#dcfce7;--del:#fee2e2;
+--addtx:#047857;--deltx:#b91c1c;--shadow:#000;--shadowop:.10}
+@media (prefers-color-scheme:dark){svg{--bg:#1c1c1c;--surface:#282828;--surface2:#333;--line:#3a3a3a;--line2:#4c4c4c;
+--text:#f4f4f4;--muted:#a5a5a5;--faint:#7a7a7a;--dots:#3c3c3c;--run:#60a5fa;--need:#fbbf24;--done:#34d399;
+--add:#10391f;--del:#3f1d1d;--addtx:#6ee7b7;--deltx:#fca5a5;--shadowop:.45}}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.bg{fill:var(--bg)}.sf{fill:var(--surface);stroke:var(--line)}.sf2{fill:var(--surface);stroke:var(--line2)}
+.s2{fill:var(--surface2)}.sl{stroke:var(--line)}.sl2{stroke:var(--line2)}.tx{fill:var(--text)}.mu{fill:var(--muted)}
+.fa{fill:var(--faint)}.dot{fill:var(--dots)}.acc{fill:var(--accent)}.run{fill:var(--run)}.need{fill:var(--need)}
+.done{fill:var(--done)}.add{fill:var(--add)}.del{fill:var(--del)}.addtx{fill:var(--addtx)}.deltx{fill:var(--deltx)}
+.stx{stroke:var(--text)}.smu{stroke:var(--muted)}.sfa{stroke:var(--faint)}.srun{stroke:var(--run)}.sacc{stroke:var(--accent)}
+.shadow{flood-color:var(--shadow);flood-opacity:var(--shadowop)}
+</style>
+<defs>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.1" class="dot"/></pattern>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="10" class="shadow"/></filter>
+</defs>
+<clipPath id="win"><rect x="1" y="1" width="1198" height="598" rx="14"/></clipPath>
+<g clip-path="url(#win)">
+<rect width="1200" height="600" class="bg"/>
+<rect y="38" width="1200" height="562" fill="url(#dots)"/>
+<rect width="1200" height="38" class="bg"/>
+<path d="M0 38.5 H1200" class="sl"/>
+</g>
+<rect x="1" y="1" width="1198" height="598" rx="14" fill="none" class="sl2"/>
+<circle cx="20" cy="19" r="6" fill="#ff5f57"/><circle cx="40" cy="19" r="6" fill="#febc2e"/><circle cx="60" cy="19" r="6" fill="#28c840"/>
+<text x="600.0" y="24" font-size="13" class="tx" font-weight="600" text-anchor="middle">Argus</text>
+
+<rect x="10" y="46" width="1180" height="544" rx="16" class="sf" filter="url(#sh)"/>
+<path d="M28 62 l9 9 l-6 6 l-9 -9 z M27 75 l-3 6 l6 -3" fill="none" class="smu" stroke-width="1.4" stroke-linejoin="round"/><text x="52" y="76" font-size="13" class="tx" font-weight="600">Checkout mais direto</text><text x="196" y="76" font-size="12" class="mu">loja</text>
+<rect x="510.0" y="56" width="180" height="30" rx="10" class="s2"/><rect x="513.0" y="59" width="86" height="24" rx="8" class="sf"/><text x="556.0" y="76" font-size="12" class="tx" font-weight="500" text-anchor="middle">Desktop</text><text x="644.0" y="76" font-size="12" class="mu" text-anchor="middle">Celular</text>
+<text x="1138" y="76" font-size="12" class="tx" text-anchor="end">Visualizar</text><path d="M1158 66 l10 10 M1168 66 l-10 10" class="smu" stroke-width="1.5"/>
+<path d="M10 96.5 H1190" class="sl"/>
+<rect x="26" y="110" width="560" height="32" rx="9" class="s2"/><text x="40" y="131" font-size="12" class="mu mono">localhost:3000</text><text x="144" y="131" font-size="12" class="tx mono">/checkout</text><path d="M566 123 l5 5 l5 -5" fill="none" class="smu" stroke-width="1.5"/>
+<rect x="598" y="112" width="91.36999999999999" height="28" rx="7" class="s2"/><text x="643.685" y="130.14" font-size="11.5" class="mu" text-anchor="middle">site  :3000</text>
+<rect x="698" y="110" width="108" height="32" rx="9" class="acc"/><path d="M714 120 h14 a3 3 0 0 1 3 3 v6 a3 3 0 0 1 -3 3 h-8 l-4 4 v-4 h-2 a3 3 0 0 1 -3 -3 v-6 a3 3 0 0 1 3 -3 z" fill="none" stroke="#fff" stroke-width="1.4"/><text x="740" y="131" font-size="12" font-weight="600" fill="#fff">Comentar</text>
+<g><clipPath id="pg"><rect x="26" y="154" width="780" height="420" rx="10"/></clipPath><g clip-path="url(#pg)"><rect x="26" y="154" width="780" height="420" fill="#f7f7f8"/><rect x="26" y="154" width="780" height="52" fill="#ffffff"/><path d="M26 206.5 H806" stroke="#e5e5ea"/><rect x="50" y="170" width="20" height="20" rx="6" fill="#7c3aed"/><text x="78" y="185" font-size="14" font-weight="700" fill="#1d1d1f">Loja</text><text x="782" y="185" font-size="12" fill="#6e6e73" text-anchor="end">Produtos    Pedidos    Conta</text><text x="58" y="250" font-size="22" font-weight="700" fill="#1d1d1f">Finalizar compra</text>
+<rect x="58" y="270" width="420" height="250" rx="12" fill="#fff" stroke="#e5e5ea"/>
+<text x="78" y="304" font-size="11.5" fill="#6e6e73">Nome completo</text><rect x="78" y="312" width="380" height="34" rx="8" fill="#fff" stroke="#d1d1d6"/>
+<text x="78" y="376" font-size="11.5" fill="#6e6e73">E-mail</text><rect x="78" y="384" width="380" height="34" rx="8" fill="#fff" stroke="#d1d1d6"/>
+<text x="78" y="448" font-size="11.5" fill="#6e6e73">CPF</text><rect x="78" y="456" width="380" height="34" rx="8" fill="#fff" stroke="#d1d1d6"/>
+<rect x="502" y="270" width="272" height="196" rx="12" fill="#fff" stroke="#e5e5ea"/><text x="522" y="302" font-size="13" font-weight="600" fill="#1d1d1f">Resumo</text><text x="522" y="332" font-size="12" fill="#6e6e73">2 itens</text><text x="754" y="332" font-size="12" fill="#1d1d1f" text-anchor="end">R$ 169,90</text><text x="522" y="356" font-size="12" fill="#6e6e73">Frete</text><text x="754" y="356" font-size="12" fill="#1d1d1f" text-anchor="end">R$ 20,00</text><path d="M522 372.5 H754" stroke="#e5e5ea"/><text x="522" y="396" font-size="13" font-weight="700" fill="#1d1d1f">Total</text><text x="754" y="396" font-size="13" font-weight="700" fill="#1d1d1f" text-anchor="end">R$ 189,90</text><rect x="522" y="414" width="120" height="34" rx="8" fill="#d1d1d6"/><text x="582" y="435" font-size="12" font-weight="600" fill="#3a3a3c" text-anchor="middle">Pagar</text></g></g>
+<circle cx="642" cy="430" r="12" class="acc" stroke="#fff" stroke-width="2"/><text x="642" y="434" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+<rect x="660" y="422" width="133.60000000000002" height="52" rx="14" class="sf" filter="url(#sh)"/><rect x="660" y="422" width="133.60000000000002" height="52" rx="14" class="acc" fill-opacity=".10" stroke="var(--accent)" stroke-opacity=".5"/>
+<text x="674" y="444" font-size="12" class="tx">Botão maior e na</text>
+<text x="674" y="462" font-size="12" class="tx">cor da marca</text>
+<circle cx="458" cy="452" r="12" class="acc" stroke="#fff" stroke-width="2"/><text x="458" y="456" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+<rect x="476" y="444" width="133.60000000000002" height="34" rx="14" class="sf" filter="url(#sh)"/><rect x="476" y="444" width="133.60000000000002" height="34" rx="14" class="acc" fill-opacity=".10" stroke="var(--accent)" stroke-opacity=".5"/>
+<text x="490" y="466" font-size="12" class="tx">Tirar este campo</text>
+<path d="M813.5 97 V590" class="sl"/>
+<rect x="882" y="110" width="292" height="52" rx="14" class="s2"/><text x="896" y="132" font-size="12.5" class="tx">Deixa o checkout mais direto,</text><text x="896" y="150" font-size="12.5" class="tx">num passo só.</text>
+<text x="822" y="192" font-size="12.5" class="tx">Juntei endereço e pagamento na mesma</text><text x="822" y="210" font-size="12.5" class="tx">tela e tirei o passo de revisão.</text>
+<path d="M826 228 l-4 4 l4 4 M834 228 l4 4 l-4 4" fill="none" class="smu" stroke-width="1.4"/><text x="846" y="236" font-size="11" class="mu mono">Editou app/checkout/page.tsx</text>
+<path d="M826 252 l-4 4 l4 4 M834 252 l4 4 l-4 4" fill="none" class="smu" stroke-width="1.4"/><text x="846" y="260" font-size="11" class="mu mono">Editou components/Resumo.tsx</text>
+<circle cx="827" cy="296" r="3.5" class="done"/><text x="838" y="300" font-size="11" class="mu">Concluída - 2:08</text>
+<rect x="818" y="498" width="360" height="78" rx="14" class="sf2"/>
+<rect x="832" y="508" width="100.94" height="22" rx="7" class="acc" fill-opacity=".18"/><text x="882.47" y="522.96" font-size="11" class="tx" text-anchor="middle">2 comentários</text>
+<text x="942.94" y="523" font-size="12.5" class="fa">Descreva o ajuste…</text>
+<rect x="832" y="544" width="43.519999999999996" height="22" rx="7" class="s2"/><text x="853.76" y="558.96" font-size="11" class="mu" text-anchor="middle">Opus</text>
+<rect x="881.52" y="544" width="94.55999999999999" height="22" rx="7" class="s2"/><text x="928.8" y="558.96" font-size="11" class="mu" text-anchor="middle">Esforço alto</text>
+<circle cx="996.0799999999999" cy="555" r="7" fill="none" class="sl2" stroke-width="3"/><circle cx="996.0799999999999" cy="555" r="7" fill="none" stroke="#ef4444" stroke-opacity="0.58" stroke-width="3" stroke-dasharray="16.7 44.0" transform="rotate(-90 996.0799999999999 555)" stroke-linecap="round"/>
+<g fill="none" class="smu" stroke-width="1.5" stroke-linecap="round"><rect x="1112.5" y="548" width="7" height="11" rx="3.5"/><path d="M1109.5 556 a6.5 6.5 0 0 0 13 0 M1116 562.5 v3"/></g>
+<rect x="1136" y="540" width="30" height="30" rx="8" class="acc"/><path d="M1151 561 v-12 M1146 554 l5 -5 l5 5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

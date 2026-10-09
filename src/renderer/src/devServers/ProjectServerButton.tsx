@@ -5,6 +5,8 @@ import { ContextMenu, type MenuItem } from '../canvas/ContextMenu'
 import { Tooltip } from '../canvas/NavBar'
 import { startProjectServer, stopProjectServer, useProjectServer } from './projectServers'
 
+const appNameOf = (app?: { name?: string }) => (app?.name ? `${app.name} - ` : '')
+
 const BUTTON =
   'group relative flex h-6 min-w-6 items-center justify-center gap-1.5 rounded-md border border-line bg-surface text-muted shadow-sm hover:bg-surface-2 hover:text-text'
 
@@ -34,7 +36,8 @@ export function ProjectServerButton({ path }: { path: string }) {
     ...server.ports.map(
       (port): MenuItem => ({
         type: 'action',
-        label: `Abrir localhost:${port}`,
+        // Com o nome do pacote: num monorepo, cada porta é um app (site, admin, api).
+        label: `Abrir ${appNameOf(server.apps?.find((a) => a.port === port))}localhost:${port}`,
         icon: ExternalLink,
         onSelect: () => window.open(`http://localhost:${port}`)
       })

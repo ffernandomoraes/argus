@@ -41,7 +41,8 @@ async function refresh(): Promise<void> {
     return refresh()
   }
   if (watching.size === 0) return
-  const starting = [...byPath.values()].some((s) => s.state === 'starting')
+  // Também enquanto confere quais portas mostram página (modo design).
+  const starting = [...byPath.values()].some((s) => s.state === 'starting' || s.apps?.some((a) => a.page === undefined))
   timer = setTimeout(refresh, starting ? FAST : POLL)
 }
 
@@ -69,8 +70,9 @@ export function useProjectServer(path: string): ProjectServer | null {
   return useSyncExternalStore(subscribe, () => byPath.get(path) ?? null)
 }
 
-export async function startProjectServer(path: string): Promise<void> {
-  await window.api.projectServers.start(path)
+// noBrowser: sem abrir o navegador sozinho (modo design: a página fica no drawer).
+export async function startProjectServer(path: string, noBrowser = false): Promise<void> {
+  await window.api.projectServers.start(path, noBrowser)
   await refresh()
 }
 

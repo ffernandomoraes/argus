@@ -30,6 +30,12 @@ export type ProjectServer = {
   // starting: iniciado daqui e ainda sem porta aberta.
   state: 'stopped' | 'starting' | 'running'
   ports: number[]
+  // De que pasta do projeto vem cada porta: num monorepo, um `dev` sobe vários apps (site, admin,
+  // app), cada um na sua. `dir` é relativa à pasta do projeto ('' na raiz; vazia também no Windows,
+  // que não informa a pasta de outro processo). page: a porta mostra uma página (o "/" responde HTML);
+  // uma API ou a porta do recarregamento ao vivo não; undefined enquanto confere. name: o nome do
+  // pacote da pasta.
+  apps?: { port: number; dir: string; name?: string; page?: boolean }[]
   // Rodando, mas nenhum processo dá para encerrar daqui (ver DevServer.locked).
   locked?: DevServer['locked']
   // Iniciado daqui e saiu sem ninguém pedir: últimas linhas da saída, para dizer o motivo.

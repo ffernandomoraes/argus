@@ -28,6 +28,8 @@ export type Design = {
   route?: string
   // Tela que já existia no projeto, aberta para ajustar (não foi o Claude que criou).
   existing?: boolean
+  // Porta do app em que a tela está, quando o projeto sobe vários (monorepo: site, admin, app).
+  port?: number
   createdAt: string
   updatedAt: string
 }

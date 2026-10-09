@@ -195,6 +195,23 @@ async function productName(cwd: string): Promise<string | undefined> {
   return names.get(cwd)
 }
 
+// Nome do pacote da pasta (package.json), para dizer qual app é cada porta num monorepo: o
+// productName, senão o name sem o escopo ("@loja/admin" vira "admin").
+const packages = new Map<string, string | undefined>()
+export async function packageName(cwd: string): Promise<string | undefined> {
+  if (!cwd) return undefined
+  if (!packages.has(cwd)) {
+    try {
+      const pkg = JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8'))
+      const name = [pkg.productName, pkg.name].find((n) => typeof n === 'string' && n.trim()) as string | undefined
+      packages.set(cwd, name?.trim().replace(/^@[^/]+\//, ''))
+    } catch {
+      packages.set(cwd, undefined)
+    }
+  }
+  return packages.get(cwd)
+}
+
 // Todo comando que o Claude Code roda herda CLAUDECODE=1; o que o play iniciou leva a marca do
 // app. Seguir a árvore de processos não serve: rodando em segundo plano, o servidor perde o pai
 // e é adotado pelo sistema. Fora isso, qualquer porta aberta dentro de uma pasta do canvas

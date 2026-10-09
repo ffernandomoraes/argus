@@ -1,9 +1,9 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import type { ProjectServer } from '../shared/devServers'
-import { APP_MARK, inside, realRoot, scanListening, terminate, type Listening } from './devServers'
+import { APP_MARK, inside, packageName, realRoot, scanListening, terminate, type Listening } from './devServers'
 import { childEnv, IS_WIN, prependPath, SYSTEM32 } from './platform'
 import { killTreeSync } from './winProcesses'
 
@@ -86,14 +86,46 @@ function lastLine(output: string): string {
 const ofProject = (root: string, listening: Listening[]) =>
   listening.filter((p) => !p.claude && p.ports.length > 0 && belongs(root, p))
 
+// Porta que mostra página: o "/" responde com HTML. Uma API responde JSON ou erro, e a porta do
+// recarregamento ao vivo (HMR) pede WebSocket. A conferência roda à parte, sem segurar o status:
+// enquanto a primeira não volta, a resposta é "não sei" (undefined) e a tela mostra um loader.
+// Guardado por um tempo; o "não" vale menos, porque o app pode só não ter terminado de subir. A
+// espera é longa porque a primeira página de um app pode levar segundos para compilar.
+const PAGE_TTL = 30_000
+const NOT_PAGE_TTL = 5_000
+const PAGE_WAIT = 10_000
+const pages = new Map<number, { page?: boolean; at: number; checking?: boolean }>()
+
+function servesPage(port: number): boolean | undefined {
+  const known = pages.get(port)
+  const fresh = known && (known.checking || Date.now() - known.at < (known.page ? PAGE_TTL : NOT_PAGE_TTL))
+  if (!fresh) {
+    pages.set(port, { page: known?.page, at: known?.at ?? 0, checking: true })
+    void fetch(`http://localhost:${port}/`, { signal: AbortSignal.timeout(PAGE_WAIT), headers: { accept: 'text/html' } })
+      .then((res) => {
+        void res.body?.cancel()
+        return res.ok && (res.headers.get('content-type') ?? '').includes('text/html')
+      })
+      // Não respondeu HTTP (ou não a tempo).
+      .catch(() => false)
+      .then((page) => pages.set(port, { page, at: Date.now() }))
+  }
+  return pages.get(port)?.page
+}
+
 async function statusOf(path: string, listening: Listening[]): Promise<ProjectServer> {
   const root = realRoot(path)
   const run = await projectScript(root)
   const mine = ofProject(root, listening)
+  const apps = mine
+    .flatMap((p) => p.ports.map((port) => ({ port, cwd: p.cwd, dir: p.cwd ? relative(root, p.cwd).split(sep).join('/') : '' })))
+    .filter((a, i, all) => all.findIndex((b) => b.port === a.port) === i)
+    .sort((a, b) => a.port - b.port)
   const base = {
     script: run?.script ?? null,
     command: run?.command ?? null,
-    ports: [...new Set(mine.flatMap((p) => p.ports))].sort((a, b) => a - b)
+    ports: apps.map((a) => a.port),
+    apps: await Promise.all(apps.map(async ({ cwd, ...a }) => ({ ...a, name: await packageName(cwd), page: servesPage(a.port) })))
   }
   if (mine.length > 0) {
     return { ...base, state: 'running', locked: mine.every((p) => p.locked) ? mine[0].locked : undefined }
@@ -111,7 +143,9 @@ export async function projectServers(paths: string[]): Promise<Record<string, Pr
 
 // Roda o script num shell de login, em segundo plano e num grupo próprio, para encerrar o
 // comando inteiro depois (pnpm + vite), como o painel de servidores faz.
-export async function startProjectServer(path: string): Promise<boolean> {
+// noBrowser: sem abrir o navegador sozinho (o --open ou server.open do Vite, o do Create React App),
+// para a página ficar só no drawer do modo design. Os dois leem BROWSER=none.
+export async function startProjectServer(path: string, noBrowser = false): Promise<boolean> {
   const root = realRoot(path)
   if (started.has(root)) return false
   const run = await projectScript(root)
@@ -122,6 +156,7 @@ export async function startProjectServer(path: string): Promise<boolean> {
   // Não foi o Claude Code que rodou; a marca do app põe o servidor no painel mesmo assim.
   delete env.CLAUDECODE
   env[APP_MARK] = '1'
+  if (noBrowser) env.BROWSER = 'none'
   prependPath(env, [])
 
   errors.delete(root)

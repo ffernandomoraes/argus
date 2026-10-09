@@ -5,6 +5,7 @@ import type { Usage, UsageWindow } from '../../../shared/usage'
 import { useAuth } from '../auth/useAuth'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { useEscape } from '../useEscape'
+import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 
 function timeLeft(resetsAt: string, now: number): string {
@@ -102,14 +103,9 @@ export function UsageIndicator() {
   }, [])
 
   useEffect(() => {
-    if (!open) return
-    setNow(Date.now())
-    const close = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('mousedown', close)
-    return () => window.removeEventListener('mousedown', close)
+    if (open) setNow(Date.now())
   }, [open])
+  useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
   // Na ordem das configurações: a principal primeiro.

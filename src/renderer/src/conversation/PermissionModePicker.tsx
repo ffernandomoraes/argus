@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Check, ChevronUp, FilePen, Hand, ListChecks, ShieldCheck, ShieldOff, type LucideIcon } from 'lucide-react'
 import { useClaudeInfo } from './useModels'
 import { useEscape } from '../useEscape'
+import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { MENU_HOVER } from '../canvas/ContextMenu'
 
@@ -30,12 +31,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
   const ref = useRef<HTMLDivElement>(null)
   const info = useClaudeInfo()
 
-  useEffect(() => {
-    if (!open) return
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    window.addEventListener('mousedown', close)
-    return () => window.removeEventListener('mousedown', close)
-  }, [open])
+  useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
   // Vazio = padrão da conta, que o claude informa ao iniciar.
@@ -59,7 +55,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
 
       <Presence kind="menu">
         {open && (
-          <div className="absolute bottom-full right-0 z-10 mb-2 w-80 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
+          <div className="absolute bottom-full right-0 z-10 mb-2 w-80 whitespace-normal rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
             <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modo</div>
             {MODES.map((m) => {
               const ModeIcon = m.icon

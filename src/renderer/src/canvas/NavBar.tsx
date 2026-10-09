@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Panel, useReactFlow } from '@xyflow/react'
 import {
   Bot,
@@ -14,6 +14,7 @@ import {
 import { useCanvasActions } from './CanvasContext'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { useEscape } from '../useEscape'
+import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { IS_WIN, keys } from '../platform'
 import { MENU_PANEL, MENU_ROW } from './ContextMenu'
@@ -90,14 +91,7 @@ function NewBlockMenu() {
   const { screenToFlowPosition } = useReactFlow()
   const { addGroup, addFolder, addNote, newLooseConversation } = useCanvasActions()
 
-  useEffect(() => {
-    if (!open) return
-    const close = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('mousedown', close)
-    return () => window.removeEventListener('mousedown', close)
-  }, [open])
+  useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
   const center = () => {

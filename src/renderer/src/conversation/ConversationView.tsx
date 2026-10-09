@@ -23,6 +23,7 @@ import { agentHint, mentionedAgents } from './AgentMenu'
 import type { AgentDef } from '../../../shared/agents'
 import type { UncommittedFile } from '../../../shared/sessions'
 import { useEscape } from '../useEscape'
+import { useOutsideClick } from '../useOutsideClick'
 import { AccountContext } from '../auth/useAuth'
 import { Presence } from '../motion'
 import { lastSep, relativeTo, tildify, untildify } from '../platform'
@@ -90,12 +91,7 @@ function BranchTag({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    window.addEventListener('mousedown', close)
-    return () => window.removeEventListener('mousedown', close)
-  }, [open])
+  useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
   if (!files?.length)

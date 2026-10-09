@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import { Check, ChevronRight } from 'lucide-react'
 import { COLORS } from './factory'
 import { useEscape } from '../useEscape'
+import { useOutsideClick } from '../useOutsideClick'
 
 type Icon = ComponentType<{ size?: number }>
 
@@ -107,16 +108,10 @@ export function ContextMenu({ menu, onClose }: { menu: MenuState; onClose: () =>
     })
   }, [menu])
 
+  useOutsideClick(ref, onClose)
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) onClose()
-    }
-    window.addEventListener('mousedown', onDown)
     window.addEventListener('wheel', onClose)
-    return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('wheel', onClose)
-    }
+    return () => window.removeEventListener('wheel', onClose)
   }, [onClose])
   useEscape(onClose)
 

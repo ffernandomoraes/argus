@@ -55,7 +55,7 @@ export function TitleBar({
 
   return (
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50).
-    // O recuo acompanha o grupo da direita (café, nova janela, versão e, às vezes, atualizar) dos dois lados:
+    // O recuo acompanha o grupo da direita (café, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
@@ -70,17 +70,6 @@ export function TitleBar({
       )}
       {updates && (
         <div className="absolute inset-y-0 flex items-center gap-2.5" style={{ right: 12 + controls.right }}>
-          {ready && (
-            <button
-              onClick={() => window.api.updates.install()}
-              title={`Reinicia o Argus na versão ${ready.version}`}
-              className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
-            >
-              <CircleArrowUp size={12} className="text-running" />
-              Atualizar para {ready.version}
-            </button>
-          )}
-          {progress && <span className="text-[12px] tabular-nums text-faint">{progress}</span>}
           <button
             onClick={() => setCoffeeOpen(true)}
             className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
@@ -106,6 +95,17 @@ export function TitleBar({
             </NavButton>
           </span>
           <Divider />
+          {ready && (
+            <button
+              onClick={() => window.api.updates.install()}
+              title={`Reinicia o Argus na versão ${ready.version}`}
+              className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
+            >
+              <CircleArrowUp size={12} className="text-running" />
+              Atualizar para {ready.version}
+            </button>
+          )}
+          {progress && <span className="text-[12px] tabular-nums text-faint">{progress}</span>}
           <span className="text-[12px] tabular-nums text-faint">v{updates.version}</span>
         </div>
       )}

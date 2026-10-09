@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { Code2, ExternalLink, Eye, Loader2, MessageSquarePlus, RotateCw, X } from 'lucide-react'
+import { Code2, ExternalLink, Eye, Loader2, MessageSquarePlus, Play, RotateCw, X } from 'lucide-react'
 import { DEVICE_WIDTH, type Design, type DesignDevice } from '../../../shared/design'
 import type { ProjectServer } from '../../../shared/devServers'
 import { moveConversationSettings, setConversationSettings, useConversationSettings } from '../conversation/conversationSettings'
@@ -32,7 +32,8 @@ function serverText(server: ProjectServer | null, running: boolean, checking: bo
   if (checking) return 'Conferindo quais portas do projeto mostram página…'
   if (server.state !== 'running') {
     if (server.error) return `O servidor do projeto não subiu: ${server.error}`
-    return server.script ? 'Subindo o servidor do projeto…' : 'Esta pasta não tem script dev ou start para mostrar a página.'
+    if (!server.script) return 'Esta pasta não tem script dev ou start para mostrar a página.'
+    return server.state === 'starting' ? 'Subindo o servidor do projeto…' : 'O servidor do projeto está parado. Inicie para ver a página aqui.'
   }
   return running
     ? 'O Claude está escrevendo a tela no projeto. A página aparece aqui assim que ele disser o endereço dela.'
@@ -178,16 +179,11 @@ export function PrototypePane({
     }
   }, [sessionId, route, running, projectPath])
 
-  // O protótipo é visto pelo servidor do projeto: parado, sobe sozinho (uma vez por abertura) assim
-  // que o design começa. Antes disso, a escolha de como começar mostra o servidor e o botão de iniciar.
+  // O protótipo é visto pelo servidor do projeto. Parado, não sobe sozinho (abrir o design pode ter
+  // sido um clique sem querer): o painel mostra o botão de iniciar. Antes de o design começar, a
+  // escolha de como começar faz o mesmo.
   const fresh = !sessionId && !design.existing && !route && !running
   const server = useProjectServer(projectPath)
-  const tried = useRef(false)
-  useEffect(() => {
-    if (fresh || server?.state !== 'stopped' || !server.script || server.error || tried.current) return
-    tried.current = true
-    void startProjectServer(projectPath, true)
-  }, [server?.state, fresh]) // eslint-disable-line react-hooks/exhaustive-deps
   const ports = server?.state === 'running' ? server.ports : []
   // Monorepo: o `dev` sobe vários apps, um por porta. A escolha fica no design.
   const allApps: ProjectApp[] = server?.state === 'running' ? (server.apps ?? ports.map((p) => ({ port: p, dir: '' }))) : []
@@ -567,7 +563,7 @@ export function PrototypePane({
           <div className="min-h-0 flex-1 overflow-y-auto">{start}</div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
-            {!server || checking || running || server.state === 'starting' ? (
+            {!server || checking || server.state === 'starting' || (running && server.state === 'running') ? (
               <Loader2 size={20} className="animate-spin text-faint" />
             ) : (
               <Code2 size={20} className="text-faint" />
@@ -575,9 +571,18 @@ export function PrototypePane({
             <p className={`max-w-sm text-xs leading-relaxed ${server?.error ? 'text-red-400' : 'text-faint'}`}>
               {serverText(server, running, checking)}
             </p>
-            {server?.state === 'stopped' && server.error && (
-              <button onClick={() => void startProjectServer(projectPath, true)} className={`${BUTTON} hover:bg-surface-2`}>
-                Tentar de novo
+            {server?.state === 'stopped' && server.script && (
+              <button
+                onClick={() => void startProjectServer(projectPath, true)}
+                title={server.command ?? undefined}
+                className={
+                  server.error
+                    ? `${BUTTON} hover:bg-surface-2`
+                    : 'flex h-6 items-center gap-1.5 rounded-md bg-accent px-3 text-[12px] font-medium text-white hover:brightness-110'
+                }
+              >
+                {!server.error && <Play size={11} />}
+                {server.error ? 'Tentar de novo' : 'Iniciar o servidor'}
               </button>
             )}
           </div>

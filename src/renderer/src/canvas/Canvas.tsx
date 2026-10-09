@@ -57,10 +57,11 @@ import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
-import { useFitAll } from './useCanvasShortcuts'
+import { useFrame } from './useCanvasShortcuts'
 import { IS_WIN, isAbsolutePath, isMod, relativeTo, untildify } from '../platform'
 import {
   addNode,
+  boundsOf,
   dropIntoGroup,
   findChatSpot,
   fitAfterResize,
@@ -152,7 +153,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     null
   )
   const { screenToFlowPosition, getZoom, fitView, setCenter } = useReactFlow()
-  const fitAll = useFitAll()
+  const { frame, freeAspect } = useFrame()
   const [guides, setGuides] = useState<Guide[]>([])
   // Grupo que recebe o bloco solto sendo arrastado, se ele for largado agora; fica destacado.
   const [dropTargetId, setDropTargetId] = useState<string | null>(null)
@@ -456,11 +457,18 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         popoutConversation(nodeId, node.data.sessionId)
         change((ns) => removeNode(ns, nodeId))
       },
-      // Um ⌘Z desfaz tudo. Depois, a câmera enquadra o board inteiro, como o "Ver tudo".
+      // Um ⌘Z desfaz tudo. Os blocos vão para linhas no formato da área livre entre as barras, e
+      // a câmera enquadra o board inteiro nela, como o "Ver tudo", já no lugar final dos blocos.
       organizeBoard: () => {
-        if (arrange(organizeBoard(nodesRef.current, window.innerWidth / window.innerHeight))) setTimeout(fitAll, 50)
+        const next = organizeBoard(nodesRef.current, freeAspect())
+        if (arrange(next)) frame(boundsOf(next.filter((n) => !n.parentId && !n.hidden)))
       },
-      organizeGroup: (id: string) => arrange(organizeGroup(nodesRef.current, id, window.innerWidth / window.innerHeight)),
+      // O grupo pode crescer para baixo das barras: aí a câmera vai até ele, sem aproximar.
+      organizeGroup: (id: string) => {
+        const next = organizeGroup(nodesRef.current, id, freeAspect())
+        const group = next.find((n) => n.id === id)
+        if (arrange(next) && group) frame(boundsOf([group]), { onlyIfCovered: true })
+      },
       openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => {
         setCodeFor(project)
         openFileLink(project.path, path, lines, diff)

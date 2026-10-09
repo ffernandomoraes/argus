@@ -295,6 +295,17 @@ function boxOf(node: CanvasNode): Box {
   }
 }
 
+// Caixa que cobre os blocos (de fora de grupo), com os nomes acima deles. Calculada do estado,
+// e não do que está na tela: logo depois de organizar, os blocos ainda estão indo para o lugar.
+export function boundsOf(nodes: CanvasNode[]): Box {
+  const boxes = nodes.map(boxOf)
+  const x = Math.min(...boxes.map((b) => b.x))
+  const y = Math.min(...boxes.map((b) => b.y))
+  const right = Math.max(...boxes.map((b) => b.x + b.width))
+  const bottom = Math.max(...boxes.map((b) => b.y + b.height))
+  return { x, y, width: right - x, height: bottom - y }
+}
+
 // Onde entra a conversa solta nova. Clique com o botão direito num lugar livre vale como
 // pedido de posição. Senão: embaixo da última conversa solta ou, se for a primeira, à direita
 // do último grupo criado, alinhada pelo topo. Se encostar em algum bloco, desce até ficar livre.

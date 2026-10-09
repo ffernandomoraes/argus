@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronDown, ChevronUp, ExternalLink, FolderInput, Fullscreen, FolderOpen, PenTool, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, StickyNote, Terminal, Trash2, Ungroup, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, LayoutGrid, ExternalLink, FolderInput, Fullscreen, FolderOpen, PenTool, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, StickyNote, Terminal, Trash2, Ungroup, X } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { AuthState } from '../../../shared/auth'
 import { resolveAccount } from '../auth/useAuth'
@@ -44,6 +44,8 @@ export type Deps = {
   poppedOut: Set<string>
   trashConversation: (path: string, conversationId: string) => void
   openDesign: (nodeId: string, designId?: string) => void
+  organizeBoard: () => void
+  organizeGroup: (id: string) => void
 }
 
 const plural = (n: number) => (n === 1 ? '1 instância' : `${n} instâncias`)
@@ -81,7 +83,9 @@ export function paneMenu(deps: Deps, position: XYPosition): MenuItem[] {
     terminalSubmenu('Novo terminal', (kind) => deps.addTerminal(position, undefined, undefined, kind)),
     { type: 'separator' },
     { type: 'action', label: 'Nova pasta', icon: FolderPlus, onSelect: () => deps.addFolder(position) },
-    { type: 'action', label: 'Criar grupo', icon: SquareDashed, onSelect: () => deps.addGroup(position) }
+    { type: 'action', label: 'Criar grupo', icon: SquareDashed, onSelect: () => deps.addGroup(position) },
+    { type: 'separator' },
+    { type: 'action', label: 'Organizar board', icon: LayoutGrid, onSelect: deps.organizeBoard }
   ]
 }
 
@@ -143,6 +147,13 @@ export function groupMenu(deps: Deps, group: AreaNode): MenuItem[] {
       icon: Fullscreen,
       disabled: count === 0 || !!group.data.collapsed,
       onSelect: () => setNodes((ns) => fitGroupToContent(ns, group.id))
+    },
+    {
+      type: 'action',
+      label: 'Organizar grupo',
+      icon: LayoutGrid,
+      disabled: count < 2 || !!group.data.collapsed,
+      onSelect: () => deps.organizeGroup(group.id)
     },
     { type: 'action', label: 'Renomear grupo', icon: Pencil, onSelect: () => deps.startRename(group.id) },
     { type: 'separator' },

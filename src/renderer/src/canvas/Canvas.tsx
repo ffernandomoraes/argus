@@ -57,6 +57,7 @@ import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
+import { useFitAll } from './useCanvasShortcuts'
 import { IS_WIN, isAbsolutePath, isMod, relativeTo, untildify } from '../platform'
 import {
   addNode,
@@ -66,6 +67,8 @@ import {
   groupAccount,
   groupUnder,
   leaveGroup,
+  organizeBoard,
+  organizeGroup,
   placeBeside,
   removeNode,
   rename,
@@ -149,6 +152,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     null
   )
   const { screenToFlowPosition, getZoom, fitView, setCenter } = useReactFlow()
+  const fitAll = useFitAll()
   const [guides, setGuides] = useState<Guide[]>([])
   // Grupo que recebe o bloco solto sendo arrastado, se ele for largado agora; fica destacado.
   const [dropTargetId, setDropTargetId] = useState<string | null>(null)
@@ -163,6 +167,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   // Interface oculta: só os blocos e a barra de título; as barras do canvas (navegação, zoom, uso)
   // somem até clicar de novo no botão ou repetir ⌘\. Não fica salvo: reabrir o app volta com tudo.
   const [uiHidden, setUiHidden] = useState(false)
+  // "Organizar board": os blocos deslizam até o lugar novo, em vez de saltar.
+  const [arranging, setArranging] = useState(false)
   const toggleUi = () => setUiHidden((h) => !h)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -290,6 +296,15 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [change, nodesRef])
+
+  // Organizar: os blocos deslizam até o lugar novo (classe arranging) em vez de saltar.
+  const arrange = (next: CanvasNode[]) => {
+    if (next === nodesRef.current) return false
+    setArranging(true)
+    change(next)
+    setTimeout(() => setArranging(false), 450)
+    return true
+  }
 
   // O menu de uma conversa nasce no ProjectNode, pelo contexto, e precisa dos deps desta renderização.
   const depsRef = useRef<Deps | null>(null)
@@ -438,6 +453,11 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         popoutConversation(nodeId, node.data.sessionId)
         change((ns) => removeNode(ns, nodeId))
       },
+      // Um ⌘Z desfaz tudo. Depois, a câmera enquadra o board inteiro, como o "Ver tudo".
+      organizeBoard: () => {
+        if (arrange(organizeBoard(nodesRef.current, window.innerWidth / window.innerHeight))) setTimeout(fitAll, 50)
+      },
+      organizeGroup: (id: string) => arrange(organizeGroup(nodesRef.current, id, window.innerWidth / window.innerHeight)),
       openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => {
         setCodeFor(project)
         openFileLink(project.path, path, lines, diff)
@@ -706,7 +726,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           setNodes((ns) => dropIntoGroup(ns, dragged.map((n) => n.id)))
         }}
         nodeTypes={nodeTypes}
-        className={`${spaceHeld ? 'camera-mode' : ''} ${motion.booting ? 'canvas-booting' : ''} ${uiHidden ? 'ui-hidden' : ''}`}
+        className={`${spaceHeld ? 'camera-mode' : ''} ${motion.booting ? 'canvas-booting' : ''} ${uiHidden ? 'ui-hidden' : ''} ${arranging ? 'arranging' : ''}`}
         nodesDraggable={!spaceHeld}
         elementsSelectable={!spaceHeld}
         onPaneContextMenu={onPaneContextMenu}

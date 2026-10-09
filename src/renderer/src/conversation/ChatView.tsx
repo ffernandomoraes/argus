@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Bot, Brain, Image as ImageIcon, ImagePlus, Loader2, Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
+import { Bot, Brain, Crosshair, Image as ImageIcon, ImagePlus, Loader2, MessageSquarePlus, Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
 import { agentActivity, useRunningAgent } from '../canvas/runningAgents'
 import { AgentMenu, matchAgents } from './AgentMenu'
 import { ContextRing } from '../canvas/ContextRing'
@@ -22,7 +22,7 @@ import type { SessionSettings } from './SessionSettings'
 import type { SessionStatus } from '../canvas/types'
 import type { AgentDef, RunningAgent } from '../../../shared/agents'
 import type { ChatActivity, ChatState, PermissionAnswer } from '../../../shared/chat'
-import type { Message } from './types'
+import type { Message, MessageMark } from './types'
 import { Presence } from '../motion'
 import { keys, SYSTEM_SETTINGS } from '../platform'
 
@@ -61,13 +61,16 @@ const UserBubble = memo(function UserBubble({
   at,
   queued,
   images = 0,
-  imageView
+  imageView,
+  marks
 }: {
   text: string
   at?: string
   queued?: boolean
   images?: number
   imageView?: ImageView
+  // O que foi junto no modo design (parte selecionada, comentários): uma linha discreta embaixo.
+  marks?: MessageMark[]
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -96,6 +99,16 @@ const UserBubble = memo(function UserBubble({
             </div>
           )}
           {text && <span className="whitespace-pre-wrap break-words">{text}</span>}
+          {marks && (
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-faint">
+              {marks.map((m, i) => (
+                <span key={i} className="flex min-w-0 items-center gap-1">
+                  {m.kind === 'comentarios' ? <MessageSquarePlus size={11} className="shrink-0" /> : <Crosshair size={11} className="shrink-0" />}
+                  <span className="truncate">{m.text}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         {text && <CopyButton text={text} label="Copiar prompt" className="shrink-0" />}
       </div>
@@ -120,11 +133,13 @@ const ThinkingRow = memo(function ThinkingRow({ message }: { message: Extract<Me
   )
 })
 
-const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
+// No chat reduzido (protótipo do modo design), a edição fica só na linha, com o +/-: o clique abre
+// o detalhe.
+const ToolRow = memo(function ToolRow({ message, compact }: { message: Extract<Message, { role: 'tool' }>; compact?: boolean }) {
   const stats = message.diff && diffStats(message.diff)
   // Sem caixa, como a resposta: a ação não chama mais atenção que o texto. Passar o mouse só clareia a linha.
   return (
-    <details className="group text-[13px]" open={!!message.diff}>
+    <details className="group text-[13px]" open={!compact && !!message.diff}>
       <summary className="flex cursor-pointer list-none items-center gap-2 py-1 leading-5 text-muted hover:text-text">
         <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`} title={message.name}>
           {message.label}
@@ -271,7 +286,11 @@ export function ChatView({
   contextPercent,
   agents = [],
   composerBorder = true,
-  compact = false
+  compact = false,
+  composerAbove,
+  composerChips,
+  extraSend,
+  cleanText
 }: {
   // Conversa dona do rascunho guardado.
   draftKey: string
@@ -296,8 +315,18 @@ export function ChatView({
   agents?: AgentDef[]
   // Linha separando a caixa de escrever da conversa; o modo foco do drawer tira.
   composerBorder?: boolean
-  // Coluna estreita (o modo design): ditando, só o fundo do microfone acende, e o contexto não
-  // aparece embaixo, para a linha do modelo e do modo caber sem quebrar.
+  // Em cima da caixa de escrever (o "Selecionar" do modo design).
+  composerAbove?: ReactNode
+  // Dentro da caixa, antes do texto (a parte escolhida na página, com o X para soltar).
+  composerChips?: ReactNode
+  // Algo a enviar além do texto (os comentários na página do modo design): libera o Enviar mesmo
+  // com a caixa vazia, e `compose` monta o texto que vai.
+  extraSend?: { compose: (text: string) => string }
+  // Tira da resposta do Claude o que é recado para o app, não para a pessoa (as linhas ROTA e TELA
+  // do modo design).
+  cleanText?: (text: string) => string
+  // Chat reduzido (o modo design): comandos e edições só na linha, sem o último pedido preso no
+  // topo, e a linha de baixo mais curta (esforço sem as bolinhas, contexto sem a palavra).
   compact?: boolean
 }) {
   const attachments = useAttachments()
@@ -428,6 +457,10 @@ export function ChatView({
   // A prévia da resposta some quando o mesmo texto já chegou no histórico.
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant')
   const partial = live?.partial && lastAssistant?.text !== live.partial.trim() ? live.partial : ''
+  const cleanRef = useRef(cleanText)
+  cleanRef.current = cleanText
+  // Estável: mudar a função a cada render não refaz a conversa inteira.
+  const clean = useMemo(() => (text: string) => (cleanRef.current ? cleanRef.current(text) : text), [])
 
   const running = status === 'running' || status === 'needs-you' || waiting.length > 0
   const footers = useMemo(() => turnFooters(messages, running), [messages, running])
@@ -435,12 +468,13 @@ export function ChatView({
   const fromHistory = currentTurn(messages)
   const turnStartedAt = live?.turnStartedAt ?? fromHistory.startedAt
   const turnTokens = Math.max(live?.turnStartedAt ? live.turnTokens : 0, fromHistory.tokens)
-  const canSend = draft.trim().length > 0 || attachments.items.length > 0
+  const canSend = draft.trim().length > 0 || attachments.items.length > 0 || !!extraSend
 
   const send = () => {
     if (dictation.state !== 'idle') dictation.stop()
     if (!canSend) return
-    const text = draft.trim()
+    const typed = draft.trim()
+    const text = extraSend && !typed.startsWith('/') ? extraSend.compose(typed) : typed
     if (text === '/mcp') {
       setDraft('')
       return onOpenMcp()
@@ -538,11 +572,11 @@ export function ChatView({
   // não obriga a redesenhar a conversa inteira (com diffs, raciocínio e tudo).
   const history = useMemo(() => {
     const timeline: TimelineItem[] = []
-    const user = (key: string, text: string, at?: string, queued?: boolean, images?: number, view?: ImageView) =>
+    const user = (key: string, text: string, at?: string, queued?: boolean, images?: number, view?: ImageView, marks?: MessageMark[]) =>
       timeline.push({
         kind: 'user',
         key,
-        node: <UserBubble text={text} at={at} queued={queued} images={images} imageView={view} />
+        node: <UserBubble text={text} at={at} queued={queued} images={images} imageView={view} marks={marks} />
       })
     const step = (key: string, dot: string, node: ReactNode, dotTop?: number) =>
       timeline.push({ kind: 'step', key, dot, dotTop, node })
@@ -550,7 +584,7 @@ export function ChatView({
       if (m.role === 'user') {
         const read = loadImagesRef.current
         const view = m.images && read ? imageView(m.id, () => read(m.id)) : undefined
-        return user(m.id, m.text, m.at, m.queued, m.images, view)
+        return user(m.id, m.text, m.at, m.queued, m.images, view, m.marks)
       }
       if (m.role === 'event') {
         // Divisor: troca de modelo, esforço, modo ou compactação no meio da conversa.
@@ -587,14 +621,14 @@ export function ChatView({
         // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
         const pending = !m.result && !m.diff && running && i === messages.length - 1
         const dot = m.error ? 'bg-red-400' : pending ? 'bg-running animate-pulse' : 'bg-emerald-400'
-        return step(m.id, dot, m.name === 'Bash' ? <BashRow message={m} compact={compact} /> : <ToolRow message={m} />, DOT_ROW)
+        return step(m.id, dot, m.name === 'Bash' ? <BashRow message={m} compact={compact} /> : <ToolRow message={m} compact={compact} />, DOT_ROW)
       }
       const footer = footers.get(m.id)
       step(
         m.id,
         'bg-faint',
         <div className="text-[15px] leading-relaxed text-text">
-          <Markdown text={m.text} />
+          <Markdown text={clean(m.text)} />
           {footer && (
             <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-faint">
               <span>
@@ -602,14 +636,14 @@ export function ChatView({
                 {footer.duration !== undefined && ` - levou ${formatDuration(footer.duration)}`}
                 {footer.tokens > 0 && ` - ${formatTokens(footer.tokens)}`}
               </span>
-              <CopyButton text={m.text} label="Copiar resposta" />
+              <CopyButton text={clean(m.text)} label="Copiar resposta" />
             </div>
           )}
         </div>
       )
     })
     return timeline
-  }, [messages, footers, running, compact])
+  }, [messages, footers, running, compact, clean])
 
   timeline.push(...history)
   waiting.forEach((w) =>
@@ -642,7 +676,7 @@ export function ChatView({
       'partial',
       'bg-running animate-pulse',
       <div className="text-[15px] leading-relaxed text-text">
-        <Markdown text={partial} />
+        <Markdown text={clean(partial)} />
       </div>
     )
   }
@@ -741,6 +775,7 @@ export function ChatView({
 
       <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
         {live?.remote && <RemoteControlBar remote={live.remote} onTurnOff={() => onRemoteControl(false)} />}
+        {composerAbove}
         <div className="relative rounded-lg border border-line bg-surface focus-within:border-line-strong">
           <Presence kind="menu">
             {commands && (
@@ -752,6 +787,7 @@ export function ChatView({
               <AgentMenu items={mention.items} active={activeCommand} onHover={setActiveCommand} onSelect={selectAgent} />
             )}
           </Presence>
+          {composerChips}
           <AttachmentList items={attachments.items} onRemove={attachments.remove} />
           <textarea
             ref={textarea}
@@ -792,7 +828,7 @@ export function ChatView({
               <Paperclip size={15} />
             </button>
             <span className="flex-1" />
-            {!compact && dictation.state !== 'idle' && (
+            {dictation.state !== 'idle' && (
               <span className="mr-1 flex items-center gap-2 text-[12px] text-running">
                 {dictation.state === 'listening' ? <VoiceWave /> : 'Ligando…'}
               </span>
@@ -804,9 +840,7 @@ export function ChatView({
               className={`mr-1 flex size-7 items-center justify-center rounded-md ${
                 dictation.state === 'idle'
                   ? 'text-muted hover:bg-surface-2 hover:text-text'
-                  : compact && dictation.state === 'listening'
-                    ? 'bg-running text-white hover:brightness-110'
-                    : 'bg-running/15 text-running hover:bg-running/25'
+                  : 'bg-running/15 text-running hover:bg-running/25'
               }`}
             >
               <Mic size={15} />

@@ -1,2 +1,2 @@
-export type { Message } from '../../../shared/history'
+export type { Message, MessageMark } from '../../../shared/history'
 

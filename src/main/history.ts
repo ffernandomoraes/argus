@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Message } from '../shared/history'
+import type { Message, MessageMark } from '../shared/history'
 import { diffFromResult } from './diffs'
 import { sessionsDir } from './sessions'
 import { describeTool } from './toolLabels'
@@ -33,6 +33,20 @@ function promptText(content: unknown): string | null {
         : []
   const text = parts.map((t) => t.trim()).filter((t) => t && !t.startsWith('<')).join('\n\n')
   return text || null
+}
+
+// Marcas que o modo design põe no contexto do pedido: <argus-marca tipo="selecao">Topo › Botão</argus-marca>.
+function marksOf(content: unknown): MessageMark[] | undefined {
+  const parts =
+    typeof content === 'string'
+      ? [content]
+      : Array.isArray(content)
+        ? content.filter((c: Line) => c?.type === 'text').map((c: Line) => String(c.text))
+        : []
+  const marks = parts.flatMap((t) =>
+    [...t.matchAll(/<argus-marca tipo="([\w-]+)">([^<]{1,200})<\/argus-marca>/g)].map((m) => ({ kind: m[1], text: m[2] }))
+  )
+  return marks.length ? marks : undefined
 }
 
 async function readSession(projectPath: string, sessionId: string): Promise<string | null> {
@@ -107,7 +121,7 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
     if (l.type === 'attachment' && l.attachment?.type === 'queued_command' && !l.isSidechain) {
       const text = promptText(l.attachment.prompt)
       if (text) {
-        messages.push({ id: l.uuid, role: 'user', text, at: l.timestamp, queued: true })
+        messages.push({ id: l.uuid, role: 'user', text, at: l.timestamp, queued: true, marks: marksOf(l.attachment.prompt) })
         queuedTexts.add(text)
       }
       continue
@@ -133,7 +147,7 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
       if (text && queuedTexts.delete(text)) continue
       // Mensagem só com print, sem texto, também aparece.
       if (text || images) {
-        messages.push({ id: l.uuid, role: 'user', text: text ?? '', at: l.timestamp, images: images || undefined })
+        messages.push({ id: l.uuid, role: 'user', text: text ?? '', at: l.timestamp, images: images || undefined, marks: marksOf(content) })
       }
       continue
     }

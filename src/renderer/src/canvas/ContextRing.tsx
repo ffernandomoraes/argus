@@ -1,8 +1,10 @@
 // Anel pequeno com a porcentagem da janela de contexto ocupada pela conversa.
+// A cor vai de um vermelho apagado (pouco contexto) a um vermelho forte (cheio), para avisar
+// que encher a janela atrapalha. O apagado sai da mistura com a cor do trilho: no tema claro
+// fica rosado e escurece até o fim; no escuro, um vermelho escuro de verdade sumiria no fundo.
 function ringColor(percent: number): string {
-  if (percent >= 90) return '#ef4444'
-  if (percent >= 75) return 'var(--color-needs-you)'
-  return 'var(--color-muted)'
+  const strength = 30 + (percent / 100) * 70
+  return `color-mix(in oklab, #dc2626 ${strength}%, var(--color-line-strong))`
 }
 
 export function ContextRing({ percent }: { percent: number }) {

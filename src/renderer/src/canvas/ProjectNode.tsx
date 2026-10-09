@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore, type NodeProps } from '@xyflow/react'
 import { ChevronDown, ChevronUp, Folder, List, MessageSquare, PenTool, Plus } from 'lucide-react'
@@ -12,38 +12,36 @@ import { CodeTyping } from './CodeTyping'
 import { ProjectServerButton } from '../devServers/ProjectServerButton'
 import { Tooltip } from './NavBar'
 import { IconTile } from '../settings/controls'
-import { AgentItem, ConversationItem, useNow } from './ConversationItem'
+import { AgentItem, ConversationRow, useNow } from './ConversationItem'
 import { getRunningAgents, useRunningAgentsVersion } from './runningAgents'
 import { useBranch, useSessions, useUncommitted } from './sessionsStore'
 import type { RunningAgent } from '../../../shared/agents'
 import type { ConversationSummary, ProjectNode as ProjectNodeType } from './types'
 
-// As conversas mais recentes ficam empilhadas embaixo da pasta; todas abrem pelo botão
-// abaixo da lista, no painel flutuante.
+// As conversas mais recentes ficam como linhas dentro da caixa da pasta; todas abrem pelo
+// botão no fim da lista, no painel flutuante.
 const MAX_CONVERSATIONS = 3
 
 // Recolhida, a pasta ainda mostra o que pede atenção, para nenhum aviso sumir junto.
 const isActive = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'
 
-// Conversas recuadas e mais estreitas que a pasta, como itens dentro dela. As linhas formam
-// uma árvore: descem de baixo da pasta, alinhadas ao ícone de pasta, e entram pela lateral
-// esquerda de cada conversa.
-const INDENT = 44
+// Conversas recuadas dentro da caixa, cada uma com uma perninha que desce de baixo do ícone
+// da pasta e entra pela esquerda dela. As posições saem das alturas fixas das linhas (sem
+// medir o layout): cabeçalho de 56px com o ícone de 28px no meio, conversa de 32px
+// (ConversationRow) e subagente de 24px (AgentItem), com ROW_GAP entre elas.
+const INDENT = 34
 // Meio do ícone de pasta: 12px de respiro do cabeçalho + metade do quadradinho de 28px.
 const TRUNK = 26
+// Base do ícone, contada do topo da lista: 56 / 2 + 14 = 42, e a lista começa em 56.
+const TRUNK_TOP = -14
+const ROW_HEIGHT = { conversation: 32, agent: 24 }
+// Espaço entre as linhas (o gap-1 da lista), para o fundo de cada conversa aparecer separado.
+const ROW_GAP = 4
 const RADIUS = 6
-// Subagente rodando: mais um nível, recuado em relação à conversa que o lançou. A linha sai
-// de baixo da conversa, alinhada ao ícone dela (12px de respiro + metade do ícone de 13px).
-const SUB_INDENT = 36
-const SUB_TRUNK = 18
 
-// Onde a pasta termina e onde fica o meio e a base de cada linha da lista, medidos no layout
-// (sem o zoom do canvas), para as linhas acertarem as laterais mesmo quando um bloco muda de altura.
-type Middles = { project: number; items: { middle: number; bottom: number }[] }
-
-// Linha da árvore: desce de (x, from) até a altura `to` e entra pela lateral em `end`.
-function route(x: number, from: number, to: number, end: number): string {
-  return [`M ${x} ${from}`, `V ${to - RADIUS}`, `Q ${x} ${to} ${x + RADIUS} ${to}`, `H ${end}`].join(' ')
+// Perninha: desce do ícone até o meio da conversa e entra pela lateral.
+function leg(middle: number): string {
+  return `M ${TRUNK} ${TRUNK_TOP} V ${middle - RADIUS} Q ${TRUNK} ${middle} ${TRUNK + RADIUS} ${middle} H ${INDENT}`
 }
 
 // Conversas na ordem da lista, cada uma seguida dos subagentes que ela tem rodando agora.
@@ -80,7 +78,7 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
     const group = parentId ? s.nodeLookup.get(parentId) : undefined
     return group?.type === 'area' ? (group.data.color as string) : undefined
   })
-  // Linha da conversa rodando na cor do grupo; grupo cinza (o padrão) conta como sem cor.
+  // Linha até a conversa rodando e os subagentes na cor do grupo; grupo cinza (o padrão) conta como sem cor.
   const flowColor = groupColor && groupColor !== DEFAULT_GROUP_COLOR ? groupColor : 'var(--color-running)'
   const now = useNow()
   const {
@@ -96,82 +94,19 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
   } = useCanvasActions()
   const [newMenu, setNewMenu] = useState<MenuState | null>(null)
 
-  const rootRef = useRef<HTMLDivElement>(null)
-  const blockRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<HTMLUListElement>(null)
-  const [middles, setMiddles] = useState<Middles | null>(null)
-
-  useLayoutEffect(() => {
-    const root = rootRef.current
-    if (!root) return
-    const measure = () => {
-      const block = blockRef.current
-      if (!block) return
-      const items = [...(listRef.current?.children ?? [])] as HTMLElement[]
-      const next = {
-        project: block.offsetTop + block.offsetHeight,
-        items: items.map((el) => ({ middle: el.offsetTop + el.offsetHeight / 2, bottom: el.offsetTop + el.offsetHeight }))
-      }
-      setMiddles((cur) => (JSON.stringify(cur) === JSON.stringify(next) ? cur : next))
+  // Meio de cada conversa na lista, para as perninhas.
+  const legs: { middle: number; running: boolean }[] = []
+  let top = 0
+  for (const row of rows) {
+    if (row.kind === 'conversation') {
+      legs.push({ middle: top + ROW_HEIGHT.conversation / 2, running: row.conversation.status === 'running' })
     }
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(root)
-    return () => observer.disconnect()
-  }, [rows.length])
+    top += ROW_HEIGHT[row.kind] + ROW_GAP
+  }
 
   return (
-    <div ref={rootRef} className="relative flex flex-col gap-2.5" style={{ width: INSTANCE_WIDTH }}>
-      {middles && middles.items.length === rows.length && rows.length > 0 && (
-        <svg
-          aria-hidden="true"
-          className="pointer-events-none absolute top-0 h-full overflow-visible"
-          style={{ left: 0, width: INDENT }}
-        >
-          {rows.map((row, i) =>
-            row.kind === 'conversation' ? (
-              <path
-                key={i}
-                d={route(TRUNK, middles.project, middles.items[i].middle, INDENT)}
-                fill="none"
-                stroke="var(--color-line-strong)"
-                strokeWidth={1.5}
-              />
-            ) : null
-          )}
-          {/* Por cima das outras: o caminho até a conversa rodando e até cada subagente, tracejado andando. */}
-          {rows.map((row, i) =>
-            row.kind === 'agent' ? (
-              <path
-                key={`agent-${row.agent.id}`}
-                d={route(INDENT + SUB_TRUNK, middles.items[row.parent].bottom, middles.items[i].middle, INDENT + SUB_INDENT)}
-                fill="none"
-                stroke={flowColor}
-                strokeWidth={1.5}
-                className="conversation-flow"
-              />
-            ) : row.conversation.status === 'running' ? (
-              <path
-                key={`running-${i}`}
-                d={route(TRUNK, middles.project, middles.items[i].middle, INDENT)}
-                fill="none"
-                stroke={flowColor}
-                strokeWidth={1.5}
-                className="conversation-flow"
-              />
-            ) : null
-          )}
-        </svg>
-      )}
-
-      {/* Branch atual, fora do card: acima do canto esquerdo, na mesma altura e no mesmo estilo das ações. */}
-      {branch && (
-        <div className="absolute bottom-full left-0 mb-1.5 flex h-6 max-w-[calc(100%-40px)] items-center rounded-md border border-line bg-surface px-2 text-[12px] text-muted shadow-sm">
-          <BranchLabel branch={branch} changes={uncommitted?.length} />
-        </div>
-      )}
-
-      {/* Ações da pasta, fora do card: acima do canto direito, como o nome do grupo fica acima da borda. */}
+    <div className="relative" style={{ width: INSTANCE_WIDTH }}>
+      {/* Ações da pasta, fora do card: acima do canto direito. */}
       <div className="nodrag absolute bottom-full right-0 mb-1.5 flex items-center gap-1">
         <ProjectServerButton path={data.path} />
         {/* "+": nova conversa ou novo design (os designs que já existem ficam na lista de conversas). */}
@@ -199,28 +134,29 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
         {newMenu && createPortal(<ContextMenu menu={newMenu} onClose={() => setNewMenu(null)} />, document.body)}
       </div>
 
+      {/* Uma caixa só: cabeçalho com a pasta e a branch, e as conversas como linhas dentro dela.
+          O ícone fica num quadradinho tingido de leve: na cor do grupo, para não brigar com ele;
+          fora de grupo, no azul de pasta do Finder. Selecionada, a borda vai para a cor de destaque. */}
       <div
-        ref={blockRef}
-        // Destaque da pasta sobre as conversas: borda mais forte, cabeçalho mais alto,
-        // nome maior e o ícone num quadradinho tingido de leve: na cor do grupo, para não brigar com ele;
-        // fora de grupo, no azul de pasta do Finder. Selecionada, a borda vai para a cor de destaque.
         className="flex flex-col overflow-hidden rounded-xl border bg-project shadow-xl shadow-black/40"
         style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line-strong)' }}
       >
-        <header
-          className={`flex items-center gap-2.5 px-3 py-2.5 ${conversations.length === 0 ? 'border-b border-line' : ''}`}
-        >
+        <header className="flex h-14 shrink-0 items-center gap-2.5 px-3">
           <IconTile color={groupColor ?? '#3d9df5'} size={28} soft>
-            {running ? (
-              <CodeTyping size={16} label="Conversa em andamento" />
-            ) : (
-              <Folder size={15} />
-            )}
+            {running ? <CodeTyping size={16} label="Conversa em andamento" /> : <Folder size={15} />}
           </IconTile>
           <div className="flex min-w-0 flex-1 flex-col">
             <EditableName id={id} value={data.name} className="text-[15px] font-semibold leading-tight" />
             <PathLabel path={data.path} className="text-[12px] text-faint" />
           </div>
+          {branch && (
+            <BranchLabel
+              branch={branch}
+              changes={uncommitted?.length}
+              highlight
+              className="max-w-[40%] shrink text-[12px] text-muted"
+            />
+          )}
           {conversations.length > 0 && (
             <button
               aria-label={collapsed ? 'Mostrar conversas' : 'Recolher conversas'}
@@ -229,61 +165,85 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
                 e.stopPropagation()
                 toggleProject(id)
               }}
-              className="nodrag flex size-6 shrink-0 items-center justify-center rounded-md text-muted hover:bg-line hover:text-text"
+              className="nodrag -mr-1 flex size-6 shrink-0 items-center justify-center rounded-md text-muted hover:bg-line hover:text-text"
             >
               {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
             </button>
           )}
         </header>
 
-        {conversations.length === 0 && <p className="bg-card px-3 py-2.5 text-xs text-faint">Nenhuma conversa ainda</p>}
-      </div>
+        {conversations.length === 0 && (
+          <p className="border-t border-line px-3 py-2.5 text-xs text-faint">Nenhuma conversa ainda</p>
+        )}
 
-      {shown.length > 0 && (
-        <ul ref={listRef} className="flex flex-col gap-2.5" style={{ marginLeft: INDENT }}>
-          {rows.map((row) => {
-            const c = row.conversation
-            if (row.kind === 'agent') {
+        {(rows.length > 0 || !collapsed) && conversations.length > 0 && (
+          <ul className="relative flex flex-col gap-1 pb-1.5 pr-1.5" style={{ paddingLeft: INDENT }}>
+            <svg
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 h-full overflow-visible"
+              style={{ width: INDENT }}
+            >
+              {legs.map((l, i) => (
+                <path key={i} d={leg(l.middle)} fill="none" stroke="var(--color-line-strong)" strokeWidth={1.5} />
+              ))}
+              {/* Por cima das outras: o caminho até a conversa rodando, tracejado andando. */}
+              {legs.map((l, i) =>
+                l.running ? (
+                  <path
+                    key={`running-${i}`}
+                    d={leg(l.middle)}
+                    fill="none"
+                    stroke={flowColor}
+                    strokeWidth={1.5}
+                    className="conversation-flow"
+                  />
+                ) : null
+              )}
+            </svg>
+            {rows.map((row, i) => {
+              const c = row.conversation
+              if (row.kind === 'agent') {
+                return (
+                  <AgentItem
+                    key={`agent-${row.agent.id}`}
+                    agent={row.agent}
+                    first={row.parent === i - 1}
+                    color={flowColor}
+                    onOpen={() => openConversation(id, c.id)}
+                  />
+                )
+              }
               return (
-                <AgentItem
-                  key={`agent-${row.agent.id}`}
-                  agent={row.agent}
-                  style={{ marginLeft: SUB_INDENT }}
+                <ConversationRow
+                  key={c.id}
+                  conversation={c}
+                  now={now}
+                  poppedOut={poppedOut.has(c.id)}
+                  active={
+                    (activeConversation?.nodeId === id &&
+                      (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)) ||
+                    (!!c.designId && activeDesign?.nodeId === id && activeDesign.designId === c.designId)
+                  }
                   onOpen={() => openConversation(id, c.id)}
+                  onContextMenu={(e) => openConversationMenu(e, id, c)}
                 />
               )
-            }
-            return (
-              <ConversationItem
-                key={c.id}
-                card
-                conversation={c}
-                now={now}
-                poppedOut={poppedOut.has(c.id)}
-                active={
-                  (activeConversation?.nodeId === id &&
-                    (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)) ||
-                  (!!c.designId && activeDesign?.nodeId === id && activeDesign.designId === c.designId)
-                }
-                onOpen={() => openConversation(id, c.id)}
-                onContextMenu={(e) => openConversationMenu(e, id, c)}
-              />
-            )
-          })}
-        </ul>
-      )}
-
-      {/* Fecha a lista: depois da última conversa, no mesmo recuo, fora das linhas da árvore. */}
-      {conversations.length > 0 && !collapsed && (
-        <button
-          onClick={() => openAllConversations(id)}
-          className="nodrag flex items-center gap-1.5 self-start rounded-md px-2.5 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text"
-          style={{ marginLeft: INDENT }}
-        >
-          <List size={13} />
-          Ver todas as {conversations.length} conversas
-        </button>
-      )}
+            })}
+            {/* Fecha a lista: abre todas no painel flutuante. */}
+            {!collapsed && (
+              <li>
+                <button
+                  onClick={() => openAllConversations(id)}
+                  className="nodrag flex h-7 w-full items-center gap-2.5 rounded-lg px-2 text-xs text-faint hover:bg-fill hover:text-text"
+                >
+                  <List size={12} className="shrink-0" />
+                  Ver todas as {conversations.length} conversas
+                </button>
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

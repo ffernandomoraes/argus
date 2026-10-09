@@ -35,8 +35,8 @@ export const INSTANCE_MIN_HEIGHT = 130
 // os botões. As linhas até as conversas ficam dentro da caixa, no recuo da pilha.
 export const PROJECT_OUTSET = { left: 0, top: 30 }
 
-// O grupo desenha o nome e a setinha acima da borda (24px + 6px de respiro).
-export const AREA_OUTSET = { left: 0, top: 30 }
+// O grupo desenha o nome e os botões em cima da borda: metade (12px) fica acima dela.
+export const AREA_OUTSET = { left: 0, top: 12 }
 
 // "~/Desktop/proj" (no Windows, "~\Desktop\proj"): é assim que o canvas guarda as pastas.
 export function displayPath(path: string): string {

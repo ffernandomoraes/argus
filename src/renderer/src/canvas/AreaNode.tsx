@@ -31,7 +31,7 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
   const stripe = `color-mix(in srgb, ${color} 14%, transparent)`
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center rounded-xl"
+      className="absolute inset-0 flex items-center justify-center rounded-2xl"
       style={{ background: `repeating-linear-gradient(-45deg, ${stripe} 0 2px, transparent 2px 14px)` }}
     >
       <button
@@ -64,7 +64,11 @@ function AccountTag({ account, color }: { account?: string; color: string }) {
     <span
       title={`Conta do Claude deste grupo: ${current.name}`}
       className="flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
-      style={{ color, borderColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
+      style={{
+        color,
+        borderColor: `color-mix(in srgb, ${color} 35%, transparent)`,
+        background: `color-mix(in srgb, ${color} 12%, var(--color-bg))`
+      }}
     >
       <ClaudeIcon size={10} />
       <span className="truncate">{current.name}</span>
@@ -91,57 +95,58 @@ export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
         handleStyle={{ background: color, border: 'none', width: 8, height: 8 }}
       />
 
-      {/* Nome e setinha ficam acima do grupo, fora da borda */}
-      <div className="absolute bottom-full left-0 right-0 mb-1.5 flex items-end justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          {/* Dois cliques no nome renomeiam o grupo. */}
-          <div
-            onDoubleClick={(e) => {
-              e.stopPropagation()
-              startRename(id)
-            }}
-            className="flex min-w-0 max-w-full items-center rounded-md px-2 py-0.5"
-            style={{ color, background: `color-mix(in srgb, ${color} 22%, var(--color-bg))` }}
-          >
-            <EditableName id={id} value={data.label} className="text-[12px] font-semibold uppercase tracking-widest" />
-          </div>
-          <AccountTag account={data.account} color={color} />
+      {/* Nome numa etiqueta cheia na cor do grupo, em cima da borda, no canto esquerdo. */}
+      <div className="absolute left-4 right-24 top-0 z-10 flex -translate-y-1/2 items-center gap-1.5">
+        {/* Dois cliques no nome renomeiam o grupo. */}
+        <div
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            startRename(id)
+          }}
+          className="flex h-6 min-w-0 max-w-full items-center rounded-full px-3 text-white shadow-sm [&_input]:text-text"
+          style={{ background: color }}
+        >
+          <EditableName id={id} value={data.label} className="text-[12px] font-semibold" />
         </div>
-        <div className="flex shrink-0 items-center">
-          <button
-            aria-label={obscured ? 'Mostrar conteúdo' : 'Ocultar conteúdo'}
-            title={obscured ? 'Mostrar conteúdo' : 'Ocultar conteúdo'}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleObscure(id)
-            }}
-            className="nodrag flex size-6 items-center justify-center rounded-md opacity-70 hover:bg-surface-2 hover:opacity-100"
-            style={{ color }}
-          >
-            <Visibility size={14} />
-          </button>
-          <button
-            aria-label={collapsed ? 'Expandir grupo' : 'Recolher grupo'}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleGroup(id)
-            }}
-            className="nodrag flex size-6 items-center justify-center rounded-md opacity-70 hover:bg-surface-2 hover:opacity-100"
-            style={{ color }}
-          >
-            <Chevron size={14} />
-          </button>
-        </div>
+        <AccountTag account={data.account} color={color} />
       </div>
 
-      {/* Recebendo um bloco arrastado: borda cheia e fundo mais forte, para avisar onde ele vai entrar. */}
+      {/* Ocultar e recolher, também em cima da borda, no canto direito. */}
       <div
-        className={`flex h-full w-full items-center rounded-xl border px-3 transition-[background-color,border-color,box-shadow] duration-150 ${
-          receiving ? 'border-solid' : 'border-dashed'
-        }`}
+        className="absolute right-4 top-0 z-10 flex -translate-y-1/2 items-center rounded-lg border bg-bg p-0.5"
+        style={{ borderColor: `color-mix(in srgb, ${color} 50%, transparent)` }}
+      >
+        <button
+          aria-label={obscured ? 'Mostrar conteúdo' : 'Ocultar conteúdo'}
+          title={obscured ? 'Mostrar conteúdo' : 'Ocultar conteúdo'}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleObscure(id)
+          }}
+          className="nodrag flex size-5 items-center justify-center rounded-md opacity-70 hover:bg-surface-2 hover:opacity-100"
+          style={{ color }}
+        >
+          <Visibility size={13} />
+        </button>
+        <button
+          aria-label={collapsed ? 'Expandir grupo' : 'Recolher grupo'}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleGroup(id)
+          }}
+          className="nodrag flex size-5 items-center justify-center rounded-md opacity-70 hover:bg-surface-2 hover:opacity-100"
+          style={{ color }}
+        >
+          <Chevron size={13} />
+        </button>
+      </div>
+
+      {/* Recebendo um bloco arrastado: borda na cor cheia e fundo mais forte, para avisar onde ele vai entrar. */}
+      <div
+        className="flex h-full w-full items-center rounded-2xl border px-3 pt-1 transition-[background-color,border-color,box-shadow] duration-150"
         style={{
-          borderColor: receiving ? color : `color-mix(in srgb, ${color} ${collapsed ? 55 : 45}%, transparent)`,
-          background: `color-mix(in srgb, ${color} ${receiving ? 14 : collapsed ? 8 : 4}%, ${collapsed ? 'var(--color-surface)' : 'transparent'})`,
+          borderColor: receiving ? color : `color-mix(in srgb, ${color} 50%, transparent)`,
+          background: `color-mix(in srgb, ${color} ${receiving ? 14 : collapsed ? 8 : 6}%, ${collapsed ? 'var(--color-surface)' : 'transparent'})`,
           boxShadow: receiving ? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent)` : undefined
         }}
       >

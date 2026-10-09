@@ -1,8 +1,19 @@
 import { GitBranch } from 'lucide-react'
 
 // Branch do git: ícone e nome, cortado no fim quando falta espaço (o nome inteiro fica no title).
-// Com arquivos não comitados, o número deles vem depois do nome, numa pílula cinza discreta.
-export function BranchLabel({ branch, changes, className }: { branch: string; changes?: number; className?: string }) {
+// Com arquivos não comitados, o número deles vem depois do nome, numa pílula cinza discreta
+// (ou âmbar, com `highlight`, no cabeçalho da pasta).
+export function BranchLabel({
+  branch,
+  changes,
+  highlight = false,
+  className
+}: {
+  branch: string
+  changes?: number
+  highlight?: boolean
+  className?: string
+}) {
   const dirty = !!changes && changes > 0
   const title = dirty
     ? `Branch: ${branch} - ${changes} ${changes === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`
@@ -14,7 +25,9 @@ export function BranchLabel({ branch, changes, className }: { branch: string; ch
       {dirty && (
         <span
           aria-label={title}
-          className="ml-0.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-surface-2 px-1 font-sans text-[11px] font-medium leading-none text-muted"
+          className={`ml-0.5 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 font-sans text-[11px] font-medium leading-none ${
+            highlight ? 'bg-needs-you/20 font-semibold text-needs-you' : 'bg-surface-2 text-muted'
+          }`}
         >
           {changes > 999 ? '999+' : changes}
         </span>

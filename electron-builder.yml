@@ -12,6 +12,14 @@ files:
   # O app usa o `claude` instalado na máquina; o binário que vem com o SDK (~200 MB) não entra.
   - '!node_modules/@anthropic-ai/claude-agent-sdk-*/**'
 
+# Só as traduções do Chromium em português e inglês (as outras ~200 somavam ~48 MB). Valem para
+# os textos do próprio Chromium, como o menu do botão direito nos campos de texto.
+electronLanguages:
+  - pt_BR
+  - pt-BR
+  - en
+  - en-US
+
 # node-pty carrega .node e executa o spawn-helper: os dois precisam estar fora do asar.
 asarUnpack:
   - node_modules/node-pty/**

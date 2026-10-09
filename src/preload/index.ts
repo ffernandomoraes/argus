@@ -5,6 +5,7 @@ import type { CanvasViewport } from '../shared/canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
 import type { CliStatus } from '../shared/cli'
+import type { Design, DesignSummary } from '../shared/design'
 import type { AppSettings } from '../shared/appSettings'
 import type { AuthState, LoginMethod } from '../shared/auth'
 import type { DevServer, ProjectServer } from '../shared/devServers'
@@ -195,6 +196,16 @@ contextBridge.exposeInMainWorld('api', {
     },
     respond: (result: CanvasToolResult) => ipcRenderer.send('canvasAgent:result', result)
   },
+  // Modo design: protótipos guardados em ~/.argus/design (o código fica no projeto).
+  design: {
+    load: (id: string): Promise<Design | null> => ipcRenderer.invoke('design:load', id),
+    save: (design: Design): Promise<boolean> => ipcRenderer.invoke('design:save', design),
+    list: (projectPath: string): Promise<DesignSummary[]> => ipcRenderer.invoke('design:list', projectPath),
+    trash: (id: string): Promise<boolean> => ipcRenderer.invoke('design:trash', id),
+    pick: (origin: string, on: boolean, accent: string) => ipcRenderer.send('design:pick', origin, on, accent),
+    escape: (origin: string, on: boolean) => ipcRenderer.send('design:escape', origin, on),
+    track: (origin: string) => ipcRenderer.send('design:track', origin)
+  },
   sessions: {
     list: (path: string): Promise<SessionSummary[]> => ipcRenderer.invoke('sessions:list', path),
     folders: (): Promise<KnownFolder[]> => ipcRenderer.invoke('sessions:folders'),
@@ -206,6 +217,7 @@ contextBridge.exposeInMainWorld('api', {
     history: (path: string, id: string): Promise<Message[]> => ipcRenderer.invoke('sessions:history', path, id),
     images: (path: string, id: string, messageId: string): Promise<string[]> =>
       ipcRenderer.invoke('sessions:images', path, id, messageId),
+    context: (path: string, id: string): Promise<number> => ipcRenderer.invoke('sessions:context', path, id),
     watch: (paths: string[]) => ipcRenderer.send('sessions:watch', paths),
     onChanged: (cb: (path: string) => void) => {
       const listener = (_e: IpcRendererEvent, path: string) => cb(path)

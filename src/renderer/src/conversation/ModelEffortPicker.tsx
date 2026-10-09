@@ -4,6 +4,7 @@ import type { ClaudeModel } from '../../../shared/models'
 import type { SessionSettings } from './SessionSettings'
 import { useModels } from './useModels'
 import { useEscape } from '../useEscape'
+import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { MENU_ACTIVE, MENU_HOVER } from '../canvas/ContextMenu'
 
@@ -86,10 +87,13 @@ export function Toggle({
 
 export function ModelEffortPicker({
   settings,
-  onChange
+  onChange,
+  dots: showDots = true
 }: {
   settings: SessionSettings
   onChange: (patch: Partial<SessionSettings>) => void
+  // Falso nas colunas estreitas (modo design): o esforço fica só escrito, sem as bolinhas.
+  dots?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -109,12 +113,9 @@ export function ModelEffortPicker({
   const dots = EFFORTS.findIndex((e) => e.value === settings.effort) + 1
 
   useEffect(() => {
-    if (!open) return
-    setExpanded(null)
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    window.addEventListener('mousedown', close)
-    return () => window.removeEventListener('mousedown', close)
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (open) setExpanded(null)
+  }, [open])
+  useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
   const row = `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text ${MENU_HOVER}`
@@ -131,7 +132,7 @@ export function ModelEffortPicker({
         <span>{currentName}</span>
         {allowed.length > 0 && (
           <>
-            <EffortDots level={dots} />
+            {showDots && <EffortDots level={dots} />}
             <span className="text-faint">{effortLabel(settings.effort)}</span>
           </>
         )}
@@ -141,7 +142,7 @@ export function ModelEffortPicker({
 
       <Presence kind="menu">
         {open && (
-          <div className="absolute bottom-full left-0 z-10 mb-2 w-72 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
+          <div className="absolute bottom-full left-0 z-10 mb-2 w-72 whitespace-normal rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
             {/* Sem rolagem aqui: o submenu das versões sai para o lado e seria cortado */}
             <div>
               <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modelo</div>

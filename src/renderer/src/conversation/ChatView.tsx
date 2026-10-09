@@ -156,8 +156,9 @@ const ToolRow = memo(function ToolRow({ message }: { message: Extract<Message, {
 })
 
 // Comando no terminal, como no VS Code: o comando (IN) e a saída (OUT) ficam à vista,
-// resumidos em poucas linhas; um clique abre os dois inteiros.
-const BashRow = memo(function BashRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
+// resumidos em poucas linhas; um clique abre os dois inteiros. No chat reduzido (protótipo do modo
+// design) fica só a linha do comando, e o clique mostra o IN/OUT.
+const BashRow = memo(function BashRow({ message, compact }: { message: Extract<Message, { role: 'tool' }>; compact?: boolean }) {
   const [open, setOpen] = useState(false)
   const command = message.detail ?? message.input
   const output = message.result.trim()
@@ -176,6 +177,7 @@ const BashRow = memo(function BashRow({ message }: { message: Extract<Message, {
         <span className="truncate text-muted">{message.input}</span>
       </button>
       {/* Arrastar para copiar um trecho não conta como clique. */}
+      {(!compact || open) && (
       <div
         onClick={() => !window.getSelection()?.toString() && setOpen((o) => !o)}
         className="mt-1 grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 rounded-md border border-line bg-bg font-mono text-[13px]"
@@ -195,6 +197,7 @@ const BashRow = memo(function BashRow({ message }: { message: Extract<Message, {
           </>
         )}
       </div>
+      )}
     </div>
   )
 })
@@ -267,7 +270,8 @@ export function ChatView({
   onSettingChange,
   contextPercent,
   agents = [],
-  composerBorder = true
+  composerBorder = true,
+  compact = false
 }: {
   // Conversa dona do rascunho guardado.
   draftKey: string
@@ -292,6 +296,9 @@ export function ChatView({
   agents?: AgentDef[]
   // Linha separando a caixa de escrever da conversa; o modo foco do drawer tira.
   composerBorder?: boolean
+  // Coluna estreita (o modo design): ditando, só o fundo do microfone acende, e o contexto não
+  // aparece embaixo, para a linha do modelo e do modo caber sem quebrar.
+  compact?: boolean
 }) {
   const attachments = useAttachments()
   const imageInput = useRef<HTMLInputElement>(null)
@@ -580,7 +587,7 @@ export function ChatView({
         // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
         const pending = !m.result && !m.diff && running && i === messages.length - 1
         const dot = m.error ? 'bg-red-400' : pending ? 'bg-running animate-pulse' : 'bg-emerald-400'
-        return step(m.id, dot, m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} />, DOT_ROW)
+        return step(m.id, dot, m.name === 'Bash' ? <BashRow message={m} compact={compact} /> : <ToolRow message={m} />, DOT_ROW)
       }
       const footer = footers.get(m.id)
       step(
@@ -602,7 +609,7 @@ export function ChatView({
       )
     })
     return timeline
-  }, [messages, footers, running])
+  }, [messages, footers, running, compact])
 
   timeline.push(...history)
   waiting.forEach((w) =>
@@ -616,13 +623,14 @@ export function ChatView({
     )
   )
 
+  // No chat reduzido (protótipo do modo design), o último pedido não fica preso no topo.
   const pinnedPrompt = useMemo(() => {
-    if (!pinnedKey) return null
+    if (compact || !pinnedKey) return null
     const m = messages.find((m) => m.role === 'user' && m.id === pinnedKey)
     if (m?.role === 'user') return { key: m.id, text: m.text, images: m.images ?? 0 }
     const w = waiting.find((w) => w.id === pinnedKey)
     return w ? { key: w.id, text: w.text, images: w.images } : null
-  }, [pinnedKey, messages, waiting])
+  }, [compact, pinnedKey, messages, waiting])
 
   const scrollToPrompt = () =>
     scroller.current
@@ -784,7 +792,7 @@ export function ChatView({
               <Paperclip size={15} />
             </button>
             <span className="flex-1" />
-            {dictation.state !== 'idle' && (
+            {!compact && dictation.state !== 'idle' && (
               <span className="mr-1 flex items-center gap-2 text-[12px] text-running">
                 {dictation.state === 'listening' ? <VoiceWave /> : 'Ligando…'}
               </span>
@@ -796,7 +804,9 @@ export function ChatView({
               className={`mr-1 flex size-7 items-center justify-center rounded-md ${
                 dictation.state === 'idle'
                   ? 'text-muted hover:bg-surface-2 hover:text-text'
-                  : 'bg-running/15 text-running hover:bg-running/25'
+                  : compact && dictation.state === 'listening'
+                    ? 'bg-running text-white hover:brightness-110'
+                    : 'bg-running/15 text-running hover:bg-running/25'
               }`}
             >
               <Mic size={15} />
@@ -842,7 +852,7 @@ export function ChatView({
         )}
 
         {/* Fora da caixa de texto: contexto, modelo e esforço à esquerda, modo à direita */}
-        <div className="mt-1.5 flex items-center justify-between">
+        <div className="mt-1.5 flex items-center justify-between whitespace-nowrap">
           <div className="flex items-center gap-1">
             <button
               aria-label="Comandos"
@@ -852,10 +862,10 @@ export function ChatView({
             >
               /
             </button>
-            <ModelEffortPicker settings={settings} onChange={onSettingChange} />
+            <ModelEffortPicker settings={settings} onChange={onSettingChange} dots={!compact} />
             <span className="flex items-center gap-1 px-1 text-[11px] text-faint">
               <ContextRing percent={contextPercent} />
-              contexto
+              {!compact && 'contexto'}
             </span>
           </div>
           <PermissionModePicker

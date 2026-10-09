@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronDown, ChevronUp, ExternalLink, FolderInput, Fullscreen, FolderOpen, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, StickyNote, Terminal, Trash2, Ungroup, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, FolderInput, Fullscreen, FolderOpen, PenTool, MessageCircle, MessageCirclePlus, PanelRight, Pencil, FolderPlus, SquareDashed, SquareTerminal, StickyNote, Terminal, Trash2, Ungroup, X } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { AuthState } from '../../../shared/auth'
 import { resolveAccount } from '../auth/useAuth'
@@ -43,6 +43,7 @@ export type Deps = {
   chatPanelPopout: (nodeId: string) => void
   poppedOut: Set<string>
   trashConversation: (path: string, conversationId: string) => void
+  openDesign: (nodeId: string, designId?: string) => void
 }
 
 const plural = (n: number) => (n === 1 ? '1 instância' : `${n} instâncias`)
@@ -216,6 +217,7 @@ export function instanceMenu(deps: Deps, node: ProjectNode, repoUrl: string | nu
     { type: 'separator' },
     { type: 'action', label: 'Nova conversa', icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
     terminalSubmenu('Novo terminal aqui', (kind) => deps.addTerminal(node.position, node.parentId, node.data.path, kind)),
+    { type: 'action', label: 'Novo design', icon: PenTool, onSelect: () => deps.openDesign(node.id) },
     { type: 'separator' },
     ...(repo.length ? [...repo, { type: 'separator' } as const] : []),
     moveSubmenu(deps, node),
@@ -255,7 +257,32 @@ export function instanceMenu(deps: Deps, node: ProjectNode, repoUrl: string | nu
 
 // Conversa na lista de uma pasta. A Lixeira leva o arquivo do Claude Code: some também do
 // `claude --resume` e só volta restaurando pela Lixeira do sistema.
+// Conversa do modo design na lista da pasta: abre o drawer do design; apagar manda a pasta dele
+// para a Lixeira (o código de um protótipo fica no projeto).
+function designConversationMenu(deps: Deps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
+  return [
+    { type: 'action', label: 'Abrir design', icon: PenTool, onSelect: () => deps.openConversation(node.id, conversation.id) },
+    { type: 'separator' },
+    {
+      type: 'action',
+      label: 'Mover design para a Lixeira',
+      icon: Trash2,
+      danger: true,
+      onSelect: () =>
+        deps.confirm({
+          title: `Mover "${conversation.title}" para a Lixeira?`,
+          description: `O design vai para a Lixeira do ${SYSTEM_NAME}. O código do protótipo continua no projeto, e a conversa dele volta para a lista como uma conversa comum.`,
+          confirmLabel: 'Mover para a Lixeira',
+          onConfirm: () => {
+            if (conversation.designId) void window.api.design.trash(conversation.designId)
+          }
+        })
+    }
+  ]
+}
+
 export function conversationMenu(deps: Deps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
+  if (conversation.kind === 'design') return designConversationMenu(deps, node, conversation)
   return [
     {
       type: 'action',

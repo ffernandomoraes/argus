@@ -4,6 +4,7 @@ import type { AgentDraftRequest, AgentSaveRequest } from '../shared/agents'
 import type { CanvasViewport } from '../shared/canvas'
 import type { CanvasToolResult } from '../shared/canvasAgent'
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, PermissionAnswer } from '../shared/chat'
+import type { Design } from '../shared/design'
 import type { TerminalOpenRequest } from '../shared/terminal'
 import type { LoginMethod } from '../shared/auth'
 import { cleanupAccounts, resolveAccount } from './accounts'
@@ -18,6 +19,9 @@ import { Cli, cliStatus, installCli, openArg, uninstallCli, validFolder } from '
 import { ChatHolders } from './chatHolders'
 import { Chats } from './chats'
 import { ChatNotifier } from './notifications'
+import { escapeInPage, pickInPage, trackInPage } from './designPicker'
+import { liveSessions } from './liveSessions'
+import { designSessionIds, listDesigns, loadDesign, saveDesign, trashDesign } from './designStore'
 import { killDevServer, listDevServers } from './devServers'
 import { projectServers, startProjectServer, stopProjectServer, stopStartedServers } from './projectServers'
 import {
@@ -37,7 +41,7 @@ import { readHistory, readImages } from './history'
 import { listMemory, readMemory, writeMemory } from './memory'
 import type { MemoryProject } from '../shared/memory'
 import { SessionWatch } from './sessionWatch'
-import { listKnownFolders, listSessions, trashSession } from './sessions'
+import { listKnownFolders, listSessions, sessionContext, trashSession } from './sessions'
 import { currentBranch, fileDiff, repoUrl, uncommittedFiles } from './gitBranch'
 import { Speech } from './speech'
 import { StatusTray } from './statusTray'
@@ -508,6 +512,27 @@ app.whenReady().then(() => {
   ipcMain.on('canvasAgent:send', (_e, text: string) => canvasAgent.send(text))
   ipcMain.on('canvasAgent:interrupt', () => void canvasAgent.interrupt())
   ipcMain.on('canvasAgent:result', (_e, result: CanvasToolResult) => canvasAgent.result(result))
+  ipcMain.handle('design:load', (_e, id: string) => loadDesign(id))
+  // Com o status da conversa de cada protótipo, como a lista das conversas comuns.
+  ipcMain.handle('design:list', async (_e, path: string) => {
+    const live = await liveSessions()
+    return listDesigns(path).map((d) => ({ ...d, live: d.sessionId ? (live.get(d.sessionId) ?? null) : null }))
+  })
+  // Design da pasta gravado ou apagado: a lista de conversas dela se atualiza.
+  ipcMain.handle('design:save', (_e, design: Design) => {
+    const ok = saveDesign(design)
+    if (ok && design.projectPath) broadcast('sessions:changed', design.projectPath)
+    return ok
+  })
+  ipcMain.handle('design:trash', async (_e, id: string) => {
+    const projectPath = loadDesign(id)?.projectPath
+    const ok = await trashDesign(id)
+    if (ok && projectPath) broadcast('sessions:changed', projectPath)
+    return ok
+  })
+  ipcMain.on('design:pick', (e, origin: string, on: boolean, accent: string) => pickInPage(e.sender, origin, on, accent))
+  ipcMain.on('design:escape', (e, origin: string, on: boolean) => escapeInPage(e.sender, origin, on))
+  ipcMain.on('design:track', (e, origin: string) => trackInPage(e.sender, origin))
   ipcMain.handle('memory:list', (_e, projects: MemoryProject[]) => listMemory(projects))
   ipcMain.handle('memory:read', (_e, path: string, projects: MemoryProject[]) => readMemory(path, projects))
   ipcMain.handle('memory:write', (_e, path: string, text: string, projects: MemoryProject[]) =>
@@ -517,7 +542,12 @@ app.whenReady().then(() => {
   ipcMain.handle('agents:save', (_e, req: AgentSaveRequest) => saveAgent(req))
   ipcMain.handle('agents:remove', (_e, name: string) => removeAgent(name))
   ipcMain.handle('agents:draft', (_e, req: AgentDraftRequest) => draftAgent(req))
-  ipcMain.handle('sessions:list', (_e, path: string) => listSessions(path))
+  ipcMain.handle('sessions:list', async (_e, path: string) => {
+    // A conversa de um protótipo faz parte do design dele, que já está na lista: não aparece solta.
+    const sessions = await listSessions(path)
+    const inDesigns = designSessionIds(path)
+    return inDesigns.size ? sessions.filter((s) => !inDesigns.has(s.id)) : sessions
+  })
   ipcMain.handle('sessions:folders', () => listKnownFolders())
   ipcMain.handle('sessions:trash', (_e, path: string, id: string) => trashSession(path, id))
   ipcMain.handle('sessions:branch', (_e, path: string) => currentBranch(path))
@@ -531,6 +561,7 @@ app.whenReady().then(() => {
   ipcMain.handle('sessions:changes', (_e, path: string) => uncommittedFiles(path))
   ipcMain.on('sessions:watch', (_e, paths: string[]) => sessionWatch.setProjects(paths))
   ipcMain.handle('sessions:history', (_e, path: string, id: string) => readHistory(path, id))
+  ipcMain.handle('sessions:context', (_e, path: string, id: string) => sessionContext(path, id))
   ipcMain.handle('sessions:images', (_e, path: string, id: string, messageId: string) => readImages(path, id, messageId))
   ipcMain.handle('devServers:list', (_e, paths: string[]) => listDevServers(paths))
   ipcMain.handle('devServers:kill', (_e, pgid: number, paths: string[]) => killDevServer(pgid, paths))

@@ -14,6 +14,12 @@ export type ActiveConversation = {
   at?: XYPosition
 }
 
+// Design aberto no drawer: um dos designs da pasta (nodeId). Novo: já nasce com o id que vai usar.
+export type ActiveDesign = {
+  nodeId: string
+  designId: string
+}
+
 type CanvasActions = {
   renamingId: string | null
   startRename: (id: string) => void
@@ -43,6 +49,9 @@ type CanvasActions = {
   openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => void
   // Painel flutuante com todas as conversas da pasta.
   openAllConversations: (nodeId: string) => void
+  activeDesign: ActiveDesign | null
+  // Drawer do modo design: um design da pasta (sem designId, um novo).
+  openDesign: (nodeId: string, designId?: string) => void
   openSettings: () => void
   // Com projectPath, mostra só a memória daquela pasta.
   openMemory: (projectPath?: string) => void

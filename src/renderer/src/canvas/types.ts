@@ -17,7 +17,8 @@ export type AreaData = {
 export type ConversationSummary = {
   id: string
   title: string
-  kind: 'conversa' | 'agente'
+  // design: uma conversa do modo design (o drawer de design, não o chat).
+  kind: 'conversa' | 'agente' | 'design'
   status: SessionStatus
   // Última mensagem, em ISO. Ordena a lista e mostra "há 2h".
   updatedAt: string
@@ -27,6 +28,10 @@ export type ConversationSummary = {
   sessionId?: string
   // Conversa nova, ainda sem mensagem enviada: abre em branco e não aparece na lista.
   draft?: boolean
+  // Conversa de um protótipo do modo design: leva o ícone do design na lista.
+  design?: boolean
+  // Item do modo design: o design que ele abre.
+  designId?: string
 }
 
 export type ProjectData = {

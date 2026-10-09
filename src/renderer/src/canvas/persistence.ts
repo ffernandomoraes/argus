@@ -8,10 +8,11 @@ function clean(nodes: CanvasNode[]): CanvasNode[] {
 
 export function loadNodes(): CanvasNode[] {
   const saved = window.api.canvas.load()
-  // "conversation" e "browser" foram testes que não ficaram: não voltam para a tela.
+  // "conversation", "browser" e "design" (o card do design livre) foram testes que não ficaram: não
+  // voltam para a tela.
   if (!Array.isArray(saved)) return []
   return (saved as CanvasNode[])
-    .filter((n) => !['conversation', 'browser'].includes((n as { type?: string }).type ?? ''))
+    .filter((n) => !['conversation', 'browser', 'design'].includes((n as { type?: string }).type ?? ''))
     // As primeiras notas tinham tamanho fixo; hoje o balão acompanha o texto.
     .map((n) => (n.type === 'note' && n.style ? { ...n, style: undefined, width: undefined, height: undefined } : n))
 }

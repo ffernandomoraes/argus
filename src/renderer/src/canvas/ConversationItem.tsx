@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
-import { Bot, ExternalLink, MessageCircle } from 'lucide-react'
+import { Bot, ExternalLink, PenTool, MessageCircle } from 'lucide-react'
 import { Elapsed } from '../conversation/turnInfo'
 import { relativeTime } from './relativeTime'
 import { agentActivity } from './runningAgents'
@@ -43,7 +43,11 @@ export function ConversationItem({
           : `flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ${active ? 'bg-selection text-white [&_svg]:text-white/80 [&_.text-faint]:text-white/70' : 'hover:bg-fill'}`
       }
     >
-      <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
+      {c.design || c.kind === 'design' ? (
+        <PenTool size={13} className="shrink-0 text-muted" aria-label="Modo design" />
+      ) : (
+        <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
+      )}
       <span className="min-w-0 truncate">{c.title}</span>
       <StatusDot status={c.status} />
       {c.kind === 'agente' && <Bot size={11} className="shrink-0 text-faint" aria-label="Agente" />}

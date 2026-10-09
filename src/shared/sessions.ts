@@ -11,6 +11,8 @@ export type SessionSummary = {
   contextPercent: number
   // Nulo: nenhum processo do Claude Code está com a sessão aberta.
   live: LiveStatus | null
+  // Conversa de um protótipo do modo design (começou com as instruções <modo-design>).
+  design?: boolean
 }
 
 // Pasta onde o Claude Code já conversou (lista do "Nova pasta").

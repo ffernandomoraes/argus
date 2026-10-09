@@ -14,15 +14,16 @@ import { TitleBar } from './TitleBar'
 import { Presence } from '../motion'
 import { useNodeMotion } from './useNodeMotion'
 import { ConversationDrawer } from '../conversation/ConversationDrawer'
+import { DesignDrawer } from '../design/DesignDrawer'
 import { MemoryModal } from '../memory/MemoryModal'
 import { AgentsModal } from '../agents/AgentsModal'
 import { DevServersModal } from '../devServers/DevServersModal'
-import type { PanelRect } from '../conversation/FloatingPanel'
+import { PANEL_DEFAULT_WIDTH, PANEL_MARGIN, type PanelRect } from '../conversation/FloatingPanel'
 import type { LineRange } from '../conversation/fileLinks'
 import { getPreferences } from '../settings/preferences'
 import { useAuth } from '../auth/useAuth'
 import { AreaNode } from './AreaNode'
-import { CanvasContext, type ActiveConversation } from './CanvasContext'
+import { CanvasContext, type ActiveConversation, type ActiveDesign } from './CanvasContext'
 import { CommandBar } from './CommandBar'
 import { ConfirmDialog, type ConfirmRequest } from './ConfirmDialog'
 import { ContextMenu, type MenuState } from './ContextMenu'
@@ -51,7 +52,7 @@ import { AllConversationsPanel } from './AllConversationsPanel'
 import { AlignmentGuides } from './AlignmentGuides'
 import { EdgeFade } from './EdgeFade'
 import { loadNodes, useCanvasSync } from './persistence'
-import { getSessions, refreshNow, useSessionsVersion } from './sessionsStore'
+import { DESIGN_PREFIX, getSessions, refreshNow, useSessionsVersion } from './sessionsStore'
 import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
@@ -89,7 +90,14 @@ import {
   type Deps
 } from './useContextMenus'
 
-const nodeTypes = { area: AreaNode, project: ProjectNode, terminal: TerminalNode, chat: ChatNode, chatPanel: ChatPanelNode, note: NoteNode }
+const nodeTypes = {
+  area: AreaNode,
+  project: ProjectNode,
+  terminal: TerminalNode,
+  chat: ChatNode,
+  chatPanel: ChatPanelNode,
+  note: NoteNode
+}
 
 // Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
 function projectOf(node: CanvasNode | undefined): ProjectData | null {
@@ -122,6 +130,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const [codeFor, setCodeFor] = useState<ProjectData | null>(null)
   // Posição e tamanho do painel da conversa; lembrados enquanto o app está aberto.
   const [drawerRect, setDrawerRect] = useState<PanelRect | null>(null)
+  // Modo design: um drawer de cada vez, no lugar do da conversa. O dele nasce com metade da tela.
+  const [activeDesign, setActiveDesign] = useState<ActiveDesign | null>(null)
   // 'all' = todas as pastas; caminho = só a memória daquela pasta.
   const [memoryOpen, setMemoryOpen] = useState<'all' | string | null>(null)
   const [agentsOpen, setAgentsOpen] = useState(false)
@@ -352,6 +362,13 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       toggleProject: (id: string) => change((ns) => toggleProjectCollapse(ns, id)),
       activeConversation,
       openConversation: (nodeId: string, conversationId: string) => {
+        // Conversa do modo design: abre o drawer do design, não o chat.
+        if (conversationId.startsWith(DESIGN_PREFIX)) {
+          setActiveConversation(null)
+          closeCode()
+          setActiveDesign({ nodeId, designId: conversationId.slice(DESIGN_PREFIX.length) })
+          return
+        }
         const openIn = getPreferences().openIn
         // Já no canvas: a câmera vai até o bloco dela.
         const panel = chatPanelOf(conversationId)
@@ -359,13 +376,29 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         // Em janela separada (já aberta, ou pela preferência): abre ou traz a janela para frente.
         else if (poppedOut.has(conversationId) || openIn === 'window') popoutConversation(nodeId, conversationId)
         else if (openIn === 'node') pinConversation(nodeId, conversationId)
-        else setActiveConversation({ nodeId, conversationId })
+        else {
+          setActiveDesign(null)
+          setActiveConversation({ nodeId, conversationId })
+        }
       },
       poppedOut,
-      newConversation: (nodeId: string) =>
-        setActiveConversation({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true }),
-      newLooseConversation: (position?: XYPosition) =>
-        setActiveConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position }),
+      newConversation: (nodeId: string) => {
+        setActiveDesign(null)
+        setActiveConversation({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true })
+      },
+      newLooseConversation: (position?: XYPosition) => {
+        setActiveDesign(null)
+        setActiveConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position })
+      },
+      activeDesign,
+      // O drawer do design fica no lugar do da conversa (e do código dela).
+      // Na pasta, sem designId, começa um design novo (ela pode ter vários, cada um na lista dela).
+      openDesign: (nodeId: string, designId?: string) => {
+        setActiveConversation(null)
+        closeCode()
+        if (nodesRef.current.find((n) => n.id === nodeId)?.type !== 'project') return
+        setActiveDesign({ nodeId, designId: designId ?? crypto.randomUUID() })
+      },
       openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => {
         e.preventDefault()
         // Sem isso, o botão direito sobe até a pasta e abre o menu dela.
@@ -410,7 +443,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         openFileLink(project.path, path, lines, diff)
       }
     }),
-    [renamingId, change, nodesRef, activeConversation, poppedOut, onOpenSettings, dropTargetId] // eslint-disable-line react-hooks/exhaustive-deps
+    [renamingId, change, nodesRef, activeConversation, activeDesign, poppedOut, onOpenSettings, dropTargetId] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // Clique na notificação do sistema: abre a conversa pelo bloco dela (conversa solta) ou pelo
@@ -462,6 +495,21 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     const group = parentId ? nodes.find((n) => n.id === parentId) : undefined
     return group?.type === 'area' ? group.data.color : undefined
   }, [drawer, nodes])
+
+  // Design aberto no drawer: um da pasta. Some se a pasta sair do canvas.
+  const designView = useMemo(() => {
+    if (!activeDesign) return null
+    const node = nodes.find((n) => n.id === activeDesign.nodeId)
+    if (node?.type !== 'project') return null
+    const group = node.parentId ? nodes.find((n) => n.id === node.parentId) : undefined
+    return {
+      key: activeDesign.designId,
+      name: node.data.name,
+      target: { designId: activeDesign.designId, projectPath: node.data.path, projectName: node.data.name },
+      account: groupAccount(nodes, node),
+      tint: group?.type === 'area' ? group.data.color : undefined
+    }
+  }, [nodes, activeDesign])
 
   // Pasta do painel de todas as conversas; some junto com a pasta, se ela for excluída.
   const allConversations = useMemo(() => {
@@ -575,7 +623,6 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const deps: Deps = { nodes, setNodes: change, confirm: setConfirm, auth, trashConversation, ...actions }
   depsRef.current = deps
   const closeMenu = useCallback(() => setMenu(null), [])
-
   const onPaneContextMenu = (e: ReactMouseEvent | MouseEvent) => {
     e.preventDefault()
     const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
@@ -690,12 +737,18 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-200 ${
-          drawer || allConversations ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
+          drawer || allConversations || designView ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
         }`}
       />
       {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
       <TitleBar
-        windowTitle={drawer ? `${drawer.conversation.title} - ${drawer.project.name}` : 'Argus'}
+        windowTitle={
+          drawer
+            ? `${drawer.conversation.title} - ${drawer.project.name}`
+            : designView
+              ? `Design - ${designView.name}`
+              : 'Argus'
+        }
         uiHidden={uiHidden}
         onToggleUi={toggleUi}
       />
@@ -706,7 +759,13 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
             name={codeProject.name}
             selected={openFile?.root === codeProject.path ? openFile.path : null}
             // Sem o painel aberto, o código vai até a borda direita.
-            rightOffset={!drawer ? 16 : drawerRect ? `calc(100% - ${drawerRect.x - 16}px)` : 582}
+            rightOffset={
+              !drawer
+                ? PANEL_MARGIN
+                : drawerRect
+                  ? `calc(100% - ${drawerRect.x - PANEL_MARGIN}px)`
+                  : PANEL_DEFAULT_WIDTH + PANEL_MARGIN * 2
+            }
             onOpenFile={(path) => setOpenFile({ root: codeProject.path, path })}
             onRenamed={(from, to) =>
               setOpenFile((f) =>
@@ -781,6 +840,17 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
               setActiveConversation(null)
               closeCode()
             }}
+          />
+        )}
+      </Presence>
+      <Presence>
+        {designView && (
+          <DesignDrawer
+            key={designView.key}
+            target={designView.target}
+            account={designView.account}
+            tint={designView.tint}
+            onClose={() => setActiveDesign(null)}
           />
         )}
       </Presence>

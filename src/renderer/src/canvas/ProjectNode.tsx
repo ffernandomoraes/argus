@@ -1,7 +1,9 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore, type NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronUp, Folder, List, Plus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Folder, List, MessageSquare, PenTool, Plus } from 'lucide-react'
 import { useCanvasActions } from './CanvasContext'
+import { ContextMenu, type MenuState } from './ContextMenu'
 import { EditableName } from './EditableName'
 import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH } from './factory'
 import { PathLabel } from './PathLabel'
@@ -86,8 +88,11 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
     newConversation,
     openAllConversations,
     poppedOut,
-    toggleProject
+    toggleProject,
+    activeDesign,
+    openDesign
   } = useCanvasActions()
+  const [newMenu, setNewMenu] = useState<MenuState | null>(null)
 
   const rootRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef<HTMLDivElement>(null)
@@ -167,14 +172,29 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
       {/* Ações da pasta, fora do card: acima do canto direito, como o nome do grupo fica acima da borda. */}
       <div className="nodrag absolute bottom-full right-0 mb-1.5 flex items-center gap-1">
         <ProjectServerButton path={data.path} />
+        {/* "+": nova conversa ou novo design (os designs que já existem ficam na lista de conversas). */}
         <button
-          aria-label="Nova conversa"
-          onClick={() => newConversation(id)}
-          className="group relative flex size-6 items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm hover:bg-surface-2 hover:text-text"
+          aria-label="Novo"
+          aria-haspopup="menu"
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect()
+            setNewMenu({
+              x: r.left,
+              y: r.bottom + 4,
+              items: [
+                { type: 'action', label: 'Nova conversa', icon: MessageSquare, onSelect: () => newConversation(id) },
+                { type: 'action', label: 'Novo design', icon: PenTool, onSelect: () => openDesign(id) }
+              ]
+            })
+          }}
+          className={`group relative flex size-6 items-center justify-center rounded-md border bg-surface shadow-sm hover:bg-surface-2 hover:text-text ${
+            newMenu ? 'border-accent text-accent' : 'border-line text-muted'
+          }`}
         >
           <Plus size={13} />
-          <Tooltip label="Nova conversa" />
+          {!newMenu && <Tooltip label="Nova conversa ou design" />}
         </button>
+        {newMenu && createPortal(<ContextMenu menu={newMenu} onClose={() => setNewMenu(null)} />, document.body)}
       </div>
 
       <div
@@ -239,8 +259,9 @@ export function ProjectNode({ id, data, selected, parentId }: NodeProps<ProjectN
                 now={now}
                 poppedOut={poppedOut.has(c.id)}
                 active={
-                  activeConversation?.nodeId === id &&
-                  (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)
+                  (activeConversation?.nodeId === id &&
+                    (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)) ||
+                  (!!c.designId && activeDesign?.nodeId === id && activeDesign.designId === c.designId)
                 }
                 onOpen={() => openConversation(id, c.id)}
                 onContextMenu={(e) => openConversationMenu(e, id, c)}

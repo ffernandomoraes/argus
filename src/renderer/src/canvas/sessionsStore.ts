@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react'
+import type { DesignSummary } from '../../../shared/design'
 import type { SessionSummary, UncommittedFile } from '../../../shared/sessions'
 import type { ConversationSummary } from './types'
 
@@ -26,18 +27,37 @@ function toConversation(s: SessionSummary): ConversationSummary {
     status: s.live ?? 'idle',
     updatedAt: s.updatedAt,
     contextPercent: s.contextPercent,
-    sessionId: s.id
+    sessionId: s.id,
+    ...(s.design && { design: true })
+  }
+}
+
+// Cada design da pasta é uma conversa do modo design: o id leva "design:" para abrir o drawer dele.
+export const DESIGN_PREFIX = 'design:'
+
+function designToConversation(d: DesignSummary): ConversationSummary {
+  return {
+    id: DESIGN_PREFIX + d.id,
+    title: d.name,
+    kind: 'design',
+    status: d.live ?? 'idle',
+    updatedAt: d.updatedAt,
+    contextPercent: 0,
+    designId: d.id
   }
 }
 
 async function refresh(path: string): Promise<void> {
   const withChanges = watchingChanges.has(path)
-  const [sessions, branch, changes] = await Promise.all([
+  const [sessions, designs, branch, changes] = await Promise.all([
     window.api.sessions.list(path),
+    window.api.design.list(path),
     window.api.sessions.branch(path),
     withChanges ? window.api.sessions.changes(path) : null
   ])
-  const list = sessions.map(toConversation)
+  const list = [...sessions.map(toConversation), ...designs.map(designToConversation)].sort((a, b) =>
+    b.updatedAt.localeCompare(a.updatedAt)
+  )
   const changesSame = !withChanges || JSON.stringify(changes) === JSON.stringify(changesByPath.get(path))
   // Sem mudança, não redesenha.
   if (JSON.stringify(list) === JSON.stringify(byPath.get(path)) && branch === branchByPath.get(path) && changesSame) return

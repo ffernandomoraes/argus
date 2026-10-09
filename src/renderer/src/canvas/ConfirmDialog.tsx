@@ -6,6 +6,8 @@ export type ConfirmRequest = {
   description: string
   confirmLabel?: string
   onConfirm?: () => void
+  // Sem "action", o botão de confirmar é vermelho (apagar, descartar); com ele, azul de ação.
+  tone?: 'action'
 }
 
 export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; onClose: () => void }) {
@@ -37,7 +39,9 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
                 request.onConfirm?.()
                 onClose()
               }}
-              className="rounded-md bg-red-500 px-3.5 py-1 text-xs font-medium text-white hover:bg-red-600"
+              className={`rounded-md px-3.5 py-1 text-xs font-medium text-white ${
+                request.tone === 'action' ? 'bg-accent hover:brightness-110' : 'bg-red-500 hover:bg-red-600'
+              }`}
             >
               {request.confirmLabel}
             </button>

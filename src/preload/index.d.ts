@@ -7,6 +7,7 @@ import type { FileContent, FileDiff, FileEntry, FileOpResult } from '../shared/f
 import type { ClaudeInfo } from '../shared/models'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
 import type { CliStatus } from '../shared/cli'
+import type { Design, DesignSummary } from '../shared/design'
 import type { AppSettings } from '../shared/appSettings'
 import type { AuthState, LoginMethod } from '../shared/auth'
 import type { UpdateInfo, UpdateState } from '../shared/updates'
@@ -110,6 +111,21 @@ declare global {
         onCall: (cb: (call: CanvasToolCall) => void) => () => void
         respond: (result: CanvasToolResult) => void
       }
+      design: {
+        load: (id: string) => Promise<Design | null>
+        // Grava o design.json; falso se não deu.
+        save: (design: Design) => Promise<boolean>
+        // Designs da pasta, para a lista de conversas dela.
+        list: (projectPath: string) => Promise<DesignSummary[]>
+        // Pasta do design para a Lixeira.
+        trash: (id: string) => Promise<boolean>
+        // Seletor de seção na página do protótipo (servidor local em `origin`) aberta no drawer.
+        pick: (origin: string, on: boolean, accent: string) => void
+        // Visualizar: o Esc dentro da página do protótipo chega ao drawer (mensagem 'escape').
+        escape: (origin: string, on: boolean) => void
+        // A página do protótipo passa a avisar o endereço a cada navegação (mensagem 'location').
+        track: (origin: string) => void
+      }
       sessions: {
         list: (path: string) => Promise<SessionSummary[]>
         // Pastas onde o Claude Code já conversou, da mais recente para a mais antiga.
@@ -127,6 +143,8 @@ declare global {
         history: (path: string, id: string) => Promise<Message[]>
         // Imagens de uma mensagem sua (data URLs), lidas só quando o preview abre.
         images: (path: string, id: string, messageId: string) => Promise<string[]>
+        // Porcentagem da janela de contexto que a conversa ocupa agora.
+        context: (path: string, id: string) => Promise<number>
         watch: (paths: string[]) => void
         onChanged: (cb: (path: string) => void) => () => void
       }

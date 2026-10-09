@@ -58,7 +58,8 @@ export function Segmented<T extends string>({
   onChange
 }: {
   value: T
-  options: { value: T; label: string; icon?: ReactNode }[]
+  // disabled: a opção fica à vista, apagada, com o motivo em `title`.
+  options: { value: T; label: string; icon?: ReactNode; disabled?: boolean; title?: string }[]
   onChange: (value: T) => void
 }) {
   return (
@@ -67,8 +68,10 @@ export function Segmented<T extends string>({
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-[12px] ${
-            value === o.value ? 'bg-control text-text shadow-sm shadow-black/20' : 'text-muted hover:text-text'
+          disabled={o.disabled}
+          title={o.title}
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-[12px] disabled:opacity-40 ${
+            value === o.value ? 'bg-control text-text shadow-sm shadow-black/20' : 'text-muted enabled:hover:text-text'
           }`}
         >
           {o.icon}

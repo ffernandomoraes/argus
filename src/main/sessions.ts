@@ -64,6 +64,12 @@ function userText(line: Line): string | null {
   return clean && !clean.startsWith('<') ? clean : null
 }
 
+// Protótipo do modo design: o primeiro pedido leva as instruções num bloco <modo-design>.
+function isDesign(line: Line): boolean {
+  const content = line.type === 'user' && !line.isSidechain ? line.message?.content : null
+  return Array.isArray(content) && content.some((c: Line) => c?.type === 'text' && String(c.text).trimStart().startsWith('<modo-design>'))
+}
+
 function contextPercent(lines: Line[]): number {
   for (let i = lines.length - 1; i >= 0; i--) {
     const l = lines[i]
@@ -99,7 +105,20 @@ async function summarize(file: string, id: string, size: number, mtime: Date): P
     title: title.split('\n')[0].slice(0, 120),
     updatedAt: mtime.toISOString(),
     contextPercent: contextPercent(tail),
-    live: null
+    live: null,
+    ...(head.some(isDesign) && { design: true })
+  }
+}
+
+// Quanto da janela de contexto uma conversa ocupa agora (o protótipo do modo design, que não entra
+// na lista da pasta).
+export async function sessionContext(projectPath: string, id: string): Promise<number> {
+  const file = join(sessionsDir(projectPath), `${id}.jsonl`)
+  try {
+    const { size } = await stat(file)
+    return contextPercent(parseLines(await readSlice(file, Math.max(0, size - TAIL_BYTES), Math.min(size, TAIL_BYTES))))
+  } catch {
+    return 0
   }
 }
 

@@ -414,6 +414,35 @@ export function ChatView({
     setPinnedKey(key)
   }
 
+  // O prompt preso só aparece rolando para cima. Rolando para baixo some; parado, some depois
+  // de um instante (dá tempo de clicar nele; com o mouse em cima, fica). Só conta como
+  // rolagem num sentido depois de ~60px seguidos nele: um tremido do trackpad não mexe.
+  const [scrollingUp, setScrollingUp] = useState(false)
+  const lastTop = useRef(0)
+  const travel = useRef({ distance: 0, at: 0 })
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const hidePinnedSoon = () => {
+    clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => setScrollingUp(false), 1200)
+  }
+  const trackDirection = (top: number) => {
+    const delta = top - lastTop.current
+    lastTop.current = top
+    const now = performance.now()
+    const t = travel.current
+    // Mudou de sentido ou ficou parado um pouco: começa a contar de novo.
+    t.distance = Math.sign(delta) !== Math.sign(t.distance) || now - t.at > 300 ? delta : t.distance + delta
+    t.at = now
+    if (t.distance <= -60) {
+      setScrollingUp(true)
+      hidePinnedSoon()
+    } else if (t.distance >= 60) {
+      clearTimeout(hideTimer.current)
+      setScrollingUp(false)
+    }
+  }
+  useEffect(() => () => clearTimeout(hideTimer.current), [])
+
   // Lista de comandos aparece enquanto o texto é "/" + palavra (igual à extensão do VS Code).
   const commands = menuClosed ? null : matchCommands(draft)
   // Lista de agentes aparece enquanto o texto termina em "@" + palavra.
@@ -524,7 +553,7 @@ export function ChatView({
     setDraft(base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken)
   })
   // O texto ditado entra por código, e o navegador não rola o campo sozinho:
-  // sem isso as últimas palavras ficam escondidas abaixo da segunda linha.
+  // sem isso as últimas palavras ficam escondidas abaixo da terceira linha.
   useEffect(() => {
     const el = textarea.current
     if (!el || dictation.state === 'idle') return
@@ -717,8 +746,13 @@ export function ChatView({
         {pinnedPrompt && (
           <button
             onClick={scrollToPrompt}
+            onMouseEnter={() => clearTimeout(hideTimer.current)}
+            onMouseLeave={hidePinnedSoon}
             title="Ir para a mensagem"
-            className="absolute inset-x-4 top-2 z-10 rounded-lg border border-line bg-surface-2 px-3 py-2 text-left text-[15px] shadow-md hover:border-line-strong"
+            tabIndex={scrollingUp ? 0 : -1}
+            className={`absolute inset-x-4 top-2 z-10 rounded-lg border border-line bg-surface-2 px-3 py-2 text-left text-[15px] shadow-md transition-opacity duration-150 hover:border-line-strong ${
+              scrollingUp ? 'opacity-100' : 'pointer-events-none opacity-0'
+            }`}
           >
             {pinnedPrompt.text ? (
               <span className="line-clamp-2 whitespace-pre-wrap break-words">{pinnedPrompt.text}</span>
@@ -735,6 +769,7 @@ export function ChatView({
           onScroll={(e) => {
             const el = e.currentTarget
             pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+            trackDirection(el.scrollTop)
             findPinned.current()
           }}
           className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
@@ -795,6 +830,8 @@ export function ChatView({
           </Presence>
           {composerChips}
           <AttachmentList items={attachments.items} onRemove={attachments.remove} />
+          {/* Começa com 1 linha e cresce com o texto até 3; daí em diante rola. O placeholder
+              não quebra linha: se quebrasse, a caixa vazia já nasceria alta. */}
           <textarea
             ref={textarea}
             value={draft}
@@ -802,7 +839,7 @@ export function ChatView({
             onKeyDown={onKeyDown}
             onBlur={() => setMenuClosed(true)}
             onPaste={onPaste}
-            rows={2}
+            rows={1}
             placeholder={
               dictation.state === 'listening'
                 ? 'Ouvindo… fale à vontade'
@@ -812,7 +849,7 @@ export function ChatView({
                     ? `Escreva, fale, cole um print (${keys('⌘V')}), / para comandos ou @ para agentes`
                     : `Escreva, fale, cole um print (${keys('⌘V')}) ou digite / para comandos`
             }
-            className="mb-1.5 block w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-faint"
+            className="mb-1.5 block max-h-[calc(3lh+1rem)] min-h-[calc(1lh+1rem)] w-full resize-none bg-transparent px-3 py-2 text-sm outline-none [field-sizing:content] placeholder:overflow-hidden placeholder:whitespace-nowrap placeholder:text-faint"
           />
           <div className="flex items-center gap-1 px-2 pb-2">
             <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={onPick} />

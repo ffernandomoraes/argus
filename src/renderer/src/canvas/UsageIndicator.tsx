@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { Panel } from '@xyflow/react'
 import type { ClaudeAccount } from '../../../shared/auth'
 import type { Usage, UsageWindow } from '../../../shared/usage'
 import { useAuth } from '../auth/useAuth'
@@ -88,13 +87,13 @@ function useUsages(): Record<string, Usage> {
   return usages
 }
 
-// Limites do Claude no canto do canvas. Com mais de uma conta, o botão mostra a sessão de cada
-// uma, com o nome, e o painel traz sessão e semanal de todas.
-export function UsageIndicator() {
+// Limites do Claude na barra de título; o painel abre para baixo. Com mais de uma conta, o botão
+// mostra a sessão de cada uma, com o nome, e o painel traz sessão e semanal de todas.
+// O aberto fica com a TitleBar: enquanto o painel está à vista, ela sobe acima dos drawers.
+export function UsageIndicator({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const usages = useUsages()
   const auth = useAuth()
   const [now, setNow] = useState(Date.now())
-  const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -105,8 +104,8 @@ export function UsageIndicator() {
   useEffect(() => {
     if (open) setNow(Date.now())
   }, [open])
-  useOutsideClick(ref, () => setOpen(false), open)
-  useEscape(() => setOpen(false), open)
+  useOutsideClick(ref, () => onOpenChange(false), open)
+  useEscape(() => onOpenChange(false), open)
 
   // Na ordem das configurações: a principal primeiro.
   const shown = (auth?.accounts ?? [])
@@ -117,57 +116,56 @@ export function UsageIndicator() {
   const updatedAt = Math.max(...shown.map((x) => x.usage.updatedAt))
 
   return (
-    <Panel position="bottom-left" className="!m-4">
-      <div ref={ref} className="relative">
-        <Presence kind="menu">
-          {open && (
-            <div className="absolute bottom-full left-0 mb-2 max-h-[70vh] w-72 overflow-y-auto rounded-2xl border border-line bg-surface/90 p-4 shadow-xl shadow-black/40 backdrop-blur-xl">
-              <div className="mb-4 flex items-center gap-2">
-                <ClaudeIcon size={14} />
-                <span className="text-xs font-medium text-text">Limites do Claude</span>
-              </div>
-              <div className="flex flex-col gap-5">
-                {shown.map(({ account, usage }) => (
-                  <div key={account.id}>
-                    {named && (
-                      <div className="mb-3 truncate text-[11px] font-semibold uppercase tracking-widest text-faint">
-                        {account.name}
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-4">
-                      <WindowDetail title="Sessão (5 horas)" window={usage.session} now={now} />
-                      <WindowDetail title="Semanal" window={usage.weekly} now={now} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 border-t border-line pt-2 text-[11px] text-faint">
-                Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-              </div>
+    <div ref={ref} className="no-drag relative">
+      <button
+        aria-label="Ver limites do Claude"
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
+        className={`flex items-center gap-2 rounded-md px-2 py-0.5 text-[12px] text-faint hover:bg-fill hover:text-muted ${
+          open ? 'bg-fill text-muted' : ''
+        }`}
+      >
+        <ClaudeIcon size={12} />
+        {shown.map(({ account, usage }, i) => {
+          const percent = Math.round(usage.session!.percent)
+          return (
+            <span key={account.id} className="flex items-center gap-2">
+              {i > 0 && <span>-</span>}
+              {named && <span className="max-w-24 truncate">{account.name}</span>}
+              <Bar percent={percent} className="h-1 w-10" />
+              <span className="font-mono text-muted">{percent}%</span>
+            </span>
+          )
+        })}
+      </button>
+      <Presence kind="menu">
+        {open && (
+          <div className="absolute right-0 top-full mt-2 max-h-[70vh] w-72 origin-top-right overflow-y-auto rounded-2xl border border-line bg-surface/90 p-4 text-left shadow-xl shadow-black/40 backdrop-blur-xl">
+            <div className="mb-4 flex items-center gap-2">
+              <ClaudeIcon size={14} />
+              <span className="text-xs font-medium text-text">Limites do Claude</span>
             </div>
-          )}
-        </Presence>
-        <button
-          aria-label="Ver limites do Claude"
-          onClick={() => setOpen((o) => !o)}
-          className={`flex h-[34px] items-center gap-2 rounded-md border border-line bg-surface/90 px-3.5 backdrop-blur-xl text-[11px] text-faint shadow-md shadow-black/20 hover:text-muted ${
-            open ? 'text-muted' : ''
-          }`}
-        >
-          <ClaudeIcon size={12} />
-          {shown.map(({ account, usage }, i) => {
-            const percent = Math.round(usage.session!.percent)
-            return (
-              <span key={account.id} className="flex items-center gap-2">
-                {i > 0 && <span>-</span>}
-                {named && <span className="max-w-24 truncate">{account.name}</span>}
-                <Bar percent={percent} className="h-1 w-10" />
-                <span className="font-mono text-muted">{percent}%</span>
-              </span>
-            )
-          })}
-        </button>
-      </div>
-    </Panel>
+            <div className="flex flex-col gap-5">
+              {shown.map(({ account, usage }) => (
+                <div key={account.id}>
+                  {named && (
+                    <div className="mb-3 truncate text-[11px] font-semibold uppercase tracking-widest text-faint">
+                      {account.name}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-4">
+                    <WindowDetail title="Sessão (5 horas)" window={usage.session} now={now} />
+                    <WindowDetail title="Semanal" window={usage.weekly} now={now} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 border-t border-line pt-2 text-[11px] text-faint">
+              Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          </div>
+        )}
+      </Presence>
+    </div>
   )
 }

@@ -132,7 +132,7 @@ editor da memória do Claude.
 - Subagentes aparecem embaixo da conversa que os lançou enquanto trabalham, com o que estão fazendo agora.
 - Notificação do sistema quando uma conversa termina ou precisa de resposta.
 - Ícone na barra de menus (no Windows, na área de notificação) com o resumo do que está rodando.
-- Indicador do limite de uso do Claude, de cada conta.
+- Indicador do limite de uso do Claude na barra de título, de cada conta; o detalhe abre num painel logo abaixo.
 - Lista dos servidores locais que algum agente deixou rodando ou que rodam dentro das pastas do canvas, com o nome do app e atalho para abrir ou encerrar; não deixa encerrar o que derrubaria uma sessão (só no Mac).
 - Fechar ou atualizar o app com conversa ou terminal rodando pede confirmação antes.
 
@@ -153,10 +153,10 @@ editor da memória do Claude.
 **App**
 - Login do Claude Code dentro do app, sem passar pelo terminal.
 - Boas-vindas em 5 etapas com ilustrações; a última instala o Claude Code com um clique e faz o login.
-- Configurações no estilo do Ajustes do macOS (Geral, Conversas, Aparência, Contas), com as Boas-vindas sempre à mão no pé da barra lateral.
+- Configurações no estilo do Ajustes do macOS (Geral, Conversas, Aparência, Contas, Me pague um café), com as Boas-vindas sempre à mão no pé da barra lateral.
 - Cada conta do Claude aparece com o nome da pessoa, a organização e o plano.
 - Atualização automática, com a versão em uso no canto da barra de título e o botão de atualizar ao lado dela.
-- Botão **Me pague um café** na barra de título, com QR Code e chave Pix para apoiar o projeto.
+- Aba **Me pague um café** nas configurações, com QR Code e chave Pix para apoiar o projeto.
 
 ## Requisitos
 

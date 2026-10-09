@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   AppWindow,
   Check,
+  Coffee,
   Copy,
   MessagesSquare,
   Monitor,
@@ -28,13 +29,14 @@ import { displayPath } from '../canvas/factory'
 import { MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '../../../shared/auth'
 import type { CliStatus } from '../../../shared/cli'
 import type { ThemePreference } from '../theme/useTheme'
+import { CoffeeSection } from './CoffeeSection'
 import { BUTTON, Group, Row, Segmented, Select, Switch } from './controls'
 import { setPreferences, usePreferences } from './preferences'
 import { useUpdates } from '../updates/useUpdates'
 import { Presence } from '../motion'
 import { IS_WIN, SYSTEM_NAME, THIS_COMPUTER } from '../platform'
 
-type Section = 'general' | 'conversations' | 'appearance' | 'accounts'
+type Section = 'general' | 'conversations' | 'appearance' | 'accounts' | 'coffee'
 
 // Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
@@ -52,7 +54,13 @@ const SECTIONS: { id: Section; label: string; icon: typeof Settings2; descriptio
     description: 'Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.'
   },
   { id: 'appearance', label: 'Aparência', icon: Palette, description: 'Tema claro, escuro ou o mesmo do sistema.' },
-  { id: 'accounts', label: 'Contas', icon: Users, description: 'As contas do Claude Code que o Argus usa.' }
+  { id: 'accounts', label: 'Contas', icon: Users, description: 'As contas do Claude Code que o Argus usa.' },
+  {
+    id: 'coffee',
+    label: 'Me pague um café',
+    icon: Coffee,
+    description: 'Se o Argus te ajuda no dia a dia, um Pix de qualquer valor ajuda a manter o projeto.'
+  }
 ]
 
 // `argus .` em qualquer terminal abre a pasta no canvas, como o `code .` do VS Code.
@@ -620,6 +628,7 @@ export function SettingsPage({
           {section === 'conversations' && <ConversationsSection />}
           {section === 'appearance' && <AppearanceSection theme={theme} onThemeChange={onThemeChange} />}
           {section === 'accounts' && <AccountsSection />}
+          {section === 'coffee' && <CoffeeSection />}
         </div>
       </section>
     </div>

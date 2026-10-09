@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Check, Copy, X } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import QRCode from 'qrcode'
-import { useEscape } from '../useEscape'
 
 const PIX_KEY = '772b807a-f1e6-4796-827e-185ca87573b5'
 const PIX_NAME = 'FERNANDO MORAES LIMA'
@@ -57,8 +56,9 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   )
 }
 
-export function CoffeeDialog({ onClose }: { onClose: () => void }) {
-  useEscape(onClose)
+// Seção "Me pague um café" das configurações: QR Code do Pix, chave e os botões de copiar. O
+// cabeçalho da seção (SettingsPage) já traz o título e o convite.
+export function CoffeeSection() {
   const [qr, setQr] = useState<string | null>(null)
 
   useEffect(() => {
@@ -66,44 +66,20 @@ export function CoffeeDialog({ onClose }: { onClose: () => void }) {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onMouseDown={onClose}>
-      <div
-        role="dialog"
-        aria-labelledby="coffee-title"
-        onMouseDown={(e) => e.stopPropagation()}
-        className="relative flex w-80 flex-col items-center rounded-2xl border border-line bg-surface p-5 text-center shadow-2xl shadow-black/60"
-      >
-        <button
-          aria-label="Fechar"
-          title="Fechar"
-          onClick={onClose}
-          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-md text-muted hover:bg-fill hover:text-text"
-        >
-          <X size={15} />
-        </button>
-        {/* Recuo à direita para o título não passar por baixo do X. */}
-        <div className="w-full pr-8 text-left">
-          <h2 id="coffee-title" className="text-sm font-semibold">
-            Me pague um café
-          </h2>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted">
-            Se o Argus te ajuda no dia a dia, um Pix de qualquer valor ajuda a manter o projeto.
-          </p>
-        </div>
-        {/* Fundo branco também no tema escuro: leitor de QR Code precisa de contraste claro. */}
-        <div className="mt-4 rounded-xl bg-white p-3">
-          {qr ? (
-            <div className="size-44 [&>svg]:block [&>svg]:size-full" dangerouslySetInnerHTML={{ __html: qr }} />
-          ) : (
-            <div className="size-44" />
-          )}
-        </div>
-        <p className="mt-3 text-xs font-medium text-text">Fernando Moraes Lima - Nubank</p>
-        <p className="mt-1 font-mono text-[11px] break-all text-faint select-text">{PIX_KEY}</p>
-        <div className="mt-4 flex w-full flex-col gap-2">
-          <CopyButton text={PIX_KEY} label="Copiar chave" />
-          <CopyButton text={PIX_PAYLOAD} label="Pix copia e cola" />
-        </div>
+    <div className="flex flex-col items-center rounded-xl bg-fill px-6 py-6 text-center">
+      {/* Fundo branco também no tema escuro: leitor de QR Code precisa de contraste claro. */}
+      <div className="rounded-xl bg-white p-3">
+        {qr ? (
+          <div className="size-44 [&>svg]:block [&>svg]:size-full" dangerouslySetInnerHTML={{ __html: qr }} />
+        ) : (
+          <div className="size-44" />
+        )}
+      </div>
+      <p className="mt-3 text-xs font-medium text-text">Fernando Moraes Lima - Nubank</p>
+      <p className="mt-1 font-mono text-[11px] break-all text-faint select-text">{PIX_KEY}</p>
+      <div className="mt-4 flex w-full max-w-64 flex-col gap-2">
+        <CopyButton text={PIX_KEY} label="Copiar chave" />
+        <CopyButton text={PIX_PAYLOAD} label="Pix copia e cola" />
       </div>
     </div>
   )

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { AppWindow, CircleArrowUp, Coffee, Eye, EyeOff } from 'lucide-react'
+import { AppWindow, CircleArrowUp, Eye, EyeOff } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { useUpdates } from '../updates/useUpdates'
 import { IS_WIN } from '../platform'
 import { useWindowControls } from '../useWindowControls'
-import { CoffeeDialog } from './CoffeeDialog'
 import { NavButton } from './NavBar'
+import { UsageIndicator } from './UsageIndicator'
 
 const Divider = () => <span className="h-4 w-px bg-line" />
 
@@ -26,7 +25,7 @@ export function TitleBar({
 }) {
   const updates = useUpdates()
   const controls = useWindowControls()
-  const [coffeeOpen, setCoffeeOpen] = useState(false)
+  const [usageOpen, setUsageOpen] = useState(false)
   const state = updates?.state
   const ready = state?.status === 'ready' ? state : null
   // Sutil, ao lado da versão: só enquanto procura ou baixa, para saber que a conferência rodou.
@@ -54,12 +53,13 @@ export function TitleBar({
   }, [windowTitle])
 
   return (
-    // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50).
-    // O recuo acompanha o grupo da direita (café, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
+    // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
+    // painel de limites aberto sobe acima dos painéis, senão um drawer aberto cobriria o painel.
+    // O recuo acompanha o grupo da direita (limites, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface ${ready || progress ? 'px-[29rem]' : 'px-[19rem]'}`}
+      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${ready || progress ? 'px-[29rem]' : 'px-[19rem]'}`}
     >
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
@@ -70,13 +70,7 @@ export function TitleBar({
       )}
       {updates && (
         <div className="absolute inset-y-0 flex items-center gap-2.5" style={{ right: 12 + controls.right }}>
-          <button
-            onClick={() => setCoffeeOpen(true)}
-            className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
-          >
-            <Coffee size={12} className="text-needs-you" />
-            Me pague um café
-          </button>
+          <UsageIndicator open={usageOpen} onOpenChange={setUsageOpen} />
           <Divider />
           {/* Fora da área que arrasta a janela, senão o botão não recebe o mouse. */}
           <span className="no-drag flex items-center gap-0.5">
@@ -109,8 +103,6 @@ export function TitleBar({
           <span className="text-[12px] tabular-nums text-faint">v{updates.version}</span>
         </div>
       )}
-      {/* No body: dentro da barra (z-[35]) o modal ficaria abaixo dos painéis. */}
-      {coffeeOpen && createPortal(<CoffeeDialog onClose={() => setCoffeeOpen(false)} />, document.body)}
     </div>
   )
 }

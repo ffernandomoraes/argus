@@ -53,7 +53,6 @@ import { AlignmentGuides } from './AlignmentGuides'
 import { EdgeFade } from './EdgeFade'
 import { loadNodes, useCanvasSync } from './persistence'
 import { DESIGN_PREFIX, getSessions, refreshNow, useSessionsVersion } from './sessionsStore'
-import { UsageIndicator } from './UsageIndicator'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { useHistory } from './useHistory'
 import { useSpaceHeld } from './useSpaceHeld'
@@ -861,7 +860,6 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         <ViewBar />
         {/* Com o drawer aberto, ⌘+ / ⌘- escalam o drawer em vez do canvas. */}
         <NavBar zoomShortcuts={!anyDrawer} />
-        <UsageIndicator />
       </ReactFlow>
       {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
       <div

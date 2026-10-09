@@ -25,6 +25,8 @@ import type { ChatActivity, ChatState, PermissionAnswer } from '../../../shared/
 import type { Message, MessageMark } from './types'
 import { Presence } from '../motion'
 import { keys, SYSTEM_SETTINGS } from '../platform'
+import { IconTile } from '../settings/controls'
+import { ClaudeIcon } from '../icons/ClaudeIcon'
 
 // Texto digitado e não enviado, por conversa: fechar o drawer (ESC, X) ou trocar de conversa
 // não perde o que estava escrito. Vale enquanto o app está aberto.
@@ -744,10 +746,14 @@ export function ChatView({
             </div>
           )}
           {!loading && messages.length === 0 && (
-            <div className="m-auto max-w-64 text-center">
-              <p className="text-sm text-text">Nova conversa</p>
-              <p className="mt-1 text-xs leading-relaxed text-faint">
-                Escreva, fale pelo microfone ou cole um print para começar.
+            <div className="m-auto flex max-w-80 flex-col items-center text-center">
+              <IconTile color="#D97757" size={48} soft>
+                <ClaudeIcon size={24} />
+              </IconTile>
+              <p className="mt-4 text-[15px] font-semibold text-text">Nova conversa</p>
+              {/* Como escrever já está na caixa de baixo; aqui, o que dá para pedir. */}
+              <p className="mt-1 max-w-64 text-xs leading-relaxed text-faint">
+                Peça uma mudança, tire uma dúvida sobre o código ou mostre um bug.
               </p>
             </div>
           )}

@@ -6,7 +6,7 @@ import { useLayoutEffect, useRef, type PointerEvent, type RefObject } from 'reac
 // `area` é o tamanho da área do canvas quando o rect foi definido: se a janela muda de tamanho
 // (ex.: foi para outro monitor), o painel é reescalado na mesma proporção em vez de quebrar.
 export type PanelRect = { x: number; y: number; width: number; height: number; area?: AreaSize }
-type AreaSize = { width: number; height: number }
+export type AreaSize = { width: number; height: number }
 
 // Folga mínima entre o painel e as bordas da área (laterais, embaixo e abaixo da barra de título).
 export const PANEL_MARGIN = 8
@@ -41,6 +41,25 @@ function rescale(rect: PanelRect, from: AreaSize, to: AreaSize): PanelRect {
   const x = clamp(MARGIN + (rect.x - MARGIN) * sx, MARGIN, to.width - MARGIN - width)
   const y = clamp(PANEL_TOP + (rect.y - PANEL_TOP) * sy, PANEL_TOP, to.height - MARGIN - height)
   return { x, y, width, height, area: to }
+}
+
+// Lugar de um segundo painel que não cubra o fixado. Primeiro na mesma coluna, acima ou abaixo dele
+// (onde sobrar mais altura); sem altura para isso, ao lado, na largura padrão (ou no que couber),
+// encostado nele e na altura toda. Sem espaço em lugar nenhum, nulo: nasce no lugar padrão.
+export function freeSpot(pinned: PanelRect, area: AreaSize, width: number): PanelRect | null {
+  const bottom = area.height - MARGIN
+  const above = pinned.y - MARGIN - PANEL_TOP
+  const below = bottom - (pinned.y + pinned.height + MARGIN)
+  if (Math.max(above, below) >= PANEL_MIN.height) {
+    const y = above > below ? PANEL_TOP : pinned.y + pinned.height + MARGIN
+    return { x: pinned.x, y, width: pinned.width, height: Math.max(above, below), area }
+  }
+  const left = pinned.x - MARGIN - MARGIN
+  const right = area.width - MARGIN - (pinned.x + pinned.width + MARGIN)
+  if (Math.max(left, right) < PANEL_MIN.width) return null
+  const w = Math.min(width, Math.max(left, right))
+  const x = left > right ? pinned.x - MARGIN - w : pinned.x + pinned.width + MARGIN
+  return { x, y: PANEL_TOP, width: w, height: bottom - PANEL_TOP, area }
 }
 
 // Sem posição definida ainda, o painel nasce encostado à direita, na altura toda.

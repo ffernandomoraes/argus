@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Code2, ExternalLink, Maximize2, PictureInPicture2 } from 'lucide-react'
+import { Code2, Ellipsis, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, type LucideIcon } from 'lucide-react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { askColors } from './askColors'
 import { ConversationView, HeaderButton } from './ConversationView'
@@ -14,7 +14,9 @@ import {
 import { useDrawerZoom } from './useDrawerZoom'
 import type { LineRange } from './fileLinks'
 import { useEscape } from '../useEscape'
-import { MOTION, reduced } from '../motion'
+import { useOutsideClick } from '../useOutsideClick'
+import { MOTION, Presence, reduced } from '../motion'
+import { MENU_PANEL, MENU_ROW } from '../canvas/ContextMenu'
 
 // Troca do modo foco com o efeito padrão (motion.tsx): o painel some, o layout troca enquanto
 // ele está invisível, e ele volta no novo tamanho. Esticar a largura deixava o texto se
@@ -41,6 +43,8 @@ export function ConversationDrawer({
   onSessionStarted,
   rect,
   onRectChange,
+  pinned = false,
+  onTogglePin,
   onClose
 }: {
   project: ProjectData
@@ -66,6 +70,11 @@ export function ConversationDrawer({
   // Posição e tamanho no canvas; nulo = ainda não definido (nasce à direita).
   rect: PanelRect | null
   onRectChange: (rect: PanelRect) => void
+  // Fixado: continua à vista (e móvel), e a próxima conversa abre num segundo drawer no espaço livre
+  // ao lado, em vez de trocar esta.
+  pinned?: boolean
+  // Sem ele, o item de fixar não aparece (só o drawer principal fixa).
+  onTogglePin?: () => void
   onClose: () => void
 }) {
   const zoom = useDrawerZoom()
@@ -136,24 +145,29 @@ export function ConversationDrawer({
       actions={
         !focus && (
           <>
-            <HeaderButton label="Modo foco" onClick={() => setFocus(true)}>
-              <Maximize2 size={14} />
-            </HeaderButton>
+            <MoreMenu
+              items={[
+                { label: 'Modo foco', icon: Maximize2, onClick: () => setFocus(true) },
+                ...(onTogglePin
+                  ? [
+                      pinned
+                        ? { label: 'Desafixar', icon: PinOff, onClick: onTogglePin }
+                        : { label: 'Fixar', icon: Pin, onClick: onTogglePin }
+                    ]
+                  : []),
+                // Conversa ainda não enviada não tem sessão para abrir em outro lugar.
+                ...(conversation.draft
+                  ? []
+                  : [
+                      { label: 'Colocar no canvas', icon: PictureInPicture2, onClick: onPinToCanvas },
+                      { label: 'Abrir em janela separada', icon: ExternalLink, onClick: onPopout }
+                    ])
+              ]}
+            />
             {!loose && (
               <HeaderButton label={codeOpen ? 'Fechar código' : 'Abrir código'} onClick={onToggleCode} active={codeOpen}>
                 <Code2 size={14} />
               </HeaderButton>
-            )}
-            {/* Conversa ainda não enviada não tem sessão para abrir em outro lugar. */}
-            {!conversation.draft && (
-              <>
-                <HeaderButton label="Colocar no canvas" onClick={onPinToCanvas}>
-                  <PictureInPicture2 size={14} />
-                </HeaderButton>
-                <HeaderButton label="Abrir em janela separada" onClick={onPopout}>
-                  <ExternalLink size={14} />
-                </HeaderButton>
-              </>
             )}
           </>
         )
@@ -166,8 +180,8 @@ export function ConversationDrawer({
   return (
     <aside
       ref={panelRef}
-      className={`absolute z-40 flex flex-col overflow-hidden rounded-xl border border-line bg-bg ${
-        focus ? '' : 'shadow-2xl shadow-black/50'
+      className={`absolute flex flex-col overflow-hidden rounded-xl border border-line bg-bg ${
+        focus ? 'z-50' : 'z-40 shadow-2xl shadow-black/50'
       }`}
       style={{
         ...(focus
@@ -189,5 +203,41 @@ export function ConversationDrawer({
           No foco vira a coluna de leitura: linhas curtas cansam menos que texto de ponta a ponta. */}
       <div ref={contentRef} className={`flex min-h-0 w-full flex-1 flex-col ${focus ? 'mx-auto max-w-[1100px]' : ''}`}>{view}</div>
     </aside>
+  )
+}
+
+// O que não é fechar nem código fica num menu só: o cabeçalho com um botão por opção pesava.
+function MoreMenu({ items }: { items: { label: string; icon: LucideIcon; onClick: () => void }[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useOutsideClick(ref, () => setOpen(false), open)
+  // Empilhado depois do fechar do drawer: com o menu aberto, o ESC fecha só ele.
+  useEscape(() => setOpen(false), open)
+  return (
+    <div ref={ref} className="relative">
+      <HeaderButton label="Mais opções" onClick={() => setOpen((o) => !o)} active={open}>
+        <Ellipsis size={15} />
+      </HeaderButton>
+      <Presence kind="menu">
+        {open && (
+          // Clique na borda do menu não arrasta o drawer (o cabeçalho é a alça).
+          <div onPointerDown={(e) => e.stopPropagation()} className={`absolute right-0 top-full z-50 mt-1 w-52 ${MENU_PANEL}`}>
+            {items.map(({ label, icon: Icon, onClick }) => (
+              <button
+                key={label}
+                onClick={() => {
+                  setOpen(false)
+                  onClick()
+                }}
+                className={`${MENU_ROW} text-text hover:bg-accent hover:text-white`}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </Presence>
+    </div>
   )
 }

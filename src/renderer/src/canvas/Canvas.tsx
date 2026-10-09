@@ -18,7 +18,7 @@ import { DesignDrawer } from '../design/DesignDrawer'
 import { MemoryModal } from '../memory/MemoryModal'
 import { AgentsModal } from '../agents/AgentsModal'
 import { DevServersModal } from '../devServers/DevServersModal'
-import { PANEL_DEFAULT_WIDTH, PANEL_MARGIN, type PanelRect } from '../conversation/FloatingPanel'
+import { DRAWER_DEFAULT_WIDTH, freeSpot, PANEL_DEFAULT_WIDTH, PANEL_MARGIN, type PanelRect } from '../conversation/FloatingPanel'
 import type { LineRange } from '../conversation/fileLinks'
 import { getPreferences } from '../settings/preferences'
 import { useAuth } from '../auth/useAuth'
@@ -103,6 +103,9 @@ const nodeTypes = {
   note: NoteNode
 }
 
+// Drawer de conversa: o principal (de cima, quando fixado) ou o segundo, que abre embaixo dele.
+type DrawerSlot = 'main' | 'second'
+
 // Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
 function projectOf(node: CanvasNode | undefined): ProjectData | null {
   if (node?.type === 'project') return node.data
@@ -127,6 +130,13 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [activeConversation, setActiveConversation] = useState<ActiveConversation | null>(null)
+  // Drawer fixado: fica onde está, e a próxima conversa abre num segundo drawer (second), no espaço
+  // livre ao lado dele. Fechar o fixado solta a fixação; o segundo fica onde está.
+  const [pinned, setPinned] = useState(false)
+  const [second, setSecond] = useState<ActiveConversation | null>(null)
+  const [secondRect, setSecondRect] = useState<PanelRect | null>(null)
+  // De qual drawer é o código aberto (com dois à vista, cada um tem a sua pasta).
+  const [codeSlot, setCodeSlot] = useState<DrawerSlot>('main')
   const [poppedOut, setPoppedOut] = useState<Set<string>>(new Set())
   // Código aberto acompanha a pasta da conversa aberta.
   const [codeOpen, setCodeOpen] = useState(false)
@@ -383,8 +393,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       openConversation: (nodeId: string, conversationId: string) => {
         // Conversa do modo design: abre o drawer do design, não o chat.
         if (conversationId.startsWith(DESIGN_PREFIX)) {
-          setActiveConversation(null)
-          closeCode()
+          closeDrawers()
           setActiveDesign({ nodeId, designId: conversationId.slice(DESIGN_PREFIX.length) })
           return
         }
@@ -395,26 +404,18 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         // Em janela separada (já aberta, ou pela preferência): abre ou traz a janela para frente.
         else if (poppedOut.has(conversationId) || openIn === 'window') popoutConversation(nodeId, conversationId)
         else if (openIn === 'node') pinConversation(nodeId, conversationId)
-        else {
-          setActiveDesign(null)
-          setActiveConversation({ nodeId, conversationId })
-        }
+        else showConversation({ nodeId, conversationId })
       },
       poppedOut,
-      newConversation: (nodeId: string) => {
-        setActiveDesign(null)
-        setActiveConversation({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true })
-      },
-      newLooseConversation: (position?: XYPosition) => {
-        setActiveDesign(null)
-        setActiveConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position })
-      },
+      newConversation: (nodeId: string) =>
+        showConversation({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true }),
+      newLooseConversation: (position?: XYPosition) =>
+        showConversation({ nodeId: null, conversationId: `new-${crypto.randomUUID()}`, draft: true, at: position }),
       activeDesign,
       // O drawer do design fica no lugar do da conversa (e do código dela).
       // Na pasta, sem designId, começa um design novo (ela pode ter vários, cada um na lista dela).
       openDesign: (nodeId: string, designId?: string) => {
-        setActiveConversation(null)
-        closeCode()
+        closeDrawers()
         if (nodesRef.current.find((n) => n.id === nodeId)?.type !== 'project') return
         setActiveDesign({ nodeId, designId: designId ?? crypto.randomUUID() })
       },
@@ -449,7 +450,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         const owner = ownerOf(node.data.path, node.data.sessionId)
         if (!owner) return
         change((ns) => removeNode(ns, nodeId))
-        setActiveConversation({ nodeId: owner.id, conversationId: node.data.sessionId })
+        showConversation({ nodeId: owner.id, conversationId: node.data.sessionId })
       },
       chatPanelPopout: (nodeId: string) => {
         const node = nodesRef.current.find((n) => n.id === nodeId)
@@ -474,7 +475,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         openFileLink(project.path, path, lines, diff)
       }
     }),
-    [renamingId, change, nodesRef, activeConversation, activeDesign, poppedOut, onOpenSettings, dropTargetId] // eslint-disable-line react-hooks/exhaustive-deps
+    [renamingId, change, nodesRef, activeConversation, pinned, second, activeDesign, poppedOut, onOpenSettings, dropTargetId] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   // Clique na notificação do sistema: abre a conversa pelo bloco dela (conversa solta) ou pelo
@@ -482,50 +483,55 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   useEffect(
     () =>
       window.api.chat.onOpen((cwd, sessionId) => {
-        const open = actions.activeConversation
-        if (open && (open.conversationId === sessionId || open.sessionId === sessionId)) return
+        const shown = [actions.activeConversation, second]
+        if (shown.some((open) => open && (open.conversationId === sessionId || open.sessionId === sessionId))) return
         const target = ownerOf(displayPath(cwd), sessionId)
         if (target) actions.openConversation(target.id, sessionId)
       }),
-    [actions, nodesRef]
+    [actions, second, nodesRef]
   )
 
   // Conversa aberta no painel; some sozinha se a pasta ou a conversa for excluída.
   // Conversa sem projeto ainda não enviada não tem bloco: roda na pasta do usuário.
-  const drawer = useMemo(() => {
-    if (!activeConversation) return null
-    const node = nodes.find((n) => n.id === activeConversation.nodeId)
-    const loose = node ? node.type === 'chat' : activeConversation.nodeId === null
+  const drawerOf = (active: ActiveConversation | null) => {
+    if (!active) return null
+    const node = nodes.find((n) => n.id === active.nodeId)
+    const loose = node ? node.type === 'chat' : active.nodeId === null
     const project = node ? projectOf(node) : loose ? looseProject() : null
     if (!project) return null
     const sessions = getSessions(project.path)
     // Conversa nova que já entrou na lista da pasta passa a ser a conversa normal.
-    const started = activeConversation.sessionId && sessions.find((c) => c.id === activeConversation.sessionId)
+    const started = active.sessionId && sessions.find((c) => c.id === active.sessionId)
     const conversation: ConversationSummary | undefined = started
       ? started
-      : activeConversation.draft
+      : active.draft
       ? {
-          id: activeConversation.conversationId,
+          id: active.conversationId,
           title: 'Nova conversa',
           kind: 'conversa',
           status: 'idle',
           updatedAt: new Date().toISOString(),
           contextPercent: 0,
-          sessionId: activeConversation.sessionId,
+          sessionId: active.sessionId,
           draft: true
         }
-      : sessions.find((c) => c.id === activeConversation.conversationId)
+      : sessions.find((c) => c.id === active.conversationId)
     // Conta do grupo da pasta (ou do card da conversa solta); fora de grupo, a padrão.
     const account = groupAccount(nodes, node)
     return conversation ? { nodeId: node?.id, parentId: node?.parentId, project, loose, conversation, account } : null
-  }, [nodes, activeConversation, sessionsVersion])
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const drawer = useMemo(() => drawerOf(activeConversation), [nodes, activeConversation, sessionsVersion])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const secondDrawer = useMemo(() => drawerOf(second), [nodes, second, sessionsVersion])
+  // Algum drawer de conversa à vista (o de baixo pode estar sozinho).
+  const anyDrawer = drawer ?? secondDrawer
 
   // Tom do grupo que contém o projeto aberto no drawer.
-  const groupTint = useMemo(() => {
-    const parentId = drawer?.parentId
+  const tintOf = (parentId: string | undefined) => {
     const group = parentId ? nodes.find((n) => n.id === parentId) : undefined
     return group?.type === 'area' ? group.data.color : undefined
-  }, [drawer, nodes])
+  }
 
   // Design aberto no drawer: um da pasta. Some se a pasta sair do canvas.
   const designView = useMemo(() => {
@@ -625,10 +631,102 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
     setCodeOpen(false)
     setOpenFile(null)
     setCodeFor(null)
+    setCodeSlot('main')
   }
 
-  // Pasta do código: a do link clicado numa conversa do canvas ou, sem isso, a do painel.
-  const codeProject = codeFor ?? drawer?.project
+  // Abre a conversa no drawer. Com um fixado, ela vai para o segundo (a fixada já à vista fica como
+  // está), que nasce no espaço livre ao lado do fixado; com o segundo já aberto, troca a dele.
+  const showConversation = (conversation: ActiveConversation) => {
+    setActiveDesign(null)
+    const same = (a: ActiveConversation) =>
+      a.conversationId === conversation.conversationId || a.sessionId === conversation.conversationId
+    if (pinned && activeConversation) {
+      if (same(activeConversation)) return
+      if (!second && drawerRect) {
+        const area = drawerRect.area ?? { width: window.innerWidth, height: window.innerHeight }
+        setSecondRect(freeSpot(drawerRect, area, DRAWER_DEFAULT_WIDTH))
+      }
+      setSecond(conversation)
+    } else if (second) setSecond(conversation)
+    else setActiveConversation(conversation)
+  }
+
+  const closeDrawers = () => {
+    setActiveConversation(null)
+    setSecond(null)
+    setPinned(false)
+    closeCode()
+  }
+
+  // Fechar o de cima solta a fixação. O código fecha junto só se era daquele drawer.
+  const closeDrawer = (slot: DrawerSlot) => {
+    if (slot === 'main') {
+      setActiveConversation(null)
+      setPinned(false)
+    } else setSecond(null)
+    if (codeSlot === slot) closeCode()
+  }
+
+  // O código vai até o drawer mais à esquerda (com dois à vista, um pode estar ao lado do outro).
+  const drawerXs = [drawer && drawerRect?.x, secondDrawer && secondRect?.x].filter((x): x is number => typeof x === 'number')
+  const codeEdge = drawerXs.length ? Math.min(...drawerXs) : null
+
+  // Pasta do código: a do link clicado numa conversa do canvas ou, sem isso, a do drawer dele.
+  const codeProject = codeFor ?? (codeSlot === 'second' ? secondDrawer : drawer)?.project
+
+  type Drawer = NonNullable<ReturnType<typeof drawerOf>>
+  const renderDrawer = (d: Drawer, slot: DrawerSlot) => {
+    const setSlot = slot === 'main' ? setActiveConversation : setSecond
+    const main = slot === 'main'
+    const shown = slot === 'main' ? activeConversation : second
+    const codeHere = codeOpen && codeSlot === slot
+    const openCode = () => {
+      setCodeFor(null)
+      setCodeSlot(slot)
+    }
+    return (
+      <ConversationDrawer
+        project={d.project}
+        account={d.account}
+        loose={d.loose}
+        tint={tintOf(d.parentId)}
+        conversation={d.conversation}
+        codeOpen={codeHere}
+        rect={main ? drawerRect : secondRect}
+        onRectChange={main ? setDrawerRect : setSecondRect}
+        pinned={main && pinned}
+        onTogglePin={main ? () => setPinned((p) => !p) : undefined}
+        onToggleCode={() => {
+          if (codeHere) return closeCode()
+          openCode()
+          setCodeOpen(true)
+        }}
+        onOpenFile={(path, lines) => {
+          openCode()
+          openFileLink(d.project.path, path, lines)
+        }}
+        onOpenDiff={(path) => {
+          openCode()
+          openFileLink(d.project.path, path, undefined, true)
+        }}
+        onSessionStarted={(sessionId) => {
+          // Conversa sem projeto entra no canvas no primeiro envio, num lugar livre.
+          const node = shown?.nodeId === null ? createChat(findChatSpot(nodesRef.current, shown.at), sessionId) : undefined
+          if (node) change((ns) => [...ns, node])
+          setSlot((a) => (a?.draft ? { ...a, sessionId, ...(node && { nodeId: node.id }) } : a))
+        }}
+        onPopout={() => {
+          if (d.nodeId) popoutConversation(d.nodeId, d.conversation.id)
+          closeDrawer(slot)
+        }}
+        onPinToCanvas={() => {
+          if (d.nodeId) pinConversation(d.nodeId, d.conversation.id)
+          closeDrawer(slot)
+        }}
+        onClose={() => closeDrawer(slot)}
+      />
+    )
+  }
 
   // Dentro de um grupo, a pasta entra num lugar livre e o grupo cresce se precisar.
   const pickFolder = (folder: string) => {
@@ -643,9 +741,10 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
   const trashConversation = async (path: string, conversationId: string) => {
     const error = await window.api.sessions.trash(path, conversationId)
     if (error) return setConfirm({ title: 'Não deu para mover a conversa para a Lixeira', description: error })
-    setActiveConversation((cur) =>
+    const notTrashed = (cur: ActiveConversation | null) =>
       cur && (cur.conversationId === conversationId || cur.sessionId === conversationId) ? null : cur
-    )
+    setActiveConversation(notTrashed)
+    setSecond(notTrashed)
     const panel = chatPanelOf(conversationId)
     if (panel) change((ns) => removeNode(ns, panel.id))
     refreshNow(path)
@@ -761,21 +860,21 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
         <EdgeFade />
         <ViewBar />
         {/* Com o drawer aberto, ⌘+ / ⌘- escalam o drawer em vez do canvas. */}
-        <NavBar zoomShortcuts={!drawer} />
+        <NavBar zoomShortcuts={!anyDrawer} />
         <UsageIndicator />
       </ReactFlow>
       {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-200 ${
-          drawer || allConversations || designView ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
+          anyDrawer || allConversations || designView ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
         }`}
       />
       {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
       <TitleBar
         windowTitle={
-          drawer
-            ? `${drawer.conversation.title} - ${drawer.project.name}`
+          anyDrawer
+            ? `${anyDrawer.conversation.title} - ${anyDrawer.project.name}`
             : designView
               ? `Design - ${designView.name}`
               : 'Argus'
@@ -791,10 +890,10 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
             selected={openFile?.root === codeProject.path ? openFile.path : null}
             // Sem o painel aberto, o código vai até a borda direita.
             rightOffset={
-              !drawer
+              !anyDrawer
                 ? PANEL_MARGIN
-                : drawerRect
-                  ? `calc(100% - ${drawerRect.x - PANEL_MARGIN}px)`
+                : codeEdge !== null
+                  ? `calc(100% - ${codeEdge - PANEL_MARGIN}px)`
                   : PANEL_DEFAULT_WIDTH + PANEL_MARGIN * 2
             }
             onOpenFile={(path) => setOpenFile({ root: codeProject.path, path })}
@@ -828,52 +927,8 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           </CodeExplorer>
         )}
       </Presence>
-      <Presence>
-        {drawer && (
-          <ConversationDrawer
-            project={drawer.project}
-            account={drawer.account}
-            loose={drawer.loose}
-            tint={groupTint}
-            conversation={drawer.conversation}
-            codeOpen={codeOpen}
-            rect={drawerRect}
-            onRectChange={setDrawerRect}
-            onToggleCode={() => (codeOpen ? closeCode() : setCodeOpen(true))}
-            onOpenFile={(path, lines) => {
-              setCodeFor(null)
-              openFileLink(drawer.project.path, path, lines)
-            }}
-            onOpenDiff={(path) => {
-              setCodeFor(null)
-              openFileLink(drawer.project.path, path, undefined, true)
-            }}
-            onSessionStarted={(sessionId) => {
-              // Conversa sem projeto entra no canvas no primeiro envio, num lugar livre.
-              const node =
-                activeConversation?.nodeId === null
-                  ? createChat(findChatSpot(nodesRef.current, activeConversation.at), sessionId)
-                  : undefined
-              if (node) change((ns) => [...ns, node])
-              setActiveConversation((a) => (a?.draft ? { ...a, sessionId, ...(node && { nodeId: node.id }) } : a))
-            }}
-            onPopout={() => {
-              if (drawer.nodeId) popoutConversation(drawer.nodeId, drawer.conversation.id)
-              setActiveConversation(null)
-              closeCode()
-            }}
-            onPinToCanvas={() => {
-              if (drawer.nodeId) pinConversation(drawer.nodeId, drawer.conversation.id)
-              setActiveConversation(null)
-              closeCode()
-            }}
-            onClose={() => {
-              setActiveConversation(null)
-              closeCode()
-            }}
-          />
-        )}
-      </Presence>
+      <Presence>{drawer && renderDrawer(drawer, 'main')}</Presence>
+      <Presence>{secondDrawer && renderDrawer(secondDrawer, 'second')}</Presence>
       <Presence>
         {designView && (
           <DesignDrawer
@@ -912,7 +967,7 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
           <MemoryModal
             projects={memoryProjects}
             only={memoryOpen === 'all' ? undefined : memoryOpen}
-            initialProject={drawer && !drawer.loose ? drawer.project.path : undefined}
+            initialProject={anyDrawer && !anyDrawer.loose ? anyDrawer.project.path : undefined}
             onClose={() => setMemoryOpen(null)}
           />
         )}

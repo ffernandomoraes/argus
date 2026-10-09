@@ -330,9 +330,12 @@ export function Canvas({ colorMode, onOpenSettings }: { colorMode: ResolvedTheme
       },
       // Diferente dos outros blocos, a nota fica onde foi pedida, mesmo em cima de uma pasta:
       // ela é um lembrete sobre o que está embaixo. Em cima de um grupo, entra nele.
+      // Nasce selecionada, sozinha: bloco selecionado sobe de camada no React Flow, e a pasta
+      // selecionada embaixo cobriria a nota até perder a seleção.
       addNote: (position: XYPosition, groupId?: string) => {
         const note = createNote(position)
         change((ns) => (groupId ? addNode(ns, note, groupId) : dropIntoGroup([...ns, note], [note.id])))
+        setNodes((ns) => ns.map((n) => (n.selected === (n.id === note.id) ? n : { ...n, selected: n.id === note.id })))
         setRenamingId(note.id)
       },
       finishNote: (id: string, text: string) => {

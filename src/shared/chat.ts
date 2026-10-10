@@ -52,6 +52,22 @@ export type ChatState = {
   agents: RunningAgent[]
 }
 
+// Conversa do app trabalhando ou esperando você: uma linha do indicador no canto do canvas.
+export type ActiveChat = {
+  // Chave da conversa no app (a primeira dela, ver Chats.list) e a pasta onde roda.
+  key: string
+  cwd: string
+  sessionId?: string
+  status: Exclude<LiveStatus, 'idle'>
+  activity?: ChatActivity
+  // Subagentes em primeiro plano (o Claude está esperando por eles).
+  foregroundAgents: number
+  turnStartedAt?: number
+}
+
+// Conversa com resposta que você ainda não viu (bolinha verde na lista), como a janela conta.
+export type UnreadChat = { id: string; cwd: string; title: string }
+
 // thinking: pensando ou esperando o modelo. writing: escrevendo a resposta. preparing: montando o
 // pedido de uma ferramenta (o resumo chega aos poucos). running: ferramenta rodando.
 export type ChatActivity = {

@@ -1,11 +1,14 @@
+import type { UnreadChats } from '../app/unreadChats'
 import type { ChatHolders } from '../chatHolders'
 import type { Chats } from '../chats'
+import { activeChats } from '../chats/entries'
 import type { Terminals } from '../terminals'
 import { handle, on } from './register'
 
 // Conversas pelo chat (SDK do Claude).
-export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: Terminals): void {
+export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: Terminals, unread: UnreadChats): void {
   handle('chat:state', (_e, key) => chats.state(key))
+  handle('chat:active', () => activeChats(chats.list()))
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma
   // sessão. Abrir um encerra o outro; o histórico continua no arquivo da sessão.
   on('chat:send', (_e, req) => {
@@ -25,4 +28,5 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   on('chat:release', (e, key) => holders.drop(key, e.sender.id))
   on('chat:interrupt', (_e, key) => chats.interrupt(key))
   on('chat:configure', (_e, key, patch) => chats.configure(key, patch))
+  on('chat:unread', (e, list) => unread.set(e.sender, list))
 }

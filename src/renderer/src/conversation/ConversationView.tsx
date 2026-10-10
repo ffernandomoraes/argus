@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { AccountContext } from '../auth/useAuth'
+import { useViewing } from '../canvas/sessionsStore'
 import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
@@ -76,6 +77,8 @@ export const ConversationView = memo(function ConversationView({
 }: Props) {
   const viewKey = useViewKey(conversation)
   const live = useLiveChat(viewKey)
+  // Na tela: a resposta que chegar aqui já foi vista (a bolinha da lista não fica verde).
+  useViewing(conversation.sessionId ?? live?.sessionId ?? conversation.id)
   const agents = useAgentList(cwd, viewKey)
   const history = useConversationHistory(cwd, conversation.sessionId, conversation.updatedAt, live?.revision)
   const localEvents = useLocalEvents(conversation.sessionId)

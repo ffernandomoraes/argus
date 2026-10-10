@@ -46,7 +46,7 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
     const fromHistory = currentTurn(o.messages)
     const startedAt = o.live?.turnStartedAt ?? fromHistory.startedAt
     const tokens = Math.max(o.live?.turnStartedAt ? o.live.turnTokens : 0, fromHistory.tokens)
-    const label = activityLabel(o.live?.activity, o.live?.agents ?? [])
+    const label = activityLabel(o.live?.activity, (o.live?.agents ?? []).filter((a) => !a.background).length)
     items.push(stepItem('working', 'bg-running animate-pulse', <WorkingRow label={label} startedAt={startedAt} tokens={tokens} />))
   }
   if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <p className="py-0.5 text-[13px] text-red-400">{o.live.error}</p>))

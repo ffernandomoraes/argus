@@ -3,7 +3,7 @@ import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
+import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -95,6 +95,11 @@ export type Api = {
     onState: (cb: (key: string, state: ChatState) => void) => Off
     // Clique na notificação do sistema.
     onOpen: (cb: (cwd: string, sessionId: string) => void) => Off
+    // Conversas trabalhando ou esperando você, em todas as pastas.
+    active: () => Promise<ActiveChat[]>
+    onActive: (cb: (chats: ActiveChat[]) => void) => Off
+    // Respostas não vistas nesta janela: o ícone da barra de menus conta e lista.
+    setUnread: (chats: UnreadChat[]) => void
   }
   // Biblioteca de agentes (~/.claude/agents). Com a pasta, inclui os do projeto.
   agents: {

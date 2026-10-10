@@ -3,7 +3,7 @@ import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
+import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -54,6 +54,7 @@ export type InvokeChannels = {
   'auth:remove': (accountId: string) => boolean
   // Conversas
   'chat:state': (key: string) => ChatState | null
+  'chat:active': () => ActiveChat[]
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
   'agents:list': (projectPath?: string) => AgentDef[]
   'agents:save': (req: AgentSaveRequest) => AgentSaveResult
@@ -133,6 +134,8 @@ export type SendChannels = {
   'chat:answer': (key: string, id: string, answer: PermissionAnswer) => void
   'chat:retain': (key: string) => void
   'chat:release': (key: string) => void
+  // Conversas com resposta não vista nesta janela (para o ícone da barra de menus).
+  'chat:unread': (chats: UnreadChat[]) => void
   'chat:interrupt': (key: string) => void
   'chat:configure': (key: string, patch: Partial<ChatSettings>) => void
   // Canvas
@@ -185,6 +188,8 @@ export type EventChannels = {
   'cli:open': (path: string) => void
   'auth:state': (state: AuthState) => void
   'chat:state': (key: string, state: ChatState) => void
+  // As conversas trabalhando ou esperando você mudaram.
+  'chat:active': (chats: ActiveChat[]) => void
   // Clique na notificação do sistema.
   'chat:open': (cwd: string, sessionId: string) => void
   'canvas:remote': (nodes: unknown) => void

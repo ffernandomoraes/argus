@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { ResolvedTheme } from '../theme/useTheme'
 import type { NodesApi } from './actions/types'
 import { useArrange } from './actions/useArrange'
@@ -27,6 +27,8 @@ import { useCanvasKeys } from './keys/useCanvasKeys'
 import { useSpaceHeld } from './keys/useSpaceHeld'
 import { useUiHidden } from './keys/useUiHidden'
 import { loadNodes, useCanvasSync } from './persistence'
+import { RunningIndicator } from './RunningIndicator'
+import { setPoppedOut } from './sessionsStore'
 import { TitleBar } from './TitleBar'
 import type { CanvasNode } from './types'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
@@ -53,6 +55,15 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   const shownDrawers = useShownDrawers()
   const markPoppedOut = usePoppedOut(view)
   const isPoppedOut = (id: string) => view.get().poppedOut.has(id)
+  // Conversa em janela separada está sendo vista: a resposta dela não fica como não lida.
+  useEffect(() => {
+    let last = view.get().poppedOut
+    setPoppedOut(last)
+    return view.subscribe(() => {
+      const now = view.get().poppedOut
+      if (now !== last) setPoppedOut((last = now))
+    })
+  }, [view])
   const focusNode = useFocusNode(api)
   const nodeActions = useNodeActions(api, view, overlays.commands.confirm)
   const { arranging, organizeBoard, organizeGroup } = useArrange(api)
@@ -102,7 +113,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   })
   useCliOpen(api, focusNode)
   const { main, second } = drawers.state
-  useNotificationOpen({ nodesRef, shown: [main, second], openConversation: conversations.openConversation })
+  const openChat = useNotificationOpen({ nodesRef, shown: [main, second], openConversation: conversations.openConversation })
   // A conversa e o design abertos vão para o store, onde cada bloco lê se é o dele.
   const activeDesign = drawers.state.design
   useLayoutEffect(() => patchView(view, { activeConversation: main, activeDesign }), [view, main, activeDesign])
@@ -147,6 +158,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           }`}
         />
         {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
+        <RunningIndicator hidden={uiHidden} onOpen={openChat} />
         <TitleBar
           windowTitle={
             shown ? `${shown.title} - ${shown.target.project.name}` : design ? `Design - ${design.projectName}` : 'Argus'

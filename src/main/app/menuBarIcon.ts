@@ -1,19 +1,14 @@
-import { StatusTray } from '../statusTray'
-
-type Entry = ConstructorParameters<typeof StatusTray>[0]
+import { StatusTray, type TraySources } from '../statusTray'
 
 // Ícone com o status das conversas na barra de menus (Mac) ou na bandeja (Windows). Criado com o
 // app pronto (o Tray exige); nulo também quando desligado nas configurações.
 export class MenuBarIcon {
   private tray: StatusTray | null = null
 
-  constructor(
-    private list: Entry,
-    private showApp: () => void
-  ) {}
+  constructor(private sources: TraySources) {}
 
   set(on: boolean): void {
-    if (on && !this.tray) this.tray = new StatusTray(this.list, this.showApp)
+    if (on && !this.tray) this.tray = new StatusTray(this.sources)
     if (!on) this.destroy()
   }
 
@@ -22,7 +17,7 @@ export class MenuBarIcon {
     this.tray?.refresh()
   }
 
-  // Você voltou ao app: os avisos de concluído já foram vistos.
+  // Você voltou ao app: os avisos de erro já foram vistos.
   seen(): void {
     this.tray?.seen()
   }

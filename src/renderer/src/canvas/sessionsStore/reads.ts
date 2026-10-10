@@ -1,6 +1,7 @@
 import type { SessionChange } from '../../../../shared/sessions'
 import { folderList } from './convert'
 import { changesAt, merge, store, watching, watchingChanges } from './state'
+import { noteFinished } from './unread'
 
 // Leituras das pastas pelo processo principal: a lista de conversas (com os designs), a branch e o
 // git status. Cada pedido diz o que quer reler (Need): o aviso de uma conversa relê a lista e, com
@@ -35,6 +36,7 @@ async function read(path: string, need: Need): Promise<void> {
   ])
   if (ticket <= (settled.get(path) ?? 0)) return
   settled.set(path, ticket)
+  const before = store.get().sessions.get(path)
   store.set((s) =>
     merge(s, path, {
       list: sessions && designs ? folderList(sessions, designs) : undefined,
@@ -43,6 +45,7 @@ async function read(path: string, need: Need): Promise<void> {
       changes: watchingChanges.has(path) ? changes : undefined
     })
   )
+  noteFinished(before, store.get().sessions.get(path))
 }
 
 // Uma leitura por pasta de cada vez. Pedido que chega com uma em andamento fica guardado e roda

@@ -3,6 +3,7 @@ import { CanvasAgent } from '../canvasAgent'
 import { CanvasHub } from '../canvasHub'
 import { ChatHolders } from '../chatHolders'
 import { Chats } from '../chats'
+import { activeChats, activeSignature } from '../chats/entries'
 import { Cli } from '../cli'
 import { broadcast, sendTo } from '../ipc/events'
 import { ChatNotifier } from '../notifications'
@@ -16,6 +17,7 @@ import { canvasWindowList, readyCanvas } from './canvasRegistry'
 import { openFolder } from './folderOpener'
 import { MenuBarIcon } from './menuBarIcon'
 import { TerminalViewers } from './terminalViewers'
+import { UnreadChats } from './unreadChats'
 import { UnsavedFiles } from './unsavedFiles'
 import { createConversationWindow, showApp } from './windows'
 
@@ -35,12 +37,32 @@ export function createServices() {
 
   const sessionWatch = new SessionWatch((path, change) => broadcast('sessions:changed', path, change))
 
-  const tray = new MenuBarIcon(() => chats.list(), showApp)
+  // Traz o app e abre a conversa (clique na notificação ou numa linha do ícone da barra).
+  const openChat = (cwd: string, sessionId?: string): void => {
+    showApp()
+    const win = readyCanvas()
+    if (sessionId && win) sendTo(win.webContents, 'chat:open', cwd, sessionId)
+  }
+
+  // Respostas que você ainda não viu, como as janelas contam: o ícone da barra mostra quantas.
+  const unread = new UnreadChats(() => tray.refresh())
+  const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), showApp, openChat })
+
+  // O indicador do canto do canvas só recebe a lista quando ela muda de verdade.
+  let activeShown = ''
+  const publishActive = (): void => {
+    const list = activeChats(chats.list())
+    const signature = activeSignature(list)
+    if (signature === activeShown) return
+    activeShown = signature
+    broadcast('chat:active', list)
+  }
 
   const chats = new Chats((key, state) => {
     broadcast('chat:state', key, state)
     tray.refresh()
     notifier.refresh()
+    publishActive()
   })
 
   const chatHolders = new ChatHolders(
@@ -49,14 +71,7 @@ export function createServices() {
   )
 
   // Clique na notificação: traz o app e abre a conversa que avisou.
-  const notifier = new ChatNotifier(
-    () => chats.list(),
-    (cwd, sessionId) => {
-      showApp()
-      const win = readyCanvas()
-      if (sessionId && win) sendTo(win.webContents, 'chat:open', cwd, sessionId)
-    }
-  )
+  const notifier = new ChatNotifier(() => chats.list(), openChat)
 
   // Limites de cada conta logada.
   const usage = new UsageMonitors(
@@ -115,6 +130,7 @@ export function createServices() {
     terminalViewers,
     sessionWatch,
     tray,
+    unread,
     chats,
     chatHolders,
     notifier,

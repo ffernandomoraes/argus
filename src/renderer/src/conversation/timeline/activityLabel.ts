@@ -1,11 +1,10 @@
-import type { RunningAgent } from '../../../../shared/agents'
 import type { ChatActivity } from '../../../../shared/chat'
 
 // O que o Claude está fazendo agora, no lugar de um "Trabalhando…" parado. Só o tipo da ação:
-// o detalhe (comando, arquivo) já aparece na linha da ferramenta logo acima.
-export function activityLabel(activity: ChatActivity | undefined, agents: RunningAgent[]): string {
+// o detalhe (comando, arquivo) já aparece na linha da ferramenta logo acima. `foreground`: subagentes
+// em primeiro plano, que o Claude está esperando.
+export function activityLabel(activity: ChatActivity | undefined, foreground: number): string {
   const tool = activity?.tool
-  const foreground = agents.filter((a) => !a.background).length
   switch (activity?.kind) {
     case 'thinking':
       return 'Pensando…'

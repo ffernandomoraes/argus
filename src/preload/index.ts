@@ -84,7 +84,10 @@ const api: Api = {
     release: (key) => send('chat:release', key),
     configure: (key, patch) => send('chat:configure', key, patch),
     onState: (cb) => listen('chat:state', cb),
-    onOpen: (cb) => listen('chat:open', cb)
+    onOpen: (cb) => listen('chat:open', cb),
+    active: () => invoke('chat:active'),
+    onActive: (cb) => listen('chat:active', cb),
+    setUnread: (chats) => send('chat:unread', chats)
   },
   agents: {
     list: (projectPath) => invoke('agents:list', projectPath),

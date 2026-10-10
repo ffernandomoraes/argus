@@ -3,6 +3,7 @@ import type { Design, DesignDevice } from '../../../shared/design'
 import { AccountContext } from '../auth/accountContext'
 import { agentHint, mentionedAgents } from '../conversation/agentMentions'
 import { imagesForSend } from '../conversation/chatImages'
+import { DESIGN_PREFIX, useViewing } from '../canvas/sessionsStore'
 import { pressEscape } from '../useEscape'
 import { AddressBar } from './AddressBar'
 import { CommentLayer } from './comments/CommentLayer'
@@ -45,6 +46,7 @@ export function PrototypePane({
 }) {
   const projectPath = design.projectPath
   const session = usePrototypeSession(design, onUpdate)
+  useViewing(DESIGN_PREFIX + design.id)
   const { live, running } = session
   const address = usePrototypeAddress(design, onUpdate, running)
   const { origin, url, here } = address

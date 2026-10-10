@@ -1,4 +1,4 @@
-import type { ChatState } from '../../shared/chat'
+import type { ActiveChat, ChatState } from '../../shared/chat'
 
 // Uma conversa aberta no app (ver Chats.list), como a bandeja e as notificações enxergam.
 export type ChatEntry = { id: string; cwd: string; state: ChatState }
@@ -39,4 +39,30 @@ export class StatusChanges {
     for (const id of this.previous.keys()) if (!seen.has(id)) this.previous.delete(id)
     return changed
   }
+}
+
+// Conversas trabalhando ou esperando você, para o indicador no canto do canvas.
+export function activeChats(entries: ChatEntry[]): ActiveChat[] {
+  return entries.flatMap(({ id, cwd, state: s }) =>
+    s.status === 'idle'
+      ? []
+      : [
+          {
+            key: id,
+            cwd,
+            sessionId: s.sessionId,
+            status: s.status,
+            activity: s.activity,
+            foregroundAgents: s.agents.filter((a) => !a.background).length,
+            turnStartedAt: s.turnStartedAt
+          }
+        ]
+  )
+}
+
+// Resumo do que o indicador mostra: o texto chegando não muda nada disso, e quem compara sai cedo.
+export function activeSignature(chats: ActiveChat[]): string {
+  return chats
+    .map((c) => [c.key, c.sessionId, c.status, c.activity?.kind, c.activity?.tool, c.foregroundAgents, c.turnStartedAt].join(':'))
+    .join('|')
 }

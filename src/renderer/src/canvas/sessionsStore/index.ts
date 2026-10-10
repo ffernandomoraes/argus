@@ -6,8 +6,11 @@ import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
 import { changesAt, store, watching, watchingChanges } from './state'
+// Efeito de importar: as não vistas vão para o ícone da barra de menus.
+import './unreadSync'
 
 export { DESIGN_PREFIX } from './convert'
+export { setPoppedOut, useIsUnread, useViewing } from './unread'
 
 // Conversas de cada pasta, lidas dos arquivos do Claude Code, a branch atual dela e os arquivos
 // não comitados. Não entram no canvas salvo nem no desfazer: são sempre relidas do disco.

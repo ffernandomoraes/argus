@@ -27,7 +27,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerSessionsIpc(s.sessionWatch)
   registerServersIpc()
   registerFilesIpc(s.unsavedFiles)
-  registerChatIpc(s.chats, s.chatHolders, s.terminals)
+  registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread)
   registerTerminalIpc(s.terminals, s.chats, s.terminalViewers)
   registerCliIpc()
 }

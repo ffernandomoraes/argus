@@ -31,3 +31,9 @@ export type UncommittedFile = {
   // ! em conflito.
   kind: 'M' | 'A' | 'D' | 'R' | 'U' | '!'
 }
+
+// Por que a pasta mudou, no aviso sessions:changed: a lista de conversas mudou (transcript: uma
+// conversa gravou, apareceu, ou um design dela mudou), o status de algum Claude Code mudou (status)
+// ou o .git mudou (git: checkout, add, commit). A janela relê só o que o motivo pede: o git status,
+// o mais caro, só no aviso do git.
+export type SessionChange = 'transcript' | 'status' | 'git'

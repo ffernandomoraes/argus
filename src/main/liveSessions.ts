@@ -9,14 +9,51 @@ import { statusDirs } from './accounts'
 // Formato interno do Claude Code, não documentado: pode mudar entre versões.
 
 const STATUS: Record<string, LiveStatus> = { busy: 'running', waiting: 'needs-you', idle: 'idle' }
+const STATUS_FILE = /^\d+\.json$/
+
+type StatusFile = { pid: number; sessionId: string | null; status: LiveStatus }
 
 function alive(pid: number): boolean {
+  // 0 e negativos são grupos de processos para o kill: nunca um Claude Code.
+  if (!Number.isInteger(pid) || pid <= 0) return false
   try {
     process.kill(pid, 0)
     return true
   } catch (e) {
     // EPERM: existe, mas é de outro usuário.
     return (e as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
+// Status de um processo que ainda está rodando; nulo se ele já saiu ou se o arquivo está sendo
+// regravado (JSON pela metade).
+function parseStatus(text: string): StatusFile | null {
+  let info: Record<string, unknown> | null
+  try {
+    info = JSON.parse(text) as Record<string, unknown> | null
+  } catch {
+    return null
+  }
+  const pid = Number(info?.pid)
+  if (!alive(pid)) return null
+  const raw = info?.status
+  const status = typeof raw === 'string' && Object.hasOwn(STATUS, raw) ? STATUS[raw] : 'idle'
+  return { pid, sessionId: typeof info?.sessionId === 'string' ? info.sessionId : null, status }
+}
+
+const readSync = (file: string) => {
+  try {
+    return readFileSync(file, 'utf8')
+  } catch {
+    return ''
+  }
+}
+
+const namesSync = (dir: string) => {
+  try {
+    return readdirSync(dir).filter((n) => STATUS_FILE.test(n))
+  } catch {
+    return []
   }
 }
 
@@ -30,22 +67,17 @@ export async function liveSessions(): Promise<Map<string, LiveStatus>> {
 async function readStatusDir(dir: string, out: Map<string, LiveStatus>): Promise<void> {
   let names: string[]
   try {
-    names = (await readdir(dir)).filter((n) => /^\d+\.json$/.test(n))
+    names = (await readdir(dir)).filter((n) => STATUS_FILE.test(n))
   } catch {
     return
   }
   await Promise.all(
     names.map(async (name) => {
-      try {
-        const info = JSON.parse(await readFile(join(dir, name), 'utf8'))
-        if (typeof info.sessionId !== 'string' || !alive(Number(info.pid))) return
-        const status = STATUS[info.status] ?? 'idle'
-        // A mesma sessão aberta em dois lugares: vale o status mais urgente.
-        const prev = out.get(info.sessionId)
-        if (!prev || prev === 'idle' || status === 'needs-you') out.set(info.sessionId, status)
-      } catch {
-        // arquivo sendo regravado
-      }
+      const info = parseStatus(await readFile(join(dir, name), 'utf8').catch(() => ''))
+      if (!info || info.sessionId === null) return
+      // A mesma sessão aberta em dois lugares: vale o status mais urgente.
+      const prev = out.get(info.sessionId)
+      if (!prev || prev === 'idle' || info.status === 'needs-you') out.set(info.sessionId, info.status)
     })
   )
 }
@@ -55,21 +87,21 @@ async function readStatusDir(dir: string, out: Map<string, LiveStatus>): Promise
 export function liveStatusByPid(): Map<number, LiveStatus> {
   const out = new Map<number, LiveStatus>()
   for (const dir of statusDirs()) {
-    let names: string[]
-    try {
-      names = readdirSync(dir).filter((n) => /^\d+\.json$/.test(n))
-    } catch {
-      continue
-    }
-    for (const name of names) {
-      try {
-        const info = JSON.parse(readFileSync(join(dir, name), 'utf8'))
-        const pid = Number(info.pid)
-        if (alive(pid)) out.set(pid, STATUS[info.status] ?? 'idle')
-      } catch {
-        // arquivo sendo regravado
-      }
+    for (const name of namesSync(dir)) {
+      const info = parseStatus(readSync(join(dir, name)))
+      if (info) out.set(info.pid, info.status)
     }
   }
   return out
+}
+
+// Sessão do `claude` que roda com esse pid (o terminal do app sabe o pid dele); nula se o processo
+// saiu ou ainda não gravou o status. Lê um arquivo por conta.
+export function sessionIdByPid(pid: number): string | null {
+  if (!Number.isInteger(pid) || pid <= 0) return null
+  for (const dir of statusDirs()) {
+    const info = parseStatus(readSync(join(dir, `${pid}.json`)))
+    if (info?.pid === pid && info.sessionId) return info.sessionId
+  }
+  return null
 }

@@ -20,18 +20,6 @@ export type AgentSaveRequest = Omit<AgentDef, 'scope' | 'path'> & {
   previousName?: string
 }
 
-// Campos que o Claude preenche a partir de uma descrição.
-export type AgentDraftFields = { name: string; description: string; prompt: string; model?: string }
-
-export type AgentDraftRequest = {
-  // O que a pessoa contou sobre o agente, ou a mudança que quer num agente existente.
-  brief: string
-  // Campos atuais: com conteúdo, o pedido vale como ajuste em cima deles.
-  current?: AgentDraftFields
-}
-
-export type AgentDraftResult = { ok: true; fields: AgentDraftFields } | { ok: false; error: string }
-
 export type AgentSaveResult = { ok: true; agent: AgentDef } | { ok: false; error: string }
 
 // Subagente trabalhando dentro de uma conversa, enquanto não termina.

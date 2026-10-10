@@ -1,0 +1,56 @@
+/* A página em si: fundo, fonte, cursor, faixa de arrastar a janela e barras de rolagem. */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Tailwind 4 tira o cursor de mão dos botões; aqui ele volta para tudo que é clicável */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']) {
+  cursor: pointer;
+}
+
+/* Faixa invisível que arrasta a janela: ao lado dos semáforos no Mac, sob os botões no Windows */
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Barra de rolagem fina, nas cores do tema. O polegar fica mais visível ao passar o mouse. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-faint);
+}
+
+/* O código é sempre escuro: barra escura independentemente do tema.
+   O terminal desenha a própria barra (cores no tema do xterm, em TerminalView). */
+.code-editor .cm-scroller::-webkit-scrollbar-thumb {
+  background-color: #4d4d56;
+}
+.code-editor .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: #7c7c87;
+}

@@ -1,4 +1,4 @@
-type Input = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+type Input = Record<string, any>
 
 // Como cada ferramenta aparece no chat: o que ela faz (label), para quê (summary)
 // e o detalhe técnico (comando, caminho, endereço), que só aparece ao abrir a linha.

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Folder, FolderOpen, Search } from 'lucide-react'
 import type { KnownFolder } from '../../../shared/sessions'
-import { useEscape } from '../useEscape'
 import { lastSep, parentDir } from '../platform'
+import { Modal } from '../ui/Modal'
+import { TimeAgo } from './blocks/TimeAgo'
 import { displayPath } from './factory'
-import { relativeTime } from './relativeTime'
 
 // "Nova pasta": as pastas onde o Claude Code já conversou, da mais recente para a mais antiga,
 // para não confundir pastas de nome parecido no seletor do sistema. Pasta sem conversa
@@ -24,21 +24,17 @@ export function FolderPicker({
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
   const list = useRef<HTMLUListElement>(null)
-  const now = useMemo(() => Date.now(), [])
 
   useEffect(() => {
-    void window.api.sessions.folders().then(setFolders)
+    let alive = true
+    void window.api.sessions.folders().then((all) => alive && setFolders(all))
+    return () => {
+      alive = false
+    }
   }, [])
 
-  useEscape(onClose)
-
-  const shown = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return (folders ?? []).filter((f) => !q || f.path.toLowerCase().includes(q))
-  }, [folders, query])
-
-  // A lista muda com a busca: o destaque volta para o primeiro.
-  useEffect(() => setHighlight(0), [query])
+  const q = query.trim().toLowerCase()
+  const shown = (folders ?? []).filter((f) => !q || f.path.toLowerCase().includes(q))
 
   useEffect(() => {
     list.current?.children[highlight]?.scrollIntoView({ block: 'nearest' })
@@ -59,73 +55,92 @@ export function FolderPicker({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50" onMouseDown={onClose}>
-      <div
-        role="dialog"
-        aria-label="Nova pasta"
-        onMouseDown={(e) => e.stopPropagation()}
-        className="absolute left-1/2 top-[18%] flex max-h-[60vh] w-[520px] max-w-[calc(100vw-32px)] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/60"
-      >
-        <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2.5">
-          <Search size={15} className="shrink-0 text-muted" />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="Buscar pasta com conversa do Claude Code"
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint"
-          />
-        </div>
-
-        {folders === null ? (
-          <p className="px-3 py-4 text-xs text-muted">Lendo as conversas…</p>
-        ) : shown.length === 0 ? (
-          <p className="px-3 py-4 text-xs text-muted">
-            {query ? 'Nenhuma pasta com esse nome.' : 'Nenhuma pasta com conversa do Claude Code.'}
-          </p>
-        ) : (
-          <ul ref={list} className="min-h-0 flex-1 overflow-y-auto p-1">
-            {shown.map((f, i) => {
-              const path = displayPath(f.path)
-              const parent = parentDir(path) || path.slice(0, lastSep(path) + 1)
-              return (
-                <li key={f.path}>
-                  <button
-                    onClick={() => onPick(f.path)}
-                    onMouseMove={() => setHighlight(i)}
-                    title={path}
-                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
-                      i === highlight ? 'bg-accent [&_span]:border-white/40 [&_span]:text-white [&_svg]:text-white' : ''
-                    }`}
-                  >
-                    <Folder size={14} className="shrink-0 text-muted" />
-                    <span className="shrink-0 font-medium text-text">{path.slice(lastSep(path) + 1)}</span>
-                    <span className="min-w-0 truncate text-faint">{parent}</span>
-                    {onCanvas.has(path) && (
-                      <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] text-faint">no canvas</span>
-                    )}
-                    <span
-                      title={new Date(f.updatedAt).toLocaleString('pt-BR')}
-                      className="ml-auto shrink-0 pl-2 text-[11px] text-faint"
-                    >
-                      {relativeTime(f.updatedAt, now)}
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-
-        <button
-          onClick={() => void pickOther()}
-          className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
-        >
-          <FolderOpen size={14} className="shrink-0" />
-          Escolher outra pasta…
-        </button>
+    <Modal variant="palette" label="Nova pasta" className="flex flex-col" onClose={onClose}>
+      <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2.5">
+        <Search size={15} className="shrink-0 text-muted" />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            // A lista muda com a busca: o destaque volta para o primeiro.
+            setHighlight(0)
+          }}
+          onKeyDown={onKeyDown}
+          placeholder="Buscar pasta com conversa do Claude Code"
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint"
+        />
       </div>
-    </div>
+
+      {folders === null ? (
+        <p className="px-3 py-4 text-xs text-muted">Lendo as conversas…</p>
+      ) : shown.length === 0 ? (
+        <p className="px-3 py-4 text-xs text-muted">
+          {query ? 'Nenhuma pasta com esse nome.' : 'Nenhuma pasta com conversa do Claude Code.'}
+        </p>
+      ) : (
+        <ul ref={list} className="min-h-0 flex-1 overflow-y-auto p-1">
+          {shown.map((f, i) => (
+            <FolderRow
+              key={f.path}
+              folder={f}
+              index={i}
+              highlighted={i === highlight}
+              onCanvas={onCanvas}
+              onPick={onPick}
+              onHighlight={setHighlight}
+            />
+          ))}
+        </ul>
+      )}
+
+      <button
+        onClick={() => void pickOther()}
+        className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+      >
+        <FolderOpen size={14} className="shrink-0" />
+        Escolher outra pasta…
+      </button>
+    </Modal>
   )
 }
+
+// Uma pasta da lista: nome, pasta de cima, "no canvas" e há quanto tempo teve conversa.
+const FolderRow = memo(function FolderRow({
+  folder,
+  index,
+  highlighted,
+  onCanvas,
+  onPick,
+  onHighlight
+}: {
+  folder: KnownFolder
+  index: number
+  highlighted: boolean
+  onCanvas: Set<string>
+  onPick: (folder: string) => void
+  onHighlight: (index: number) => void
+}) {
+  const path = displayPath(folder.path)
+  const parent = parentDir(path) || path.slice(0, lastSep(path) + 1)
+  return (
+    <li>
+      <button
+        onClick={() => onPick(folder.path)}
+        onMouseMove={() => onHighlight(index)}
+        title={path}
+        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
+          highlighted ? 'bg-accent [&_span]:border-white/40 [&_span]:text-white [&_svg]:text-white' : ''
+        }`}
+      >
+        <Folder size={14} className="shrink-0 text-muted" />
+        <span className="shrink-0 font-medium text-text">{path.slice(lastSep(path) + 1)}</span>
+        <span className="min-w-0 truncate text-faint">{parent}</span>
+        {onCanvas.has(path) && (
+          <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] text-faint">no canvas</span>
+        )}
+        <TimeAgo iso={folder.updatedAt} className="pl-2" />
+      </button>
+    </li>
+  )
+})

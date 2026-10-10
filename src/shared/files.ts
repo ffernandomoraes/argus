@@ -18,4 +18,6 @@ export type FileContent =
 export type FileDiff = { ok: true; hunks: DiffHunk[] } | { ok: false; error: string }
 
 // Criar, renomear, excluir, colar, salvar. `path`: o item criado ou renomeado, relativo à raiz.
-export type FileOpResult = { ok: true; path: string } | { ok: false; error: string }
+// conflict: ao salvar com a base, o arquivo no disco já não era ela (alguém mudou por fora); nada
+// foi gravado.
+export type FileOpResult = { ok: true; path: string } | { ok: false; error: string; conflict?: boolean }

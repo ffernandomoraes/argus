@@ -1,0 +1,111 @@
+/* Cores, fontes e cantos do app (variáveis do Tailwind em @theme), no tema escuro e no claro. */
+
+@theme {
+  /* Tema escuro (padrão), nos cinzas neutros do macOS: o canvas é o fundo mais escuro (como a
+     lateral do Ajustes do Sistema), os painéis ficam um tom acima (o conteúdo do Ajustes). */
+  --color-bg: #1c1c1c;
+  --color-surface: #282828;
+  --color-surface-2: #333333;
+  --color-line: #3a3a3a;
+  --color-line-strong: #4c4c4c;
+  --color-text: #f4f4f4;
+  --color-muted: #a5a5a5;
+  --color-faint: #7a7a7a;
+  --color-dots: #383838;
+
+  /* Fundo das listas agrupadas (cartões do Ajustes do Sistema): translúcido, para clarear um
+     pouco qualquer superfície em que estiver. */
+  --color-fill: rgb(255 255 255 / 0.05);
+
+  /* Cartão do projeto e cartões das conversas embaixo dele. No escuro o projeto é o mais claro;
+     no claro inverte: projeto branco, conversas acinzentadas. `card-hover` é o passar do mouse. */
+  --color-project: var(--color-surface-2);
+  --color-card: var(--color-surface);
+  --color-card-hover: var(--color-surface-2);
+
+  /* Cor de destaque do sistema (Ajustes > Aparência no Mac, Cores no Windows). O valor aqui é o
+     azul padrão; o app troca pela do sistema ao abrir (main.tsx). `selection` é o fundo do item
+     selecionado: mais fechado no escuro, como o do macOS. */
+  --color-accent: #0a84ff;
+  --color-selection: color-mix(in srgb, var(--color-accent) 78%, black);
+
+  /* Parte clara de um controle: o segmento escolhido e a bolinha do interruptor. */
+  --color-control: #5e5e5e;
+
+  --color-area-trabalho: #3b82f6;
+  --color-area-freela: #f59e0b;
+  --color-area-pessoal: #10b981;
+
+  --color-running: #60a5fa;
+  --color-needs-you: #fbbf24;
+  --color-done: #34d399;
+
+  /* Pergunta ou permissão no chat: na cor do grupo da conversa, que o painel e o bloco do canvas
+     trocam no style. Fora de grupo, o amarelo do "precisa de você". */
+  --color-ask: var(--color-needs-you);
+  --color-ask-text: #1c1c1c;
+
+  /* Contador por cima de ícone, no azul do VS Code; o mesmo nos dois temas, sempre com texto branco. */
+  --color-badge: #0078d4;
+
+  /* Linha-guia do encaixe ao arrastar: destoa de tudo para ler como ajuda, não como conteúdo. */
+  --color-guide: #f472b6;
+
+  /* Etiqueta "Desenvolvimento" na barra de título do pnpm dev, para não confundir com o Argus
+     instalado aberto ao lado. */
+  --color-dev: #f59e0b;
+
+  /* Fonte do sistema: SF Pro no Mac, Segoe UI no Windows (a Variable no Windows 11). */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  /* Texto base de 13px, como o do macOS (o text-xs do Tailwind tem 12px). */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
+
+  /* Cantos mais arredondados, no desenho do macOS. Os nomes seguem os do Tailwind, um degrau acima. */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+
+  /* No Windows, sem as do Mac, ficam a Cascadia Mono (do Terminal do Windows) e a Consolas. */
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace;
+}
+
+/* Tema claro: as mesmas variáveis, trocadas. Terminal e código continuam escuros. */
+:root {
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #ececec;
+  --color-surface: #ffffff;
+  --color-surface-2: #ebebeb;
+  --color-line: #dedede;
+  --color-line-strong: #c6c6c6;
+  --color-text: #1d1d1f;
+  --color-muted: #6e6e73;
+  --color-faint: #8e8e93;
+  --color-dots: #cbcbcb;
+
+  --color-fill: rgb(0 0 0 / 0.035);
+  --color-project: #ffffff;
+  --color-card: #f5f5f5;
+  --color-card-hover: #ebebeb;
+  --color-selection: var(--color-accent);
+  --color-control: #ffffff;
+
+  --color-running: #2563eb;
+  --color-needs-you: #d97706;
+  --color-done: #059669;
+
+  --color-guide: #db2777;
+
+  --color-dev: #b45309;
+}
+
+/* As sombras (shadow-black/50 e afins) foram dosadas para o fundo escuro; no claro gritam.
+   Aqui todas ficam com metade da opacidade. A variável não é herdada, por isso o `*`. */
+:root[data-theme='light'] * {
+  --tw-shadow-alpha: 50%;
+}

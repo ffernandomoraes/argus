@@ -1,4 +1,5 @@
 import { FileText, X } from 'lucide-react'
+import { IconButton } from '../ui/IconButton'
 import type { Attachment } from './useAttachments'
 
 function formatSize(bytes: number): string {
@@ -7,6 +8,8 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+// Anexos da mensagem que está sendo escrita, acima do texto: miniatura das imagens, nome e tamanho
+// dos outros arquivos. O X aparece ao passar o mouse.
 export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRemove: (id: string) => void }) {
   if (items.length === 0) return null
 
@@ -33,13 +36,15 @@ export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRem
               </div>
             </div>
           )}
-          <button
-            aria-label={`Remover ${a.file.name}`}
+          <IconButton
+            label={`Remover ${a.file.name}`}
+            variant="floating"
+            size="xs"
             onClick={() => onRemove(a.id)}
-            className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-md border border-line bg-surface text-muted opacity-0 shadow hover:text-text group-hover:opacity-100"
+            className="absolute -right-1.5 -top-1.5 opacity-0 group-hover:opacity-100"
           >
             <X size={11} />
-          </button>
+          </IconButton>
         </div>
       ))}
     </div>

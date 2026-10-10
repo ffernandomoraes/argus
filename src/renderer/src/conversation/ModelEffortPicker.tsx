@@ -1,90 +1,23 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Check, ChevronRight, ChevronUp, Workflow } from 'lucide-react'
-import type { ClaudeModel } from '../../../shared/models'
+import { useRef, useState } from 'react'
+import { ChevronUp, Workflow } from 'lucide-react'
 import type { SessionSettings } from './SessionSettings'
+import { EFFORTS, effortLabel } from './modelOptions'
 import { useModels } from './useModels'
+import { EffortDots, EffortSlider } from './composer/EffortSlider'
+import { ModelList } from './composer/ModelList'
+import { Toggle } from './composer/Toggle'
+import { POPOVER } from './popover'
 import { useEscape } from '../useEscape'
 import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
-import { MENU_ACTIVE, MENU_HOVER } from '../canvas/ContextMenu'
+
+// Níveis de esforço e famílias de modelo moram em modelOptions.ts; saem daqui também, como antes,
+// para as Configurações.
+export { EFFORTS, groupByFamily } from './modelOptions'
 
 // Igual à extensão do VS Code: botão com modelo e esforço embaixo do campo; o menu abre
 // para cima com os modelos agrupados por família, a régua de esforço e as opções de
 // thinking e Ultracode. A lista de modelos vem do próprio `claude` (ver useModels).
-
-export const EFFORTS = [
-  { value: 'low', label: 'Baixo' },
-  { value: 'medium', label: 'Médio' },
-  { value: 'high', label: 'Alto' },
-  { value: 'xhigh', label: 'Muito alto' },
-  { value: 'max', label: 'Máximo' }
-]
-
-// Texto da extensão do VS Code para o nível máximo, traduzido.
-const MAX_WARNING =
-  'Pode gastar tokens demais, com respostas lentas ou pensamento excessivo. Use só nas tarefas mais difíceis.'
-
-const effortLabel = (value: string) => EFFORTS.find((e) => e.value === value)?.label ?? 'Auto'
-
-// "Opus 5.5" → família "Opus". A ordem das famílias segue a ordem da lista do claude.
-export function groupByFamily(models: ClaudeModel[]) {
-  const families = new Map<string, ClaudeModel[]>()
-  for (const m of models) {
-    if (m.value === '') continue
-    const family = m.displayName.split(' ')[0]
-    families.set(family, [...(families.get(family) ?? []), m])
-  }
-  return [...families.entries()]
-}
-
-function EffortDots({ level }: { level: number }) {
-  return (
-    <span className="flex items-center gap-[3px]" aria-hidden="true">
-      {EFFORTS.map((_, i) => (
-        <span key={i} className={`size-[5px] rounded-full bg-current ${i < level ? '' : 'opacity-20'}`} />
-      ))}
-    </span>
-  )
-}
-
-export function Toggle({
-  label,
-  description,
-  checked,
-  onChange,
-  icon
-}: {
-  label: string
-  description: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-  icon?: ReactNode
-}) {
-  return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-fill"
-    >
-      <span className="flex-1">
-        <span className="flex items-center gap-1.5 text-xs text-text">
-          {icon}
-          {label}
-        </span>
-        <span className="mt-0.5 block text-[12px] leading-snug text-faint">{description}</span>
-      </span>
-      <span
-        className={`mt-0.5 flex h-4 w-7 shrink-0 items-center rounded-full p-0.5 transition-colors ${
-          checked ? 'bg-accent' : 'bg-line-strong'
-        }`}
-      >
-        <span className={`size-3 rounded-full bg-white shadow-sm shadow-black/30 transition-transform ${checked ? 'translate-x-3' : ''}`} />
-      </span>
-    </button>
-  )
-}
-
 export function ModelEffortPicker({
   settings,
   onChange,
@@ -96,29 +29,19 @@ export function ModelEffortPicker({
   dots?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const [expanded, setExpanded] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const models = useModels()
+  useOutsideClick(ref, () => setOpen(false), open)
+  useEscape(() => setOpen(false), open)
 
   const current = models.find((m) => m.value === settings.model)
-  const defaultModel = models.find((m) => m.value === '')
-  const families = groupByFamily(models)
   // Padrão mostra o modelo a que aponta hoje: "Opus 5.5".
   const currentName = current
     ? current.value === '' ? (current.resolvedName ?? 'Padrão') : current.displayName
     : settings.model || 'Padrão'
   // Sem lista ainda, mostra a régua inteira; modelo sem esforço (Haiku) esconde a régua.
   const allowed = current ? EFFORTS.filter((e) => current.efforts.includes(e.value)) : EFFORTS
-  const index = allowed.findIndex((e) => e.value === settings.effort)
   const dots = EFFORTS.findIndex((e) => e.value === settings.effort) + 1
-
-  useEffect(() => {
-    if (open) setExpanded(null)
-  }, [open])
-  useOutsideClick(ref, () => setOpen(false), open)
-  useEscape(() => setOpen(false), open)
-
-  const row = `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text ${MENU_HOVER}`
 
   return (
     <div ref={ref} className="relative">
@@ -142,93 +65,14 @@ export function ModelEffortPicker({
 
       <Presence kind="menu">
         {open && (
-          <div className="absolute bottom-full left-0 z-10 mb-2 w-72 whitespace-normal rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
-            {/* Sem rolagem aqui: o submenu das versões sai para o lado e seria cortado */}
-            <div>
-              <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modelo</div>
-              {models.length === 0 && <div className="px-2 py-1.5 text-xs text-faint">Carregando modelos…</div>}
-
-              {defaultModel && (
-                <button onClick={() => onChange({ model: '' })} className={row}>
-                  <span className="flex-1">
-                    Padrão
-                    {defaultModel.resolvedName && <span className="text-faint"> - {defaultModel.resolvedName}</span>}
-                  </span>
-                  {settings.model === '' && <Check size={13} className="text-muted" />}
-                </button>
-              )}
-
-              {families.map(([family, versions]) => {
-                const selected = versions.find((v) => v.value === settings.model)
-                const isOpen = expanded === family
-                return (
-                  <div
-                    key={family}
-                    className="relative"
-                    onMouseEnter={() => setExpanded(family)}
-                    onMouseLeave={() => setExpanded((f) => (f === family ? null : f))}
-                  >
-                    <button
-                      onClick={() => setExpanded(isOpen ? null : family)}
-                      className={`${row} ${isOpen ? MENU_ACTIVE : ''}`}
-                    >
-                      <span className="flex-1">{family}</span>
-                      {selected && <span className="text-[12px] text-faint">{selected.displayName}</span>}
-                      {selected && <Check size={13} className="text-muted" />}
-                      <ChevronRight size={12} className="shrink-0 text-faint" />
-                    </button>
-                    {/* Submenu ao lado; o pl-1 mantém o mouse "dentro" ao atravessar o vão */}
-                    <Presence kind="menu">
-                      {isOpen && (
-                        <div className="absolute left-full top-0 z-10 pl-1">
-                          <div className="w-44 rounded-xl border border-line bg-surface/90 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl">
-                            {versions.map((v) => (
-                              <button key={v.value} onClick={() => onChange({ model: v.value })} className={row}>
-                                <span className="flex-1">{v.displayName}</span>
-                                {settings.model === v.value && <Check size={13} className="text-muted" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </Presence>
-                  </div>
-                )
-              })}
-            </div>
-
+          <div className={`absolute bottom-full left-0 z-10 mb-2 w-72 whitespace-normal ${POPOVER}`}>
+            <ModelList models={models} value={settings.model} onChange={(model) => onChange({ model })} />
             {allowed.length > 0 && (
               <>
                 <div className="my-1 h-px bg-line" />
-                <div className="px-2 pb-2 pt-1.5">
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="text-faint">Esforço</span>
-                    <span className="text-text">{effortLabel(settings.effort)}</span>
-                  </div>
-                  {/* Régua com uma marca por nível aceito; clicar na marca atual volta para Auto */}
-                  <div className="relative mt-2.5 flex h-4 items-center justify-between">
-                    <div className="absolute inset-x-1.5 h-0.5 rounded-full bg-line" />
-                    <div
-                      className="absolute left-1.5 h-0.5 rounded-full bg-muted"
-                      style={{ width: `calc((100% - 12px) * ${Math.max(0, index) / Math.max(1, allowed.length - 1)})` }}
-                    />
-                    {allowed.map((e, i) => (
-                      <button
-                        key={e.value}
-                        aria-label={e.label}
-                        title={e.label}
-                        onClick={() => onChange({ effort: settings.effort === e.value ? '' : e.value })}
-                        className={`relative size-3 rounded-full border-2 ${
-                          i <= index ? 'border-text bg-text' : 'border-line-strong bg-surface hover:border-muted'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {settings.effort === 'max' && <p className="mt-2 text-[12px] leading-snug text-needs-you">{MAX_WARNING}</p>}
-                </div>
+                <EffortSlider allowed={allowed} value={settings.effort} onChange={(effort) => onChange({ effort })} />
               </>
             )}
-
             <div className="my-1 h-px bg-line" />
             <Toggle
               label="Thinking"

@@ -1,52 +1,22 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
-import { Code2, Ellipsis, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, type LucideIcon } from 'lucide-react'
+import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
+import { Code2, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff } from 'lucide-react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
-import { askColors } from './askColors'
-import { ConversationView, HeaderButton } from './ConversationView'
-import {
-  DRAWER_DEFAULT_WIDTH,
-  ResizeHandles,
-  TITLE_BAR_HEIGHT,
-  useFloatingRect,
-  type PanelRect
-} from './FloatingPanel'
-import { useDrawerZoom } from './useDrawerZoom'
-import type { LineRange } from './fileLinks'
+import { useStableCallback } from '../lib/useStableCallback'
+import { MOTION, reduced } from '../motion'
 import { useEscape } from '../useEscape'
-import { useOutsideClick } from '../useOutsideClick'
-import { MOTION, Presence, reduced } from '../motion'
-import { MENU_PANEL, MENU_ROW } from '../canvas/ContextMenu'
+import { askColors } from './askColors'
+import { sameConversation } from './conversationIdentity'
+import { ConversationView } from './ConversationView'
+import type { LineRange } from './fileLinks'
+import { HeaderButton } from './header/HeaderButton'
+import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
+import { useFloatingRect } from './hooks/useFloatingRect'
+import { useFocusMode } from './hooks/useFocusMode'
+import { DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
+import { ResizeHandles } from './FloatingPanel'
+import { useDrawerZoom } from './useDrawerZoom'
 
-// Troca do modo foco com o efeito padrão (motion.tsx): o painel some, o layout troca enquanto
-// ele está invisível, e ele volta no novo tamanho. Esticar a largura deixava o texto se
-// rearrumando na frente de quem lê.
-const HIDDEN = { opacity: 0, transform: MOTION.panel.to }
-const SHOWN = { opacity: 1, transform: 'none' }
-
-// Painel flutuante à direita. Não é modal: o canvas continua clicável ao lado,
-// e abrir outra conversa troca o conteúdo deste mesmo painel.
-// No modo foco, o painel cobre a área toda abaixo da barra de título e a conversa fica numa
-// coluna estreita no centro: para ler respostas longas sem distração.
-export function ConversationDrawer({
-  project,
-  account,
-  loose = false,
-  tint,
-  conversation,
-  codeOpen,
-  onToggleCode,
-  onPopout,
-  onPinToCanvas,
-  onOpenFile,
-  onOpenDiff,
-  onSessionStarted,
-  rect,
-  onRectChange,
-  pinned = false,
-  onTogglePin,
-  onClose
-}: {
+type Props = {
   project: ProjectData
   // Conta do Claude do grupo da pasta; vazia = a padrão.
   account?: string
@@ -76,106 +46,62 @@ export function ConversationDrawer({
   // Sem ele, o item de fixar não aparece (só o drawer principal fixa).
   onTogglePin?: () => void
   onClose: () => void
-}) {
+}
+
+// Painel flutuante à direita. Não é modal: o canvas continua clicável ao lado,
+// e abrir outra conversa troca o conteúdo deste mesmo painel.
+// No modo foco, o painel cobre a área toda abaixo da barra de título e a conversa fica numa
+// coluna estreita no centro: para ler respostas longas sem distração.
+export function ConversationDrawer(props: Props) {
+  const { project, account, loose = false, tint, conversation, rect, onClose } = props
   const zoom = useDrawerZoom()
   const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, rect, onRectChange, DRAWER_DEFAULT_WIDTH)
-  const [focus, setFocusNow] = useState(false)
-  const switching = useRef(false)
+  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH)
+  const [focus, setFocus] = useFocusMode(panelRef)
+  const leaveFocus = useCallback(() => void setFocus(false), [setFocus])
 
   // Outra conversa no mesmo drawer: o painel fica, e só o conteúdo entra com o efeito padrão
   // (fade subindo uns pixels). Sem fade de saída: a conversa antiga já deixou de ser a aberta,
-  // e segurá-la na tela misturaria o histórico dela com a pasta da nova.
+  // e segurá-la na tela misturaria o histórico dela com a pasta da nova. A conversa nova que
+  // ganhou o id da sessão continua a mesma: não anima.
   const contentRef = useRef<HTMLDivElement>(null)
-  const shownId = useRef(conversation.id)
+  const { id, sessionId } = conversation
+  const shown = useRef({ id, sessionId })
   useLayoutEffect(() => {
-    if (shownId.current === conversation.id) return
-    shownId.current = conversation.id
-    if (reduced()) return
-    contentRef.current?.animate(
-      [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
-      MOTION.panel.in
-    )
-  }, [conversation.id])
-  const setFocus = async (on: boolean) => {
-    const panel = panelRef.current
-    if (on === focus || switching.current) return
-    if (!panel || matchMedia('(prefers-reduced-motion: reduce)').matches) return setFocusNow(on)
-    switching.current = true
-    const out = panel.animate([SHOWN, HIDDEN], { ...MOTION.panel.out, fill: 'forwards' })
-    await out.finished.catch(() => {})
-    flushSync(() => setFocusNow(on))
-    // O fade de entrada começa já no estado escondido, então tirar o de saída não pisca.
-    const enter = panel.animate([{ opacity: 0, transform: MOTION.panel.from }, SHOWN], MOTION.panel.in)
-    out.cancel()
-    await enter.finished.catch(() => {})
-    switching.current = false
-  }
+    const before = shown.current
+    const now = { id, sessionId }
+    shown.current = now
+    if (sameConversation(before, now) || reduced()) return
+    contentRef.current?.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], MOTION.panel.in)
+  }, [id, sessionId])
+
   useEscape(onClose)
   // Empilhado depois do fechar: o primeiro ESC sai do foco, o segundo fecha.
-  useEscape(() => setFocus(false), focus)
+  useEscape(leaveFocus, focus)
 
   // Arquivo e diff abrem no código ao lado, por baixo do foco: saem dele para aparecer.
-  const unfocused = <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => {
-    setFocus(false)
-    fn(...args)
-  }
+  const openFile = useStableCallback((path: string, lines?: LineRange) => {
+    leaveFocus()
+    props.onOpenFile(path, lines)
+  })
+  const openDiff = useStableCallback((path: string) => {
+    leaveFocus()
+    props.onOpenDiff(path)
+  })
 
-  const view = (
-    <ConversationView
-      cwd={project.path}
-      account={account}
-      project={loose ? undefined : project.name}
-      conversation={conversation}
-      onOpenFile={unfocused(onOpenFile)}
-      onOpenDiff={unfocused(onOpenDiff)}
-      onSessionStarted={onSessionStarted}
-      zoom={zoom}
-      headerClassName={focus ? '' : 'cursor-grab active:cursor-grabbing'}
-      minimalHeader={focus}
-      // No foco, o cabeçalho tem a cor do painel: o tom do grupo destacava demais.
-      headerStyle={{
-        zoom,
-        ...(tint && !focus && {
+  // No foco, o cabeçalho tem a cor do painel: o tom do grupo destacava demais.
+  const headerStyle = useMemo<CSSProperties>(
+    () => ({
+      zoom,
+      ...(tint &&
+        !focus && {
           background: `color-mix(in srgb, ${tint} 8%, var(--color-bg))`,
           borderBottomColor: `color-mix(in srgb, ${tint} 25%, var(--color-line))`
         })
-      }}
-      onHeaderPointerDown={focus ? undefined : floating.onMoveStart}
-      actions={
-        !focus && (
-          <>
-            <MoreMenu
-              items={[
-                { label: 'Modo foco', icon: Maximize2, onClick: () => setFocus(true) },
-                ...(onTogglePin
-                  ? [
-                      pinned
-                        ? { label: 'Desafixar', icon: PinOff, onClick: onTogglePin }
-                        : { label: 'Fixar', icon: Pin, onClick: onTogglePin }
-                    ]
-                  : []),
-                // Conversa ainda não enviada não tem sessão para abrir em outro lugar.
-                ...(conversation.draft
-                  ? []
-                  : [
-                      { label: 'Colocar no canvas', icon: PictureInPicture2, onClick: onPinToCanvas },
-                      { label: 'Abrir em janela separada', icon: ExternalLink, onClick: onPopout }
-                    ])
-              ]}
-            />
-            {!loose && (
-              <HeaderButton label={codeOpen ? 'Fechar código' : 'Abrir código'} onClick={onToggleCode} active={codeOpen}>
-                <Code2 size={14} />
-              </HeaderButton>
-            )}
-          </>
-        )
-      }
-      // No foco, o fechar só sai do foco: a conversa volta para o drawer de antes.
-      onClose={focus ? () => setFocus(false) : onClose}
-    />
+    }),
+    [zoom, tint, focus]
   )
+  const actions = useDrawerActions(props, focus, setFocus)
 
   return (
     <aside
@@ -201,43 +127,56 @@ export function ConversationDrawer({
       {!focus && <ResizeHandles onResizeStart={floating.onResizeStart} />}
       {/* Mesmo elemento nos dois modos: trocar a árvore recriaria a conversa e soltaria a sessão.
           No foco vira a coluna de leitura: linhas curtas cansam menos que texto de ponta a ponta. */}
-      <div ref={contentRef} className={`flex min-h-0 w-full flex-1 flex-col ${focus ? 'mx-auto max-w-[1100px]' : ''}`}>{view}</div>
+      <div ref={contentRef} className={`flex min-h-0 w-full flex-1 flex-col ${focus ? 'mx-auto max-w-[1100px]' : ''}`}>
+        <ConversationView
+          cwd={project.path}
+          account={account}
+          project={loose ? undefined : project.name}
+          conversation={conversation}
+          onOpenFile={openFile}
+          onOpenDiff={openDiff}
+          onSessionStarted={props.onSessionStarted}
+          zoom={zoom}
+          headerClassName={focus ? '' : 'cursor-grab active:cursor-grabbing'}
+          minimalHeader={focus}
+          headerStyle={headerStyle}
+          onHeaderPointerDown={focus ? undefined : floating.onMoveStart}
+          actions={actions}
+          // No foco, o fechar só sai do foco: a conversa volta para o drawer de antes.
+          onClose={focus ? leaveFocus : onClose}
+        />
+      </div>
     </aside>
   )
 }
 
-// O que não é fechar nem código fica num menu só: o cabeçalho com um botão por opção pesava.
-function MoreMenu({ items }: { items: { label: string; icon: LucideIcon; onClick: () => void }[] }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useOutsideClick(ref, () => setOpen(false), open)
-  // Empilhado depois do fechar do drawer: com o menu aberto, o ESC fecha só ele.
-  useEscape(() => setOpen(false), open)
-  return (
-    <div ref={ref} className="relative">
-      <HeaderButton label="Mais opções" onClick={() => setOpen((o) => !o)} active={open}>
-        <Ellipsis size={15} />
-      </HeaderButton>
-      <Presence kind="menu">
-        {open && (
-          // Clique na borda do menu não arrasta o drawer (o cabeçalho é a alça).
-          <div onPointerDown={(e) => e.stopPropagation()} className={`absolute right-0 top-full z-50 mt-1 w-52 ${MENU_PANEL}`}>
-            {items.map(({ label, icon: Icon, onClick }) => (
-              <button
-                key={label}
-                onClick={() => {
-                  setOpen(false)
-                  onClick()
-                }}
-                className={`${MENU_ROW} text-text hover:bg-accent hover:text-white`}
-              >
-                <Icon size={14} />
-                {label}
-              </button>
-            ))}
-          </div>
+// Botões do cabeçalho do drawer: o menu de mais opções e o código. Somem no foco. Memorizados,
+// para o cabeçalho e a conversa não redesenharem enquanto o painel é arrastado.
+function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>) {
+  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, loose = false, codeOpen, onToggleCode } = props
+  const draft = !!conversation.draft
+  return useMemo(() => {
+    if (focus) return null
+    const items: MoreMenuItem[] = [
+      { label: 'Modo foco', icon: Maximize2, onClick: () => void setFocus(true) },
+      ...(onTogglePin ? [pinned ? { label: 'Desafixar', icon: PinOff, onClick: onTogglePin } : { label: 'Fixar', icon: Pin, onClick: onTogglePin }] : []),
+      // Conversa ainda não enviada não tem sessão para abrir em outro lugar.
+      ...(draft
+        ? []
+        : [
+            { label: 'Colocar no canvas', icon: PictureInPicture2, onClick: onPinToCanvas },
+            { label: 'Abrir em janela separada', icon: ExternalLink, onClick: onPopout }
+          ])
+    ]
+    return (
+      <>
+        <MoreMenu items={items} />
+        {!loose && (
+          <HeaderButton label={codeOpen ? 'Fechar código' : 'Abrir código'} onClick={onToggleCode} active={codeOpen}>
+            <Code2 size={14} />
+          </HeaderButton>
         )}
-      </Presence>
-    </div>
-  )
+      </>
+    )
+  }, [focus, setFocus, onTogglePin, pinned, draft, onPinToCanvas, onPopout, loose, codeOpen, onToggleCode])
 }

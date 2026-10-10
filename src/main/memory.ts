@@ -1,7 +1,9 @@
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
-import type { MemoryFile, MemoryGroup, MemoryProject } from '../shared/memory'
+import type { MemoryFile, MemoryGroup, MemoryProject, MemoryWriteResult } from '../shared/memory'
+import { changedOnDisk } from './files/diskBase'
+import { writeTextFile } from './files/textFile'
 import { expandHome } from './paths'
 import { sessionsDir } from './sessions'
 
@@ -89,9 +91,17 @@ export async function readMemory(path: string, projects: MemoryProject[]): Promi
   return readFile(path, 'utf8').catch(() => '')
 }
 
-export async function writeMemory(path: string, text: string, projects: MemoryProject[]): Promise<boolean> {
+// false também quando não deu para gravar (sem permissão, disco cheio): a tela avisa, em vez de
+// achar que salvou. base: o texto lido quando a edição começou; se o disco mudou desde então (o
+// Claude anotou algo), responde 'conflict' sem gravar.
+export async function writeMemory(path: string, text: string, projects: MemoryProject[], base?: string): Promise<MemoryWriteResult> {
   if (!allowed(path, projects)) return false
-  await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, text)
-  return true
+  try {
+    if (await changedOnDisk(path, base)) return 'conflict'
+    await writeTextFile(path, text)
+    return true
+  } catch (err) {
+    console.error('[memória] não consegui gravar', path, err)
+    return false
+  }
 }

@@ -8,6 +8,9 @@ export type UpdateState =
   | { status: 'downloading'; version: string; progress: number }
   // Baixada e conferida: entra ao reiniciar, ou sozinha quando o app fechar.
   | { status: 'ready'; version: string; notesUrl: string }
+  // Windows: a versão nova saiu, mas o instalador dela ainda não subiu (sai alguns minutos depois
+  // do app do Mac). Não é erro: procurar de novo daqui a pouco resolve.
+  | { status: 'waiting'; version: string; message: string }
   | { status: 'error'; message: string }
 
 export type UpdateInfo = {

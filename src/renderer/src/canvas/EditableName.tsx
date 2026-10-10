@@ -1,30 +1,33 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
+import { useFocusWhenVisible } from './blocks/useFocusWhenVisible'
 import { useCanvasActions } from './CanvasContext'
+import { useIsRenaming } from './useCanvasView'
 
 // Mostra o nome; vira campo de texto quando o nó está sendo renomeado.
 export function EditableName({ id, value, className }: { id: string; value: string; className?: string }) {
-  const { renamingId, finishRename } = useCanvasActions()
+  const { finishRename } = useCanvasActions()
+  // Só o bloco que entra ou sai da renomeação redesenha.
+  const renaming = useIsRenaming(id)
+  if (!renaming) return <span className={`truncate ${className ?? ''}`}>{value}</span>
+  return <NameField id={id} value={value} className={className} onDone={finishRename} />
+}
+
+// O campo só existe durante a renomeação: ao aparecer, pega o foco com o texto selecionado.
+// Enter guarda; Esc cancela; clicar fora guarda.
+function NameField({
+  id,
+  value,
+  className,
+  onDone
+}: {
+  id: string
+  value: string
+  className?: string
+  onDone: (id: string, value: string | null) => void
+}) {
   const cancelled = useRef(false)
   const input = useRef<HTMLInputElement>(null)
-  const editing = renamingId === id
-
-  // Bloco recém-criado fica invisível até o React Flow medir o tamanho dele, e o
-  // navegador não foca elemento invisível (o autoFocus falha). Tenta a cada quadro até pegar.
-  useEffect(() => {
-    if (!editing) return
-    let frame = 0
-    let tries = 0
-    const focus = () => {
-      const el = input.current
-      if (!el || document.activeElement === el) return
-      el.focus()
-      if (document.activeElement !== el && ++tries < 30) frame = requestAnimationFrame(focus)
-    }
-    focus()
-    return () => cancelAnimationFrame(frame)
-  }, [editing])
-
-  if (renamingId !== id) return <span className={`truncate ${className ?? ''}`}>{value}</span>
+  useFocusWhenVisible(input)
 
   return (
     <input
@@ -35,6 +38,8 @@ export function EditableName({ id, value, className }: { id: string; value: stri
         e.target.select()
       }}
       onKeyDown={(e) => {
+        // Compondo um acento ou um ideograma (IME), Enter e Esc são da composição.
+        if (e.nativeEvent.isComposing) return
         if (e.key === 'Enter') e.currentTarget.blur()
         if (e.key === 'Escape') {
           // Só cancela a renomeação; não fecha o que estiver aberto.
@@ -43,7 +48,7 @@ export function EditableName({ id, value, className }: { id: string; value: stri
           e.currentTarget.blur()
         }
       }}
-      onBlur={(e) => finishRename(id, cancelled.current ? null : e.currentTarget.value)}
+      onBlur={(e) => onDone(id, cancelled.current ? null : e.currentTarget.value)}
       className={`nodrag nopan min-w-0 flex-1 rounded border border-line-strong bg-bg px-1 outline-none ${className ?? ''}`}
     />
   )

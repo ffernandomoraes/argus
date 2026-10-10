@@ -1,76 +1,54 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import type { EventKind } from '../../../shared/history'
 import type { Message } from './types'
 
-type EventMessage = Extract<Message, { role: 'event' }>
+export type EventMessage = Extract<Message, { role: 'event' }>
 
 // Trocas feitas pelos seletores do chat (modelo, esforço, modo...) não ficam no arquivo da
 // sessão do Claude Code; o app guarda neste computador para mostrar o divisor no lugar certo.
+// Encaixar entre as mensagens: mergeEvents.ts.
 const key = (sessionId: string) => `chat-events:${sessionId}`
 const CHANGED = 'chat-events-changed'
+const NONE: EventMessage[] = []
 
-function read(sessionId: string): EventMessage[] {
+function readRaw(sessionId: string): string | null {
   try {
-    return JSON.parse(localStorage.getItem(key(sessionId)) ?? '[]') as EventMessage[]
+    return localStorage.getItem(key(sessionId))
   } catch {
-    return []
+    return null
+  }
+}
+
+function parse(raw: string | null): EventMessage[] {
+  if (!raw) return NONE
+  try {
+    return JSON.parse(raw) as EventMessage[]
+  } catch {
+    return NONE
   }
 }
 
 export function addLocalEvent(sessionId: string, kind: EventKind, text: string): void {
   const event: EventMessage = { id: `local-${crypto.randomUUID()}`, role: 'event', kind, text, at: new Date().toISOString() }
   try {
-    localStorage.setItem(key(sessionId), JSON.stringify([...read(sessionId), event].slice(-200)))
+    localStorage.setItem(key(sessionId), JSON.stringify([...parse(readRaw(sessionId)), event].slice(-200)))
   } catch {
     // Sem armazenamento: o divisor não aparece, a troca vale do mesmo jeito.
   }
   window.dispatchEvent(new CustomEvent(CHANGED, { detail: sessionId }))
 }
 
-export function useLocalEvents(sessionId: string | undefined): EventMessage[] {
-  const [events, setEvents] = useState<EventMessage[]>(() => (sessionId ? read(sessionId) : []))
-  useEffect(() => {
-    if (!sessionId) return setEvents([])
-    setEvents(read(sessionId))
-    const refresh = () => setEvents(read(sessionId))
-    const onChanged = (e: Event) => (e as CustomEvent).detail === sessionId && refresh()
-    const onStorage = (e: StorageEvent) => e.key === key(sessionId) && refresh()
-    window.addEventListener(CHANGED, onChanged)
-    window.addEventListener('storage', onStorage)
-    return () => {
-      window.removeEventListener(CHANGED, onChanged)
-      window.removeEventListener('storage', onStorage)
-    }
-  }, [sessionId])
-  return events
+// Troca feita aqui (CHANGED) ou em outra janela (storage): cada conversa relê só a sua chave.
+function subscribe(onChange: () => void): () => void {
+  window.addEventListener(CHANGED, onChange)
+  window.addEventListener('storage', onChange)
+  return () => {
+    window.removeEventListener(CHANGED, onChange)
+    window.removeEventListener('storage', onChange)
+  }
 }
 
-// Encaixa os divisores do app entre as mensagens pelo horário e tira repetições:
-// a troca de modelo feita aqui também aparece no histórico quando a próxima resposta chega.
-export function mergeEvents(messages: Message[], events: EventMessage[]): Message[] {
-  if (!events.length) return messages
-  const pending = [...events].sort((a, b) => (a.at ?? '').localeCompare(b.at ?? ''))
-  const merged: Message[] = []
-  for (const m of messages) {
-    while (pending.length && m.at && (pending[0].at ?? '') <= m.at) merged.push(pending.shift()!)
-    merged.push(m)
-  }
-  merged.push(...pending)
-
-  const out: Message[] = []
-  const lastText: Partial<Record<EventKind, string>> = {}
-  let localModelSinceReply = false
-  for (const m of merged) {
-    if (m.role === 'event') {
-      if (lastText[m.kind] === m.text) continue
-      const derived = m.kind === 'model' && !m.id.startsWith('local-')
-      if (derived && localModelSinceReply) continue
-      if (m.kind === 'model' && m.id.startsWith('local-')) localModelSinceReply = true
-      lastText[m.kind] = m.text
-    } else if (m.role !== 'user') {
-      localModelSinceReply = false
-    }
-    out.push(m)
-  }
-  return out
+export function useLocalEvents(sessionId: string | undefined): EventMessage[] {
+  const raw = useSyncExternalStore(subscribe, () => (sessionId ? readRaw(sessionId) : null))
+  return useMemo(() => parse(raw), [raw])
 }

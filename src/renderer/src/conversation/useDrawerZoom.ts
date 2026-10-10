@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { getPreferences, setPreferences, usePreferences } from '../settings/preferences'
+import { getPreferences, setPreferences, usePreference } from '../settings/preferences'
 
 // Escala do conteúdo do drawer, no espírito do zoom do VS Code: texto, espaçamento e
 // ícones crescem juntos. ⌘+ sobe um degrau, ⌘- desce um, ⌘0 volta ao normal.
 // Enquanto o drawer está aberto, esses atalhos são dele: o canvas desliga os seus
 // (ver useCanvasShortcuts). Fica salvo neste computador e vale nas duas janelas.
-export const DRAWER_ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2]
+const DRAWER_ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2]
 
 function step(zoom: number, direction: 1 | -1): number {
   let closest = 0
@@ -28,13 +28,19 @@ export function drawerZoomKey(e: KeyboardEvent): boolean {
   return true
 }
 
+// Os drawers abertos ao mesmo tempo dividem um ouvinte só. O navegador guarda a mesma função uma
+// vez: com cada drawer pondo e tirando a sua, o primeiro a fechar desligava os atalhos do outro.
+// Liga com o primeiro e desliga com o último.
+let holders = 0
+
+function holdZoomKeys(): () => void {
+  if (holders++ === 0) window.addEventListener('keydown', drawerZoomKey)
+  return () => {
+    if (--holders === 0) window.removeEventListener('keydown', drawerZoomKey)
+  }
+}
+
 export function useDrawerZoom(): number {
-  const zoom = usePreferences().drawerZoom
-
-  useEffect(() => {
-    window.addEventListener('keydown', drawerZoomKey)
-    return () => window.removeEventListener('keydown', drawerZoomKey)
-  }, [])
-
-  return zoom
+  useEffect(holdZoomKeys, [])
+  return usePreference('drawerZoom')
 }

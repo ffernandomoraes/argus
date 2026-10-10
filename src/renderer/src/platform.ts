@@ -80,8 +80,6 @@ export function relativeTo(path: string, dir: string): string | null {
   return IS_WIN ? rel.replace(/\\/g, '/') : rel
 }
 
-export const isInside = (path: string, dir: string) => relativeTo(path, dir) !== null
-
 // "~/proj" no lugar de "/Users/ana/proj" (no Windows, "~\proj").
 export function tildify(path: string): string {
   const home = window.api.homeDir

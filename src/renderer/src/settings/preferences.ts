@@ -1,5 +1,6 @@
-import { useSyncExternalStore } from 'react'
 import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings'
+import { createStore } from '../lib/createStore'
+import { useStore } from '../lib/useStore'
 
 // Preferências do app, salvas neste computador. Valem em todas as janelas.
 export type Preferences = {
@@ -49,37 +50,31 @@ function read(): Preferences {
   }
 }
 
-let current = read()
-const listeners = new Set<() => void>()
-const notify = () => listeners.forEach((l) => l())
+const prefs = createStore<Preferences>(read())
 
 // Mudança feita em outra janela (ex.: janela de conversa).
 window.addEventListener('storage', (e) => {
-  if (e.key !== KEY) return
-  current = read()
-  notify()
+  if (e.key === KEY) prefs.set(read())
 })
 
 export function getPreferences(): Preferences {
-  return current
+  return prefs.get()
 }
 
 export function setPreferences(patch: Partial<Preferences>): void {
-  current = { ...current, ...patch }
+  prefs.set((p) => ({ ...p, ...patch }))
   try {
-    localStorage.setItem(KEY, JSON.stringify(current))
+    localStorage.setItem(KEY, JSON.stringify(prefs.get()))
   } catch {
     // Sem armazenamento, vale só até fechar o app.
   }
-  notify()
 }
 
 export function usePreferences(): Preferences {
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb)
-      return () => listeners.delete(cb)
-    },
-    () => current
-  )
+  return useStore(prefs)
+}
+
+// Uma preferência só: redesenha apenas quando ela muda (ex.: usePreference('welcomeSeen')).
+export function usePreference<K extends keyof Preferences>(key: K): Preferences[K] {
+  return useStore(prefs, (p) => p[key])
 }

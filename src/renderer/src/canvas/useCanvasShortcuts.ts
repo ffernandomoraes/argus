@@ -1,7 +1,9 @@
 import { useCallback, useEffect } from 'react'
 import { getViewportForBounds, useReactFlow, useStoreApi, type Rect } from '@xyflow/react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { isMod } from '../platform'
 import { FADE_SIZE } from './EdgeFade'
+import { isEditableTarget } from './keys/keyTargets'
 
 export const ZOOM_DURATION = 200
 const FIT_DURATION = 300
@@ -63,7 +65,7 @@ export function useFrame() {
         zoomLimit = zoom
       }
       const padding = { top: `${pad.top}px`, right: `${pad.right}px`, bottom: `${pad.bottom}px`, left: `${pad.left}px` } as const
-      setViewport(getViewportForBounds(bounds, width, height, minZoom, zoomLimit, padding), { duration: FIT_DURATION })
+      void setViewport(getViewportForBounds(bounds, width, height, minZoom, zoomLimit, padding), { duration: FIT_DURATION })
     },
     [getViewport, setViewport, store]
   )
@@ -93,27 +95,27 @@ export function useFitAll() {
 
 // Atalhos no padrão do Figma: ⌘= / ⌘- zoom, ⇧1 ver tudo, ⇧0 100%.
 // Com o drawer aberto, ⌘= / ⌘- passam a ser dele (useDrawerZoom) e `zoom` vem falso.
+// ⌘ no Mac e Ctrl no Windows (isMod): no Mac, o Ctrl não é atalho do app.
 export function useCanvasShortcuts(zoom = true) {
   const { zoomIn, zoomOut, zoomTo } = useReactFlow()
   const fitAll = useFitAll()
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      if (target.closest('input, textarea, [contenteditable="true"]')) return
+      if (isEditableTarget(e.target)) return
 
-      const mod = e.metaKey || e.ctrlKey
+      const mod = isMod(e)
       if (mod && !zoom) return
       if (mod && (e.key === '=' || e.key === '+')) {
         e.preventDefault()
-        zoomIn({ duration: ZOOM_DURATION })
+        void zoomIn({ duration: ZOOM_DURATION })
       } else if (mod && e.key === '-') {
         e.preventDefault()
-        zoomOut({ duration: ZOOM_DURATION })
+        void zoomOut({ duration: ZOOM_DURATION })
       } else if (e.shiftKey && e.code === 'Digit1') {
         fitAll()
       } else if (e.shiftKey && e.code === 'Digit0') {
-        zoomTo(1, { duration: ZOOM_DURATION })
+        void zoomTo(1, { duration: ZOOM_DURATION })
       }
     }
     window.addEventListener('keydown', onKeyDown)

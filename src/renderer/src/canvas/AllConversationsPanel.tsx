@@ -1,46 +1,20 @@
+import { memo, useCallback, useRef } from 'react'
 import { Folder, Plus, X } from 'lucide-react'
-import { useRef } from 'react'
 import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
-import { ConversationItem, useNow } from './ConversationItem'
-import { useSessions } from './sessionsStore'
-import type { ActiveConversation } from './CanvasContext'
+import { useNow } from '../lib/clock'
+import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
+import { ConversationItem } from './ConversationItem'
+import { groupByDay } from './project/groupByDay'
+import { useSessions } from './sessionsStore'
 import type { ConversationSummary } from './types'
-
-// Agrupa por dia (local). As de hoje ficam no topo sem título; as mais antigas ganham a
-// data ("19/10", ou "19/10/2025" se for de outro ano).
-function groupByDay(conversations: ConversationSummary[], now: number) {
-  const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-  const today = new Date(now)
-  const groups: { key: string; label: string | null; items: ConversationSummary[] }[] = []
-  for (const c of conversations) {
-    const d = new Date(c.updatedAt)
-    const key = dayKey(d)
-    let group = groups[groups.length - 1]
-    if (group?.key !== key) {
-      const label =
-        key === dayKey(today)
-          ? null
-          : d.toLocaleDateString('pt-BR', {
-              day: '2-digit',
-              month: '2-digit',
-              ...(d.getFullYear() !== today.getFullYear() && { year: 'numeric' })
-            })
-      group = { key, label, items: [] }
-      groups.push(group)
-    }
-    group.items.push(c)
-  }
-  return groups
-}
+import { useActiveConversationIn, usePoppedOutSet } from './useCanvasView'
 
 // Todas as conversas de uma pasta, num painel flutuante: no canvas só as mais recentes
 // viram card.
-export function AllConversationsPanel({
+export const AllConversationsPanel = memo(function AllConversationsPanel({
   project,
   nodeId,
-  active,
-  poppedOut,
   rect,
   onRectChange,
   onOpen,
@@ -49,20 +23,24 @@ export function AllConversationsPanel({
 }: {
   project: { name: string; path: string }
   nodeId: string
-  active: ActiveConversation | null
-  poppedOut: Set<string>
   rect: PanelRect | null
   onRectChange: (rect: PanelRect) => void
   onOpen: (conversationId: string) => void
   onNew: () => void
   onClose: () => void
 }) {
+  // Já vem da mais recente para a mais antiga (sessionsStore).
   const conversations = useSessions(project.path)
-  const shown = [...conversations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-  const now = useNow()
+  // A conversa aberta no drawer, se for desta pasta, e as que estão em janela separada.
+  const active = useActiveConversationIn(nodeId)
+  const poppedOut = usePoppedOutSet()
+  // Só para separar os dias (o "há 5min" de cada linha acompanha o relógio sozinho).
+  const now = useNow(60_000)
   const panelRef = useRef<HTMLElement>(null)
   const floating = useFloatingRect(panelRef, rect, onRectChange)
   useEscape(onClose)
+  // A mesma função para todas as linhas.
+  const open = useCallback((c: ConversationSummary) => onOpen(c.id), [onOpen])
 
   return (
     <aside
@@ -91,13 +69,13 @@ export function AllConversationsPanel({
           <Plus size={13} />
           Nova
         </button>
-        <button aria-label="Fechar" onClick={onClose} className="text-faint hover:text-text">
+        <IconButton label="Fechar" onClick={onClose}>
           <X size={16} />
-        </button>
+        </IconButton>
       </header>
 
       <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {groupByDay(shown, now).map((g, i) => (
+        {groupByDay(conversations, now).map((g, i) => (
           <li key={g.key} className="flex flex-col gap-1">
             {g.label && (
               <div className={`px-2 pb-0.5 text-[11px] font-medium text-faint ${i > 0 ? 'pt-3' : ''}`}>{g.label}</div>
@@ -107,12 +85,9 @@ export function AllConversationsPanel({
                 <ConversationItem
                   key={c.id}
                   conversation={c}
-                  now={now}
                   poppedOut={poppedOut.has(c.id)}
-                  active={
-                    active?.nodeId === nodeId && (active.conversationId === c.id || active.sessionId === c.id)
-                  }
-                  onOpen={() => onOpen(c.id)}
+                  active={!!active && (active.conversationId === c.id || active.sessionId === c.id)}
+                  onOpen={open}
                 />
               ))}
             </ul>
@@ -122,4 +97,4 @@ export function AllConversationsPanel({
       </ul>
     </aside>
   )
-}
+})

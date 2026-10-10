@@ -55,7 +55,7 @@ win:
   icon: build/icon.ico
 
 # Instala na pasta do usuário, sem pedir administrador, e abre o app no fim. O nome do arquivo é o
-# que o atualizador procura no release (src/main/updater.ts).
+# que o atualizador procura no release (src/main/updater/releases.ts).
 nsis:
   oneClick: true
   perMachine: false

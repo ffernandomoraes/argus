@@ -1,56 +1,85 @@
-import { useSyncExternalStore } from 'react'
 import type { Text } from '@codemirror/state'
+import { createStore } from '../lib/createStore'
+import { useStore } from '../lib/useStore'
 
 // Edição ainda não salva (⌘S), por arquivo. Trocar de arquivo ou fechar o painel não perde
-// o que foi digitado: ao reabrir, o editor volta com o rascunho. Some ao fechar o app.
-// `base`: o texto do disco quando a edição começou, para saber se o arquivo mudou por fora.
+// o que foi digitado: ao reabrir, o editor volta com o rascunho. Some ao fechar o app (que pergunta
+// antes, ver reportUnsaved).
+// `base`: o texto do disco quando a edição começou (como está no disco, com o fim de linha dele),
+// para saber se o arquivo mudou por fora.
 export type Draft = { base: string; doc: Text }
 
-const drafts = new Map<string, Draft>()
-const listeners = new Set<() => void>()
-let version = 0
+// Por pasta do projeto e, dentro dela, por arquivo. Uma chave só ("pasta|arquivo") quebrava com
+// "|" no nome ao renomear uma pasta. Nenhuma pasta fica com o Map vazio.
+const drafts = new Map<string, Map<string, Draft>>()
 
-const keyOf = (root: string, path: string) => `${root}|${path}`
-const notify = () => {
-  version++
-  listeners.forEach((l) => l())
+// O que a tela usa: quais arquivos de cada pasta têm rascunho. Muda só quando um arquivo passa a
+// ter (ou deixa de ter) rascunho; o texto de cada um fica no Map acima, e digitar não avisa ninguém.
+const EMPTY: ReadonlySet<string> = new Set()
+const marked = createStore<ReadonlyMap<string, ReadonlySet<string>>>(new Map())
+
+// O processo principal pergunta antes de fechar ou atualizar o app quando há rascunho (ele só
+// existe aqui, na memória da janela). Avisa só quando muda.
+let reported = false
+function reportUnsaved(): void {
+  const has = drafts.size > 0
+  if (has === reported) return
+  reported = has
+  window.api.files.setUnsaved(has)
+}
+
+function publish(root: string): void {
+  reportUnsaved()
+  const files = drafts.get(root)
+  marked.set((m) => {
+    const next = new Map(m)
+    if (files) next.set(root, new Set(files.keys()))
+    else next.delete(root)
+    return next
+  })
 }
 
 export function getDraft(root: string, path: string): Draft | undefined {
-  return drafts.get(keyOf(root, path))
+  return drafts.get(root)?.get(path)
 }
 
 export function setDraft(root: string, path: string, draft: Draft | null): void {
-  const key = keyOf(root, path)
-  const had = drafts.has(key)
-  if (draft) drafts.set(key, draft)
-  else drafts.delete(key)
+  let files = drafts.get(root)
+  const had = !!files?.has(path)
+  if (draft) {
+    if (!files) drafts.set(root, (files = new Map()))
+    files.set(path, draft)
+  } else if (files) {
+    files.delete(path)
+    if (!files.size) drafts.delete(root)
+  }
   // A árvore só precisa saber quando um arquivo passa a ter (ou deixa de ter) rascunho.
-  if (had !== !!draft) notify()
+  if (had !== !!draft) publish(root)
+}
+
+// Algum arquivo, em qualquer pasta, com alteração não salva.
+export function hasDrafts(): boolean {
+  return drafts.size > 0
 }
 
 // Renomear ou excluir uma pasta leva junto os rascunhos dos arquivos dentro dela.
 export function moveDrafts(root: string, from: string, to: string | null): void {
+  const files = drafts.get(root)
+  if (!files) return
   let changed = false
-  for (const [key, draft] of [...drafts]) {
-    const [r, p] = [key.slice(0, key.indexOf('|')), key.slice(key.indexOf('|') + 1)]
-    if (r !== root || (p !== from && !p.startsWith(from + '/'))) continue
-    drafts.delete(key)
-    if (to !== null) drafts.set(keyOf(root, to + p.slice(from.length)), draft)
+  for (const [path, draft] of [...files]) {
+    if (path !== from && !path.startsWith(from + '/')) continue
+    files.delete(path)
+    if (to !== null) files.set(to + path.slice(from.length), draft)
     changed = true
   }
-  if (changed) notify()
+  if (!changed) return
+  if (!files.size) drafts.delete(root)
+  publish(root)
 }
 
-// Caminhos com rascunho na raiz; a árvore marca esses arquivos com um ponto.
-export function useDraftPaths(root: string): Set<string> {
-  useSyncExternalStore(
-    (l) => {
-      listeners.add(l)
-      return () => listeners.delete(l)
-    },
-    () => version
-  )
-  const prefix = `${root}|`
-  return new Set([...drafts.keys()].filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)))
+// Caminhos com rascunho na pasta; a árvore marca esses arquivos com um ponto. A mesma referência
+// enquanto a lista não muda.
+export function useDraftPaths(root: string): ReadonlySet<string> {
+  return useStore(marked, (m) => m.get(root) ?? EMPTY)
 }

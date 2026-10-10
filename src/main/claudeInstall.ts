@@ -1,6 +1,5 @@
 import { execFile } from 'node:child_process'
-import { join } from 'node:path'
-import { childEnv, IS_WIN, prependPath, SYSTEM32 } from './platform'
+import { childEnv, IS_WIN, prependPath, WINDOWS_POWERSHELL } from './platform'
 
 // Instalador oficial da Anthropic, o mesmo da documentação do Claude Code. Põe o `claude` em
 // ~/.local/bin (claude.exe no Windows), o primeiro lugar onde o Argus procura.
@@ -14,12 +13,14 @@ const TIMEOUT_MS = 10 * 60_000
 // Roda o instalador sem janela. Devolve nulo se terminou bem, senão o fim da saída (o erro).
 // Windows: TLS 1.2 garantido (o PowerShell 5.1 de sistemas antigos tenta versões que o site
 // recusa) e saída em UTF-8, para a mensagem de erro chegar com acento.
+// Mac: com pipefail, o curl falhando (sem internet) sai com erro; sem ele, o bash recebia o
+// script vazio, saía com 0 e a falha só aparecia como "o Claude Code não apareceu".
 export function runClaudeInstaller(): Promise<string | null> {
   const env = childEnv()
   prependPath(env, [])
   const [file, args] = IS_WIN
     ? [
-        join(SYSTEM32, 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+        WINDOWS_POWERSHELL,
         [
           '-NoProfile',
           '-NonInteractive',
@@ -27,7 +28,7 @@ export function runClaudeInstaller(): Promise<string | null> {
           `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ${INSTALL_COMMAND}`
         ]
       ]
-    : ['/bin/bash', ['-c', INSTALL_COMMAND]]
+    : ['/bin/bash', ['-c', `set -o pipefail; ${INSTALL_COMMAND}`]]
   return new Promise((resolve) =>
     execFile(
       file,

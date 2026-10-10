@@ -18,8 +18,6 @@ import { newReader, readMessage, type Reader } from './stream'
 export type SessionEvents = {
   // Estado novo da conversa. Único ponto de emissão (ver flush).
   changed: (session: ChatSession) => void
-  // Nada mudou na tela, mas a sessão pode ter ficado livre para fechar.
-  settled: (session: ChatSession) => void
   // O Claude informou o id da sessão: vira mais uma chave.
   identified: (session: ChatSession, id: string) => void
   // O processo do Claude terminou.
@@ -30,6 +28,12 @@ export type OpenRequest = Omit<ChatSendRequest, 'text' | 'images'>
 
 // Texto chegando aos pedaços: junta para não redesenhar a cada letra.
 const FLUSH_MS = 50
+
+// Prévia da resposta que continua depois do fim do pedido. A tela relê o histórico com a resposta
+// gravada sem esperar, mas não na hora: zerar junto com o fim fazia a resposta sumir por um
+// instante, a conversa encolher e a rolagem pular. Depois disso sai de vez (pedido cortado, que o
+// histórico nunca traz igual).
+const PARTIAL_HOLD_MS = 3_000
 
 // Sem pedido em andamento.
 const STOPPED = { status: 'idle', turnStartedAt: undefined } as const
@@ -54,6 +58,7 @@ export class ChatSession {
   private q: Query
   private reader: Reader = newReader()
   private flushTimer: NodeJS.Timeout | null = null
+  private partialTimer: NodeJS.Timeout | undefined
   private permissions = new PendingPermissions(
     (request) => this.update({ status: 'needs-you', permissions: [...this.state.permissions, request] }),
     (id) => this.dropPermission(id)
@@ -90,8 +95,9 @@ export class ChatSession {
     void this.run()
   }
 
+  // A fila vai junto de todo estado novo: quem mexe nela sempre emite um em seguida.
   private update(patch: Partial<ChatState>, now = true): void {
-    this.state = { ...this.state, ...patch }
+    this.state = { ...this.state, ...patch, queued: this.queued.list() }
     if (now) this.flush()
     else this.flushTimer ??= setTimeout(() => this.flush(), FLUSH_MS)
   }
@@ -115,7 +121,7 @@ export class ChatSession {
     const uuid = randomUUID()
     // Com o Claude no meio de um pedido (ou terminando um que você parou), a mensagem espera na
     // fila dele. Durante a parada ela roda logo depois do pedido parado.
-    if (this.state.status !== 'idle' || this.interrupted) this.queued.add(uuid)
+    if (this.state.status !== 'idle' || this.interrupted) this.queued.add({ id: uuid, text: req.text, at: Date.now() })
     if (this.interrupted) this.resumes = true
     this.inbox.push(userMessage(req, uuid))
     // Mensagem nova com o Claude parado começa a contagem de tempo e tokens.
@@ -201,6 +207,7 @@ export class ChatSession {
   }
 
   close(): void {
+    clearTimeout(this.partialTimer)
     this.permissions.denyAll('Conversa fechada.')
     this.queued.clear()
     this.inbox.close()
@@ -208,10 +215,17 @@ export class ChatSession {
   }
 
   // Ninguém mais na fila do Claude. Parada com mensagem que acabou não rodando: não há mais o que
-  // esperar. Senão, a conversa pode ter ficado livre para fechar.
+  // esperar. Em todo caso o balão sai, e a conversa pode ter ficado livre para fechar.
   private queueDrained(): void {
-    if (this.state.status === 'running' && !this.state.turnStartedAt) this.update(STOPPED)
-    else this.events.settled(this)
+    this.update(this.state.status === 'running' && !this.state.turnStartedAt ? STOPPED : {})
+  }
+
+  private dropPartialSoon(): void {
+    const held = this.state.partial
+    if (!held) return
+    // Resposta nova já escrevendo nesse meio-tempo: a prévia é outra e fica.
+    clearTimeout(this.partialTimer)
+    this.partialTimer = setTimeout(() => this.state.partial === held && this.update({ partial: '' }), PARTIAL_HOLD_MS)
   }
 
   private async run(): Promise<void> {
@@ -258,6 +272,9 @@ export class ChatSession {
       this.resumes = false
     }
     if (step.patch) this.update(step.patch, !!step.urgent)
-    if (step.turnEnded) this.queued.ended()
+    if (step.turnEnded) {
+      this.queued.ended()
+      this.dropPartialSoon()
+    }
   }
 }

@@ -27,7 +27,6 @@ export class Chats {
       s.keys.forEach((k) => this.onState(k, s.state))
       this.closeIfDone(s)
     },
-    settled: (s) => this.closeIfDone(s),
     identified: (s, id) => {
       s.keys.add(id)
       this.sessions.set(id, s)

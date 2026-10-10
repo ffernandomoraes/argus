@@ -1,7 +1,7 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChatState } from '../../../../shared/chat'
 import type { Message } from '../types'
-import { isDelivered, type PendingSend } from './optimisticSends'
+import { isDelivered, queuedSends, type PendingSend } from './optimisticSends'
 
 // Sem nenhum estado do chat depois do envio por este tempo, o envio não chegou ao Claude (o
 // processo principal responde na hora: o "Trabalhando…" sai junto com o envio).
@@ -12,7 +12,8 @@ export type OutgoingMessage = { text: string; typed: string; files: File[] }
 
 // Balões provisórios das mensagens enviadas. Saem quando a mensagem chega ao histórico, quando o
 // pedido termina (comando de barra não volta como mensagem sua), quando o envio falha (drop) ou
-// quando passa o prazo sem resposta (onLost: o texto volta para o campo). `previewOpen`: o preview
+// quando passa o prazo sem resposta (onLost: o texto volta para o campo). Mensagem ainda na fila
+// do Claude continua com balão mesmo assim, e também ao abrir a conversa de novo (ver queuedSends). `previewOpen`: o preview
 // grande de imagem está aberto, talvez numa imagem de um balão que já saiu.
 export function useOptimisticSends(
   messages: Message[],
@@ -108,5 +109,11 @@ export function useOptimisticSends(
       return next.length ? next : NONE
     })
 
-  return { waiting: sent, add, drop }
+  const queued = live?.queued
+  const waiting = useMemo(() => {
+    const restored = queuedSends(queued, sent, messages)
+    return restored.length ? [...restored, ...sent] : sent
+  }, [queued, sent, messages])
+
+  return { waiting, add, drop }
 }

@@ -50,7 +50,12 @@ export type ChatState = {
   remote?: RemoteControl
   // Subagentes trabalhando agora, lançados por esta conversa.
   agents: RunningAgent[]
+  // Mensagens suas na fila do Claude, ainda fora do histórico (ele só grava o texto ao entregar).
+  queued?: QueuedMessage[]
 }
+
+// Mensagem enviada com o Claude no meio de um pedido. at: hora do envio (ms).
+export type QueuedMessage = { id: string; text: string; at: number }
 
 // Conversa do app trabalhando ou esperando você: uma linha do indicador no canto do canvas.
 export type ActiveChat = {

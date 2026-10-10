@@ -1,4 +1,4 @@
-import type { ChatState } from '../../../../shared/chat'
+import type { ChatState, QueuedMessage } from '../../../../shared/chat'
 import type { Message } from '../types'
 
 // Mensagem enviada que ainda não está no histórico gravado: aparece na hora como balão provisório.
@@ -37,4 +37,19 @@ export function isDelivered(s: PendingSend, messages: Message[]): boolean {
     if (!s.text || m.text.trim().startsWith(s.text)) return true
   }
   return false
+}
+
+const NO_IMAGES = () => Promise.resolve<string[]>([])
+
+// Mensagens na fila do Claude sem balão nesta tela (a conversa foi fechada e aberta de novo no meio
+// do pedido): voltam como balão até chegarem ao histórico. As enviadas daqui já têm o delas. Sem
+// as imagens: elas só existem na mensagem que já foi para o Claude.
+export function queuedSends(queued: QueuedMessage[] | undefined, own: PendingSend[], messages: Message[]): PendingSend[] {
+  const list: PendingSend[] = []
+  for (const q of queued ?? []) {
+    if (own.some((s) => Math.abs(s.sentAt - q.at) < CLOCK_SLACK_MS && q.text.startsWith(s.text))) continue
+    const s: PendingSend = { id: q.id, text: q.text, typed: q.text, files: [], images: 0, read: NO_IMAGES, sentAt: q.at, live: null }
+    if (!isDelivered(s, messages)) list.push(s)
+  }
+  return list
 }

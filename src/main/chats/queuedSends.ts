@@ -1,6 +1,9 @@
+import type { QueuedMessage } from '../../shared/chat'
+
 // Mensagens que você mandou com o Claude no meio de um pedido. O Claude Code guarda na fila dele e
 // entrega entre uma ação e outra, ou num pedido logo depois deste. Enquanto alguma pode estar
-// esperando, a sessão não fecha: fechar mataria a mensagem junto.
+// esperando, a sessão não fecha: fechar mataria a mensagem junto. O texto fica guardado aqui porque
+// o Claude Code só grava no histórico na entrega: a conversa aberta de novo ainda mostra o balão.
 
 // Silêncio do Claude depois do fim do pedido: sem pedido novo nesse tempo, a mensagem já foi
 // entregue dentro do pedido que acabou. Generoso porque o pedido seguinte só dá sinal quando a API
@@ -9,7 +12,7 @@
 const GRACE_MS = 30_000
 
 export class QueuedSends {
-  private ids = new Set<string>()
+  private items = new Map<string, QueuedMessage>()
   private timer: NodeJS.Timeout | null = null
   private lastSeen = 0
 
@@ -20,15 +23,19 @@ export class QueuedSends {
   ) {}
 
   get size(): number {
-    return this.ids.size
+    return this.items.size
   }
 
   has(id: string): boolean {
-    return this.ids.has(id)
+    return this.items.has(id)
   }
 
-  add(id: string): void {
-    this.ids.add(id)
+  add(m: QueuedMessage): void {
+    this.items.set(m.id, m)
+  }
+
+  list(): QueuedMessage[] {
+    return [...this.items.values()]
   }
 
   // Começou um pedido novo: o que esperava na fila está nele.
@@ -38,7 +45,7 @@ export class QueuedSends {
 
   // O pedido terminou com mensagem ainda na fila: espera o seguinte começar.
   ended(): void {
-    if (!this.ids.size) return
+    if (!this.items.size) return
     this.lastSeen = Date.now()
     if (!this.timer) this.wait(this.graceMs)
   }
@@ -49,7 +56,7 @@ export class QueuedSends {
   }
 
   clear(): void {
-    this.ids.clear()
+    this.items.clear()
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
   }

@@ -41,28 +41,30 @@ export class StatusChanges {
   }
 }
 
-// Conversas trabalhando ou esperando você, para o indicador no canto do canvas.
+// Conversas trabalhando ou esperando você, para o indicador no canto do canvas. Parada com algo
+// ainda rodando em segundo plano também conta como rodando.
 export function activeChats(entries: ChatEntry[]): ActiveChat[] {
-  return entries.flatMap(({ id, cwd, state: s }) =>
-    s.status === 'idle'
-      ? []
-      : [
-          {
-            key: id,
-            cwd,
-            sessionId: s.sessionId,
-            status: s.status,
-            activity: s.activity,
-            foregroundAgents: s.agents.filter((a) => !a.background).length,
-            turnStartedAt: s.turnStartedAt
-          }
-        ]
-  )
+  return entries.flatMap(({ id, cwd, state: s }) => {
+    const background = s.agents.filter((a) => a.background).length + s.backgroundTasks
+    if (s.status === 'idle' && !background) return []
+    return [
+      {
+        key: id,
+        cwd,
+        sessionId: s.sessionId,
+        status: s.status === 'idle' ? 'running' : s.status,
+        activity: s.status === 'idle' ? undefined : s.activity,
+        foregroundAgents: s.agents.filter((a) => !a.background).length,
+        background,
+        turnStartedAt: s.status === 'idle' ? undefined : s.turnStartedAt
+      }
+    ]
+  })
 }
 
 // Resumo do que o indicador mostra: o texto chegando não muda nada disso, e quem compara sai cedo.
 export function activeSignature(chats: ActiveChat[]): string {
   return chats
-    .map((c) => [c.key, c.sessionId, c.status, c.activity?.kind, c.activity?.tool, c.foregroundAgents, c.turnStartedAt].join(':'))
+    .map((c) => [c.key, c.sessionId, c.status, c.activity?.kind, c.activity?.tool, c.foregroundAgents, c.background, c.turnStartedAt].join(':'))
     .join('|')
 }

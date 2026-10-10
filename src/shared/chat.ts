@@ -70,6 +70,9 @@ export type ActiveChat = {
   activity?: ChatActivity
   // Subagentes em primeiro plano (o Claude está esperando por eles).
   foregroundAgents: number
+  // Subagentes e comandos em segundo plano. Com o pedido já terminado, são eles que deixam a
+  // conversa no indicador (status 'running', sem turnStartedAt).
+  background: number
   turnStartedAt?: number
 }
 

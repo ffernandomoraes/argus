@@ -76,7 +76,11 @@ function ActiveRow({ chat: c, onOpen }: { chat: ActiveChat; onOpen: () => void }
   const sessions = useSessions(path)
   const title = sessions.find((s) => s.id === c.sessionId)?.title ?? 'Conversa nova'
   const folder = path.split(/[\\/]/).filter(Boolean).at(-1) ?? path
-  const doing = c.status === 'needs-you' ? 'Precisa de você' : activityLabel(c.activity, c.foregroundAgents)
+  // Pedido já terminado: só o que ficou em segundo plano roda.
+  const turnDone = c.status === 'running' && c.turnStartedAt === undefined && !c.activity && c.background > 0
+  const doing =
+    c.status === 'needs-you' ? 'Precisa de você' : turnDone ? '' : activityLabel(c.activity, c.foregroundAgents)
+  const line = [doing, c.background > 0 && `${c.background} em segundo plano`].filter(Boolean).join(' - ')
 
   return (
     <li>
@@ -90,7 +94,7 @@ function ActiveRow({ chat: c, onOpen }: { chat: ActiveChat; onOpen: () => void }
             <span className="ml-auto shrink-0 text-[11px] text-faint">{folder}</span>
           </span>
           <span className="truncate text-[11px] text-faint">
-            {doing}
+            {line}
             {c.turnStartedAt !== undefined && (
               <>
                 {' - '}

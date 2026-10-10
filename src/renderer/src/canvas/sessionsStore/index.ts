@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { UncommittedFile } from '../../../../shared/sessions'
 import { shallowEqual } from '../../lib/shallowEqual'
+import { useBackgroundBusy } from '../backgroundTasks'
 import { useStore } from '../../lib/useStore'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
@@ -50,10 +51,22 @@ export function getSessions(path: string): ConversationSummary[] {
   return store.get().sessions.get(path) ?? EMPTY
 }
 
+// Parada para o Claude Code, mas com subagente ou comando ainda rodando em segundo plano pelo chat
+// do app: aparece rodando. Sem nenhuma assim, a mesma lista (o memo de quem a recebe continua valendo).
+function withBackground(list: ConversationSummary[], busy: ReadonlySet<string>): ConversationSummary[] {
+  if (!busy.size) return list
+  const keyOf = (c: ConversationSummary) => (c.kind === 'design' ? c.sessionId : c.id)
+  const marked = (c: ConversationSummary) => c.status === 'idle' && busy.has(keyOf(c) ?? '')
+  if (!list.some(marked)) return list
+  return list.map((c) => (marked(c) ? { ...c, status: 'running' } : c))
+}
+
 // Conversas de uma pasta; mantém a lista atualizada enquanto o componente estiver na tela.
 export function useSessions(path: string): ConversationSummary[] {
   useEffect(() => watch(path), [path])
-  return useStore(store, (s) => s.sessions.get(path) ?? EMPTY)
+  const list = useStore(store, (s) => s.sessions.get(path) ?? EMPTY)
+  const busy = useBackgroundBusy()
+  return useMemo(() => withBackground(list, busy), [list, busy])
 }
 
 // Conversas de várias pastas (o resumo do grupo recolhido, cujas pastas não estão na tela):
@@ -65,7 +78,9 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
     const stops = (key ? key.split('\0') : []).map((path) => watch(path))
     return () => stops.forEach((stop) => stop())
   }, [key])
-  return useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual)
+  const lists = useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual)
+  const busy = useBackgroundBusy()
+  return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy])
 }
 
 // Branch atual da pasta; nulo fora de repositório ou antes da primeira leitura.

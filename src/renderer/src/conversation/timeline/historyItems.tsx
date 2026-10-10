@@ -47,7 +47,7 @@ export function historyItems(messages: Message[], o: HistoryOptions): TimelineIt
         // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
         const pending = !m.result && !m.diff && o.running && i === messages.length - 1
         const dot = m.error ? 'bg-red-400' : pending ? 'bg-running animate-pulse' : 'bg-emerald-400'
-        const row = m.name === 'Bash' ? <BashRow message={m} compact={o.compact} /> : <ToolRow message={m} compact={o.compact} />
+        const row = m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} compact={o.compact} />
         return stepItem(m.id, dot, row, DOT_ROW)
       }
       default: {

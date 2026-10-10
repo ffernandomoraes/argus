@@ -4,7 +4,7 @@ import { useBranch, useUncommitted } from '../../canvas/sessionsStore'
 import { BranchTag, TAG } from './BranchTag'
 import { HeaderButton } from './HeaderButton'
 
-// Cabeçalho da conversa: título, pasta e branch (com os não comitados), os botões de quem a
+// Cabeçalho da conversa: título e branch (na mesma linha), a pasta quando vem, os botões de quem a
 // mostra e o fechar. Memorizado: o chat andando não redesenha o cabeçalho.
 export const ConversationHeader = memo(function ConversationHeader({
   title,
@@ -34,25 +34,28 @@ export const ConversationHeader = memo(function ConversationHeader({
   const branch = useBranch(cwd)
   const uncommitted = useUncommitted(cwd)
 
+  // A pasta, quando vem, ocupa uma segunda linha; sem ela o cabeçalho fica numa linha só.
+  const folderRow = !minimal && !!project
+
   return (
     <header
       onPointerDown={onPointerDown}
       // Mínimo: uma linha só, sem a borda de baixo (no foco ela parava no meio da tela).
-      className={`flex shrink-0 gap-3 px-4 ${minimal ? 'items-center py-1.5' : 'items-start border-b border-line py-3'} ${className}`}
+      className={`flex shrink-0 gap-3 px-4 ${minimal ? 'items-center py-1.5' : `${folderRow ? 'items-start' : 'items-center'} border-b border-line py-2.5`} ${className}`}
       style={style}
     >
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{title}</div>
-        {/* Conversa sem projeto, fora de repositório: não tem o que mostrar aqui. */}
-        {!minimal && (project || branch) && (
-          <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
-            {project && (
-              <span className={`${TAG} min-w-0 gap-1`}>
-                <Folder size={12} className="shrink-0" />
-                <span className="truncate">{project}</span>
-              </span>
-            )}
-            {branch && <BranchTag cwd={cwd} branch={branch} files={uncommitted} onOpenDiff={onOpenDiff} />}
+        {/* A branch fica em frente ao título; fora de repositório, não aparece. */}
+        <div className="flex min-w-0 items-center gap-2 text-[12px] text-faint">
+          <div className="min-w-0 truncate text-sm font-medium text-text">{title}</div>
+          {!minimal && branch && <BranchTag cwd={cwd} branch={branch} files={uncommitted} onOpenDiff={onOpenDiff} />}
+        </div>
+        {folderRow && (
+          <div className="mt-1 flex items-center text-[12px] text-faint">
+            <span className={`${TAG} min-w-0 gap-1`}>
+              <Folder size={12} className="shrink-0" />
+              <span className="truncate">{project}</span>
+            </span>
           </div>
         )}
       </div>

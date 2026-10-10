@@ -53,7 +53,7 @@ type Props = {
 // No modo foco, o painel cobre a área toda abaixo da barra de título e a conversa fica numa
 // coluna estreita no centro: para ler respostas longas sem distração.
 export function ConversationDrawer(props: Props) {
-  const { project, account, loose = false, tint, conversation, rect, onClose } = props
+  const { project, account, tint, conversation, rect, onClose } = props
   const zoom = useDrawerZoom()
   const panelRef = useRef<HTMLElement>(null)
   const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH)
@@ -131,7 +131,6 @@ export function ConversationDrawer(props: Props) {
         <ConversationView
           cwd={project.path}
           account={account}
-          project={loose ? undefined : project.name}
           conversation={conversation}
           onOpenFile={openFile}
           onOpenDiff={openDiff}

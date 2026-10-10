@@ -1,74 +1,75 @@
-import { NodeResizer, useNodesData, type NodeProps } from '@xyflow/react'
+import { memo, useCallback, useMemo } from 'react'
+import type { NodeProps } from '@xyflow/react'
 import { ExternalLink, PanelRight } from 'lucide-react'
 import { askColors } from '../conversation/askColors'
 import { ConversationView, HeaderButton } from '../conversation/ConversationView'
+import type { LineRange } from '../conversation/fileLinks'
+import { BlockFrame } from './blocks/BlockFrame'
+import { sameNodeProps } from './blocks/sameNodeProps'
+import { useConversationSummary } from './blocks/useConversationSummary'
+import { useGroupOf } from './blocks/useGroupOf'
 import { useCanvasActions } from './CanvasContext'
-import { useNow } from './ConversationItem'
-import { useSessions } from './sessionsStore'
-import type { AreaNode, ChatPanelNode as ChatPanelNodeType, ConversationSummary } from './types'
+import type { ChatPanelNode as ChatPanelNodeType } from './types'
+import { useIsNewBlock } from './useCanvasView'
 
 // A conversa morando no canvas, como o terminal: o mesmo chat do painel lateral, num bloco que
 // acompanha o zoom. Arrasta pelo cabeçalho; no corpo, dá para selecionar texto e rolar o chat.
-export function ChatPanelNode({ id, data, selected, parentId }: NodeProps<ChatPanelNodeType>) {
-  const sessions = useSessions(data.path)
-  const now = useNow()
-  // Conta do grupo onde o bloco está. Vale ao abrir a sessão, como no painel.
-  const group = useNodesData<AreaNode>(parentId ?? '')
-  const account = group?.type === 'area' ? group.data.account : undefined
-  // Perguntas e permissões no chat, na cor do grupo.
-  const tint = group?.type === 'area' ? group.data.color : undefined
-  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom } = useCanvasActions()
-  const project = { name: data.projectName ?? 'Sem projeto', path: data.path, color: '#71717a' }
-
+function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanelNodeType>) {
   // A conversa já existe (só entra no canvas depois do primeiro envio), mas pode demorar a
   // aparecer na lista da pasta ao abrir o app.
-  const conversation: ConversationSummary = sessions.find((s) => s.id === data.sessionId) ?? {
-    id: data.sessionId,
-    title: data.name,
-    kind: 'conversa',
-    status: 'idle',
-    updatedAt: new Date(now).toISOString(),
-    contextPercent: 0,
-    sessionId: data.sessionId
-  }
+  const conversation = useConversationSummary(data.path, data.sessionId, data.name, 'idle')
+  // Conta do grupo onde o bloco está (vale ao abrir a sessão, como no painel) e a cor dele, para
+  // as perguntas e permissões no chat.
+  const { account, color: tint } = useGroupOf(parentId)
+  // Só o bloco que acabou de ser posto no canvas pega o foco: ao abrir o app, expandir o grupo ou
+  // desfazer, a caixa de escrever não rouba as teclas do canvas.
+  const isNew = useIsNewBlock(id)
+  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom } = useCanvasActions()
+
+  // Tudo fixo enquanto a pasta não muda: o ConversationView é memorizado, e arrastar o bloco não
+  // pode redesenhar a conversa.
+  const { projectName, path } = data
+  const project = useMemo(() => ({ name: projectName ?? 'Sem projeto', path, color: '#71717a' }), [projectName, path])
+  const onOpenFile = useCallback(
+    (file: string, lines?: LineRange) => openFileFrom(project, file, lines),
+    [openFileFrom, project]
+  )
+  const onOpenDiff = useCallback((file: string) => openFileFrom(project, file, undefined, true), [openFileFrom, project])
+  const onClose = useCallback(() => closeChatPanel(id), [closeChatPanel, id])
+  const actions = useMemo(
+    () => (
+      <>
+        <HeaderButton label="Voltar para o painel lateral" onClick={() => chatPanelToDrawer(id)}>
+          <PanelRight size={14} />
+        </HeaderButton>
+        <HeaderButton label="Abrir em janela separada" onClick={() => chatPanelPopout(id)}>
+          <ExternalLink size={14} />
+        </HeaderButton>
+      </>
+    ),
+    [chatPanelToDrawer, chatPanelPopout, id]
+  )
+  const style = useMemo(() => (tint ? askColors(tint) : undefined), [tint])
 
   return (
-    <>
-      <NodeResizer
-        isVisible={selected}
-        minWidth={360}
-        minHeight={320}
-        lineStyle={{ borderColor: 'var(--color-line-strong)' }}
-        handleStyle={{ background: 'var(--color-muted)', border: 'none', width: 8, height: 8 }}
+    // nowheel: rolar em cima do bloco rola o chat, não o canvas
+    <BlockFrame selected={selected} minHeight={320} className="nowheel relative bg-bg" style={style}>
+      <ConversationView
+        cwd={data.path}
+        account={account}
+        project={data.projectName}
+        conversation={conversation}
+        onOpenFile={onOpenFile}
+        onOpenDiff={onOpenDiff}
+        // chat-panel-drag: o cabeçalho é a alça do bloco (dragHandle, em createChatPanel).
+        headerClassName="chat-panel-drag cursor-grab bg-surface-2 active:cursor-grabbing"
+        bodyClassName="nodrag nopan select-text"
+        actions={actions}
+        autoFocus={isNew}
+        onClose={onClose}
       />
-      {/* nowheel: rolar em cima do bloco rola o chat, não o canvas */}
-      <div
-        className="nowheel relative flex h-full flex-col overflow-hidden rounded-xl border bg-bg shadow-lg shadow-black/30"
-        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line)', ...(tint && askColors(tint)) }}
-      >
-        <ConversationView
-          cwd={data.path}
-          account={account}
-          project={data.projectName}
-          conversation={conversation}
-          onOpenFile={(path, lines) => openFileFrom(project, path, lines)}
-          onOpenDiff={(path) => openFileFrom(project, path, undefined, true)}
-          // chat-panel-drag: o cabeçalho é a alça do bloco (dragHandle, em createChatPanel).
-          headerClassName="chat-panel-drag cursor-grab bg-surface-2 active:cursor-grabbing"
-          bodyClassName="nodrag nopan select-text"
-          actions={
-            <>
-              <HeaderButton label="Voltar para o painel lateral" onClick={() => chatPanelToDrawer(id)}>
-                <PanelRight size={14} />
-              </HeaderButton>
-              <HeaderButton label="Abrir em janela separada" onClick={() => chatPanelPopout(id)}>
-                <ExternalLink size={14} />
-              </HeaderButton>
-            </>
-          }
-          onClose={() => closeChatPanel(id)}
-        />
-      </div>
-    </>
+    </BlockFrame>
   )
 }
+
+export const ChatPanelNode = memo(ChatPanelNodeView, sameNodeProps)

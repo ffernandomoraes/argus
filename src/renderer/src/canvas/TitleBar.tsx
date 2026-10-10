@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
-import { AppWindow, CircleArrowUp, Eye, EyeOff } from 'lucide-react'
+import { memo, useEffect, useState } from 'react'
+import { AppWindow, Eye, EyeOff } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { NavButton } from '../ui/NavButton'
 import { useUpdates } from '../updates/useUpdates'
-import { IS_WIN } from '../platform'
 import { useWindowControls } from '../useWindowControls'
-import { NavButton } from './NavBar'
+import { UpdateStatus } from './bars/UpdateStatus'
+import { updateProgress } from './bars/updateProgress'
+import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
 import { UsageIndicator } from './UsageIndicator'
 
 const Divider = () => <span className="h-4 w-px bg-line" />
@@ -14,7 +16,7 @@ const Divider = () => <span className="h-4 w-px bg-line" />
 // janela e maximiza no duplo clique. Tem fundo próprio, para o título não brigar com o canvas; os
 // painéis começam abaixo dela (PANEL_TOP).
 // Mostra sempre o nome do app; a conversa aberta fica só no título da janela (windowTitle).
-export function TitleBar({
+export const TitleBar = memo(function TitleBar({
   windowTitle,
   uiHidden,
   onToggleUi
@@ -26,26 +28,8 @@ export function TitleBar({
   const updates = useUpdates()
   const controls = useWindowControls()
   const [usageOpen, setUsageOpen] = useState(false)
-  const state = updates?.state
-  const ready = state?.status === 'ready' ? state : null
-  // Sutil, ao lado da versão: só enquanto procura ou baixa, para saber que a conferência rodou.
-  const progress =
-    state?.status === 'checking' ? 'Procurando atualização…'
-    : state?.status === 'downloading' ? `Baixando ${state.version} - ${Math.round(state.progress * 100)}%`
-    : null
-
-  // Outra janela do mesmo canvas, para levar a outro monitor. No Mac o ⇧⌘N vem pelo menu Arquivo;
-  // no Windows, sem menu, a tecla é tratada aqui.
-  useEffect(() => {
-    if (!IS_WIN) return
-    const onKey = (e: KeyboardEvent) => {
-      if (!e.ctrlKey || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'n') return
-      e.preventDefault()
-      window.api.canvas.newWindow()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  const status = updateProgress(updates?.state)
+  useNewWindowShortcut()
 
   // Aparece no menu Janela e no Mission Control.
   useEffect(() => {
@@ -59,7 +43,7 @@ export function TitleBar({
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${ready || progress ? 'px-[29rem]' : 'px-[19rem]'}`}
+      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
     >
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
@@ -89,20 +73,9 @@ export function TitleBar({
             </NavButton>
           </span>
           <Divider />
-          {ready && (
-            <button
-              onClick={() => window.api.updates.install()}
-              title={`Reinicia o Argus na versão ${ready.version}`}
-              className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
-            >
-              <CircleArrowUp size={12} className="text-running" />
-              Atualizar para {ready.version}
-            </button>
-          )}
-          {progress && <span className="text-[12px] tabular-nums text-faint">{progress}</span>}
-          <span className="text-[12px] tabular-nums text-faint">v{updates.version}</span>
+          <UpdateStatus version={updates.version} {...status} />
         </div>
       )}
     </div>
   )
-}
+})

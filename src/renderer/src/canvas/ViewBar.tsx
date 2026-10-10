@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { MiniMap, Panel, useReactFlow, useStore, type Node } from '@xyflow/react'
 import { Map as MapIcon, Maximize, Minus, Plus } from 'lucide-react'
-import { MENU_HOVER, MENU_ROW } from './ContextMenu'
-import { NavButton } from './NavBar'
+import { NavButton } from '../ui/NavButton'
+import { MENU_HOVER, MENU_ROW } from '../ui/menuStyles'
 import type { AreaNode } from './types'
 import { useFitAll, ZOOM_DURATION } from './useCanvasShortcuts'
 
@@ -10,7 +10,7 @@ import { useFitAll, ZOOM_DURATION } from './useCanvasShortcuts'
 const sameGroups = (a: AreaNode[], b: AreaNode[]) => a.length === b.length && a.every((g, i) => g === b[i])
 
 // Zoom, "ver tudo" e minimapa juntos no canto inferior direito; o minimapa abre acima da barra.
-export function ViewBar() {
+export const ViewBar = memo(function ViewBar() {
   const [mapOpen, setMapOpen] = useState(false)
   const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow()
   const fitAll = useFitAll()
@@ -29,7 +29,7 @@ export function ViewBar() {
   }
 
   const goToGroup = (id: string) => {
-    fitView({ nodes: [{ id }], padding: 0.15, maxZoom: 1, duration: 300 })
+    void fitView({ nodes: [{ id }], padding: 0.15, maxZoom: 1, duration: 300 })
     setMapOpen(false)
   }
 
@@ -83,4 +83,4 @@ export function ViewBar() {
       </div>
     </Panel>
   )
-}
+})

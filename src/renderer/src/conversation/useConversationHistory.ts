@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createHistoryReader, type HistoryReader } from './historyReader'
+import { reuseMessages } from './reuseMessages'
 import type { Message } from './types'
 
-// Histórico salvo pelo Claude Code. Relê quando a sessão grava algo novo (updatedAt muda).
+const NONE: Message[] = []
+
+// Histórico salvo pelo Claude Code. Relê quando o chat grava na sessão (revision) e quando o
+// arquivo muda por outro caminho (updatedAt), sem ler duas vezes a mesma gravação (historyReader).
 export function useConversationHistory(
   projectPath: string,
   sessionId: string | undefined,
@@ -11,19 +16,31 @@ export function useConversationHistory(
 ): { messages: Message[]; loading: boolean } {
   const [state, setState] = useState<{ key: string; messages: Message[] } | null>(null)
   const key = `${projectPath}|${sessionId}`
+  const reader = useRef<HistoryReader | null>(null)
 
+  // Um leitor por conversa: o resultado de uma não cai na outra.
   useEffect(() => {
     if (!sessionId) return
-    let cancelled = false
-    window.api.sessions.history(projectPath, sessionId).then((messages) => {
-      if (!cancelled) setState({ key, messages })
-    })
+    const current = createHistoryReader(
+      () => window.api.sessions.history(projectPath, sessionId),
+      (messages) =>
+        setState((prev) => {
+          const kept = reuseMessages(prev?.key === key ? prev.messages : NONE, messages)
+          return prev?.key === key && prev.messages === kept ? prev : { key, messages: kept }
+        })
+    )
+    reader.current = current
     return () => {
-      cancelled = true
+      current.dispose()
+      if (reader.current === current) reader.current = null
     }
-  }, [key, updatedAt, revision]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key, projectPath, sessionId])
 
-  if (!sessionId) return { messages: [], loading: false }
+  useEffect(() => {
+    reader.current?.sync(revision, updatedAt ? Date.parse(updatedAt) || 0 : 0)
+  }, [key, revision, updatedAt])
+
+  if (!sessionId) return { messages: NONE, loading: false }
   // Enquanto a outra conversa não chega, não mostra o histórico da anterior.
-  return state?.key === key ? { messages: state.messages, loading: false } : { messages: [], loading: true }
+  return state?.key === key ? { messages: state.messages, loading: false } : { messages: NONE, loading: true }
 }

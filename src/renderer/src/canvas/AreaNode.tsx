@@ -1,26 +1,37 @@
-import { NodeResizer, useNodes, type NodeProps } from '@xyflow/react'
+import { memo } from 'react'
+import { NodeResizer, useStore, type NodeProps, type ReactFlowState } from '@xyflow/react'
 import { ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import { findAccount, useAuth } from '../auth/useAuth'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
+import { shallowEqual } from '../lib/shallowEqual'
+import { Tooltip } from '../ui/Tooltip'
+import { sameNodeProps } from './blocks/sameNodeProps'
 import { useCanvasActions } from './CanvasContext'
 import { EditableName } from './EditableName'
-import { Tooltip } from './NavBar'
-import { getSessions, useSessionsVersion } from './sessionsStore'
-import type { AreaNode as AreaNodeType, CanvasNode } from './types'
+import { useSessionsOf } from './sessionsStore'
+import type { AreaNode as AreaNodeType } from './types'
+import { useIsDropTarget } from './useCanvasView'
 
+// Pastas de dentro do grupo. Lida por seletor e comparada item a item: arrastar qualquer bloco
+// muda a lista de nós a cada quadro, mas só redesenha o resumo quando entra ou sai uma pasta.
+const projectPathsIn = (s: ReactFlowState, id: string) =>
+  s.nodes.flatMap((n) => (n.parentId === id && n.type === 'project' ? [(n.data as { path: string }).path] : []))
+
+// As pastas escondidas não estão na tela: o resumo observa as listas delas (useSessionsOf) e
+// redesenha só quando alguma muda.
 function CollapsedSummary({ id }: { id: string }) {
-  const nodes = useNodes<CanvasNode>()
-  const children = nodes.filter((n) => n.parentId === id && n.type === 'project')
-  useSessionsVersion()
-  const sessions = children.flatMap((n) => (n.type === 'project' ? getSessions(n.data.path) : []))
+  const paths = useStore((s) => projectPathsIn(s, id), shallowEqual)
+  const sessions = useSessionsOf(paths).flat()
   const needsYou = sessions.some((c) => c.status === 'needs-you')
   const running = sessions.some((c) => c.status === 'running')
 
   return (
     <span className="flex items-center gap-2 text-[12px] text-faint">
-      <span>{children.length === 1 ? '1 instância' : `${children.length} instâncias`}</span>
+      <span>{paths.length === 1 ? '1 instância' : `${paths.length} instâncias`}</span>
       {needsYou && <span className="size-1.5 rounded-full bg-needs-you" title="Alguma instância precisa de você" />}
-      {running && <span className="size-1.5 animate-pulse rounded-full bg-running" title="Alguma instância rodando" />}
+      {running && (
+        <span className="size-1.5 rounded-full bg-running motion-safe:animate-pulse" title="Alguma instância rodando" />
+      )}
     </span>
   )
 }
@@ -76,9 +87,9 @@ function AccountTag({ account, color }: { account?: string; color: string }) {
   )
 }
 
-export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
-  const { toggleGroup, toggleObscure, dropTargetId, startRename } = useCanvasActions()
-  const receiving = dropTargetId === id
+function AreaNodeView({ id, data, selected }: NodeProps<AreaNodeType>) {
+  const { toggleGroup, toggleObscure, startRename } = useCanvasActions()
+  const receiving = useIsDropTarget(id)
   const color = data.color
   const collapsed = !!data.collapsed
   const Chevron = collapsed ? ChevronDown : ChevronUp
@@ -158,3 +169,6 @@ export function AreaNode({ id, data, selected }: NodeProps<AreaNodeType>) {
     </>
   )
 }
+
+// Arrastar o grupo não redesenha o conteúdo dele (ver sameNodeProps).
+export const AreaNode = memo(AreaNodeView, sameNodeProps)

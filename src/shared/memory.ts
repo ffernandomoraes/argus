@@ -22,3 +22,7 @@ export type MemoryGroup = {
 }
 
 export type MemoryProject = { name: string; path: string }
+
+// Resposta de gravar: true gravou; false não deu (sem permissão, disco cheio, fora da memória);
+// 'conflict' (só quando a base vai junto) o arquivo mudou no disco desde a base e nada foi gravado.
+export type MemoryWriteResult = boolean | 'conflict'

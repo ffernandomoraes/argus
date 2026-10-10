@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useWindowControls } from '../useWindowControls'
 import { ConversationView } from './ConversationView'
@@ -19,6 +20,15 @@ export function ConversationWindow({
 }) {
   const zoom = useDrawerZoom()
   const controls = useWindowControls()
+  // Os botões do sistema não acompanham a escala: o recuo volta ao tamanho de tela.
+  const headerStyle = useMemo(
+    () => ({
+      zoom,
+      ...(controls.left ? { paddingLeft: controls.left / zoom } : {}),
+      ...(controls.right ? { paddingRight: (controls.right + 8) / zoom } : {})
+    }),
+    [zoom, controls.left, controls.right]
+  )
 
   return (
     <div className="absolute inset-0 flex flex-col overflow-hidden bg-bg">
@@ -29,12 +39,7 @@ export function ConversationWindow({
         conversation={conversation}
         zoom={zoom}
         headerClassName="drag"
-        // Os botões do sistema não acompanham a escala: o recuo volta ao tamanho de tela.
-        headerStyle={{
-          zoom,
-          ...(controls.left ? { paddingLeft: controls.left / zoom } : {}),
-          ...(controls.right ? { paddingRight: (controls.right + 8) / zoom } : {})
-        }}
+        headerStyle={headerStyle}
         onClose={onClose}
       />
     </div>

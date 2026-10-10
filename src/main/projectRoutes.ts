@@ -1,12 +1,13 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
-import { realRoot } from './devServers'
+import type { DesignRoute } from '../shared/ipc'
+import { realRoot } from './paths'
+import { readPackageJson } from './projectServers/packageJson'
 
 // Rotas de um projeto, para a lista do campo de endereço do modo design. Lidas do código, sem
 // rodar nada: as pastas de páginas dos frameworks que usam arquivos como rotas (Next, Nuxt,
 // SvelteKit, Astro, Remix) e os caminhos escritos nas rotas do código (React Router, Vue Router,
 // links e navegações). É uma estimativa: cada projeto liga arquivo e endereço do seu jeito.
-export type ProjectRoute = { route: string; from: string }
 
 const SKIP = new Set(['node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', '.svelte-kit', '.output', 'coverage', '.turbo', '.cache', 'vendor'])
 const CODE = /\.(tsx|jsx|ts|js|mjs|vue|svelte|astro|mdx?)$/
@@ -54,13 +55,9 @@ async function files(root: string): Promise<string[]> {
 type Frameworks = { next: boolean; nuxt: boolean; astro: boolean; sveltekit: boolean; remix: boolean }
 
 async function frameworksOf(root: string): Promise<Frameworks> {
-  let deps: Record<string, string> = {}
-  try {
-    const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-    deps = { ...pkg.dependencies, ...pkg.devDependencies }
-  } catch {
-    // sem package.json: só os caminhos escritos no código
-  }
+  // Sem package.json: só os caminhos escritos no código.
+  const pkg = await readPackageJson(root)
+  const deps: Record<string, string> = { ...pkg?.dependencies, ...pkg?.devDependencies }
   const has = (name: string) => name in deps || Object.keys(deps).some((d) => d.startsWith(name + '/'))
   return { next: has('next'), nuxt: has('nuxt'), astro: has('astro'), sveltekit: has('@sveltejs/kit'), remix: has('@remix-run') || has('@react-router/dev') }
 }
@@ -96,7 +93,7 @@ function fileRoute(rel: string, fw: Frameworks): string | null {
   return null
 }
 
-export async function projectRoutes(projectPath: string): Promise<ProjectRoute[]> {
+export async function projectRoutes(projectPath: string): Promise<DesignRoute[]> {
   const root = realRoot(projectPath)
   try {
     if (!(await stat(root)).isDirectory()) return []

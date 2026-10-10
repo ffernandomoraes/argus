@@ -1,6 +1,7 @@
-# Gera uma versão nova: sobe o número no package.json, cria a tag, monta o .dmg e o .zip
-# (Apple Silicon) e publica tudo num release do GitHub. Em seguida, numa máquina Windows, monta o
-# instalador .exe, confere se o app abre e o anexa ao mesmo release.
+# Gera uma versão nova: sobe o número no package.json, confere os tipos, monta o .dmg e o .zip
+# (Apple Silicon), confere se o app abre, cria a tag e publica tudo num release do GitHub. Em
+# seguida, numa máquina Windows, monta o instalador .exe, confere se o app abre e o anexa ao mesmo
+# release.
 # Roda sozinho a cada push na main (sobe o patch; notas = commits desde a última tag).
 # Na mão, pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=minor -f notas="- item"
 # Com publicar=false só monta e guarda o .dmg e o .exe no run, sem tag nem release.
@@ -51,10 +52,13 @@ jobs:
     steps:
       # A main como está agora, não a do push que disparou: um run que esperou na fila
       # pega o commit de versão do anterior e o que chegou depois.
+      # persist-credentials: false: o token não fica no .git/config enquanto as dependências
+      # instalam (um pacote com script poderia lê-lo); ele entra só no push da versão.
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
@@ -84,9 +88,17 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
-      # Opcional: com os secrets do certificado, o app sai assinado sempre com a mesma
-      # identidade e o macOS não pede de novo microfone e ditado a cada versão.
-      # Sem eles, a assinatura é ad-hoc (ver scripts/sign.mjs).
+      - name: Conferir os tipos
+        run: pnpm typecheck
+
+      # O postinstall compila o programa do ditado (native/speech) e só avisa se falhar: sem ele,
+      # o app sairia sem ditado no Mac.
+      - name: Conferir o programa do ditado
+        run: test -x native/speech/build/speech-helper
+
+      # Com os secrets do certificado, o app sai assinado sempre com a mesma identidade e o macOS
+      # não pede de novo microfone e ditado a cada versão. Sem eles, a montagem para (ver
+      # scripts/sign.mjs): um release ad-hoc seria recusado pelo atualizador de todos os Macs.
       - name: Importar certificado de assinatura
         env:
           MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
@@ -94,7 +106,7 @@ jobs:
           MAC_SIGN_IDENTITY: ${{ secrets.MAC_SIGN_IDENTITY }}
         run: |
           if [ -z "$MAC_CERT_P12" ]; then
-            echo "Sem certificado: assinatura ad-hoc."
+            echo "Sem certificado: a montagem vai parar na assinatura (scripts/sign.mjs)."
             exit 0
           fi
           keychain="$RUNNER_TEMP/argus.keychain-db"
@@ -118,10 +130,34 @@ jobs:
 
       # Mesmo certificado em todas as versões = o macOS não pede as permissões de novo.
       - name: Conferir assinatura
-        if: env.MAC_SIGN_IDENTITY != ''
         run: |
           codesign --verify --deep --strict dist/mac-arm64/Argus.app
           codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -qE 'certificate (leaf|root)'
+
+      # Mesmo teste do job do Windows (--smoke-test, ver src/main/smokeTest.ts): abre o app, espera o
+      # canvas, abre um terminal e fecha. Se não passar, não há tag nem release. O macOS não tem o
+      # `timeout`: a espera de 3 minutos é feita aqui.
+      - name: Testar se o app abre
+        run: |
+          dist/mac-arm64/Argus.app/Contents/MacOS/Argus --smoke-test &
+          pid=$!
+          for _ in $(seq 360); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.5
+          done
+          if kill -0 "$pid" 2>/dev/null; then
+            kill -9 "$pid"
+            cat "${TMPDIR:-/tmp}/argus-smoke.log" 2>/dev/null || true
+            echo "O app não terminou o teste a tempo." >&2
+            exit 1
+          fi
+          code=0
+          wait "$pid" || code=$?
+          cat "${TMPDIR:-/tmp}/argus-smoke.log" 2>/dev/null || true
+          if [ "$code" -ne 0 ]; then
+            echo "O app falhou no teste (código $code)." >&2
+            exit 1
+          fi
 
       - name: Guardar o app (teste)
         if: env.PUBLICAR != 'true'
@@ -130,15 +166,19 @@ jobs:
           name: Argus-${{ steps.version.outputs.version }}
           path: dist/*.dmg
 
-      # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois.
+      # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois. O token vai só neste push
+      # (o checkout não o guardou): no endereço, sem ficar gravado no repositório.
       - name: Commit da versão e tag
         if: env.PUBLICAR == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "Versão ${{ steps.version.outputs.version }}"
           git tag "v${{ steps.version.outputs.version }}"
-          git push --atomic origin "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v${{ steps.version.outputs.version }}"
+          git push --atomic "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v${{ steps.version.outputs.version }}"
 
       - name: Publicar release
         if: env.PUBLICAR == 'true'
@@ -176,9 +216,11 @@ jobs:
     steps:
       # Publicando: a tag que o job do Mac acabou de criar, já com a versão nova no package.json.
       # Testando: o mesmo commit que ele montou; a versão é trocada aqui, sem tag.
+      # Sem token no .git/config (ver o job do Mac): este job não faz push, só anexa pelo gh.
       - uses: actions/checkout@v5
         with:
           ref: ${{ (github.event_name == 'push' || inputs.publicar) && format('v{0}', needs.release.outputs.version) || needs.release.outputs.sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:

@@ -16,12 +16,15 @@ export const COLORS = [
 // Cinza: o último da paleta.
 export const DEFAULT_GROUP_COLOR = '#71717a'
 
+// Grupo novo, e o tamanho de volta de um grupo recolhido que não guardou o dele.
+export const GROUP_SIZE = { width: 480, height: 320 }
+
 export function createGroup(position: XYPosition): AreaNode {
   return {
     id: `g-${crypto.randomUUID()}`,
     type: 'area',
     position,
-    style: { width: 480, height: 320 },
+    style: { ...GROUP_SIZE },
     data: { label: 'Novo grupo', color: DEFAULT_GROUP_COLOR }
   }
 }
@@ -89,7 +92,7 @@ export function createChat(position: XYPosition, sessionId: string): ChatNode {
 }
 
 // Conversa no canvas: perto da largura do painel lateral, e alta o bastante para ler a resposta.
-export const CHAT_PANEL_SIZE = { width: 600, height: 680 }
+const CHAT_PANEL_SIZE = { width: 600, height: 680 }
 
 // A posição é decidida por placeBeside, ao lado de quem abriu a conversa.
 export function createChatPanel(project: ProjectData, loose: boolean, conversation: { id: string; title: string }): ChatPanelNode {
@@ -109,7 +112,7 @@ export function createChatPanel(project: ProjectData, loose: boolean, conversati
 }
 
 // Amarelo de post-it: se destaca das pastas e dos grupos, que nascem cinza.
-export const DEFAULT_NOTE_COLOR = '#f59e0b'
+const DEFAULT_NOTE_COLOR = '#f59e0b'
 // Sem tamanho no nó: o React Flow mede o balão, que acompanha o texto.
 export const NOTE_MAX_WIDTH = 280
 export const NOTE_MIN_WIDTH = 120

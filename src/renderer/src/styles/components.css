@@ -1,0 +1,56 @@
+/* Componentes de terceiros e do app que pedem CSS fora das classes: o React Flow (canvas) e os
+   itens da conversa. */
+
+/* React Flow no tema do app */
+.react-flow {
+  --xy-background-color: var(--color-bg);
+  --xy-node-border-radius: 14px;
+  --xy-minimap-background-color: var(--color-surface);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  --xy-minimap-node-background-color: var(--color-line-strong);
+  --xy-edge-stroke: var(--color-line-strong);
+  --xy-selection-background-color: rgb(59 130 246 / 0.08);
+  --xy-selection-border: 1px dashed rgb(59 130 246 / 0.6);
+}
+.react-flow__node {
+  font-family: var(--font-sans);
+}
+.react-flow__minimap {
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__attribution {
+  display: none;
+}
+
+/* Espaço segurado: os blocos deixam de receber o mouse e o arraste vai para a câmera.
+   !important porque o React Flow define pointer-events inline em cada nó. */
+.react-flow.camera-mode .react-flow__node {
+  pointer-events: none !important;
+}
+.react-flow.camera-mode .react-flow__pane {
+  cursor: grab;
+}
+.react-flow.camera-mode .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+/* Interface oculta (botão na barra de título, ⌘\): as barras do canvas somem, mas continuam
+   montadas, porque a NavBar é quem liga os atalhos de zoom. */
+.react-flow__panel {
+  transition: opacity 200ms ease;
+}
+.react-flow.ui-hidden .react-flow__panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Item da conversa (ChatView): fora da tela, o navegador não calcula nem desenha o conteúdo,
+   então conversa longa continua leve. A altura real fica guardada depois da primeira vez na
+   tela (o `auto`); antes disso vale a estimativa. Corta o que vazar da caixa: a linha do tempo
+   fica fora dela. */
+.timeline-item {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 4rem;
+}

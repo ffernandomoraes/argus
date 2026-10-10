@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-// Botão com borda das configurações. Todo botão do app usa rounded-md, o mesmo raio dos de cima do card.
-export const BUTTON = 'whitespace-nowrap rounded-md border border-line bg-fill px-3 py-1 text-xs'
+// Controles das configurações (e de quem segue o mesmo desenho, como a biblioteca de agentes). O
+// botão com borda daqui virou o Button da base (ui/Button, variante secondary).
 
 // Ícone num quadradinho colorido, como os do Ajustes do Sistema. `color` é o fundo; o ícone é branco.
 // `soft`: versão discreta, com o fundo só tingido da cor e o ícone na própria cor.

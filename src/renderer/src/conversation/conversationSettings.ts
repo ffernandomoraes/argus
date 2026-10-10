@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { getPreferences, usePreferences } from '../settings/preferences'
+import { useMemo, useSyncExternalStore } from 'react'
+import { getPreferences, usePreference } from '../settings/preferences'
 import type { SessionSettings } from './SessionSettings'
 
 // Trocas feitas nos seletores de uma conversa ficam só nela, guardadas neste computador.
@@ -8,13 +8,23 @@ import type { SessionSettings } from './SessionSettings'
 const key = (id: string) => `chat-settings:${id}`
 const CHANGED = 'chat-settings-changed'
 
-function read(id: string): Partial<SessionSettings> {
+function readRaw(id: string): string | null {
   try {
-    return JSON.parse(localStorage.getItem(key(id)) ?? '{}') as Partial<SessionSettings>
+    return localStorage.getItem(key(id))
+  } catch {
+    return null
+  }
+}
+
+function parse(raw: string | null): Partial<SessionSettings> {
+  try {
+    return JSON.parse(raw ?? '{}') as Partial<SessionSettings>
   } catch {
     return {}
   }
 }
+
+const read = (id: string) => parse(readRaw(id))
 
 function write(id: string, value: Partial<SessionSettings>): void {
   try {
@@ -53,21 +63,20 @@ export function moveConversationSettings(from: string, to: string): void {
   }
 }
 
+// Troca feita aqui (CHANGED) ou na janela separada da mesma conversa (storage). Cada conversa na
+// tela relê só a sua chave e redesenha se o texto guardado mudou.
+function subscribe(onChange: () => void): () => void {
+  window.addEventListener(CHANGED, onChange)
+  window.addEventListener('storage', onChange)
+  return () => {
+    window.removeEventListener(CHANGED, onChange)
+    window.removeEventListener('storage', onChange)
+  }
+}
+
+// O mesmo objeto enquanto nada muda: vai para o chat e para os seletores memorizados.
 export function useConversationSettings(id: string): SessionSettings {
-  const prefs = usePreferences()
-  const [saved, setSaved] = useState(() => read(id))
-  useEffect(() => {
-    setSaved(read(id))
-    const refresh = () => setSaved(read(id))
-    const onChanged = (e: Event) => (e as CustomEvent).detail === id && refresh()
-    // Troca feita na janela separada da mesma conversa.
-    const onStorage = (e: StorageEvent) => e.key === key(id) && refresh()
-    window.addEventListener(CHANGED, onChanged)
-    window.addEventListener('storage', onStorage)
-    return () => {
-      window.removeEventListener(CHANGED, onChanged)
-      window.removeEventListener('storage', onStorage)
-    }
-  }, [id])
-  return { ...prefs.conversation, ...saved }
+  const defaults = usePreference('conversation')
+  const raw = useSyncExternalStore(subscribe, () => readRaw(id))
+  return useMemo(() => ({ ...defaults, ...parse(raw) }), [defaults, raw])
 }

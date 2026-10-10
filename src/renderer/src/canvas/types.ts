@@ -45,7 +45,7 @@ export type ProjectData = {
 // Terminal solto no canvas: o `claude` ou o shell do sistema, numa pasta.
 export type TerminalKind = 'claude' | 'shell'
 
-export type TerminalData = {
+type TerminalData = {
   name: string
   path: string
   // Sem kind = claude (terminais salvos antes de existir o shell).
@@ -56,7 +56,7 @@ export type TerminalData = {
 
 // Conversa sem projeto: roda na pasta do usuário e entra no canvas no primeiro envio,
 // como um card que reabre a conversa no painel lateral.
-export type ChatData = {
+type ChatData = {
   // Nome de reserva enquanto o Claude Code não deu título à conversa.
   name: string
   path: string
@@ -65,7 +65,7 @@ export type ChatData = {
 
 // Conversa aberta dentro do canvas, como o terminal: o mesmo chat do painel lateral, num bloco
 // que acompanha o zoom e fica onde foi posto. Nasce ao lado da pasta (ou do card da conversa solta).
-export type ChatPanelData = {
+type ChatPanelData = {
   // Nome de reserva enquanto a conversa não aparece na lista da pasta.
   name: string
   path: string
@@ -78,7 +78,7 @@ export type ChatPanelData = {
 // Posta em cima de um grupo, entra nele e anda junto; em cima de uma pasta, só fica ali.
 // Como o comentário do Figma: nasce pequena, alarga com o texto até NOTE_MAX_WIDTH e depois
 // cresce para baixo. `width`: largura escolhida pela pessoa no puxador; a altura segue o texto.
-export type NoteData = {
+type NoteData = {
   text: string
   color: string
   width?: number
@@ -88,7 +88,8 @@ export type AreaNode = Node<AreaData, 'area'>
 export type ProjectNode = Node<ProjectData, 'project'>
 export type TerminalNode = Node<TerminalData, 'terminal'>
 export type ChatNode = Node<ChatData, 'chat'>
-// 'chatPanel', e não 'conversation': esse nome ficou com um teste antigo que não volta (persistence).
+// 'chatPanel', e não 'conversation': esse nome ficou com um teste antigo que não volta (o filtro
+// dos tipos antigos fica em flow/savedNodes.ts).
 export type ChatPanelNode = Node<ChatPanelData, 'chatPanel'>
 export type NoteNode = Node<NoteData, 'note'>
 export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode | ChatPanelNode | NoteNode

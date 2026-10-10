@@ -1,350 +1,202 @@
-import { homedir } from 'node:os'
-import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
-import type { AgentDef, AgentDraftRequest, AgentDraftResult, AgentSaveRequest, AgentSaveResult } from '../shared/agents'
-import type { CanvasViewport } from '../shared/canvas'
-import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from '../shared/canvasAgent'
-import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../shared/chat'
-import type { CliStatus } from '../shared/cli'
-import type { Design, DesignSummary } from '../shared/design'
-import type { AppSettings } from '../shared/appSettings'
-import type { AuthState, LoginMethod } from '../shared/auth'
-import type { DevServer, ProjectServer } from '../shared/devServers'
-import type { McpStatus } from '../shared/mcp'
-import type { FileContent, FileDiff, FileEntry, FileOpResult } from '../shared/files'
-import type { ClaudeInfo } from '../shared/models'
-import type { TerminalOpenRequest, TerminalOpenResult } from '../shared/terminal'
-import type { Message } from '../shared/history'
-import type { MemoryGroup, MemoryProject } from '../shared/memory'
-import type { KnownFolder, SessionSummary, UncommittedFile } from '../shared/sessions'
-import type { SpeechEvent } from '../shared/speech'
-import type { UpdateInfo, UpdateState } from '../shared/updates'
-import type { Usage } from '../shared/usage'
+import { contextBridge, webUtils } from 'electron'
+import type { Api } from '../shared/api'
+import { invoke, listen, send, sendSync } from './ipc'
+import { onEdit, onReloadKey } from './keys'
 import { winMic } from './winMic'
+
+// Monta o `window.api` (formato em src/shared/api.ts; canais em src/shared/ipc.ts). Sem módulos do
+// Node além do electron: o preload fica pronto para rodar com sandbox.
 
 const IS_WIN = process.platform === 'win32'
 
-// Desfazer e refazer. No Mac chegam pelo menu Editar (⌘Z, ⇧⌘Z). O Windows não tem menu: Ctrl+Z,
-// Ctrl+Shift+Z e Ctrl+Y fazem o papel dele e chegam do mesmo jeito. Sem ninguém escutando (janela
-// de conversa) ou no terminal e no editor de código, que têm o desfazer deles, a tecla segue normal.
-type EditAction = 'undo' | 'redo'
-const editListeners = new Set<(action: EditAction) => void>()
-ipcRenderer.on('edit', (_e, action: EditAction) => editListeners.forEach((l) => l(action)))
-if (IS_WIN) {
-  window.addEventListener(
-    'keydown',
-    (e) => {
-      if (!e.ctrlKey || e.altKey || e.metaKey || !editListeners.size) return
-      const key = e.key.toLowerCase()
-      const action: EditAction | null = key === 'z' ? (e.shiftKey ? 'redo' : 'undo') : key === 'y' && !e.shiftKey ? 'redo' : null
-      if (!action || (e.target as Element | null)?.closest?.('.xterm, .cm-editor')) return
-      e.preventDefault()
-      editListeners.forEach((l) => l(action))
-    },
-    true
-  )
+// Pasta pessoal, como o os.homedir() do processo principal: USERPROFILE no Windows, HOME no Mac.
+const homeDir = (IS_WIN ? (process.env.USERPROFILE ?? process.env.HOME) : (process.env.HOME ?? process.env.USERPROFILE)) ?? ''
+
+// Windows: o build é o terceiro número da versão ("10.0.22631"). Disponível também com sandbox.
+function windowsBuild(): number | null {
+  if (!IS_WIN) return null
+  const build = Number(process.getSystemVersion().split('.')[2])
+  return Number.isInteger(build) && build > 0 ? build : null
 }
 
-// Recarregar (⌘R no menu Ver; no Windows, Ctrl+R). Com alguém escutando (a página do protótipo
-// aberta no modo design), recarrega só ela; sem ninguém, no Mac recarrega a janela, como antes.
-const reloadListeners: (() => void)[] = []
-const reloadKey = (): boolean => {
-  const top = reloadListeners[reloadListeners.length - 1]
-  if (!top) return false
-  top()
-  return true
-}
-ipcRenderer.on('reload-request', () => {
-  if (!reloadKey()) location.reload()
-})
-if (IS_WIN) {
-  window.addEventListener(
-    'keydown',
-    (e) => {
-      if (!e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || e.key.toLowerCase() !== 'r') return
-      if (reloadKey()) e.preventDefault()
-    },
-    true
-  )
-}
-
-contextBridge.exposeInMainWorld('api', {
+const api: Api = {
   platform: process.platform,
-  homeDir: homedir(),
-  setTheme: (theme: 'dark' | 'light' | 'system') => ipcRenderer.send('theme:set', theme),
-  // Cor de destaque do sistema, "#rrggbb"; nula quando o sistema não informa.
+  homeDir,
+  windowsBuild: windowsBuild(),
+  setTheme: (theme) => send('theme:set', theme),
   accent: {
-    get: (): string | null => ipcRenderer.sendSync('accent:get'),
-    onChange: (cb: (color: string | null) => void) => {
-      const listener = (_e: IpcRendererEvent, color: string | null) => cb(color)
-      ipcRenderer.on('accent:changed', listener)
-      return () => ipcRenderer.removeListener('accent:changed', listener)
-    }
+    get: () => sendSync('accent:get'),
+    onChange: (cb) => listen('accent:changed', cb)
   },
-  pickFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickFolder'),
-  onReloadKey: (cb: () => void) => {
-    reloadListeners.push(cb)
-    return () => {
-      const i = reloadListeners.lastIndexOf(cb)
-      if (i >= 0) reloadListeners.splice(i, 1)
-    }
-  },
-  onEdit: (cb: (action: EditAction) => void) => {
-    editListeners.add(cb)
-    return () => {
-      editListeners.delete(cb)
-    }
-  },
+  pickFolder: () => invoke('dialog:pickFolder'),
+  onReloadKey,
+  onEdit,
   // No Windows o microfone é gravado aqui mesmo (winMic); no Mac, pelo programa native/speech.
   speech: {
-    start: () => (IS_WIN ? void winMic.start() : ipcRenderer.send('speech:start')),
+    start: () => (IS_WIN ? void winMic.start() : send('speech:start')),
     stop: () => {
       if (IS_WIN) winMic.stop()
-      ipcRenderer.send('speech:stop')
+      send('speech:stop')
     },
-    openSettings: () => ipcRenderer.send('speech:openSettings'),
-    onEvent: (cb: (event: SpeechEvent) => void) => {
-      const listener = (_e: IpcRendererEvent, event: SpeechEvent) => cb(event)
-      ipcRenderer.on('speech:event', listener)
+    openSettings: () => send('speech:openSettings'),
+    onEvent: (cb) => {
+      const off = listen('speech:event', cb)
       const offMic = IS_WIN ? winMic.onEvent(cb) : () => {}
       return () => {
-        ipcRenderer.removeListener('speech:event', listener)
+        off()
         offMic()
       }
     }
   },
   popout: {
-    open: (id: string, payload: unknown) => ipcRenderer.send('popout:open', id, payload),
-    payload: (id: string): Promise<unknown> => ipcRenderer.invoke('popout:payload', id),
-    onClosed: (cb: (id: string) => void) => {
-      const listener = (_e: IpcRendererEvent, id: string) => cb(id)
-      ipcRenderer.on('popout:closed', listener)
-      return () => ipcRenderer.removeListener('popout:closed', listener)
-    }
+    open: (id, payload) => send('popout:open', id, payload),
+    payload: (id) => invoke('popout:payload', id),
+    onClosed: (cb) => listen('popout:closed', cb)
   },
-  // Modelos e modo padrão que o `claude` de cada conta informa; sem conta, a padrão.
   claude: {
-    info: (account?: string): Promise<ClaudeInfo | null> => ipcRenderer.invoke('claude:info', account),
-    onInfo: (cb: (account: string, info: ClaudeInfo) => void) => {
-      const listener = (_e: IpcRendererEvent, account: string, info: ClaudeInfo) => cb(account, info)
-      ipcRenderer.on('claude:info', listener)
-      return () => ipcRenderer.removeListener('claude:info', listener)
-    }
+    info: (account) => invoke('claude:info', account),
+    onInfo: (cb) => listen('claude:info', cb)
   },
-  // Contas do Claude Code: a principal (a mesma do terminal e do VS Code) e as que têm pasta própria.
   auth: {
-    state: (): Promise<AuthState> => ipcRenderer.invoke('auth:state'),
-    refresh: () => ipcRenderer.send('auth:refresh'),
-    install: () => ipcRenderer.send('auth:install'),
-    login: (accountId: string, method: LoginMethod) => ipcRenderer.send('auth:login', accountId, method),
-    add: (method: LoginMethod) => ipcRenderer.send('auth:add', method),
-    submitCode: (code: string) => ipcRenderer.send('auth:code', code),
-    cancel: () => ipcRenderer.send('auth:cancel'),
-    logout: (): Promise<boolean> => ipcRenderer.invoke('auth:logout'),
-    remove: (accountId: string): Promise<boolean> => ipcRenderer.invoke('auth:remove', accountId),
-    rename: (accountId: string, name: string) => ipcRenderer.send('auth:rename', accountId, name),
-    setDefault: (accountId: string) => ipcRenderer.send('auth:setDefault', accountId),
-    open: (url: string) => ipcRenderer.send('auth:open', url),
-    onState: (cb: (state: AuthState) => void) => {
-      const listener = (_e: IpcRendererEvent, state: AuthState) => cb(state)
-      ipcRenderer.on('auth:state', listener)
-      return () => ipcRenderer.removeListener('auth:state', listener)
-    }
+    state: () => invoke('auth:state'),
+    refresh: () => send('auth:refresh'),
+    install: () => send('auth:install'),
+    login: (accountId, method) => send('auth:login', accountId, method),
+    add: (method) => send('auth:add', method),
+    submitCode: (code) => send('auth:code', code),
+    cancel: () => send('auth:cancel'),
+    logout: () => invoke('auth:logout'),
+    remove: (accountId) => invoke('auth:remove', accountId),
+    rename: (accountId, name) => send('auth:rename', accountId, name),
+    setDefault: (accountId) => send('auth:setDefault', accountId),
+    open: (url) => send('auth:open', url),
+    onState: (cb) => listen('auth:state', cb)
   },
-  // Caminho no disco de um arquivo escolhido ou arrastado (anexos do chat).
-  filePath: (file: File): string => webUtils.getPathForFile(file),
+  filePath: (file) => webUtils.getPathForFile(file),
   chat: {
-    state: (key: string): Promise<ChatState | null> => ipcRenderer.invoke('chat:state', key),
-    send: (req: ChatSendRequest) => ipcRenderer.send('chat:send', req),
-    remoteControl: (req: ChatRemoteRequest) => ipcRenderer.send('chat:remote-control', req),
-    answer: (key: string, id: string, answer: PermissionAnswer) => ipcRenderer.send('chat:answer', key, id, answer),
-    interrupt: (key: string) => ipcRenderer.send('chat:interrupt', key),
-    retain: (key: string) => ipcRenderer.send('chat:retain', key),
-    mcpStatus: (key: string, cwd: string, account?: string): Promise<McpStatus> =>
-      ipcRenderer.invoke('mcp:status', key, cwd, account),
-    release: (key: string) => ipcRenderer.send('chat:release', key),
-    configure: (key: string, patch: Partial<ChatSettings>) => ipcRenderer.send('chat:configure', key, patch),
-    onState: (cb: (key: string, state: ChatState) => void) => {
-      const listener = (_e: IpcRendererEvent, key: string, state: ChatState) => cb(key, state)
-      ipcRenderer.on('chat:state', listener)
-      return () => ipcRenderer.removeListener('chat:state', listener)
-    },
-    // Clique na notificação do sistema.
-    onOpen: (cb: (cwd: string, sessionId: string) => void) => {
-      const listener = (_e: IpcRendererEvent, cwd: string, sessionId: string) => cb(cwd, sessionId)
-      ipcRenderer.on('chat:open', listener)
-      return () => ipcRenderer.removeListener('chat:open', listener)
-    }
+    state: (key) => invoke('chat:state', key),
+    send: (req) => send('chat:send', req),
+    remoteControl: (req) => send('chat:remote-control', req),
+    answer: (key, id, answer) => send('chat:answer', key, id, answer),
+    interrupt: (key) => send('chat:interrupt', key),
+    retain: (key) => send('chat:retain', key),
+    mcpStatus: (key, cwd, account) => invoke('mcp:status', key, cwd, account),
+    release: (key) => send('chat:release', key),
+    configure: (key, patch) => send('chat:configure', key, patch),
+    onState: (cb) => listen('chat:state', cb),
+    onOpen: (cb) => listen('chat:open', cb)
   },
-  // Biblioteca de agentes (~/.claude/agents). Com a pasta, inclui os do projeto.
   agents: {
-    list: (projectPath?: string): Promise<AgentDef[]> => ipcRenderer.invoke('agents:list', projectPath),
-    save: (req: AgentSaveRequest): Promise<AgentSaveResult> => ipcRenderer.invoke('agents:save', req),
-    remove: (name: string): Promise<boolean> => ipcRenderer.invoke('agents:remove', name),
-    // O Claude preenche os campos a partir de uma descrição (falada ou escrita).
-    draft: (req: AgentDraftRequest): Promise<AgentDraftResult> => ipcRenderer.invoke('agents:draft', req)
+    list: (projectPath) => invoke('agents:list', projectPath),
+    save: (req) => invoke('agents:save', req),
+    remove: (name) => invoke('agents:remove', name)
   },
   memory: {
-    list: (projects: MemoryProject[]): Promise<MemoryGroup[]> => ipcRenderer.invoke('memory:list', projects),
-    read: (path: string, projects: MemoryProject[]): Promise<string | null> =>
-      ipcRenderer.invoke('memory:read', path, projects),
-    write: (path: string, text: string, projects: MemoryProject[]): Promise<boolean> =>
-      ipcRenderer.invoke('memory:write', path, text, projects)
+    list: (projects) => invoke('memory:list', projects),
+    read: (path, projects) => invoke('memory:read', path, projects),
+    write: (path, text, projects, base) => invoke('memory:write', path, text, projects, base)
   },
   canvas: {
-    // Síncrono: o canvas já abre com o que estava salvo, sem piscar vazio.
-    load: (): unknown => ipcRenderer.sendSync('canvas:load'),
-    // O canvas é um só em todas as janelas: a mudança feita aqui vai para as outras (e para o arquivo).
-    sync: (nodes: unknown) => ipcRenderer.send('canvas:sync', nodes),
-    onRemote: (cb: (nodes: unknown) => void) => {
-      const listener = (_e: IpcRendererEvent, nodes: unknown) => cb(nodes)
-      ipcRenderer.on('canvas:remote', listener)
-      return () => ipcRenderer.removeListener('canvas:remote', listener)
-    },
-    // Desfazer é um só para todas as janelas: o histórico fica no processo principal.
-    record: () => ipcRenderer.send('canvas:record'),
-    undo: () => ipcRenderer.send('canvas:undo'),
-    redo: () => ipcRenderer.send('canvas:redo'),
-    // Câmera desta janela, para ela reabrir olhando o mesmo lugar.
-    viewport: (): CanvasViewport | null => ipcRenderer.sendSync('canvas:viewport'),
-    setViewport: (viewport: CanvasViewport) => ipcRenderer.send('canvas:setViewport', viewport),
-    newWindow: () => ipcRenderer.send('canvas:newWindow')
+    load: () => sendSync('canvas:load'),
+    sync: (nodes) => send('canvas:sync', nodes),
+    onRemote: (cb) => listen('canvas:remote', cb),
+    record: () => send('canvas:record'),
+    undo: () => send('canvas:undo'),
+    redo: () => send('canvas:redo'),
+    viewport: () => sendSync('canvas:viewport'),
+    setViewport: (viewport) => send('canvas:setViewport', viewport),
+    newWindow: () => send('canvas:newWindow')
   },
   canvasAgent: {
-    state: (): Promise<CanvasAgentState> => ipcRenderer.invoke('canvasAgent:state'),
-    send: (text: string) => ipcRenderer.send('canvasAgent:send', text),
-    interrupt: () => ipcRenderer.send('canvasAgent:interrupt'),
-    onState: (cb: (state: CanvasAgentState) => void) => {
-      const listener = (_e: IpcRendererEvent, state: CanvasAgentState) => cb(state)
-      ipcRenderer.on('canvasAgent:state', listener)
-      return () => ipcRenderer.removeListener('canvasAgent:state', listener)
-    },
-    // Ações que o Claude pede; a resposta volta por respond.
-    onCall: (cb: (call: CanvasToolCall) => void) => {
-      const listener = (_e: IpcRendererEvent, call: CanvasToolCall) => cb(call)
-      ipcRenderer.on('canvasAgent:call', listener)
-      return () => ipcRenderer.removeListener('canvasAgent:call', listener)
-    },
-    respond: (result: CanvasToolResult) => ipcRenderer.send('canvasAgent:result', result)
+    state: () => invoke('canvasAgent:state'),
+    send: (text) => send('canvasAgent:send', text),
+    interrupt: () => send('canvasAgent:interrupt'),
+    onState: (cb) => listen('canvasAgent:state', cb),
+    onCall: (cb) => listen('canvasAgent:call', cb),
+    respond: (result) => send('canvasAgent:result', result),
+    onCancel: (cb) => listen('canvasAgent:cancel', cb)
   },
-  // Modo design: protótipos guardados em ~/.argus/design (o código fica no projeto).
   design: {
-    load: (id: string): Promise<Design | null> => ipcRenderer.invoke('design:load', id),
-    save: (design: Design): Promise<boolean> => ipcRenderer.invoke('design:save', design),
-    list: (projectPath: string): Promise<DesignSummary[]> => ipcRenderer.invoke('design:list', projectPath),
-    trash: (id: string): Promise<boolean> => ipcRenderer.invoke('design:trash', id),
-    escape: (origin: string, on: boolean) => ipcRenderer.send('design:escape', origin, on),
-    track: (origin: string) => ipcRenderer.send('design:track', origin),
-    snapshot: (origin: string): Promise<string | null> => ipcRenderer.invoke('design:snapshot', origin),
-    comment: (origin: string, action: 'on' | 'off' | 'remove' | 'clear', id?: number) =>
-      ipcRenderer.send('design:comment', origin, action, id),
-    routes: (projectPath: string): Promise<{ route: string; from: string }[]> => ipcRenderer.invoke('design:routes', projectPath)
+    load: (id) => invoke('design:load', id),
+    save: (design) => invoke('design:save', design),
+    list: (projectPath) => invoke('design:list', projectPath),
+    trash: (id) => invoke('design:trash', id),
+    escape: (origin, on) => send('design:escape', origin, on),
+    track: (origin) => send('design:track', origin),
+    snapshot: (origin) => invoke('design:snapshot', origin),
+    comment: (origin, action, id) => send('design:comment', origin, action, id),
+    routes: (projectPath) => invoke('design:routes', projectPath)
   },
   sessions: {
-    list: (path: string): Promise<SessionSummary[]> => ipcRenderer.invoke('sessions:list', path),
-    folders: (): Promise<KnownFolder[]> => ipcRenderer.invoke('sessions:folders'),
-    trash: (path: string, id: string): Promise<string | null> => ipcRenderer.invoke('sessions:trash', path, id),
-    branch: (path: string): Promise<string | null> => ipcRenderer.invoke('sessions:branch', path),
-    repoUrl: (path: string): Promise<string | null> => ipcRenderer.invoke('sessions:repoUrl', path),
-    openRepo: (path: string) => ipcRenderer.send('sessions:openRepo', path),
-    changes: (path: string): Promise<UncommittedFile[] | null> => ipcRenderer.invoke('sessions:changes', path),
-    history: (path: string, id: string): Promise<Message[]> => ipcRenderer.invoke('sessions:history', path, id),
-    images: (path: string, id: string, messageId: string): Promise<string[]> =>
-      ipcRenderer.invoke('sessions:images', path, id, messageId),
-    context: (path: string, id: string): Promise<number> => ipcRenderer.invoke('sessions:context', path, id),
-    watch: (paths: string[]) => ipcRenderer.send('sessions:watch', paths),
-    onChanged: (cb: (path: string) => void) => {
-      const listener = (_e: IpcRendererEvent, path: string) => cb(path)
-      ipcRenderer.on('sessions:changed', listener)
-      return () => ipcRenderer.removeListener('sessions:changed', listener)
-    }
+    list: (path) => invoke('sessions:list', path),
+    folders: () => invoke('sessions:folders'),
+    trash: (path, id) => invoke('sessions:trash', path, id),
+    branch: (path) => invoke('sessions:branch', path),
+    repoUrl: (path) => invoke('sessions:repoUrl', path),
+    openRepo: (path) => send('sessions:openRepo', path),
+    changes: (path) => invoke('sessions:changes', path),
+    history: (path, id) => invoke('sessions:history', path, id),
+    images: (path, id, messageId) => invoke('sessions:images', path, id, messageId),
+    context: (path, id) => invoke('sessions:context', path, id),
+    watch: (paths) => send('sessions:watch', paths),
+    onChanged: (cb) => listen('sessions:changed', cb)
   },
-  // Servidores locais: os que o Claude Code ou o play deixaram rodando e qualquer porta aberta
-  // dentro das pastas do canvas (`paths`).
   devServers: {
-    list: (paths: string[]): Promise<DevServer[]> => ipcRenderer.invoke('devServers:list', paths),
-    kill: (pgid: number, paths: string[]): Promise<boolean> => ipcRenderer.invoke('devServers:kill', pgid, paths)
+    list: (paths) => invoke('devServers:list', paths),
+    kill: (pgid, paths) => invoke('devServers:kill', pgid, paths)
   },
-  // Servidor de cada pasta do canvas: rodando (venha de onde vier) e iniciar/encerrar.
   projectServers: {
-    status: (paths: string[]): Promise<Record<string, ProjectServer>> =>
-      ipcRenderer.invoke('projectServers:status', paths),
-    start: (path: string, noBrowser?: boolean): Promise<boolean> => ipcRenderer.invoke('projectServers:start', path, noBrowser),
-    stop: (path: string): Promise<boolean> => ipcRenderer.invoke('projectServers:stop', path)
+    status: (paths) => invoke('projectServers:status', paths),
+    start: (path, noBrowser) => invoke('projectServers:start', path, noBrowser),
+    stop: (path) => invoke('projectServers:stop', path)
   },
   files: {
-    list: (root: string, rel: string): Promise<FileEntry[]> => ipcRenderer.invoke('files:list', root, rel),
-    read: (root: string, rel: string): Promise<FileContent> => ipcRenderer.invoke('files:read', root, rel),
-    diff: (root: string, rel: string): Promise<FileDiff> => ipcRenderer.invoke('files:diff', root, rel),
-    write: (root: string, rel: string, text: string): Promise<FileOpResult> =>
-      ipcRenderer.invoke('files:write', root, rel, text),
-    create: (root: string, dir: string, name: string, isDir: boolean): Promise<FileOpResult> =>
-      ipcRenderer.invoke('files:create', root, dir, name, isDir),
-    rename: (root: string, rel: string, name: string): Promise<FileOpResult> =>
-      ipcRenderer.invoke('files:rename', root, rel, name),
-    trash: (root: string, rel: string): Promise<FileOpResult> => ipcRenderer.invoke('files:trash', root, rel),
-    copy: (root: string, rels: string[]): Promise<void> => ipcRenderer.invoke('files:copy', root, rels),
-    paste: (root: string, dir: string): Promise<FileOpResult> => ipcRenderer.invoke('files:paste', root, dir),
-    reveal: (root: string, rel: string) => ipcRenderer.send('files:reveal', root, rel),
-    watch: (root: string, rel: string) => ipcRenderer.send('files:watch', root, rel),
-    unwatch: () => ipcRenderer.send('files:unwatch'),
-    onChanged: (cb: (root: string, rel: string) => void) => {
-      const listener = (_e: IpcRendererEvent, root: string, rel: string) => cb(root, rel)
-      ipcRenderer.on('files:changed', listener)
-      return () => ipcRenderer.removeListener('files:changed', listener)
-    }
+    list: (root, rel) => invoke('files:list', root, rel),
+    read: (root, rel) => invoke('files:read', root, rel),
+    diff: (root, rel) => invoke('files:diff', root, rel),
+    write: (root, rel, text, base) => invoke('files:write', root, rel, text, base),
+    create: (root, dir, name, isDir) => invoke('files:create', root, dir, name, isDir),
+    rename: (root, rel, name) => invoke('files:rename', root, rel, name),
+    trash: (root, rel) => invoke('files:trash', root, rel),
+    copy: (root, rels) => invoke('files:copy', root, rels),
+    paste: (root, dir) => invoke('files:paste', root, dir),
+    reveal: (root, rel) => send('files:reveal', root, rel),
+    watch: (root, rel) => send('files:watch', root, rel),
+    unwatch: () => send('files:unwatch'),
+    onChanged: (cb) => listen('files:changed', cb),
+    setUnsaved: (has) => send('files:unsaved', has)
   },
   terminal: {
-    open: (req: TerminalOpenRequest): Promise<TerminalOpenResult> => ipcRenderer.invoke('terminal:open', req),
-    write: (key: string, data: string) => ipcRenderer.send('terminal:write', key, data),
-    rename: (oldKey: string, newKey: string) => ipcRenderer.send('terminal:rename', oldKey, newKey),
-    resize: (key: string, cols: number, rows: number) => ipcRenderer.send('terminal:resize', key, cols, rows),
-    kill: (key: string) => ipcRenderer.send('terminal:kill', key),
-    onData: (cb: (key: string, data: string) => void) => {
-      const listener = (_e: IpcRendererEvent, key: string, data: string) => cb(key, data)
-      ipcRenderer.on('terminal:data', listener)
-      return () => ipcRenderer.removeListener('terminal:data', listener)
-    },
-    onExit: (cb: (key: string, code: number) => void) => {
-      const listener = (_e: IpcRendererEvent, key: string, code: number) => cb(key, code)
-      ipcRenderer.on('terminal:exit', listener)
-      return () => ipcRenderer.removeListener('terminal:exit', listener)
-    }
+    open: (req) => invoke('terminal:open', req),
+    write: (key, data) => send('terminal:write', key, data),
+    resize: (key, cols, rows) => send('terminal:resize', key, cols, rows),
+    kill: (key) => send('terminal:kill', key),
+    onData: (cb) => listen('terminal:data', cb),
+    onExit: (cb) => listen('terminal:exit', cb),
+    session: (key) => invoke('terminal:session', key),
+    onSession: (cb) => listen('terminal:session', cb)
   },
-  // Comando `argus` do terminal.
   cli: {
-    ready: () => ipcRenderer.send('cli:ready'),
-    onOpen: (cb: (path: string) => void) => {
-      const listener = (_e: IpcRendererEvent, path: string) => cb(path)
-      ipcRenderer.on('cli:open', listener)
-      return () => ipcRenderer.removeListener('cli:open', listener)
-    },
-    status: (): Promise<CliStatus> => ipcRenderer.invoke('cli:status'),
-    install: (): Promise<CliStatus> => ipcRenderer.invoke('cli:install'),
-    uninstall: (): Promise<CliStatus> => ipcRenderer.invoke('cli:uninstall')
+    ready: () => send('cli:ready'),
+    onOpen: (cb) => listen('cli:open', cb),
+    status: () => invoke('cli:status'),
+    install: () => invoke('cli:install'),
+    uninstall: () => invoke('cli:uninstall')
   },
-  // Preferências guardadas no processo principal.
   settings: {
-    get: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
-    setMenuBarIcon: (on: boolean): Promise<AppSettings> => ipcRenderer.invoke('settings:menuBarIcon', on)
+    get: () => invoke('settings:get'),
+    setMenuBarIcon: (on) => invoke('settings:menuBarIcon', on)
   },
-  // Atualização do app pelos releases do GitHub.
   updates: {
-    get: (): Promise<UpdateInfo> => ipcRenderer.invoke('updates:get'),
-    check: (): Promise<UpdateState> => ipcRenderer.invoke('updates:check'),
-    install: () => ipcRenderer.send('updates:install'),
-    onState: (cb: (state: UpdateState) => void) => {
-      const listener = (_e: IpcRendererEvent, state: UpdateState) => cb(state)
-      ipcRenderer.on('updates:state', listener)
-      return () => ipcRenderer.removeListener('updates:state', listener)
-    }
+    get: () => invoke('updates:get'),
+    check: () => invoke('updates:check'),
+    install: () => send('updates:install'),
+    onState: (cb) => listen('updates:state', cb)
   },
-  // Limites de cada conta logada; nulo quando a conta sai ou é removida.
   usage: {
-    get: (): Promise<Record<string, Usage>> => ipcRenderer.invoke('usage:get'),
-    onUpdate: (cb: (account: string, usage: Usage | null) => void) => {
-      const listener = (_e: IpcRendererEvent, account: string, usage: Usage | null) => cb(account, usage)
-      ipcRenderer.on('usage:update', listener)
-      return () => ipcRenderer.removeListener('usage:update', listener)
-    }
+    get: () => invoke('usage:get'),
+    onUpdate: (cb) => listen('usage:update', cb)
   }
-})
+}
+
+contextBridge.exposeInMainWorld('api', api)

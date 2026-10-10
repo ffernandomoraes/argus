@@ -20,8 +20,10 @@ export type ActiveDesign = {
   designId: string
 }
 
-type CanvasActions = {
-  renamingId: string | null
+// Os comandos que os blocos e as barras pedem ao Canvas (montados em actions/useCanvasCommands).
+// O objeto é criado uma vez e nunca muda: ler o contexto não faz ninguém redesenhar. O que muda
+// com o uso (renomeando, conversa aberta, grupo destacado...) é lido por bloco em useCanvasView.ts.
+export type CanvasActions = {
   startRename: (id: string) => void
   finishRename: (id: string, value: string | null) => void
   addGroup: (position: XYPosition) => void
@@ -35,11 +37,8 @@ type CanvasActions = {
   toggleGroup: (id: string) => void
   toggleObscure: (id: string) => void
   toggleProject: (id: string) => void
-  // Grupo destacado: recebe o bloco solto que está sendo arrastado, se ele for largado agora.
-  dropTargetId: string | null
   // "Tirar do grupo": o grupo encolhe, o bloco vai para fora e a câmera vai até ele.
   leaveGroup: (id: string) => void
-  activeConversation: ActiveConversation | null
   openConversation: (nodeId: string, conversationId: string) => void
   newConversation: (nodeId: string) => void
   // Conversa sem projeto: abre o painel em branco e só entra no canvas no primeiro envio.
@@ -49,7 +48,6 @@ type CanvasActions = {
   openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => void
   // Painel flutuante com todas as conversas da pasta.
   openAllConversations: (nodeId: string) => void
-  activeDesign: ActiveDesign | null
   // Drawer do modo design: um design da pasta (sem designId, um novo).
   openDesign: (nodeId: string, designId?: string) => void
   openSettings: () => void
@@ -59,13 +57,11 @@ type CanvasActions = {
   openAgents: () => void
   // Servidores locais que o Claude Code deixou rodando.
   openDevServers: () => void
-  // Barra de comando do assistente do canvas; voice = abre já ouvindo.
+  // Terminal no canvas; sem pasta (folder vazio), abre na do usuário.
   addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => void
   // Guarda no nó a conversa que o terminal criou, para ele retomá-la depois.
   bindTerminalSession: (nodeId: string, sessionId: string) => void
   closeTerminal: (nodeId: string, name: string) => void
-  // Conversas abertas em janela separada.
-  poppedOut: Set<string>
   // Conversa no canvas (ChatPanelNode): fechar tira o bloco (a conversa continua salva); os outros
   // dois tiram o bloco e abrem a conversa no painel lateral ou numa janela própria.
   closeChatPanel: (nodeId: string) => void

@@ -16,7 +16,7 @@ export type Account = {
 }
 
 // A principal é a conta do ~/.claude, a mesma do terminal e do VS Code. As outras moram cada uma
-// numa pasta própria, com login separado e o resto ligado à principal (ver src/main/accounts.ts).
+// numa pasta própria, com login separado e o resto ligado à principal (ver src/main/accounts/).
 export const MAIN_ACCOUNT = 'main'
 
 export type ClaudeAccount = {

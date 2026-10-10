@@ -1,18 +1,16 @@
 import type { XYPosition } from '@xyflow/react'
-import { sizeOf } from './operations'
+import { isPlaced, sizeOf, type Box } from './operations'
 import type { CanvasNode } from './types'
 
 // Encaixe ao arrastar: o bloco alinha pela borda ou pelo meio com os vizinhos (mesmo grupo,
 // ou soltos no canvas) quando chega perto, na horizontal e na vertical, e aparece a linha-guia.
 
 // Distância, em pixels de tela, em que o encaixe pega.
-export const SNAP_DISTANCE = 8
+const SNAP_DISTANCE = 8
 
 // Linha-guia em coordenadas do canvas (já somada a posição do grupo, se houver).
 // x: linha vertical em `at`, de `from` a `to` no eixo y. y: o contrário.
 export type Guide = { axis: 'x' | 'y'; at: number; from: number; to: number }
-
-type Box = { x: number; y: number; width: number; height: number }
 
 // Começo, meio e fim do bloco num eixo.
 const lines = (start: number, size: number) => [start, start + size / 2, start + size]
@@ -39,7 +37,7 @@ export function snap(
   if (!node) return { position, guides: [] }
   const { width, height } = sizeOf(node)
   const neighbors: Box[] = nodes
-    .filter((n) => n.id !== id && !n.hidden && n.parentId === node.parentId)
+    .filter((n) => n.id !== id && !n.hidden && n.parentId === node.parentId && isPlaced(n))
     .map((n) => ({ ...n.position, ...sizeOf(n) }))
   if (neighbors.length === 0) return { position, guides: [] }
 

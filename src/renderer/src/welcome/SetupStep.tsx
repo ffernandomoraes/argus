@@ -1,8 +1,11 @@
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Check, CheckCircle2, Circle, Copy, Loader2 } from 'lucide-react'
 import { MAIN_ACCOUNT, type AuthState, type ClaudeInstall } from '../../../shared/auth'
 import { LoginPanel } from '../auth/LoginPanel'
+import { useCopied } from '../lib/useCopied'
 import { IS_WIN } from '../platform'
+import { Button } from '../ui/Button'
+import { IconButton } from '../ui/IconButton'
 
 const GIT_URL = 'https://git-scm.com/download/win'
 
@@ -36,27 +39,17 @@ function Item({ state, title, detail, children }: { state: 'done' | 'busy' | 'to
   )
 }
 
-const BUTTON = 'flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm disabled:opacity-50'
-const PRIMARY = `${BUTTON} bg-accent font-medium text-white hover:brightness-110`
-const SECONDARY = `${BUTTON} border border-line text-text hover:bg-surface-2`
-
 // Comando do instalador para rodar na mão, com botão de copiar.
 function Command({ command }: { command: string }) {
-  const [copied, setCopied] = useState(false)
-  const copy = () => {
-    void navigator.clipboard.writeText(command).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
+  const { copied, copy } = useCopied()
   return (
     <div className="flex items-center gap-2 rounded-md border border-line bg-bg px-2.5 py-1.5">
       <code className="min-w-0 flex-1 truncate font-mono text-xs text-text" title={command}>
         {command}
       </code>
-      <button onClick={copy} aria-label="Copiar comando" title="Copiar comando" className="shrink-0 rounded p-1 text-muted hover:bg-surface-2 hover:text-text">
+      <IconButton label="Copiar comando" size="xs" onClick={() => copy(command)}>
         {copied ? <Check size={13} /> : <Copy size={13} />}
-      </button>
+      </IconButton>
     </div>
   )
 }
@@ -79,9 +72,9 @@ function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
           {claude.message}
         </pre>
       )}
-      <button onClick={() => window.api.auth.install()} className={PRIMARY}>
+      <Button size="xl" variant="primary" onClick={() => window.api.auth.install()}>
         {failed ? 'Tentar de novo' : 'Instalar Claude Code'}
-      </button>
+      </Button>
       {failed && (
         <div className="mt-3 flex flex-col gap-2">
           <p className="text-xs text-faint">Ou rode no {IS_WIN ? 'PowerShell' : 'Terminal'} e confira de novo:</p>
@@ -108,9 +101,9 @@ export function SetupStep({ auth }: { auth: AuthState }) {
           detail={auth.claude.git ? 'Instalado.' : 'O Claude Code usa o Git para rodar comandos no Windows. Instale e confira de novo.'}
         >
           {!auth.claude.git && (
-            <button onClick={() => window.api.auth.open(GIT_URL)} className={SECONDARY}>
+            <Button size="xl" onClick={() => window.api.auth.open(GIT_URL)}>
               Baixar o Git
-            </button>
+            </Button>
           )}
         </Item>
       )}

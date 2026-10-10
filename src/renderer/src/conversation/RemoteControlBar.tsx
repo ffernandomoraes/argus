@@ -2,24 +2,17 @@ import { useState } from 'react'
 import { Check, Copy, ExternalLink, Loader2, Smartphone, X } from 'lucide-react'
 import { ConfirmDialog } from '../canvas/ConfirmDialog'
 import type { RemoteControl } from '../../../shared/chat'
+import { useCopied } from '../lib/useCopied'
 import { Presence } from '../motion'
 
-const ACTION = 'flex items-center gap-1 rounded px-1 text-faint hover:text-text'
+const ACTION = 'flex items-center gap-1 rounded-md px-1 text-faint hover:text-text'
 
 // Linha discreta acima do campo de texto enquanto o remote control está ligado (/remote-control).
 export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl; onTurnOff: () => void }) {
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopied()
   const [confirming, setConfirming] = useState(false)
   // Falhou: não há conexão a perder, então o X só tira a faixa.
   const turnOff = () => (remote.status === 'failed' ? onTurnOff() : setConfirming(true))
-
-  const copy = () => {
-    if (!remote.url) return
-    void navigator.clipboard.writeText(remote.url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
 
   const label =
     remote.status === 'connected'
@@ -44,7 +37,7 @@ export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl;
             <ExternalLink size={11} />
             Abrir
           </a>
-          <button onClick={copy} className={ACTION}>
+          <button onClick={() => remote.url && copy(remote.url)} className={ACTION}>
             {copied ? <Check size={11} /> : <Copy size={11} />}
             {copied ? 'Copiado' : 'Copiar'}
           </button>

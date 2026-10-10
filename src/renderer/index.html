@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <title>Argus</title>
+    <!-- No build, a Content-Security-Policy entra aqui no topo e libera este script pelo hash dele
+         (ver contentSecurityPolicy em electron.vite.config.ts). Outro script inline seria barrado. -->
     <script>
       // Aplica o tema salvo antes do React montar, para não piscar o tema errado.
       try {

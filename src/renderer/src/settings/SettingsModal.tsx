@@ -1,6 +1,6 @@
 import type { ThemePreference } from '../theme/useTheme'
+import { Modal } from '../ui/Modal'
 import { SettingsPage } from './SettingsPage'
-import { useEscape } from '../useEscape'
 
 // Configurações por cima do canvas; fecha no X, no Esc ou clicando fora.
 export function SettingsModal({
@@ -12,20 +12,9 @@ export function SettingsModal({
   onThemeChange: (t: ThemePreference) => void
   onClose: () => void
 }) {
-  useEscape(onClose)
-
   return (
-    <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        role="dialog"
-        aria-label="Configurações"
-        className="h-[min(640px,100%)] w-[min(880px,100%)] overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50"
-      >
-        <SettingsPage theme={theme} onThemeChange={onThemeChange} onClose={onClose} />
-      </div>
-    </div>
+    <Modal label="Configurações" onClose={onClose}>
+      <SettingsPage theme={theme} onThemeChange={onThemeChange} onClose={onClose} />
+    </Modal>
   )
 }

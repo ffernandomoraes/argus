@@ -26,7 +26,8 @@ export function mergeEvents(messages: Message[], events: EventMessage[]): Messag
   let localModelSinceReply = false
   for (const m of merged) {
     if (m.role === 'event') {
-      if (lastText[m.kind] === m.text) continue
+      // Cada parada é um momento seu, mesmo com o mesmo texto da anterior.
+      if (m.kind !== 'interrupted' && lastText[m.kind] === m.text) continue
       const derived = m.kind === 'model' && !m.id.startsWith('local-')
       if (derived && localModelSinceReply) continue
       if (m.kind === 'model' && m.id.startsWith('local-')) localModelSinceReply = true

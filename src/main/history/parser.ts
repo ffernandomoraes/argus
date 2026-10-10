@@ -3,7 +3,7 @@ import { diffFromResult } from '../diffs'
 import { describeTool } from '../toolLabels'
 import { arr, atOf, contentOf, idOf, obj, str, type Line } from '../transcripts/line'
 import { marksOf, promptText, resultText } from './content'
-import { commandEvent, commandMessage, commandOutput, compactEvent, modelName } from './events'
+import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEvent, modelName } from './events'
 
 const RESULT_MAX = 2000
 // O relatório de um subagente é o que ele entregou: cabe bem mais.
@@ -37,7 +37,7 @@ export class HistoryParser {
   }
 
   feed(l: Line): void {
-    const marker = compactEvent(l) ?? commandEvent(l)
+    const marker = compactEvent(l) ?? interruptEvent(l) ?? commandEvent(l)
     if (marker) {
       if (marker.kind === 'model') this.lastModelEvent = marker.text
       return this.push(marker)

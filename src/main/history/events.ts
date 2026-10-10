@@ -25,6 +25,16 @@ export function compactEvent(l: Line): EventMessage | null {
   return { id: idOf(l), role: 'event', kind: 'compact', text: how + before, at: atOf(l) }
 }
 
+// Parada pelo botão: o Claude Code grava "[Request interrupted by user]" (ou "... for tool use")
+// como mensagem sua, em texto ou numa parte de texto.
+export function interruptEvent(l: Line): EventMessage | null {
+  if (l.type !== 'user') return null
+  const content = contentOf(l)
+  const parts = typeof content === 'string' ? [content] : (Array.isArray(content) ? content : []).map((c) => obj(c)?.text)
+  if (!parts.some((t) => typeof t === 'string' && /^\[Request interrupted by user[^\]]*\]$/.test(t.trim()))) return null
+  return { id: idOf(l), role: 'event', kind: 'interrupted', text: 'Você parou o Claude aqui', at: atOf(l) }
+}
+
 // "/rename teste": o Claude Code grava o comando e os argumentos em marcadores próprios.
 export function commandMessage(l: Line): Message | null {
   const content = contentOf(l)

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Ellipsis, type LucideIcon } from 'lucide-react'
 import { Presence } from '../../motion'
+import { MenuArrow } from '../../ui/MenuArrow'
 import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles'
 import { useEscape } from '../../useEscape'
 import { useOutsideClick } from '../../useOutsideClick'
@@ -23,7 +24,8 @@ export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
       <Presence kind="menu">
         {open && (
           // Clique na borda do menu não arrasta o drawer (o cabeçalho é a alça).
-          <div onPointerDown={(e) => e.stopPropagation()} className={`absolute right-0 top-full z-50 mt-1 w-52 ${MENU_PANEL}`}>
+          <div onPointerDown={(e) => e.stopPropagation()} className={`absolute right-0 top-full z-50 mt-2.5 w-52 ${MENU_PANEL}`}>
+            <MenuArrow side="top" align="end" />
             {items.map(({ label, icon: Icon, onClick }) => (
               <button
                 key={label}

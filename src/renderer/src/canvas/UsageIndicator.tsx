@@ -12,6 +12,7 @@ import { useUsages } from './bars/useUsages'
 
 // Limites do Claude na barra de título; o painel abre para baixo. Com mais de uma conta, o botão
 // mostra a sessão de cada uma, com o nome, e o painel traz sessão e semanal de todas.
+// O contêiner ocupa a altura da barra: o painel abre abaixo dela, não sobre a borda.
 // O aberto fica com a TitleBar: enquanto o painel está à vista, ela sobe acima dos drawers.
 export const UsageIndicator = memo(function UsageIndicator({
   open,
@@ -35,7 +36,7 @@ export const UsageIndicator = memo(function UsageIndicator({
   const named = shown.length > 1
 
   return (
-    <div ref={ref} className="no-drag relative">
+    <div ref={ref} className="no-drag relative flex items-center self-stretch">
       <button
         aria-label="Ver limites do Claude"
         aria-expanded={open}

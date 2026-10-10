@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
 import { FolderPlus, MessageCirclePlus, Plus, SquareDashed, StickyNote } from 'lucide-react'
 import { Presence } from '../../motion'
+import { MenuArrow } from '../../ui/MenuArrow'
 import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles'
 import { NavButton } from '../../ui/NavButton'
 import { useEscape } from '../../useEscape'
@@ -38,7 +39,8 @@ export function NewBlockMenu() {
       </NavButton>
       <Presence kind="menu">
         {open && (
-          <div className={`absolute left-full top-0 ml-2 w-44 ${MENU_PANEL}`}>
+          <div className={`absolute left-full top-0 ml-2.5 w-44 ${MENU_PANEL}`}>
+            <MenuArrow side="left" at={16} />
             {items.map(({ label, icon: Icon, shortcut, onClick }) => (
               <button
                 key={label}

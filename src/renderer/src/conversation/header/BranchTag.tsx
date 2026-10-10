@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { UncommittedFile } from '../../../../shared/sessions'
 import { BranchLabel } from '../../canvas/BranchLabel'
 import { Presence } from '../../motion'
+import { MenuArrow } from '../../ui/MenuArrow'
 import { lastSep, relativeTo, tildify, untildify } from '../../platform'
 import { useEscape } from '../../useEscape'
 import { useOutsideClick } from '../../useOutsideClick'
@@ -59,8 +60,9 @@ export function BranchTag({
           // pointerdown não sobe: o cabeçalho arrasta o painel.
           <div
             onPointerDown={(e) => e.stopPropagation()}
-            className="absolute left-0 top-full z-50 mt-1 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
+            className="absolute left-0 top-full z-50 mt-2.5 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
           >
+            <MenuArrow side="top" />
             <div className="shrink-0 border-b border-line px-3 py-2 text-[12px] text-faint">{label}</div>
             <ul className="min-h-0 overflow-y-auto p-1">
               {files.map((f) => {

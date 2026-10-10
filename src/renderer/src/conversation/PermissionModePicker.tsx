@@ -6,6 +6,7 @@ import { useClaudeInfo } from './useModels'
 import { useEscape } from '../useEscape'
 import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
+import { MenuArrow } from '../ui/MenuArrow'
 import { MENU_HOVER } from '../ui/menuStyles'
 
 // A lista dos modos mora em permissionModes.ts; sai daqui também, como antes, para as Configurações.
@@ -40,7 +41,8 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
 
       <Presence kind="menu">
         {open && (
-          <div className={`absolute bottom-full right-0 z-10 mb-2 w-80 whitespace-normal ${POPOVER}`}>
+          <div className={`absolute bottom-full right-0 z-10 mb-2.5 w-80 whitespace-normal ${POPOVER}`}>
+            <MenuArrow side="bottom" align="end" />
             <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modo</div>
             {MODES.map((m) => {
               const ModeIcon = m.icon

@@ -10,6 +10,7 @@ import { POPOVER } from './popover'
 import { useEscape } from '../useEscape'
 import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
+import { MenuArrow } from '../ui/MenuArrow'
 
 // Níveis de esforço e famílias de modelo moram em modelOptions.ts; saem daqui também, como antes,
 // para as Configurações.
@@ -65,7 +66,8 @@ export function ModelEffortPicker({
 
       <Presence kind="menu">
         {open && (
-          <div className={`absolute bottom-full left-0 z-10 mb-2 w-72 whitespace-normal ${POPOVER}`}>
+          <div className={`absolute bottom-full left-0 z-10 mb-2.5 w-72 whitespace-normal ${POPOVER}`}>
+            <MenuArrow side="bottom" />
             <ModelList models={models} value={settings.model} onChange={(model) => onChange({ model })} />
             {allowed.length > 0 && (
               <>

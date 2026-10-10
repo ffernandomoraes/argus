@@ -1,13 +1,14 @@
 // Conversas recuadas dentro da caixa da pasta, cada uma com uma perninha que desce de baixo do
 // ícone da pasta e entra pela esquerda dela. As posições saem das alturas fixas das linhas (sem
 // medir o layout): cabeçalho de 56px com o ícone de 28px no meio, conversa de 32px
-// (ConversationRow) e subagente de 24px (AgentRow), com ROW_GAP entre elas.
+// (ConversationRow), subagente de 24px (AgentRow) e tarefas em segundo plano de 24px (TasksRow),
+// com ROW_GAP entre elas.
 export const INDENT = 34
 // Meio do ícone de pasta: 12px de respiro do cabeçalho + metade do quadradinho de 28px.
 const TRUNK = 26
 // Base do ícone, contada do topo da lista: 56 / 2 + 14 = 42, e a lista começa em 56.
 const TRUNK_TOP = -14
-export const ROW_HEIGHT = { conversation: 32, agent: 24 }
+export const ROW_HEIGHT = { conversation: 32, agent: 24, tasks: 24 }
 // Espaço entre as linhas (o gap-1 da lista), para o fundo de cada conversa aparecer separado.
 export const ROW_GAP = 4
 const RADIUS = 6

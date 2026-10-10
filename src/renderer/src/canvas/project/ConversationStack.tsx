@@ -5,6 +5,7 @@ import type { ConversationSummary } from '../types'
 import { useActiveConversationIn, useActiveDesignIn } from '../useCanvasView'
 import { AgentRow } from './AgentRow'
 import { ConversationRow } from './ConversationRow'
+import { TasksRow } from './TasksRow'
 import { INDENT, legPath } from './geometry'
 import { useProjectRows } from './useProjectRows'
 
@@ -69,6 +70,15 @@ export const ConversationStack = memo(function ConversationStack({
           <AgentRow
             key={`agent-${row.agent.id}`}
             agent={row.agent}
+            conversation={row.conversation}
+            first={row.first}
+            color={flowColor}
+            onOpen={open}
+          />
+        ) : row.kind === 'tasks' ? (
+          <TasksRow
+            key={`tasks-${row.conversation.id}`}
+            count={row.count}
             conversation={row.conversation}
             first={row.first}
             color={flowColor}

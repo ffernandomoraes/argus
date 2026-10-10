@@ -47,7 +47,7 @@ export class ChatSession {
   closeWhenIdle = false
   // Fechada na tela com o remote control ligado: encerrar quando ele cair ou for desligado.
   keepForRemote = false
-  state: ChatState = { status: 'idle', partial: '', permissions: [], revision: 0, turnTokens: 0, agents: [] }
+  state: ChatState = { status: 'idle', partial: '', permissions: [], revision: 0, turnTokens: 0, agents: [], backgroundTasks: 0 }
   // Parada pedida por você: o fim do pedido não é erro.
   private interrupted = false
   // Parada com mensagem sua que continua na fila do Claude: o fim do pedido parado emenda no seguinte.
@@ -148,10 +148,12 @@ export class ChatSession {
     }
   }
 
-  // Trabalhando: respondendo, com subagente em segundo plano ainda rodando, ou com mensagem sua
-  // esperando na fila do Claude.
+  // Trabalhando: respondendo, com subagente ou comando em segundo plano ainda rodando, ou com
+  // mensagem sua esperando na fila do Claude.
   get busy(): boolean {
-    return this.state.status !== 'idle' || this.state.agents.length > 0 || this.queued.size > 0
+    return (
+      this.state.status !== 'idle' || this.state.agents.length > 0 || this.state.backgroundTasks > 0 || this.queued.size > 0
+    )
   }
 
   get remoteOn(): boolean {
@@ -247,6 +249,7 @@ export class ChatSession {
         partial: '',
         permissions: [],
         agents: [],
+        backgroundTasks: 0,
         activity: undefined,
         revision: this.state.revision + 1
       })

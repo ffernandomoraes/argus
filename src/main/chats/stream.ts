@@ -81,6 +81,11 @@ function readSystem(m: Line, chat: ChatState, reader: Reader, now: number): Step
   if (typeof m.subtype === 'string' && m.subtype.startsWith('task_')) {
     return agentsStep(reader, taskChange(chat.agents, m as TaskMessage, now))
   }
+  if (m.subtype === 'background_tasks_changed') {
+    // Lista completa a cada mudança. Subagentes já vêm pelos task_*; ambientes não são trabalho.
+    const count = (m.tasks as Line[]).filter((t) => !t.ambient && t.task_type !== 'local_agent').length
+    return count === chat.backgroundTasks ? { reader } : { reader, patch: { backgroundTasks: count }, urgent: true }
+  }
   // A compactação é gravada no arquivo da sessão: o chat relê e mostra o divisor.
   if (m.subtype === 'compact_boundary') return { reader, patch: { revision: chat.revision + 1 }, urgent: true }
   return { reader }
@@ -180,7 +185,7 @@ function readResult(m: Result, chat: ChatState, reader: Reader, ctx: ReadContext
       status: ctx.waiting ? 'needs-you' : ctx.resumes ? 'running' : 'idle',
       turnStartedAt: undefined,
       activity: undefined,
-      partial: '',
+      // A prévia fica: a tela tira quando o histórico relido trouxer o mesmo texto (ver ChatSession).
       revision: chat.revision + 1,
       error: failed ? ('result' in m && m.result ? m.result : 'O Claude parou com erro.') : undefined
     }

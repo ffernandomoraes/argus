@@ -14,10 +14,12 @@ export function visibleConversations(conversations: ConversationSummary[], colla
   return (collapsed ? conversations.filter(isActive) : conversations).slice(0, MAX_CONVERSATIONS)
 }
 
-// Conversas na ordem da lista, cada uma seguida dos subagentes que ela tem rodando agora.
+// Conversas na ordem da lista, cada uma seguida dos subagentes que ela tem rodando agora e, por
+// último, de uma linha com quantas tarefas ela deixou em segundo plano.
 export type Row =
   | { kind: 'conversation'; conversation: ConversationSummary }
   | { kind: 'agent'; agent: RunningAgent; conversation: ConversationSummary; first: boolean }
+  | { kind: 'tasks'; count: number; conversation: ConversationSummary; first: boolean }
 
 // Chave dos subagentes de uma conversa da lista. Design: os agentes são da conversa do protótipo
 // dele (a sessão), não do item da lista; sem sessão ainda, nenhuma ('').
@@ -26,7 +28,8 @@ export const agentsKeyOf = (conversation: ConversationSummary): string =>
 
 export function withAgents(
   conversations: ConversationSummary[],
-  agentsOf: (key: string) => RunningAgent[]
+  agentsOf: (key: string) => RunningAgent[],
+  tasksOf: (key: string) => number
 ): Row[] {
   const rows: Row[] = []
   for (const conversation of conversations) {
@@ -35,6 +38,8 @@ export function withAgents(
     const agents = key ? agentsOf(key) : []
     // O primeiro subagente da conversa puxa a linha do ícone dela; os outros, do anterior.
     agents.forEach((agent, i) => rows.push({ kind: 'agent', agent, conversation, first: i === 0 }))
+    const count = key ? tasksOf(key) : 0
+    if (count) rows.push({ kind: 'tasks', count, conversation, first: agents.length === 0 })
   }
   return rows
 }

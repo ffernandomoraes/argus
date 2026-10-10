@@ -40,7 +40,16 @@ export function useConversationHistory(
     reader.current?.sync(revision, updatedAt ? Date.parse(updatedAt) || 0 : 0)
   }, [key, revision, updatedAt])
 
+  // Conversa nova que acabou de ganhar a sessão aqui (no primeiro envio): não há histórico a
+  // esperar, a mensagem já está na tela. O "Carregando conversa…" entrava no meio e o drawer piscava.
+  const [seen, setSeen] = useState({ key, sessionId, born: false })
+  let born = seen.born
+  if (seen.key !== key) {
+    born = !seen.sessionId && !!sessionId && seen.key === `${projectPath}|undefined`
+    setSeen({ key, sessionId, born })
+  }
+
   if (!sessionId) return { messages: NONE, loading: false }
   // Enquanto a outra conversa não chega, não mostra o histórico da anterior.
-  return state?.key === key ? { messages: state.messages, loading: false } : { messages: NONE, loading: true }
+  return state?.key === key ? { messages: state.messages, loading: false } : { messages: NONE, loading: !born }
 }

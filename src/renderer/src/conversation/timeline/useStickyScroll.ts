@@ -82,10 +82,19 @@ export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, c
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight
     // No fim (também quando o conteúdo encolhe e puxa a rolagem): segue. Qualquer subida solta na
     // hora; antes, só passar de 40px do fim soltava, e cada atualização puxava de volta.
-    if (distance <= 1) following.current = true
-    else if (delta < 0) following.current = false
-    else if (distance < 40) following.current = true
-    trackDirection(delta)
+    // Parar no fim não é rolar para cima, mesmo que a rolagem tenha voltado: ao enviar, a caixa de
+    // escrever encolhe e a área da conversa cresce, o navegador puxa a rolagem uns pixels para
+    // trás, e o prompt preso aparecia e sumia.
+    if (distance <= 1) {
+      following.current = true
+      travel.current.distance = 0
+      clearTimeout(hideTimer.current)
+      setScrollingUp(false)
+    } else {
+      if (delta < 0) following.current = false
+      else if (distance < 40) following.current = true
+      trackDirection(delta)
+    }
     findPinned()
   }
 

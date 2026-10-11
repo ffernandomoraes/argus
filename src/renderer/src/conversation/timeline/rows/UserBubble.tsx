@@ -26,16 +26,8 @@ export const UserBubble = memo(function UserBubble({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      {(at || queued) && (
-        <span className="self-end px-1 text-[13px] text-faint">
-          {queued && 'enviada durante a resposta'}
-          {queued && at && ' - '}
-          {at && formatClock(at)}
-        </span>
-      )}
-      {/* Copiar fica dentro do balão, numa coluna à direita, no meio da altura do texto. */}
-      <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-2 py-2 pl-3 pr-2 text-[15px]">
-        <div className="min-w-0 flex-1">
+      <div className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-[15px]">
+        <div className="min-w-0">
           {images > 0 && (
             <div className={`flex flex-col gap-1.5 ${text ? 'mb-1.5' : ''}`}>
               {imageView && <ImageThumbs count={images} load={imageView.load} onOpen={imageView.open} />}
@@ -62,8 +54,20 @@ export const UserBubble = memo(function UserBubble({
             </div>
           )}
         </div>
-        {text && <CopyButton text={text} label="Copiar prompt" className="shrink-0" />}
       </div>
+      {/* Hora e copiar ficam embaixo do balão, à direita, para o texto usar a largura toda. */}
+      {(at || queued || text) && (
+        <div className="flex items-center justify-end gap-1 px-1 text-[13px] text-faint">
+          {(at || queued) && (
+            <span>
+              {queued && 'enviada durante a resposta'}
+              {queued && at && ' - '}
+              {at && formatClock(at)}
+            </span>
+          )}
+          {text && <CopyButton text={text} label="Copiar prompt" />}
+        </div>
+      )}
     </div>
   )
 })

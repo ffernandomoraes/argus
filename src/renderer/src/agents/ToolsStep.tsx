@@ -49,7 +49,7 @@ export function ToolsStep({
               <label key={t.name} className="flex items-center gap-2 text-xs text-text">
                 <input type="checkbox" checked={draft.tools.includes(t.name)} onChange={() => onToggleTool(t.name)} />
                 {t.label}
-                <span className="font-mono text-[11px] text-faint">{t.name}</span>
+                <span className="whitespace-nowrap font-mono text-[11px] text-faint">{t.name}</span>
               </label>
             ))}
           </div>

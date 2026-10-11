@@ -11,7 +11,7 @@ function Tip({ children }: { children: ReactNode }) {
 }
 
 const Code = ({ children }: { children: ReactNode }) => (
-  <code className="rounded bg-bg px-1 py-0.5 font-mono text-[12px] text-text">{children}</code>
+  <code className="whitespace-nowrap rounded bg-bg px-1 py-0.5 font-mono text-[12px] text-text">{children}</code>
 )
 
 // As etapas das boas-vindas: o que o Argus faz e, por último, a configuração do Claude Code.

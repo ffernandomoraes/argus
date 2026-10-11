@@ -15,7 +15,11 @@ export function SlashMenu({
   onSelect: (command: SlashCommand) => void
 }) {
   return (
-    <div className={`absolute bottom-full left-0 right-0 z-10 mb-2 ${POPOVER}`}>
+    // Grade com subgrid: a coluna do nome tem a largura do maior nome, sem quebrar
+    // "/remote-control" no hífen, e as descrições ficam alinhadas.
+    <div
+      className={`absolute bottom-full left-0 right-0 z-10 mb-2 grid grid-cols-[max-content_minmax(0,1fr)] ${POPOVER}`}
+    >
       {items.map((c, i) => (
         <button
           key={c.name}
@@ -25,9 +29,9 @@ export function SlashMenu({
             onSelect(c)
           }}
           onMouseEnter={() => onHover(i)}
-          className={`flex w-full items-baseline gap-3 rounded-md px-2 py-1.5 text-left ${i === active ? MENU_ACTIVE : ''}`}
+          className={`col-span-2 grid grid-cols-subgrid items-baseline gap-x-3 rounded-md px-2 py-1.5 text-left ${i === active ? MENU_ACTIVE : ''}`}
         >
-          <span className="w-28 shrink-0 font-mono text-xs text-text">/{c.name}</span>
+          <span className="whitespace-nowrap font-mono text-xs text-text">/{c.name}</span>
           <span className="truncate text-[12px] text-faint">{c.description}</span>
         </button>
       ))}

@@ -51,8 +51,9 @@ export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl;
           <ConfirmDialog
             request={{
               title: 'Desligar o remote control?',
+              // \u2011: hífen que não quebra linha, para "/remote-control" não partir no meio.
               description:
-                'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote-control liga de novo.',
+                'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote\u2011control liga de novo.',
               confirmLabel: 'Desligar',
               onConfirm: onTurnOff
             }}

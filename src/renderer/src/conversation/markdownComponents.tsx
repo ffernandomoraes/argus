@@ -28,12 +28,17 @@ export const MARKDOWN_COMPONENTS: Components = {
   h4: ({ children }) => <h4 className="mb-1 mt-3 text-[15px] font-medium first:mt-0">{children}</h4>,
   blockquote: ({ children }) => <blockquote className="my-2 border-l-2 border-line-strong pl-3 text-muted">{children}</blockquote>,
   hr: () => <hr className="my-3 border-line" />,
-  // Código em linha; o de bloco é estilizado pelo <pre> abaixo.
+  // Código em linha; o de bloco é estilizado pelo <pre> abaixo. Trecho curto sem espaço (comando,
+  // nome de arquivo) não quebra no hífen: "/remote-control" fica inteiro. Caminho longo segue quebrando.
   code: ({ children, className }) =>
     className ? (
       <code className={className}>{children}</code>
     ) : (
-      <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[13px]">{children}</code>
+      <code
+        className={`rounded bg-surface-2 px-1 py-0.5 font-mono text-[13px] ${typeof children === 'string' && children.length <= 40 && !/\s/.test(children) ? 'whitespace-nowrap' : ''}`}
+      >
+        {children}
+      </code>
     ),
   pre: ({ children }) => (
     <pre className="my-2 overflow-x-auto rounded-md border border-line bg-bg p-3 font-mono text-[13px] leading-relaxed [&_code]:bg-transparent [&_code]:p-0">

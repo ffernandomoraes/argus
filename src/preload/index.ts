@@ -156,6 +156,7 @@ const api: Api = {
   files: {
     list: (root, rel) => invoke('files:list', root, rel),
     read: (root, rel) => invoke('files:read', root, rel),
+    image: (path) => invoke('files:image', path),
     diff: (root, rel) => invoke('files:diff', root, rel),
     write: (root, rel, text, base) => invoke('files:write', root, rel, text, base),
     create: (root, dir, name, isDir) => invoke('files:create', root, dir, name, isDir),

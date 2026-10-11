@@ -2,5 +2,6 @@
 // mandar para a Lixeira e copiar/colar com o Finder ou o Explorador.
 export { listDir } from './tree'
 export { readFile } from './read'
+export { readImage } from './image'
 export { createItem, renameItem, revealItem, trashItem, writeFile } from './ops'
 export { copyToClipboard, pasteFromClipboard } from './clipboard'

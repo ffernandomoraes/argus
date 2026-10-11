@@ -201,6 +201,8 @@ export type Api = {
   files: {
     list: (root: string, rel: string) => Promise<FileEntry[]>
     read: (root: string, rel: string) => Promise<FileContent>
+    // Imagem em qualquer caminho (data URL), para o preview do que o Claude leu; null se não der.
+    image: (path: string) => Promise<string | null>
     // Mudanças do arquivo desde o último commit.
     diff: (root: string, rel: string) => Promise<FileDiff>
     // base: o texto do disco na última leitura ou gravação; com ela, um arquivo mudado por fora

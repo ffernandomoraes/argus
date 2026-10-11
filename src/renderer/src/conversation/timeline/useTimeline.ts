@@ -16,7 +16,7 @@ type Options = LiveOptions & {
 export function useTimeline({ messages, waiting, live, status, clean, viewFor, onAnswer, running, compact, readsImages }: Options) {
   const footers = useMemo(() => turnFooters(messages, running), [messages, running])
   const history = useMemo(
-    () => historyItems(messages, { footers, running, compact, clean, viewFor: readsImages ? viewFor : undefined }),
+    () => historyItems(messages, { footers, running, compact, clean, viewFor: readsImages ? viewFor : undefined, viewFile: viewFor }),
     [messages, footers, running, compact, clean, viewFor, readsImages]
   )
   const tail = useMemo(

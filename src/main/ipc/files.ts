@@ -4,6 +4,7 @@ import {
   listDir,
   pasteFromClipboard,
   readFile,
+  readImage,
   renameItem,
   revealItem,
   trashItem,
@@ -18,6 +19,7 @@ import { handle, on } from './register'
 export function registerFilesIpc(unsaved: UnsavedFiles): void {
   handle('files:list', (_e, root, rel) => listDir(root, rel))
   handle('files:read', (_e, root, rel) => readFile(root, rel))
+  handle('files:image', (_e, path) => readImage(path))
   handle('files:diff', (_e, root, rel) => fileDiff(root, rel))
   handle('files:write', (_e, root, rel, text, base) => writeFile(root, rel, text, base))
   handle('files:create', (_e, root, dir, name, isDir) => createItem(root, dir, name, isDir))

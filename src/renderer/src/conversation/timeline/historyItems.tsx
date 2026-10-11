@@ -1,3 +1,4 @@
+import { imageType } from '../../../../shared/imageFiles'
 import type { TurnFooter } from '../turnInfo'
 import type { Message } from '../types'
 import type { ImageView } from './imageViews'
@@ -20,6 +21,8 @@ export type HistoryOptions = {
   clean: (text: string) => string
   // Imagens de uma mensagem gravada; sem quem as leia, o balão só conta quantas foram.
   viewFor?: (messageId: string) => ImageView
+  // Preview de uma imagem que o Claude leu do disco (ferramenta Ler).
+  viewFile?: (messageId: string, load: () => Promise<string[]>) => ImageView
 }
 
 // Linha do tempo do histórico gravado: suas mensagens em balões; cada passo do Claude (resposta,
@@ -47,7 +50,8 @@ export function historyItems(messages: Message[], o: HistoryOptions): TimelineIt
         // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
         const pending = !m.result && !m.diff && o.running && i === messages.length - 1
         const dot = m.error ? 'bg-red-400' : pending ? 'bg-running animate-pulse' : 'bg-emerald-400'
-        const row = m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} compact={o.compact} />
+        const image = m.name === 'Read' && m.detail && o.viewFile ? fileView(m.id, m.detail, o.viewFile) : undefined
+        const row = m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} compact={o.compact} image={image} />
         return stepItem(m.id, dot, row, DOT_ROW)
       }
       default: {
@@ -58,3 +62,6 @@ export function historyItems(messages: Message[], o: HistoryOptions): TimelineIt
     }
   })
 }
+
+const fileView = (id: string, path: string, viewFile: NonNullable<HistoryOptions['viewFile']>) =>
+  imageType(path) ? viewFile(id, () => window.api.files.image(path).then((url) => (url ? [url] : []))) : undefined

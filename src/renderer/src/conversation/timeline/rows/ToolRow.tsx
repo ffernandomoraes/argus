@@ -2,12 +2,22 @@ import { memo } from 'react'
 import type { Message } from '../../types'
 import { DiffView } from '../../DiffView'
 import { diffStats } from '../../diffLines'
+import type { ImageView } from '../imageViews'
 import { LazyDetails } from './LazyDetails'
 
 // Ação do Claude (ler, editar, buscar...): o nome e para que serve numa linha; o clique mostra o
 // detalhe, a edição ou o resultado. Edição já vem aberta. No chat reduzido (protótipo do modo
-// design), a edição fica só na linha, com o +/-: o clique abre o detalhe.
-export const ToolRow = memo(function ToolRow({ message, compact }: { message: Extract<Message, { role: 'tool' }>; compact?: boolean }) {
+// design), a edição fica só na linha, com o +/-: o clique abre o detalhe. Imagem lida (image): o
+// clique abre o preview dela, e o caminho fica na dica.
+export const ToolRow = memo(function ToolRow({
+  message,
+  compact,
+  image
+}: {
+  message: Extract<Message, { role: 'tool' }>
+  compact?: boolean
+  image?: ImageView
+}) {
   const stats = message.diff && diffStats(message.diff)
   // Sem caixa, como a resposta: a ação não chama mais atenção que o texto. Passar o mouse só clareia a linha.
   return (
@@ -15,11 +25,23 @@ export const ToolRow = memo(function ToolRow({ message, compact }: { message: Ex
       className="group text-[13px]"
       open={!compact && !!message.diff}
       summary={
-        <summary className="flex cursor-pointer list-none items-center gap-2 py-1 leading-5 text-muted hover:text-text">
+        <summary
+          className="flex cursor-pointer list-none items-center gap-2 py-1 leading-5 text-muted hover:text-text"
+          title={image ? message.detail : undefined}
+          onClick={
+            image &&
+            ((e) => {
+              e.preventDefault()
+              image.open(0)
+            })
+          }
+        >
           <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`} title={message.name}>
             {message.label}
           </span>
-          <span className="truncate text-muted">{message.input}</span>
+          <span className={`truncate ${image ? 'underline decoration-line-strong underline-offset-2' : 'text-muted'}`}>
+            {message.input}
+          </span>
           {stats && (
             <span className="ml-auto shrink-0 font-mono">
               <span className="text-emerald-400">+{stats.added}</span>{' '}

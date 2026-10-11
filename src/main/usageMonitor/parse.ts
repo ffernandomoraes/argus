@@ -4,7 +4,7 @@ import type { Usage, UsageWindow } from '../../shared/usage'
 // Respostas do `claude` (stream-json) aos pedidos de controle do monitor. Lógica pura: o que vale
 // de cada linha.
 
-type RawWindow = { utilization?: number; resets_at?: string } | null | undefined
+type RawWindow = { utilization?: number | null; resets_at?: string | null } | null | undefined
 
 type RawModel = { value: string; displayName: string; description?: string; supportedEffortLevels?: string[] }
 
@@ -21,9 +21,10 @@ function toModels(raw: RawModel[]): ClaudeModel[] {
   })
 }
 
+// Sem mensagem na janela (conta recém-conectada), ela vem sem hora de recomeçar: vale como 0%.
 function toWindow(raw: RawWindow): UsageWindow | null {
-  if (!raw || typeof raw.utilization !== 'number' || !raw.resets_at) return null
-  return { percent: raw.utilization, resetsAt: raw.resets_at }
+  if (!raw) return null
+  return { percent: typeof raw.utilization === 'number' ? raw.utilization : 0, resetsAt: raw.resets_at ?? null }
 }
 
 // info: resposta ao "init" (modelos, modo de permissão, conta). usage: resposta a um "usage-N"
@@ -56,5 +57,7 @@ export function parseControlReply(line: string, now: number): ControlReply | nul
 
   const limits = res.response?.rate_limits
   if (!limits) return {}
-  return { usage: { session: toWindow(limits.five_hour), weekly: toWindow(limits.seven_day), updatedAt: now } }
+  // Sessão ausente com o resto presente: a janela de 5 horas ainda não começou.
+  const session = toWindow(limits.five_hour) ?? { percent: 0, resetsAt: null }
+  return { usage: { session, weekly: toWindow(limits.seven_day), updatedAt: now } }
 }

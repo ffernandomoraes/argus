@@ -24,7 +24,9 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
       </div>
       <UsageBar percent={percent} className="mt-1.5 h-1.5 w-full" />
       <div className="mt-1.5 text-[12px] text-faint">
-        Reseta em {timeLeft(window.resetsAt, now)} - {resetLabel(window.resetsAt, now)}
+        {window.resetsAt
+          ? `Reseta em ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`
+          : 'Começa a contar na próxima mensagem'}
       </div>
     </div>
   )

@@ -48,7 +48,11 @@ export type Step = {
   turnStarted?: boolean
   // O pedido terminou (result).
   turnEnded?: boolean
+  // Estado que o próprio Claude Code informa (session_state_changed).
+  sessionState?: SessionState
 }
+
+export type SessionState = 'idle' | 'running' | 'requires_action'
 
 export function readMessage(m: SDKMessage, chat: ChatState, reader: Reader, ctx: ReadContext): Step {
   if (m.type === 'system') return readSystem(m as Line, chat, reader, ctx.now)
@@ -70,6 +74,8 @@ const agentsStep = (reader: Reader, change: AgentsChange): Step =>
 
 function readSystem(m: Line, chat: ChatState, reader: Reader, now: number): Step {
   if (m.subtype === 'init') return { reader, sessionId: m.session_id, patch: { sessionId: m.session_id }, urgent: true }
+  // Vai como estado novo para a tela: parado de vez, a conversa pode ter ficado livre para fechar.
+  if (m.subtype === 'session_state_changed') return { reader, sessionState: m.state, patch: {}, urgent: true }
   if (m.subtype === 'bridge_state') {
     // Estado da conexão do remote control (ready, connected, failed...). Fica fora dos tipos do
     // SDK, como o pedido (ver remote.ts).

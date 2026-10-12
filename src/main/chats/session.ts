@@ -12,7 +12,7 @@ import { PendingPermissions } from './permissions'
 import { QueuedSends } from './queuedSends'
 import { setRemoteControl } from './remote'
 import { flagChanges, mergeSettings, openingFlags, toPermissionMode } from './settings'
-import { newReader, readMessage, type Reader } from './stream'
+import { newReader, readMessage, type Reader, type SessionState } from './stream'
 
 // O que a sessão avisa ao registro (Chats).
 export type SessionEvents = {
@@ -38,6 +38,15 @@ const PARTIAL_HOLD_MS = 3_000
 // Sem pedido em andamento.
 const STOPPED = { status: 'idle', turnStartedAt: undefined } as const
 
+// Tarefa em segundo plano que terminou: o Claude Code entrega o aviso num pedido novo, logo em
+// seguida. Fechar a conversa nesse intervalo matava o pedido, e a resposta só vinha na sua próxima
+// mensagem. Quem diz que o pedido começou é o session_state "running", que chega logo depois do fim
+// da tarefa; o prazo é só a rede de segurança para um aviso que não vire pedido (ou CLI antigo).
+// Qualquer notícia do Claude nesse meio-tempo recomeça a conta.
+const WAKE_GRACE_MS = 60_000
+
+const backgroundWork = (s: ChatState): number => s.agents.filter((a) => a.background).length + s.backgroundTasks
+
 export class ChatSession {
   readonly keys = new Set<string>()
   readonly cwd: string
@@ -59,6 +68,11 @@ export class ChatSession {
   private reader: Reader = newReader()
   private flushTimer: NodeJS.Timeout | null = null
   private partialTimer: NodeJS.Timeout | undefined
+  // Esperando o pedido que entrega o aviso da tarefa em segundo plano (ver WAKE_GRACE_MS).
+  private wakeTimer: NodeJS.Timeout | undefined
+  // O que o próprio Claude Code diz (session_state): só "idle" é parado de verdade, já sem pedido
+  // nem aviso de tarefa por entregar.
+  private claudeState: SessionState = 'idle'
   private permissions = new PendingPermissions(
     (request) => this.update({ status: 'needs-you', permissions: [...this.state.permissions, request] }),
     (id) => this.dropPermission(id)
@@ -75,10 +89,13 @@ export class ChatSession {
     this.account = resolveAccount(req.account)
     this.settings = req.settings
     const s = req.settings
+    const options = claudeCodeOptions(req.cwd, this.account)
     this.q = query({
       prompt: this.inbox,
       options: {
-        ...claudeCodeOptions(req.cwd, this.account),
+        ...options,
+        // Sem isso o Claude Code não manda o session_state (ver claudeState).
+        env: { ...options.env, CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS: '1' },
         includePartialMessages: true,
         resume: req.sessionId,
         model: s.model || undefined,
@@ -148,11 +165,16 @@ export class ChatSession {
     }
   }
 
-  // Trabalhando: respondendo, com subagente ou comando em segundo plano ainda rodando, ou com
-  // mensagem sua esperando na fila do Claude.
+  // Trabalhando: respondendo, com subagente ou comando em segundo plano ainda rodando (ou que acabou
+  // de terminar e o aviso ainda vai chegar), ou com mensagem sua esperando na fila do Claude.
   get busy(): boolean {
     return (
-      this.state.status !== 'idle' || this.state.agents.length > 0 || this.state.backgroundTasks > 0 || this.queued.size > 0
+      this.state.status !== 'idle' ||
+      this.state.agents.length > 0 ||
+      this.state.backgroundTasks > 0 ||
+      this.queued.size > 0 ||
+      this.claudeState !== 'idle' ||
+      !!this.wakeTimer
     )
   }
 
@@ -210,6 +232,7 @@ export class ChatSession {
 
   close(): void {
     clearTimeout(this.partialTimer)
+    this.stopWaitingWake()
     this.permissions.denyAll('Conversa fechada.')
     this.queued.clear()
     this.inbox.close()
@@ -220,6 +243,21 @@ export class ChatSession {
   // esperar. Em todo caso o balão sai, e a conversa pode ter ficado livre para fechar.
   private queueDrained(): void {
     this.update(this.state.status === 'running' && !this.state.turnStartedAt ? STOPPED : {})
+  }
+
+  // Segura a sessão até o pedido do aviso começar. Sem pedido nesse tempo, nada mais a esperar, e a
+  // conversa pode ter ficado livre para fechar.
+  private expectWake(): void {
+    clearTimeout(this.wakeTimer)
+    this.wakeTimer = setTimeout(() => {
+      this.wakeTimer = undefined
+      this.update({})
+    }, WAKE_GRACE_MS)
+  }
+
+  private stopWaitingWake(): void {
+    clearTimeout(this.wakeTimer)
+    this.wakeTimer = undefined
   }
 
   private dropPartialSoon(): void {
@@ -244,6 +282,8 @@ export class ChatSession {
       this.update({ error: friendlyError((err as Error).message) })
     } finally {
       this.queued.clear()
+      this.stopWaitingWake()
+      this.claudeState = 'idle'
       this.update({
         status: 'idle',
         partial: '',
@@ -269,7 +309,18 @@ export class ChatSession {
     this.reader = step.reader
     if (step.sessionId) this.events.identified(this, step.sessionId)
     step.contextWindows?.forEach(([model, tokens]) => learnContextWindow(model, tokens))
-    if (step.turnStarted) this.queued.started()
+    // Antes do update: com a tarefa saindo da lista a sessão já pareceria livre e fecharia ali.
+    const finished = !!step.patch && backgroundWork({ ...this.state, ...step.patch }) < backgroundWork(this.state)
+    if (finished || this.wakeTimer) this.expectWake()
+    if (step.sessionState) {
+      this.claudeState = step.sessionState
+      // Pedido do aviso começou: daqui quem segura a sessão é o próprio estado.
+      if (step.sessionState !== 'idle') this.stopWaitingWake()
+    }
+    if (step.turnStarted) {
+      this.queued.started()
+      this.stopWaitingWake()
+    }
     if (step.turnEnded) {
       this.interrupted = false
       this.resumes = false

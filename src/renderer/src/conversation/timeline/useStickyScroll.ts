@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type RefObject, type UIEvent, type WheelEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject, type KeyboardEvent, type PointerEvent, type UIEvent, type WheelEvent } from 'react'
 import { scrollWithin } from '../scrollWithin'
+
+const UP_KEYS = new Set(['ArrowUp', 'PageUp', 'Home'])
 
 // Rolagem da conversa: segue o fim quando chega coisa nova (a menos que a pessoa tenha subido para
 // ler) e acha o prompt do trecho na tela, que fica preso no topo enquanto ela rola para cima.
@@ -85,8 +87,11 @@ export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, c
     // Parar no fim não é rolar para cima, mesmo que a rolagem tenha voltado: ao enviar, a caixa de
     // escrever encolhe e a área da conversa cresce, o navegador puxa a rolagem uns pixels para
     // trás, e o prompt preso aparecia e sumia.
+    // Só volta a seguir quem desceu até o fim. Rolagem que voltou porque o conteúdo encolheu
+    // (a resposta terminou: a linha de "trabalhando" sai e a prévia vira a mensagem gravada) não
+    // é a pessoa chegando ao fim: quem tinha subido para ler continua onde estava.
     if (distance <= 1) {
-      following.current = true
+      if (delta >= 0) following.current = true
       travel.current.distance = 0
       clearTimeout(hideTimer.current)
       setScrollingUp(false)
@@ -104,10 +109,20 @@ export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, c
     if (e.deltaY < 0 && e.currentTarget.scrollTop > 0) following.current = false
   }
 
+  // Subir pelo teclado ou arrastando a barra de rolagem também solta na hora: o evento de rolagem
+  // chega um quadro depois, e nesse meio a resposta crescendo puxava de volta para o fim.
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (UP_KEYS.has(e.key)) following.current = false
+  }
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    if (e.nativeEvent.offsetX >= el.clientWidth && el.scrollTop > 0) following.current = false
+  }
+
   const scrollToPrompt = () => {
     const el = scrollerRef.current?.querySelector(`[data-prompt="${CSS.escape(pinnedKey ?? '')}"]`)
     if (el) scrollWithin(el, 'start')
   }
 
-  return { onScroll, onWheel, toEnd, follow, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
+  return { onScroll, onWheel, onKeyDown, onPointerDown, toEnd, follow, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
 }

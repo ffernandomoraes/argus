@@ -102,7 +102,7 @@ export function Select({
       </select>
       {/* A setinha num quadradinho na cor de destaque, como o menu suspenso do macOS. */}
       <span className="pointer-events-none absolute right-1 flex size-4 items-center justify-center rounded bg-accent text-white">
-        <ChevronDown size={11} strokeWidth={2.5} />
+        <ChevronDown size={11} />
       </span>
     </label>
   )

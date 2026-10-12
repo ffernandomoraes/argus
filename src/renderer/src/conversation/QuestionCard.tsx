@@ -50,7 +50,7 @@ export function QuestionCard({
                 i === step ? 'bg-ask text-ask-text' : 'bg-surface-2 text-muted hover:text-text'
               }`}
             >
-              {answerOf(q) && <Check size={10} strokeWidth={3} />}
+              {answerOf(q) && <Check size={10} />}
               {q.header || `Pergunta ${i + 1}`}
             </button>
           ))}
@@ -87,7 +87,7 @@ export function QuestionCard({
                         q.multiSelect ? 'rounded-[4px]' : 'rounded-full'
                       } ${on ? 'border-ask bg-ask' : 'border-muted'}`}
                     >
-                      {on && (q.multiSelect ? <Check size={10} strokeWidth={3} className="text-ask-text" /> : <span className="size-1.5 rounded-full bg-ask-text" />)}
+                      {on && (q.multiSelect ? <Check size={10} className="text-ask-text" /> : <span className="size-1.5 rounded-full bg-ask-text" />)}
                     </span>
                     <div>
                       <div className="text-text">{o.label === '__other' ? 'Outra resposta' : o.label}</div>

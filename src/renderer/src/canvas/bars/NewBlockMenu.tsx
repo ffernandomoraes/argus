@@ -35,7 +35,7 @@ export function NewBlockMenu() {
   return (
     <div ref={ref} className="relative">
       <NavButton label="Novo bloco" onClick={() => setOpen((o) => !o)} active={open} primary>
-        <Plus size={16} strokeWidth={2.5} />
+        <Plus size={16} />
       </NavButton>
       <Presence kind="menu">
         {open && (

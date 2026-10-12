@@ -64,7 +64,7 @@ export function SettingsPage({
         <div className="px-8 py-7">
           {/* Cabeçalho da seção, como o do Ajustes do Sistema: ícone grande, nome e o que tem nela. */}
           <header className="mb-4 flex flex-col items-center rounded-xl bg-fill px-6 py-5 text-center">
-            <CurrentIcon size={28} strokeWidth={1.75} className="text-muted" />
+            <CurrentIcon size={28} className="text-muted" />
             <h1 className="mt-2.5 text-lg font-bold">{current.label}</h1>
             <p className="mt-0.5 max-w-md text-[12px] leading-relaxed text-muted">{current.description}</p>
           </header>

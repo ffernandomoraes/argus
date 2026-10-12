@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { LucideProvider } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
 import './index.css'
 import { App } from './App'
@@ -18,10 +19,13 @@ window.api.accent.onChange(applyAccent)
 // A mesma página serve a janela principal e as janelas de conversa (#popout/<id>).
 const popout = location.hash.match(/^#popout\/(.+)$/)
 
+// Traço 1.5 em todos os ícones, no lugar do 2 padrão do lucide.
 // Erro ao desenhar a janela não a deixa em branco: aparece o aviso para recarregar. O canvas tem
 // o seu, dentro do App, para as boas-vindas e as configurações continuarem funcionando.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>{popout ? <PopoutApp id={decodeURIComponent(popout[1])} /> : <App />}</ErrorBoundary>
+    <LucideProvider strokeWidth={1.5}>
+      <ErrorBoundary>{popout ? <PopoutApp id={decodeURIComponent(popout[1])} /> : <App />}</ErrorBoundary>
+    </LucideProvider>
   </StrictMode>
 )

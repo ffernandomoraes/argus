@@ -1,13 +1,10 @@
-import { memo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { MessageSquare, PenTool, Plus } from 'lucide-react'
+import { memo } from 'react'
+import { Plus } from 'lucide-react'
 import { ProjectServerButton } from '../../devServers/ProjectServerButton'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
-import { useAnchoredMenu } from '../../ui/useAnchoredMenu'
 import { BranchLabel } from '../BranchLabel'
 import { useCanvasActions } from '../CanvasContext'
-import { ContextMenu, type MenuState } from '../ContextMenu'
 import { useBranch, useUncommitted } from '../sessionsStore'
 
 // O que fica fora do card da pasta, logo acima dele: a branch atual no canto esquerdo e as
@@ -30,42 +27,20 @@ export const ProjectActions = memo(function ProjectActions({ nodeId, path }: { n
   )
 })
 
-// "+": nova conversa ou novo design (os designs que já existem ficam na lista de conversas).
-// Clicar de novo no botão fecha o menu (useAnchoredMenu).
+// "+": abre direto uma conversa nova. Novo design fica só no menu do botão direito da pasta.
 function NewButton({ nodeId }: { nodeId: string }) {
-  const { newConversation, openDesign } = useCanvasActions()
-  const anchor = useRef<HTMLButtonElement>(null)
-  const menu = useAnchoredMenu(anchor)
-  const [at, setAt] = useState<MenuState | null>(null)
+  const { newConversation } = useCanvasActions()
   return (
-    <>
-      <IconButton
-        ref={anchor}
-        label="Novo"
-        title=""
-        variant="floating"
-        size="sm"
-        pressed={menu.open}
-        aria-haspopup="menu"
-        aria-expanded={menu.open}
-        className="group relative"
-        onClick={(e) => {
-          const r = e.currentTarget.getBoundingClientRect()
-          setAt({
-            x: r.left,
-            y: r.bottom + 4,
-            items: [
-              { type: 'action', label: 'Nova conversa', icon: MessageSquare, onSelect: () => newConversation(nodeId) },
-              { type: 'action', label: 'Novo design', icon: PenTool, onSelect: () => openDesign(nodeId) }
-            ]
-          })
-          menu.toggle()
-        }}
-      >
-        <Plus size={13} />
-        {!menu.open && <Tooltip label="Nova conversa ou design" />}
-      </IconButton>
-      {menu.open && at && createPortal(<ContextMenu menu={at} onClose={menu.close} />, document.body)}
-    </>
+    <IconButton
+      label="Nova conversa"
+      title=""
+      variant="floating"
+      size="sm"
+      className="group relative"
+      onClick={() => newConversation(nodeId)}
+    >
+      <Plus size={13} />
+      <Tooltip label="Nova conversa" />
+    </IconButton>
   )
 }

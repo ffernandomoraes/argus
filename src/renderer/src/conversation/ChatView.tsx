@@ -19,6 +19,7 @@ import { useTimeline } from './timeline/useTimeline'
 import type { Message } from './types'
 
 const NO_AGENTS: AgentDef[] = []
+const NO_PROMPTS: string[] = []
 const asIs = (text: string) => text
 const LOST = 'A mensagem não chegou ao Claude. Tente enviar de novo.'
 
@@ -130,6 +131,13 @@ export const ChatView = memo(function ChatView({
     [compact, sticky.pinnedKey, messages, sends.waiting]
   )
 
+  // Pedidos já feitos, para as setas da caixa de escrever. No modo design o texto gravado leva os
+  // comentários junto (extraSend), então lá só vale o que foi digitado com o app aberto.
+  const pastPrompts = useMemo(
+    () => (extraSend ? NO_PROMPTS : messages.flatMap((m) => (m.role === 'user' && m.text.trim() ? [m.text] : []))),
+    [messages, extraSend]
+  )
+
   // A mensagem aparece na hora como balão provisório. Envio que falha antes de sair tira o balão
   // e repassa o erro: o campo devolve o texto e os anexos.
   const submit = useStableCallback(async (message: OutgoingMessage) => {
@@ -197,6 +205,7 @@ export const ChatView = memo(function ChatView({
           above={composerAbove}
           chips={composerChips}
           extraSend={extraSend}
+          pastPrompts={pastPrompts}
         />
       </div>
       <Presence kind="modal">

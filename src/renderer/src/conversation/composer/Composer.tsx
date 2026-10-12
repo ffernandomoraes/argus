@@ -27,6 +27,7 @@ import { ComposerNotices } from './ComposerNotices'
 import { pastedFiles } from './pastedFiles'
 import { useComposerMenus } from './useComposerMenus'
 import { useDraft } from './useDraft'
+import { usePromptHistory } from './usePromptHistory'
 
 export type ComposerHandle = {
   // Envio que não chegou: o texto volta (se o campo estiver vazio), os anexos voltam e o aviso aparece.
@@ -53,7 +54,11 @@ type Props = {
   above?: ReactNode
   chips?: ReactNode
   extraSend?: { compose: (text: string) => string }
+  // Pedidos gravados na conversa, do mais velho ao mais novo: as setas percorrem eles.
+  pastPrompts?: string[]
 }
+
+const NO_PROMPTS: string[] = []
 
 // Caixa de escrever da conversa, com estado próprio: digitar não redesenha a conversa. Texto,
 // menus de comandos e de agentes, anexos (botão ou ⌘V), ditado, enviar ou parar, e os seletores
@@ -65,6 +70,7 @@ export const Composer = memo(function Composer(props: Props) {
   const [draft, setDraft] = useDraft(draftKey)
   const menus = useComposerMenus(draft, agents)
   const [sendError, setSendError] = useState<string | null>(null)
+  const history = usePromptHistory(draftKey, props.pastPrompts ?? NO_PROMPTS)
 
   // Abrir a conversa já deixa o campo pronto para digitar, com o cursor no fim do rascunho.
   // Espera um quadro: o drawer nasce invisível até ser posicionado, e campo invisível não recebe foco.
@@ -128,6 +134,7 @@ export const Composer = memo(function Composer(props: Props) {
       return onToggleRemote()
     }
     const files = attachments.items.map((a) => a.file)
+    if (typed) history.remember(typed)
     setDraft('')
     setSendError(null)
     attachments.clear()
@@ -152,6 +159,19 @@ export const Composer = memo(function Composer(props: Props) {
       if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
         e.preventDefault()
         send()
+      } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
+        // Setas percorrem os pedidos já enviados (campo vazio ou mostrando um deles), cursor no fim.
+        const recalled = history.step(e.key === 'ArrowUp' ? -1 : 1, draft)
+        if (recalled === null) return
+        e.preventDefault()
+        setDraft(recalled)
+        setSendError(null)
+        // Pedido que começa com / ou @ não abre o menu: as setas continuam no histórico.
+        menus.close()
+        requestAnimationFrame(() => {
+          const el = field.current
+          if (el) el.setSelectionRange(el.value.length, el.value.length)
+        })
       }
       return
     }

@@ -1,7 +1,7 @@
 # Gera uma versão nova: sobe o número no package.json, confere os tipos, monta o .dmg e o .zip
-# (Apple Silicon), confere se o app abre, cria a tag e publica tudo num release do GitHub. Em
-# seguida, numa máquina Windows, monta o instalador .exe, confere se o app abre e o anexa ao mesmo
-# release.
+# (Apple Silicon), confere se o app abre, cria a tag e publica tudo num release do GitHub. Ao mesmo
+# tempo, numa máquina Windows, monta o instalador .exe e confere se o app abre; quando os dois
+# terminam, o .exe é anexado ao mesmo release.
 # Roda sozinho a cada push na main (sobe o patch; notas = commits desde a última tag).
 # Na mão, pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=minor -f notas="- item"
 # Com publicar=false só monta e guarda o .dmg e o .exe no run, sem tag nem release.
@@ -36,38 +36,26 @@ permissions:
 concurrency: release
 
 jobs:
-  release:
+  # Escolhe o commit e o número da versão uma vez só, para o Mac e o Windows montarem o mesmo.
+  versao:
     # O commit "Versão X" que este workflow envia não dispara outro release. O GitHub já não
     # dispara com pushes feitos pelo próprio Actions; isto é só a garantia.
     if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Versão ') }}
-    runs-on: macos-15
-    # Para o job do Windows montar a mesma versão, do mesmo commit.
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
       sha: ${{ steps.version.outputs.sha }}
     env:
-      # No push não há as opções do disparo manual: publica sempre e sobe o patch.
-      PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
+      # No push não há as opções do disparo manual: sobe o patch.
       BUMP: ${{ inputs.bump || 'patch' }}
     steps:
       # A main como está agora, não a do push que disparou: um run que esperou na fila
       # pega o commit de versão do anterior e o que chegou depois.
-      # persist-credentials: false: o token não fica no .git/config enquanto as dependências
-      # instalam (um pacote com script poderia lê-lo); ele entra só no push da versão.
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
           persist-credentials: false
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: pnpm
 
       - name: Próxima versão
         id: version
@@ -83,7 +71,42 @@ jobs:
           fi
           echo "version=$next" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          npm pkg set version="$next"
+
+  release:
+    needs: versao
+    runs-on: macos-15
+    env:
+      # No push não há as opções do disparo manual: publica sempre.
+      PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
+      VERSION: ${{ needs.versao.outputs.version }}
+    steps:
+      # O commit escolhido no job versao (fetch-depth: 0: as notas listam os commits desde a última tag).
+      # persist-credentials: false: o token não fica no .git/config enquanto as dependências
+      # instalam (um pacote com script poderia lê-lo); ele entra só no push da versão.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Versão
+        run: npm pkg set version="$VERSION"
+
+      # O binário do Electron (baixado no postinstall e usado pelo electron-builder). Mudou o
+      # lockfile, começa do zero: assim versões antigas do Electron não se acumulam no cache.
+      - uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/electron
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
@@ -161,9 +184,9 @@ jobs:
 
       - name: Guardar o app (teste)
         if: env.PUBLICAR != 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: Argus-${{ steps.version.outputs.version }}
+          name: Argus-${{ env.VERSION }}
           path: dist/*.dmg
 
       # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois. O token vai só neste push
@@ -175,17 +198,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Versão ${{ steps.version.outputs.version }}"
-          git tag "v${{ steps.version.outputs.version }}"
+          git commit -am "Versão $VERSION"
+          git tag "v$VERSION"
           git push --atomic "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v${{ steps.version.outputs.version }}"
+            "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v$VERSION"
 
       - name: Publicar release
         if: env.PUBLICAR == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           NOTAS: ${{ inputs.notas }}
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           notas="$RUNNER_TEMP/notas.md"
           if [ -n "$NOTAS" ]; then
@@ -199,11 +221,11 @@ jobs:
             --title "Argus $VERSION" \
             --notes-file "$notas"
 
-  # Instalador do Windows (.exe), numa máquina Windows do GitHub, depois que o release do Mac sai.
-  # Antes de anexar, abre o app em modo de teste (--smoke-test, ver src/main/smokeTest.ts): se ele
+  # Instalador do Windows (.exe), numa máquina Windows do GitHub, ao mesmo tempo que o do Mac.
+  # Antes de guardar, abre o app em modo de teste (--smoke-test, ver src/main/smokeTest.ts): se ele
   # nem abrir, o instalador não vai, e quem usa no Windows continua na versão anterior.
   windows:
-    needs: release
+    needs: versao
     runs-on: windows-latest
     # Ocupa a mesma fila dos releases (concurrency): travado, não pode segurar o próximo do Mac.
     timeout-minutes: 30
@@ -211,18 +233,16 @@ jobs:
       run:
         shell: bash
     env:
-      PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
-      VERSION: ${{ needs.release.outputs.version }}
+      VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      # Publicando: a tag que o job do Mac acabou de criar, já com a versão nova no package.json.
-      # Testando: o mesmo commit que ele montou; a versão é trocada aqui, sem tag.
-      # Sem token no .git/config (ver o job do Mac): este job não faz push, só anexa pelo gh.
+      # O mesmo commit do Mac; a versão é trocada aqui (a tag só existe depois que o Mac publica).
+      # Sem token no .git/config (ver o job do Mac): este job não faz push.
       - uses: actions/checkout@v5
         with:
-          ref: ${{ (github.event_name == 'push' || inputs.publicar) && format('v{0}', needs.release.outputs.version) || needs.release.outputs.sha }}
+          ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11
 
@@ -231,8 +251,7 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Versão (teste)
-        if: env.PUBLICAR != 'true'
+      - name: Versão
         run: npm pkg set version="$VERSION"
 
       - name: Instalar dependências
@@ -253,15 +272,29 @@ jobs:
           if (-not $done) { $app.Kill(); throw 'O app não terminou o teste a tempo.' }
           if ($app.ExitCode -ne 0) { throw "O app falhou no teste (código $($app.ExitCode))." }
 
-      - name: Guardar o instalador (teste)
-        if: env.PUBLICAR != 'true'
-        uses: actions/upload-artifact@v4
+      # Publicando, o job anexar-windows pega daqui e a cópia some em 1 dia (o .exe fica no
+      # release); testando, fica para baixar no run pelo prazo padrão do repositório (0).
+      - name: Guardar o instalador
+        uses: actions/upload-artifact@v6
         with:
           name: Argus-Setup-${{ env.VERSION }}
           path: dist/Argus-Setup-*.exe
+          retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
+
+  # Anexa o .exe ao release que o job do Mac criou. Só roda se os dois deram certo: com o Mac
+  # falhando não há release; com o Windows falhando, o release sai só com o Mac.
+  anexar-windows:
+    needs: [versao, release, windows]
+    if: ${{ github.event_name == 'push' || inputs.publicar }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.versao.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: Argus-Setup-${{ env.VERSION }}
 
       - name: Anexar ao release
-        if: env.PUBLICAR == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v$VERSION" dist/Argus-Setup-*.exe --clobber
+        run: gh release upload "v$VERSION" Argus-Setup-*.exe --clobber --repo "$GITHUB_REPOSITORY"

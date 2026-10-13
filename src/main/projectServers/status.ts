@@ -39,10 +39,20 @@ export async function statusOf(path: string, listening: Listening[]): Promise<Pr
   return { ...base, state: 'stopped', error: errors.get(root) }
 }
 
+// Portas do servidor do WSL. Só o fim da saída fica guardado: depois de muitas linhas (cada arquivo
+// salvo vira uma no Vite), o "Local: http://localhost:5173" sai dela, e a porta sumia da tela. Valem
+// as anunciadas por último; um reinício que anuncia outras troca a lista.
+export function wslPorts(entry: Started): number[] {
+  if (!entry.wsl) return []
+  const now = portsInOutput(entry.output.text())
+  if (now.length) entry.wsl.ports = now
+  return entry.wsl.ports
+}
+
 // WSL: o Windows não mostra quem abriu cada porta lá dentro. Vale o que foi iniciado daqui, com as
 // portas que o servidor anunciou na saída.
 async function wslStatus(root: string, entry: Started | undefined, run: ProjectScript | null): Promise<ProjectServer> {
-  const ports = entry ? portsInOutput(entry.output.text()) : []
+  const ports = entry ? wslPorts(entry) : []
   const pid = entry?.child.pid ?? 0
   const name = await packageName(root)
   const base = {

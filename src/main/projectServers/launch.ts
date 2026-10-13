@@ -11,13 +11,13 @@ import { parseWslPath } from '../wsl'
 import { launchInWsl } from '../wsl/servers'
 
 // startedAt: quando o play iniciou (ver o "iniciando" em status.ts). wsl: roda dentro do WSL, com o
-// jeito próprio de parar (ver wsl/servers.ts).
+// jeito próprio de parar (ver wsl/servers.ts), e as portas que ele anunciou por último (ver wslPorts).
 export type Started = {
   child: ChildProcess
   output: OutputBuffer
   stopping: boolean
   startedAt: number
-  wsl?: { stop: () => Promise<void>; stopSync: () => void }
+  wsl?: { stop: () => Promise<void>; stopSync: () => void; ports: number[] }
 }
 
 // Servidores iniciados por este app, pela pasta real do projeto.
@@ -74,7 +74,7 @@ export async function launchWsl(root: string, run: ProjectScript, noBrowser: boo
     output: new OutputBuffer(OUTPUT_LIMIT),
     stopping: false,
     startedAt: Date.now(),
-    wsl: { stop: server.stop, stopSync: server.stopSync }
+    wsl: { stop: server.stop, stopSync: server.stopSync, ports: [] }
   })
 }
 

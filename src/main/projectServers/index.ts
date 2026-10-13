@@ -6,7 +6,7 @@ import { isWslPath } from '../wsl'
 import { ofProject, rootsOf } from './matching'
 import { keepPages, pageKey } from './pageCheck'
 import { projectScript } from './scripts'
-import { statusOf } from './status'
+import { statusOf, wslPorts } from './status'
 
 // Servidor de cada pasta do canvas, para o botão de iniciar e encerrar acima dela.
 export { stopStartedServers } from './launch'
@@ -14,7 +14,10 @@ export { stopStartedServers } from './launch'
 // Uma varredura de portas só, para todas as pastas na tela.
 export async function projectServers(paths: string[]): Promise<Record<string, ProjectServer>> {
   const listening = await scanListening()
-  keepPages(listening.flatMap((p) => p.ports.map((port) => pageKey(p.pid, port))))
+  // Os do WSL não aparecem na varredura do Windows: sem eles aqui, a conferência da página era
+  // apagada a cada consulta, antes de responder, e o modo design ficava carregando para sempre.
+  const wsl = [...started.values()].flatMap((e) => wslPorts(e).map((port) => pageKey(e.child.pid ?? 0, port)))
+  keepPages([...listening.flatMap((p) => p.ports.map((port) => pageKey(p.pid, port))), ...wsl])
   const entries = await Promise.all(paths.map(async (path) => [path, await statusOf(path, listening)] as const))
   return Object.fromEntries(entries)
 }

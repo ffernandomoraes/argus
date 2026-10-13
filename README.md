@@ -300,6 +300,10 @@ o microfone.
 | [docs/integracao-com-agentes.md](docs/integracao-com-agentes.md) | Como o app conversa com o Claude e o que ele lê do Claude Code |
 | [docs/decisoes.md](docs/decisoes.md) | O que já foi decidido e o que está em aberto |
 
+## Licença
+
+MIT com a [Commons Clause](https://commonsclause.com): qualquer pessoa pode usar, modificar e distribuir o Argus de graça, inclusive no trabalho, mas não pode vendê-lo nem cobrar por um produto ou serviço que seja basicamente ele. Texto completo em [LICENSE](LICENSE).
+
 ---
 
 Projeto pessoal, sem vínculo com a Anthropic. Claude e Claude Code são marcas da Anthropic.

@@ -57,5 +57,6 @@
     "esbuild@0.28.2": true
   },
   "author": "Fernando Moraes <fermoraeslima10@gmail.com>",
-  "homepage": "https://github.com/ffernandomoraes/argus"
+  "homepage": "https://github.com/ffernandomoraes/argus",
+  "license": "SEE LICENSE IN LICENSE"
 }

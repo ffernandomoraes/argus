@@ -46,6 +46,20 @@ export function newestWith(releases: Release[], current: string, match: (a: Rele
   return best
 }
 
+// A versão publicada logo antes da em uso que tem o arquivo pedido, ou null: para onde volta quem
+// está numa versão que quebrou (ver app/crashGuard.ts).
+export function previousWith(releases: Release[], current: string, match: (a: ReleaseAsset) => boolean): Pick | null {
+  let best: Pick | null = null
+  for (const release of releases) {
+    if (release.draft || release.prerelease) continue
+    const version = releaseVersion(release)
+    const asset = release.assets.find(match)
+    if (!asset || !isNewer(current, version) || (best && !isNewer(version, best.version))) continue
+    best = { release, asset, version }
+  }
+  return best
+}
+
 type Header = (name: string) => string | null
 
 // Resposta de erro da API. 403/429 com o limite esgotado (60 consultas por hora por rede, sem

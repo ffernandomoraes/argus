@@ -8,6 +8,7 @@ import { runSmokeTest, SMOKE_TEST } from '../smokeTest'
 import { watchAppearance } from './appearance'
 import { activeCanvas, canvasWindowList, isCanvasReady } from './canvasRegistry'
 import { checkForUpdates } from './checkForUpdates'
+import { watchOpening } from './crashGuard'
 import { installDesktopEntry } from './linuxDesktop'
 import type { Lifecycle } from './lifecycle'
 import { setAppMenu } from './menu'
@@ -37,6 +38,7 @@ export function startApp(s: Services, life: Lifecycle): void {
   app.on('browser-window-focus', () => s.tray.seen())
   step('janelas do canvas', restoreCanvasWindows)
   const firstCanvas = activeCanvas()
+  watchOpening(firstCanvas)
   if (SMOKE_TEST && firstCanvas) {
     // Sai pelo mesmo caminho de quem fecha a janela, já confirmado.
     runSmokeTest(firstCanvas, s.terminals, () => isCanvasReady(firstCanvas.webContents), life.confirmAndQuit)

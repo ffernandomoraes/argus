@@ -11,7 +11,8 @@ import { downloadTo } from './download'
 import { cleanupDownloads, newDownloadDir, removePath } from './files'
 import { fetchLatestRelease, fetchRecentReleases } from './github'
 import { currentBundle, extractApp, hasExecutable, spawnSwap, verifyApp } from './mac'
-import { isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, releaseVersion, type Release, type ReleaseAsset } from './releases'
+import { isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, previousWith, releaseVersion, type Release, type ReleaseAsset } from './releases'
+import { skipVersion, updateFloor } from './skipped'
 import { installedByInstaller, spawnInstaller } from './windows'
 
 // Atualização pelos releases do GitHub, sem o Squirrel (electron-updater): o app é assinado com
@@ -36,6 +37,8 @@ export class Updater {
   private ready: Ready | null = null
   private busy = false
   private installing = false
+  // Voltando para a versão anterior (rollback): a conferência automática não baixa outra por cima.
+  private rollingBack = false
   private timer: NodeJS.Timeout | null = null
   // Limpeza das sobras da abertura: a conferência espera ela, para nunca apagar o próprio download.
   private cleaning: Promise<void> = Promise.resolve()
@@ -88,6 +91,11 @@ export class Updater {
     return this.ready !== null
   }
 
+  // A troca (ou o instalador) já começou: o app está fechando para entrar a versão baixada.
+  get swapping(): boolean {
+    return this.installing
+  }
+
   start(): void {
     if (this.state.status === 'unsupported') return
     this.cleaning = cleanupDownloads()
@@ -101,14 +109,14 @@ export class Updater {
   }
 
   async check(): Promise<UpdateState> {
-    if (this.state.status === 'unsupported' || this.busy || this.ready) return this.state
+    if (this.state.status === 'unsupported' || this.busy || this.ready || this.rollingBack) return this.state
     this.busy = true
     this.set({ status: 'checking' })
     try {
       await this.cleaning
       const latest = await fetchLatestRelease()
       const version = latest ? releaseVersion(latest) : ''
-      if (!latest || !version || !isNewer(version, app.getVersion())) {
+      if (!latest || !version || !isNewer(version, updateFloor(app.getVersion()))) {
         this.set({ status: 'latest' })
       } else if (IS_WIN) {
         await this.updateFrom(latest, version, isWindowsAsset, () => tr('o instalador do Windows', 'the Windows installer'))
@@ -132,7 +140,7 @@ export class Updater {
   // mais recente que tem. Nenhum mais novo que a versão em uso: avisa, em vez de dizer que já está
   // na mais recente.
   private async updateFrom(latest: Release, version: string, match: (a: ReleaseAsset) => boolean, what: () => string): Promise<void> {
-    const current = app.getVersion()
+    const current = updateFloor(app.getVersion())
     const pick = newestWith([latest], current, match) ?? newestWith(await fetchRecentReleases(), current, match)
     if (pick) return this.downloadFile(pick.version, pick.asset, pick.release.html_url)
     this.set({
@@ -143,6 +151,44 @@ export class Updater {
         `Version ${version} doesn't have ${what()} yet (it comes out a few minutes later). Check again shortly.`
       )
     })
+  }
+
+  // Espera a conferência em andamento terminar (ela pode estar baixando uma versão).
+  async settled(): Promise<void> {
+    while (this.busy) await new Promise((resolve) => setTimeout(resolve, 200))
+  }
+
+  // Baixa a versão publicada logo antes da em uso e a deixa pronta, como uma atualização: entra
+  // pelo mesmo "Reiniciar e atualizar". A versão em uso fica marcada para pular (ver skipped.ts).
+  // Devolve a versão baixada. Para quem está numa versão que quebrou (ver app/crashGuard.ts).
+  async rollback(): Promise<string> {
+    const support = this.state
+    if (support.status === 'unsupported') throw new Error(support.reason)
+    this.rollingBack = true
+    try {
+      await this.settled()
+      await this.cleaning
+      this.busy = true
+      // Uma versão mais nova já baixada sai: é dela, ou de uma parecida, que se está fugindo.
+      if (this.ready) {
+        await removePath(this.ready.dir)
+        this.ready = null
+      }
+      const current = app.getVersion()
+      const match = IS_WIN ? isWindowsAsset : IS_LINUX ? isLinuxAsset : isMacAsset
+      const pick = previousWith(await fetchRecentReleases(), current, match)
+      if (!pick) throw new Error(tr('Não achei uma versão anterior para baixar.', "Couldn't find a previous version to download."))
+      if (IS_WIN || IS_LINUX) await this.downloadFile(pick.version, pick.asset, pick.release.html_url)
+      else await this.downloadMac(pick.version, pick.asset, pick.release.html_url)
+      skipVersion(current)
+      return pick.version
+    } catch (err) {
+      this.set({ status: 'error', message: errorMessage(err) })
+      throw err
+    } finally {
+      this.busy = false
+      this.rollingBack = false
+    }
   }
 
   // Baixa mostrando o progresso na barra de título.

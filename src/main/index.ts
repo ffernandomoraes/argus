@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { armCrashGuard, askAfterCrash, attachRecovery } from './app/crashGuard'
 import { receiveFolders } from './app/folderOpener'
 import { setupLifecycle } from './app/lifecycle'
 import { createServices } from './app/services'
@@ -30,11 +31,15 @@ else start()
 function start(): void {
   // Windows: identifica o app nas notificações, com o mesmo id do atalho que o instalador cria.
   if (IS_WIN) app.setAppUserModelId(app.isPackaged ? 'dev.argus.app' : process.execPath)
+  // Antes dos serviços: um erro ao criá-los já oferece voltar de versão (ver app/crashGuard.ts).
+  const crashedBefore = armCrashGuard()
   const services = createServices()
   receiveFolders()
   const life = setupLifecycle(services)
+  attachRecovery(services.updater, life.restartToUpdate)
   app
     .whenReady()
-    .then(() => startApp(services, life))
+    .then(() => (crashedBefore ? askAfterCrash() : true))
+    .then((open) => open && startApp(services, life))
     .catch((err: unknown) => console.error('[app] a abertura falhou:', err))
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import type { UncommittedFile } from '../../../../shared/sessions'
 import { shallowEqual } from '../../lib/shallowEqual'
 import { useBackgroundBusy } from '../backgroundTasks'
+import { canvasScope, inScope } from '../canvasScope'
 import { useStore } from '../../lib/useStore'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
@@ -84,21 +85,25 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
   return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy])
 }
 
-// Conversas que terminaram sem você ver (bolinha verde), em todas as pastas lidas: a pasta como
-// está no store, o id e o título. A que voltou a trabalhar sai daqui (já aparece como ativa).
+// Conversas que terminaram sem você ver (bolinha verde), nas pastas lidas que estão no canvas: a
+// pasta como está no store, o id e o título. A que voltou a trabalhar sai daqui (já aparece como
+// ativa). Pasta que saiu do canvas mas ainda tem a lista guardada não entra (ver canvasScope).
 export type FinishedChat = { path: string; id: string; title: string }
 
 export function useFinishedChats(): FinishedChat[] {
   const ids = useStore(unread)
   const sessions = useStore(store, (s) => s.sessions)
+  const scope = useStore(canvasScope)
   return useMemo(() => {
     const list: FinishedChat[] = []
     if (!ids.size) return list
     for (const [path, conversations] of sessions) {
-      for (const c of conversations) if (ids.has(c.id) && c.status === 'idle') list.push({ path, id: c.id, title: c.title })
+      for (const c of conversations) {
+        if (ids.has(c.id) && c.status === 'idle' && inScope(scope, path, c.id)) list.push({ path, id: c.id, title: c.title })
+      }
     }
     return list
-  }, [ids, sessions])
+  }, [ids, sessions, scope])
 }
 
 // Branch atual da pasta; nulo fora de repositório ou antes da primeira leitura.

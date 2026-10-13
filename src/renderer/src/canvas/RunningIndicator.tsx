@@ -7,7 +7,7 @@ import { Presence } from '../motion'
 import { MenuArrow } from '../ui/MenuArrow'
 import { MENU_HOVER, MENU_PANEL, MENU_ROW } from '../ui/menuStyles'
 import { useOutsideClick } from '../useOutsideClick'
-import { useActiveChats } from './activeChats'
+import { useActiveChatsInCanvas } from './canvasScope'
 import { displayPath } from './factory'
 import { untildify } from '../platform'
 import { useFinishedChats, useSessions, type FinishedChat } from './sessionsStore'
@@ -25,7 +25,7 @@ export const RunningIndicator = memo(function RunningIndicator({
   hidden: boolean
   onOpen: (cwd: string, sessionId: string) => void
 }) {
-  const chats = useActiveChats()
+  const chats = useActiveChatsInCanvas()
   const finished = useFinishedChats()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)

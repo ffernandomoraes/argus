@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import { Check, ChevronRight } from 'lucide-react'
 import { COLORS } from './factory'
 import { useEscape } from '../useEscape'
+import { keys } from '../platform'
 import { MENU_PANEL, MENU_ROW } from '../ui/menuStyles'
 import { useOutsideClick } from '../useOutsideClick'
 
@@ -9,7 +10,17 @@ type Icon = ComponentType<{ size?: number }>
 
 export type MenuItem =
   // checked: a opção que está valendo numa lista de escolha (ex.: a conta do grupo).
-  | { type: 'action'; label: string; icon?: Icon; onSelect: () => void; danger?: boolean; disabled?: boolean; checked?: boolean }
+  // shortcut: o atalho escrito como no Mac ("⌘N"); aparece do jeito do sistema (keys).
+  | {
+      type: 'action'
+      label: string
+      icon?: Icon
+      onSelect: () => void
+      danger?: boolean
+      disabled?: boolean
+      checked?: boolean
+      shortcut?: string
+    }
   | { type: 'submenu'; label: string; icon?: Icon; items: MenuItem[] }
   | { type: 'colors'; label: string; value: string; onSelect: (color: string) => void }
   | { type: 'separator' }
@@ -111,6 +122,7 @@ function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () => void }
             {Icon && <Icon size={14} />}
             {item.label}
             {item.checked && <Check size={14} className="ml-auto shrink-0 text-muted group-hover/item:text-white" />}
+            {item.shortcut && <kbd className="ml-auto pl-4 font-mono text-faint group-hover/item:text-white">{keys(item.shortcut)}</kbd>}
           </button>
         )
       })}

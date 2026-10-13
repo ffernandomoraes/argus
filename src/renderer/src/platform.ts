@@ -4,13 +4,14 @@
 
 export const IS_WIN = window.api.platform === 'win32'
 export const IS_MAC = window.api.platform === 'darwin'
+export const IS_LINUX = window.api.platform === 'linux'
 
-export const SYSTEM_NAME = IS_WIN ? 'Windows' : 'macOS'
-export const FILE_MANAGER = IS_WIN ? 'Explorador de Arquivos' : 'Finder'
-// O app de configurações do sistema: Ajustes do Sistema no Mac, Configurações no Windows.
-export const SYSTEM_SETTINGS = IS_WIN ? 'Configurações' : 'Ajustes'
+export const SYSTEM_NAME = IS_WIN ? 'Windows' : IS_LINUX ? 'Linux' : 'macOS'
+export const FILE_MANAGER = IS_WIN ? 'Explorador de Arquivos' : IS_LINUX ? 'gerenciador de arquivos' : 'Finder'
+// O app de configurações do sistema: Ajustes do Sistema no Mac, Configurações no Windows e no Linux.
+export const SYSTEM_SETTINGS = IS_MAC ? 'Ajustes' : 'Configurações'
 // "O Claude Code deste Mac", "deste computador".
-export const THIS_COMPUTER = IS_WIN ? 'deste computador' : 'deste Mac'
+export const THIS_COMPUTER = IS_MAC ? 'deste Mac' : 'deste computador'
 
 // Tecla dos atalhos: ⌘ no Mac, Ctrl no Windows.
 export const isMod = (e: { metaKey: boolean; ctrlKey: boolean }) => (IS_MAC ? e.metaKey : e.ctrlKey)

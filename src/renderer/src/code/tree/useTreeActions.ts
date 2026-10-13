@@ -4,7 +4,7 @@ import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
 import type { MenuState } from '../../canvas/ContextMenu'
 import { refreshNow } from '../../canvas/sessionsStore'
 import { useStableCallback } from '../../lib/useStableCallback'
-import { IS_WIN, isMod } from '../../platform'
+import { IS_MAC, isMod } from '../../platform'
 import { moveDrafts } from '../drafts'
 import type { Editing } from './FileTree'
 import { treeMenu, type TreeMenuActions } from './treeMenu'
@@ -12,7 +12,7 @@ import { dirsUpTo, parentOf } from './treePaths'
 import type { FileTree } from './useFileTree'
 
 // A Lixeira do Windows abre direto da Área de Trabalho; a do Mac, pelo Finder.
-const RECOVER = IS_WIN ? 'Dá para recuperar pela Lixeira.' : 'Dá para recuperar pelo Finder.'
+const RECOVER = IS_MAC ? 'Dá para recuperar pelo Finder.' : 'Dá para recuperar pela Lixeira.'
 
 type Options = {
   root: string
@@ -140,10 +140,10 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     } else if (isMod(e) && e.key === 'c' && entry) {
       e.preventDefault()
       menuActions.copy(entry.path)
-    } else if ((e.key === 'Enter' || (IS_WIN && e.key === 'F2')) && entry) {
+    } else if ((e.key === 'Enter' || (!IS_MAC && e.key === 'F2')) && entry) {
       e.preventDefault()
       setEditing({ kind: 'rename', path: entry.path })
-    } else if ((IS_WIN ? e.key === 'Delete' : e.metaKey && e.key === 'Backspace') && entry) {
+    } else if ((IS_MAC ? e.metaKey && e.key === 'Backspace' : e.key === 'Delete') && entry) {
       e.preventDefault()
       askDelete(entry)
     }

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Instala (ou atualiza) o Argus a partir do último release no GitHub.
+# Instala (ou atualiza) o Argus a partir do último release no GitHub, no Mac ou no Linux.
 #   curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.sh | sh
 # Baixado pelo curl, o app não recebe a marca de quarentena do macOS, então abre sem o
 # aviso de "desenvolvedor não identificado" (o app não é notarizado pela Apple).
@@ -81,9 +81,43 @@ swap_app() {
   xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
 }
 
+# Linux: o AppImage vai para ~/Applications/Argus.AppImage, um arquivo só, sem administrador. Na
+# primeira abertura o próprio app cria o atalho no menu de apps; as atualizações trocam o arquivo no
+# mesmo lugar.
+LINUX_APP="$HOME/Applications/Argus.AppImage"
+
+install_linux() {
+  [ "$(uname -m)" = "x86_64" ] || fail "No Linux, o Argus por enquanto só roda em PCs Intel/AMD (x86_64)."
+  echo "Procurando a última versão..."
+  URL=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
+    | grep -o '"browser_download_url": *"[^"]*-x86_64\.AppImage"' | head -n 1 | cut -d '"' -f 4)
+  [ -n "$URL" ] || fail "Não achei o AppImage no último release de $REPO."
+
+  mkdir -p "$(dirname "$LINUX_APP")"
+  TMP=$(mktemp "$LINUX_APP.XXXXXX")
+  trap 'rm -f "$TMP"' EXIT
+  echo "Baixando $(basename "$URL")..."
+  curl -fL --progress-bar "$URL" -o "$TMP"
+  chmod 755 "$TMP"
+  # A troca é de uma vez: um Argus aberto segue com o arquivo antigo até fechar.
+  mv "$TMP" "$LINUX_APP"
+  trap - EXIT
+
+  echo "Pronto: Argus instalado em $LINUX_APP"
+  if command -v setsid >/dev/null 2>&1; then
+    setsid "$LINUX_APP" >/dev/null 2>&1 &
+  else
+    nohup "$LINUX_APP" >/dev/null 2>&1 &
+  fi
+}
+
 main() {
+  if [ "$(uname -s)" = "Linux" ]; then
+    install_linux
+    return
+  fi
   if [ "$(uname -s)" != "Darwin" ] || [ "$(uname -m)" != "arm64" ]; then
-    fail "O Argus por enquanto só roda em Mac com Apple Silicon (M1 ou mais novo)."
+    fail "O Argus roda em Mac com Apple Silicon (M1 ou mais novo), no Windows e no Linux. No Windows, baixe o instalador no último release."
   fi
 
   echo "Procurando a última versão..."

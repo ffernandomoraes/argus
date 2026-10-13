@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { join } from 'node:path'
-import { childEnv, IS_WIN, prependPath, SYSTEM32 } from '../platform'
+import { childEnv, IS_WIN, prependPath, SYSTEM32, userShell } from '../platform'
 import { APP_MARK } from '../processScan'
 import { OutputBuffer } from '../terminals/outputBuffer'
 import { killTreeSync } from '../winProcesses'
@@ -49,7 +49,7 @@ export function launch(root: string, run: ProjectScript, noBrowser: boolean): vo
         windowsHide: true,
         stdio: ['ignore', 'pipe', 'pipe']
       })
-    : spawn(process.env.SHELL || '/bin/zsh', ['-ilc', `exec ${run.command}`], {
+    : spawn(userShell(), ['-ilc', `exec ${run.command}`], {
         cwd: root,
         env,
         detached: true,

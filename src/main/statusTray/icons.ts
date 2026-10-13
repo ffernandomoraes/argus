@@ -1,5 +1,5 @@
 import { nativeImage, nativeTheme, type NativeImage } from 'electron'
-import { IS_MAC } from '../platform'
+import { IS_LINUX, IS_MAC } from '../platform'
 import type { Kind } from './kinds'
 import { arc, bang, check, cross, hollow, logo, withBadge, type Shape } from './shapes'
 
@@ -10,16 +10,18 @@ import { arc, bang, check, cross, hollow, logo, withBadge, type Shape } from './
 const SIZE = 18
 const SCALE = 2
 const SAMPLES = 4
-// Pixels do ícone: 18 pontos no Mac; no Windows, 16 (o tamanho da área de notificação), a 2x.
-const PIXELS = IS_MAC ? SIZE * SCALE : 16 * SCALE
+// Pixels do ícone: 18 pontos no Mac; no Windows, 16 (o tamanho da área de notificação); no Linux,
+// 22 (o das bandejas do GNOME e do KDE). Sempre a 2x.
+const PIXELS = (IS_MAC ? SIZE : IS_LINUX ? 22 : 16) * SCALE
 
 // Quadros da animação de "processando".
 export const FRAMES = 12
 
 export type TrayIcons = { kinds: Record<Kind, NativeImage>; spinner: NativeImage[] }
 
-// Barra de tarefas escura no Windows: ícone branco. No Mac, preto (o sistema recolore).
-const light = (): boolean => !IS_MAC && nativeTheme.shouldUseDarkColorsForSystemIntegratedUI
+// Barra de tarefas escura no Windows: ícone branco. No Mac, preto (o sistema recolore). No Linux,
+// branco: a barra do GNOME é sempre escura, e o Linux não diz a cor da bandeja.
+const light = (): boolean => IS_LINUX || (!IS_MAC && nativeTheme.shouldUseDarkColorsForSystemIntegratedUI)
 
 function draw(shape: Shape): NativeImage {
   const px = PIXELS

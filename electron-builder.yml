@@ -11,6 +11,10 @@ files:
   - package.json
   # O app usa o `claude` instalado na máquina; o binário que vem com o SDK (~200 MB) não entra.
   - '!node_modules/@anthropic-ai/claude-agent-sdk-*/**'
+  # Sobras da compilação do node-pty no Linux (só o pty.node é usado).
+  - '!node_modules/node-pty/build/Release/obj.target/**'
+  - '!node_modules/node-pty/build/Release/.deps/**'
+  - '!node_modules/node-pty/build/**/*.mk'
 
 # Só as traduções do Chromium em português e inglês (as outras ~200 somavam ~48 MB). Valem para
 # os textos do próprio Chromium, como o menu do botão direito nos campos de texto.
@@ -64,6 +68,29 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   deleteAppDataOnUninstall: false
+
+# Linux: AppImage, um arquivo só que roda na maioria das distribuições (Ubuntu, Fedora, Debian...),
+# sem instalar nada e sem administrador. Só PCs Intel/AMD. O nome do arquivo é o que o atualizador
+# procura no release (src/main/updater/releases.ts).
+linux:
+  target:
+    - target: AppImage
+      arch: x64
+  icon: build/icon.png
+  category: Development
+  artifactName: Argus-${version}-${arch}.${ext}
+  executableName: argus
+  synopsis: Canvas infinito para orquestrar projetos e agentes do Claude Code
+  # O ícone das janelas e do atalho no menu de apps (ver app/linuxDesktop.ts): no Linux a janela não
+  # pega o ícone do executável sozinha.
+  extraResources:
+    - from: build/icon.png
+      to: icon.png
+
+# Runtime novo do AppImage (estático): o antigo pedia a libfuse2, que o Ubuntu 22.04 em diante não
+# traz instalada, e o AppImage nem abria. Ainda marcado como beta pelo electron-builder.
+toolsets:
+  appimage: '1.0.3'
 
 afterPack: scripts/sign.mjs
 

@@ -1,5 +1,6 @@
 import { BrowserWindow, nativeTheme } from 'electron'
 import { IS_MAC } from '../platform'
+import { linuxIcon } from './linuxDesktop'
 
 // Moldura das janelas: barra de título própria, os botões do sistema na cor dela e os atalhos que,
 // sem menu, o Windows não teria.
@@ -13,9 +14,11 @@ const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
 // Sem a barra do sistema. No Mac, os semáforos ficam dentro da barra do app. No Windows,
 // minimizar, maximizar e fechar são desenhados pelo sistema por cima da barra do app, na cor dela:
 // a barra de título do canvas (surface) ou o cabeçalho da conversa (bg), como no index.css.
+// No Linux a janela recebe também o ícone do app (a barra de tarefas não o pega do executável).
 export function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
   if (IS_MAC) return { titleBarStyle: 'hiddenInset' }
-  return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind) }
+  const icon = linuxIcon()
+  return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind), ...(icon ? { icon } : {}) }
 }
 
 function overlay(kind: WindowKind): Electron.TitleBarOverlay {

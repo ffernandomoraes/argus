@@ -3,7 +3,7 @@ import { listen, send } from '../ipc'
 import { micError } from './audio'
 import { record } from './record'
 
-// Microfone do ditado no Windows. No Mac quem grava é o programa native/speech; aqui é a própria
+// Microfone do ditado no Windows e no Linux. No Mac quem grava é o programa native/speech; aqui é a própria
 // janela, pelo navegador. Entrega o mesmo que ele: o áudio em 16 kHz, mono, 16 bits (para o processo
 // principal, que manda ao serviço de voz do Claude), o volume para as ondas e o "ready".
 
@@ -80,7 +80,7 @@ export const winMic = {
   }
 }
 
-if (process.platform === 'win32') {
+if (process.platform !== 'darwin') {
   listen('speech:started', () => (acked = true))
   // O processo principal encerrou o ditado (fim do texto ou erro): o microfone desliga junto.
   listen('speech:event', (event) => {

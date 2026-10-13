@@ -1,11 +1,11 @@
-import { IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform'
 
 // Comandos de canvas são simples: o Haiku responde rápido, o que conta muito na voz.
 export const MODEL = 'haiku'
 
 // O que muda no texto entre os sistemas: o nome dele e a tecla de desfazer.
-export const SYSTEM_NAME = IS_WIN ? 'Windows' : 'macOS'
-const UNDO = IS_WIN ? 'Ctrl+Z' : '⌘Z'
+export const SYSTEM_NAME = IS_WIN ? 'Windows' : IS_LINUX ? 'Linux' : 'macOS'
+const UNDO = IS_WIN || IS_LINUX ? 'Ctrl+Z' : '⌘Z'
 
 export const SYSTEM_PROMPT = `Você é o assistente do canvas de um app de ${SYSTEM_NAME} que organiza projetos do Claude Code.
 O canvas tem blocos:

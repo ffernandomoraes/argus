@@ -2,13 +2,13 @@ import { app, BrowserWindow, Menu, nativeTheme, Tray } from 'electron'
 import type { UnreadChat } from '../../shared/chat'
 import { statusSignature, StatusChanges, type ChatEntry } from '../chats/entries'
 import { sessionTitles } from '../chats/titles'
-import { IS_MAC } from '../platform'
+import { IS_LINUX, IS_MAC } from '../platform'
 import { drawIcons, FRAMES } from './icons'
 import { tooltip, topKind, type Finished, type Kind } from './kinds'
 import { trayMenu, trayRows } from './menu'
 
-// Ícone com o estado das conversas abertas neste app: na barra de menus do macOS, ou na área de
-// notificação do Windows (perto do relógio). "Concluído" é a resposta que você ainda não viu (a
+// Ícone com o estado das conversas abertas neste app: na barra de menus do macOS, na área de
+// notificação do Windows (perto do relógio) ou na bandeja do Linux. "Concluído" é a resposta que você ainda não viu (a
 // bolinha verde da lista) e fica até você abrir a conversa; no Mac, o número ao lado do ícone conta
 // essas. "Erro" fica marcado até você voltar ao app.
 
@@ -44,10 +44,12 @@ export class StatusTray {
   constructor(private sources: TraySources) {
     this.tray = new Tray(this.icons.kinds.idle)
     const open = (): void => void this.openMenu()
-    this.tray.on('click', open)
-    this.tray.on('right-click', open)
+    if (!IS_LINUX) {
+      this.tray.on('click', open)
+      this.tray.on('right-click', open)
+    }
     // Windows: a barra de tarefas trocou de tema claro para escuro (ou o contrário).
-    if (!IS_MAC) nativeTheme.on('updated', this.redraw)
+    if (!IS_MAC && !IS_LINUX) nativeTheme.on('updated', this.redraw)
     this.refresh()
   }
 
@@ -55,6 +57,15 @@ export class StatusTray {
     this.icons = drawIcons(DEV)
     this.shown = null
     this.paint()
+  }
+
+  // Linux: a bandeja não avisa o clique ao app (GNOME e KDE abrem o menu sozinhos), então o menu
+  // fica preso ao ícone e é refeito a cada mudança.
+  private menuSeq = 0
+  private async attachMenu(): Promise<void> {
+    const seq = ++this.menuSeq
+    const menu = await this.buildMenu()
+    if (seq === this.menuSeq) this.tray.setContextMenu(menu)
   }
 
   // Chamado a cada mudança de estado de uma conversa. Sai cedo quando nada do que o ícone mostra
@@ -76,6 +87,7 @@ export class StatusTray {
       }
     }
     this.paint()
+    if (IS_LINUX) void this.attachMenu()
   }
 
   // Você voltou ao app: os avisos de erro já foram vistos.
@@ -83,6 +95,7 @@ export class StatusTray {
     if (!this.finished.size) return
     this.finished.clear()
     this.paint()
+    if (IS_LINUX) void this.attachMenu()
   }
 
   destroy(): void {
@@ -109,7 +122,8 @@ export class StatusTray {
     const top = topKind(kinds)
     if (top === this.shown) return
     this.shown = top
-    if (top === 'running') this.startSpinner()
+    // Linux: sem animação. Cada quadro vira uma imagem nova mandada à bandeja pelo DBus.
+    if (top === 'running' && !IS_LINUX) this.startSpinner()
     else {
       this.stopSpinner()
       this.tray.setImage(this.icons.kinds[top])
@@ -131,6 +145,10 @@ export class StatusTray {
 
   // Menu montado na hora do clique: os títulos vêm dos arquivos das sessões.
   private async openMenu(): Promise<void> {
+    this.tray.popUpContextMenu(await this.buildMenu())
+  }
+
+  private async buildMenu(): Promise<Menu> {
     const rows = trayRows(this.entries, this.finished, this.unread)
     const titles = new Map<string, string>()
     const untitled = rows.filter((r) => r.title === undefined)
@@ -144,6 +162,6 @@ export class StatusTray {
       showApp: this.sources.showApp,
       openChat: this.sources.openChat
     })
-    this.tray.popUpContextMenu(Menu.buildFromTemplate(items))
+    return Menu.buildFromTemplate(items)
   }
 }

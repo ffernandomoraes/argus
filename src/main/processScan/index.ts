@@ -1,4 +1,5 @@
-import { IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform'
+import { scanLinux } from './linux'
 import { scanMac } from './mac'
 import type { Listening } from './types'
 import { scanWindows } from './win'
@@ -23,7 +24,7 @@ export function scanListening({ fresh = false }: { fresh?: boolean } = {}): Prom
   if (!fresh && cache && Date.now() - cache.at < TTL) return Promise.resolve(cache.list)
   if (pending && pending.generation === generation) return pending.promise
   const started = generation
-  const promise = (IS_WIN ? scanWindows() : scanMac())
+  const promise = (IS_WIN ? scanWindows() : IS_LINUX ? scanLinux() : scanMac())
     .then((list) => {
       if (started === generation) cache = { at: Date.now(), list }
       return list

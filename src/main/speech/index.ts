@@ -1,7 +1,7 @@
 import type { WebContents } from 'electron'
 import { claudeAccessToken } from '../claudeAuth'
 import { sendTo } from '../ipc/events'
-import { IS_WIN } from '../platform'
+import { IS_MAC } from '../platform'
 import { claudeSession } from './claudeSession'
 import { appleSession, helperPath, spawnHelper } from './helper'
 import type { OpenMic, Send, Session } from './types'
@@ -35,7 +35,7 @@ export class Speech {
     // campo dela) e, no Windows, desliga o microfone dela. No Mac, o programa que grava já foi
     // encerrado no abort.
     if (previous && previous !== target) {
-      if (IS_WIN) sendTo(previous, 'speech:micStop')
+      if (!IS_MAC) sendTo(previous, 'speech:micStop')
       sendTo(previous, 'speech:event', { type: 'done', text: '' })
     }
     this.target = target
@@ -44,7 +44,8 @@ export class Speech {
       this.abort()
       this.target = null
     })
-    if (IS_WIN) {
+    // Windows e Linux: a janela grava (preload/winMic) e o áudio vem para cá.
+    if (!IS_MAC) {
       // Daqui em diante, fim e erro que chegarem são desta sessão (ver preload/winMic).
       sendTo(target, 'speech:started')
       return this.startWindows(seq, send)

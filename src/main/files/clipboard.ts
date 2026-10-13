@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { clipboard, ClipboardItem } from 'electron'
 import type { FileOpResult } from '../../shared/files'
 import { insideRoot } from '../paths'
-import { IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform'
 import { powershell } from '../winProcesses'
 import { exists, failure, OUTSIDE, relOf } from './fsHelpers'
 
@@ -38,7 +38,18 @@ export async function copyToClipboard(root: string, rels: string[]): Promise<voi
     return
   }
   const urls = paths.map((p) => pathToFileURL(p).href)
-  await clipboard.write([new ClipboardItem({ 'text/uri-list': urls.join('\r\n') })])
+  const uriList = urls.join('\r\n')
+  // Linux: o Nautilus (GNOME) cola pelo formato próprio dele; o Dolphin (KDE), pelo text/uri-list.
+  // Os dois juntos; se o formato do GNOME for recusado, vai só o padrão.
+  if (IS_LINUX) {
+    try {
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': uriList, 'x-special/gnome-copied-files': `copy\n${urls.join('\n')}` })])
+      return
+    } catch {
+      // segue com o padrão
+    }
+  }
+  await clipboard.write([new ClipboardItem({ 'text/uri-list': uriList })])
 }
 
 // Nome livre na pasta de destino, como o Finder ao duplicar: "nome cópia.ext", "nome cópia 2.ext".
@@ -58,7 +69,7 @@ export async function pasteFromClipboard(root: string, dirRel: string): Promise<
   if (!dir) return OUTSIDE
   const sources = await clipboardPaths()
   if (!sources.length) {
-    const hint = IS_WIN ? 'no Explorador de Arquivos com Ctrl+C' : 'no Finder com ⌘C'
+    const hint = IS_WIN ? 'no Explorador de Arquivos com Ctrl+C' : IS_LINUX ? 'no gerenciador de arquivos com Ctrl+C' : 'no Finder com ⌘C'
     return { ok: false, error: `Nada copiado para colar. Copie arquivos ${hint}.` }
   }
   let last = ''

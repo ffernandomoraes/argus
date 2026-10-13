@@ -13,6 +13,8 @@ export type Release = {
 export const isMacAsset = (a: ReleaseAsset) => a.name.endsWith('-arm64.zip')
 // Instalador do Windows publicado em cada release (ver electron-builder.yml).
 export const isWindowsAsset = (a: ReleaseAsset) => /^Argus-Setup-[\d.]+\.exe$/.test(a.name)
+// AppImage do Linux (Intel/AMD). O electron-builder escreve a arquitetura como x86_64 no AppImage.
+export const isLinuxAsset = (a: ReleaseAsset) => /^Argus-[\d.]+-(x86_64|x64)\.AppImage$/.test(a.name)
 
 export const releaseVersion = (release: Release) => release.tag_name.replace(/^v/, '')
 

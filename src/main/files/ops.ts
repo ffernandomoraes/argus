@@ -1,10 +1,10 @@
 import { mkdir, rename, writeFile as write } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { app, shell } from 'electron'
 import type { FileOpResult } from '../../shared/files'
 import { expandHome, insideRoot } from '../paths'
-import { IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform'
 import { changedOnDisk } from './diskBase'
 import { exists, failure, OUTSIDE, relOf } from './fsHelpers'
 import { invalidName, invalidPath } from './names'
@@ -91,6 +91,7 @@ export function revealItem(root: string, rel: string): void {
 export async function openInBrowser(root: string, rel: string): Promise<void> {
   const full = insideRoot(root, rel)
   if (!full) return
+  if (IS_LINUX) return openInLinuxBrowser(full)
   try {
     const browser = (await app.getApplicationInfoForProtocol('https://')).path
     const [cmd, args] = IS_WIN ? [browser, [full]] : ['open', ['-a', browser, full]]
@@ -98,4 +99,17 @@ export async function openInBrowser(root: string, rel: string): Promise<void> {
   } catch {
     void shell.openPath(full)
   }
+}
+
+// Linux: o navegador padrão vem do xdg-settings (o .desktop dele, "firefox.desktop") e abre pelo
+// gtk-launch. Sem um dos dois (KDE sem o GTK, por exemplo), cai no app padrão do tipo.
+function openInLinuxBrowser(full: string): void {
+  execFile('xdg-settings', ['get', 'default-web-browser'], { timeout: 5000 }, (err, stdout) => {
+    const desktop = String(stdout ?? '').trim()
+    if (err || !desktop.endsWith('.desktop')) return void shell.openPath(full)
+    const child = spawn('gtk-launch', [desktop, full], { detached: true, stdio: 'ignore' })
+    child.on('error', () => void shell.openPath(full))
+    child.on('exit', (code) => code && void shell.openPath(full))
+    child.unref()
+  })
 }

@@ -57,3 +57,22 @@ export function windowsScript(): string {
 function launchCommand(): string {
   return app.isPackaged ? `"${process.execPath}"` : `"${process.execPath}" "${app.getAppPath()}"`
 }
+
+// Linux: como no Windows, o script abre o app com a pasta, e o app já aberto recebe dela o pedido
+// (ver openArg.ts); não depende do curl, que nem sempre vem instalado. No AppImage o caminho é o do
+// arquivo .AppImage (APPIMAGE): o do executável muda a cada abertura (/tmp/.mount_...). setsid: o
+// app não fecha junto com o terminal que rodou o comando.
+export function linuxScript(): string {
+  const exe = app.isPackaged ? quote(process.env.APPIMAGE || process.execPath) : `${quote(process.execPath)} ${quote(app.getAppPath())}`
+  return `#!/bin/sh
+# Gerado pelo Argus a cada vez que o app abre; mudanças aqui se perdem.
+target="\${1:-.}"
+dir=$(cd "$target" 2>/dev/null && pwd -P) || { echo "argus: pasta não encontrada: $target" >&2; exit 1; }
+if command -v setsid >/dev/null 2>&1; then
+  setsid ${exe} "${OPEN_FLAG}$dir" >/dev/null 2>&1 &
+else
+  nohup ${exe} "${OPEN_FLAG}$dir" >/dev/null 2>&1 &
+fi
+exit 0
+`
+}

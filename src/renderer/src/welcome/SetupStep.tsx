@@ -3,11 +3,14 @@ import { Check, CheckCircle2, Circle, Copy, Loader2 } from 'lucide-react'
 import { MAIN_ACCOUNT, type AuthState, type ClaudeInstall } from '../../../shared/auth'
 import { LoginPanel } from '../auth/LoginPanel'
 import { useCopied } from '../lib/useCopied'
-import { IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 
 const GIT_URL = 'https://git-scm.com/download/win'
+// Linux: o git vem do gerenciador de pacotes da distribuição (apt no Ubuntu e no Debian, dnf no
+// Fedora).
+const LINUX_GIT = 'sudo apt install git   # Fedora: sudo dnf install git'
 
 // Pronto para começar: Claude Code instalado e nenhuma conta confirmada sem login. Conta que não
 // respondeu (null) não trava a pessoa aqui; é a mesma regra do App para abrir o canvas. O Git
@@ -105,6 +108,15 @@ export function SetupStep({ auth }: { auth: AuthState }) {
               Baixar o Git
             </Button>
           )}
+        </Item>
+      )}
+      {IS_LINUX && (
+        <Item
+          state={auth.claude.git ? 'done' : 'todo'}
+          title="Git"
+          detail={auth.claude.git ? 'Instalado.' : 'O Claude Code e o Argus usam o Git. Instale pelo terminal e confira de novo.'}
+        >
+          {!auth.claude.git && <Command command={LINUX_GIT} />}
         </Item>
       )}
       {account ? (

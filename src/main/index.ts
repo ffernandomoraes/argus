@@ -1,10 +1,11 @@
 import { app } from 'electron'
 import { receiveFolders } from './app/folderOpener'
 import { setupLifecycle } from './app/lifecycle'
+import { setupLinuxSandbox } from './app/linuxSandbox'
 import { createServices } from './app/services'
 import { startApp } from './app/startup'
 import { openArg } from './cli'
-import { IS_MAC, IS_WIN } from './platform'
+import { cleanAppImageEnv, IS_MAC, IS_WIN } from './platform'
 
 // Partida do processo principal. As peças ficam em app/ (janelas, serviços, saída, segurança) e
 // ipc/ (os canais da janela, tipados por src/shared/ipc.ts).
@@ -12,6 +13,8 @@ import { IS_MAC, IS_WIN } from './platform'
 // O pnpm dev tem dados próprios: com a mesma pasta do instalado, um sobrescreveria o canvas e as
 // configurações do outro.
 if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')} Dev`)
+setupLinuxSandbox()
+cleanAppImageEnv()
 
 // Uma instância só: com duas, as duas gravariam o mesmo canvas.json e a segunda tomaria o socket do
 // `argus` (ver o módulo cli) da primeira. A segunda entrega à primeira a pasta do `argus .`

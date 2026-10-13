@@ -8,6 +8,8 @@ import { winMic } from './winMic'
 // Node além do electron: o preload fica pronto para rodar com sandbox.
 
 const IS_WIN = process.platform === 'win32'
+// Onde a janela grava o microfone do ditado (preload/winMic): fora do Mac.
+const WINDOW_MIC = process.platform !== 'darwin'
 
 // Pasta pessoal, como o os.homedir() do processo principal: USERPROFILE no Windows, HOME no Mac.
 const homeDir = (IS_WIN ? (process.env.USERPROFILE ?? process.env.HOME) : (process.env.HOME ?? process.env.USERPROFILE)) ?? ''
@@ -35,17 +37,18 @@ const api: Api = {
   },
   onReloadKey,
   onEdit,
-  // No Windows o microfone é gravado aqui mesmo (winMic); no Mac, pelo programa native/speech.
+  // No Windows e no Linux o microfone é gravado aqui mesmo (winMic); no Mac, pelo programa
+  // native/speech.
   speech: {
-    start: () => (IS_WIN ? void winMic.start() : send('speech:start')),
+    start: () => (WINDOW_MIC ? void winMic.start() : send('speech:start')),
     stop: () => {
-      if (IS_WIN) winMic.stop()
+      if (WINDOW_MIC) winMic.stop()
       send('speech:stop')
     },
     openSettings: () => send('speech:openSettings'),
     onEvent: (cb) => {
       const off = listen('speech:event', cb)
-      const offMic = IS_WIN ? winMic.onEvent(cb) : () => {}
+      const offMic = WINDOW_MIC ? winMic.onEvent(cb) : () => {}
       return () => {
         off()
         offMic()

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { IS_WIN } from '../platform'
+import { IS_MAC, IS_WIN, SYSTEM_NAME } from '../platform'
 
 // Ilustrações das boas-vindas: esquemas do próprio app, nas cores do tema (claro ou escuro).
 // Todas no mesmo quadro, 360 x 160; os pontos do canvas são o fundo da moldura (WelcomeModal).
@@ -156,15 +156,15 @@ export function AgentsArt() {
 }
 
 // Janela do sistema com a lista do que precisa estar pronto. Mac: os três círculos à esquerda;
-// Windows: os botões à direita e o Git na lista.
+// Windows e Linux: os botões à direita e o Git na lista.
 export function SetupArt() {
-  const items = IS_WIN ? ['Claude Code', 'Git for Windows', 'Sua conta'] : ['Claude Code', 'Sua conta']
+  const items = IS_MAC ? ['Claude Code', 'Sua conta'] : ['Claude Code', IS_WIN ? 'Git for Windows' : 'Git', 'Sua conta']
   return (
-    <Art label={`Configuração do Claude Code no ${IS_WIN ? 'Windows' : 'macOS'}`}>
+    <Art label={`Configuração do Claude Code no ${SYSTEM_NAME}`}>
       <g transform="translate(70 14)">
         <rect width="220" height="132" rx="10" className="fill-surface stroke-line-strong" strokeWidth="1" />
         <path d="M0 26 h220" className="stroke-line" strokeWidth="1" />
-        {IS_WIN ? (
+        {!IS_MAC ? (
           <g className="stroke-muted" strokeWidth="1.2" fill="none">
             <path d="M168 13 h8" />
             <rect x="184" y="9" width="8" height="8" />
@@ -184,7 +184,7 @@ export function SetupArt() {
           ))}
         </g>
         {items.map((label, i) => (
-          <g key={label} transform={`translate(${IS_WIN ? 62 : 72} ${(IS_WIN ? 82 : 90) + i * 16})`}>
+          <g key={label} transform={`translate(${IS_MAC ? 72 : 62} ${(IS_MAC ? 90 : 82) + i * 16})`}>
             <circle cx="5" cy="-3" r="5" className="fill-done" />
             <path d="M2.6 -3 l1.7 1.7 l3.2 -3.4" stroke="#fff" strokeWidth="1.3" fill="none" />
             <text x="16" y="0" fontSize="9" className="fill-text">

@@ -1,10 +1,10 @@
 # Gera uma versão nova: sobe o número no package.json, confere os tipos, monta o .dmg e o .zip
 # (Apple Silicon), confere se o app abre, cria a tag e publica tudo num release do GitHub. Ao mesmo
-# tempo, numa máquina Windows, monta o instalador .exe e confere se o app abre; quando os dois
-# terminam, o .exe é anexado ao mesmo release.
+# tempo, numa máquina Windows, monta o instalador .exe, e numa Linux, o AppImage; cada um confere se
+# o app abre e, quando o do Mac termina, é anexado ao mesmo release.
 # Roda sozinho a cada push na main (sobe o patch; notas = commits desde a última tag).
 # Na mão, pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=minor -f notas="- item"
-# Com publicar=false só monta e guarda o .dmg e o .exe no run, sem tag nem release.
+# Com publicar=false só monta e guarda o .dmg, o .exe e o AppImage no run, sem tag nem release.
 name: Release
 
 on:
@@ -298,3 +298,73 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "v$VERSION" Argus-Setup-*.exe --clobber --repo "$GITHUB_REPOSITORY"
+
+  # AppImage do Linux, numa máquina Ubuntu do GitHub, ao mesmo tempo que os outros. Mesmo teste de
+  # abertura (--smoke-test), numa tela virtual (xvfb): sem passar, o AppImage não vai.
+  linux:
+    needs: versao
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.versao.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Versão
+        run: npm pkg set version="$VERSION"
+
+      # O postinstall compila o terminal (node-pty) com o build-essential que já vem na máquina.
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Conferir o terminal
+        run: test -f node_modules/node-pty/build/Release/pty.node
+
+      - name: Montar o AppImage
+        run: pnpm exec electron-vite build && pnpm exec electron-builder --linux --x64 --publish never
+
+      - name: Testar se o app abre
+        run: |
+          code=0
+          timeout 180 xvfb-run -a dist/linux-unpacked/argus --smoke-test || code=$?
+          cat "${TMPDIR:-/tmp}/argus-smoke.log" 2>/dev/null || true
+          if [ "$code" -ne 0 ]; then
+            echo "O app falhou no teste (código $code)." >&2
+            exit 1
+          fi
+
+      - name: Guardar o AppImage
+        uses: actions/upload-artifact@v6
+        with:
+          name: Argus-Linux-${{ env.VERSION }}
+          path: dist/Argus-*.AppImage
+          retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
+
+  # Anexa o AppImage ao release que o job do Mac criou (mesma regra do Windows).
+  anexar-linux:
+    needs: [versao, release, linux]
+    if: ${{ github.event_name == 'push' || inputs.publicar }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.versao.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: Argus-Linux-${{ env.VERSION }}
+
+      - name: Anexar ao release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "v$VERSION" Argus-*.AppImage --clobber --repo "$GITHUB_REPOSITORY"

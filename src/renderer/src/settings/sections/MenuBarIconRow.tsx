@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { IS_WIN } from '../../platform'
+import { IS_LINUX, IS_WIN } from '../../platform'
 import { Row, Switch } from '../controls'
 
-// Na barra de menus do Mac; no Windows, na área de notificação, perto do relógio.
+// Na barra de menus do Mac; no Windows, na área de notificação, perto do relógio; no Linux, na
+// bandeja do sistema (o GNOME só mostra com a extensão AppIndicator, que o Ubuntu já traz).
 const TRAY = IS_WIN
   ? { label: 'Ícone na área de notificação', where: 'perto do relógio do Windows' }
-  : { label: 'Ícone na barra de menus', where: 'no topo do macOS' }
+  : IS_LINUX
+    ? { label: 'Ícone na bandeja do sistema', where: 'no topo da tela (no GNOME, precisa da extensão AppIndicator)' }
+    : { label: 'Ícone na barra de menus', where: 'no topo do macOS' }
 
 // Guardada no processo principal: o ícone é criado antes de a janela abrir.
 export function MenuBarIconRow() {

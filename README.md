@@ -12,6 +12,8 @@
   <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para macOS (Apple Silicon)</b></a>
   -
   <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para Windows</b></a>
+  -
+  <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para Linux (AppImage)</b></a>
 </p>
 
 ![Ilustração do Argus: projetos agrupados em Trabalho e Pessoal, conversas rodando com seus subagentes, uma nota, um terminal e o painel da conversa pedindo permissão para um comando](docs/ilustracoes/canvas.svg)
@@ -133,7 +135,7 @@ editor da memória do Claude.
 - Notificação do sistema quando uma conversa termina ou precisa de resposta.
 - Ícone na barra de menus (no Windows, na área de notificação) com o resumo do que está rodando.
 - Indicador do limite de uso do Claude na barra de título, de cada conta; o detalhe abre num painel logo abaixo.
-- Lista dos servidores locais que algum agente deixou rodando ou que rodam dentro das pastas do canvas, com o nome do app e atalho para abrir ou encerrar; não deixa encerrar o que derrubaria uma sessão (só no Mac).
+- Lista dos servidores locais que algum agente deixou rodando ou que rodam dentro das pastas do canvas, com o nome do app e atalho para abrir ou encerrar; não deixa encerrar o que derrubaria uma sessão (no Mac e no Linux).
 - Fechar ou atualizar o app com conversa ou terminal rodando pede confirmação antes.
 
 **Ferramentas**
@@ -160,14 +162,15 @@ editor da memória do Claude.
 
 ## Requisitos
 
-- Mac com Apple Silicon (M1 ou mais novo), ou PC com Windows 10 ou 11 de 64 bits.
+- Mac com Apple Silicon (M1 ou mais novo), PC com Windows 10 ou 11 de 64 bits, ou PC com Linux de
+  64 bits (Intel/AMD; testado só no GitHub Actions, num Ubuntu).
 - [Claude Code](https://docs.claude.com/claude-code). O Argus usa o `claude` da sua máquina e a sua assinatura.
   Na primeira vez, as boas-vindas explicam o app em 5 etapas e a última configura tudo: instala o
   Claude Code com um clique (o instalador oficial da Anthropic), confere o Git no Windows e faz o
   login. Outras contas entram por
   **Configurações › Contas**.
 - No Windows, também o [Git for Windows](https://git-scm.com/download/win), que o app usa para mostrar os
-  arquivos alterados e o diff.
+  arquivos alterados e o diff. No Linux, o git da distribuição (`sudo apt install git`).
 
 ## Instalação
 
@@ -178,6 +181,13 @@ curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.
 ```
 
 Baixa a última versão, coloca em `/Applications` e abre. Rodar de novo atualiza.
+
+### Linux
+
+O mesmo comando acima baixa o AppImage para `~/Applications/Argus.AppImage` e abre o app. Ou
+baixe o `Argus-<versão>-x86_64.AppImage` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest),
+dê permissão de execução (`chmod +x`) e abra. Na primeira abertura o Argus aparece no menu de
+apps. As atualizações trocam o próprio arquivo, no mesmo lugar.
 
 ### Atualizações
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { AuthState } from '../../../shared/auth'
-import { IS_WIN, keys } from '../platform'
+import { IS_LINUX, IS_WIN, keys } from '../platform'
 import { AgentsArt, CanvasArt, ChatArt, OrganizeArt, SetupArt } from './illustrations'
 import { SetupStep } from './SetupStep'
 
@@ -85,7 +85,9 @@ export function welcomeSteps(auth: AuthState): Step[] {
           <p>
             {IS_WIN
               ? 'O Argus usa o Claude Code deste computador e a sua assinatura. No Windows, ele também precisa do Git.'
-              : 'O Argus usa o Claude Code deste Mac e a sua assinatura, o mesmo login do Terminal e do VS Code.'}
+              : IS_LINUX
+                ? 'O Argus usa o Claude Code deste computador e a sua assinatura, o mesmo login do terminal. Ele também precisa do Git.'
+                : 'O Argus usa o Claude Code deste Mac e a sua assinatura, o mesmo login do Terminal e do VS Code.'}
           </p>
           <SetupStep auth={auth} />
         </>

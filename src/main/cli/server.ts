@@ -1,15 +1,15 @@
 import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import { isDirectory } from '../paths'
-import { IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform'
 import { CLI_BIN, SCRIPT, SOCKET } from './locations'
-import { macScript, windowsScript } from './scripts'
+import { linuxScript, macScript, windowsScript } from './scripts'
 
 // O corpo do pedido é só o caminho de uma pasta: mais que isso não veio do script do argus.
 const MAX_BODY = 4096
 
-// Grava o script do `argus` e, no Mac, escuta o socket por onde ele manda a pasta. No Windows, o
-// argus.cmd abre o Argus.exe com a pasta, e o app já aberto recebe dele o pedido (ver openArg.ts).
+// Grava o script do `argus` e, no Mac, escuta o socket por onde ele manda a pasta. No Windows e no
+// Linux, o script abre o app com a pasta, e o app já aberto recebe dele o pedido (ver openArg.ts).
 export class Cli {
   private server: Server | null = null
 
@@ -19,6 +19,10 @@ export class Cli {
     mkdirSync(CLI_BIN, { recursive: true })
     if (IS_WIN) {
       writeFileSync(SCRIPT, windowsScript())
+      return
+    }
+    if (IS_LINUX) {
+      writeFileSync(SCRIPT, linuxScript(), { mode: 0o755 })
       return
     }
     writeFileSync(SCRIPT, macScript(), { mode: 0o755 })

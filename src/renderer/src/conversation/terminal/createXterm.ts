@@ -1,7 +1,7 @@
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
-import { IS_WIN } from '../../platform'
+import { IS_LINUX, IS_WIN } from '../../platform'
 import { TERMINAL_FONT, TERMINAL_THEME } from './theme'
 import { fixMouseForZoom } from './zoomCorrection'
 
@@ -22,6 +22,22 @@ function windowsClipboard(term: Terminal): void {
       e.preventDefault()
       void navigator.clipboard.writeText(term.getSelection())
       term.clearSelection()
+      return false
+    }
+    // O xterm não trata a tecla: o navegador cola, e o texto chega pelo evento de colar.
+    return key !== 'v'
+  })
+}
+
+// Linux: como no terminal do GNOME e no Konsole, Ctrl+Shift+C copia e Ctrl+Shift+V cola; o Ctrl+C
+// continua interrompendo o programa.
+function linuxClipboard(term: Terminal): void {
+  term.attachCustomKeyEventHandler((e) => {
+    if (e.type !== 'keydown' || !e.ctrlKey || !e.shiftKey || e.altKey) return true
+    const key = e.key.toLowerCase()
+    if (key === 'c') {
+      e.preventDefault()
+      if (term.hasSelection()) void navigator.clipboard.writeText(term.getSelection())
       return false
     }
     // O xterm não trata a tecla: o navegador cola, e o texto chega pelo evento de colar.
@@ -54,6 +70,7 @@ export function createXterm(el: HTMLElement, fontSize: number, focus = true): Xt
   term.open(el)
   fixMouseForZoom(term)
   if (IS_WIN) windowsClipboard(term)
+  if (IS_LINUX) linuxClipboard(term)
   fit.fit()
   if (focus) term.focus()
 

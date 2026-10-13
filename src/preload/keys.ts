@@ -1,14 +1,15 @@
 import type { EditAction } from '../shared/ipc'
 import { listen } from './ipc'
 
-const IS_WIN = process.platform === 'win32'
+// Windows e Linux: sem o menu do app (só o Mac tem), as teclas vêm daqui.
+const NO_MENU = process.platform !== 'darwin'
 
-// Desfazer e refazer. No Mac chegam pelo menu Editar (⌘Z, ⇧⌘Z). O Windows não tem menu: Ctrl+Z,
-// Ctrl+Shift+Z e Ctrl+Y fazem o papel dele e chegam do mesmo jeito. Sem ninguém escutando (janela
+// Desfazer e refazer. No Mac chegam pelo menu Editar (⌘Z, ⇧⌘Z). O Windows e o Linux não têm menu:
+// Ctrl+Z, Ctrl+Shift+Z e Ctrl+Y fazem o papel dele e chegam do mesmo jeito. Sem ninguém escutando (janela
 // de conversa) ou no terminal e no editor de código, que têm o desfazer deles, a tecla segue normal.
 const editListeners = new Set<(action: EditAction) => void>()
 listen('edit', (action) => editListeners.forEach((l) => l(action)))
-if (IS_WIN) {
+if (NO_MENU) {
   window.addEventListener(
     'keydown',
     (e) => {
@@ -30,7 +31,7 @@ export function onEdit(cb: (action: EditAction) => void): () => void {
   }
 }
 
-// Recarregar (⌘R no menu Ver; no Windows, Ctrl+R). Com alguém escutando (a página do protótipo
+// Recarregar (⌘R no menu Ver; no Windows e no Linux, Ctrl+R). Com alguém escutando (a página do protótipo
 // aberta no modo design), recarrega só ela; sem ninguém, no Mac recarrega a janela, como antes.
 const reloadListeners: (() => void)[] = []
 const reloadKey = (): boolean => {
@@ -42,7 +43,7 @@ const reloadKey = (): boolean => {
 listen('reload-request', () => {
   if (!reloadKey()) location.reload()
 })
-if (IS_WIN) {
+if (NO_MENU) {
   window.addEventListener(
     'keydown',
     (e) => {

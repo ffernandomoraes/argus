@@ -2,7 +2,7 @@ import type { ReactNode, Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { TITLE_BAR_HEIGHT } from '../../conversation/FloatingPanel'
 import { drawerZoomKey } from '../../conversation/useDrawerZoom'
-import { IS_WIN } from '../../platform'
+import { IS_MAC } from '../../platform'
 
 const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
 
@@ -16,7 +16,7 @@ export function TerminalFocusLayer({ panelRef, children }: { panelRef: Ref<HTMLD
     // de mouse param aqui (selecionar, menu do bloco).
     <div
       ref={panelRef}
-      onKeyDownCapture={(e) => (IS_WIN || e.metaKey) && drawerZoomKey(e.nativeEvent) && e.stopPropagation()}
+      onKeyDownCapture={(e) => (!IS_MAC || e.metaKey) && drawerZoomKey(e.nativeEvent) && e.stopPropagation()}
       onClick={stop}
       onDoubleClick={stop}
       onContextMenu={stop}

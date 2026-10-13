@@ -39,7 +39,7 @@ mac:
   category: public.app-category.developer-tools
   artifactName: Argus-${version}-${arch}.${ext}
   icon: build/icon.icns
-  # A assinatura é feita no afterPack (scripts/sign.mjs), com certificado próprio ou ad-hoc.
+  # A assinatura é feita no afterPack (scripts/afterPack.mjs -> sign.mjs), com certificado próprio ou ad-hoc.
   identity: null
   # Programa do ditado (native/speech), só no Mac. No Windows o microfone é gravado pela janela.
   extraResources:
@@ -92,7 +92,8 @@ linux:
 toolsets:
   appimage: '1.0.3'
 
-afterPack: scripts/sign.mjs
+# Assina o app do Mac e, no Linux, põe o lançador que cuida do sandbox (scripts/linuxLauncher.mjs).
+afterPack: scripts/afterPack.mjs
 
 dmg:
   title: Argus ${version}

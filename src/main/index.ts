@@ -1,7 +1,6 @@
 import { app } from 'electron'
 import { receiveFolders } from './app/folderOpener'
 import { setupLifecycle } from './app/lifecycle'
-import { setupLinuxSandbox } from './app/linuxSandbox'
 import { createServices } from './app/services'
 import { startApp } from './app/startup'
 import { openArg } from './cli'
@@ -13,7 +12,6 @@ import { cleanAppImageEnv, IS_MAC, IS_WIN } from './platform'
 // O pnpm dev tem dados próprios: com a mesma pasta do instalado, um sobrescreveria o canvas e as
 // configurações do outro.
 if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')} Dev`)
-setupLinuxSandbox()
 cleanAppImageEnv()
 
 // Uma instância só: com duas, as duas gravariam o mesmo canvas.json e a segunda tomaria o socket do

@@ -1,10 +1,10 @@
 import { execFile, spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { accountDir } from '../accounts'
 import { keychainAccount, keychainService } from '../accounts/keychain'
+import { configDir } from '../claudeHome'
 import { writeStdin } from '../lib/childProcess'
 import { writeJsonAtomic } from '../lib/jsonFile'
 import { IS_MAC } from '../platform'
@@ -31,8 +31,8 @@ const run = promisify(execFile)
 // argumentos (conferido na 2.1.295). Aqui, igual.
 const STDIN_LIMIT = 4032
 
-const credentialsFile = (account: string) =>
-  join(accountDir(account) ?? join(homedir(), '.claude'), '.credentials.json')
+// Do Claude Code do app: no Windows sem o `claude` de lá, o do WSL (ver claudeHome.ts).
+const credentialsFile = (account: string) => join(configDir(account), '.credentials.json')
 
 // null sem login guardado, ou se não deu para ler.
 export async function readStored(account: string): Promise<Stored | null> {

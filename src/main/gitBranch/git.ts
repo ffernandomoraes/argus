@@ -1,6 +1,9 @@
 import { execFile } from 'node:child_process'
+import { homedir } from 'node:os'
 import { promisify } from 'node:util'
 import { gitPath } from '../platform'
+import { parseWslPath, toLinux } from '../wsl'
+import { WSL_EXE } from '../wsl/distros'
 
 const run = promisify(execFile)
 
@@ -13,8 +16,23 @@ export const SAFE_GIT = ['-c', 'core.fsmonitor=']
 
 export type GitOptions = { timeout?: number; maxBuffer?: number }
 
+// Programa, argumentos e pasta para rodar o git em `cwd`. Pasta do WSL: o git de lá, pelo wsl.exe.
+// O do Windows recusa a pasta (o dono é outro usuário) e veria como alterado todo arquivo
+// executável e toda quebra de linha diferente; o do Linux é o mesmo que o Claude usa no projeto.
+// O wsl.exe fica na pasta do usuário do Windows (o Windows não aceita pasta de rede como pasta de
+// trabalho de um programa); a do Linux vai pelo --cd.
+export function gitCommand(cwd: string, args: string[]): { file: string; args: string[]; cwd: string; wsl: boolean } {
+  const wsl = parseWslPath(cwd)
+  if (!wsl || process.platform !== 'win32') return { file: gitPath(), args: [...SAFE_GIT, ...args], cwd, wsl: false }
+  // Caminhos do projeto nos argumentos (o arquivo do diff) vão como o Linux os vê.
+  const linuxArgs = args.map((a) => (parseWslPath(a) ? toLinux(a) : a))
+  return { file: WSL_EXE, args: ['-d', wsl.distro, '--cd', wsl.linux, '--exec', 'git', ...SAFE_GIT, ...linuxArgs], cwd: homedir(), wsl: true }
+}
+
+// No WSL o prazo é maior: o primeiro wsl.exe pode ligar a máquina virtual.
 export async function git(cwd: string, args: string[], { timeout = 5000, maxBuffer = 1024 * 1024 }: GitOptions = {}): Promise<string> {
-  return (await run(gitPath(), [...SAFE_GIT, ...args], { cwd, timeout, maxBuffer, windowsHide: true })).stdout
+  const cmd = gitCommand(cwd, args)
+  return (await run(cmd.file, cmd.args, { cwd: cmd.cwd, timeout: cmd.wsl ? Math.max(timeout, 20_000) : timeout, maxBuffer, windowsHide: true })).stdout
 }
 
 // git diff sai com código 1 quando há diferença (--no-index); a saída ainda serve.

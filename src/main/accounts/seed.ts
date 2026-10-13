@@ -35,9 +35,10 @@ function pick(from: Record<string, unknown>, keys: string[]): Record<string, unk
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 // O .claude.json da conta nova, a partir do da principal. Sem ele (ou ilegível), a conta começa
-// do zero, como um Claude Code recém-instalado.
-export function seed(dir: string): void {
-  const read = readJsonFile(join(homedir(), '.claude.json'))
+// do zero, como um Claude Code recém-instalado. `home`: pasta do usuário onde está o da principal
+// (a do Linux, numa conta usada no WSL).
+export function seed(dir: string, home = homedir()): void {
+  const read = readJsonFile(join(home, '.claude.json'))
   if (read.status !== 'ok' || !isObject(read.data)) return
   const main = read.data
   const config = Object.fromEntries(Object.entries(main).filter(([k]) => SEED_KEYS.has(k) || SEED_MIGRATIONS.test(k)))

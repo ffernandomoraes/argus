@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute } from 'node:path'
 import { findInPath, IS_WIN } from '../platform'
+import { claudeDistro } from '../wsl/distros'
 import { knownClaude, loginShellClaude, lookupLoginShell } from './mac'
 import { windowsClaude } from './windows'
 
@@ -18,10 +19,17 @@ export function lookupClaude(): Promise<void> {
   return lookupLoginShell()
 }
 
-// O `claude` existe de verdade? Sem achar, claudePath devolve só o nome, na esperança do PATH.
-export function claudeFound(): boolean {
+// O `claude` deste sistema existe de verdade? Sem achar, claudePath devolve só o nome, na
+// esperança do PATH.
+export function nativeClaudeFound(): boolean {
   const claude = claudePath()
   return isAbsolute(claude) ? existsSync(claude) : !!findInPath(claude.replace(/\.exe$/i, ''))
+}
+
+// Tem um Claude Code para o app usar? No Windows, vale também o instalado no Linux do WSL: quem
+// trabalha lá não precisa de um segundo, do lado do Windows (ver wsl/index.ts).
+export function claudeFound(): boolean {
+  return nativeClaudeFound() || (IS_WIN && !!claudeDistro())
 }
 
 // Programa e argumentos para abrir o `claude` fora do SDK (terminal, login, uso). O cli.js do npm

@@ -1,11 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import type { AgentDef } from '../../shared/agents'
+import { claudeDir } from '../claudeHome'
 import { expandHome } from '../paths'
 import { parseAgent } from './format'
 
-export const GLOBAL_DIR = join(homedir(), '.claude', 'agents')
+// ~/.claude/agents de quem roda o Claude Code de `path`; sem ela, o do app (a biblioteca de agentes).
+// Num projeto do WSL, o do Linux.
+export const globalDir = (path?: string): string => join(claudeDir(path), 'agents')
 export const projectDir = (projectPath: string): string => join(expandHome(projectPath), '.claude', 'agents')
 
 export async function readDir(dir: string, scope: AgentDef['scope']): Promise<AgentDef[]> {

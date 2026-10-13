@@ -63,12 +63,12 @@ export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasRea
     // O canvas avisa que montou pelo mesmo sinal do comando `argus` (cli:ready).
     while (!canvasReady()) await wait(250)
     log('canvas montado')
-    const opened = terminals.open({ key: KEY, cwd: homedir(), shell: true, cols: 80, rows: 24 })
+    const opened = await terminals.open({ key: KEY, cwd: homedir(), shell: true, cols: 80, rows: 24 })
     if (!opened.ok) return finish(false, `terminal: ${opened.error}`)
     // Pedir de novo o mesmo terminal devolve o que ele já escreveu (o prompt do shell).
     for (let i = 0; i < 60; i++) {
       await wait(500)
-      const again = terminals.open({ key: KEY, cwd: homedir(), shell: true, cols: 80, rows: 24 })
+      const again = await terminals.open({ key: KEY, cwd: homedir(), shell: true, cols: 80, rows: 24 })
       if (again.ok && again.buffer.trim()) {
         log(`terminal respondeu: ${JSON.stringify(again.buffer.slice(-200))}`)
         return finish(true, 'app, canvas e terminal subiram')

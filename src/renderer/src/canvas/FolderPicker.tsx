@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Folder, FolderOpen, Search } from 'lucide-react'
 import type { KnownFolder } from '../../../shared/sessions'
-import { lastSep, parentDir } from '../platform'
+import { IS_WIN, lastSep, parentDir } from '../platform'
 import { Modal } from '../ui/Modal'
 import { TimeAgo } from './blocks/TimeAgo'
 import { displayPath } from './factory'
@@ -23,11 +23,14 @@ export function FolderPicker({
   const [folders, setFolders] = useState<KnownFolder[] | null>(null)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
+  // Distros do WSL (só no Windows): cada uma ganha um atalho para escolher pasta no Linux dela.
+  const [distros, setDistros] = useState<string[]>([])
   const list = useRef<HTMLUListElement>(null)
 
   useEffect(() => {
     let alive = true
     void window.api.sessions.folders().then((all) => alive && setFolders(all))
+    if (IS_WIN) void window.api.wsl.distros().then((d) => alive && setDistros(d), () => {})
     return () => {
       alive = false
     }
@@ -40,8 +43,8 @@ export function FolderPicker({
     list.current?.children[highlight]?.scrollIntoView({ block: 'nearest' })
   }, [highlight])
 
-  const pickOther = async () => {
-    const folder = await window.api.pickFolder()
+  const pickOther = async (distro?: string) => {
+    const folder = await window.api.pickFolder(distro)
     if (folder) onPick(folder)
   }
 
@@ -101,6 +104,16 @@ export function FolderPicker({
         <FolderOpen size={14} className="shrink-0" />
         Escolher outra pasta…
       </button>
+      {distros.map((d) => (
+        <button
+          key={d}
+          onClick={() => void pickOther(d)}
+          className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+        >
+          <FolderOpen size={14} className="shrink-0" />
+          Escolher pasta do Linux - WSL ({d})…
+        </button>
+      ))}
     </Modal>
   )
 }

@@ -15,8 +15,9 @@ import {
 } from '../accounts'
 import type { Inbox } from '../chats'
 import { INSTALL_COMMAND, runClaudeInstaller } from '../claudeInstall'
-import { claudeFound, claudePath, lookupClaude } from '../claudePath'
+import { claudeFound, lookupClaude } from '../claudePath'
 import { gitFound } from '../platform'
+import { distroFor } from '../wsl'
 import { openLoginQuery, type LoginQuery } from './loginQuery'
 import { readAccount, runClaude, type AccountRead } from './status'
 
@@ -25,9 +26,10 @@ import { readAccount, runClaude, type AccountRead } from './status'
 // pasta de configuração). Na principal, onde o Claude Code inteiro (terminal, VS Code, este app)
 // passa a usar; nas outras, no item da pasta da conta (ver accounts/).
 
-// O Git é conferido junto: no Windows, a etapa de configuração mostra se falta.
+// O Git é conferido junto: no Windows, a etapa de configuração mostra se falta. Com o Claude Code
+// rodando no WSL, vale o git de lá.
 function installState(status: ClaudeInstall['status'], message?: string): ClaudeInstall {
-  return { status, message, command: INSTALL_COMMAND, git: gitFound() }
+  return { status, message, command: INSTALL_COMMAND, git: gitFound() || !!distroFor() }
 }
 
 // adding: conta nova, cuja pasta some se o login não terminar.
@@ -205,10 +207,9 @@ export class Auth {
   // terminal e o VS Code.
   async logout(): Promise<boolean> {
     this.cancel()
-    const claude = claudePath()
     let ok = true
     try {
-      await runClaude(claude, ['auth', 'logout'], MAIN_ACCOUNT)
+      await runClaude(['auth', 'logout'], MAIN_ACCOUNT)
     } catch (err) {
       console.warn('[auth] claude auth logout falhou:', (err as Error).message)
       ok = false
@@ -224,8 +225,7 @@ export class Auth {
     if (id === MAIN_ACCOUNT || !accountIds().includes(id)) return false
     if (this.session?.accountId === id) this.cancel()
     this.onAccountRemoved(id)
-    const claude = claudePath()
-    await runClaude(claude, ['auth', 'logout'], id).catch(() => {})
+    await runClaude(['auth', 'logout'], id).catch(() => {})
     removeAccount(id)
     this.statuses.delete(id)
     // Uma conferência ainda em andamento não traz a conta de volta.

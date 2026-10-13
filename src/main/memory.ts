@@ -1,13 +1,29 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import type { MemoryFile, MemoryGroup, MemoryProject, MemoryWriteResult } from '../shared/memory'
 import { changedOnDisk } from './files/diskBase'
 import { writeTextFile } from './files/textFile'
+import { claudeDir } from './claudeHome'
 import { expandHome } from './paths'
 import { sessionsDir } from './sessions'
+import { distroFor } from './wsl'
 
-const GLOBAL_INSTRUCTIONS = join(homedir(), '.claude', 'CLAUDE.md')
+// CLAUDE.md global de quem roda o Claude Code de `path` (sem ela, o do app).
+const globalInstructions = (path?: string) => join(claudeDir(path), 'CLAUDE.md')
+
+// Os CLAUDE.md globais em jogo: o do app e, para projetos do WSL que rodam em outro lugar, o de
+// cada distro.
+function globals(projects: MemoryProject[]): { id: string; label: string; path: string }[] {
+  const out = [{ id: 'global', label: 'Global', path: globalInstructions() }]
+  const app = distroFor()
+  for (const p of projects) {
+    const distro = distroFor(expandHome(p.path))
+    if (!distro || distro === app) continue
+    const path = globalInstructions(expandHome(p.path))
+    if (!out.some((g) => g.path === path)) out.push({ id: `global:${distro}`, label: `Global (WSL: ${distro})`, path })
+  }
+  return out
+}
 // Lugares onde o Claude Code procura instruções de um projeto.
 const PROJECT_INSTRUCTIONS = ['CLAUDE.md', join('.claude', 'CLAUDE.md'), 'CLAUDE.local.md']
 
@@ -52,11 +68,15 @@ async function memoryFiles(projectPath: string): Promise<MemoryFile[]> {
 }
 
 export async function listMemory(projects: MemoryProject[]): Promise<MemoryGroup[]> {
-  const global: MemoryGroup = {
-    id: 'global',
-    label: 'Global',
-    files: [{ path: GLOBAL_INSTRUCTIONS, fileName: 'CLAUDE.md', kind: 'instructions', exists: await exists(GLOBAL_INSTRUCTIONS) }]
-  }
+  const global = await Promise.all(
+    globals(projects).map(
+      async (g): Promise<MemoryGroup> => ({
+        id: g.id,
+        label: g.label,
+        files: [{ path: g.path, fileName: 'CLAUDE.md', kind: 'instructions', exists: await exists(g.path) }]
+      })
+    )
+  )
   const groups = await Promise.all(
     projects.map(async (p): Promise<MemoryGroup> => {
       const root = expandHome(p.path)
@@ -71,14 +91,14 @@ export async function listMemory(projects: MemoryProject[]): Promise<MemoryGroup
       return { id: p.path, label: p.name, projectPath: p.path, files: [...shown, ...(await memoryFiles(p.path))] }
     })
   )
-  return [global, ...groups]
+  return [...global, ...groups]
 }
 
 // Só lê e grava arquivos de memória: CLAUDE.md global, de projetos do canvas, ou a pasta
 // de memória automática deles. Nada fora disso, mesmo que o pedido venha da interface.
 function allowed(path: string, projects: MemoryProject[]): boolean {
   const full = resolve(path)
-  if (full === GLOBAL_INSTRUCTIONS) return true
+  if (globals(projects).some((g) => full === resolve(g.path))) return true
   return projects.some((p) => {
     const root = resolve(expandHome(p.path))
     if (PROJECT_INSTRUCTIONS.some((rel) => full === join(root, rel))) return true

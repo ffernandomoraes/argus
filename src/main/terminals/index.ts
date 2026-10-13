@@ -1,12 +1,12 @@
 import type { IPty } from 'node-pty'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../../shared/terminal'
-import { liveStatusByPid } from '../liveSessions'
+import { liveStatusByPid, liveStatusBySessionSync } from '../liveSessions'
 import { expandHome, isDirectory } from '../paths'
 import { IS_WIN } from '../platform'
 import { childrenOf, processTable } from '../winProcesses'
 import { forceKillLater } from './forceKill'
 import { OutputBuffer } from './outputBuffer'
-import { watchSession } from './sessionBinding'
+import { diskLookup, watchSession } from './sessionBinding'
 import { spawnTerminal } from './spawnTerminal'
 
 // Guarda o fim da saída de cada terminal para redesenhar a tela ao reconectar.
@@ -23,6 +23,8 @@ type Session = {
   cwd: string
   shell?: string
   sessionId?: string
+  // Roda no WSL: o status vem pelo id da conversa, não pelo pid (ver busy).
+  wsl?: boolean
   unwatch?: () => void
 }
 
@@ -30,6 +32,9 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export class Terminals {
   private sessions = new Map<string, Session>()
+  // Terminais abrindo (o do WSL espera a distro responder): um segundo pedido na mesma chave espera
+  // o primeiro, em vez de abrir outro processo.
+  private opening = new Map<string, Promise<TerminalOpenResult>>()
   // Windows: terminais encerrados que ainda não terminaram de fechar (ver closed()).
   private closing = new Set<Promise<void>>()
 
@@ -40,16 +45,27 @@ export class Terminals {
     private onSession: (key: string, sessionId: string) => void
   ) {}
 
-  open(req: TerminalOpenRequest): TerminalOpenResult {
+  async open(req: TerminalOpenRequest): Promise<TerminalOpenResult> {
+    const pending = this.opening.get(req.key)
+    if (pending) await pending
     const existing = this.sessions.get(req.key)
     if (existing) {
       if (!req.keepSize) existing.pty.resize(req.cols, req.rows)
       return { ok: true, buffer: existing.output.text() }
     }
+    const p = this.start(req)
+    this.opening.set(req.key, p)
+    try {
+      return await p
+    } finally {
+      if (this.opening.get(req.key) === p) this.opening.delete(req.key)
+    }
+  }
 
+  private async start(req: TerminalOpenRequest): Promise<TerminalOpenResult> {
     const cwd = expandHome(req.cwd)
     if (!isDirectory(cwd)) return { ok: false, error: `A pasta não existe: ${req.cwd}` }
-    const opened = spawnTerminal(req, cwd)
+    const opened = await spawnTerminal(req, cwd)
     if (!opened.ok) return opened
 
     const session: Session = {
@@ -59,7 +75,8 @@ export class Terminals {
       account: opened.account,
       cwd,
       shell: opened.shell,
-      sessionId: req.shell ? undefined : req.sessionId
+      sessionId: req.shell ? undefined : req.sessionId,
+      wsl: opened.wsl
     }
     // Só a sessão que ainda ocupa a chave fala por ela. Terminal fechado e reaberto na mesma chave
     // (desfazer logo depois de fechar): a saída e o fim do antigo chegam depois (no Windows, ~1 s)
@@ -76,13 +93,18 @@ export class Terminals {
       this.sessions.delete(session.key)
       this.onExit(session.key, exitCode)
     })
-    // `claude` sem conversa: acompanha pelo pid qual ele cria.
+    // `claude` sem conversa: acompanha pelo pid qual ele cria. No WSL o id já veio escolhido;
+    // espera só a conversa aparecer gravada.
     if (!req.shell && !req.sessionId) {
-      session.unwatch = watchSession(session.pty.pid, cwd, (id) => {
+      const found = (id: string) => {
         session.unwatch = undefined
         session.sessionId = id
         if (current()) this.onSession(session.key, id)
-      })
+      }
+      const chosen = opened.newSession
+      session.unwatch = chosen
+        ? watchSession(session.pty.pid, cwd, found, { ...diskLookup, sessionOf: () => chosen })
+        : watchSession(session.pty.pid, cwd, found)
     }
     this.sessions.set(req.key, session)
     return { ok: true, buffer: '' }
@@ -128,8 +150,10 @@ export class Terminals {
   // node-pty não diz qual processo está na frente: os shells ficam para o busyShells().
   busy(): string[] {
     const status = liveStatusByPid()
+    const wsl = [...this.sessions.values()].some((s) => s.wsl) ? liveStatusBySessionSync() : null
+    const claudeStatus = (s: Session) => (s.wsl ? (s.sessionId && wsl?.get(s.sessionId)) : status.get(s.pty.pid)) || 'idle'
     return [...this.sessions.values()]
-      .filter((s) => (s.shell ? !IS_WIN && s.pty.process !== s.shell : (status.get(s.pty.pid) ?? 'idle') !== 'idle'))
+      .filter((s) => (s.shell ? !IS_WIN && s.pty.process !== s.shell : claudeStatus(s) !== 'idle'))
       .map((s) => s.cwd)
   }
 

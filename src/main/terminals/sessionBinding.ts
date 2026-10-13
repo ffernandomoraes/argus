@@ -17,7 +17,7 @@ export type SessionLookup = {
   saved(cwd: string, sessionId: string): boolean
 }
 
-const diskLookup: SessionLookup = {
+export const diskLookup: SessionLookup = {
   sessionOf: sessionIdByPid,
   saved: (cwd, sessionId) => {
     const file = sessionFile(cwd, sessionId)

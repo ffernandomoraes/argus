@@ -8,7 +8,7 @@ import { MAIN_DIR } from './paths'
 // configurações do usuário através do link; só recusa link nas de projeto, que ficam na pasta do
 // projeto e não passam por aqui. O .claude.json nunca é ligado: ele guarda a organização da
 // conta, que o Claude Code usa nos pedidos, e misturaria uma conta com a outra.
-const SHARED = [
+export const SHARED = [
   'projects',
   'CLAUDE.md',
   'settings.json',

@@ -67,10 +67,23 @@ export function parentDir(path: string): string {
 // No Windows, com uma barra só ("C:/proj" e "C:\proj" são o mesmo caminho).
 const normalize = (path: string) => (IS_WIN ? fromGitBash(path).replace(/\//g, '\\') : path)
 
+// Pasta do Linux do WSL vista pelo Windows: o começo "\\wsl.localhost\Ubuntu" (ou "\\wsl$\Ubuntu").
+const WSL_ROOT = /^[\\/]{2}(?:wsl\.localhost|wsl\$)[\\/][^\\/]+(?=[\\/]|$)/i
+
+// O Claude que roda no WSL escreve caminhos do Linux ("/home/ana/proj/x.ts"). Numa pasta do WSL,
+// viram o caminho que o Windows enxerga; "/mnt/c/x" é o disco C: do Windows.
+function fromLinux(path: string, dir: string): string {
+  const root = IS_WIN && path.startsWith('/') ? WSL_ROOT.exec(dir) : null
+  if (!root) return path
+  const mnt = /^\/mnt\/([a-z])(\/.*)?$/.exec(path)
+  if (mnt) return `${mnt[1].toUpperCase()}:${(mnt[2] ?? '/').replace(/\//g, '\\')}`
+  return root[0] + path.replace(/\//g, '\\')
+}
+
 // Caminho relativo à pasta, com "/" (o formato da árvore de arquivos), ou null se estiver fora.
 // No Windows, sem diferenciar maiúsculas, como o disco de lá.
 export function relativeTo(path: string, dir: string): string | null {
-  const full = normalize(path)
+  const full = normalize(fromLinux(path, dir))
   const base = normalize(dir).replace(/[\\/]+$/, '')
   const head = full.slice(0, base.length)
   if (IS_WIN ? head.toLowerCase() !== base.toLowerCase() : head !== base) return null

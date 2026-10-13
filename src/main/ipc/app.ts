@@ -4,23 +4,29 @@ import { accentColor, setTheme } from '../app/appearance'
 import type { Lifecycle } from '../app/lifecycle'
 import type { Services } from '../app/services'
 import { loadAppSettings, saveAppSettings } from '../appSettings'
+import { ensureDistro, homeUnc, listDistros } from '../wsl'
+import { wslDiagnostics } from '../wsl/diagnostics'
 import { handle, on, onSync } from './register'
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
 export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('theme:set', (_e, theme) => setTheme(theme))
   onSync('accent:get', () => accentColor())
-  handle('dialog:pickFolder', async (e) => {
+  handle('dialog:pickFolder', async (e, distro) => {
     const win = BrowserWindow.fromWebContents(e.sender)
+    // Pasta do WSL: abre na pasta do usuário no Linux (\\wsl.localhost\<distro>\home\<usuário>).
+    const wslHome = typeof distro === 'string' && distro ? (await ensureDistro(distro), homeUnc(distro)) : null
     const options: Electron.OpenDialogOptions = {
-      title: 'Escolha a pasta do projeto',
+      title: wslHome ? `Escolha a pasta do projeto no WSL (${distro})` : 'Escolha a pasta do projeto',
       buttonLabel: 'Adicionar',
-      defaultPath: app.getPath('desktop'),
+      defaultPath: wslHome ?? app.getPath('desktop'),
       properties: ['openDirectory', 'createDirectory']
     }
     const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
     return result.canceled ? null : result.filePaths[0]
   })
+  handle('wsl:distros', () => listDistros())
+  handle('wsl:diagnostics', () => wslDiagnostics())
   handle('settings:get', () => loadAppSettings())
   handle('settings:menuBarIcon', (_e, enabled) => {
     s.tray.set(enabled)

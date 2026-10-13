@@ -28,7 +28,11 @@ const api: Api = {
     get: () => sendSync('accent:get'),
     onChange: (cb) => listen('accent:changed', cb)
   },
-  pickFolder: () => invoke('dialog:pickFolder'),
+  pickFolder: (distro) => invoke('dialog:pickFolder', distro),
+  wsl: {
+    distros: () => invoke('wsl:distros'),
+    diagnostics: () => invoke('wsl:diagnostics')
+  },
   onReloadKey,
   onEdit,
   // No Windows o microfone é gravado aqui mesmo (winMic); no Mac, pelo programa native/speech.

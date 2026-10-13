@@ -36,7 +36,14 @@ export type Api = {
     get: () => string | null
     onChange: (cb: (color: string | null) => void) => Off
   }
-  pickFolder: () => Promise<string | null>
+  // distro: abre na pasta do usuário no Linux daquela distro do WSL.
+  pickFolder: (distro?: string) => Promise<string | null>
+  wsl: {
+    // Distros do WSL instaladas (só no Windows; vazio sem WSL).
+    distros: () => Promise<string[]>
+    // Texto com o que o app sabe do WSL e o que pediu a ele, para mandar quando algo não funciona.
+    diagnostics: () => Promise<string>
+  }
   onEdit: (cb: (action: EditAction) => void) => Off
   // ⌘R / Ctrl+R: quem escuta (o último) recarrega o que é seu em vez da janela inteira.
   onReloadKey: (cb: () => void) => Off

@@ -1,13 +1,12 @@
-import type { FSWatcher } from 'node:fs'
 import type { LiveStatus } from '../../shared/history'
 import type { SessionChange } from '../../shared/sessions'
-import { statusDirs } from '../accounts'
+import { statusDirsWithPlace } from '../claudeHome'
 import { forgetStatus, gitDir } from '../gitBranch'
 import { liveSessions } from '../liveSessions'
 import { projectDir, projectsDir } from '../transcripts/projectDir'
 import { watchGit, type GitWatch } from './gitWatch'
 import { changedSessions, projectsWith } from './statusChanges'
-import { watchDir } from './watchDir'
+import { watchDir, type DirWatch } from './watchDir'
 
 // Avisa na hora que uma conversa mudou, em vez de esperar a próxima conferência:
 // - a pasta de sessões de cada projeto (o .jsonl cresce a cada mensagem). Projeto ainda sem
@@ -23,13 +22,13 @@ const SETTLE_MS = 60
 const RETRY = '\0projects'
 const STATUS = '\0status'
 
-type Watchers = { sessions: FSWatcher | null; git: GitWatch | null }
+type Watchers = { sessions: DirWatch | null; git: GitWatch | null }
 
 export class SessionWatch {
   private projects = new Map<string, Watchers>()
-  private status = new Map<string, FSWatcher | null>()
+  private status = new Map<string, DirWatch | null>()
   // ~/.claude/projects, enquanto algum projeto ainda não tem pasta de sessões.
-  private parent: FSWatcher | null = null
+  private parents = new Map<string, DirWatch | null>()
   private timers = new Map<string, NodeJS.Timeout>()
   // Último status lido de todas as sessões: a base para saber quem mudou.
   private live: Map<string, LiveStatus> | null = null
@@ -82,8 +81,8 @@ export class SessionWatch {
     this.refreshStatusDirs()
   }
 
-  private watchSessions(path: string): FSWatcher | null {
-    const w: FSWatcher | null = watchDir(
+  private watchSessions(path: string): DirWatch | null {
+    const w: DirWatch | null = watchDir(
       projectDir(path),
       () => this.notify(path, 'transcript'),
       () => {
@@ -109,21 +108,25 @@ export class SessionWatch {
   }
 
   // Projeto sem pasta de sessões (nenhuma conversa ainda, ou a pasta deu erro): ela aparece em
-  // ~/.claude/projects quando a primeira conversa começa.
+  // ~/.claude/projects quando a primeira conversa começa. Uma por lugar onde o Claude Code grava
+  // (a do sistema e a de cada distro do WSL com projeto na tela).
   private syncParent(): void {
-    const missing = [...this.projects.values()].some((w) => !w.sessions)
-    if (missing && !this.parent) {
-      const p: FSWatcher | null = watchDir(
-        projectsDir(),
+    const roots = new Set([...this.projects].filter(([, w]) => !w.sessions).map(([path]) => projectsDir(path)))
+    for (const [root, w] of this.parents) {
+      if (roots.has(root)) continue
+      w?.close()
+      this.parents.delete(root)
+    }
+    for (const root of roots) {
+      if (this.parents.get(root)) continue
+      const p: DirWatch | null = watchDir(
+        root,
         () => this.later(RETRY, () => this.retryMissing()),
         () => {
-          if (this.parent === p) this.parent = null
+          if (this.parents.get(root) === p) this.parents.set(root, null)
         }
       )
-      this.parent = p
-    } else if (!missing && this.parent) {
-      this.parent.close()
-      this.parent = null
+      this.parents.set(root, p)
     }
   }
 
@@ -139,7 +142,7 @@ export class SessionWatch {
 
   // Uma pasta de status por conta; chamada de novo quando uma conta entra ou sai.
   refreshStatusDirs(): void {
-    const wanted = new Set(statusDirs())
+    const wanted = new Set(statusDirsWithPlace().map((p) => p.dir))
     for (const [dir, w] of this.status) {
       if (wanted.has(dir)) continue
       w?.close()
@@ -147,7 +150,7 @@ export class SessionWatch {
     }
     for (const dir of wanted) {
       if (this.status.get(dir)) continue
-      const w: FSWatcher | null = watchDir(
+      const w: DirWatch | null = watchDir(
         dir,
         () => this.later(STATUS, () => void this.checkStatus()),
         () => {
@@ -192,8 +195,8 @@ export class SessionWatch {
     this.projects.clear()
     this.status.forEach((w) => w?.close())
     this.status.clear()
-    this.parent?.close()
-    this.parent = null
+    this.parents.forEach((w) => w?.close())
+    this.parents.clear()
     this.timers.forEach((t) => clearTimeout(t))
     this.timers.clear()
   }

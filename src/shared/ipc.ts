@@ -37,7 +37,12 @@ export type DesignRoute = { route: string; from: string }
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
 export type InvokeChannels = {
-  'dialog:pickFolder': () => string | null
+  // distro: abre na pasta do usuário no Linux daquela distro do WSL.
+  'dialog:pickFolder': (distro?: string) => string | null
+  // Distros do WSL instaladas (só no Windows; vazio sem WSL).
+  'wsl:distros': () => string[]
+  // Texto para copiar e mandar quando algo do WSL não funciona.
+  'wsl:diagnostics': () => string
   'settings:get': () => AppSettings
   'settings:menuBarIcon': (on: boolean) => AppSettings
   'updates:get': () => UpdateInfo

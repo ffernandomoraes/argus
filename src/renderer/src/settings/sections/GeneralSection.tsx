@@ -4,6 +4,7 @@ import { setPreferences, usePreference } from '../preferences'
 import { CliRow } from './CliRow'
 import { MenuBarIconRow } from './MenuBarIconRow'
 import { UpdatesRow } from './UpdatesRow'
+import { WslRow } from './WslRow'
 
 export function GeneralSection() {
   const openIn = usePreference('openIn')
@@ -22,6 +23,7 @@ export function GeneralSection() {
       </Row>
       <MenuBarIconRow />
       <CliRow />
+      <WslRow />
       <UpdatesRow />
     </Group>
   )

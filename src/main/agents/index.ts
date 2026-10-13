@@ -5,7 +5,7 @@ import { exists } from '../files/fsHelpers'
 import { isReservedOnWindows } from '../files/names'
 import { writeTextFile } from '../files/textFile'
 import { errorMessage } from '../lib/errors'
-import { findByName, GLOBAL_DIR, projectDir, readDir } from './folder'
+import { findByName, globalDir, projectDir, readDir } from './folder'
 import { serializeAgent } from './format'
 
 // Nome vira o arquivo e o @nome no chat: minúsculas, números e hífen.
@@ -17,7 +17,7 @@ const sameFile = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
 // Globais e, com uma pasta, também os do projeto. Mesmo nome nos dois: vale o do projeto,
 // como no Claude Code.
 export async function listAgents(projectPath?: string): Promise<AgentDef[]> {
-  const global = await readDir(GLOBAL_DIR, 'global')
+  const global = await readDir(globalDir(projectPath), 'global')
   if (!projectPath) return global
   const local = await readDir(projectDir(projectPath), 'project')
   const names = new Set(local.map((a) => a.name))
@@ -40,12 +40,12 @@ export async function saveAgent(req: AgentSaveRequest): Promise<AgentSaveResult>
   const error = invalid(req, name)
   if (error) return { ok: false, error }
 
-  const agents = await readDir(GLOBAL_DIR, 'global')
+  const agents = await readDir(globalDir(), 'global')
   // O arquivo de antes da edição, achado na pasta pelo nome do cabeçalho: o nome que veio da tela
   // nunca vira caminho ("../../Documents/tese" apagaria um arquivo fora da pasta).
   const previous = req.previousName ? findByName(agents, req.previousName) : undefined
   const renamed = !previous || previous.name !== name
-  const path = renamed ? join(GLOBAL_DIR, `${name}.md`) : previous.path
+  const path = renamed ? join(globalDir(), `${name}.md`) : previous.path
   if (renamed) {
     if (agents.some((a) => a !== previous && a.name === name)) return { ok: false, error: `Já existe um agente chamado ${name}.` }
     // Um arquivo com esse nome que não é deste agente (escrito à mão, sem cabeçalho) não é sobrescrito.
@@ -69,7 +69,7 @@ export async function saveAgent(req: AgentSaveRequest): Promise<AgentSaveResult>
 // Pelo nome do cabeçalho, que pode diferir do nome do arquivo (agente escrito à mão).
 export async function removeAgent(name: string): Promise<boolean> {
   if (typeof name !== 'string' || !name) return false
-  const agent = findByName(await readDir(GLOBAL_DIR, 'global'), name)
+  const agent = findByName(await readDir(globalDir(), 'global'), name)
   if (!agent) return false
   try {
     await unlink(agent.path)

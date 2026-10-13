@@ -1,11 +1,11 @@
-import { watch, type FSWatcher } from 'node:fs'
+import { unwatchFile as stopPolling, watch, watchFile as poll, type Stats } from 'node:fs'
 import type { WebContents } from 'electron'
 import { sendTo } from './ipc/events'
 import { insideRoot } from './paths'
 
 // Um arquivo vigiado por janela: o que está aberto no visualizador de código.
 // Mudou no disco (o Claude editou, por exemplo), a janela é avisada para recarregar.
-type Entry = { root: string; rel: string; full: string; watcher?: FSWatcher; timer?: NodeJS.Timeout; retries: number }
+type Entry = { root: string; rel: string; full: string; watcher?: { close(): void }; timer?: NodeJS.Timeout; retries: number }
 
 const watchers = new Map<number, Entry>()
 // Janelas com o aviso de fechada já registrado: um por janela, não um a cada arquivo aberto.
@@ -17,6 +17,18 @@ const SETTLE_MS = 150
 // tenta religar algumas vezes antes de desistir.
 const RETRY_MS = 200
 const RETRIES = 10
+// Pasta de rede (as do WSL: \\wsl.localhost\...): o Windows não avisa quando o arquivo muda lá. A
+// data e o tamanho são conferidos a cada POLL_MS.
+const POLL_MS = 1000
+const isNetworkPath = (path: string) => /^[\\/]{2}[^\\/]/.test(path)
+
+function pollFile(full: string, onChange: () => void): { close(): void } {
+  const listener = (now: Stats, before: Stats) => {
+    if (now.mtimeMs !== before.mtimeMs || now.size !== before.size) onChange()
+  }
+  poll(full, { interval: POLL_MS }, listener)
+  return { close: () => stopPolling(full, listener) }
+}
 
 export function unwatchFile(sender: WebContents): void {
   const current = watchers.get(sender.id)
@@ -45,8 +57,14 @@ function arm(sender: WebContents, entry: Entry, changed: boolean): void {
   entry.watcher?.close()
   entry.watcher = undefined
   try {
-    entry.watcher = watch(entry.full, () => settle(sender, entry))
-    entry.watcher.on('error', () => retry(sender, entry))
+    if (isNetworkPath(entry.full)) {
+      entry.watcher = pollFile(entry.full, () => settle(sender, entry))
+      if (changed) sendTo(sender, 'files:changed', entry.root, entry.rel)
+      return
+    }
+    const w = watch(entry.full, () => settle(sender, entry))
+    entry.watcher = w
+    w.on('error', () => retry(sender, entry))
     entry.retries = 0
     if (changed) sendTo(sender, 'files:changed', entry.root, entry.rel)
   } catch {

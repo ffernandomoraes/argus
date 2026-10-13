@@ -4,7 +4,7 @@ import type { ChatEntry } from './entries'
 import { mcpStatusFor } from './mcpStatus'
 import { ChatSession, type OpenRequest, type SessionEvents } from './session'
 
-export { claudeEnv, claudeProcess } from './env'
+export { claudeEnv, claudeLaunch, claudeProcess } from './env'
 export { Inbox } from './inbox'
 export type { ChatEntry } from './entries'
 

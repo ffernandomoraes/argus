@@ -1,8 +1,9 @@
 import { readdirSync, statSync } from 'node:fs'
-import { homedir } from 'node:os'
 import { isAbsolute, join, resolve } from 'node:path'
+import { claudeDir } from '../claudeHome'
 import { expandHome } from '../paths'
 import { IS_MAC, IS_WIN } from '../platform'
+import { distroFor, toLinux } from '../wsl'
 import { cwdsIn } from './cwd'
 import { readSliceSync } from './read'
 
@@ -10,7 +11,9 @@ import { readSliceSync } from './read'
 // projeto "achatado": tudo que não é letra ou número vira "-".
 const flatten = (path: string) => path.replace(/[^a-zA-Z0-9]/g, '-')
 
-export const projectsDir = () => join(homedir(), '.claude', 'projects')
+// ~/.claude/projects de quem roda o Claude Code de `path` (sem ela, o do app). Num projeto do WSL,
+// a do Linux (ver claudeHome.ts).
+export const projectsDir = (path?: string) => join(claudeDir(path), 'projects')
 
 // Id de conversa (nome do .jsonl) vindo da tela: nada de "../".
 export const isSessionId = (id: unknown): id is string => typeof id === 'string' && /^[\w-]+$/.test(id)
@@ -40,11 +43,14 @@ const canonical = (path: string) => {
 }
 
 // Pasta das conversas de um projeto. Caminho comprido: o hash pode mudar entre versões do Claude
-// Code, então, como o SDK faz, procura a pasta pelo começo do nome e confere o `cwd` gravado.
+// Code, então, como o SDK faz, procura a pasta pelo começo do nome e confere o `cwd` gravado. No
+// WSL o nome vem do caminho como o Linux vê (/home/u/proj vira -home-u-proj).
 export function projectDir(projectPath: string): string {
   const full = canonical(projectPath)
-  const name = flatten(full)
-  return name.length <= MAX_NAME ? join(projectsDir(), name) : longProjectDir(full, name)
+  const key = distroFor(full) ? toLinux(full) : full
+  const name = flatten(key)
+  const root = projectsDir(full)
+  return name.length <= MAX_NAME ? join(root, name) : longProjectDir(root, key, name)
 }
 
 // Arquivo de uma conversa; nulo com id inválido.
@@ -66,8 +72,7 @@ type Found = { dir: string; stamp: number; until: number }
 const MISS_MS = 30_000
 const longDirs = new Map<string, Found>()
 
-function longProjectDir(full: string, name: string): string {
-  const root = projectsDir()
+function longProjectDir(root: string, full: string, name: string): string {
   const stamp = mtimeOf(root)
   const now = Date.now()
   const hit = longDirs.get(full)

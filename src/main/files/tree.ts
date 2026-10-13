@@ -1,10 +1,9 @@
 import { execFile } from 'node:child_process'
 import { readdir } from 'node:fs/promises'
 import type { FileEntry } from '../../shared/files'
-import { SAFE_GIT } from '../gitBranch/git'
+import { gitCommand } from '../gitBranch/git'
 import { writeStdin } from '../lib/childProcess'
 import { insideRoot } from '../paths'
-import { gitPath } from '../platform'
 
 // Arquivos que o sistema cria sozinho nas pastas (Finder e Explorador do Windows).
 const HIDDEN = new Set(['.git', '.DS_Store', 'Thumbs.db', 'desktop.ini'])
@@ -14,12 +13,13 @@ const HIDDEN = new Set(['.git', '.DS_Store', 'Thumbs.db', 'desktop.ini'])
 function ignoredNames(dir: string, names: string[]): Promise<Set<string>> {
   return new Promise((done) => {
     if (!names.length) return done(new Set())
+    const cmd = gitCommand(dir, ['check-ignore', '-z', '--stdin'])
     const child = execFile(
-      gitPath(),
-      [...SAFE_GIT, '-C', dir, 'check-ignore', '-z', '--stdin'],
+      cmd.file,
+      cmd.args,
       // O limite padrão (1 MB) cortava a lista de uma pasta grande; sem prazo, um git travado
       // seguraria a árvore para sempre.
-      { windowsHide: true, timeout: 10_000, maxBuffer: 16 * 1024 * 1024 },
+      { cwd: cmd.cwd, windowsHide: true, timeout: cmd.wsl ? 20_000 : 10_000, maxBuffer: 16 * 1024 * 1024 },
       (_err, stdout) =>
         // Sai com 1 quando nada é ignorado e 128 fora de repositório: os dois viram lista vazia.
         done(new Set(String(stdout ?? '').split('\0').filter(Boolean)))

@@ -2,6 +2,8 @@ import { app } from 'electron'
 import { cleanupAccounts } from '../accounts'
 import { loadAppSettings } from '../appSettings'
 import { registerIpc } from '../ipc'
+import { IS_WIN } from '../platform'
+import { warmUp } from '../wsl'
 import { runSmokeTest, SMOKE_TEST } from '../smokeTest'
 import { watchAppearance } from './appearance'
 import { activeCanvas, canvasWindowList, isCanvasReady } from './canvasRegistry'
@@ -23,6 +25,10 @@ export function startApp(s: Services, life: Lifecycle): void {
   // Os monitores de uso sobem quando o login de cada conta é conferido.
   step('limpar contas', cleanupAccounts)
   step('conferir o login', () => s.auth.refresh())
+  // Windows com WSL: o Claude Code de cada distro aparece em segundo plano (o primeiro wsl.exe liga
+  // a máquina virtual). Com a resposta, o login é conferido de novo: sem o `claude` do Windows, é o
+  // do WSL que vale.
+  if (IS_WIN) step('WSL', () => warmUp().then(() => s.auth.refresh()))
   step('comando argus', () => s.cli.start())
   step('atualizações', () => s.updater.start())
   step('ícone da barra de menus', () => s.tray.set(loadAppSettings().menuBarIcon))

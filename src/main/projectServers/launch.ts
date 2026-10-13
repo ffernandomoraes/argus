@@ -6,9 +6,18 @@ import { OutputBuffer } from '../terminals/outputBuffer'
 import { killTreeSync } from '../winProcesses'
 import { lastLine, OUTPUT_LIMIT } from './output'
 import type { ProjectScript } from './scripts'
+import { parseWslPath } from '../wsl'
+import { launchInWsl } from '../wsl/servers'
 
-// startedAt: quando o play iniciou (ver o "iniciando" em status.ts).
-export type Started = { child: ChildProcess; output: OutputBuffer; stopping: boolean; startedAt: number }
+// startedAt: quando o play iniciou (ver o "iniciando" em status.ts). wsl: roda dentro do WSL, com o
+// jeito próprio de parar (ver wsl/servers.ts).
+export type Started = {
+  child: ChildProcess
+  output: OutputBuffer
+  stopping: boolean
+  startedAt: number
+  wsl?: { stop: () => Promise<void>; stopSync: () => void }
+}
 
 // Servidores iniciados por este app, pela pasta real do projeto.
 export const started = new Map<string, Started>()
@@ -46,7 +55,30 @@ export function launch(root: string, run: ProjectScript, noBrowser: boolean): vo
         detached: true,
         stdio: ['ignore', 'pipe', 'pipe']
       })
-  const entry: Started = { child, output: new OutputBuffer(OUTPUT_LIMIT), stopping: false, startedAt: Date.now() }
+  track(root, run, { child, output: new OutputBuffer(OUTPUT_LIMIT), stopping: false, startedAt: Date.now() })
+}
+
+// Pasta do WSL: o script roda dentro da distro, pelo shell de login de lá (ver wsl/servers.ts).
+export async function launchWsl(root: string, run: ProjectScript, noBrowser: boolean): Promise<void> {
+  const wsl = parseWslPath(root)
+  if (!wsl) return
+  errors.delete(root)
+  const server = await launchInWsl(wsl.distro, wsl.linux, run.command, noBrowser).catch((err: Error) => err.message)
+  if (typeof server === 'string') {
+    errors.set(root, server)
+    return
+  }
+  track(root, run, {
+    child: server.child,
+    output: new OutputBuffer(OUTPUT_LIMIT),
+    stopping: false,
+    startedAt: Date.now(),
+    wsl: { stop: server.stop, stopSync: server.stopSync }
+  })
+}
+
+function track(root: string, run: ProjectScript, entry: Started): void {
+  const { child } = entry
   // Texto já decodificado: um acento partido entre dois pedaços não vira lixo.
   child.stdout?.setEncoding('utf8')
   child.stderr?.setEncoding('utf8')
@@ -73,6 +105,10 @@ export function launch(root: string, run: ProjectScript, noBrowser: boolean): vo
 export function stopStartedServers(): void {
   for (const entry of started.values()) {
     entry.stopping = true
+    if (entry.wsl) {
+      entry.wsl.stopSync()
+      continue
+    }
     if (!entry.child.pid) continue
     if (IS_WIN) {
       killTreeSync(entry.child.pid)

@@ -43,7 +43,7 @@ export function MemoryNav({
               className="mb-1 flex w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-left text-[12px] font-medium uppercase tracking-wide text-faint hover:text-muted"
             >
               <ChevronRight size={11} className={`shrink-0 transition-transform ${expanded.has(g.id) ? 'rotate-90' : ''}`} />
-              {g.id === 'global' && <Globe size={11} className="shrink-0" />}
+              {!g.projectPath && <Globe size={11} className="shrink-0" />}
               <span className="truncate">{g.label}</span>
             </button>
           )}

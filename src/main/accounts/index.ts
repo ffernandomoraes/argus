@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { MAIN_ACCOUNT } from '../../shared/auth'
 import { erase } from './erase'
 import { link } from './links'
-import { accountDir, MAIN_DIR, ROOT } from './paths'
-import { accountIds, forgetAccount, pending, resolveAccount } from './registry'
+import { accountDir, ROOT } from './paths'
+import { forgetAccount, pending, resolveAccount } from './registry'
 import { seed } from './seed'
 
 // Contas do Claude no app. A principal é a do ~/.claude, a mesma do terminal e do VS Code. Cada
@@ -28,11 +28,6 @@ export {
   resolveAccount,
   setDefaultAccount
 } from './registry'
-
-// Pastas onde cada Claude Code aberto grava o status (<pasta>/sessions/<pid>.json), de todas as contas.
-export function statusDirs(): string[] {
-  return accountIds().map((id) => join(accountDir(id) ?? MAIN_DIR, 'sessions'))
-}
 
 // Põe a conta no ambiente do `claude` e devolve a que ficou valendo. A principal vai sem a
 // variável, mesmo se o app foi aberto com ela: o resto do app lê ~/.claude.

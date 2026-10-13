@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { expandHome } from '../paths'
 import { IS_WIN } from '../platform'
+import { homeUnc, parseWslPath } from '../wsl'
 
 const HOME = resolve(homedir())
 const sameDir = (a: string, b: string) => (IS_WIN ? a.toLowerCase() === b.toLowerCase() : a === b)
@@ -16,9 +17,12 @@ export type Repo = { root: string; gitDir: string }
 // inteira. A própria home, aberta como projeto, ainda vale.
 export function findRepo(folder: string): Repo | null {
   const start = resolve(expandHome(folder))
+  // Pasta do WSL: o limite é a pasta do usuário no Linux.
+  const wsl = parseWslPath(start)
+  const home = (wsl && homeUnc(wsl.distro, wsl.linux)) || HOME
   let dir = start
   while (true) {
-    if (sameDir(dir, HOME) && !sameDir(start, HOME)) return null
+    if (sameDir(dir, home) && !sameDir(start, home)) return null
     const dotGit = join(dir, '.git')
     try {
       if (statSync(dotGit).isDirectory()) return { root: dir, gitDir: dotGit }

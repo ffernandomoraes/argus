@@ -1,7 +1,8 @@
 import type { ProjectServer } from '../../shared/devServers'
 import { realRoot } from '../paths'
 import { invalidateScan, scanListening, terminate } from '../processScan'
-import { errors, launch, started } from './launch'
+import { errors, launch, launchWsl, started } from './launch'
+import { isWslPath } from '../wsl'
 import { ofProject, rootsOf } from './matching'
 import { keepPages, pageKey } from './pageCheck'
 import { projectScript } from './scripts'
@@ -30,7 +31,8 @@ export async function startProjectServer(path: string, noBrowser = false): Promi
   try {
     const run = await projectScript(root)
     if (!run) return false
-    launch(root, run, noBrowser)
+    if (isWslPath(root)) await launchWsl(root, run, noBrowser)
+    else launch(root, run, noBrowser)
     invalidateScan()
     return true
   } finally {
@@ -46,6 +48,12 @@ export async function stopProjectServer(path: string): Promise<boolean> {
   const entry = started.get(root)
   if (entry) entry.stopping = true
   errors.delete(root)
+  // WSL: o Windows não enxerga os processos de lá; para o que foi iniciado daqui.
+  if (isWslPath(root)) {
+    if (!entry?.wsl) return false
+    await entry.wsl.stop()
+    return true
+  }
   const mine = ofProject(rootsOf(path), entry?.child.pid, await scanListening({ fresh: true }))
   const groups = new Set(mine.filter((p) => !p.locked && !p.current).map((p) => p.pgid))
   if (entry?.child.pid) groups.add(entry.child.pid)

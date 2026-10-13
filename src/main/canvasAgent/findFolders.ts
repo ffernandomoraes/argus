@@ -5,6 +5,7 @@ import { readSavedNodes } from '../canvasStore'
 import { expandHome } from '../paths'
 import { IS_WIN } from '../platform'
 import { mapLimit } from '../transcripts/mapLimit'
+import { homeUnc, knownDistros } from '../wsl'
 
 const WINDOWS_ROOTS = [join('OneDrive', 'Desktop'), join('OneDrive', 'Documents'), join('source', 'repos')]
 const NO_DIR = /^(\.|node_modules$|Library$|Applications$|Pictures$|Music$|Movies$|AppData$)/
@@ -42,9 +43,18 @@ function roots(): string[] {
       // Studio cria os projetos em source\repos.
       ...['Desktop', 'Documents', 'Developer', 'Projects', 'projects', 'code', 'dev', ...(IS_WIN ? WINDOWS_ROOTS : [])].map((d) =>
         join(home, d)
-      )
+      ),
+      // Windows com WSL: as pastas de projeto comuns no Linux de cada distro.
+      ...wslRoots()
     ])
   ]
+}
+
+function wslRoots(): string[] {
+  return knownDistros().flatMap((d) => {
+    const home = homeUnc(d)
+    return home ? ['projects', 'code', 'dev', 'src', 'repos', 'workspace'].map((sub) => join(home, sub)) : []
+  })
 }
 
 async function subdirs(path: string): Promise<string[]> {

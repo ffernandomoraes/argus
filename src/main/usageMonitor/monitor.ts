@@ -1,10 +1,8 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { homedir } from 'node:os'
 import { createInterface } from 'node:readline'
 import type { ClaudeInfo } from '../../shared/models'
 import type { Usage } from '../../shared/usage'
-import { claudeEnv } from '../chats'
-import { claudeCommand, claudePath } from '../claudePath'
+import { claudeLaunch } from '../chats'
 import { createBackoff } from '../lib/backoff'
 import { guardStdin, writeStdin } from '../lib/childProcess'
 import { parseControlReply } from './parse'
@@ -37,6 +35,8 @@ export class UsageMonitor {
   private backoff = createBackoff({ initialMs: 30_000, maxMs: 10 * 60_000 })
   private stopped = false
   private seq = 0
+  // Cada start; um anterior que ainda esperava o WSL não abre nada (ver start).
+  private starts = 0
   last: Usage | null = null
   info: ClaudeInfo | null = null
 
@@ -48,10 +48,21 @@ export class UsageMonitor {
 
   start(): void {
     this.stopped = false
-    const claude = claudePath()
-    const cmd = claudeCommand(ARGS, claude)
-    // windowsHide: sem ele, o Windows mostraria uma janela de terminal para este `claude` escondido.
-    const proc = spawn(cmd.file, cmd.args, { cwd: homedir(), env: claudeEnv(claude, this.account), windowsHide: true })
+    const seq = ++this.starts
+    // No WSL, espera a distro responder na primeira vez (ver claudeLaunch).
+    void claudeLaunch(ARGS, this.account).then((l) => {
+      if (this.stopped || seq !== this.starts) return
+      if (!l.ok) {
+        console.warn('[usage] falha ao iniciar o claude:', l.error)
+        this.restart = setTimeout(() => this.start(), this.backoff.next())
+        return
+      }
+      // windowsHide: sem ele, o Windows mostraria uma janela de terminal para este `claude` escondido.
+      this.attach(spawn(l.file, l.args, { cwd: l.cwd, env: l.env, windowsHide: true }))
+    })
+  }
+
+  private attach(proc: ChildProcessWithoutNullStreams): void {
     this.proc = proc
     // O poll pode escrever num `claude` que morreu antes do aviso de saída: sem ouvinte, o EPIPE
     // derrubaria o processo principal.

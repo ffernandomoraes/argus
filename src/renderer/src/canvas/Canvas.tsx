@@ -17,6 +17,7 @@ import { designView, slotTarget } from './drawers/drawerView'
 import { useCanvasProjects } from './drawers/useCanvasProjects'
 import { useDrawers } from './drawers/useDrawers'
 import { useOverlays } from './drawers/useOverlays'
+import { looseDrawer } from './drawers/drawerState'
 import { useShownDrawers } from './drawers/useShownDrawers'
 import { CanvasFlow } from './flow/CanvasFlow'
 import { useGroupDrop } from './flow/useGroupDrop'
@@ -112,13 +113,16 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     closeMenu: overlays.commands.closeMenu
   })
   useCliOpen(api, focusNode)
-  const { main, second } = drawers.state
-  const openChat = useNotificationOpen({ nodesRef, shown: [main, second], openConversation: conversations.openConversation })
+  const open = drawers.state.drawers
+  const shownConversations = useMemo(() => open.map((d) => d.conversation), [open])
+  const openChat = useNotificationOpen({ nodesRef, shown: shownConversations, openConversation: conversations.openConversation })
+  // A conversa destacada no bloco é a do drawer solto (a última aberta), senão a do último fixado.
+  const main = (looseDrawer(open) ?? open[open.length - 1])?.conversation ?? null
   // A conversa e o design abertos vão para o store, onde cada bloco lê se é o dele.
   const activeDesign = drawers.state.design
   useLayoutEffect(() => patchView(view, { activeConversation: main, activeDesign }), [view, main, activeDesign])
 
-  const targets = useMemo(() => ({ main: slotTarget(nodes, main), second: slotTarget(nodes, second) }), [nodes, main, second])
+  const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open])
   const design = useMemo(() => designView(nodes, drawers.state.design), [nodes, drawers.state.design])
   const layout = drawerLayout(drawers.state, targets, shownDrawers.titles)
   const { shown } = layout

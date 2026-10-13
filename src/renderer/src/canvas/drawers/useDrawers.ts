@@ -12,7 +12,7 @@ export type DrawerCommands = {
   show: (conversation: ActiveConversation) => void
   closeAll: () => void
   close: (slot: SlotId) => void
-  togglePin: () => void
+  togglePin: (slot: SlotId) => void
   setRect: (slot: SlotId, rect: PanelRect) => void
   // Conversa nova (pelo id provisório) ganhou o id da sessão e, se era solta, o card no canvas.
   sessionStarted: (conversationId: string, sessionId: string, nodeId?: string) => void
@@ -33,7 +33,7 @@ export type DrawerCommands = {
   closeCode: () => void
 }
 
-// Drawers de conversa (o principal e o segundo, com o fixado), o do design e o painel de código.
+// Drawers de conversa (os fixados e o solto), o do design e o painel de código.
 export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
   const [state, dispatch] = useReducer(drawerReducer, INITIAL_DRAWERS)
 
@@ -43,7 +43,7 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
         dispatch({ type: 'show', conversation, area: { width: window.innerWidth, height: window.innerHeight } }),
       closeAll: () => dispatch({ type: 'closeAll' }),
       close: (slot) => dispatch({ type: 'close', slot }),
-      togglePin: () => dispatch({ type: 'togglePin' }),
+      togglePin: (slot) => dispatch({ type: 'togglePin', slot }),
       setRect: (slot, rect) => dispatch({ type: 'rect', slot, rect }),
       sessionStarted: (conversationId, sessionId, nodeId) =>
         dispatch({ type: 'sessionStarted', conversationId, sessionId, nodeId }),

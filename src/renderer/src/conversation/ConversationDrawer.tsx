@@ -40,10 +40,12 @@ type Props = {
   // Posição e tamanho no canvas; nulo = ainda não definido (nasce à direita).
   rect: PanelRect | null
   onRectChange: (rect: PanelRect) => void
-  // Fixado: continua à vista (e móvel), e a próxima conversa abre num segundo drawer no espaço livre
-  // ao lado, em vez de trocar esta.
+  // Os outros drawers à vista: este para encostado neles em vez de cobri-los.
+  obstacles?: readonly PanelRect[]
+  // Fixado: continua à vista (e móvel), e a próxima conversa abre num drawer novo no espaço livre,
+  // em vez de trocar esta.
   pinned?: boolean
-  // Sem ele, o item de fixar não aparece (só o drawer principal fixa).
+  // Sem ele, o item de fixar não aparece.
   onTogglePin?: () => void
   onClose: () => void
 }
@@ -56,7 +58,7 @@ export function ConversationDrawer(props: Props) {
   const { project, account, tint, conversation, rect, onClose } = props
   const zoom = useDrawerZoom()
   const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH)
+  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH, props.obstacles)
   const [focus, setFocus] = useFocusMode(panelRef)
   const leaveFocus = useCallback(() => void setFocus(false), [setFocus])
 

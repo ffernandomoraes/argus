@@ -21,6 +21,8 @@ type Props = {
   conversation: ConversationSummary
   target: SlotTarget
   rect: PanelRect | null
+  // Rects dos outros drawers de conversa à vista.
+  obstacles: readonly PanelRect[]
   pinned: boolean
   codeOpen: boolean
   commands: DrawerCommands
@@ -29,10 +31,10 @@ type Props = {
   onShown: (slot: SlotId, title: string | null) => void
 }
 
-// Um drawer de conversa: o principal ou o segundo. A conversa vem pronta do DrawerHost, que tira o
+// Um drawer de conversa, fixado ou solto. A conversa vem pronta do DrawerHost, que tira o
 // drawer (com a saída animada) se ela sair da lista.
 function DrawerSlotView(props: Props) {
-  const { slot, active, conversation, target, rect, pinned, codeOpen, commands, actions, onShown } = props
+  const { slot, active, conversation, target, rect, obstacles, pinned, codeOpen, commands, actions, onShown } = props
   const title = conversation.title
 
   useLayoutEffect(() => {
@@ -69,8 +71,8 @@ function DrawerSlotView(props: Props) {
     commands.close(slot)
   }, [actions, commands, slot, nodeId, conversationId])
   const onClose = useCallback(() => commands.close(slot), [commands, slot])
+  const onTogglePin = useCallback(() => commands.togglePin(slot), [commands, slot])
 
-  const main = slot === 'main'
   return (
     <ConversationDrawer
       project={target.project}
@@ -80,9 +82,10 @@ function DrawerSlotView(props: Props) {
       conversation={conversation}
       codeOpen={codeOpen}
       rect={rect}
+      obstacles={obstacles}
       onRectChange={onRectChange}
-      pinned={main && pinned}
-      onTogglePin={main ? commands.togglePin : undefined}
+      pinned={pinned}
+      onTogglePin={onTogglePin}
       onToggleCode={onToggleCode}
       onOpenFile={onOpenFile}
       onOpenDiff={onOpenDiff}
@@ -94,9 +97,12 @@ function DrawerSlotView(props: Props) {
   )
 }
 
-// O alvo é recalculado a cada lista de nós nova (todo quadro de um arraste); com os mesmos
-// valores, o drawer não redesenha.
+// O alvo e os obstáculos são recalculados a cada lista de nós nova (todo quadro de um arraste); com
+// os mesmos valores, o drawer não redesenha.
+const sameRects = (a: readonly PanelRect[], b: readonly PanelRect[]) => a.length === b.length && a.every((r, i) => r === b[i])
 const sameProps = (a: Props, b: Props) =>
-  sameTarget(a.target, b.target) && (Object.keys(a) as (keyof Props)[]).every((k) => k === 'target' || Object.is(a[k], b[k]))
+  sameTarget(a.target, b.target) &&
+  sameRects(a.obstacles, b.obstacles) &&
+  (Object.keys(a) as (keyof Props)[]).every((k) => k === 'target' || k === 'obstacles' || Object.is(a[k], b[k]))
 
 export const DrawerSlot = memo(DrawerSlotView, sameProps)

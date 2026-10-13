@@ -9,6 +9,7 @@ export {
   PANEL_MARGIN,
   PANEL_TOP,
   TITLE_BAR_HEIGHT,
+  cascadeSpot,
   freeSpot,
   type AreaSize,
   type PanelRect

@@ -1,5 +1,5 @@
 // Geometria dos painéis flutuantes (drawers, lista de conversas): onde nascem, como se ajustam a
-// uma área de outro tamanho e onde cabe um segundo sem cobrir o fixado. Só contas, sem tela.
+// uma área de outro tamanho e onde cabe um novo sem cobrir os fixados. Só contas, sem tela.
 
 // `area` é o tamanho da área do canvas quando o rect foi definido: se a janela muda de tamanho
 // (ex.: foi para outro monitor), o painel é reescalado na mesma proporção em vez de quebrar.
@@ -41,47 +41,123 @@ export function rescale(rect: PanelRect, from: AreaSize, to: AreaSize): PanelRec
   return { x, y, width, height, area: to }
 }
 
+// Dois trechos [a, a+aLen] e [b, b+bLen] mais perto que a folga um do outro.
+const near = (a: number, aLen: number, b: number, bLen: number) => a < b + bLen + MARGIN && b < a + aLen + MARGIN
+const overlaps = (a: PanelRect, b: PanelRect) =>
+  near(a.x, a.width, b.x, b.width) && near(a.y, a.height, b.y, b.height)
+
 // Rect depois de arrastar (dx, dy) a partir de `rect`: todas as bordas juntas (mover) ou só
-// algumas (redimensionar), sem sair da área nem ficar menor que o mínimo.
-export function dragRect(rect: PanelRect, edges: Edges | 'move', dx: number, dy: number, area: AreaSize): PanelRect {
+// algumas (redimensionar), sem sair da área nem ficar menor que o mínimo. Com `obstacles` (os
+// outros drawers à vista), também não entra neles: para encostado, com a folga. Um que já começou
+// por baixo deste não conta, para dar como separar os dois.
+export function dragRect(
+  rect: PanelRect,
+  edges: Edges | 'move',
+  dx: number,
+  dy: number,
+  area: AreaSize,
+  obstacles: readonly PanelRect[] = []
+): PanelRect {
+  const os = obstacles.filter((o) => !overlaps(rect, o))
   const max = { right: area.width - MARGIN, bottom: area.height - MARGIN }
   if (edges === 'move') {
-    return {
+    const moved = {
       ...rect,
       x: clamp(rect.x + dx, MARGIN, max.right - rect.width),
       y: clamp(rect.y + dy, PANEL_TOP, max.bottom - rect.height),
       area
     }
+    const hit = os.filter((o) => overlaps(moved, o))
+    return hit.length ? slideAround(moved, hit, os, rect, max) : moved
   }
+  // A borda só bate num outro se os dois se cruzam no outro eixo. Primeiro o horizontal, com a
+  // altura de antes; depois o vertical, já com a largura nova (no canto, os dois mudam). Cada
+  // borda para no mais perto dos que estão daquele lado.
+  const crossesY = os.filter((o) => near(rect.y, rect.height, o.y, o.height))
   let { x, y, width, height } = rect
   if (edges.left) {
-    x = clamp(rect.x + dx, MARGIN, rect.x + rect.width - PANEL_MIN.width)
+    const min = Math.max(MARGIN, ...crossesY.filter((o) => o.x + o.width <= rect.x).map((o) => o.x + o.width + MARGIN))
+    x = clamp(rect.x + dx, min, rect.x + rect.width - PANEL_MIN.width)
     width = rect.x + rect.width - x
   }
-  if (edges.right) width = clamp(rect.width + dx, PANEL_MIN.width, max.right - rect.x)
+  if (edges.right) {
+    const right = Math.min(max.right, ...crossesY.filter((o) => o.x >= rect.x + rect.width).map((o) => o.x - MARGIN))
+    width = clamp(rect.width + dx, PANEL_MIN.width, right - rect.x)
+  }
+  const crossesX = os.filter((o) => near(x, width, o.x, o.width))
   if (edges.top) {
-    y = clamp(rect.y + dy, PANEL_TOP, rect.y + rect.height - PANEL_MIN.height)
+    const min = Math.max(PANEL_TOP, ...crossesX.filter((o) => o.y + o.height <= rect.y).map((o) => o.y + o.height + MARGIN))
+    y = clamp(rect.y + dy, min, rect.y + rect.height - PANEL_MIN.height)
     height = rect.y + rect.height - y
   }
-  if (edges.bottom) height = clamp(rect.height + dy, PANEL_MIN.height, max.bottom - rect.y)
+  if (edges.bottom) {
+    const bottom = Math.min(max.bottom, ...crossesX.filter((o) => o.y >= rect.y + rect.height).map((o) => o.y - MARGIN))
+    height = clamp(rect.height + dy, PANEL_MIN.height, bottom - rect.y)
+  }
   return { x, y, width, height, area }
 }
 
-// Lugar de um segundo painel que não cubra o fixado. Primeiro na mesma coluna, acima ou abaixo dele
-// (onde sobrar mais altura); sem altura para isso, ao lado, na largura padrão (ou no que couber),
-// encostado nele e na altura toda. Sem espaço em lugar nenhum, nulo: nasce no lugar padrão.
-export function freeSpot(pinned: PanelRect, area: AreaSize, width: number): PanelRect | null {
+// Arrastando para dentro de outro drawer: escorrega pela borda dele, encostado do lado mais perto
+// de onde o ponteiro levaria, sem cair em cima de outro. Sem lado que sirva, fica onde começou.
+function slideAround(
+  moved: PanelRect,
+  hit: PanelRect[],
+  all: PanelRect[],
+  start: PanelRect,
+  max: { right: number; bottom: number }
+): PanelRect {
+  const options = hit
+    .flatMap((o) => [
+      { ...moved, x: o.x - MARGIN - moved.width },
+      { ...moved, x: o.x + o.width + MARGIN },
+      { ...moved, y: o.y - MARGIN - moved.height },
+      { ...moved, y: o.y + o.height + MARGIN }
+    ])
+    .filter((r) => r.x >= MARGIN && r.x + r.width <= max.right && r.y >= PANEL_TOP && r.y + r.height <= max.bottom)
+    .filter((r) => all.every((o) => !overlaps(r, o)))
+  const distance = (r: PanelRect) => Math.abs(r.x - moved.x) + Math.abs(r.y - moved.y)
+  const best = options.sort((a, b) => distance(a) - distance(b))[0]
+  return best ?? { ...start, area: moved.area }
+}
+
+// Lugares ao redor de um painel: na mesma coluna, acima e abaixo dele (onde sobrar mais altura
+// primeiro); depois ao lado, na largura padrão (ou no que couber), encostado nele e na altura toda.
+function spotsAround(o: PanelRect, area: AreaSize, width: number): PanelRect[] {
   const bottom = area.height - MARGIN
-  const above = pinned.y - MARGIN - PANEL_TOP
-  const below = bottom - (pinned.y + pinned.height + MARGIN)
-  if (Math.max(above, below) >= PANEL_MIN.height) {
-    const y = above > below ? PANEL_TOP : pinned.y + pinned.height + MARGIN
-    return { x: pinned.x, y, width: pinned.width, height: Math.max(above, below), area }
+  const above = o.y - MARGIN - PANEL_TOP
+  const below = bottom - (o.y + o.height + MARGIN)
+  const vertical = [
+    { size: above, rect: { x: o.x, y: PANEL_TOP, width: o.width, height: above, area } },
+    { size: below, rect: { x: o.x, y: o.y + o.height + MARGIN, width: o.width, height: below, area } }
+  ].filter((s) => s.size >= PANEL_MIN.height)
+  const left = o.x - MARGIN - MARGIN
+  const right = area.width - MARGIN - (o.x + o.width + MARGIN)
+  const side = [
+    { size: left, rect: { x: o.x - MARGIN - Math.min(width, left), y: PANEL_TOP, width: Math.min(width, left), height: bottom - PANEL_TOP, area } },
+    { size: right, rect: { x: o.x + o.width + MARGIN, y: PANEL_TOP, width: Math.min(width, right), height: bottom - PANEL_TOP, area } }
+  ].filter((s) => s.size >= PANEL_MIN.width)
+  const bySize = (a: { size: number }, b: { size: number }) => b.size - a.size
+  return [...vertical.sort(bySize), ...side.sort(bySize)].map((s) => s.rect)
+}
+
+// Lugar de um painel novo que não cubra os fixados: ao redor de um deles, do mais recente para o
+// mais antigo, sem cair em cima de outro. Sem espaço em lugar nenhum, nulo.
+export function freeSpot(pinned: readonly PanelRect[], area: AreaSize, width: number): PanelRect | null {
+  for (const o of [...pinned].reverse()) {
+    const spot = spotsAround(o, area, width).find((r) => pinned.every((p) => !overlaps(r, p)))
+    if (spot) return spot
   }
-  const left = pinned.x - MARGIN - MARGIN
-  const right = area.width - MARGIN - (pinned.x + pinned.width + MARGIN)
-  if (Math.max(left, right) < PANEL_MIN.width) return null
-  const w = Math.min(width, Math.max(left, right))
-  const x = left > right ? pinned.x - MARGIN - w : pinned.x + pinned.width + MARGIN
-  return { x, y: PANEL_TOP, width: w, height: bottom - PANEL_TOP, area }
+  return null
+}
+
+// Sem espaço livre: nasce em cascata, um degrau abaixo e ao lado do último (à esquerda; encostado
+// na borda, à direita), do mesmo tamanho. Na altura toda, encolhe o degrau para descer.
+export const CASCADE_STEP = 28
+export function cascadeSpot(last: PanelRect, area: AreaSize): PanelRect {
+  const width = Math.min(last.width, area.width - MARGIN * 2)
+  const maxX = area.width - MARGIN - width
+  const x = last.x - CASCADE_STEP >= MARGIN ? last.x - CASCADE_STEP : clamp(last.x + CASCADE_STEP, MARGIN, maxX)
+  const y = Math.min(last.y + CASCADE_STEP, area.height - MARGIN - PANEL_MIN.height)
+  const height = clamp(last.height, PANEL_MIN.height, area.height - MARGIN - y)
+  return { x, y: Math.max(PANEL_TOP, y), width, height, area }
 }

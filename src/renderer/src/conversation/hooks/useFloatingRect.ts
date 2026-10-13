@@ -14,7 +14,9 @@ export function useFloatingRect(
   ref: RefObject<HTMLElement | null>,
   rect: PanelRect | null,
   onChange: (rect: PanelRect) => void,
-  defaultWidth = PANEL_DEFAULT_WIDTH
+  defaultWidth = PANEL_DEFAULT_WIDTH,
+  // Outros painéis à vista que este não pode cobrir ao mover nem ao redimensionar.
+  obstacles?: readonly PanelRect[]
 ) {
   useLayoutEffect(() => {
     if (rect) return
@@ -60,7 +62,7 @@ export function useFloatingRect(
     const handle = e.currentTarget as HTMLElement
     const pointer = { x: e.clientX, y: e.clientY }
 
-    const onMove = (ev: globalThis.PointerEvent) => onChange(dragRect(rect, edges, ev.clientX - pointer.x, ev.clientY - pointer.y, area))
+    const onMove = (ev: globalThis.PointerEvent) => onChange(dragRect(rect, edges, ev.clientX - pointer.x, ev.clientY - pointer.y, area, obstacles))
     // Termina ao soltar e também quando o sistema toma o ponteiro (pointercancel, captura perdida):
     // no Windows, com toque, caneta ou um diálogo do sistema no meio, o pointerup pode não vir, e o
     // painel seguia o mouse depois de solto.

@@ -1,10 +1,11 @@
-import { Presence } from '../../motion'
+import { useEffect, useMemo, useState } from 'react'
+import { MOTION, Presence } from '../../motion'
 import { CodePanel } from './CodePanel'
 import { DesignPanel } from './DesignPanel'
 import type { DrawerLayout, SlotTargets } from './drawerLayout'
 import { DrawerSlot, type SlotActions } from './DrawerSlot'
-import type { DrawerState, SlotId } from './drawerState'
-import type { DesignView } from './drawerView'
+import type { Drawer, DrawerState, SlotId } from './drawerState'
+import type { DesignView, SlotTarget } from './drawerView'
 import type { DrawerCommands } from './useDrawers'
 import { useSlotConversation } from './useSlotConversation'
 
@@ -18,13 +19,14 @@ type Props = {
   onShown: (slot: SlotId, title: string | null) => void
 }
 
-// Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código, o
-// drawer de conversa principal, o segundo e o do design. O drawer de conversa só existe com a
-// conversa na lista: se ela for excluída, sai daqui e a saída anima.
+// Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código, os
+// drawers de conversa (do mais antigo ao mais novo) e o do design. O drawer de conversa só existe
+// com a conversa na lista: se ela for excluída, sai daqui e a saída anima.
 export function DrawerHost({ state, targets, design, layout, commands, actions, onShown }: Props) {
   const { code } = layout
-  const mainConversation = useSlotConversation(state.main, targets.main)
-  const secondConversation = useSlotConversation(state.second, targets.second)
+  const leaving = useLeaving(state.drawers)
+  // Com vários drawers de conversa à vista, um não passa por cima nem por baixo dos outros.
+  const placed = state.drawers.filter((d) => d.rect && targets[d.id])
   return (
     <>
       <Presence>
@@ -38,39 +40,85 @@ export function DrawerHost({ state, targets, design, layout, commands, actions, 
           />
         )}
       </Presence>
-      <Presence>
-        {state.main && targets.main && mainConversation && (
-          <DrawerSlot
-            slot="main"
-            active={state.main}
-            conversation={mainConversation}
-            target={targets.main}
-            rect={state.mainRect}
-            pinned={state.pinned}
-            codeOpen={state.code.open && state.code.slot === 'main'}
-            commands={commands}
-            actions={actions}
-            onShown={onShown}
-          />
-        )}
-      </Presence>
-      <Presence>
-        {state.second && targets.second && secondConversation && (
-          <DrawerSlot
-            slot="second"
-            active={state.second}
-            conversation={secondConversation}
-            target={targets.second}
-            rect={state.secondRect}
-            pinned={state.pinned}
-            codeOpen={state.code.open && state.code.slot === 'second'}
-            commands={commands}
-            actions={actions}
-            onShown={onShown}
-          />
-        )}
-      </Presence>
+      {leaving.map((id) => (
+        <DrawerEntry key={id} slot={id} drawer={null} target={null} obstacles={NO_OBSTACLES} codeOpen={false} {...{ commands, actions, onShown }} />
+      ))}
+      {state.drawers.map((d) => (
+        <DrawerEntry
+          key={d.id}
+          slot={d.id}
+          drawer={d}
+          target={targets[d.id] ?? null}
+          obstacles={placed}
+          codeOpen={state.code.open && state.code.slot === d.id}
+          {...{ commands, actions, onShown }}
+        />
+      ))}
       <Presence>{design && <DesignPanel key={design.designId} {...design} onClose={commands.closeDesign} />}</Presence>
     </>
   )
 }
+
+const NO_OBSTACLES: Drawer[] = []
+
+type EntryProps = {
+  slot: SlotId
+  // Nulo: fechado, fazendo a saída.
+  drawer: Drawer | null
+  target: SlotTarget | null
+  // Drawers à vista com lugar definido (este incluso: sai da conta aqui).
+  obstacles: Drawer[]
+  codeOpen: boolean
+  commands: DrawerCommands
+  actions: SlotActions
+  onShown: (slot: SlotId, title: string | null) => void
+}
+
+// Um drawer de conversa com a sua entrada e saída. A conversa é procurada aqui, fora do Presence,
+// para a saída animar quando ela some da lista.
+function DrawerEntry({ slot, drawer, target, obstacles, codeOpen, commands, actions, onShown }: EntryProps) {
+  const active = drawer?.conversation ?? null
+  const conversation = useSlotConversation(active, target)
+  const others = useMemo(
+    () => obstacles.flatMap((o) => (o.id !== slot && o.rect ? [o.rect] : [])),
+    [obstacles, slot]
+  )
+  return (
+    <Presence>
+      {drawer && active && target && conversation && (
+        <DrawerSlot
+          slot={slot}
+          active={active}
+          conversation={conversation}
+          target={target}
+          rect={drawer.rect}
+          obstacles={others}
+          pinned={drawer.pinned}
+          codeOpen={codeOpen}
+          commands={commands}
+          actions={actions}
+          onShown={onShown}
+        />
+      )}
+    </Presence>
+  )
+}
+
+// Drawers que acabaram de fechar: ficam montados (vazios) o tempo da saída, para o Presence de cada
+// um mostrar o último conteúdo sumindo.
+function useLeaving(drawers: readonly Drawer[]): SlotId[] {
+  const [prev, setPrev] = useState(drawers)
+  const [gone, setGone] = useState<SlotId[]>([])
+  if (prev !== drawers) {
+    const removed = prev.filter((p) => !drawers.some((d) => d.id === p.id)).map((p) => p.id)
+    setPrev(drawers)
+    if (removed.length) setGone((g) => [...g, ...removed])
+  }
+  useEffect(() => {
+    if (!gone.length) return
+    const timer = setTimeout(() => setGone([]), MOTION.panel.out.duration + 100)
+    return () => clearTimeout(timer)
+  }, [gone])
+  return gone
+}
+

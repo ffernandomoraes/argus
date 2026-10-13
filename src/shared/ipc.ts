@@ -158,6 +158,7 @@ export type SendChannels = {
   'sessions:watch': (paths: string[]) => void
   // Arquivos
   'files:reveal': (root: string, rel: string) => void
+  'files:openInBrowser': (root: string, rel: string) => void
   'files:watch': (root: string, rel: string) => void
   'files:unwatch': () => void
   // O painel de código desta janela tem (ou deixou de ter) arquivo com alteração não salva: fechar

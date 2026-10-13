@@ -165,6 +165,7 @@ const api: Api = {
     copy: (root, rels) => invoke('files:copy', root, rels),
     paste: (root, dir) => invoke('files:paste', root, dir),
     reveal: (root, rel) => send('files:reveal', root, rel),
+    openInBrowser: (root, rel) => send('files:openInBrowser', root, rel),
     watch: (root, rel) => send('files:watch', root, rel),
     unwatch: () => send('files:unwatch'),
     onChanged: (cb) => listen('files:changed', cb),

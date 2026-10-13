@@ -117,6 +117,7 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     copyPath: (path) => void navigator.clipboard.writeText(path),
     rename: (path) => setEditing({ kind: 'rename', path }),
     reveal: (path) => window.api.files.reveal(root, path),
+    openInBrowser: (path) => window.api.files.openInBrowser(root, path),
     remove: askDelete
   }
 

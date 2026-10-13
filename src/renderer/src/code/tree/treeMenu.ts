@@ -1,4 +1,4 @@
-import { ClipboardPaste, Copy, FilePlus, FolderPlus, FolderSearch, Link, Pencil, Trash2 } from 'lucide-react'
+import { ClipboardPaste, Copy, FilePlus, FolderPlus, FolderSearch, Globe, Link, Pencil, Trash2 } from 'lucide-react'
 import type { FileEntry } from '../../../../shared/files'
 import type { MenuItem } from '../../canvas/ContextMenu'
 import { FILE_MANAGER } from '../../platform'
@@ -11,8 +11,12 @@ export type TreeMenuActions = {
   copyPath: (path: string) => void
   rename: (path: string) => void
   reveal: (path: string) => void
+  openInBrowser: (path: string) => void
   remove: (entry: FileEntry) => void
 }
+
+// O que o navegador mostra sozinho: página, PDF, imagem.
+const BROWSER_FILE = /\.(html?|xhtml|pdf|svg|png|jpe?g|gif|webp|avif)$/i
 
 // Menu do botão direito na árvore: num item, ou no vazio (entry nulo: vale para a raiz). Criar e
 // colar vão para a pasta do item (ou a do arquivo).
@@ -32,6 +36,8 @@ export function treeMenu(entry: FileEntry | null, a: TreeMenuActions): MenuItem[
       { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => a.rename(entry.path) }
     )
   }
+  if (entry && !entry.isDir && BROWSER_FILE.test(entry.path))
+    items.push({ type: 'action', label: 'Abrir no navegador', icon: Globe, onSelect: () => a.openInBrowser(entry.path) })
   items.push({ type: 'action', label: `Mostrar no ${FILE_MANAGER}`, icon: FolderSearch, onSelect: () => a.reveal(entry?.path ?? '') })
   if (entry) items.push({ type: 'separator' }, { type: 'action', label: 'Excluir', icon: Trash2, danger: true, onSelect: () => a.remove(entry) })
   return items

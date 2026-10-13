@@ -1,8 +1,10 @@
 import { mkdir, rename, writeFile as write } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import { shell } from 'electron'
+import { spawn } from 'node:child_process'
+import { app, shell } from 'electron'
 import type { FileOpResult } from '../../shared/files'
 import { expandHome, insideRoot } from '../paths'
+import { IS_WIN } from '../platform'
 import { changedOnDisk } from './diskBase'
 import { exists, failure, OUTSIDE, relOf } from './fsHelpers'
 import { invalidName, invalidPath } from './names'
@@ -82,4 +84,18 @@ export async function trashItem(root: string, rel: string): Promise<FileOpResult
 export function revealItem(root: string, rel: string): void {
   const full = insideRoot(root, rel)
   if (full) shell.showItemInFolder(full)
+}
+
+// Abre o arquivo no navegador padrão, não no app padrão do tipo (o PDF iria para o Preview). Sem
+// navegador registrado, cai no app padrão do tipo.
+export async function openInBrowser(root: string, rel: string): Promise<void> {
+  const full = insideRoot(root, rel)
+  if (!full) return
+  try {
+    const browser = (await app.getApplicationInfoForProtocol('https://')).path
+    const [cmd, args] = IS_WIN ? [browser, [full]] : ['open', ['-a', browser, full]]
+    spawn(cmd, args, { detached: true, stdio: 'ignore' }).on('error', () => void shell.openPath(full)).unref()
+  } catch {
+    void shell.openPath(full)
+  }
 }

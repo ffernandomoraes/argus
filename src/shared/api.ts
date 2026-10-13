@@ -218,6 +218,7 @@ export type Api = {
     // Cola na pasta os arquivos copiados no Finder (ou na árvore).
     paste: (root: string, dir: string) => Promise<FileOpResult>
     reveal: (root: string, rel: string) => void
+    openInBrowser: (root: string, rel: string) => void
     watch: (root: string, rel: string) => void
     unwatch: () => void
     onChanged: (cb: (root: string, rel: string) => void) => Off

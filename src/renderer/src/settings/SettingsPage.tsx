@@ -7,6 +7,7 @@ import { AccountsSection } from './sections/AccountsSection'
 import { AppearanceSection } from './sections/AppearanceSection'
 import { CoffeeSection } from './sections/CoffeeSection'
 import { ConversationsSection } from './sections/ConversationsSection'
+import { ExperimentsSection } from './sections/ExperimentsSection'
 import { GeneralSection } from './sections/GeneralSection'
 import { SECTIONS, type Section } from './sections/sectionList'
 import { tr } from '../i18n'
@@ -73,6 +74,7 @@ export function SettingsPage({
           {section === 'conversations' && <ConversationsSection />}
           {section === 'appearance' && <AppearanceSection theme={theme} onThemeChange={onThemeChange} />}
           {section === 'accounts' && <AccountsSection />}
+          {section === 'experiments' && <ExperimentsSection />}
           {section === 'coffee' && <CoffeeSection />}
         </div>
       </section>

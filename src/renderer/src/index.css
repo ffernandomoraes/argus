@@ -1,8 +1,9 @@
 @import 'tailwindcss';
 
 /* Os estilos do app, por assunto (ver styles/). A ordem é a de antes da divisão: tokens (o @theme
-   precisa vir depois do Tailwind), a página, os componentes e as animações. */
+   precisa vir depois do Tailwind), a página, os componentes e as animações. O mascote fica à parte. */
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/components.css';
 @import './styles/animations.css';
+@import './styles/mascot.css';

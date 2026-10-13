@@ -16,6 +16,11 @@ export type Preferences = {
   conversationDefaults: number
   // Player da música que toca no sistema, na barra de título (MediaControls).
   mediaPlayer: boolean
+  // Mascote no canto esquerdo do canvas (canvas/mascot).
+  mascot: boolean
+  // Onde o mascote fica parado, se a pessoa arrastou: canto de cima do quadro dele, em fração da
+  // largura e da altura da janela. Nulo = canto esquerdo, no meio da altura.
+  mascotSpot: { x: number; y: number } | null
 }
 
 const KEY = 'preferences'
@@ -26,7 +31,9 @@ const DEFAULTS: Preferences = {
   conversation: DEFAULT_SETTINGS,
   welcomeSeen: false,
   conversationDefaults: CONVERSATION_DEFAULTS,
-  mediaPlayer: true
+  mediaPlayer: true,
+  mascot: false,
+  mascotSpot: null
 }
 
 function read(): Preferences {

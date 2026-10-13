@@ -1,0 +1,525 @@
+/* Mascote (canvas/mascot/MascotFigure.tsx). A pose vem na classe do <svg> (.pose-idle,
+   .pose-whip...). Cada parte que mexe tem dois grupos: o da pose (.m-arm-r, .m-head...), com a
+   posição fixa e transição entre poses, e o do movimento (.m-arm-r-move...), com a animação somada
+   por cima. Nos braços, ângulo positivo levanta para fora dos dois lados (o direito é o esquerdo
+   espelhado). Unidades em px valem unidades do desenho. */
+
+.mascot {
+  overflow: visible;
+  /* Contorno claro bem leve para o cabelo e a barba não sumirem no fundo escuro. */
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 0.35)) drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+}
+:root[data-theme='light'] .mascot {
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.22));
+}
+
+/* ---------- posição fixa de cada pose ---------- */
+
+.mascot :is(.m-arm-l, .m-arm-r, .m-fore-l, .m-fore-r, .m-head, .m-iris) {
+  transition: transform 240ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.mascot :is(.m-arm-l, .m-arm-r) {
+  transform: rotate(8deg);
+}
+.mascot :is(.m-fore-l, .m-fore-r) {
+  transform: rotate(-6deg);
+}
+/* Escutando: mão em concha na orelha, cabeça inclinada para ela, olhar de lado. */
+.mascot.pose-listen .m-arm-r {
+  transform: rotate(140deg);
+}
+.mascot.pose-listen .m-fore-r {
+  transform: rotate(12deg);
+}
+.mascot.pose-listen .m-head {
+  transform: rotate(8deg);
+}
+.mascot.pose-listen .m-iris {
+  transform: translate(1.5px, -0.4px);
+}
+/* Joia: braço para fora, antebraço para cima (um pouco aberto, para a mão não cobrir o queixo). */
+.mascot.pose-thumbs .m-arm-r {
+  transform: rotate(95deg);
+}
+.mascot.pose-thumbs .m-fore-r {
+  transform: rotate(65deg);
+}
+.mascot.pose-thumbs .m-head {
+  transform: rotate(-4deg);
+}
+/* Acenando: braço aberto e antebraço para cima, longe do rosto; a mão balança na animação. */
+.mascot.pose-wave .m-arm-r {
+  transform: rotate(110deg);
+}
+.mascot.pose-wave .m-fore-r {
+  transform: rotate(50deg);
+}
+.mascot.pose-wave .m-head {
+  transform: rotate(-4deg);
+}
+/* Chicotada e dança: o ângulo inteiro vem da animação. */
+.mascot.pose-whip :is(.m-arm-r, .m-fore-r),
+.mascot.pose-dance :is(.m-arm-l, .m-arm-r, .m-fore-l, .m-fore-r) {
+  transform: none;
+}
+
+/* ---------- sempre: pisca ---------- */
+
+@keyframes mascot-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+.mascot .m-blink {
+  animation: mascot-blink 4.2s infinite;
+}
+
+/* ---------- parado: respira ---------- */
+
+@keyframes mascot-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.022);
+  }
+}
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.8px);
+  }
+}
+@keyframes mascot-sway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+.mascot:is(.pose-idle, .pose-listen, .pose-thumbs, .pose-wave) .m-torso-move {
+  animation: mascot-breathe 3.2s ease-in-out infinite;
+}
+.mascot.pose-idle .m-head-move {
+  animation: mascot-bob 3.2s ease-in-out infinite;
+}
+.mascot.pose-idle :is(.m-arm-l-move, .m-arm-r-move) {
+  animation: mascot-sway 3.2s ease-in-out infinite;
+}
+
+/* ---------- andando: de perfil, pernas e braços em tesoura, inclinado para a frente ----------
+   O corpo desce um pouco quando as pernas abrem, para os pés não saírem do chão. */
+
+@keyframes mascot-turn {
+  from {
+    transform: scaleX(0.55);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.mascot .m-turn {
+  animation: mascot-turn 180ms ease-out both;
+}
+.mascot .m-far {
+  filter: brightness(0.72);
+}
+.mascot :is(.m-fore-near, .m-fore-far) {
+  transform: rotate(-18deg);
+}
+@keyframes mascot-stride {
+  0%,
+  100% {
+    transform: rotate(22deg);
+  }
+  50% {
+    transform: rotate(-22deg);
+  }
+}
+@keyframes mascot-swing {
+  0%,
+  100% {
+    transform: rotate(-20deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+}
+@keyframes mascot-walk-body {
+  0%,
+  50%,
+  100% {
+    transform: rotate(3deg) translateY(1.9px);
+  }
+  25%,
+  75% {
+    transform: rotate(3deg) translateY(0);
+  }
+}
+.mascot.pose-walk .m-body-move {
+  animation: mascot-walk-body 520ms ease-in-out infinite;
+}
+.mascot.pose-walk .m-leg-near-move {
+  animation: mascot-stride 520ms ease-in-out infinite;
+}
+.mascot.pose-walk .m-leg-far-move {
+  animation: mascot-stride 520ms ease-in-out -260ms infinite;
+}
+.mascot.pose-walk .m-arm-near-move {
+  animation: mascot-swing 520ms ease-in-out infinite;
+}
+.mascot.pose-walk .m-arm-far-move {
+  animation: mascot-swing 520ms ease-in-out -260ms infinite;
+}
+
+/* ---------- chicotada: prepara (12-38%), estala (38-68%), a tira cai (68-100%) ----------
+   Cada fase tem a tira desenhada já na posição; a troca é instantânea, junto com o braço. */
+
+@keyframes mascot-whip-arm {
+  0% {
+    transform: rotate(8deg);
+  }
+  12%,
+  36% {
+    transform: rotate(130deg);
+  }
+  40%,
+  66% {
+    transform: rotate(90deg);
+  }
+  72%,
+  100% {
+    transform: rotate(50deg);
+  }
+}
+@keyframes mascot-whip-forearm {
+  0% {
+    transform: rotate(-6deg);
+  }
+  12%,
+  36% {
+    transform: rotate(30deg);
+  }
+  40%,
+  66% {
+    transform: rotate(0deg);
+  }
+  72%,
+  100% {
+    transform: rotate(-10deg);
+  }
+}
+@keyframes mascot-whip-body {
+  0% {
+    transform: rotate(0deg);
+  }
+  12%,
+  36% {
+    transform: rotate(-2deg);
+  }
+  40% {
+    transform: rotate(3deg);
+  }
+  66% {
+    transform: rotate(1.5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mascot-lash-windup {
+  0%,
+  11.9% {
+    opacity: 0;
+  }
+  12%,
+  37.9% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mascot-lash-crack {
+  0%,
+  37.9% {
+    opacity: 0;
+  }
+  38%,
+  67.9% {
+    opacity: 1;
+  }
+  68%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mascot-lash-follow {
+  0%,
+  67.9% {
+    opacity: 0;
+  }
+  68%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes mascot-spark {
+  0%,
+  37.9% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  38% {
+    opacity: 1;
+    transform: scale(0.5);
+  }
+  46% {
+    transform: scale(1.25);
+  }
+  56%,
+  64% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+.mascot.pose-whip .m-arm-r-move {
+  animation: mascot-whip-arm var(--whip-ms) linear both;
+}
+.mascot.pose-whip .m-fore-r-move {
+  animation: mascot-whip-forearm var(--whip-ms) linear both;
+}
+.mascot.pose-whip .m-body-move {
+  animation: mascot-whip-body var(--whip-ms) ease-out both;
+}
+.mascot .m-lash-windup {
+  animation: mascot-lash-windup var(--whip-ms) linear both;
+}
+.mascot .m-lash-crack {
+  animation: mascot-lash-crack var(--whip-ms) linear both;
+}
+.mascot .m-lash-follow {
+  animation: mascot-lash-follow var(--whip-ms) linear both;
+}
+.mascot .m-spark {
+  animation: mascot-spark var(--whip-ms) linear both;
+}
+
+@keyframes mascot-step {
+  0%,
+  50%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  25% {
+    transform: translateY(-2px) scaleY(0.88);
+  }
+}
+
+/* ---------- dançando: pula, balança o quadril e alterna os braços ---------- */
+
+@keyframes mascot-dance-body {
+  0%,
+  100% {
+    transform: rotate(-3deg) translateY(0);
+  }
+  25%,
+  75% {
+    transform: rotate(0deg) translateY(-4px);
+  }
+  50% {
+    transform: rotate(3deg) translateY(0);
+  }
+}
+@keyframes mascot-dance-arm {
+  0%,
+  100% {
+    transform: rotate(150deg);
+  }
+  50% {
+    transform: rotate(25deg);
+  }
+}
+@keyframes mascot-dance-forearm {
+  0%,
+  100% {
+    transform: rotate(20deg);
+  }
+  50% {
+    transform: rotate(-25deg);
+  }
+}
+@keyframes mascot-dance-head {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+.mascot.pose-dance .m-body-move {
+  animation: mascot-dance-body 800ms ease-in-out infinite;
+}
+.mascot.pose-dance .m-head-move {
+  animation: mascot-dance-head 800ms ease-in-out infinite;
+}
+.mascot.pose-dance .m-arm-l-move {
+  animation: mascot-dance-arm 800ms ease-in-out infinite;
+}
+.mascot.pose-dance .m-fore-l-move {
+  animation: mascot-dance-forearm 800ms ease-in-out infinite;
+}
+.mascot.pose-dance .m-arm-r-move {
+  animation: mascot-dance-arm 800ms ease-in-out -400ms infinite;
+}
+.mascot.pose-dance .m-fore-r-move {
+  animation: mascot-dance-forearm 800ms ease-in-out -400ms infinite;
+}
+.mascot.pose-dance .m-leg-l-move {
+  animation: mascot-step 800ms ease-in-out infinite;
+}
+.mascot.pose-dance .m-leg-r-move {
+  animation: mascot-step 800ms ease-in-out -400ms infinite;
+}
+
+/* ---------- escutando: balança a cabeça; ondas chegando na orelha, da mais longe para a mais perto ---------- */
+
+@keyframes mascot-nod {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+@keyframes mascot-sound {
+  0% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+  35% {
+    opacity: 1;
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+.mascot.pose-listen .m-head-move {
+  animation: mascot-nod 2.4s ease-in-out infinite;
+}
+.mascot .m-sound {
+  animation: mascot-sound 1.2s ease-out infinite both;
+}
+.mascot .m-sound-0 {
+  animation-delay: 600ms;
+}
+.mascot .m-sound-1 {
+  animation-delay: 300ms;
+}
+
+/* ---------- joia: pulinho e brilhos ---------- */
+
+@keyframes mascot-hop {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0);
+  }
+  15% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes mascot-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1) rotate(30deg);
+  }
+  70% {
+    opacity: 0.8;
+    transform: scale(0.85) rotate(45deg);
+  }
+}
+.mascot.pose-thumbs .m-body-move {
+  animation: mascot-hop 700ms ease-out both;
+}
+.mascot .m-sparkle {
+  animation: mascot-twinkle 900ms ease-in-out infinite both;
+}
+.mascot .m-sparkle-1 {
+  animation-delay: 300ms;
+}
+.mascot .m-sparkle-2 {
+  animation-delay: 600ms;
+}
+
+/* ---------- acenando: mão balança, aviso pulsa ---------- */
+
+@keyframes mascot-wave {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
+}
+@keyframes mascot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+.mascot.pose-wave .m-fore-r-move {
+  animation: mascot-wave 500ms ease-in-out infinite;
+}
+.mascot.pose-wave .m-head-move {
+  animation: mascot-nod 1s ease-in-out infinite;
+}
+.mascot .m-badge {
+  animation: mascot-pulse 1s ease-in-out infinite;
+}
+
+/* Reduzir movimento: poses paradas, sem caminhada (ele aparece no lugar). A chicotada fica parada
+   no estalo. */
+@media (prefers-reduced-motion: reduce) {
+  .mascot *,
+  .mascot-walker {
+    animation: none !important;
+    transition: none !important;
+  }
+  .mascot.pose-whip .m-arm-r {
+    transform: rotate(90deg);
+  }
+  .mascot :is(.m-lash-windup, .m-lash-follow) {
+    display: none;
+  }
+}

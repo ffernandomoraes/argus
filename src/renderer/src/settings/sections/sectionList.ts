@@ -1,7 +1,7 @@
-import { Coffee, MessagesSquare, Palette, Settings2, Users } from 'lucide-react'
+import { Coffee, FlaskConical, MessagesSquare, Palette, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'appearance' | 'accounts' | 'coffee'
+export type Section = 'general' | 'conversations' | 'appearance' | 'accounts' | 'experiments' | 'coffee'
 
 // Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
@@ -35,6 +35,15 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     label: tr('Contas', 'Accounts'),
     icon: Users,
     description: tr('As contas do Claude Code que o Argus usa.', 'The Claude Code accounts Argus uses.')
+  },
+  {
+    id: 'experiments',
+    label: tr('Experimentos', 'Experiments'),
+    icon: FlaskConical,
+    description: tr(
+      'Recursos em teste ou só por diversão. Vêm desligados; ligue o que quiser experimentar.',
+      'Features being tested or just for fun. They start off; turn on what you want to try.'
+    )
   },
   {
     id: 'coffee',

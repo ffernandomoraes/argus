@@ -33,7 +33,9 @@ import { setPoppedOut } from './sessionsStore'
 import { TitleBar } from './TitleBar'
 import type { CanvasNode } from './types'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
+import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
+import { Mascot } from './mascot/Mascot'
 
 type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
 
@@ -44,6 +46,8 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   const [nodes, setNodes] = useState<CanvasNode[]>(loadNodes)
   const { nodesRef, change, trackGesture, undo, redo } = useHistory(nodes, setNodes)
   useCanvasSync(nodes, setNodes)
+  // O que está no canvas: só essas pastas contam para o "concluído", a barra de menus e o mascote.
+  useEffect(() => setCanvasScope(nodes), [nodes])
   useCanvasAgentTools(nodesRef, change)
   const api = useMemo<NodesApi>(() => ({ nodesRef, setNodes, change }), [nodesRef, change])
   // Câmera com que esta janela estava ao fechar o app; sem ela, enquadra tudo.
@@ -156,6 +160,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           arranging={arranging}
           zoomShortcuts={!shown}
         />
+        <Mascot nodesRef={nodesRef} hidden={uiHidden} />
         {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
         <div
           aria-hidden="true"

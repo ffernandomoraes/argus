@@ -11,6 +11,7 @@ import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { Message } from './history'
 import type { McpStatus } from './mcp'
+import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeInfo } from './models'
 import type { KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
@@ -51,6 +52,9 @@ export type InvokeChannels = {
   'updates:check': () => UpdateState
   'popout:payload': (id: string) => unknown
   'usage:get': () => Record<string, Usage>
+  'media:get': () => NowPlaying | null
+  'media:command': (command: MediaCommand) => void
+  'media:volume': (volume: number) => void
   'claude:info': (account?: string) => ClaudeInfo | null
   'cli:status': () => CliStatus
   'cli:install': () => CliStatus

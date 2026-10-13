@@ -12,6 +12,7 @@ import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { Message } from './history'
 import type { DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
 import type { McpStatus } from './mcp'
+import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeInfo } from './models'
 import type { KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
@@ -277,5 +278,11 @@ export type Api = {
   usage: {
     get: () => Promise<Record<string, Usage>>
     onUpdate: (cb: (account: string, usage: Usage | null) => void) => Off
+  }
+  // O que toca no sistema; nulo sem nada tocando ou sem como ler.
+  media: {
+    get: () => Promise<NowPlaying | null>
+    command: (command: MediaCommand) => Promise<void>
+    setVolume: (volume: number) => Promise<void>
   }
 }

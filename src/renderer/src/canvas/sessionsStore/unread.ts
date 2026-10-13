@@ -13,7 +13,9 @@ const viewing = new Map<string, number>()
 // Conversas em janela separada: também contam como vistas (setPoppedOut, pelo Canvas).
 let poppedOut: ReadonlySet<string> = new Set()
 
-const seen = (id: string) => viewing.has(id) || poppedOut.has(id)
+// Na tela, mas com você em outro app, não conta como vista (igual à notificação do sistema). A
+// janela separada fica de fora: esta janela não sabe se ela está em foco.
+const seen = (id: string) => (viewing.has(id) && document.hasFocus()) || poppedOut.has(id)
 
 function markRead(ids: Iterable<string>): void {
   unread.set((s) => {
@@ -36,6 +38,9 @@ export function noteFinished(before: ConversationSummary[] | undefined, after: C
   })
   if (done.length) unread.set((s) => new Set([...s, ...done.map((c) => c.id)]))
 }
+
+// Você voltou à janela: o que está na tela foi visto.
+window.addEventListener('focus', () => markRead([...viewing.keys()]))
 
 // A conversa está na tela enquanto o componente estiver montado: marca como lida.
 export function useViewing(id: string | undefined): void {

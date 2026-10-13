@@ -14,6 +14,8 @@ export type Preferences = {
   welcomeSeen: boolean
   // Versão dos padrões da conversa já aplicada. Até a 2, thinking vinha ligado e ficava salvo.
   conversationDefaults: number
+  // Player da música que toca no sistema, na barra de título (MediaControls).
+  mediaPlayer: boolean
 }
 
 const KEY = 'preferences'
@@ -23,7 +25,8 @@ const DEFAULTS: Preferences = {
   drawerZoom: 1,
   conversation: DEFAULT_SETTINGS,
   welcomeSeen: false,
-  conversationDefaults: CONVERSATION_DEFAULTS
+  conversationDefaults: CONVERSATION_DEFAULTS,
+  mediaPlayer: true
 }
 
 function read(): Preferences {

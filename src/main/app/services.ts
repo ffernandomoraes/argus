@@ -14,6 +14,7 @@ import { Terminals } from '../terminals'
 import { Updater } from '../updater'
 import { UsageMonitors } from '../usageMonitor'
 import { canvasWindowList, readyCanvas } from './canvasRegistry'
+import { DockBadge } from './dockBadge'
 import { openFolder } from './folderOpener'
 import { MenuBarIcon } from './menuBarIcon'
 import { TerminalViewers } from './terminalViewers'
@@ -45,8 +46,12 @@ export function createServices() {
   }
 
   // Respostas que você ainda não viu, como as janelas contam: o ícone da barra mostra quantas.
-  const unread = new UnreadChats(() => tray.refresh())
+  const unread = new UnreadChats(() => {
+    tray.refresh()
+    badge.refresh()
+  })
   const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), showApp, openChat })
+  const badge = new DockBadge(() => chats.list(), () => unread.list())
 
   // O indicador do canto do canvas só recebe a lista quando ela muda de verdade.
   let activeShown = ''
@@ -61,6 +66,7 @@ export function createServices() {
   const chats = new Chats((key, state) => {
     broadcast('chat:state', key, state)
     tray.refresh()
+    badge.refresh()
     notifier.refresh()
     publishActive()
   })

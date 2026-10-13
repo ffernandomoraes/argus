@@ -4,9 +4,11 @@ import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { useUpdates } from '../updates/useUpdates'
 import { useWindowControls } from '../useWindowControls'
+import { MediaControls } from './bars/MediaControls'
 import { UpdateStatus } from './bars/UpdateStatus'
 import { updateProgress } from './bars/updateProgress'
 import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
+import { usePreference } from '../settings/preferences'
 import { UsageIndicator } from './UsageIndicator'
 import { tr } from '../i18n'
 
@@ -28,6 +30,7 @@ export const TitleBar = memo(function TitleBar({
 }) {
   const updates = useUpdates()
   const controls = useWindowControls()
+  const mediaPlayer = usePreference('mediaPlayer')
   const [usageOpen, setUsageOpen] = useState(false)
   const status = updateProgress(updates?.state)
   useNewWindowShortcut()
@@ -47,6 +50,12 @@ export const TitleBar = memo(function TitleBar({
       style={{ height: TITLE_BAR_HEIGHT }}
       className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35] hover:z-[45]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
     >
+      {/* Logo depois dos botões da janela (os semáforos do Mac). Desligado, nem consulta o sistema. */}
+      {mediaPlayer && (
+        <div className="absolute inset-y-0 flex items-center" style={{ left: 12 + controls.left }}>
+          <MediaControls />
+        </div>
+      )}
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
       {import.meta.env.DEV && (

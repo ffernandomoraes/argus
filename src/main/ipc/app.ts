@@ -4,6 +4,7 @@ import { accentColor, setTheme } from '../app/appearance'
 import type { Lifecycle } from '../app/lifecycle'
 import type { Services } from '../app/services'
 import { refreshAppMenu } from '../app/menu'
+import { mediaCommand, nowPlaying, setVolume } from '../media'
 import { loadAppSettings, saveAppSettings } from '../appSettings'
 import { lang, setLang, tr } from '../i18n'
 import { broadcast } from './events'
@@ -53,5 +54,8 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('popout:open', (_e, id, payload) => s.popouts.show(id, payload))
   handle('popout:payload', (_e, id) => s.popouts.payload(id))
   handle('usage:get', () => s.usage.all())
+  handle('media:get', () => nowPlaying())
+  handle('media:command', (_e, command) => mediaCommand(command))
+  handle('media:volume', (_e, volume) => setVolume(volume))
   handle('claude:info', (_e, account) => s.usage.info(resolveAccount(account)))
 }

@@ -1,5 +1,5 @@
 import { AppWindow, PanelRight, PictureInPicture2 } from 'lucide-react'
-import { Group, Row, Segmented } from '../controls'
+import { Group, Row, Segmented, Switch } from '../controls'
 import { setPreferences, usePreference } from '../preferences'
 import { CliRow } from './CliRow'
 import { LanguageRow } from './LanguageRow'
@@ -10,6 +10,7 @@ import { tr } from '../../i18n'
 
 export function GeneralSection() {
   const openIn = usePreference('openIn')
+  const mediaPlayer = usePreference('mediaPlayer')
   return (
     <Group>
       <LanguageRow />
@@ -25,6 +26,15 @@ export function GeneralSection() {
         />
       </Row>
       <MenuBarIconRow />
+      <Row
+        label={tr('Player de música', 'Music player')}
+        description={tr(
+          'Mostra na barra de título o que toca no computador, com tocar/pausar e volume.',
+          'Shows what is playing on the computer in the title bar, with play/pause and volume.'
+        )}
+      >
+        <Switch label={tr('Player de música', 'Music player')} checked={mediaPlayer} onChange={(next) => setPreferences({ mediaPlayer: next })} />
+      </Row>
       <CliRow />
       <WslRow />
       <UpdatesRow />

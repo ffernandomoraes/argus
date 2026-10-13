@@ -214,6 +214,11 @@ const api: Api = {
   usage: {
     get: () => invoke('usage:get'),
     onUpdate: (cb) => listen('usage:update', cb)
+  },
+  media: {
+    get: () => invoke('media:get'),
+    command: (command) => invoke('media:command', command),
+    setVolume: (volume) => invoke('media:volume', volume)
   }
 }
 

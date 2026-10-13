@@ -6,13 +6,16 @@ export function Toggle({
   description,
   checked,
   onChange,
-  icon
+  icon,
+  tag
 }: {
   label: string
   description: string
   checked: boolean
   onChange: (checked: boolean) => void
   icon?: ReactNode
+  // Selo depois do nome (ex.: ExperimentTag).
+  tag?: ReactNode
 }) {
   return (
     <button
@@ -25,6 +28,7 @@ export function Toggle({
         <span className="flex items-center gap-1.5 text-xs text-text">
           {icon}
           {label}
+          {tag}
         </span>
         <span className="mt-0.5 block text-[12px] leading-snug text-faint">{description}</span>
       </span>

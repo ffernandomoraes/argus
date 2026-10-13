@@ -6,6 +6,8 @@ export type SessionSettings = {
   thinking: boolean
   // Workflows dinâmicos (vários subagentes) em toda tarefa, só nesta sessão.
   ultracode: boolean
+  // Modo orquestrador (shared/orchestrator.ts), só nesta sessão.
+  orchestrator: boolean
   // Modo de permissão (--permission-mode); vazio = padrão da conta.
   permissionMode: string
 }
@@ -15,6 +17,7 @@ export const DEFAULT_SETTINGS: SessionSettings = {
   effort: '',
   thinking: false,
   ultracode: false,
+  orchestrator: false,
   permissionMode: ''
 }
 
@@ -24,10 +27,12 @@ export function launchSettings(s: SessionSettings): string {
   return JSON.stringify({ alwaysThinkingEnabled: s.thinking, ultracode: s.ultracode })
 }
 
-// Comando para aplicar a mudança numa sessão de terminal já aberta (thinking não tem).
-export function liveCommand(patch: Partial<SessionSettings>): string | null {
-  if (patch.model) return `/model ${patch.model}`
-  if (patch.effort !== undefined) return `/effort ${patch.effort || 'auto'}`
-  if (patch.ultracode !== undefined) return `/effort ultracode ${patch.ultracode ? 'on' : 'off'}`
-  return null
+// Comandos para aplicar a mudança numa sessão de terminal já aberta (thinking e orquestrador não
+// têm). Ligar o orquestrador troca modelo e esforço juntos.
+export function liveCommands(patch: Partial<SessionSettings>): string[] {
+  const out: string[] = []
+  if (patch.model) out.push(`/model ${patch.model}`)
+  if (patch.effort !== undefined) out.push(`/effort ${patch.effort || 'auto'}`)
+  if (patch.ultracode !== undefined) out.push(`/effort ultracode ${patch.ultracode ? 'on' : 'off'}`)
+  return out
 }

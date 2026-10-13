@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { basename, dirname } from 'node:path'
+import { writeFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
+import { app } from 'electron'
 import { spawn, type IPty } from 'node-pty'
 import type { TerminalOpenRequest } from '../../shared/terminal'
 import { applyAccount } from '../accounts'
@@ -8,7 +10,7 @@ import { claudeCommand, claudePath } from '../claudePath'
 import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { childEnv, defaultShell, prependPath } from '../platform'
-import { distroFor } from '../wsl'
+import { distroFor, toLinux } from '../wsl'
 import { wslLaunch } from '../wsl/launch'
 
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
@@ -18,9 +20,11 @@ export type Spawned =
   | { ok: true; pty: IPty; account: string; shell?: string; wsl?: boolean; newSession?: string }
   | { ok: false; error: string }
 
-// Opções do `claude` que valem nos dois lugares.
-function claudeArgs(req: TerminalOpenRequest): string[] {
+// Opções do `claude` que valem nos dois lugares. promptFile: as regras do orquestrador, já no
+// caminho que o `claude` enxerga.
+function claudeArgs(req: TerminalOpenRequest, promptFile?: string): string[] {
   return [
+    ...(promptFile ? ['--append-system-prompt-file', promptFile] : []),
     ...(req.sessionId ? ['--resume', req.sessionId] : []),
     ...(req.model ? ['--model', req.model] : []),
     ...(req.effort ? ['--effort', req.effort] : []),
@@ -36,11 +40,20 @@ export async function spawnTerminal(req: TerminalOpenRequest, cwd: string): Prom
   return distro ? wslTerminal(req, cwd, distro) : nativeTerminal(req, cwd)
 }
 
+// Texto de várias linhas como argumento quebra no Windows e no WSL: vai num arquivo. Um só para
+// todos os terminais, porque as regras são as mesmas (vêm das Configurações).
+function writePrompt(text: string): string {
+  const path = join(app.getPath('userData'), 'orchestrator-prompt.md')
+  writeFileSync(path, text)
+  return path
+}
+
 // No WSL o app não tem como achar pelo pid a conversa que o `claude` cria (o pid é do wsl.exe e o
 // status gravado traz o do Linux): a conversa nova já abre com um id escolhido aqui.
 async function wslTerminal(req: TerminalOpenRequest, cwd: string, distro: string): Promise<Spawned> {
   const newSession = req.shell || req.sessionId ? undefined : randomUUID()
-  const args = [...claudeArgs(req), ...(newSession ? ['--session-id', newSession] : [])]
+  const prompt = req.systemPrompt && !req.shell ? toLinux(writePrompt(req.systemPrompt)) : undefined
+  const args = [...claudeArgs(req, prompt), ...(newSession ? ['--session-id', newSession] : [])]
   const env = { TERM: 'xterm-256color', COLORTERM: 'truecolor' }
   const l = await wslLaunch(distro, { args, shell: req.shell, account: req.account, cwd, env, visibleInstall: true })
   if (!l.ok) return l
@@ -65,7 +78,8 @@ function nativeTerminal(req: TerminalOpenRequest, cwd: string): Spawned {
 
   // No Mac, shell de login, como o Terminal: carrega .zprofile e .zshrc. No Windows, PowerShell.
   const shell = defaultShell()
-  const command = claudeCommand(claudeArgs(req), claude)
+  const prompt = req.systemPrompt && !req.shell ? writePrompt(req.systemPrompt) : undefined
+  const command = claudeCommand(claudeArgs(req, prompt), claude)
   const program = req.shell ? shell.file : command.file
 
   try {

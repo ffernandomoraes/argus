@@ -5,6 +5,7 @@ import { tr } from '../../i18n'
 // Coisas em teste ou só por diversão. Tudo aqui vem desligado.
 export function ExperimentsSection() {
   const mascot = usePreference('mascot')
+  const orchestrator = usePreference('orchestratorEnabled')
   return (
     <Group>
       <Row
@@ -15,6 +16,15 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Mascote', 'Mascot')} checked={mascot} onChange={(next) => setPreferences({ mascot: next })} />
+      </Row>
+      <Row
+        label={tr('Orquestrador', 'Orchestrator')}
+        description={tr(
+          'Na conversa em que for ligado, não executa: divide o pedido em etapas e manda cada uma ao modelo e esforço que ela pede. Liga o item no seletor de modelo e a aba Orquestrador, onde ficam as regras.',
+          'In the chat where it’s on, it doesn’t do the work: splits the request into steps and sends each to the model and effort it needs. Enables the item in the model picker and the Orchestrator tab, where the rules live.'
+        )}
+      >
+        <Switch label={tr('Orquestrador', 'Orchestrator')} checked={orchestrator} onChange={(next) => setPreferences({ orchestratorEnabled: next })} />
       </Row>
     </Group>
   )

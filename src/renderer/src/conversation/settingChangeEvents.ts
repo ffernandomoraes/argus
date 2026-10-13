@@ -24,5 +24,6 @@ export function settingChangeEvents(patch: Partial<SessionSettings>, models: Cla
   }
   if (patch.thinking !== undefined) out.push({ kind: 'thinking', text: patch.thinking ? tr('Raciocínio ligado', 'Thinking on') : tr('Raciocínio desligado', 'Thinking off') })
   if (patch.ultracode !== undefined) out.push({ kind: 'ultracode', text: patch.ultracode ? tr('Ultracode ligado', 'Ultracode on') : tr('Ultracode desligado', 'Ultracode off') })
+  if (patch.orchestrator !== undefined) out.push({ kind: 'orchestrator', text: patch.orchestrator ? tr('Orquestrador ligado', 'Orchestrator on') : tr('Orquestrador desligado', 'Orchestrator off') })
   return out
 }

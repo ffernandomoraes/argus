@@ -1,11 +1,12 @@
-import { Coffee, FlaskConical, MessagesSquare, Palette, Settings2, Users } from 'lucide-react'
+import { Coffee, FlaskConical, MessagesSquare, Network, Palette, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'appearance' | 'accounts' | 'experiments' | 'coffee'
+export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'accounts' | 'experiments' | 'coffee'
 
 // Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
-export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; description: string }[] = [
+// experimental: ligada em Experimentos; leva o selo na frente do nome.
+export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; description: string; experimental?: boolean }[] = [
   {
     id: 'general',
     label: tr('Geral', 'General'),
@@ -22,6 +23,16 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     description: tr(
       'Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.',
       'How each chat opens. What you change in the chat itself applies only to that chat.'
+    )
+  },
+  {
+    id: 'orchestrator',
+    label: tr('Orquestrador', 'Orchestrator'),
+    icon: Network,
+    experimental: true,
+    description: tr(
+      'Ligado numa conversa, não executa: divide o pedido em etapas e manda cada uma ao modelo e esforço que ela pede.',
+      'When on in a chat, it doesn’t do the work: splits the request into steps and sends each to the model and effort it needs.'
     )
   },
   {

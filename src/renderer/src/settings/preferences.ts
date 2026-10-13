@@ -1,3 +1,5 @@
+import type { OrchestratorConfig } from '../../../shared/orchestrator'
+import { defaultOrchestrator } from '../conversation/orchestrator'
 import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
@@ -21,6 +23,10 @@ export type Preferences = {
   // Onde o mascote fica parado, se a pessoa arrastou: canto de cima do quadro dele, em fração da
   // largura e da altura da janela. Nulo = canto esquerdo, no meio da altura.
   mascotSpot: { x: number; y: number } | null
+  // Modo orquestrador disponível (Configurações > Experimentos): mostra a aba e o item no seletor.
+  orchestratorEnabled: boolean
+  // Modelo e esforço do orquestrador e as regras de delegação dele (Configurações > Orquestrador).
+  orchestrator: OrchestratorConfig
 }
 
 const KEY = 'preferences'
@@ -33,7 +39,9 @@ const DEFAULTS: Preferences = {
   conversationDefaults: CONVERSATION_DEFAULTS,
   mediaPlayer: true,
   mascot: false,
-  mascotSpot: null
+  mascotSpot: null,
+  orchestratorEnabled: false,
+  orchestrator: defaultOrchestrator()
 }
 
 function read(): Preferences {

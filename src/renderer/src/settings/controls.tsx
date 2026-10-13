@@ -85,18 +85,28 @@ export function Segmented<T extends string>({
 export function Select({
   value,
   onChange,
+  compact,
+  disabled,
+  label,
   children
 }: {
   value: string
   onChange: (value: string) => void
+  // Mais estreito, para vários lado a lado numa linha (regras do orquestrador).
+  compact?: boolean
+  disabled?: boolean
+  // Nome para leitor de tela, quando não há rótulo à vista.
+  label?: string
   children: ReactNode
 }) {
   return (
-    <label className="relative flex items-center">
+    <label className={`relative flex items-center ${disabled ? 'opacity-40' : ''}`}>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="min-w-44 cursor-pointer appearance-none rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[12px] text-text outline-none hover:border-line-strong"
+        disabled={disabled}
+        aria-label={label}
+        className={`${compact ? 'min-w-24' : 'min-w-44'} cursor-pointer appearance-none disabled:cursor-default rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[12px] text-text outline-none enabled:hover:border-line-strong`}
       >
         {children}
       </select>

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ChevronUp, Workflow } from 'lucide-react'
+import { ChevronUp, Network, Workflow } from 'lucide-react'
 import type { SessionSettings } from './SessionSettings'
 import { EFFORTS, effortLabel } from './modelOptions'
 import { useModels } from './useModels'
@@ -12,6 +12,8 @@ import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { MenuArrow } from '../ui/MenuArrow'
 import { tr } from '../i18n'
+import { getPreferences, usePreference } from '../settings/preferences'
+import { ExperimentTag } from '../ui/ExperimentTag'
 
 // Níveis de esforço e famílias de modelo moram em modelOptions.ts; saem daqui também, como antes,
 // para as Configurações.
@@ -33,6 +35,7 @@ export function ModelEffortPicker({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const models = useModels()
+  const orchestratorEnabled = usePreference('orchestratorEnabled')
   useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
@@ -65,6 +68,7 @@ export function ModelEffortPicker({
           </>
         )}
         {settings.ultracode && <Workflow size={12} className="text-running" aria-label={tr('Ultracode ligado', 'Ultracode on')} />}
+        {orchestratorEnabled && settings.orchestrator && <Network size={12} className="text-running" aria-label={tr('Orquestrador ligado', 'Orchestrator on')} />}
         <ChevronUp size={12} className="text-faint" />
       </button>
 
@@ -99,6 +103,23 @@ export function ModelEffortPicker({
               checked={settings.ultracode}
               onChange={(ultracode) => onChange({ ultracode })}
             />
+            {orchestratorEnabled && (
+              <Toggle
+                label={tr('Orquestrador', 'Orchestrator')}
+                tag={<ExperimentTag />}
+                icon={<Network size={12} />}
+                description={tr(
+                  'Não executa: divide o pedido em etapas e manda cada uma ao modelo e esforço que ela pede. Regras em Configurações > Orquestrador.',
+                  'Doesn’t do the work: splits the request into steps and sends each to the model and effort it needs. Rules in Settings > Orchestrator.'
+                )}
+                checked={settings.orchestrator}
+                onChange={(on) => {
+                  // Ligar põe a sessão no modelo e esforço do orquestrador; desligar mantém os atuais.
+                  const o = getPreferences().orchestrator
+                  onChange(on ? { orchestrator: true, model: o.model, effort: o.effort } : { orchestrator: false })
+                }}
+              />
+            )}
           </div>
         )}
       </Presence>

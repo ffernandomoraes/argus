@@ -15,6 +15,8 @@ export type TerminalOpenRequest = {
   // JSON para --settings (thinking, Ultracode).
   settingsJson?: string
   permissionMode?: string
+  // Regras do orquestrador (--append-system-prompt-file); só valem ao abrir.
+  systemPrompt?: string
   cols: number
   rows: number
   // Aberto numa janela que não está em uso (o mesmo canvas em outro monitor): se o processo já

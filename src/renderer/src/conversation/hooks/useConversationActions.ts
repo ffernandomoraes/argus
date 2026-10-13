@@ -1,14 +1,23 @@
 import type { AgentDef } from '../../../../shared/agents'
 import type { PermissionAnswer } from '../../../../shared/chat'
+import { orchestratorPrompt } from '../../../../shared/orchestrator'
 import type { ConversationSummary } from '../../canvas/types'
 import { useStableCallback } from '../../lib/useStableCallback'
+import { getPreferences } from '../../settings/preferences'
 import { agentHint, mentionedAgents } from '../agentMentions'
 import { imagesForSend, isSendableImage } from '../chatImages'
 import { freezeConversationSettings, setConversationSettings } from '../conversationSettings'
 import { addLocalEvent } from '../localEvents'
-import { liveCommand, type SessionSettings } from '../SessionSettings'
+import { liveCommands, type SessionSettings } from '../SessionSettings'
 import { settingChangeEvents } from '../settingChangeEvents'
 import { useClaudeInfo } from '../useModels'
+
+// Agentes chamados com @ e, com o orquestrador ligado, as regras dele. Vão em toda mensagem: valem
+// assim que a pessoa liga, sem reabrir a conversa, e sobrevivem à compactação.
+function hintFor(text: string, agents: AgentDef[], settings: SessionSettings): string | undefined {
+  const parts = [agentHint(mentionedAgents(text, agents)), settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined]
+  return parts.filter(Boolean).join('\n\n') || undefined
+}
 
 type Options = {
   // Chave do chat da conversa na tela (ver useViewKey).
@@ -43,7 +52,7 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
       settings,
       text: full,
       images,
-      hint: agentHint(mentionedAgents(text, agents))
+      hint: hintFor(text, agents, settings)
     })
   })
 
@@ -54,8 +63,7 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
     const sid = conversation.sessionId
     if (sid) for (const e of settingChangeEvents(patch, info?.models ?? [])) addLocalEvent(sid, e.kind, e.text)
     setConversationSettings(settingsId, patch)
-    const command = liveCommand(patch)
-    if (command) window.api.terminal.write(conversation.id, `${command}\r`)
+    for (const command of liveCommands(patch)) window.api.terminal.write(conversation.id, `${command}\r`)
     window.api.chat.configure(chatKey, patch)
   })
 

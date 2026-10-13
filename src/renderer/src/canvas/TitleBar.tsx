@@ -38,12 +38,13 @@ export const TitleBar = memo(function TitleBar({
 
   return (
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
-    // painel de limites aberto sobe acima dos painéis, senão um drawer aberto cobriria o painel.
+    // painel de limites aberto sobe acima dos painéis, senão um drawer aberto cobriria o painel. Com o
+    // mouse em cima também sobe: os tooltips dos botões abrem para baixo, por cima do drawer.
     // O recuo acompanha o grupo da direita (limites, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
+      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35] hover:z-[45]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
     >
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}

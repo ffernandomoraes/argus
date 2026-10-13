@@ -8,6 +8,7 @@ import { ConversationRow } from './ConversationRow'
 import { TasksRow } from './TasksRow'
 import { INDENT, legPath } from './geometry'
 import { useProjectRows } from './useProjectRows'
+import { tr } from '../../i18n'
 
 // Lista de conversas dentro da caixa da pasta: as mais recentes (recolhida, só as que pedem
 // atenção), cada uma com os subagentes rodando e a perninha que sai do ícone da pasta, e o botão
@@ -102,7 +103,7 @@ export const ConversationStack = memo(function ConversationStack({
             className="nodrag flex h-7 w-full items-center gap-2.5 rounded-lg px-2 text-xs text-faint hover:bg-fill hover:text-text"
           >
             <List size={12} className="shrink-0" />
-            Ver todas as {conversations.length} conversas
+            {tr(`Ver todas as ${conversations.length} conversas`, `View all ${conversations.length} chats`)}
           </button>
         </li>
       )}

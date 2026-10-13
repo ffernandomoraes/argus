@@ -5,8 +5,9 @@ import { findLinked } from './memoryText'
 import { MemoryFileView } from './MemoryFileView'
 import { MemoryNav } from './MemoryNav'
 import { useMemoryFiles } from './useMemoryFiles'
+import { tr } from '../i18n'
 
-const DISCARD = 'Descartar as alterações deste arquivo?'
+const DISCARD = tr('Descartar as alterações deste arquivo?', 'Discard changes to this file?')
 
 // Memória do Claude Code: instruções (CLAUDE.md) e o que ele anotou sozinho, por pasta do canvas.
 export function MemoryModal({
@@ -40,7 +41,7 @@ export function MemoryModal({
 
   return (
     <Modal
-      label="Memória do Claude"
+      label={tr('Memória do Claude', 'Claude’s memory')}
       size="xl"
       className="flex"
       onClose={onClose}

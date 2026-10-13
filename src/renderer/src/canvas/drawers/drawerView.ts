@@ -2,12 +2,13 @@ import type { ActiveConversation, ActiveDesign } from '../CanvasContext'
 import { looseProject } from '../factory'
 import { groupAccount } from '../operations'
 import type { CanvasNode, ConversationSummary, ProjectData } from '../types'
+import { tr } from '../../i18n'
 
 // Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
 export function projectOf(node: CanvasNode | undefined): ProjectData | null {
   if (node?.type === 'project') return node.data
   if (node?.type === 'chat') return looseProject()
-  if (node?.type === 'chatPanel') return { name: node.data.projectName ?? 'Sem projeto', path: node.data.path, color: '#71717a' }
+  if (node?.type === 'chatPanel') return { name: node.data.projectName ?? tr('Sem projeto', 'No project'), path: node.data.path, color: '#71717a' }
   return null
 }
 
@@ -66,7 +67,7 @@ export function sameTarget(a: SlotTarget, b: SlotTarget): boolean {
 export function draftConversation(active: ActiveConversation): ConversationSummary {
   return {
     id: active.conversationId,
-    title: 'Nova conversa',
+    title: tr('Nova conversa', 'New chat'),
     kind: 'conversa',
     status: 'idle',
     updatedAt: '',

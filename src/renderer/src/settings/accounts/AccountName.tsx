@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import type { ClaudeAccount } from '../../../../shared/auth'
+import { tr } from '../../i18n'
 
 // Apelido editável no próprio card: Enter grava, Esc desiste. Vazio volta para o nome sugerido.
 export function AccountName({ account }: { account: ClaudeAccount }) {
@@ -16,7 +17,7 @@ export function AccountName({ account }: { account: ClaudeAccount }) {
           finished.current = false
           setValue(account.name)
         }}
-        title="Trocar o apelido"
+        title={tr('Trocar o apelido', 'Rename')}
         className="group/name flex min-w-0 items-center gap-1.5 text-left"
       >
         <span className="truncate text-sm text-text">{account.name}</span>
@@ -36,7 +37,7 @@ export function AccountName({ account }: { account: ClaudeAccount }) {
       autoFocus
       value={value}
       maxLength={40}
-      aria-label="Apelido da conta"
+      aria-label={tr('Apelido da conta', 'Account nickname')}
       onChange={(e) => setValue(e.target.value)}
       onFocus={(e) => e.target.select()}
       onBlur={() => done(true)}

@@ -1,6 +1,7 @@
 import type { XYPosition } from '@xyflow/react'
 import type { AreaNode, ChatNode, ChatPanelNode, NoteNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
 import { baseName, tildify } from '../platform'
+import { tr } from '../i18n'
 
 export const COLORS = [
   '#3b82f6',
@@ -25,7 +26,7 @@ export function createGroup(position: XYPosition): AreaNode {
     type: 'area',
     position,
     style: { ...GROUP_SIZE },
-    data: { label: 'Novo grupo', color: DEFAULT_GROUP_COLOR }
+    data: { label: tr('Novo grupo', 'New group'), color: DEFAULT_GROUP_COLOR }
   }
 }
 
@@ -79,7 +80,7 @@ export const CHAT_SIZE = { width: 320, height: 34 }
 // Conversa sem projeto roda na pasta do usuário. Para o painel, ela se apresenta como uma
 // pasta sem nome de projeto.
 export function looseProject(): ProjectData {
-  return { name: 'Sem projeto', path: displayPath(window.api.homeDir), color: '#71717a' }
+  return { name: tr('Sem projeto', 'No project'), path: displayPath(window.api.homeDir), color: '#71717a' }
 }
 
 export function createChat(position: XYPosition, sessionId: string): ChatNode {
@@ -87,7 +88,7 @@ export function createChat(position: XYPosition, sessionId: string): ChatNode {
     id: `c-${crypto.randomUUID()}`,
     type: 'chat',
     position,
-    data: { name: 'Conversa', path: looseProject().path, sessionId }
+    data: { name: tr('Conversa', 'Chat'), path: looseProject().path, sessionId }
   }
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, MessageCircleQuestion } from 'lucide-react'
 import type { Question } from '../../../shared/chat'
+import { tr } from '../i18n'
 
 // Perguntas do Claude com opções. "Outra" deixa escrever a resposta. Várias perguntas viram abas,
 // uma por vez, no mesmo cartão.
@@ -51,7 +52,7 @@ export function QuestionCard({
               }`}
             >
               {answerOf(q) && <Check size={10} />}
-              {q.header || `Pergunta ${i + 1}`}
+              {q.header || tr(`Pergunta ${i + 1}`, `Question ${i + 1}`)}
             </button>
           ))}
         </div>
@@ -65,7 +66,7 @@ export function QuestionCard({
               <div>
                 {q.header && questions.length === 1 && <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted">{q.header}</span>}
                 <span className="font-medium text-text">{q.question}</span>
-                {q.multiSelect && <span className="ml-1 text-muted">(pode marcar mais de uma)</span>}
+                {q.multiSelect && <span className="ml-1 text-muted">{tr('(pode marcar mais de uma)', '(select all that apply)')}</span>}
               </div>
             </div>
             <div role={q.multiSelect ? 'group' : 'radiogroup'} aria-label={q.question} className="mt-2 flex flex-col gap-1 pl-6">
@@ -90,7 +91,7 @@ export function QuestionCard({
                       {on && (q.multiSelect ? <Check size={10} className="text-ask-text" /> : <span className="size-1.5 rounded-full bg-ask-text" />)}
                     </span>
                     <div>
-                      <div className="text-text">{o.label === '__other' ? 'Outra resposta' : o.label}</div>
+                      <div className="text-text">{o.label === '__other' ? tr('Outra resposta', 'Other answer') : o.label}</div>
                       {o.description && <div className="mt-0.5 text-muted">{o.description}</div>}
                     </div>
                   </button>
@@ -101,7 +102,7 @@ export function QuestionCard({
                   autoFocus
                   value={other[q.question] ?? ''}
                   onChange={(e) => setOther((all) => ({ ...all, [q.question]: e.target.value }))}
-                  placeholder="Escreva sua resposta"
+                  placeholder={tr('Escreva sua resposta', 'Type your answer')}
                   className="rounded-md border border-line bg-bg px-2.5 py-1.5 text-text outline-none focus:border-line-strong"
                 />
               )}
@@ -111,11 +112,11 @@ export function QuestionCard({
       })}
       <div className="flex justify-end gap-1.5">
         <button onClick={onDismiss} className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg">
-          Não responder
+          {tr('Não responder', 'Skip')}
         </button>
         {step > 0 && (
           <button onClick={() => setStep(step - 1)} className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg">
-            Voltar
+            {tr('Voltar', 'Back')}
           </button>
         )}
         {last ? (
@@ -124,14 +125,14 @@ export function QuestionCard({
             onClick={() => onSubmit(Object.fromEntries(questions.map((q) => [q.question, answerOf(q)])))}
             className="rounded-md bg-ask px-2.5 py-1 font-medium text-ask-text hover:brightness-110 disabled:opacity-40"
           >
-            Responder
+            {tr('Responder', 'Answer')}
           </button>
         ) : (
           <button
             onClick={() => setStep(step + 1)}
             className="rounded-md bg-ask px-2.5 py-1 font-medium text-ask-text hover:brightness-110"
           >
-            Próxima
+            {tr('Próxima', 'Next')}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import type { Message } from '../../shared/history'
+import { locale, tr } from '../i18n'
 import { atOf, contentOf, idOf, num, obj, type Line } from '../transcripts/line'
 
 type EventMessage = Extract<Message, { role: 'event' }>
@@ -13,15 +14,19 @@ export function modelName(id: string): string {
   return `${family} ${m[2]}${m[3] ? '.' + m[3] : ''}${m[4] ? ' (1M)' : ''}`
 }
 
-const thousand = (n: number) => `${Math.round(n / 1000).toLocaleString('pt-BR')} mil`
+const thousand = (n: number) => {
+  const k = Math.round(n / 1000).toLocaleString(locale())
+  return tr(`${k} mil`, `${k}K`)
+}
 
 // Compactação: o Claude Code grava uma linha "compact_boundary" com o tamanho de antes.
 export function compactEvent(l: Line): EventMessage | null {
   if (l.type !== 'system' || l.subtype !== 'compact_boundary') return null
   const meta = obj(l.compactMetadata) ?? {}
-  const how = meta.trigger === 'auto' ? 'Conversa compactada automaticamente' : 'Conversa compactada'
+  const how =
+    meta.trigger === 'auto' ? tr('Conversa compactada automaticamente', 'Chat compacted automatically') : tr('Conversa compactada', 'Chat compacted')
   const tokens = num(meta.preTokens)
-  const before = tokens !== undefined ? ` (tinha ${thousand(tokens)} tokens)` : ''
+  const before = tokens !== undefined ? tr(` (tinha ${thousand(tokens)} tokens)`, ` (was ${thousand(tokens)} tokens)`) : ''
   return { id: idOf(l), role: 'event', kind: 'compact', text: how + before, at: atOf(l) }
 }
 
@@ -32,7 +37,7 @@ export function interruptEvent(l: Line): EventMessage | null {
   const content = contentOf(l)
   const parts = typeof content === 'string' ? [content] : (Array.isArray(content) ? content : []).map((c) => obj(c)?.text)
   if (!parts.some((t) => typeof t === 'string' && /^\[Request interrupted by user[^\]]*\]$/.test(t.trim()))) return null
-  return { id: idOf(l), role: 'event', kind: 'interrupted', text: 'Você parou o Claude aqui', at: atOf(l) }
+  return { id: idOf(l), role: 'event', kind: 'interrupted', text: tr('Você parou o Claude aqui', 'You stopped Claude here'), at: atOf(l) }
 }
 
 // "/rename teste": o Claude Code grava o comando e os argumentos em marcadores próprios.
@@ -64,8 +69,8 @@ export function commandEvent(l: Line): EventMessage | null {
   const out = localOutput(l)
   if (!out) return null
   const model = /^Set model to (.+?)(?: and saved.*)?$/m.exec(out)?.[1]
-  if (model) return { id: idOf(l), role: 'event', kind: 'model', text: `Modelo: ${modelName(model)}`, at: atOf(l) }
+  if (model) return { id: idOf(l), role: 'event', kind: 'model', text: tr(`Modelo: ${modelName(model)}`, `Model: ${modelName(model)}`), at: atOf(l) }
   const effort = /^Set effort level to (\w+)/m.exec(out)?.[1]
-  if (effort) return { id: idOf(l), role: 'event', kind: 'effort', text: `Esforço: ${effort}`, at: atOf(l) }
+  if (effort) return { id: idOf(l), role: 'event', kind: 'effort', text: tr(`Esforço: ${effort}`, `Effort: ${effort}`), at: atOf(l) }
   return null
 }

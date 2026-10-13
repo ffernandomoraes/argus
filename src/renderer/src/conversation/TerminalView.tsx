@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Button } from '../ui/Button'
 import { TERMINAL_THEME } from './terminal/theme'
 import { useXterm } from './terminal/useXterm'
+import { tr } from '../i18n'
 
 // Terminal de verdade rodando o `claude` (ou o shell, com `shell`) na pasta. O processo vive
 // no processo principal: fechar o painel ou trocar de conversa não encerra a sessão. Modelo,
@@ -39,10 +40,10 @@ export function TerminalView({
       </div>
       {(error || exitCode !== null) && (
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 border-t border-line bg-surface px-4 py-2.5 text-xs">
-          <span className="text-muted">{error ?? `Sessão encerrada (código ${exitCode}).`}</span>
+          <span className="text-muted">{error ?? tr(`Sessão encerrada (código ${exitCode}).`, `Session ended (code ${exitCode}).`)}</span>
           {!error && (
             <Button size="sm" onClick={reopen}>
-              Abrir de novo
+              {tr('Abrir de novo', 'Reopen')}
             </Button>
           )}
         </div>

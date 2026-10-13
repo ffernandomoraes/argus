@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import type { MemoryGroup, MemoryProject } from '../../../shared/memory'
+import { tr } from '../i18n'
 
 // Arquivos de memória do modal: a lista por pasta, o escolhido, o texto dele e a edição em curso.
 // `only`: só a memória dessa pasta. `initialProject`: começa mostrando a memória dela.
@@ -87,7 +88,12 @@ export function useMemoryFiles(projects: MemoryProject[], only?: string, initial
     const res = await window.api.memory.write(current.path, draft, projects, base?.overwrite ? undefined : base?.text)
     if (res === 'conflict') {
       setBase({ text: base?.text ?? '', overwrite: true })
-      setError('Este arquivo mudou no disco depois que você começou a editar. Salvar de novo grava por cima.')
+      setError(
+        tr(
+          'Este arquivo mudou no disco depois que você começou a editar. Salvar de novo grava por cima.',
+          'This file changed on disk after you started editing. Saving again overwrites it.'
+        )
+      )
       // Cancelar a edição mostra a versão nova do disco, não a de quando abriu.
       const path = current.path
       window.api.memory.read(path, projects).then(
@@ -96,7 +102,7 @@ export function useMemoryFiles(projects: MemoryProject[], only?: string, initial
       )
       return
     }
-    if (!res) return setError('Não foi possível salvar este arquivo.')
+    if (!res) return setError(tr('Não foi possível salvar este arquivo.', 'Could not save this file.'))
     setLoaded({ path: current.path, text: draft })
     setDraft(null)
     setError(null)

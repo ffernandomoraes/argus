@@ -6,6 +6,7 @@ import { NavButton } from '../ui/NavButton'
 import { NewBlockMenu } from './bars/NewBlockMenu'
 import { useCanvasActions } from './CanvasContext'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
+import { tr } from '../i18n'
 
 const Divider = () => <span className="my-1.5 h-px w-5 bg-line" />
 
@@ -22,22 +23,22 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
 
         <Divider />
 
-        <NavButton label="Agentes" onClick={openAgents}>
+        <NavButton label={tr('Agentes', 'Agents')} onClick={openAgents}>
           <Bot size={16} />
         </NavButton>
         {/* No Windows não dá para saber quais servidores um agente abriu (ver devServers.ts). */}
         {!IS_WIN && (
-          <NavButton label="Servidores rodando" onClick={openDevServers}>
+          <NavButton label={tr('Servidores rodando', 'Running servers')} onClick={openDevServers}>
             <Server size={16} />
           </NavButton>
         )}
-        <NavButton label="Memória do Claude" onClick={() => openMemory()}>
+        <NavButton label={tr('Memória do Claude', 'Claude memory')} onClick={() => openMemory()}>
           <Brain size={16} />
         </NavButton>
 
         <Divider />
 
-        <NavButton label="Configurações" shortcut="⌘ ," onClick={openSettings}>
+        <NavButton label={tr('Configurações', 'Settings')} shortcut="⌘ ," onClick={openSettings}>
           <Settings size={16} />
         </NavButton>
       </div>

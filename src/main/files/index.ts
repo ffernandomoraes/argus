@@ -3,5 +3,5 @@
 export { listDir } from './tree'
 export { readFile } from './read'
 export { readImage } from './image'
-export { createItem, openInBrowser, renameItem, revealItem, trashItem, writeFile } from './ops'
+export { createItem, openInBrowser, renameItem, revealItem, trashItem, viewItem, writeFile } from './ops'
 export { copyToClipboard, pasteFromClipboard } from './clipboard'

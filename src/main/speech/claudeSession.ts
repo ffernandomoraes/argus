@@ -1,5 +1,6 @@
 import WebSocket from 'ws'
 import { KEYTERMS, keytermsHeader } from './keyterms'
+import { tr } from '../i18n'
 import { MAX_PENDING_BYTES, type OpenMic, type Send, type Session } from './types'
 
 // Serviço de voz do Claude: o áudio vai em tempo real por WebSocket, com o login do Claude Code,
@@ -18,8 +19,8 @@ function join2(a: string, b: string): string {
   return a && b ? `${a} ${b}` : a || b
 }
 
-// fallback: o serviço falhou antes da primeira palavra; recebe o motivo.
-export function claudeSession(openMic: OpenMic, token: string, send: Send, fallback: (reason: string) => void): Session {
+// failed: o serviço falhou antes da primeira palavra; recebe o motivo.
+export function claudeSession(openMic: OpenMic, token: string, send: Send, failed: (reason: string) => void): Session {
   const params = new URLSearchParams({
     encoding: 'linear16',
     sample_rate: '16000',
@@ -108,10 +109,15 @@ export function claudeSession(openMic: OpenMic, token: string, send: Send, fallb
     })
     ws.on('error', (err) => {
       const status = /^Unexpected server response: (\d+)/.exec(err.message)?.[1]
-      // Antes da primeira palavra, qualquer falha vira o ditado do Mac: melhor que nada.
+      // Antes da primeira palavra, qualquer falha encerra o ditado com o motivo.
       if (!heard && !stopping) {
         abort()
-        fallback(status === '401' || status === '403' ? 'login do Claude recusado' : `sem conexão (${status ?? err.message})`)
+        const detail = status ?? err.message
+        failed(
+          status === '401' || status === '403'
+            ? tr('login do Claude recusado', 'Claude sign-in rejected')
+            : tr(`sem conexão (${detail})`, `no connection (${detail})`)
+        )
       }
     })
     ws.on('close', () => {
@@ -119,7 +125,7 @@ export function claudeSession(openMic: OpenMic, token: string, send: Send, fallb
       commit()
       if (stopping) return finish()
       // O serviço fechou com o microfone ainda ligado: abre de novo e continua o texto.
-      if (++reconnects > MAX_RECONNECTS) return fail('A transcrição do Claude caiu e não voltou.')
+      if (++reconnects > MAX_RECONNECTS) return fail(tr('A transcrição do Claude caiu e não voltou.', 'Claude transcription dropped and didn’t come back.'))
       setTimeout(() => !done && connect(), 250)
     })
   }
@@ -135,7 +141,7 @@ export function claudeSession(openMic: OpenMic, token: string, send: Send, fallb
       } else if (e.type === 'error') fail(e.message)
       else send(e)
     },
-    (reason) => !stopping && fail(`O microfone foi interrompido (${reason}).`)
+    (reason) => !stopping && fail(tr(`O microfone foi interrompido (${reason}).`, `The microphone was interrupted (${reason}).`))
   )
   connect()
 

@@ -1,4 +1,5 @@
 import { execFile, spawn } from 'node:child_process'
+import { tr } from './i18n'
 import { childEnv, IS_LINUX, IS_WIN, prependPath, WINDOWS_POWERSHELL } from './platform'
 
 // Instalador oficial da Anthropic, o mesmo da documentação do Claude Code. Põe o `claude` em
@@ -9,6 +10,8 @@ export const INSTALL_COMMAND = IS_WIN
 
 // Baixar e instalar leva de segundos a alguns minutos, conforme a internet.
 const TIMEOUT_MS = 10 * 60_000
+const timedOut = () =>
+  tr('A instalação passou de 10 minutos e foi interrompida.', 'The installation took more than 10 minutes and was stopped.')
 
 // Roda o instalador sem janela. Devolve nulo se terminou bem, senão o fim da saída (o erro).
 // Windows: TLS 1.2 garantido (o PowerShell 5.1 de sistemas antigos tenta versões que o site
@@ -37,7 +40,7 @@ export function runClaudeInstaller(): Promise<string | null> {
       { env, timeout: TIMEOUT_MS, windowsHide: true, maxBuffer: 16 * 1024 * 1024, encoding: 'utf8' },
       (err, stdout, stderr) => {
         if (!err) return resolve(null)
-        if (err.killed) return resolve('A instalação passou de 10 minutos e foi interrompida.')
+        if (err.killed) return resolve(timedOut())
         const tail = `${stderr}\n${stdout}`
           .split(/\r?\n/)
           .map((l) => l.trim())
@@ -66,10 +69,10 @@ async function runLinuxInstaller(): Promise<string | null> {
   let script: string
   try {
     const res = await fetch('https://claude.ai/install.sh', { signal: AbortSignal.timeout(60_000) })
-    if (!res.ok) return `Não deu para baixar o instalador (HTTP ${res.status}).`
+    if (!res.ok) return tr(`Não deu para baixar o instalador (HTTP ${res.status}).`, `Couldn’t download the installer (HTTP ${res.status}).`)
     script = await res.text()
   } catch (err) {
-    return `Não deu para baixar o instalador: ${(err as Error).message}`
+    return tr(`Não deu para baixar o instalador: ${(err as Error).message}`, `Couldn’t download the installer: ${(err as Error).message}`)
   }
   const env = childEnv()
   prependPath(env, [])
@@ -89,7 +92,11 @@ async function runLinuxInstaller(): Promise<string | null> {
     child.on('close', (code, signal) => {
       clearTimeout(timer)
       if (code === 0) return resolve(null)
-      resolve(signal ? 'A instalação passou de 10 minutos e foi interrompida.' : tailOf(out) || `O instalador saiu com o código ${code}.`)
+      resolve(
+        signal
+          ? timedOut()
+          : tailOf(out) || tr(`O instalador saiu com o código ${code}.`, `The installer exited with code ${code}.`)
+      )
     })
     child.stdin.end(script)
   })

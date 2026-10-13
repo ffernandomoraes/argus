@@ -9,6 +9,7 @@ import { CoffeeSection } from './sections/CoffeeSection'
 import { ConversationsSection } from './sections/ConversationsSection'
 import { GeneralSection } from './sections/GeneralSection'
 import { SECTIONS, type Section } from './sections/sectionList'
+import { tr } from '../i18n'
 
 // Conteúdo do modal de configurações: seções à esquerda, opções à direita.
 export function SettingsPage({
@@ -28,7 +29,7 @@ export function SettingsPage({
     <div className="flex h-full">
       {/* Lateral um tom abaixo do conteúdo, como a do Ajustes do Sistema. */}
       <nav className="flex w-56 shrink-0 flex-col gap-0.5 border-r border-line bg-bg p-3">
-        <div className="mb-3 px-2 pt-1 text-[13px] font-semibold">Configurações</div>
+        <div className="mb-3 px-2 pt-1 text-[13px] font-semibold">{tr('Configurações', 'Settings')}</div>
         {SECTIONS.map((s) => {
           const Icon = s.icon
           const selected = section === s.id
@@ -55,7 +56,7 @@ export function SettingsPage({
           className="mt-auto flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] text-muted hover:bg-fill hover:text-text"
         >
           <Sparkles size={15} />
-          Boas-vindas
+          {tr('Boas-vindas', 'Welcome')}
         </button>
       </nav>
 

@@ -45,6 +45,12 @@ export function useActiveDesignIn(nodeId: string): string | null {
   return useStore(view, (s) => (s.activeDesign?.nodeId === nodeId ? s.activeDesign.designId : null))
 }
 
+// Painel de código aberto com esta pasta (pelo botão do card ou por uma conversa dela).
+export function useIsCodeOpen(path: string): boolean {
+  const view = useCanvasView()
+  return useStore(view, (s) => s.codeRoot === path)
+}
+
 // Bloco recém-criado pela pessoa: verdadeiro só na montagem em que ele aparece pela primeira vez
 // (consumido aqui). Use para o foco automático: o terminal e a conversa no canvas só pegam o foco
 // quando são novos. Remontar (abrir o app, expandir o grupo, desfazer, a outra janela) não conta:

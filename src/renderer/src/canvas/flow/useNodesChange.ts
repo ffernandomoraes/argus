@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { applyNodeChanges, useReactFlow, type NodeChange } from '@xyflow/react'
 import { useStableCallback } from '../../lib/useStableCallback'
 import type { NodesApi } from '../actions/types'
-import { fitAfterResize } from '../operations'
+import { fitAfterResize, withoutAutoGrow } from '../operations'
 import { snap, type Guide } from '../snapping'
 import type { CanvasNode } from '../types'
 
@@ -30,6 +30,8 @@ export function useNodesChange({ nodesRef, setNodes, trackGesture, leaving }: Op
     // Instância que mudou de tamanho empurra a borda do grupo. Só instância: medida do
     // próprio grupo não entra, senão encolher o grupo na mão seria desfeito na hora.
     const resized = changes.filter((c) => c.type === 'dimensions').map((c) => c.id)
+    // Borda puxada na mão (só ela traz `resizing`): o tamanho passa a ser da pessoa.
+    const handResized = new Set(changes.flatMap((c) => (c.type === 'dimensions' && c.resizing !== undefined ? [c.id] : [])))
     // Instância arrastada contra a borda do grupo: o grupo cresce para aquele lado, junto com o arraste.
     const dragged = changes.flatMap((c) => (c.type === 'position' && c.dragging ? [c.id] : []))
     // Um bloco sendo arrastado encaixa no alinhamento dos vizinhos (vários juntos, não).
@@ -42,7 +44,10 @@ export function useNodesChange({ nodesRef, setNodes, trackGesture, leaving }: Op
       setGuides(move.dragging ? snapped.guides : NO_GUIDES)
     } else if (moves.length) setGuides(NO_GUIDES)
     setNodes((ns) => {
-      const next = applyNodeChanges(applied, ns)
+      const changed = applyNodeChanges(applied, ns)
+      const next = handResized.size
+        ? changed.map((n) => (n.type === 'area' && handResized.has(n.id) ? { ...n, data: withoutAutoGrow(n.data) } : n))
+        : changed
       return resized.length || dragged.length ? fitAfterResize(ns, next, [...resized, ...dragged]) : next
     })
   })

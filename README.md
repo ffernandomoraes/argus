@@ -198,7 +198,7 @@ nova entra quando você fechar o app. Também dá para procurar na hora em
 **Configurações › Geral** (no Mac, também pelo menu **Argus › Procurar atualizações…**).
 No Windows, a atualização roda o instalador da versão nova em modo silencioso, sem perguntar nada.
 
-No Mac, as permissões que você der ao app (microfone, ditado, notificações) continuam
+No Mac, as permissões que você der ao app (microfone, notificações) continuam
 valendo nas versões seguintes: todas saem assinadas com o mesmo certificado, e o app só
 aceita uma atualização assinada por ele.
 
@@ -288,7 +288,7 @@ sem tag nem release.
 A assinatura usa o certificado autoassinado guardado nos secrets do repositório
 (`MAC_CERT_P12`, `MAC_CERT_PASSWORD`, `MAC_SIGN_IDENTITY`). Sem eles, o app sai com
 assinatura ad-hoc e cada versão conta como um app novo para o macOS, que volta a pedir
-microfone e ditado.
+o microfone.
 
 ## Documentos
 

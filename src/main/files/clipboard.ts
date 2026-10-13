@@ -3,10 +3,11 @@ import { basename, extname, join, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { clipboard, ClipboardItem } from 'electron'
 import type { FileOpResult } from '../../shared/files'
+import { tr } from '../i18n'
 import { insideRoot } from '../paths'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { powershell } from '../winProcesses'
-import { exists, failure, OUTSIDE, relOf } from './fsHelpers'
+import { exists, failure, outside, relOf } from './fsHelpers'
 
 // Caminhos copiados no Finder (⌘C): vêm todos em text/uri-list, um file:// por linha. O Explorador
 // do Windows grava os arquivos em outro formato (lista de arquivos), lido pelo PowerShell.
@@ -57,8 +58,9 @@ async function freeName(dir: string, name: string): Promise<string> {
   if (!(await exists(join(dir, name)))) return name
   const ext = extname(name)
   const stem = name.slice(0, name.length - ext.length)
+  const copy = tr('cópia', 'copy')
   for (let n = 1; ; n++) {
-    const candidate = `${stem} cópia${n > 1 ? ` ${n}` : ''}${ext}`
+    const candidate = `${stem} ${copy}${n > 1 ? ` ${n}` : ''}${ext}`
     if (!(await exists(join(dir, candidate)))) return candidate
   }
 }
@@ -66,17 +68,21 @@ async function freeName(dir: string, name: string): Promise<string> {
 // Cola na pasta o que foi copiado no Finder ou na própria árvore. Nunca sobrescreve: nome repetido ganha "cópia".
 export async function pasteFromClipboard(root: string, dirRel: string): Promise<FileOpResult> {
   const dir = insideRoot(root, dirRel)
-  if (!dir) return OUTSIDE
+  if (!dir) return outside()
   const sources = await clipboardPaths()
   if (!sources.length) {
-    const hint = IS_WIN ? 'no Explorador de Arquivos com Ctrl+C' : IS_LINUX ? 'no gerenciador de arquivos com Ctrl+C' : 'no Finder com ⌘C'
-    return { ok: false, error: `Nada copiado para colar. Copie arquivos ${hint}.` }
+    const hint = IS_WIN
+      ? tr('no Explorador de Arquivos com Ctrl+C', 'in File Explorer with Ctrl+C')
+      : IS_LINUX
+        ? tr('no gerenciador de arquivos com Ctrl+C', 'in your file manager with Ctrl+C')
+        : tr('no Finder com ⌘C', 'in Finder with ⌘C')
+    return { ok: false, error: tr(`Nada copiado para colar. Copie arquivos ${hint}.`, `Nothing to paste. Copy files ${hint}.`) }
   }
   let last = ''
   try {
     for (const src of sources) {
       // Pasta colada dentro dela mesma copiaria sem fim.
-      if (dir === src || dir.startsWith(src + sep)) return { ok: false, error: 'Não dá para colar uma pasta dentro dela mesma.' }
+      if (dir === src || dir.startsWith(src + sep)) return { ok: false, error: tr('Não dá para colar uma pasta dentro dela mesma.', 'You can’t paste a folder into itself.') }
       const target = join(dir, await freeName(dir, basename(src)))
       await cp(src, target, { recursive: true, errorOnExist: true, force: false, preserveTimestamps: true })
       last = relOf(root, target)

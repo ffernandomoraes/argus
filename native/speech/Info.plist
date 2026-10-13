@@ -8,7 +8,5 @@
   <string>Argus Speech</string>
   <key>NSMicrophoneUsageDescription</key>
   <string>O microfone é usado para ditar mensagens para o Claude.</string>
-  <key>NSSpeechRecognitionUsageDescription</key>
-  <string>O reconhecimento de fala transforma o que você diz em texto no campo da conversa.</string>
 </dict>
 </plist>

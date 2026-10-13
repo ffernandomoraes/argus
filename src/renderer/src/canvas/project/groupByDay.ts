@@ -1,3 +1,4 @@
+import { LOCALE } from '../../i18n'
 import type { ConversationSummary } from '../types'
 
 export type DayGroup = { key: string; label: string | null; items: ConversationSummary[] }
@@ -17,7 +18,7 @@ export function groupByDay(conversations: ConversationSummary[], now: number): D
       const label =
         key === dayKey(today)
           ? null
-          : d.toLocaleDateString('pt-BR', {
+          : d.toLocaleDateString(LOCALE, {
               day: '2-digit',
               month: '2-digit',
               ...(d.getFullYear() !== today.getFullYear() && { year: 'numeric' })

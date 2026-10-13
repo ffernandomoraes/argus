@@ -1,5 +1,6 @@
 import type { ChatImage } from '../../../shared/chat'
 import { fitScale, MAX_IMAGE_BYTES, MAX_SEND_BASE64, MEASURE_FROM_BYTES, megabytes, needsShrink, shrinkType } from './imageLimits'
+import { tr } from '../i18n'
 
 // Imagens que vão junto da mensagem (o resto dos anexos vai pelo caminho no disco).
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
@@ -10,7 +11,7 @@ function toBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error ?? new Error('Não deu para ler a imagem.'))
+    reader.onerror = () => reject(reader.error ?? new Error(tr('Não deu para ler a imagem.', 'Couldn’t read the image.')))
     reader.readAsDataURL(file)
   })
 }
@@ -24,7 +25,10 @@ export async function imagesForSend(files: File[]): Promise<ChatImage[]> {
   const total = images.reduce((n, i) => n + i.data.length, 0)
   if (total > MAX_SEND_BASE64) {
     throw new Error(
-      `As imagens somam ${megabytes(total)} MB e o limite por mensagem é de ${megabytes(MAX_SEND_BASE64)} MB. Envie menos de cada vez.`
+      tr(
+        `As imagens somam ${megabytes(total)} MB e o limite por mensagem é de ${megabytes(MAX_SEND_BASE64)} MB. Envie menos de cada vez.`,
+        `The images total ${megabytes(total)} MB and the limit per message is ${megabytes(MAX_SEND_BASE64)} MB. Send fewer at a time.`
+      )
     )
   }
   return images
@@ -62,7 +66,7 @@ function draw(bitmap: ImageBitmap, scale: number, type: string, quality?: number
   const height = Math.max(1, Math.round(bitmap.height * scale))
   const canvas = new OffscreenCanvas(width, height)
   const ctx = canvas.getContext('2d')
-  if (!ctx) return Promise.reject(new Error('Não deu para reduzir a imagem.'))
+  if (!ctx) return Promise.reject(new Error(tr('Não deu para reduzir a imagem.', 'Couldn’t shrink the image.')))
   // JPEG não tem transparência: o fundo transparente ficaria preto.
   if (type === 'image/jpeg') {
     ctx.fillStyle = '#ffffff'

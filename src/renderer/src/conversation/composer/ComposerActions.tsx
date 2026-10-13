@@ -3,6 +3,7 @@ import { ImagePlus, Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
 import { IconButton } from '../../ui/IconButton'
 import type { DictationState } from '../useDictation'
 import { VoiceWave } from '../VoiceWave'
+import { tr } from '../../i18n'
 
 // Linha de baixo da caixa de escrever: anexar imagem ou arquivo, ditado e enviar (ou parar, com o
 // Claude trabalhando e nada para enviar).
@@ -36,22 +37,22 @@ export function ComposerActions({
     <div className="flex items-center gap-1 px-2 pb-2">
       <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={onPick} />
       <input ref={fileInput} type="file" multiple hidden onChange={onPick} />
-      <IconButton label="Anexar imagem" onClick={() => imageInput.current?.click()}>
+      <IconButton label={tr('Anexar imagem', 'Attach image')} onClick={() => imageInput.current?.click()}>
         <ImagePlus size={15} />
       </IconButton>
-      <IconButton label="Anexar arquivo" onClick={() => fileInput.current?.click()}>
+      <IconButton label={tr('Anexar arquivo', 'Attach file')} onClick={() => fileInput.current?.click()}>
         <Paperclip size={15} />
       </IconButton>
       <span className="flex-1" />
       {dictating && (
         <span className="mr-1 flex items-center gap-2 text-[12px] text-running">
-          {dictation === 'listening' ? <VoiceWave /> : 'Ligando…'}
+          {dictation === 'listening' ? <VoiceWave /> : tr('Ligando…', 'Starting…')}
         </span>
       )}
       {/* Microfone ligado tem cor própria (sem variante na base). */}
       <button
-        aria-label={dictating ? 'Parar ditado' : 'Ditar por voz'}
-        title={dictating ? 'Parar ditado' : 'Ditar por voz'}
+        aria-label={dictating ? tr('Parar ditado', 'Stop dictation') : tr('Ditar por voz', 'Dictate')}
+        title={dictating ? tr('Parar ditado', 'Stop dictation') : tr('Ditar por voz', 'Dictate')}
         onClick={onToggleDictation}
         className={`mr-1 flex size-7 items-center justify-center rounded-md ${
           dictating ? 'bg-running/15 text-running hover:bg-running/25' : 'text-muted hover:bg-surface-2 hover:text-text'
@@ -60,11 +61,11 @@ export function ComposerActions({
         <Mic size={15} />
       </button>
       {stopping ? (
-        <IconButton label="Parar" variant="primary" onClick={onStop}>
+        <IconButton label={tr('Parar', 'Stop')} variant="primary" onClick={onStop}>
           <Square size={11} fill="currentColor" />
         </IconButton>
       ) : (
-        <IconButton label="Enviar" title="Enviar (Enter)" variant="primary" onClick={onSend} disabled={sendDisabled}>
+        <IconButton label={tr('Enviar', 'Send')} title={tr('Enviar (Enter)', 'Send (Enter)')} variant="primary" onClick={onSend} disabled={sendDisabled}>
           <SendHorizontal size={14} />
         </IconButton>
       )}

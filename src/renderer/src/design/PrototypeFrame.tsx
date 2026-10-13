@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { DEVICE_WIDTH, type DesignDevice } from '../../../shared/design'
+import { tr } from '../i18n'
 
 // A página do projeto na largura do dispositivo, reduzida para caber e rolando por dentro.
 export function PrototypeFrame({
@@ -42,7 +43,7 @@ export function PrototypeFrame({
           key={reload}
           ref={frameRef}
           src={url}
-          title="Protótipo"
+          title={tr('Protótipo', 'Prototype')}
           onLoad={() => {
             setLoads((n) => n + 1)
             onLoad()

@@ -11,6 +11,7 @@ import { useGroupOf } from './blocks/useGroupOf'
 import { useCanvasActions } from './CanvasContext'
 import type { ChatPanelNode as ChatPanelNodeType } from './types'
 import { useIsNewBlock } from './useCanvasView'
+import { tr } from '../i18n'
 
 // A conversa morando no canvas, como o terminal: o mesmo chat do painel lateral, num bloco que
 // acompanha o zoom. Arrasta pelo cabeçalho; no corpo, dá para selecionar texto e rolar o chat.
@@ -29,7 +30,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
   // Tudo fixo enquanto a pasta não muda: o ConversationView é memorizado, e arrastar o bloco não
   // pode redesenhar a conversa.
   const { projectName, path } = data
-  const project = useMemo(() => ({ name: projectName ?? 'Sem projeto', path, color: '#71717a' }), [projectName, path])
+  const project = useMemo(() => ({ name: projectName ?? tr('Sem projeto', 'No project'), path, color: '#71717a' }), [projectName, path])
   const onOpenFile = useCallback(
     (file: string, lines?: LineRange) => openFileFrom(project, file, lines),
     [openFileFrom, project]
@@ -39,10 +40,10 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
   const actions = useMemo(
     () => (
       <>
-        <HeaderButton label="Voltar para o painel lateral" onClick={() => chatPanelToDrawer(id)}>
+        <HeaderButton label={tr('Voltar para o painel lateral', 'Move back to side panel')} onClick={() => chatPanelToDrawer(id)}>
           <PanelRight size={14} />
         </HeaderButton>
-        <HeaderButton label="Abrir em janela separada" onClick={() => chatPanelPopout(id)}>
+        <HeaderButton label={tr('Abrir em janela separada', 'Open in separate window')} onClick={() => chatPanelPopout(id)}>
           <ExternalLink size={14} />
         </HeaderButton>
       </>

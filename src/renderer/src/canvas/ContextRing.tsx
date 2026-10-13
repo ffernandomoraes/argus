@@ -1,3 +1,5 @@
+import { tr } from '../i18n'
+
 // Anel pequeno com a porcentagem da janela de contexto ocupada pela conversa.
 // A cor vai de um vermelho apagado (pouco contexto) a um vermelho forte (cheio), para avisar
 // que encher a janela atrapalha. O apagado sai da mistura com a cor do trilho: no tema claro
@@ -13,7 +15,7 @@ export function ContextRing({ percent }: { percent: number }) {
   const value = Math.min(100, Math.max(0, percent))
 
   return (
-    <span title={`Contexto: ${Math.round(value)}% usado`} className="flex shrink-0 items-center gap-1">
+    <span title={tr(`Contexto: ${Math.round(value)}% usado`, `Context: ${Math.round(value)}% used`)} className="flex shrink-0 items-center gap-1">
       <svg width="12" height="12" viewBox="0 0 12 12" className="-rotate-90">
         <circle cx="6" cy="6" r={r} fill="none" stroke="var(--color-line-strong)" strokeWidth="2" />
         <circle

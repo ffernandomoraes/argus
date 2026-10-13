@@ -1,9 +1,11 @@
+import { LOCALE, tr } from '../i18n'
+
 // Formatos de hora, duração e contagem que aparecem na conversa. Os formatadores do Intl são
 // criados uma vez: montar um a cada chamada custava ~60 vezes mais, e a conversa formata a hora de
 // cada mensagem.
-const TIME = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
-const DAY = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' })
-const THOUSANDS = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
+const TIME = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit' })
+const DAY = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2-digit' })
+const THOUSANDS = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 })
 
 // "14:32" hoje; "06/10 14:32" em outro dia. Hora ilegível não vira "Invalid Date" (e o formatador
 // lançaria erro com ela).
@@ -24,8 +26,8 @@ export function formatDuration(ms: number): string {
 
 export function formatTokens(n: number): string {
   if (n < 1000) return `${n} tokens`
-  return `${THOUSANDS.format(n / 1000)} mil tokens`
+  return tr(`${THOUSANDS.format(n / 1000)} mil tokens`, `${THOUSANDS.format(n / 1000)}k tokens`)
 }
 
 // "1 imagem enviada" / "3 imagens enviadas", no balão e no prompt preso no topo.
-export const formatImageCount = (n: number) => (n === 1 ? '1 imagem enviada' : `${n} imagens enviadas`)
+export const formatImageCount = (n: number) => (n === 1 ? tr('1 imagem enviada', '1 image sent') : tr(`${n} imagens enviadas`, `${n} images sent`))

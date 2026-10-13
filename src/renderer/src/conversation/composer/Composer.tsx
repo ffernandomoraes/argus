@@ -28,6 +28,7 @@ import { pastedFiles } from './pastedFiles'
 import { useComposerMenus } from './useComposerMenus'
 import { useDraft } from './useDraft'
 import { usePromptHistory } from './usePromptHistory'
+import { tr } from '../../i18n'
 
 export type ComposerHandle = {
   // Envio que não chegou: o texto volta (se o campo estiver vazio), os anexos voltam e o aviso aparece.
@@ -252,7 +253,7 @@ export const Composer = memo(function Composer(props: Props) {
           sendDisabled={!canSend && dictation.state === 'idle'}
         />
       </div>
-      <ComposerNotices sendError={sendError} warning={dictation.warning} error={dictation.error} />
+      <ComposerNotices sendError={sendError} error={dictation.error} />
       <ComposerFooter
         onOpenCommands={openCommands}
         settings={props.settings}
@@ -271,11 +272,20 @@ function focusField(el: HTMLTextAreaElement | null): void {
 }
 
 function placeholderFor(dictation: DictationState, withAgents: boolean): string {
-  if (dictation === 'listening') return 'Ouvindo… fale à vontade'
-  if (dictation === 'starting') return 'Ligando o microfone…'
+  if (dictation === 'listening') return tr('Ouvindo… fale à vontade', 'Listening… speak freely')
+  if (dictation === 'starting') return tr('Ligando o microfone…', 'Turning on the microphone…')
   return withAgents
-    ? `Escreva, fale, cole um print (${keys('⌘V')}), / para comandos ou @ para agentes`
-    : `Escreva, fale, cole um print (${keys('⌘V')}) ou digite / para comandos`
+    ? tr(
+        `Escreva, fale, cole um print (${keys('⌘V')}), / para comandos ou @ para agentes`,
+        `Type, speak, paste a screenshot (${keys('⌘V')}), / for commands or @ for agents`
+      )
+    : tr(
+        `Escreva, fale, cole um print (${keys('⌘V')}) ou digite / para comandos`,
+        `Type, speak, paste a screenshot (${keys('⌘V')}) or type / for commands`
+      )
 }
 
-const sendFailure = (err: unknown) => `Não deu para enviar. ${err instanceof Error && err.message ? err.message : 'Tente de novo.'}`
+const sendFailure = (err: unknown) => {
+  const detail = err instanceof Error && err.message ? err.message : ''
+  return tr(`Não deu para enviar. ${detail || 'Tente de novo.'}`, `Couldn’t send. ${detail || 'Try again.'}`)
+}

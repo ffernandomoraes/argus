@@ -1,6 +1,7 @@
 import { lstat } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import type { FileOpResult } from '../../shared/files'
+import { tr } from '../i18n'
 import { errorCode, errorMessage } from '../lib/errors'
 import { expandHome } from '../paths'
 
@@ -15,10 +16,15 @@ export const exists = (full: string): Promise<boolean> =>
 
 export const failure = (err: unknown): FileOpResult => {
   const code = errorCode(err)
-  if (code === 'EEXIST') return { ok: false, error: 'Já existe um item com esse nome.' }
-  if (code === 'ENOENT') return { ok: false, error: 'O item não existe mais.' }
-  if (code === 'EACCES' || code === 'EPERM') return { ok: false, error: 'Sem permissão para isso.' }
+  if (code === 'EEXIST') return nameTaken()
+  if (code === 'ENOENT') return { ok: false, error: tr('O item não existe mais.', 'This item no longer exists.') }
+  if (code === 'EACCES' || code === 'EPERM') return { ok: false, error: tr('Sem permissão para isso.', 'You don’t have permission to do that.') }
   return { ok: false, error: errorMessage(err) }
 }
 
-export const OUTSIDE: FileOpResult = { ok: false, error: 'Caminho fora do projeto.' }
+export const outside = (): FileOpResult => ({ ok: false, error: tr('Caminho fora do projeto.', 'Path is outside the project.') })
+
+export const nameTaken = (): FileOpResult => ({
+  ok: false,
+  error: tr('Já existe um item com esse nome.', 'An item with that name already exists.')
+})

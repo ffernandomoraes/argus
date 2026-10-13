@@ -2,7 +2,8 @@ import { basename } from 'node:path'
 import type { MenuItemConstructorOptions, NativeImage } from 'electron'
 import type { UnreadChat } from '../../shared/chat'
 import { titleOf, type ChatEntry } from '../chats/entries'
-import { kindOf, LABEL, PRIORITY, summary, type Finished, type Kind } from './kinds'
+import { tr } from '../i18n'
+import { kindOf, label, PRIORITY, summary, type Finished, type Kind } from './kinds'
 
 // Uma linha do menu: a conversa e o estado dela. `title`: já conhecido (as não vistas trazem o da
 // janela); sem ele, lido do arquivo da sessão.
@@ -55,14 +56,14 @@ export function trayMenu(rows: TrayRow[], titles: Map<string, string>, o: MenuOp
     items.push({ label: basename(cwd) || cwd, enabled: false })
     for (const r of list.sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind))) {
       items.push({
-        label: `${shorten(r.title ?? titleOf(titles, r.sessionId))}  -  ${LABEL[r.kind]}`,
+        label: `${shorten(r.title ?? titleOf(titles, r.sessionId))}  -  ${label(r.kind)}`,
         // No Windows o menu tem fundo próprio, que não combina com a cor do ícone da barra.
         icon: o.mac ? o.icon(r.kind) : undefined,
         click: () => (r.sessionId ? o.openChat(r.cwd, r.sessionId) : o.showApp())
       })
     }
   }
-  if (!items.length) items.push({ type: 'separator' }, { label: 'Nenhuma conversa aberta', enabled: false })
+  if (!items.length) items.push({ type: 'separator' }, { label: tr('Nenhuma conversa aberta', 'No open chats'), enabled: false })
   // Logo abaixo do título, o resumo: quantas rodando, esperando você, concluídas.
   const counts = summary(rows.map((r) => r.kind))
   if (counts) items.unshift({ label: counts.charAt(0).toUpperCase() + counts.slice(1), enabled: false })
@@ -70,8 +71,8 @@ export function trayMenu(rows: TrayRow[], titles: Map<string, string>, o: MenuOp
   items.unshift(o.mac ? { type: 'header', label: o.header } : { label: o.header, enabled: false })
   items.push(
     { type: 'separator' },
-    { label: `Abrir ${o.appName}`, click: o.showApp },
-    { label: `Sair do ${o.appName}`, role: 'quit' }
+    { label: tr(`Abrir ${o.appName}`, `Open ${o.appName}`), click: o.showApp },
+    { label: tr(`Sair do ${o.appName}`, `Quit ${o.appName}`), role: 'quit' }
   )
   return items
 }

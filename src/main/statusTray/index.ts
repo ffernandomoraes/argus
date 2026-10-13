@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, nativeTheme, Tray } from 'electron'
 import type { UnreadChat } from '../../shared/chat'
 import { statusSignature, StatusChanges, type ChatEntry } from '../chats/entries'
 import { sessionTitles } from '../chats/titles'
+import { lang, tr } from '../i18n'
 import { IS_LINUX, IS_MAC } from '../platform'
 import { drawIcons, FRAMES } from './icons'
 import { tooltip, topKind, type Finished, type Kind } from './kinds'
@@ -73,7 +74,8 @@ export class StatusTray {
   refresh(): void {
     const entries = this.sources.chats()
     const unread = this.sources.unread()
-    const signature = `${statusSignature(entries)}#${unread.map((u) => u.id).join('|')}`
+    // O idioma entra na assinatura: trocado nos ajustes, a dica e o menu (Linux) são refeitos.
+    const signature = `${lang()}#${statusSignature(entries)}#${unread.map((u) => u.id).join('|')}`
     if (signature === this.signature) return
     this.signature = signature
     this.entries = entries
@@ -156,7 +158,7 @@ export class StatusTray {
     for (const t of read) t.forEach((title, id) => titles.set(id, title))
     const items = trayMenu(rows, titles, {
       mac: IS_MAC,
-      header: DEV ? `${app.name} - Desenvolvimento` : `${app.name} ${app.getVersion()}`,
+      header: DEV ? `${app.name} - ${tr('Desenvolvimento', 'Development')}` : `${app.name} ${app.getVersion()}`,
       appName: app.name,
       icon: (kind) => this.icons.kinds[kind],
       showApp: this.sources.showApp,

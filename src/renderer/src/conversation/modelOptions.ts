@@ -1,17 +1,21 @@
 import type { ClaudeModel } from '../../../shared/models'
+import { tr } from '../i18n'
 
 // Níveis de esforço do --effort, com os nomes da extensão do VS Code, traduzidos.
 export const EFFORTS = [
-  { value: 'low', label: 'Baixo' },
-  { value: 'medium', label: 'Médio' },
-  { value: 'high', label: 'Alto' },
-  { value: 'xhigh', label: 'Muito alto' },
-  { value: 'max', label: 'Máximo' }
+  { value: 'low', label: tr('Baixo', 'Low') },
+  { value: 'medium', label: tr('Médio', 'Medium') },
+  { value: 'high', label: tr('Alto', 'High') },
+  { value: 'xhigh', label: tr('Muito alto', 'Extra high') },
+  { value: 'max', label: tr('Máximo', 'Max') }
 ]
 
 // Texto da extensão do VS Code para o nível máximo, traduzido.
 export const MAX_WARNING =
-  'Pode gastar tokens demais, com respostas lentas ou pensamento excessivo. Use só nas tarefas mais difíceis.'
+  tr(
+    'Pode gastar tokens demais, com respostas lentas ou pensamento excessivo. Use só nas tarefas mais difíceis.',
+    'Can use excessive tokens, with slow responses or overthinking. Use only for the hardest tasks.'
+  )
 
 export const effortLabel = (value: string) => EFFORTS.find((e) => e.value === value)?.label ?? 'Auto'
 

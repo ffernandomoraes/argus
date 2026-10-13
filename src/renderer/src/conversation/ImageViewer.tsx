@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
 import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
+import { tr } from '../i18n'
 
 // Imagens enviadas numa mensagem, grandes, sobre o app. ESC ou clique fora fecha; ← → trocam.
 // Vai direto para o body: o chat tem zoom (⌘+ / ⌘-) e o modal não deve encolher junto.
@@ -52,21 +53,21 @@ export function ImageViewer({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8" onMouseDown={onClose}>
-      <IconButton label="Fechar" variant="floating" size="lg" onClick={onClose} className="absolute right-4 top-4">
+      <IconButton label={tr('Fechar', 'Close')} variant="floating" size="lg" onClick={onClose} className="absolute right-4 top-4">
         <X size={15} />
       </IconButton>
       {urls === null ? (
         <Loader2 size={20} className="animate-spin text-muted" />
       ) : count === 0 ? (
         <p className="rounded-lg border border-line bg-surface px-4 py-3 text-xs text-muted">
-          Não deu para carregar a imagem.
+          {tr('Não deu para carregar a imagem.', 'Couldn’t load the image.')}
         </p>
       ) : (
         <>
           <div className="flex min-h-0 w-full flex-1 items-center justify-center">
             <img
               src={urls[index]}
-              alt={`Imagem ${index + 1} de ${count}`}
+              alt={tr(`Imagem ${index + 1} de ${count}`, `Image ${index + 1} of ${count}`)}
               onMouseDown={(e) => e.stopPropagation()}
               className="max-h-full max-w-full rounded-lg object-contain shadow-2xl shadow-black/60"
             />
@@ -76,13 +77,13 @@ export function ImageViewer({
               onMouseDown={(e) => e.stopPropagation()}
               className="flex items-center gap-2 rounded-xl border border-line bg-surface px-1 py-1 text-xs text-muted"
             >
-              <IconButton label="Imagem anterior" size="lg" onClick={() => go(-1)}>
+              <IconButton label={tr('Imagem anterior', 'Previous image')} size="lg" onClick={() => go(-1)}>
                 <ChevronLeft size={15} />
               </IconButton>
               <span className="tabular-nums">
-                {index + 1} de {count}
+                {tr(`${index + 1} de ${count}`, `${index + 1} of ${count}`)}
               </span>
-              <IconButton label="Próxima imagem" size="lg" onClick={() => go(1)}>
+              <IconButton label={tr('Próxima imagem', 'Next image')} size="lg" onClick={() => go(1)}>
                 <ChevronRight size={15} />
               </IconButton>
             </div>

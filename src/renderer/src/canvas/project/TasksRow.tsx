@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { ConversationSummary } from '../types'
 import { agentPath } from './geometry'
+import { tr } from '../../i18n'
 
 // Comandos que o Claude deixou rodando em segundo plano, numa linha só com a quantidade, pendurada
 // embaixo da conversa como os subagentes. Some quando todos terminam. Clicar abre a conversa.
@@ -29,7 +30,9 @@ export const TasksRow = memo(function TasksRow({
       </svg>
       <span className="size-1.5 shrink-0 rounded-full bg-running/80" aria-hidden="true" />
       <span className="min-w-0 truncate text-muted">
-        {count === 1 ? '1 tarefa em segundo plano' : `${count} tarefas em segundo plano`}
+        {count === 1
+          ? tr('1 tarefa em segundo plano', '1 background task')
+          : tr(`${count} tarefas em segundo plano`, `${count} background tasks`)}
       </span>
     </li>
   )

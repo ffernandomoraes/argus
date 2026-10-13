@@ -5,6 +5,7 @@ import type { TerminalOpenRequest } from '../../shared/terminal'
 import { applyAccount } from '../accounts'
 import { CLI_BIN } from '../cli'
 import { claudeCommand, claudePath } from '../claudePath'
+import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { childEnv, defaultShell, prependPath } from '../platform'
 import { distroFor } from '../wsl'
@@ -47,7 +48,7 @@ async function wslTerminal(req: TerminalOpenRequest, cwd: string, distro: string
     const pty = spawn(l.file, l.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd: l.cwd, env: l.env })
     return { ok: true, pty, account: l.account, shell: req.shell ? 'bash' : undefined, wsl: true, newSession }
   } catch (err) {
-    return { ok: false, error: `Não consegui abrir o WSL (${distro}): ${errorMessage(err)}` }
+    return { ok: false, error: tr(`Não consegui abrir o WSL (${distro}): ${errorMessage(err)}`, `Couldn’t open WSL (${distro}): ${errorMessage(err)}`) }
   }
 }
 
@@ -77,6 +78,7 @@ function nativeTerminal(req: TerminalOpenRequest, cwd: string): Spawned {
     })
     return { ok: true, pty, account, shell: req.shell ? basename(shell.file) : undefined }
   } catch (err) {
-    return { ok: false, error: `Não consegui abrir o ${req.shell ? basename(shell.file) : 'claude'}: ${errorMessage(err)}` }
+    const what = req.shell ? basename(shell.file) : 'claude'
+    return { ok: false, error: tr(`Não consegui abrir o ${what}: ${errorMessage(err)}`, `Couldn’t open ${what}: ${errorMessage(err)}`) }
   }
 }

@@ -2,16 +2,22 @@
 // caminhos. Os absolutos vêm do sistema ("/Users/ana/proj" no Mac, "C:\Users\ana\proj" no
 // Windows); os relativos à pasta do projeto (árvore de arquivos) usam sempre "/".
 
+import { tr } from './i18n'
+
 export const IS_WIN = window.api.platform === 'win32'
 export const IS_MAC = window.api.platform === 'darwin'
 export const IS_LINUX = window.api.platform === 'linux'
 
 export const SYSTEM_NAME = IS_WIN ? 'Windows' : IS_LINUX ? 'Linux' : 'macOS'
-export const FILE_MANAGER = IS_WIN ? 'Explorador de Arquivos' : IS_LINUX ? 'gerenciador de arquivos' : 'Finder'
+export const FILE_MANAGER = IS_WIN
+  ? tr('Explorador de Arquivos', 'File Explorer')
+  : IS_LINUX
+    ? tr('gerenciador de arquivos', 'file manager')
+    : 'Finder'
 // O app de configurações do sistema: Ajustes do Sistema no Mac, Configurações no Windows e no Linux.
-export const SYSTEM_SETTINGS = IS_MAC ? 'Ajustes' : 'Configurações'
-// "O Claude Code deste Mac", "deste computador".
-export const THIS_COMPUTER = IS_MAC ? 'deste Mac' : 'deste computador'
+export const SYSTEM_SETTINGS = IS_MAC ? tr('Ajustes', 'System Settings') : tr('Configurações', 'Settings')
+// "O Claude Code deste Mac", "deste computador" (em inglês, "on this Mac", "on this computer").
+export const THIS_COMPUTER = IS_MAC ? tr('deste Mac', 'on this Mac') : tr('deste computador', 'on this computer')
 
 // Tecla dos atalhos: ⌘ no Mac, Ctrl no Windows.
 export const isMod = (e: { metaKey: boolean; ctrlKey: boolean }) => (IS_MAC ? e.metaKey : e.ctrlKey)

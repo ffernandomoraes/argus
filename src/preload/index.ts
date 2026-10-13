@@ -30,6 +30,10 @@ const api: Api = {
     get: () => sendSync('accent:get'),
     onChange: (cb) => listen('accent:changed', cb)
   },
+  language: {
+    get: () => sendSync('language:get') ?? 'pt',
+    onChange: (cb) => listen('language:changed', cb)
+  },
   pickFolder: (distro) => invoke('dialog:pickFolder', distro),
   wsl: {
     distros: () => invoke('wsl:distros'),
@@ -172,6 +176,7 @@ const api: Api = {
     copy: (root, rels) => invoke('files:copy', root, rels),
     paste: (root, dir) => invoke('files:paste', root, dir),
     reveal: (root, rel) => send('files:reveal', root, rel),
+    view: (root, rel) => send('files:view', root, rel),
     openInBrowser: (root, rel) => send('files:openInBrowser', root, rel),
     watch: (root, rel) => send('files:watch', root, rel),
     unwatch: () => send('files:unwatch'),
@@ -197,7 +202,8 @@ const api: Api = {
   },
   settings: {
     get: () => invoke('settings:get'),
-    setMenuBarIcon: (on) => invoke('settings:menuBarIcon', on)
+    setMenuBarIcon: (on) => invoke('settings:menuBarIcon', on),
+    setLanguage: (pref) => invoke('settings:language', pref)
   },
   updates: {
     get: () => invoke('updates:get'),

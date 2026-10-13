@@ -4,6 +4,7 @@ import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from 
 import type { McpServer } from '../../shared/mcp'
 import { resolveAccount } from '../accounts'
 import { learnContextWindow } from '../contextWindows'
+import { tr } from '../i18n'
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
 import { mcpServersOf } from './mcpStatus'
@@ -226,7 +227,8 @@ export class ChatSession {
       }
       if (Object.keys(flags).length) await this.q.applyFlagSettings(flags as never)
     } catch (err) {
-      this.update({ error: `Não consegui aplicar a mudança: ${(err as Error).message}` })
+      const reason = (err as Error).message
+      this.update({ error: tr(`Não consegui aplicar a mudança: ${reason}`, `Couldn't apply the change: ${reason}`) })
     }
   }
 

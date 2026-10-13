@@ -1,19 +1,25 @@
 import { Code2, Loader2 } from 'lucide-react'
 import type { ProjectServer } from '../../../shared/devServers'
 import { StartServerButton } from './StartServerButton'
+import { tr } from '../i18n'
 
 // O que o placeholder diz sobre o servidor do projeto. O que o Claude está fazendo fica só no chat.
 function serverText(server: ProjectServer | null, running: boolean, checking: boolean): string {
-  if (!server) return 'Conferindo o servidor do projeto…'
-  if (checking) return 'Conferindo quais portas do projeto mostram página…'
+  if (!server) return tr('Conferindo o servidor do projeto…', 'Checking the project server…')
+  if (checking) return tr('Conferindo quais portas do projeto mostram página…', 'Checking which project ports serve a page…')
   if (server.state !== 'running') {
-    if (server.error) return `O servidor do projeto não subiu: ${server.error}`
-    if (!server.script) return 'Esta pasta não tem script dev ou start para mostrar a página.'
-    return server.state === 'starting' ? 'Subindo o servidor do projeto…' : 'O servidor do projeto está parado. Inicie para ver a página aqui.'
+    if (server.error) return tr(`O servidor do projeto não subiu: ${server.error}`, `The project server did not start: ${server.error}`)
+    if (!server.script) return tr('Esta pasta não tem script dev ou start para mostrar a página.', 'This folder has no dev or start script to show the page.')
+    return server.state === 'starting'
+      ? tr('Subindo o servidor do projeto…', 'Starting the project server…')
+      : tr('O servidor do projeto está parado. Inicie para ver a página aqui.', 'The project server is stopped. Start it to see the page here.')
   }
   return running
-    ? 'O Claude está escrevendo a tela no projeto. A página aparece aqui assim que ele disser o endereço dela.'
-    : 'A página aparece aqui pelo servidor do projeto.'
+    ? tr(
+        'O Claude está escrevendo a tela no projeto. A página aparece aqui assim que ele disser o endereço dela.',
+        'Claude is writing the screen in the project. The page shows up here as soon as it gives its address.'
+      )
+    : tr('A página aparece aqui pelo servidor do projeto.', 'The page shows up here from the project server.')
 }
 
 // No lugar da página enquanto ela não aparece: o servidor do projeto e, parado, o botão de iniciar.

@@ -16,6 +16,7 @@ import {
 import type { Inbox } from '../chats'
 import { INSTALL_COMMAND, runClaudeInstaller } from '../claudeInstall'
 import { claudeFound, lookupClaude } from '../claudePath'
+import { tr } from '../i18n'
 import { gitFound } from '../platform'
 import { distroFor } from '../wsl'
 import { openLoginQuery, type LoginQuery } from './loginQuery'
@@ -121,7 +122,14 @@ export class Auth {
     const error = await runClaudeInstaller()
     this.install = claudeFound()
       ? installState('found')
-      : installState('failed', error ?? 'O instalador terminou, mas o Claude Code não apareceu na pasta esperada.')
+      : installState(
+          'failed',
+          error ??
+            tr(
+              'O instalador terminou, mas o Claude Code não apareceu na pasta esperada.',
+              "The installer finished, but Claude Code didn't show up in the expected folder."
+            )
+        )
     await this.refresh()
   }
 
@@ -169,7 +177,7 @@ export class Auth {
         if (twin) {
           // A mesma conta duas vezes: a nova some com o login dela.
           this.stop()
-          this.setLogin({ status: 'error', message: `essa conta já está no app, como "${twin.name}".`, ...target })
+          this.setLogin({ status: 'error', message: tr(`essa conta já está no app, como "${twin.name}".`, `this account is already in the app, as "${twin.name}".`), ...target })
           return
         }
         addAccount(accountId)
@@ -181,7 +189,7 @@ export class Auth {
     } catch (err) {
       if (!current()) return
       this.stop()
-      this.setLogin({ status: 'error', message: (err as Error).message || 'Não deu para entrar.', ...target })
+      this.setLogin({ status: 'error', message: (err as Error).message || tr('Não deu para entrar.', "Couldn't sign in."), ...target })
     }
   }
 
@@ -192,7 +200,7 @@ export class Auth {
     const [authorizationCode, state = ''] = code.trim().split('#')
     s.q.claudeOAuthCallback(authorizationCode, state).catch((err: Error) => {
       if (this.session === s) {
-        this.setLogin({ status: 'error', message: err.message || 'Código recusado.', accountId: s.accountId, adding: s.adding })
+        this.setLogin({ status: 'error', message: err.message || tr('Código recusado.', 'Code rejected.'), accountId: s.accountId, adding: s.adding })
       }
     })
   }

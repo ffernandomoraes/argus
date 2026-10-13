@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync } from
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app } from 'electron'
+import { tr } from '../i18n'
 import { IS_LINUX } from '../platform'
 
 // Linux: o AppImage é um arquivo solto, sem instalador. Para o Argus aparecer no menu de apps (como
@@ -27,7 +28,7 @@ export function installDesktopEntry(): void {
     '[Desktop Entry]',
     'Type=Application',
     'Name=Argus',
-    'Comment=Canvas infinito para orquestrar projetos e agentes do Claude Code',
+    `Comment=${tr('Canvas infinito para orquestrar projetos e agentes do Claude Code', 'Infinite canvas to orchestrate Claude Code projects and agents')}`,
     `Exec=${quote(appImage)} %U`,
     `Icon=${icon}`,
     'Terminal=false',

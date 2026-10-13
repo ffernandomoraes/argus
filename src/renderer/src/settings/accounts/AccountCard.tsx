@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button'
 import { AccountName } from './AccountName'
 import { accountSummary } from './accountSummary'
 import { CopyTerminalCommand } from './CopyTerminalCommand'
+import { tr } from '../../i18n'
 
 function Badge({ children }: { children: ReactNode }) {
   return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[11px] text-faint">{children}</span>
@@ -39,11 +40,15 @@ export function AccountCard({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <AccountName account={account} />
-            {multiple && main && <Badge>Principal</Badge>}
-            {multiple && isDefault && <Badge>Padrão</Badge>}
+            {multiple && main && <Badge>{tr('Principal', 'Main')}</Badge>}
+            {multiple && isDefault && <Badge>{tr('Padrão', 'Default')}</Badge>}
           </div>
           <div className="mt-0.5 truncate text-xs text-muted">
-            {s === null ? 'O Claude Code não respondeu.' : loggedIn ? who : 'Entre para usar esta conta.'}
+            {s === null
+              ? tr('O Claude Code não respondeu.', 'Claude Code did not respond.')
+              : loggedIn
+                ? who
+                : tr('Entre para usar esta conta.', 'Sign in to use this account.')}
           </div>
         </div>
         {/* À direita, no meio da altura do cartão. */}
@@ -54,7 +59,7 @@ export function AccountCard({
             }`}
           >
             <span className={`size-1.5 rounded-full ${loggedIn ? 'bg-done' : 'bg-needs-you'}`} />
-            {loggedIn ? 'Conectada' : 'Sem login'}
+            {loggedIn ? tr('Conectada', 'Connected') : tr('Sem login', 'Signed out')}
           </span>
         )}
       </div>
@@ -63,17 +68,19 @@ export function AccountCard({
       <div className="border-t border-line px-4 py-2.5">
         {external ? (
           <p className="text-xs leading-relaxed text-faint">
-            O acesso vem das variáveis de ambiente ou das configurações do Claude Code, não de um login. Para trocar,
-            mude por lá.
+            {tr(
+              'O acesso vem das variáveis de ambiente ou das configurações do Claude Code, não de um login. Para trocar, mude por lá.',
+              'Access comes from environment variables or Claude Code settings, not from a login. To switch, change it there.'
+            )}
           </p>
         ) : (
           <div className="flex flex-wrap items-center justify-end gap-2">
             <span className="mr-auto min-w-0 truncate text-xs text-faint">{footer}</span>
             {account.dir && <CopyTerminalCommand dir={account.dir} />}
-            {multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>Usar como padrão</Button>}
+            {multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
             {/* Conectada, o login serve para pôr outra conta no lugar desta (ou renovar o acesso). */}
-            <Button onClick={onLogin} title={loggedIn ? 'Entra com outra conta no lugar desta, ou renova o acesso' : undefined}>
-              {loggedIn ? 'Trocar conta' : 'Entrar'}
+            <Button onClick={onLogin} title={loggedIn ? tr('Entra com outra conta no lugar desta, ou renova o acesso', 'Sign in with another account in place of this one, or renew access') : undefined}>
+              {loggedIn ? tr('Trocar conta', 'Switch account') : tr('Entrar', 'Sign in')}
             </Button>
             {main
               ? loggedIn && (
@@ -81,14 +88,17 @@ export function AccountCard({
                     danger
                     onClick={() =>
                       onConfirm({
-                        title: 'Sair da conta?',
-                        description: `O Claude Code ${THIS_COMPUTER} sai de ${who}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
-                        confirmLabel: 'Sair',
+                        title: tr('Sair da conta?', 'Sign out?'),
+                        description: tr(
+                          `O Claude Code ${THIS_COMPUTER} sai de ${who}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
+                          `Claude Code ${THIS_COMPUTER} signs out of ${who}, including in the terminal and VS Code. Chats working right now finish their current request.`
+                        ),
+                        confirmLabel: tr('Sair', 'Sign out'),
                         onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok))
                       })
                     }
                   >
-                    Sair
+                    {tr('Sair', 'Sign out')}
                   </Button>
                 )
               : (
@@ -96,21 +106,27 @@ export function AccountCard({
                     danger
                     onClick={() =>
                       onConfirm({
-                        title: `Remover "${account.name}"?`,
-                        description: `O Argus sai dessa conta e apaga a pasta dela. Conversas e terminais abertos com ela fecham agora, e os grupos que usavam ela passam a usar ${fallback ?? 'a padrão'}. O histórico das conversas continua.`,
-                        confirmLabel: 'Remover',
+                        title: tr(`Remover "${account.name}"?`, `Remove "${account.name}"?`),
+                        description: tr(
+                          `O Argus sai dessa conta e apaga a pasta dela. Conversas e terminais abertos com ela fecham agora, e os grupos que usavam ela passam a usar ${fallback ?? 'a padrão'}. O histórico das conversas continua.`,
+                          `Argus signs out of this account and deletes its folder. Chats and terminals open with it close now, and groups that used it switch to ${fallback ?? 'the default one'}. Chat history is kept.`
+                        ),
+                        confirmLabel: tr('Remover', 'Remove'),
                         onConfirm: () => void window.api.auth.remove(account.id)
                       })
                     }
                   >
-                    Remover
+                    {tr('Remover', 'Remove')}
                   </Button>
                 )}
           </div>
         )}
         {logoutFailed && (
           <p role="alert" className="mt-2 text-right text-xs text-red-400">
-            Não deu para sair. Tente de novo ou rode "claude auth logout" no {IS_WIN ? 'PowerShell' : 'Terminal'}.
+            {tr(
+              `Não deu para sair. Tente de novo ou rode "claude auth logout" no ${IS_WIN ? 'PowerShell' : 'Terminal'}.`,
+              `Could not sign out. Try again or run "claude auth logout" in ${IS_WIN ? 'PowerShell' : 'Terminal'}.`
+            )}
           </p>
         )}
       </div>

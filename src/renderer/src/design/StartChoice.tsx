@@ -9,6 +9,7 @@ import { appLabel, pageApps } from './address/projectApps'
 import { RouteField } from './address/RouteField'
 import { normalizeRoute } from './address/routeText'
 import { ServerStatus } from './ServerStatus'
+import { tr } from '../i18n'
 
 type StartKind = 'new' | 'existing'
 
@@ -74,21 +75,28 @@ export function StartChoice({
   const noScript = !!server && server.state === 'stopped' && !server.script
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-14">
-      <p className="text-sm font-medium text-text">O que você quer fazer?</p>
+      <p className="text-sm font-medium text-text">{tr('O que você quer fazer?', 'What do you want to do?')}</p>
       <div className="grid w-full grid-cols-2 gap-3">
         <Choice
           active={kind === 'new'}
           icon={<Code2 size={15} />}
-          title="Protótipo novo"
-          text={`Uma tela nova em código de verdade em ${projectName}, com as tecnologias do projeto.`}
+          title={tr('Protótipo novo', 'New prototype')}
+          text={tr(
+            `Uma tela nova em código de verdade em ${projectName}, com as tecnologias do projeto.`,
+            `A new screen in real code in ${projectName}, using the project's stack.`
+          )}
           onClick={() => setKind('new')}
         />
         <Choice
           active={kind === 'existing'}
           disabled={noScript}
           icon={<FileCode2 size={15} />}
-          title="Tela que já existe"
-          text={noScript ? 'Esta pasta não tem script dev ou start para mostrar a página.' : 'Abre uma página do projeto para ajustar direto no código.'}
+          title={tr('Tela que já existe', 'Existing screen')}
+          text={
+            noScript
+              ? tr('Esta pasta não tem script dev ou start para mostrar a página.', 'This folder has no dev or start script to show the page.')
+              : tr('Abre uma página do projeto para ajustar direto no código.', 'Opens a project page to tweak directly in the code.')
+          }
           onClick={() => setKind('existing')}
         />
       </div>
@@ -97,7 +105,7 @@ export function StartChoice({
         onChange={onDevice}
         options={[
           { value: 'desktop', label: 'Desktop', icon: <Monitor size={12} /> },
-          { value: 'mobile', label: 'Celular', icon: <Smartphone size={12} /> }
+          { value: 'mobile', label: tr('Celular', 'Mobile'), icon: <Smartphone size={12} /> }
         ]}
       />
       {kind === 'existing' ? (
@@ -106,12 +114,12 @@ export function StartChoice({
           {checking && (
             <p className="flex items-center gap-1.5 text-[12px] text-muted">
               <Loader2 size={12} className="shrink-0 animate-spin" />
-              Conferindo quais portas mostram página…
+              {tr('Conferindo quais portas mostram página…', 'Checking which ports serve a page…')}
             </p>
           )}
           {!checking && apps.length > 1 && app && (
             <div className="flex max-w-full flex-col items-center gap-1.5">
-              <p className="text-[12px] text-muted">Qual app você quer ajustar?</p>
+              <p className="text-[12px] text-muted">{tr('Qual app você quer ajustar?', 'Which app do you want to tweak?')}</p>
               <div className="max-w-full overflow-x-auto">
                 <Segmented
                   value={String(app.port)}
@@ -124,18 +132,22 @@ export function StartChoice({
           <div className="flex w-full max-w-md items-center gap-2">
             <RouteField value={route} onChange={setRoute} onGo={open} options={routes} />
             <Button variant="primary" onClick={() => open(normalizeRoute(route))} disabled={checking}>
-              Abrir
+              {tr('Abrir', 'Open')}
             </Button>
           </div>
           <p className="text-center text-xs leading-relaxed text-faint">
-            Escreva o endereço da página (por exemplo, /produtos) ou deixe vazio para abrir a página inicial. Ela abre aqui, e
-            cada pedido no chat muda o código dela.
+            {tr(
+              'Escreva o endereço da página (por exemplo, /produtos) ou deixe vazio para abrir a página inicial. Ela abre aqui, e cada pedido no chat muda o código dela.',
+              'Type the page address (for example, /products) or leave it empty to open the home page. It opens here, and each request in the chat changes its code.'
+            )}
           </p>
         </>
       ) : (
         <p className="text-center text-xs leading-relaxed text-faint">
-          Descreva a tela no chat ao lado. Uma conversa do Claude Code escreve a tela no projeto, e a página aparece aqui pelo
-          servidor dele.
+          {tr(
+            'Descreva a tela no chat ao lado. Uma conversa do Claude Code escreve a tela no projeto, e a página aparece aqui pelo servidor dele.',
+            'Describe the screen in the chat on the side. A Claude Code chat writes the screen in the project, and the page shows up here from its server.'
+          )}
         </p>
       )}
     </div>

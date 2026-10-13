@@ -7,20 +7,24 @@ import { buttonTone } from '../ui/buttonStyles'
 import { Tooltip } from '../ui/Tooltip'
 import { useAnchoredMenu } from '../ui/useAnchoredMenu'
 import { startProjectServer, stopProjectServer, useProjectServer } from './projectServers'
+import { tr } from '../i18n'
 
 const appNameOf = (app?: { name?: string }) => (app?.name ? `${app.name} - ` : '')
 
 // Itens do menu do servidor rodando: abrir cada porta no navegador e encerrar.
 function menuItems(server: ProjectServer, stop: () => void): MenuItem[] {
   const stopItem: MenuItem = server.locked
-    ? { type: 'action', label: 'Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão', icon: Lock, disabled: true, onSelect: () => {} }
-    : { type: 'action', label: 'Encerrar servidor', icon: Power, danger: true, onSelect: stop }
+    ? { type: 'action', label: tr('Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão', 'Opened by a Claude Code session: stopping it would end the session'), icon: Lock, disabled: true, onSelect: () => {} }
+    : { type: 'action', label: tr('Encerrar servidor', 'Stop server'), icon: Power, danger: true, onSelect: stop }
   return [
     ...server.ports.map(
       (port): MenuItem => ({
         type: 'action',
         // Com o nome do pacote: num monorepo, cada porta é um app (site, admin, api).
-        label: `Abrir ${appNameOf(server.apps?.find((a) => a.port === port))}localhost:${port}`,
+        label: tr(
+          `Abrir ${appNameOf(server.apps?.find((a) => a.port === port))}localhost:${port}`,
+          `Open ${appNameOf(server.apps?.find((a) => a.port === port))}localhost:${port}`
+        ),
         icon: ExternalLink,
         onSelect: () => window.open(`http://localhost:${port}`)
       })
@@ -56,10 +60,10 @@ export function ProjectServerButton({ path }: { path: string }) {
   const failed = stopped && !!server.error
 
   let label: string
-  if (busy === 'stopping') label = 'Encerrando servidor'
-  else if (pending) label = `Iniciando servidor - ${server.command}`
-  else if (stopped) label = `Iniciar servidor - ${server.command}`
-  else label = 'Servidor rodando'
+  if (busy === 'stopping') label = tr('Encerrando servidor', 'Stopping server')
+  else if (pending) label = tr(`Iniciando servidor - ${server.command}`, `Starting server - ${server.command}`)
+  else if (stopped) label = tr(`Iniciar servidor - ${server.command}`, `Start server - ${server.command}`)
+  else label = tr('Servidor rodando', 'Server running')
 
   return (
     <>
@@ -91,7 +95,7 @@ export function ProjectServerButton({ path }: { path: string }) {
         )}
         {failed ? (
           <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden w-72 -translate-x-1/2 flex-col gap-1 rounded-md border border-line bg-surface-2 px-2 py-1.5 text-left text-[12px] text-text shadow-lg group-hover:flex">
-            O servidor parou com erro - clique para tentar de novo
+            {tr('O servidor parou com erro - clique para tentar de novo', 'The server stopped with an error - click to try again')}
             <span className="break-words font-mono text-faint">{server.error}</span>
           </span>
         ) : (

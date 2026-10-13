@@ -15,6 +15,7 @@ import { TerminalHeader } from './terminal/TerminalHeader'
 import { useFocusMode } from './terminal/useFocusMode'
 import type { TerminalNode as TerminalNodeType } from './types'
 import { useIsNewBlock } from './useCanvasView'
+import { tr } from '../i18n'
 
 // Botões do cabeçalho: o último encosta na borda direita, como nos outros blocos.
 const HEADER_BUTTON = 'nodrag last:-mr-1'
@@ -51,11 +52,11 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       {!shell && !data.sessionId && <TerminalBinding nodeId={id} />}
       <BlockFrame selected={selected} minHeight={220} className="bg-surface">
         <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell}>
-          <IconButton label="Modo foco" variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.enter}>
+          <IconButton label={tr('Modo foco', 'Focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.enter}>
             <Maximize2 size={13} />
           </IconButton>
           <IconButton
-            label="Fechar terminal"
+            label={tr('Fechar terminal', 'Close terminal')}
             variant="subtle"
             size="sm"
             className={HEADER_BUTTON}
@@ -69,9 +70,9 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
         <div className="nodrag nowheel flex min-h-0 flex-1 flex-col">
           {focus.active ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 bg-surface text-xs text-muted">
-              Em modo foco
+              {tr('Em modo foco', 'In focus mode')}
               <Button size="sm" onClick={focus.exit}>
-                Sair do modo foco
+                {tr('Sair do modo foco', 'Exit focus mode')}
               </Button>
             </div>
           ) : (
@@ -83,7 +84,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       {focus.active && (
         <TerminalFocusLayer panelRef={focusRef}>
           <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell}>
-            <IconButton label="Sair do modo foco" variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.exit}>
+            <IconButton label={tr('Sair do modo foco', 'Exit focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.exit}>
               <Minimize2 size={13} />
             </IconButton>
           </TerminalHeader>

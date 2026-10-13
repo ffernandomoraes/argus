@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
 import { IS_LINUX, IS_WIN } from '../../platform'
 import { Row, Switch } from '../controls'
+import { tr } from '../../i18n'
 
 // Na barra de menus do Mac; no Windows, na área de notificação, perto do relógio; no Linux, na
 // bandeja do sistema (o GNOME só mostra com a extensão AppIndicator, que o Ubuntu já traz).
 const TRAY = IS_WIN
-  ? { label: 'Ícone na área de notificação', where: 'perto do relógio do Windows' }
+  ? { label: tr('Ícone na área de notificação', 'Notification area icon'), where: tr('perto do relógio do Windows', 'near the Windows clock') }
   : IS_LINUX
-    ? { label: 'Ícone na bandeja do sistema', where: 'no topo da tela (no GNOME, precisa da extensão AppIndicator)' }
-    : { label: 'Ícone na barra de menus', where: 'no topo do macOS' }
+    ? {
+        label: tr('Ícone na bandeja do sistema', 'System tray icon'),
+        where: tr('no topo da tela (no GNOME, precisa da extensão AppIndicator)', 'at the top of the screen (on GNOME, needs the AppIndicator extension)')
+      }
+    : { label: tr('Ícone na barra de menus', 'Menu bar icon'), where: tr('no topo do macOS', 'at the top of macOS') }
 
 // Guardada no processo principal: o ícone é criado antes de a janela abrir.
 export function MenuBarIconRow() {
@@ -25,7 +29,10 @@ export function MenuBarIconRow() {
   }, [])
 
   return (
-    <Row label={TRAY.label} description={`Mostra ${TRAY.where} quando uma conversa está rodando, precisa de você ou terminou.`}>
+    <Row label={TRAY.label} description={tr(
+        `Mostra ${TRAY.where} quando uma conversa está rodando, precisa de você ou terminou.`,
+        `Shows ${TRAY.where} when a chat is running, needs you or is done.`
+      )}>
       {on !== null && (
         <Switch
           label={TRAY.label}

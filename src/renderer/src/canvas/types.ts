@@ -12,6 +12,9 @@ export type AreaData = {
   obscured?: boolean
   // Tamanho antes de recolher, para voltar igual ao expandir.
   expandedSize?: { width: number; height: number }
+  // Tamanho de antes de o grupo crescer sozinho (conversas e agentes novos dentro). Com ele o grupo
+  // volta a encolher até ali quando o conteúdo diminui. Redimensionar na mão apaga.
+  autoGrownFrom?: { width: number; height: number }
 }
 
 export type ConversationSummary = {

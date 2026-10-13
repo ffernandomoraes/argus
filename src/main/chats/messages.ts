@@ -1,6 +1,7 @@
 import type { UUID } from 'node:crypto'
 import type { SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { ChatSendRequest } from '../../shared/chat'
+import { tr } from '../i18n'
 
 // O que vai e volta do Claude em texto: a mensagem que você manda e o erro que ele devolve.
 
@@ -21,6 +22,9 @@ export function userMessage(req: ChatSendRequest, uuid: UUID): SDKUserMessage {
 // O SDK avisa em inglês quando não acha o `claude`; a tela de boas-vindas instala.
 export function friendlyError(message: string): string {
   return /native binary not found/i.test(message)
-    ? 'O Claude Code não está instalado neste computador. Feche e abra o Argus para instalar.'
+    ? tr(
+        'O Claude Code não está instalado neste computador. Feche e abra o Argus para instalar.',
+        "Claude Code isn't installed on this computer. Quit and reopen Argus to install it."
+      )
     : message
 }

@@ -15,6 +15,7 @@ import { useFocusMode } from './hooks/useFocusMode'
 import { DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
 import { ResizeHandles } from './FloatingPanel'
 import { useDrawerZoom } from './useDrawerZoom'
+import { tr } from '../i18n'
 
 type Props = {
   project: ProjectData
@@ -159,21 +160,21 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
   return useMemo(() => {
     if (focus) return null
     const items: MoreMenuItem[] = [
-      { label: 'Modo foco', icon: Maximize2, onClick: () => void setFocus(true) },
-      ...(onTogglePin ? [pinned ? { label: 'Desafixar', icon: PinOff, onClick: onTogglePin } : { label: 'Fixar', icon: Pin, onClick: onTogglePin }] : []),
+      { label: tr('Modo foco', 'Focus mode'), icon: Maximize2, onClick: () => void setFocus(true) },
+      ...(onTogglePin ? [pinned ? { label: tr('Desafixar', 'Unpin'), icon: PinOff, onClick: onTogglePin } : { label: tr('Fixar', 'Pin'), icon: Pin, onClick: onTogglePin }] : []),
       // Conversa ainda não enviada não tem sessão para abrir em outro lugar.
       ...(draft
         ? []
         : [
-            { label: 'Colocar no canvas', icon: PictureInPicture2, onClick: onPinToCanvas },
-            { label: 'Abrir em janela separada', icon: ExternalLink, onClick: onPopout }
+            { label: tr('Colocar no canvas', 'Place on canvas'), icon: PictureInPicture2, onClick: onPinToCanvas },
+            { label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }
           ])
     ]
     return (
       <>
         <MoreMenu items={items} />
         {!loose && (
-          <HeaderButton label={codeOpen ? 'Fechar código' : 'Abrir código'} onClick={onToggleCode} active={codeOpen}>
+          <HeaderButton label={codeOpen ? tr('Fechar código', 'Close code') : tr('Abrir código', 'Open code')} onClick={onToggleCode} active={codeOpen}>
             <Code2 size={14} />
           </HeaderButton>
         )}

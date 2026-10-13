@@ -3,6 +3,7 @@ import { MENU_HOVER, MENU_PANEL, MENU_ROW } from '../../ui/menuStyles'
 import { useOutsideClick } from '../../useOutsideClick'
 import type { RouteOption } from './knownRoutes'
 import { normalizeRoute } from './routeText'
+import { tr } from '../../i18n'
 
 // No máximo isto na lista: uma página com centenas de links pesava a cada tecla digitada.
 const MAX_SHOWN = 100
@@ -69,7 +70,7 @@ export function RouteField({
             setOpen(false)
           }
         }}
-        placeholder="/endereço-da-tela"
+        placeholder={tr('/endereço-da-tela', '/screen-address')}
         spellCheck={false}
         className="h-6 w-full rounded-md bg-fill px-2 font-mono text-[12px] outline-none placeholder:text-faint"
       />

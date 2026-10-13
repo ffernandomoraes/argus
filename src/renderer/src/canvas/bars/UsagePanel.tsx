@@ -5,13 +5,14 @@ import { useNow } from '../../lib/clock'
 import { MenuArrow } from '../../ui/MenuArrow'
 import { UsageBar } from './UsageBar'
 import { resetLabel, timeLeft } from './usageFormat'
+import { LOCALE, tr } from '../../i18n'
 
 function WindowDetail({ title, window, now }: { title: string; window: UsageWindow | null; now: number }) {
   if (!window) {
     return (
       <div>
         <div className="text-xs text-text">{title}</div>
-        <div className="mt-1 text-[12px] text-faint">Sem dados</div>
+        <div className="mt-1 text-[12px] text-faint">{tr('Sem dados', 'No data')}</div>
       </div>
     )
   }
@@ -25,8 +26,11 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
       <UsageBar percent={percent} className="mt-1.5 h-1.5 w-full" />
       <div className="mt-1.5 text-[12px] text-faint">
         {window.resetsAt
-          ? `Reseta em ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`
-          : 'Começa a contar na próxima mensagem'}
+          ? tr(
+              `Reseta em ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`,
+              `Resets in ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`
+            )
+          : tr('Começa a contar na próxima mensagem', 'Starts counting on the next message')}
       </div>
     </div>
   )
@@ -38,6 +42,7 @@ export function UsagePanel({ shown }: { shown: { account: ClaudeAccount; usage: 
   const now = useNow(30_000)
   const named = shown.length > 1
   const updatedAt = Math.max(...shown.map((x) => x.usage.updatedAt))
+  const updatedTime = new Date(updatedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
 
   return (
     // A rolagem fica num filho: a caixa não corta a seta, que vaza para fora dela.
@@ -46,7 +51,7 @@ export function UsagePanel({ shown }: { shown: { account: ClaudeAccount; usage: 
       <div className="max-h-[70vh] overflow-y-auto p-4 text-left">
         <div className="mb-4 flex items-center gap-2">
           <ClaudeIcon size={14} />
-          <span className="text-xs font-medium text-text">Limites do Claude</span>
+          <span className="text-xs font-medium text-text">{tr('Limites do Claude', 'Claude limits')}</span>
         </div>
         <div className="flex flex-col gap-5">
           {shown.map(({ account, usage }) => (
@@ -57,14 +62,14 @@ export function UsagePanel({ shown }: { shown: { account: ClaudeAccount; usage: 
                 </div>
               )}
               <div className="flex flex-col gap-4">
-                <WindowDetail title="Sessão (5 horas)" window={usage.session} now={now} />
-                <WindowDetail title="Semanal" window={usage.weekly} now={now} />
+                <WindowDetail title={tr('Sessão (5 horas)', 'Session (5 hours)')} window={usage.session} now={now} />
+                <WindowDetail title={tr('Semanal', 'Weekly')} window={usage.weekly} now={now} />
               </div>
             </div>
           ))}
         </div>
         <div className="mt-4 border-t border-line pt-2 text-[11px] text-faint">
-          Atualizado às {new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          {tr(`Atualizado às ${updatedTime}`, `Updated at ${updatedTime}`)}
         </div>
       </div>
     </div>

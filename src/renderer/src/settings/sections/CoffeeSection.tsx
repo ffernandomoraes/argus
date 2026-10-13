@@ -4,13 +4,14 @@ import QRCode from 'qrcode'
 import { useCopied } from '../../lib/useCopied'
 import { Button } from '../../ui/Button'
 import { PIX_KEY, PIX_PAYLOAD } from './pix'
+import { tr } from '../../i18n'
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const { copied, copy } = useCopied()
   return (
     <Button size="lg" className="w-full" onClick={() => copy(text)}>
       {copied ? <Check size={12} className="text-done" /> : <Copy size={12} />}
-      {copied ? 'Copiado' : label}
+      {copied ? tr('Copiado', 'Copied') : label}
     </Button>
   )
 }
@@ -44,8 +45,8 @@ export function CoffeeSection() {
       <p className="mt-3 text-xs font-medium text-text">Fernando Moraes Lima - Nubank</p>
       <p className="mt-1 font-mono text-[11px] break-all text-faint select-text">{PIX_KEY}</p>
       <div className="mt-4 flex w-full max-w-64 flex-col gap-2">
-        <CopyButton text={PIX_KEY} label="Copiar chave" />
-        <CopyButton text={PIX_PAYLOAD} label="Pix copia e cola" />
+        <CopyButton text={PIX_KEY} label={tr('Copiar chave', 'Copy key')} />
+        <CopyButton text={PIX_PAYLOAD} label={tr('Pix copia e cola', 'Copy Pix code')} />
       </div>
     </div>
   )

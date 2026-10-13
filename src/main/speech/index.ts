@@ -1,20 +1,25 @@
 import type { WebContents } from 'electron'
 import { claudeAccessToken } from '../claudeAuth'
+import { tr } from '../i18n'
 import { sendTo } from '../ipc/events'
 import { IS_MAC } from '../platform'
 import { claudeSession } from './claudeSession'
-import { appleSession, helperPath, spawnHelper } from './helper'
+import { helperPath, spawnHelper } from './helper'
 import type { OpenMic, Send, Session } from './types'
 import { watchWindow } from './watchWindow'
 import { WindowFeed } from './windowFeed'
 
-// Ditado. Igual à extensão do Claude Code no VS Code: o microfone (native/speech, modo
-// "capture") grava e o áudio vai em tempo real para o serviço de voz do Claude, com o login
-// do Claude Code. Sem login ou sem conexão, cai no reconhecimento de fala do macOS.
-// No Windows, quem grava é a própria janela (ver o preload) e o áudio chega por audio(). Lá não há
-// reconhecimento de fala do sistema como reserva: sem o Claude, o ditado avisa e para.
+// Ditado. Igual à extensão do Claude Code no VS Code: o microfone grava (no Mac, native/speech; no
+// Windows e no Linux, a própria janela, ver o preload, e o áudio chega por audio()) e o áudio vai
+// em tempo real para o serviço de voz do Claude, com o login do Claude Code. Sem login ou sem
+// conexão, o ditado avisa e para: não há reserva.
 // Um de cada vez: começar um novo descarta o anterior. Esta classe é a dona da sessão: sabe de
 // que janela ela é e a encerra quando a janela fecha, recarrega ou cai.
+const noLogin = () =>
+  tr('O ditado usa a transcrição do Claude: entre no Claude Code para usar.', 'Dictation uses Claude transcription: sign in to Claude Code to use it.')
+const unavailable = (why: string) =>
+  tr(`A transcrição do Claude não está disponível (${why}).`, `Claude transcription isn't available (${why}).`)
+
 export class Speech {
   private session: Session | null = null
   private seq = 0
@@ -56,21 +61,15 @@ export class Speech {
   private startMac(seq: number, send: Send): void {
     const helper = helperPath()
     if (!helper) {
-      send({ type: 'error', message: 'Ditado não instalado. Rode `pnpm install` para compilar.' })
+      send({ type: 'error', message: tr('Ditado não instalado. Rode `pnpm install` para compilar.', 'Dictation not installed. Run `pnpm install` to build it.') })
       return
     }
     void claudeAccessToken().then((token) => {
       // Parado ou recomeçado enquanto buscava o login.
       if (seq !== this.seq || this.session) return
-      if (!token) {
-        this.session = appleSession(helper, send, 'Sem login no Claude Code; usando o ditado do Mac, que erra mais.')
-        return
-      }
+      if (!token) return send({ type: 'error', message: noLogin() })
       const openMic: OpenMic = (onEvent, onExit) => spawnHelper(helper, ['capture'], onEvent, onExit)
-      this.session = claudeSession(openMic, token, send, (why) => {
-        const reason = `Transcrição do Claude indisponível (${why}); usando o ditado do Mac, que erra mais.`
-        if (seq === this.seq) this.session = appleSession(helper, send, reason)
-      })
+      this.session = claudeSession(openMic, token, send, (why) => send({ type: 'error', message: unavailable(why) }))
     })
   }
 
@@ -83,12 +82,10 @@ export class Speech {
       if (seq !== this.seq || this.session) return
       if (!token) {
         feed.close()
-        send({ type: 'error', message: 'O ditado usa a transcrição do Claude: entre no Claude Code para usar.' })
+        send({ type: 'error', message: noLogin() })
         return
       }
-      this.session = claudeSession(feed.open, token, send, (why) =>
-        send({ type: 'error', message: `A transcrição do Claude não está disponível (${why}).` })
-      )
+      this.session = claudeSession(feed.open, token, send, (why) => send({ type: 'error', message: unavailable(why) }))
     })
   }
 

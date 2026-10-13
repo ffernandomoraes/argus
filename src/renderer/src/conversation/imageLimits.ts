@@ -1,3 +1,5 @@
+import { LOCALE } from '../i18n'
+
 // Limites da API do Claude para imagens: 5 MB por imagem e 32 MB por pedido, contados no base64
 // (4/3 do arquivo). Com margem: o pedido leva também o texto e o resto da conversa.
 const MAX_IMAGE_BASE64 = 5 * 1024 * 1024
@@ -26,4 +28,4 @@ export function shrinkType(type: string): string {
 }
 
 // "21,4" (MB) para o aviso.
-export const megabytes = (bytes: number) => (bytes / 1024 / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+export const megabytes = (bytes: number) => (bytes / 1024 / 1024).toLocaleString(LOCALE, { maximumFractionDigits: 1 })

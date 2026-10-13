@@ -4,6 +4,8 @@ import { LucideProvider } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
 import './index.css'
 import { App } from './App'
+import { hasDrafts } from './code/drafts'
+import { tr } from './i18n'
 import { PopoutApp } from './conversation/PopoutApp'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 
@@ -15,6 +17,16 @@ const applyAccent = (color: string | null) =>
     : document.documentElement.style.removeProperty('--color-accent')
 applyAccent(window.api.accent.get())
 window.api.accent.onChange(applyAccent)
+
+// Idioma trocado nos ajustes: recarrega para redesenhar os textos. Rascunhos do painel de código só
+// existem na memória; com algum, pergunta antes (sem recarregar, fica no idioma antigo até a próxima).
+window.api.language.onChange(() => {
+  const question = tr(
+    'Para trocar o idioma, a janela recarrega e descarta as alterações não salvas no painel de código. Recarregar agora?',
+    'Changing the language reloads the window and discards unsaved changes in the code panel. Reload now?'
+  )
+  if (!hasDrafts() || window.confirm(question)) location.reload()
+})
 
 // A mesma página serve a janela principal e as janelas de conversa (#popout/<id>).
 const popout = location.hash.match(/^#popout\/(.+)$/)

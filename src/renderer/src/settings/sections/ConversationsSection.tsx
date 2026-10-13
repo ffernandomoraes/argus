@@ -4,6 +4,7 @@ import type { SessionSettings } from '../../conversation/SessionSettings'
 import { useClaudeInfo } from '../../conversation/useModels'
 import { Group, Row, Segmented, Select, Switch } from '../controls'
 import { setPreferences, usePreference } from '../preferences'
+import { tr } from '../../i18n'
 
 export function ConversationsSection() {
   const s = usePreference('conversation')
@@ -18,9 +19,12 @@ export function ConversationsSection() {
   return (
     <>
       <Group>
-        <Row label="Modelo">
+        <Row label={tr('Modelo', 'Model')}>
           <Select value={s.model} onChange={(model) => set({ model })}>
-            <option value="">Padrão{defaultModel?.resolvedName ? ` - ${defaultModel.resolvedName}` : ''}</option>
+            <option value="">
+              {tr('Padrão', 'Default')}
+              {defaultModel?.resolvedName ? ` - ${defaultModel.resolvedName}` : ''}
+            </option>
             {groupByFamily(models).map(([family, versions]) => (
               <optgroup key={family} label={family}>
                 {versions.map((v) => (
@@ -34,8 +38,12 @@ export function ConversationsSection() {
         </Row>
 
         <Row
-          label="Esforço"
-          description={efforts.length ? 'Quanto o modelo pensa antes de agir. Auto deixa o Claude Code decidir.' : 'O modelo escolhido não usa esforço.'}
+          label={tr('Esforço', 'Effort')}
+          description={
+            efforts.length
+              ? tr('Quanto o modelo pensa antes de agir. Auto deixa o Claude Code decidir.', 'How much the model thinks before acting. Auto lets Claude Code decide.')
+              : tr('O modelo escolhido não usa esforço.', 'The selected model does not use effort.')
+          }
         >
           {efforts.length > 0 && (
             <Segmented
@@ -46,10 +54,11 @@ export function ConversationsSection() {
           )}
         </Row>
 
-        <Row label="Modo" description="Quanto o Claude pode fazer sem pedir sua aprovação.">
+        <Row label={tr('Modo', 'Mode')} description={tr('Quanto o Claude pode fazer sem pedir sua aprovação.', 'How much Claude can do without asking for your approval.')}>
           <Select value={s.permissionMode} onChange={(permissionMode) => set({ permissionMode })}>
             <option value="">
-              Padrão da conta{info ? ` - ${MODES.find((m) => m.value === info.defaultPermissionMode)?.label ?? ''}` : ''}
+              {tr('Padrão da conta', 'Account default')}
+              {info ? ` - ${MODES.find((m) => m.value === info.defaultPermissionMode)?.label ?? ''}` : ''}
             </option>
             {MODES.map((m) => (
               <option key={m.value} value={m.value}>
@@ -61,11 +70,14 @@ export function ConversationsSection() {
       </Group>
 
       <Group>
-        <Row label="Thinking" description="Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas.">
+        <Row label="Thinking" description={tr(
+            'Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas.',
+            'Thinks before answering. Better answers on hard tasks, a bit slower.'
+          )}>
           <Switch label="Thinking" checked={s.thinking} onChange={(thinking) => set({ thinking })} />
         </Row>
 
-        <Row label="Ultracode" description="Usa vários subagentes em paralelo em toda tarefa. Gasta bem mais tokens.">
+        <Row label="Ultracode" description={tr('Usa vários subagentes em paralelo em toda tarefa. Gasta bem mais tokens.', 'Uses several subagents in parallel on every task. Uses many more tokens.')}>
           <Switch label="Ultracode" checked={s.ultracode} onChange={(ultracode) => set({ ultracode })} />
         </Row>
       </Group>

@@ -1,4 +1,5 @@
 import { app, dialog } from 'electron'
+import { tr } from '../i18n'
 import type { Updater } from '../updater'
 
 // "Procurar atualizações…" do menu: diferente da conferência automática, sempre responde.
@@ -7,9 +8,12 @@ export async function checkForUpdates(updater: Updater, restartToUpdate: () => P
   const current = app.getVersion()
   if (state.status === 'ready') {
     const { response } = await dialog.showMessageBox({
-      message: `A versão ${state.version} está pronta.`,
-      detail: `Você está na ${current}. O Argus reinicia para atualizar.`,
-      buttons: ['Reiniciar agora', 'Depois'],
+      message: tr(`A versão ${state.version} está pronta.`, `Version ${state.version} is ready.`),
+      detail: tr(
+        `Você está na ${current}. O Argus reinicia para atualizar.`,
+        `You're on ${current}. Argus will restart to update.`
+      ),
+      buttons: [tr('Reiniciar agora', 'Restart Now'), tr('Depois', 'Later')],
       defaultId: 0,
       cancelId: 1
     })
@@ -17,14 +21,17 @@ export async function checkForUpdates(updater: Updater, restartToUpdate: () => P
     return
   }
   const message =
-    state.status === 'latest' ? 'Você já está na versão mais recente.'
-    : state.status === 'downloading' ? `Baixando a versão ${state.version}.`
+    state.status === 'latest' ? tr('Você já está na versão mais recente.', "You're on the latest version.")
+    : state.status === 'downloading' ? tr(`Baixando a versão ${state.version}.`, `Downloading version ${state.version}.`)
     : state.status === 'unsupported' ? state.reason
-    : state.status === 'error' ? 'Não deu para procurar atualizações.'
-    : state.status === 'waiting' ? `A versão ${state.version} ainda não está pronta para o Windows.`
-    : 'Procurando atualizações.'
+    : state.status === 'error' ? tr('Não deu para procurar atualizações.', "Couldn't check for updates.")
+    : state.status === 'waiting' ? tr(
+          `A versão ${state.version} ainda não está pronta para o Windows.`,
+          `Version ${state.version} isn't ready for Windows yet.`
+        )
+    : tr('Procurando atualizações.', 'Checking for updates.')
   await dialog.showMessageBox({
     message,
-    detail: state.status === 'error' || state.status === 'waiting' ? state.message : `Versão em uso: ${current}.`
+    detail: state.status === 'error' || state.status === 'waiting' ? state.message : tr(`Versão em uso: ${current}.`, `Current version: ${current}.`)
   })
 }

@@ -11,6 +11,7 @@ import { EditableName } from './EditableName'
 import { useSessionsOf } from './sessionsStore'
 import type { AreaNode as AreaNodeType } from './types'
 import { useIsDropTarget } from './useCanvasView'
+import { tr } from '../i18n'
 
 // Pastas de dentro do grupo. Lida por seletor e comparada item a item: arrastar qualquer bloco
 // muda a lista de nós a cada quadro, mas só redesenha o resumo quando entra ou sai uma pasta.
@@ -27,10 +28,10 @@ function CollapsedSummary({ id }: { id: string }) {
 
   return (
     <span className="flex items-center gap-2 text-[12px] text-faint">
-      <span>{paths.length === 1 ? '1 instância' : `${paths.length} instâncias`}</span>
-      {needsYou && <span className="size-1.5 rounded-full bg-needs-you" title="Alguma instância precisa de você" />}
+      <span>{paths.length === 1 ? tr('1 instância', '1 instance') : tr(`${paths.length} instâncias`, `${paths.length} instances`)}</span>
+      {needsYou && <span className="size-1.5 rounded-full bg-needs-you" title={tr('Alguma instância precisa de você', 'An instance needs you')} />}
       {running && (
-        <span className="size-1.5 rounded-full bg-running motion-safe:animate-pulse" title="Alguma instância rodando" />
+        <span className="size-1.5 rounded-full bg-running motion-safe:animate-pulse" title={tr('Alguma instância rodando', 'An instance is running')} />
       )}
     </span>
   )
@@ -46,7 +47,7 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
       style={{ background: `repeating-linear-gradient(-45deg, ${stripe} 0 2px, transparent 2px 14px)` }}
     >
       <button
-        aria-label="Mostrar conteúdo"
+        aria-label={tr('Mostrar conteúdo', 'Show content')}
         onClick={(e) => {
           e.stopPropagation()
           toggleObscure(id)
@@ -59,7 +60,7 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
         }}
       >
         <EyeOff size={18} />
-        <Tooltip label="Mostrar conteúdo" />
+        <Tooltip label={tr('Mostrar conteúdo', 'Show content')} />
       </button>
     </div>
   )
@@ -73,7 +74,7 @@ function AccountTag({ account, color }: { account?: string; color: string }) {
   if (!current) return null
   return (
     <span
-      title={`Conta do Claude deste grupo: ${current.name}`}
+      title={tr(`Conta do Claude deste grupo: ${current.name}`, `Claude account for this group: ${current.name}`)}
       className="flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
       style={{
         color,
@@ -130,8 +131,8 @@ function AreaNodeView({ id, data, selected }: NodeProps<AreaNodeType>) {
         style={{ borderColor: `color-mix(in srgb, ${color} 50%, transparent)` }}
       >
         <button
-          aria-label={obscured ? 'Mostrar conteúdo' : 'Ocultar conteúdo'}
-          title={obscured ? 'Mostrar conteúdo' : 'Ocultar conteúdo'}
+          aria-label={obscured ? tr('Mostrar conteúdo', 'Show content') : tr('Ocultar conteúdo', 'Hide content')}
+          title={obscured ? tr('Mostrar conteúdo', 'Show content') : tr('Ocultar conteúdo', 'Hide content')}
           onClick={(e) => {
             e.stopPropagation()
             toggleObscure(id)
@@ -142,7 +143,7 @@ function AreaNodeView({ id, data, selected }: NodeProps<AreaNodeType>) {
           <Visibility size={13} />
         </button>
         <button
-          aria-label={collapsed ? 'Expandir grupo' : 'Recolher grupo'}
+          aria-label={collapsed ? tr('Expandir grupo', 'Expand group') : tr('Recolher grupo', 'Collapse group')}
           onClick={(e) => {
             e.stopPropagation()
             toggleGroup(id)

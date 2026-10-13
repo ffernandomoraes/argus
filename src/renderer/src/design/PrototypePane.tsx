@@ -19,6 +19,7 @@ import { useContextPercent } from './useContextPercent'
 import { useProjectAgents } from './useProjectAgents'
 import { usePrototypeAddress } from './usePrototypeAddress'
 import { usePrototypeSession } from './usePrototypeSession'
+import { tr } from '../i18n'
 
 // Protótipo: a conversa do Claude Code na pasta escreve a tela no código do projeto, e a página
 // aparece aqui pelo servidor de desenvolvimento dele, atualizando a cada arquivo salvo. À esquerda
@@ -89,7 +90,7 @@ export function PrototypePane({
     // Comentários escritos vão junto (o texto deles já veio montado pelo chat, ver extraSend).
     const ready = comments.ready
     const withComments = !command && ready.length > 0
-    const marks = withComments ? markOf('comentarios', ready.length === 1 ? '1 comentário' : `${ready.length} comentários`) : ''
+    const marks = withComments ? markOf('comentarios', ready.length === 1 ? tr('1 comentário', '1 comment') : tr(`${ready.length} comentários`, `${ready.length} comments`)) : ''
     // O estado da tela, lido na hora (no máximo 0,8s de espera).
     const state = !command && url && origin ? await window.api.design.snapshot(origin) : null
     const page: PageInView | undefined = here

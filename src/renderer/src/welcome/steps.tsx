@@ -3,6 +3,7 @@ import type { AuthState } from '../../../shared/auth'
 import { IS_LINUX, IS_WIN, keys } from '../platform'
 import { AgentsArt, CanvasArt, ChatArt, OrganizeArt, SetupArt } from './illustrations'
 import { SetupStep } from './SetupStep'
+import { tr } from '../i18n'
 
 export type Step = { title: string; art: ReactNode; body: ReactNode }
 
@@ -18,76 +19,99 @@ const Code = ({ children }: { children: ReactNode }) => (
 export function welcomeSteps(auth: AuthState): Step[] {
   return [
     {
-      title: 'Seus projetos num canvas',
+      title: tr('Seus projetos num canvas', 'Your projects on a canvas'),
       art: <CanvasArt />,
       body: (
         <>
           <p>
-            Cada pasta de projeto vira um bloco com as conversas do Claude Code. De relance, você vê o que está rodando, o que
-            espera sua resposta e o que já terminou.
+            {tr(
+              'Cada pasta de projeto vira um bloco com as conversas do Claude Code. De relance, você vê o que está rodando, o que espera sua resposta e o que já terminou.',
+              'Each project folder becomes a block with its Claude Code chats. At a glance, you see what is running, what is waiting for your reply and what is done.'
+            )}
           </p>
           <Tip>
-            Adicione pastas pelo botão + da barra lateral ou rodando <Code>argus .</Code> no terminal.
+            {tr('Adicione pastas pelo botão + da barra lateral ou rodando', 'Add folders with the + button in the sidebar or by running')}{' '}
+            <Code>argus .</Code> {tr('no terminal.', 'in the terminal.')}
           </Tip>
         </>
       )
     },
     {
-      title: 'Organize do seu jeito',
+      title: tr('Organize do seu jeito', 'Organize your way'),
       art: <OrganizeArt />,
       body: (
         <>
           <p>
-            Arraste os blocos e junte pastas em grupos coloridos, como Trabalho e Pessoal. Cada grupo pode usar uma conta
-            diferente do Claude. O layout fica salvo.
+            {tr(
+              'Arraste os blocos e junte pastas em grupos coloridos, como Trabalho e Pessoal. Cada grupo pode usar uma conta diferente do Claude. O layout fica salvo.',
+              'Drag blocks around and gather folders into colored groups, like Work and Personal. Each group can use a different Claude account. The layout is saved.'
+            )}
           </p>
           <Tip>
-            Prefere pedir? Na barra de comando ({keys('⌘K')}), escreva ou fale: "cria um grupo Freela com essas duas pastas".
+            {tr(
+              `Prefere pedir? Na barra de comando (${keys('⌘K')}), escreva ou fale: "cria um grupo Freela com essas duas pastas".`,
+              `Rather ask? In the command bar (${keys('⌘K')}), type or say: "create a Freelance group with these two folders".`
+            )}
           </Tip>
         </>
       )
     },
     {
-      title: 'Converse e rode comandos',
+      title: tr('Converse e rode comandos', 'Chat and run commands'),
       art: <ChatArt />,
       body: (
         <>
           <p>
-            Abra a conversa no painel lateral, numa janela própria ou como bloco no canvas. Cole prints, dite por voz, aprove
-            permissões e veja cada edição como diff.
+            {tr(
+              'Abra a conversa no painel lateral, numa janela própria ou como bloco no canvas. Cole prints, dite por voz, aprove permissões e veja cada edição como diff.',
+              'Open a chat in the side panel, in its own window or as a block on the canvas. Paste screenshots, dictate by voice, approve permissions and see each edit as a diff.'
+            )}
           </p>
           <Tip>
-            Os terminais abrem {IS_WIN ? 'no PowerShell' : 'no seu shell'}, com o <Code>claude</Code> pronto para usar.
+            {IS_WIN ? tr('Os terminais abrem no PowerShell, com o', 'Terminals open in PowerShell, with') : tr('Os terminais abrem no seu shell, com o', 'Terminals open in your shell, with')}{' '}
+            <Code>claude</Code> {tr('pronto para usar.', 'ready to use.')}
           </Tip>
         </>
       )
     },
     {
-      title: 'Agentes globais',
+      title: tr('Agentes globais', 'Global agents'),
       art: <AgentsArt />,
       body: (
         <>
           <p>
-            Agentes são especialistas que você cria uma vez (revisor, testador, redator) e valem em todos os projetos. O Claude
-            pode escrever as instruções por você.
+            {tr(
+              'Agentes são especialistas que você cria uma vez (revisor, testador, redator) e valem em todos os projetos. O Claude pode escrever as instruções por você.',
+              'Agents are specialists you create once (reviewer, tester, writer) and use in every project. Claude can write the instructions for you.'
+            )}
           </p>
           <Tip>
-            Crie em Agentes, na barra lateral, e chame no chat com <Code>@nome</Code>.
+            {tr('Crie em Agentes, na barra lateral, e chame no chat com', 'Create them in Agents, in the sidebar, and call them in a chat with')}{' '}
+            <Code>{tr('@nome', '@name')}</Code>.
           </Tip>
         </>
       )
     },
     {
-      title: 'Configure o Claude Code',
+      title: tr('Configure o Claude Code', 'Set up Claude Code'),
       art: <SetupArt />,
       body: (
         <>
           <p>
             {IS_WIN
-              ? 'O Argus usa o Claude Code deste computador e a sua assinatura. No Windows, ele também precisa do Git.'
+              ? tr(
+                  'O Argus usa o Claude Code deste computador e a sua assinatura. No Windows, ele também precisa do Git.',
+                  'Argus uses Claude Code on this computer and your subscription. On Windows, it also needs Git.'
+                )
               : IS_LINUX
-                ? 'O Argus usa o Claude Code deste computador e a sua assinatura, o mesmo login do terminal. Ele também precisa do Git.'
-                : 'O Argus usa o Claude Code deste Mac e a sua assinatura, o mesmo login do Terminal e do VS Code.'}
+                ? tr(
+                    'O Argus usa o Claude Code deste computador e a sua assinatura, o mesmo login do terminal. Ele também precisa do Git.',
+                    'Argus uses Claude Code on this computer and your subscription, the same login as the terminal. It also needs Git.'
+                  )
+                : tr(
+                    'O Argus usa o Claude Code deste Mac e a sua assinatura, o mesmo login do Terminal e do VS Code.',
+                    'Argus uses Claude Code on this Mac and your subscription, the same login as Terminal and VS Code.'
+                  )}
           </p>
           <SetupStep auth={auth} />
         </>

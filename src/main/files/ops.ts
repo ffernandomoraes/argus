@@ -1,32 +1,40 @@
 import { mkdir, rename, writeFile as write } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { execFile, spawn } from 'node:child_process'
-import { app, shell } from 'electron'
+import { app, shell, type BrowserWindow } from 'electron'
 import type { FileOpResult } from '../../shared/files'
 import { expandHome, insideRoot } from '../paths'
-import { IS_LINUX, IS_WIN } from '../platform'
+import { IS_LINUX, IS_MAC, IS_WIN } from '../platform'
 import { changedOnDisk } from './diskBase'
-import { exists, failure, OUTSIDE, relOf } from './fsHelpers'
+import { tr } from '../i18n'
+import { exists, failure, nameTaken, outside, relOf } from './fsHelpers'
 import { invalidName, invalidPath } from './names'
 
-const INVALID: FileOpResult = { ok: false, error: 'Nome inválido.' }
-const PROJECT_ROOT: FileOpResult = { ok: false, error: 'Não dá para fazer isso com a pasta do projeto.' }
-const CONFLICT: FileOpResult = { ok: false, error: 'O arquivo mudou no disco desde a última leitura.', conflict: true }
+const invalid = (): FileOpResult => ({ ok: false, error: tr('Nome inválido.', 'Invalid name.') })
+const projectRoot = (): FileOpResult => ({
+  ok: false,
+  error: tr('Não dá para fazer isso com a pasta do projeto.', 'You can’t do that with the project folder.')
+})
+const conflict = (): FileOpResult => ({
+  ok: false,
+  error: tr('O arquivo mudou no disco desde a última leitura.', 'The file changed on disk since it was last read.'),
+  conflict: true
+})
 
 // Um item dentro da raiz, nunca a própria raiz: "." ou "src/.." mandariam o projeto inteiro
 // para a Lixeira (ou o renomeariam).
 function itemIn(root: string, rel: string): string | FileOpResult {
   const full = rel ? insideRoot(root, rel) : null
-  if (!full) return OUTSIDE
-  return full === resolve(expandHome(root)) ? PROJECT_ROOT : full
+  if (!full) return outside()
+  return full === resolve(expandHome(root)) ? projectRoot() : full
 }
 
 // base: o texto do disco que o editor leu ou gravou por último; diferente do disco, não grava.
 export async function writeFile(root: string, rel: string, text: string, base?: string): Promise<FileOpResult> {
   const file = insideRoot(root, rel)
-  if (!file) return OUTSIDE
+  if (!file) return outside()
   try {
-    if (await changedOnDisk(file, base)) return CONFLICT
+    if (await changedOnDisk(file, base)) return conflict()
     await write(file, text, 'utf8')
     return { ok: true, path: rel }
   } catch (err) {
@@ -36,11 +44,11 @@ export async function writeFile(root: string, rel: string, text: string, base?: 
 
 // `name` pode trazer subpastas ("src/novo.ts"): as que faltarem são criadas.
 export async function createItem(root: string, dirRel: string, name: string, isDir: boolean): Promise<FileOpResult> {
-  if (invalidPath(name)) return INVALID
+  if (invalidPath(name)) return invalid()
   const full = insideRoot(root, dirRel ? `${dirRel}/${name}` : name)
-  if (!full || !insideRoot(root, dirRel)) return OUTSIDE
+  if (!full || !insideRoot(root, dirRel)) return outside()
   try {
-    if (await exists(full)) return { ok: false, error: 'Já existe um item com esse nome.' }
+    if (await exists(full)) return nameTaken()
     if (isDir) await mkdir(full, { recursive: true })
     else {
       await mkdir(dirname(full), { recursive: true })
@@ -53,15 +61,15 @@ export async function createItem(root: string, dirRel: string, name: string, isD
 }
 
 export async function renameItem(root: string, rel: string, name: string): Promise<FileOpResult> {
-  if (invalidName(name)) return INVALID
+  if (invalidName(name)) return invalid()
   const from = itemIn(root, rel)
   if (typeof from !== 'string') return from
   const to = insideRoot(root, join(dirname(rel), name))
-  if (!to) return OUTSIDE
+  if (!to) return outside()
   try {
     // Só muda maiúscula/minúscula: no disco do macOS e do Windows é o mesmo arquivo, não um conflito.
     if (from.toLowerCase() !== to.toLowerCase() && (await exists(to)))
-      return { ok: false, error: 'Já existe um item com esse nome.' }
+      return nameTaken()
     await rename(from, to)
     return { ok: true, path: relOf(root, to) }
   } catch (err) {
@@ -84,6 +92,15 @@ export async function trashItem(root: string, rel: string): Promise<FileOpResult
 export function revealItem(root: string, rel: string): void {
   const full = insideRoot(root, rel)
   if (full) shell.showItemInFolder(full)
+}
+
+// Imagem, vídeo, PDF: no Mac, o Quick Look (o mesmo da barra de espaço no Finder), sem sair do app.
+// No Windows e no Linux, o app padrão do tipo.
+export async function viewItem(win: BrowserWindow | null, root: string, rel: string): Promise<void> {
+  const full = insideRoot(root, rel)
+  if (!full || !(await exists(full))) return
+  if (IS_MAC && win) win.previewFile(full)
+  else void shell.openPath(full)
 }
 
 // Abre o arquivo no navegador padrão, não no app padrão do tipo (o PDF iria para o Preview). Sem

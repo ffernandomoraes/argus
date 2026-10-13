@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import { app } from 'electron'
+import { tr } from '../i18n'
 import { log } from './log'
 import { WSL_EXE, ensureDistro, type DistroInfo } from './distros'
 import { installInWsl } from './install'
@@ -104,18 +105,24 @@ export function deferredWslProcess(
   void ensureDistro(distro).then(
     async (found) => {
       if (killed) return finish(null, 'SIGTERM')
-      if (!found) return fail(`Não deu para abrir o WSL (${distro}).`)
+      if (!found) return fail(tr(`Não deu para abrir o WSL (${distro}).`, `Couldn’t open WSL (${distro}).`))
       // Sem o Claude Code na distro: instala antes (o instalador oficial, sem janela).
       const info = found.claude ? found : ((await installInWsl(distro)) ?? found)
       if (killed) return finish(null, 'SIGTERM')
-      if (!info.claude) return fail(`Não deu para instalar o Claude Code no WSL (${distro}). Veja o diagnóstico nas configurações.`)
+      if (!info.claude)
+        return fail(
+          tr(
+            `Não deu para instalar o Claude Code no WSL (${distro}). Veja o diagnóstico nas configurações.`,
+            `Couldn’t install Claude Code in WSL (${distro}). See the diagnostics in Settings.`
+          )
+        )
       const { argv, env, cwd } = await build(info)
       if (killed) return finish(null, 'SIGTERM')
       let cmd: WslCommand
       try {
         cmd = wslCommand(distro, info, cwd, argv, env)
       } catch (err) {
-        return fail(`Não deu para preparar o WSL (${distro}): ${(err as Error).message}`)
+        return fail(tr(`Não deu para preparar o WSL (${distro}): ${(err as Error).message}`, `Couldn’t prepare WSL (${distro}): ${(err as Error).message}`))
       }
       const c = spawn(cmd.file, cmd.args, { stdio: 'pipe', windowsHide: true })
       child = c
@@ -125,7 +132,7 @@ export function deferredWslProcess(
       c.stderr.on('data', (d: Buffer) => {
         if (err.length < 2000) err += d.toString('utf8')
       })
-      c.on('error', (e) => fail(`wsl.exe não abriu: ${e.message}`))
+      c.on('error', (e) => fail(tr(`wsl.exe não abriu: ${e.message}`, `wsl.exe didn’t open: ${e.message}`)))
       c.on('close', (code, signal) => {
         if (code) log(`claude no WSL (${distro}) saiu com ${code}`, err.slice(0, 500))
         finish(code, signal)

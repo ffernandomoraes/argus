@@ -1,28 +1,33 @@
+import { tr } from './i18n'
+
 type Input = Record<string, any>
 
 // Como cada ferramenta aparece no chat: o que ela faz (label), para quê (summary)
 // e o detalhe técnico (comando, caminho, endereço), que só aparece ao abrir a linha.
 export type ToolDescription = { label: string; summary: string; detail?: string }
 
-const LABELS: Record<string, string> = {
-  Bash: 'Comando',
-  Read: 'Ler',
-  Write: 'Criar arquivo',
-  Edit: 'Editar',
-  MultiEdit: 'Editar',
-  NotebookEdit: 'Editar notebook',
-  Grep: 'Buscar no código',
-  Glob: 'Procurar arquivos',
-  WebFetch: 'Abrir página',
-  WebSearch: 'Pesquisar na web',
-  Agent: 'Subagente',
-  Task: 'Subagente',
-  TodoWrite: 'Lista de tarefas',
-  AskUserQuestion: 'Pergunta',
-  Skill: 'Skill',
-  ToolSearch: 'Carregar ferramentas',
-  TaskStop: 'Parar tarefa',
-  ExitPlanMode: 'Plano pronto'
+// Função, não constante: o idioma pode mudar com o app aberto.
+function labels(): Record<string, string> {
+  return {
+    Bash: tr('Comando', 'Command'),
+    Read: tr('Ler', 'Read'),
+    Write: tr('Criar arquivo', 'Create file'),
+    Edit: tr('Editar', 'Edit'),
+    MultiEdit: tr('Editar', 'Edit'),
+    NotebookEdit: tr('Editar notebook', 'Edit notebook'),
+    Grep: tr('Buscar no código', 'Search code'),
+    Glob: tr('Procurar arquivos', 'Find files'),
+    WebFetch: tr('Abrir página', 'Open page'),
+    WebSearch: tr('Pesquisar na web', 'Search the web'),
+    Agent: tr('Subagente', 'Subagent'),
+    Task: tr('Subagente', 'Subagent'),
+    TodoWrite: tr('Lista de tarefas', 'To-do list'),
+    AskUserQuestion: tr('Pergunta', 'Question'),
+    Skill: 'Skill',
+    ToolSearch: tr('Carregar ferramentas', 'Load tools'),
+    TaskStop: tr('Parar tarefa', 'Stop task'),
+    ExitPlanMode: tr('Plano pronto', 'Plan ready')
+  }
 }
 
 const firstLine = (s: unknown) => (typeof s === 'string' ? s.trim().split(/\r?\n/)[0] : '')
@@ -44,7 +49,7 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
     const first = Object.values(i).find((v) => typeof v === 'string')
     return { label: `${server} - ${action.replace(/_/g, ' ')}`, summary: firstLine(first) }
   }
-  const label = LABELS[name] ?? name
+  const label = labels()[name] ?? name
   switch (name) {
     case 'Bash':
       // O Claude Code descreve cada comando ("Listar arquivos da pasta"); sem isso, a 1ª linha do comando.
@@ -58,7 +63,7 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
       return { label, summary: fileName(path), detail: path }
     }
     case 'Grep':
-      return { label, summary: `“${i.pattern ?? ''}”${i.path ? ` em ${fileName(i.path)}` : ''}`, detail: i.path }
+      return { label, summary: `“${i.pattern ?? ''}”${i.path ? tr(` em ${fileName(i.path)}`, ` in ${fileName(i.path)}`) : ''}`, detail: i.path }
     case 'Glob':
       return { label, summary: i.pattern ?? '', detail: i.path }
     case 'WebFetch':
@@ -72,7 +77,7 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
     case 'Skill':
       return { label, summary: i.skill ?? '' }
     case 'TodoWrite':
-      return { label, summary: Array.isArray(i.todos) ? `${i.todos.length} itens` : '' }
+      return { label, summary: Array.isArray(i.todos) ? tr(`${i.todos.length} itens`, `${i.todos.length} items`) : '' }
     case 'AskUserQuestion':
       return { label, summary: firstLine(i.questions?.[0]?.question) }
     default: {

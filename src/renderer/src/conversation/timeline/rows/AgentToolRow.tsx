@@ -6,6 +6,7 @@ import { Elapsed } from '../../Elapsed'
 import { Markdown } from '../../Markdown'
 import type { Message } from '../../types'
 import { LazyDetails } from './LazyDetails'
+import { tr } from '../../../i18n'
 
 const SECTION_TITLE = 'mb-1 px-1 text-[13px] uppercase tracking-wide text-faint'
 
@@ -41,7 +42,7 @@ function AgentReport({ message, running }: { message: Extract<Message, { role: '
     <>
       {message.detail && (
         <div className="mt-1.5">
-          <div className={SECTION_TITLE}>Pedido</div>
+          <div className={SECTION_TITLE}>{tr('Pedido', 'Request')}</div>
           <div className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 text-[13px] text-muted">
             {message.detail}
           </div>
@@ -49,7 +50,9 @@ function AgentReport({ message, running }: { message: Extract<Message, { role: '
       )}
       {steps.length > 0 && (
         <div className="mt-1.5">
-          <div className={SECTION_TITLE}>Atividade - {running?.toolUses || steps.length} ferramentas</div>
+          <div className={SECTION_TITLE}>
+            {tr(`Atividade - ${running?.toolUses || steps.length} ferramentas`, `Activity - ${running?.toolUses || steps.length} tools`)}
+          </div>
           <ul className="max-h-48 overflow-auto rounded-md bg-bg px-2 py-1.5 text-[13px]">
             {steps.map((s, i) => (
               <li key={i} className="flex gap-2 py-0.5">
@@ -62,7 +65,7 @@ function AgentReport({ message, running }: { message: Extract<Message, { role: '
       )}
       {message.result && (
         <div className="mt-1.5">
-          <div className={SECTION_TITLE}>Entregou</div>
+          <div className={SECTION_TITLE}>{tr('Entregou', 'Result')}</div>
           <div className="max-h-96 overflow-auto rounded-md bg-bg px-3 py-2 text-[13px] leading-relaxed text-text">
             <Markdown text={message.result} />
           </div>

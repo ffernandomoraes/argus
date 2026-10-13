@@ -1,5 +1,6 @@
 import type { Message } from '../../shared/history'
 import { diffFromResult } from '../diffs'
+import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
 import { arr, atOf, contentOf, idOf, obj, str, type Line } from '../transcripts/line'
 import { marksOf, promptText, resultText } from './content'
@@ -133,7 +134,9 @@ export class HistoryParser {
       // Aviso que o próprio Claude Code grava ao retomar uma resposta cortada no meio
       // (o app reiniciou, por exemplo).
       const cut = model === '<synthetic>' && c.text.trim() === 'No response requested.'
-      const text = cut ? 'A resposta anterior foi interrompida antes de terminar. Seguindo daqui.' : c.text.trim()
+      const text = cut
+        ? tr('A resposta anterior foi interrompida antes de terminar. Seguindo daqui.', 'The previous response was interrupted before it finished. Continuing from here.')
+        : c.text.trim()
       this.push({ id, role: 'assistant', text, at, tokens: take() })
     } else if (c?.type === 'tool_use' && typeof c.name === 'string') {
       const input = obj(c.input)

@@ -64,6 +64,7 @@ export type DrawerAction =
   | { type: 'openDesign'; design: ActiveDesign | null }
   | { type: 'closeDesign' }
   | { type: 'toggleCode'; slot: SlotId }
+  | { type: 'openProjectCode'; project: ProjectData }
   | { type: 'openFile'; slot?: SlotId; project?: ProjectData; file: OpenFile | null }
   | { type: 'selectFile'; root: string; path: string }
   | { type: 'renamedFile'; root: string; from: string; to: string }
@@ -151,6 +152,14 @@ function openFile(state: DrawerState, action: Extract<DrawerAction, { type: 'ope
   return withCode(state, code)
 }
 
+// Botão de código do card da pasta: abre o código dela sem drawer. O arquivo aberto só fica se for
+// dessa pasta.
+function openProjectCode(state: DrawerState, project: ProjectData): DrawerState {
+  const { code } = state
+  const keep = code.file?.root === project.path ? code.file : null
+  return withCode(state, { open: true, slot: null, project, file: keep })
+}
+
 function file(state: DrawerState, next: OpenFile | null): DrawerState {
   return next === state.code.file ? state : withCode(state, { ...state.code, file: next })
 }
@@ -182,6 +191,8 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
       return state.code.open && state.code.slot === action.slot
         ? withCode(state, CLOSED_CODE)
         : withCode(state, { ...state.code, open: true, slot: action.slot, project: null })
+    case 'openProjectCode':
+      return openProjectCode(state, action.project)
     case 'openFile':
       return openFile(state, action)
     case 'selectFile':

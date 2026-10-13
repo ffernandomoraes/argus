@@ -7,6 +7,7 @@ import { lastSep, relativeTo, tildify, untildify } from '../../platform'
 import { useEscape } from '../../useEscape'
 import { useOutsideClick } from '../../useOutsideClick'
 import { KIND_COLOR, KIND_LABEL } from './changeKinds'
+import { tr } from '../../i18n'
 
 // Pasta e branch no cabeçalho: o mesmo selo de cima do card da pasta no canvas.
 export const TAG = 'flex h-6 items-center rounded-md border border-line bg-surface px-2 text-muted shadow-sm'
@@ -38,7 +39,7 @@ export function BranchTag({
     )
 
   const n = files.length
-  const label = `${n} ${n === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`
+  const label = n === 1 ? tr('1 arquivo não comitado', '1 uncommitted file') : tr(`${n} arquivos não comitados`, `${n} uncommitted files`)
   // Caminhos relativos à pasta da conversa; fora dela (pasta é parte do repo), com ~.
   const root = untildify(cwd)
   const shown = (path: string) => relativeTo(path, root) || tildify(path)

@@ -1,3 +1,5 @@
+import { locale, tr } from '../i18n'
+
 // Releases do GitHub: o que o atualizador lê deles. Lógica pura, sem rede (ver github.ts).
 
 export type ReleaseAsset = { name: string; size: number; browser_download_url: string }
@@ -51,10 +53,16 @@ type Header = (name: string) => string | null
 export function apiFailure(status: number, header: Header): string {
   if ((status === 403 || status === 429) && header('x-ratelimit-remaining') === '0') {
     const reset = Number(header('x-ratelimit-reset'))
-    const when = reset
-      ? ` depois das ${new Date(reset * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-      : ' mais tarde'
-    return `O GitHub limitou as consultas de atualização desta rede por enquanto. Tente de novo${when}.`
+    const time = reset ? new Date(reset * 1000).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : ''
+    return time
+      ? tr(
+          `O GitHub limitou as consultas de atualização desta rede por enquanto. Tente de novo depois das ${time}.`,
+          `GitHub is rate-limiting update checks from this network for now. Try again after ${time}.`
+        )
+      : tr(
+          'O GitHub limitou as consultas de atualização desta rede por enquanto. Tente de novo mais tarde.',
+          'GitHub is rate-limiting update checks from this network for now. Try again later.'
+        )
   }
-  return `O GitHub respondeu ${status} ao procurar a versão nova.`
+  return tr(`O GitHub respondeu ${status} ao procurar a versão nova.`, `GitHub returned ${status} while checking for a new version.`)
 }

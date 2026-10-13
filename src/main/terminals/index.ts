@@ -1,5 +1,6 @@
 import type { IPty } from 'node-pty'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../../shared/terminal'
+import { tr } from '../i18n'
 import { liveStatusByPid, liveStatusBySessionSync } from '../liveSessions'
 import { expandHome, isDirectory } from '../paths'
 import { IS_WIN } from '../platform'
@@ -64,7 +65,7 @@ export class Terminals {
 
   private async start(req: TerminalOpenRequest): Promise<TerminalOpenResult> {
     const cwd = expandHome(req.cwd)
-    if (!isDirectory(cwd)) return { ok: false, error: `A pasta não existe: ${req.cwd}` }
+    if (!isDirectory(cwd)) return { ok: false, error: tr(`A pasta não existe: ${req.cwd}`, `Folder doesn’t exist: ${req.cwd}`) }
     const opened = await spawnTerminal(req, cwd)
     if (!opened.ok) return opened
 

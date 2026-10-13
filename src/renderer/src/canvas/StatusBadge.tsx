@@ -1,10 +1,11 @@
+import { tr } from '../i18n'
 import type { SessionStatus } from './types'
 
 const STATUS_LABEL: Record<SessionStatus, string> = {
-  idle: 'parado',
-  running: 'rodando',
-  'needs-you': 'precisa de você',
-  done: 'resposta nova'
+  idle: tr('parado', 'idle'),
+  running: tr('trabalhando', 'working'),
+  'needs-you': tr('precisa de você', 'needs you'),
+  done: tr('resposta nova', 'new reply')
 }
 
 // A pulsação só com animação ligada no sistema (Reduzir movimento desliga).

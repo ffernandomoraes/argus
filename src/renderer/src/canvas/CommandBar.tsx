@@ -6,6 +6,7 @@ import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
 import { SYSTEM_SETTINGS } from '../platform'
 import { useCanvasAgent } from './bars/useCanvasAgent'
+import { tr } from '../i18n'
 
 // Depois de cumprir o pedido, a resposta fica um pouco na tela e a barra some sozinha.
 const AUTO_CLOSE_MS = 4000
@@ -68,7 +69,7 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
   const status = running ? (
     <span className="flex items-center gap-2 text-muted">
       <Loader2 size={13} className="animate-spin" />
-      {agent.activity ?? 'Pensando…'}
+      {agent.activity ?? tr('Pensando…', 'Thinking…')}
     </span>
   ) : asked && agent.error ? (
     <span className="text-red-400">{agent.error}</span>
@@ -105,22 +106,22 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
             }}
             placeholder={
               dictation.state === 'listening'
-                ? 'Ouvindo… diga o que fazer no canvas'
+                ? tr('Ouvindo… diga o que fazer no canvas', 'Listening… say what to do on the canvas')
                 : dictation.state === 'starting'
-                  ? 'Ligando o microfone…'
-                  : 'Organize, crie, mova ou exclua blocos'
+                  ? tr('Ligando o microfone…', 'Turning on the microphone…')
+                  : tr('Organize, crie, mova ou exclua blocos', 'Organize, create, move or delete blocks')
             }
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint"
           />
           {listening && (
             <span className="flex items-center text-[12px] text-running">
-              {dictation.state === 'listening' ? <VoiceWave /> : 'Ligando…'}
+              {dictation.state === 'listening' ? <VoiceWave /> : tr('Ligando…', 'Starting…')}
             </span>
           )}
           {/* Microfone ligado na cor de "rodando": não há variante de botão para isso. */}
           <button
-            aria-label={listening ? 'Parar ditado' : 'Falar'}
-            title={listening ? 'Parar ditado' : 'Falar'}
+            aria-label={listening ? tr('Parar ditado', 'Stop dictation') : tr('Falar', 'Speak')}
+            title={listening ? tr('Parar ditado', 'Stop dictation') : tr('Falar', 'Speak')}
             onClick={toggleDictation}
             className={`flex size-7 shrink-0 items-center justify-center rounded-md ${
               listening ? 'bg-running/15 text-running hover:bg-running/25' : 'text-muted hover:bg-surface-2 hover:text-text'
@@ -129,13 +130,13 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
             <Mic size={15} />
           </button>
           {running && !draft ? (
-            <IconButton label="Parar" variant="primary" onClick={() => window.api.canvasAgent.interrupt()}>
+            <IconButton label={tr('Parar', 'Stop')} variant="primary" onClick={() => window.api.canvasAgent.interrupt()}>
               <Square size={11} fill="currentColor" />
             </IconButton>
           ) : (
             <IconButton
-              label="Enviar"
-              title="Enviar (Enter)"
+              label={tr('Enviar', 'Send')}
+              title={tr('Enviar (Enter)', 'Send (Enter)')}
               variant="primary"
               onClick={send}
               disabled={!draft.trim() || running}
@@ -153,7 +154,7 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
                 onClick={() => window.api.speech.openSettings()}
                 className="shrink-0 rounded-md border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/10"
               >
-                Abrir {SYSTEM_SETTINGS}
+                {tr(`Abrir ${SYSTEM_SETTINGS}`, `Open ${SYSTEM_SETTINGS}`)}
               </button>
             )}
           </p>

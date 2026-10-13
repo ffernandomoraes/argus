@@ -7,6 +7,7 @@ import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
 import { changesAt, store, watching, watchingChanges } from './state'
+import { unread } from './unread'
 // Efeito de importar: as não vistas vão para o ícone da barra de menus.
 import './unreadSync'
 
@@ -81,6 +82,23 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
   const lists = useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual)
   const busy = useBackgroundBusy()
   return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy])
+}
+
+// Conversas que terminaram sem você ver (bolinha verde), em todas as pastas lidas: a pasta como
+// está no store, o id e o título. A que voltou a trabalhar sai daqui (já aparece como ativa).
+export type FinishedChat = { path: string; id: string; title: string }
+
+export function useFinishedChats(): FinishedChat[] {
+  const ids = useStore(unread)
+  const sessions = useStore(store, (s) => s.sessions)
+  return useMemo(() => {
+    const list: FinishedChat[] = []
+    if (!ids.size) return list
+    for (const [path, conversations] of sessions) {
+      for (const c of conversations) if (ids.has(c.id) && c.status === 'idle') list.push({ path, id: c.id, title: c.title })
+    }
+    return list
+  }, [ids, sessions])
 }
 
 // Branch atual da pasta; nulo fora de repositório ou antes da primeira leitura.

@@ -1,4 +1,5 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
+import { useUncommitted } from '../canvas/sessionsStore'
 import type { LineRange } from '../conversation/fileLinks'
 import { keys } from '../platform'
 import { CloseCodeButton } from './CloseCodeButton'
@@ -8,10 +9,12 @@ import './draftsReloadGuard'
 import { useCodeEditor } from './editor/useCodeEditor'
 import { useFileRevision } from './editor/useFileRevision'
 import { useFileEscape } from './fileEscape'
+import { changesInTree } from './tree/treePaths'
+import { tr } from '../i18n'
 
 const VIEWS = [
   { value: true, label: 'Diff' },
-  { value: false, label: 'Arquivo' }
+  { value: false, label: tr('Arquivo', 'File') }
 ]
 
 // Arquivo aberto, à direita da árvore no painel de código, num editor com a coloração do VS Code
@@ -20,7 +23,7 @@ export function FileViewer({
   root,
   path,
   lines,
-  diff,
+  diff: wantsDiff,
   onDiffChange,
   onClose,
   onCloseCode
@@ -29,7 +32,7 @@ export function FileViewer({
   path: string
   // Linhas citadas num link do chat: ficam destacadas e o arquivo abre nelas.
   lines?: LineRange
-  // Mostra as mudanças desde o último commit em vez do arquivo; o cabeçalho alterna.
+  // Mostra as mudanças desde o último commit em vez do arquivo; o cabeçalho alterna (só com mudança).
   diff: boolean
   onDiffChange: (diff: boolean) => void
   // ESC fecha só o arquivo (volta para a árvore); o X fecha o painel de código inteiro.
@@ -41,6 +44,11 @@ export function FileViewer({
   const revision = useFileRevision(root, path)
   const { content, dirty, conflict, saveError, reloadFromDisk } = useCodeEditor(hostRef, { root, path, lines, revision })
   useFileEscape(onClose)
+  // Diff só para arquivo com mudança desde o último commit (a mesma cor da árvore); sem mudança, o
+  // seletor some e o arquivo aparece mesmo que o Diff tenha sido pedido.
+  const uncommitted = useUncommitted(root)
+  const changed = useMemo(() => changesInTree(root, uncommitted).has(path), [root, uncommitted, path])
+  const diff = wantsDiff && changed
 
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-[#1e1e1e]">
@@ -49,45 +57,52 @@ export function FileViewer({
           {path}
         </span>
         {dirty && (
-          <span className="shrink-0 text-[12px] text-faint" title="Alterações não salvas">
-            ● não salvo - {keys('⌘S')}
+          <span className="shrink-0 text-[12px] text-faint" title={tr('Alterações não salvas', 'Unsaved changes')}>
+            {tr(`● não salvo - ${keys('⌘S')}`, `● unsaved - ${keys('⌘S')}`)}
           </span>
         )}
         <span className="flex-1" />
         {!diff && content?.ok && content.truncated && (
-          <span className="text-[12px] text-needs-you">mostrando só o primeiro 1 MB, sem edição</span>
+          <span className="text-[12px] text-needs-you">{tr('mostrando só o primeiro 1 MB, sem edição', 'showing only the first 1 MB, read-only')}</span>
         )}
-        <div className="flex rounded-lg border border-line p-0.5 text-[12px]">
-          {VIEWS.map((o) => (
-            <button
-              key={o.label}
-              onClick={() => onDiffChange(o.value)}
-              aria-pressed={diff === o.value}
-              className={`rounded-md px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
+        {changed && (
+          <div className="flex rounded-lg border border-line p-0.5 text-[12px]">
+            {VIEWS.map((o) => (
+              <button
+                key={o.label}
+                onClick={() => onDiffChange(o.value)}
+                aria-pressed={diff === o.value}
+                className={`rounded-md px-2 py-0.5 ${diff === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
         <CloseCodeButton onClick={onCloseCode} />
       </header>
       {!diff && conflict && (
         <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[12px] text-needs-you">
-          <span className="flex-1">O arquivo mudou no disco depois da sua edição. Salvar sobrescreve a versão do disco.</span>
+          <span className="flex-1">
+            {tr(
+              'O arquivo mudou no disco depois da sua edição. Salvar sobrescreve a versão do disco.',
+              'The file changed on disk after your edit. Saving overwrites the version on disk.'
+            )}
+          </span>
           <button onClick={() => void reloadFromDisk()} className="rounded-md px-2 py-0.5 text-text hover:bg-surface-2">
-            Descartar a minha e recarregar
+            {tr('Descartar a minha e recarregar', 'Discard mine and reload')}
           </button>
         </div>
       )}
       {!diff && saveError && (
         <p role="alert" className="border-b border-line bg-surface px-3 py-2 text-[12px] text-red-400">
-          Não consegui salvar: {saveError}
+          {tr('Não consegui salvar:', 'Could not save:')} {saveError}
         </p>
       )}
       {diff && <DiffPane root={root} path={path} revision={revision} />}
       {/* Fica montado no modo Diff: o editor mantém cursor, rolagem e desfazer. */}
       <div className={`min-h-0 flex-1 ${diff ? 'hidden' : 'flex flex-col'}`}>
-        {!content && <p className="p-4 text-xs text-faint">Carregando…</p>}
+        {!content && <p className="p-4 text-xs text-faint">{tr('Carregando…', 'Loading…')}</p>}
         {content && !content.ok && <p className="p-4 text-xs text-faint">{content.error}</p>}
         <div ref={hostRef} className={`code-editor min-h-0 flex-1 select-text ${content?.ok ? '' : 'hidden'}`} />
       </div>

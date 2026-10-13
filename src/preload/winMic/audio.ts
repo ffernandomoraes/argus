@@ -20,13 +20,17 @@ export function level(sumSquares: number, count: number): number {
   return Math.min(1, Math.max(0, (db + 50) / 50))
 }
 
-// Mensagem para o erro do getUserMedia.
-export function micError(err: unknown): string {
+// Mensagem para o erro do getUserMedia, no idioma da interface (tr vem de quem chama).
+export function micError(err: unknown, tr: (pt: string, en: string) => string): string {
   const name = (err as DOMException | undefined)?.name
-  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'Nenhum microfone encontrado.'
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return tr('Nenhum microfone encontrado.', 'No microphone found.')
   if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return 'O Windows bloqueou o microfone para o Argus. Libere em Configurações › Privacidade e segurança › Microfone.'
+    return tr(
+      'O Windows bloqueou o microfone para o Argus. Libere em Configurações › Privacidade e segurança › Microfone.',
+      'Windows blocked Argus from using the microphone. Allow it in Settings › Privacy & security › Microphone.'
+    )
   }
-  if (name === 'NotReadableError') return 'O microfone está em uso por outro programa.'
-  return `Não deu para abrir o microfone (${(err as Error | undefined)?.message ?? String(err)}).`
+  if (name === 'NotReadableError') return tr('O microfone está em uso por outro programa.', 'The microphone is in use by another app.')
+  const message = (err as Error | undefined)?.message ?? String(err)
+  return tr(`Não deu para abrir o microfone (${message}).`, `Couldn’t open the microphone (${message}).`)
 }

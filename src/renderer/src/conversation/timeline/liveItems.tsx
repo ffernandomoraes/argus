@@ -10,6 +10,7 @@ import { UserBubble } from './rows/UserBubble'
 import { WorkingRow } from './rows/WorkingRow'
 import { StreamingMarkdown } from './StreamingMarkdown'
 import { stepItem, type TimelineItem } from './timelineItem'
+import { tr } from '../../i18n'
 
 export type LiveOptions = {
   messages: Message[]
@@ -53,7 +54,10 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
   if (o.status === 'needs-you' && !o.live?.permissions.length) {
     const notice = (
       <div className="rounded-lg border border-ask/40 bg-ask/10 px-3 py-2 text-[13px] text-text">
-        Esperando você responder onde a conversa está aberta (permissão ou pergunta).
+        {tr(
+          'Esperando você responder onde a conversa está aberta (permissão ou pergunta).',
+          'Waiting for your answer where the chat is open (permission or question).'
+        )}
       </div>
     )
     items.push(stepItem('needs-you', 'bg-ask', notice))

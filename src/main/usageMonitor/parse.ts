@@ -1,5 +1,6 @@
 import type { ClaudeInfo, ClaudeModel } from '../../shared/models'
 import type { Usage, UsageWindow } from '../../shared/usage'
+import { tr } from '../i18n'
 
 // Respostas do `claude` (stream-json) aos pedidos de controle do monitor. Lógica pura: o que vale
 // de cada linha.
@@ -13,7 +14,7 @@ function toModels(raw: RawModel[]): ClaudeModel[] {
     const isDefault = m.value === 'default'
     return {
       value: isDefault ? '' : m.value,
-      displayName: isDefault ? 'Padrão' : m.displayName,
+      displayName: isDefault ? tr('Padrão', 'Default') : m.displayName,
       // A descrição do padrão começa com o nome do modelo atual: "Opus 5.5 · Best for...".
       resolvedName: isDefault ? m.description?.split(' · ')[0] : undefined,
       efforts: m.supportedEffortLevels ?? []

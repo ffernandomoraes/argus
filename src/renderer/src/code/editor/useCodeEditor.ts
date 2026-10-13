@@ -7,6 +7,7 @@ import { createEditor } from './createEditor'
 import { highlightLines } from './editorSetup'
 import { diskChange, fromDoc, lineEnds, toDoc } from './fileText'
 import { replaceWithDisk, setBase, type OpenedFile } from './openedFile'
+import { tr } from '../../i18n'
 
 // Só o que importa para a interface: o texto fica no editor.
 export type ContentState = Exclude<FileContent, { ok: true }> | { ok: true; truncated: boolean }
@@ -87,7 +88,7 @@ export function useCodeEditor(
         const l = latestLines()
         if (l) highlightLines(editor.view, l)
       },
-      (err: unknown) => !cancelled && setContent({ ok: false, error: `Não consegui ler o arquivo: ${String(err)}` })
+      (err: unknown) => !cancelled && setContent({ ok: false, error: tr(`Não consegui ler o arquivo: ${String(err)}`, `Could not read the file: ${String(err)}`) })
     )
     return () => {
       cancelled = true

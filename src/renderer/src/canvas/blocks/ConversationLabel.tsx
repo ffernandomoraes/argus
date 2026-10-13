@@ -2,6 +2,7 @@ import { Bot, ExternalLink, MessageCircle, PenTool } from 'lucide-react'
 import { useIsUnread } from '../sessionsStore'
 import { StatusDot } from '../StatusBadge'
 import type { ConversationSummary } from '../types'
+import { tr } from '../../i18n'
 
 // Começo de toda linha de conversa (card solto, painel de todas e lista da pasta): o ícone
 // (conversa ou design), o título com a bolinha de status logo depois e os selos de agente e de
@@ -12,15 +13,15 @@ export function ConversationLabel({ conversation: c, poppedOut }: { conversation
   return (
     <>
       {c.design || c.kind === 'design' ? (
-        <PenTool size={13} className="shrink-0 text-muted" aria-label="Modo design" />
+        <PenTool size={13} className="shrink-0 text-muted" aria-label={tr('Modo design', 'Design mode')} />
       ) : (
         <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
       )}
       <span className="min-w-0 truncate">{c.title}</span>
       <StatusDot status={unread && c.status === 'idle' ? 'done' : c.status} />
-      {c.kind === 'agente' && <Bot size={11} className="shrink-0 text-faint" aria-label="Agente" />}
+      {c.kind === 'agente' && <Bot size={11} className="shrink-0 text-faint" aria-label={tr('Agente', 'Agent')} />}
       {poppedOut && (
-        <ExternalLink size={11} className="shrink-0 text-faint" aria-label="Aberta em janela separada" />
+        <ExternalLink size={11} className="shrink-0 text-faint" aria-label={tr('Aberta em janela separada', 'Open in separate window')} />
       )}
     </>
   )

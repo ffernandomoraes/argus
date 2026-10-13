@@ -3,6 +3,7 @@ import { Folder, X } from 'lucide-react'
 import { useBranch, useUncommitted } from '../../canvas/sessionsStore'
 import { BranchTag, TAG } from './BranchTag'
 import { HeaderButton } from './HeaderButton'
+import { tr } from '../../i18n'
 
 // Cabeçalho da conversa: título e branch (na mesma linha), a pasta quando vem, os botões de quem a
 // mostra e o fechar. Memorizado: o chat andando não redesenha o cabeçalho.
@@ -63,7 +64,7 @@ export const ConversationHeader = memo(function ConversationHeader({
       {/* no-drag: botões fora do arraste da janela; nodrag: fora do arraste do bloco no canvas. */}
       <div className="no-drag nodrag flex shrink-0 items-center gap-1">
         {actions}
-        <HeaderButton label="Fechar" onClick={onClose}>
+        <HeaderButton label={tr('Fechar', 'Close')} onClick={onClose}>
           <X size={15} />
         </HeaderButton>
       </div>

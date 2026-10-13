@@ -9,6 +9,7 @@ import { groupByDay } from './project/groupByDay'
 import { useSessions } from './sessionsStore'
 import type { ConversationSummary } from './types'
 import { useActiveConversationIn, usePoppedOutSet } from './useCanvasView'
+import { tr } from '../i18n'
 
 // Todas as conversas de uma pasta, num painel flutuante: no canvas só as mais recentes
 // viram card.
@@ -55,7 +56,10 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
       >
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">
-            {conversations.length} conversa{conversations.length === 1 ? '' : 's'}
+            {tr(
+              `${conversations.length} conversa${conversations.length === 1 ? '' : 's'}`,
+              `${conversations.length} chat${conversations.length === 1 ? '' : 's'}`
+            )}
           </div>
           <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
             <Folder size={12} className="shrink-0" />
@@ -67,9 +71,9 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
           className="flex items-center gap-1.5 rounded-md border border-line-strong bg-surface-2 px-2 py-1.5 text-xs font-medium text-text hover:bg-line"
         >
           <Plus size={13} />
-          Nova
+          {tr('Nova', 'New')}
         </button>
-        <IconButton label="Fechar" onClick={onClose}>
+        <IconButton label={tr('Fechar', 'Close')} onClick={onClose}>
           <X size={16} />
         </IconButton>
       </header>
@@ -93,7 +97,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
             </ul>
           </li>
         ))}
-        {conversations.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">Nenhuma conversa ainda</li>}
+        {conversations.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</li>}
       </ul>
     </aside>
   )

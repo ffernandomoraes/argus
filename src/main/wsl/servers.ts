@@ -2,6 +2,7 @@ import { execFile, execFileSync, spawn, type ChildProcess } from 'node:child_pro
 import { randomUUID } from 'node:crypto'
 import { readFileSync, rmSync } from 'node:fs'
 import { app } from 'electron'
+import { tr } from '../i18n'
 import { childEnv } from '../platform'
 import { ensureDistro, WSL_EXE } from './distros'
 import { log } from './log'
@@ -18,7 +19,7 @@ export type WslServer = { child: ChildProcess; stop: () => Promise<void>; stopSy
 
 export async function launchInWsl(distro: string, linuxCwd: string, command: string, noBrowser: boolean): Promise<WslServer | string> {
   const info = await ensureDistro(distro)
-  if (!info) return `Não deu para abrir o WSL (${distro}).`
+  if (!info) return tr(`Não deu para abrir o WSL (${distro}).`, `Couldn’t open WSL (${distro}).`)
   const pidFile = `${info.home}/${RUN_DIR}/server-${randomUUID()}.pid`
   // O shell de login interativo carrega o nvm e afins, como o terminal do Linux.
   const script = `echo $$ > '${pidFile}'; exec ${command}`

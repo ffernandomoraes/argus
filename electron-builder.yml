@@ -47,7 +47,6 @@ mac:
       to: speech-helper
   extendInfo:
     NSMicrophoneUsageDescription: O microfone é usado para ditar mensagens para o Claude.
-    NSSpeechRecognitionUsageDescription: O reconhecimento de fala transforma o que você diz em texto no campo da conversa.
 
 # Windows: instalador de um clique, só para PCs Intel/AMD (os com processador ARM rodam por emulação).
 # Sem certificado de assinatura (é pago por ano): na primeira instalação o Windows avisa que o

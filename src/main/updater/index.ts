@@ -4,6 +4,7 @@ import { access, chmod, constants, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { app } from 'electron'
 import type { UpdateState } from '../../shared/updates'
+import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { downloadTo } from './download'
@@ -31,7 +32,7 @@ const EVERY_MS = 5 * 60 * 60_000
 type Ready = { app: string; dir: string }
 
 export class Updater {
-  state: UpdateState
+  private current: UpdateState
   private ready: Ready | null = null
   private busy = false
   private installing = false
@@ -40,37 +41,46 @@ export class Updater {
   private cleaning: Promise<void> = Promise.resolve()
 
   constructor(private onChange: (state: UpdateState) => void) {
-    this.state = this.support()
+    this.current = this.support()
+  }
+
+  // "Sem suporte" é refeito a cada leitura: o motivo sai no idioma escolhido, mesmo trocado depois.
+  get state(): UpdateState {
+    return this.current.status === 'unsupported' ? this.support() : this.current
   }
 
   private support(): UpdateState {
-    if (!app.isPackaged) return { status: 'unsupported', reason: 'Em desenvolvimento o app não se atualiza.' }
+    if (!app.isPackaged) return { status: 'unsupported', reason: tr('Em desenvolvimento o app não se atualiza.', "Development builds don't update.") }
     if (IS_LINUX) {
       const file = appImage()
-      if (!file) return { status: 'unsupported', reason: 'Use o Argus em AppImage para receber atualizações.' }
+      if (!file) return { status: 'unsupported', reason: tr('Use o Argus em AppImage para receber atualizações.', 'Run Argus as an AppImage to get updates.') }
       try {
         accessSync(dirname(file), constants.W_OK)
       } catch {
-        return { status: 'unsupported', reason: `Sem permissão para trocar o Argus em ${dirname(file)}.` }
+        const dir = dirname(file)
+        return {
+          status: 'unsupported',
+          reason: tr(`Sem permissão para trocar o Argus em ${dir}.`, `No permission to replace Argus in ${dir}.`)
+        }
       }
       return { status: 'idle' }
     }
     if (IS_WIN) {
       if (!installedByInstaller()) {
-        return { status: 'unsupported', reason: 'Instale o Argus pelo instalador para receber atualizações.' }
+        return { status: 'unsupported', reason: tr('Instale o Argus pelo instalador para receber atualizações.', 'Install Argus with the installer to get updates.') }
       }
       return { status: 'idle' }
     }
     const bundle = currentBundle()
     // Aberto direto do .dmg, ou ainda em quarentena (o macOS roda uma cópia temporária).
     if (!bundle || bundle.startsWith('/Volumes/') || bundle.includes('/AppTranslocation/')) {
-      return { status: 'unsupported', reason: 'Mova o Argus para a pasta Aplicativos para receber atualizações.' }
+      return { status: 'unsupported', reason: tr('Mova o Argus para a pasta Aplicativos para receber atualizações.', 'Move Argus to the Applications folder to get updates.') }
     }
     return { status: 'idle' }
   }
 
   private set(state: UpdateState): void {
-    this.state = state
+    this.current = state
     this.onChange(state)
   }
 
@@ -101,12 +111,12 @@ export class Updater {
       if (!latest || !version || !isNewer(version, app.getVersion())) {
         this.set({ status: 'latest' })
       } else if (IS_WIN) {
-        await this.updateFrom(latest, version, isWindowsAsset, 'o instalador do Windows')
+        await this.updateFrom(latest, version, isWindowsAsset, () => tr('o instalador do Windows', 'the Windows installer'))
       } else if (IS_LINUX) {
-        await this.updateFrom(latest, version, isLinuxAsset, 'o AppImage do Linux')
+        await this.updateFrom(latest, version, isLinuxAsset, () => tr('o AppImage do Linux', 'the Linux AppImage'))
       } else {
         const asset = latest.assets.find(isMacAsset)
-        if (!asset) throw new Error('A versão nova não tem o arquivo do app para Mac.')
+        if (!asset) throw new Error(tr('A versão nova não tem o arquivo do app para Mac.', "The new version doesn't include the Mac app file."))
         await this.downloadMac(version, asset, latest.html_url)
       }
     } catch (err) {
@@ -121,14 +131,17 @@ export class Updater {
   // do Mac, e faltam de vez se a montagem deles falhar. Sem o arquivo no mais novo, vale o release
   // mais recente que tem. Nenhum mais novo que a versão em uso: avisa, em vez de dizer que já está
   // na mais recente.
-  private async updateFrom(latest: Release, version: string, match: (a: ReleaseAsset) => boolean, what: string): Promise<void> {
+  private async updateFrom(latest: Release, version: string, match: (a: ReleaseAsset) => boolean, what: () => string): Promise<void> {
     const current = app.getVersion()
     const pick = newestWith([latest], current, match) ?? newestWith(await fetchRecentReleases(), current, match)
     if (pick) return this.downloadFile(pick.version, pick.asset, pick.release.html_url)
     this.set({
       status: 'waiting',
       version,
-      message: `A versão ${version} ainda não tem ${what} (ele sai alguns minutos depois). Procure de novo daqui a pouco.`
+      message: tr(
+        `A versão ${version} ainda não tem ${what()} (ele sai alguns minutos depois). Procure de novo daqui a pouco.`,
+        `Version ${version} doesn't have ${what()} yet (it comes out a few minutes later). Check again shortly.`
+      )
     })
   }
 
@@ -140,12 +153,13 @@ export class Updater {
 
   private async downloadMac(version: string, asset: ReleaseAsset, notesUrl: string): Promise<void> {
     const target = currentBundle()
-    if (!target) throw new Error('O app em uso não está num .app.')
+    if (!target) throw new Error(tr('O app em uso não está num .app.', "The running app isn't inside a .app."))
     try {
       await access(dirname(target), constants.W_OK)
       await access(target, constants.W_OK)
     } catch {
-      throw new Error(`Sem permissão para trocar o app em ${dirname(target)}.`)
+      const dir = dirname(target)
+      throw new Error(tr(`Sem permissão para trocar o app em ${dir}.`, `No permission to replace the app in ${dir}.`))
     }
 
     const dir = await newDownloadDir()
@@ -171,7 +185,7 @@ export class Updater {
       const file = join(dir, asset.name)
       await this.fetchTo(version, asset.browser_download_url, file)
       if (asset.size && (await stat(file)).size !== asset.size) {
-        throw new Error(`O download da versão ${version} chegou incompleto.`)
+        throw new Error(tr(`O download da versão ${version} chegou incompleto.`, `The download of version ${version} is incomplete.`))
       }
       if (IS_LINUX) await chmod(file, 0o755)
       this.ready = { app: file, dir }
@@ -204,21 +218,23 @@ export class Updater {
       this.installing = false
       this.ready = null
       void removePath(ready.dir)
-      const what = IS_WIN ? 'abrir o instalador da versão nova' : 'instalar a versão nova'
-      this.set({ status: 'error', message: `Não deu para ${what} (${reason}).` })
+      const message = IS_WIN
+        ? tr(`Não deu para abrir o instalador da versão nova (${reason}).`, `Couldn't open the new version's installer (${reason}).`)
+        : tr(`Não deu para instalar a versão nova (${reason}).`, `Couldn't install the new version (${reason}).`)
+      this.set({ status: 'error', message })
     }
     if (IS_LINUX) return this.swapAppImage(ready, relaunch, failed)
     let child: ChildProcess
     if (IS_WIN) {
       if (!existsSync(ready.app)) {
-        failed('o arquivo baixado sumiu')
+        failed(tr('o arquivo baixado sumiu', 'the downloaded file is missing'))
         return null
       }
       child = spawnInstaller(ready.app, relaunch)
     } else {
       const target = currentBundle()
       if (!target || !hasExecutable(ready.app)) {
-        failed('a versão baixada está incompleta')
+        failed(tr('a versão baixada está incompleta', 'the downloaded version is incomplete'))
         return null
       }
       child = spawnSwap(ready.app, target, ready.dir, relaunch)
@@ -244,7 +260,7 @@ export class Updater {
   private swapAppImage(ready: Ready, relaunch: boolean, failed: (reason: string) => void): Promise<boolean> | null {
     const target = appImage()
     if (!target || !existsSync(ready.app)) {
-      failed('a versão baixada sumiu')
+      failed(tr('a versão baixada sumiu', 'the downloaded version is missing'))
       return null
     }
     this.installing = true

@@ -1,4 +1,5 @@
 import { useMemo, useReducer } from 'react'
+import { outsideEditor } from '../../../../shared/files'
 import type { PanelRect } from '../../conversation/FloatingPanel'
 import type { LineRange } from '../../conversation/fileLinks'
 import type { ActiveConversation, ActiveDesign } from '../CanvasContext'
@@ -21,6 +22,8 @@ export type DrawerCommands = {
   openDesign: (design: ActiveDesign | null) => void
   closeDesign: () => void
   toggleCode: (slot: SlotId) => void
+  // Código da pasta pelo botão do card dela, sem conversa aberta.
+  openProjectCode: (project: ProjectData) => void
   // Link de arquivo: abre o código da pasta `root` já com o arquivo. Pedido por um drawer (`slot`)
   // ou por uma conversa do canvas (`project`). Fora da pasta, o visualizador não tem acesso.
   openFile: (from: { slot?: SlotId; project?: ProjectData }, root: string, path: string, lines?: LineRange, diff?: boolean) => void
@@ -51,8 +54,13 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
       openDesign: (design) => dispatch({ type: 'openDesign', design }),
       closeDesign: () => dispatch({ type: 'closeDesign' }),
       toggleCode: (slot) => dispatch({ type: 'toggleCode', slot }),
+      openProjectCode: (project) => dispatch({ type: 'openProjectCode', project }),
       openFile: (from, root, path, lines, diff) => {
         const rel = fileInFolder(root, path)
+        // Vídeo, imagem, PDF vão para o visualizador do sistema; zip, executável, para o Finder.
+        // O diff segue no painel: mostra que o arquivo mudou mesmo sem mostrar o conteúdo.
+        const outside = rel && !diff ? outsideEditor(rel) : null
+        if (rel && outside) return window.api.files[outside](root, rel)
         dispatch({ type: 'openFile', ...from, file: rel ? { root, path: rel, lines, diff } : null })
       },
       selectFile: (root, path) => dispatch({ type: 'selectFile', root, path }),

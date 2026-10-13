@@ -1,4 +1,5 @@
 import { GitBranch } from 'lucide-react'
+import { tr } from '../i18n'
 
 // Branch do git: ícone e nome, cortado no fim quando falta espaço (o nome inteiro fica no title).
 // Com arquivos não comitados, o número deles vem depois do nome, numa pílula cinza discreta
@@ -16,7 +17,10 @@ export function BranchLabel({
 }) {
   const dirty = !!changes && changes > 0
   const title = dirty
-    ? `Branch: ${branch} - ${changes} ${changes === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`
+    ? tr(
+        `Branch: ${branch} - ${changes} ${changes === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`,
+        `Branch: ${branch} - ${changes} ${changes === 1 ? 'uncommitted file' : 'uncommitted files'}`
+      )
     : `Branch: ${branch}`
   return (
     <span title={title} className={`flex min-w-0 items-center gap-1 font-mono ${className ?? ''}`}>

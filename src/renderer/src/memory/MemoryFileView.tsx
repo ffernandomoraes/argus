@@ -6,6 +6,7 @@ import { keys, tildify } from '../platform'
 import { Button } from '../ui/Button'
 import { ModalCloseButton } from '../ui/ModalCloseButton'
 import { fileLabel, linkMemories, splitFrontmatter, TYPE_LABEL } from './memoryText'
+import { tr } from '../i18n'
 
 // Lado direito da Memória: o arquivo escolhido, lido como Markdown ou editado como texto.
 export function MemoryFileView({
@@ -47,16 +48,16 @@ export function MemoryFileView({
         {current && !editing && (
           <Button size="sm" onClick={onEdit}>
             <Pencil size={12} />
-            {current.exists ? 'Editar' : 'Criar'}
+            {current.exists ? tr('Editar', 'Edit') : tr('Criar', 'Create')}
           </Button>
         )}
         {editing && (
           <>
             <Button size="sm" onClick={onCancel}>
-              Cancelar
+              {tr('Cancelar', 'Cancel')}
             </Button>
-            <Button size="sm" variant="primary" onClick={onSave} disabled={!dirty} title={`Salvar (${keys('⌘S')})`}>
-              Salvar
+            <Button size="sm" variant="primary" onClick={onSave} disabled={!dirty} title={tr(`Salvar (${keys('⌘S')})`, `Save (${keys('⌘S')})`)}>
+              {tr('Salvar', 'Save')}
             </Button>
           </>
         )}
@@ -77,8 +78,10 @@ export function MemoryFileView({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 select-text">
           {current && !current.exists && (
             <p className="text-xs text-faint">
-              Este arquivo ainda não existe. Use <b>Criar</b> para escrever instruções que o Claude vai seguir nesta
-              {current.path.includes('/.claude/CLAUDE.md') && !current.path.includes('/projects/') ? ' máquina inteira.' : ' pasta.'}
+              {tr('Este arquivo ainda não existe. Use', 'This file doesn’t exist yet. Use')} <b>{tr('Criar', 'Create')}</b>{' '}
+              {current.path.includes('/.claude/CLAUDE.md') && !current.path.includes('/projects/')
+                ? tr('para escrever instruções que o Claude vai seguir nesta máquina inteira.', 'to write instructions Claude will follow on this whole machine.')
+                : tr('para escrever instruções que o Claude vai seguir nesta pasta.', 'to write instructions Claude will follow in this folder.')}
             </p>
           )}
           {meta && (meta.description || meta.type) && (

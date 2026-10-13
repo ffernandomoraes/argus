@@ -1,6 +1,7 @@
 import { access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { shell } from 'electron'
+import { tr } from '../i18n'
 import { liveSessions } from '../liveSessions'
 import { isSessionId, projectDir } from '../transcripts/projectDir'
 
@@ -8,10 +9,13 @@ import { isSessionId, projectDir } from '../transcripts/projectDir'
 // subagentes dela). Some também do `claude --resume`; volta restaurando pela Lixeira.
 // Recusa conversa aberta em algum Claude Code: ele regravaria o arquivo na hora.
 export async function trashSession(projectPath: string, id: string): Promise<string | null> {
-  if (!isSessionId(id)) return 'Conversa inválida.'
+  if (!isSessionId(id)) return tr('Conversa inválida.', 'Invalid chat.')
   const live = (await liveSessions()).get(id)
   if (live === 'running' || live === 'needs-you')
-    return 'A conversa está em andamento. Interrompa antes de mover para a Lixeira.'
+    return tr(
+      'A conversa está em andamento. Interrompa antes de mover para a Lixeira.',
+      'This chat is still running. Stop it before moving it to the Trash.'
+    )
   const base = join(projectDir(projectPath), id)
   try {
     await shell.trashItem(`${base}.jsonl`)

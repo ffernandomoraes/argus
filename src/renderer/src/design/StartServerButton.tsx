@@ -3,6 +3,7 @@ import { Play } from 'lucide-react'
 import { startProjectServer } from '../devServers/projectServers'
 import { Button } from '../ui/Button'
 import type { ButtonVariant } from '../ui/buttonStyles'
+import { tr } from '../i18n'
 
 // Inicia o servidor do projeto sem abrir o navegador (a página fica no drawer). Travado enquanto
 // inicia: dois cliques seguidos subiam o comando duas vezes.
@@ -30,7 +31,7 @@ export function StartServerButton({
   return (
     <Button variant={variant} disabled={starting} onClick={start} title={command ?? undefined}>
       <Play size={11} />
-      {retry ? 'Tentar de novo' : 'Iniciar o servidor'}
+      {retry ? tr('Tentar de novo', 'Try again') : tr('Iniciar o servidor', 'Start server')}
     </Button>
   )
 }

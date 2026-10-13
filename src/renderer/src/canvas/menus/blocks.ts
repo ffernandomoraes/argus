@@ -4,17 +4,18 @@ import { removeNode, setNoteColor } from '../operations'
 import type { ChatNode, ChatPanelNode, NoteNode, TerminalNode } from '../types'
 import { moveSubmenu, type MoveDeps } from './shared'
 import type { Deps } from './types'
+import { tr } from '../../i18n'
 
 // Menus dos blocos soltos que não são pasta nem grupo: terminal, conversa sem projeto,
 // conversa aberta no canvas e nota.
 
 export function terminalMenu(deps: Pick<Deps, 'startRename' | 'closeTerminal'>, node: TerminalNode): MenuItem[] {
   return [
-    { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => deps.startRename(node.id) },
+    { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
     {
       type: 'action',
-      label: 'Fechar terminal',
+      label: tr('Fechar terminal', 'Close terminal'),
       icon: Trash2,
       danger: true,
       onSelect: () => deps.closeTerminal(node.id, node.data.name)
@@ -28,7 +29,7 @@ export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confi
   return [
     {
       type: 'action',
-      label: 'Abrir conversa',
+      label: tr('Abrir conversa', 'Open chat'),
       icon: MessageCircle,
       onSelect: () => deps.openConversation(node.id, node.data.sessionId)
     },
@@ -37,14 +38,17 @@ export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confi
     { type: 'separator' },
     {
       type: 'action',
-      label: 'Tirar do canvas',
+      label: tr('Tirar do canvas', 'Remove from canvas'),
       icon: Trash2,
       danger: true,
       onSelect: () =>
         deps.confirm({
-          title: 'Tirar a conversa do canvas?',
-          description: 'O card sai do canvas. A conversa continua salva no Claude Code.',
-          confirmLabel: 'Tirar do canvas',
+          title: tr('Tirar a conversa do canvas?', 'Remove the chat from the canvas?'),
+          description: tr(
+            'O card sai do canvas. A conversa continua salva no Claude Code.',
+            'The card leaves the canvas. The chat stays saved in Claude Code.'
+          ),
+          confirmLabel: tr('Tirar do canvas', 'Remove from canvas'),
           onConfirm: () => setNodes((ns) => removeNode(ns, node.id))
         })
     }
@@ -57,12 +61,12 @@ export function chatPanelMenu(
   node: ChatPanelNode
 ): MenuItem[] {
   return [
-    { type: 'action', label: 'Voltar para o painel lateral', icon: PanelRight, onSelect: () => deps.chatPanelToDrawer(node.id) },
-    { type: 'action', label: 'Abrir em janela separada', icon: ExternalLink, onSelect: () => deps.chatPanelPopout(node.id) },
+    { type: 'action', label: tr('Voltar para o painel lateral', 'Move back to side panel'), icon: PanelRight, onSelect: () => deps.chatPanelToDrawer(node.id) },
+    { type: 'action', label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onSelect: () => deps.chatPanelPopout(node.id) },
     { type: 'separator' },
     moveSubmenu(deps, node),
     { type: 'separator' },
-    { type: 'action', label: 'Fechar conversa', icon: X, onSelect: () => deps.closeChatPanel(node.id) }
+    { type: 'action', label: tr('Fechar conversa', 'Close chat'), icon: X, onSelect: () => deps.closeChatPanel(node.id) }
   ]
 }
 
@@ -72,17 +76,17 @@ export function noteMenu(deps: MoveDeps & Pick<Deps, 'startRename'>, node: NoteN
   return [
     {
       type: 'colors',
-      label: 'Cor',
+      label: tr('Cor', 'Color'),
       value: node.data.color,
       onSelect: (color) => setNodes((ns) => setNoteColor(ns, node.id, color))
     },
     { type: 'separator' },
-    { type: 'action', label: 'Editar nota', icon: Pencil, onSelect: () => deps.startRename(node.id) },
+    { type: 'action', label: tr('Editar nota', 'Edit note'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
     moveSubmenu(deps, node),
     { type: 'separator' },
     {
       type: 'action',
-      label: 'Excluir nota',
+      label: tr('Excluir nota', 'Delete note'),
       icon: Trash2,
       danger: true,
       onSelect: () => setNodes((ns) => removeNode(ns, node.id))

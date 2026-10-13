@@ -4,19 +4,23 @@ import type { McpServer, McpStatus } from '../../../shared/mcp'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
 import { ModalCloseButton } from '../ui/ModalCloseButton'
+import { tr } from '../i18n'
 
 // Como cada estado aparece. A ordem aqui é a ordem das seções no painel.
 const GROUPS = [
-  { status: 'connected', label: 'Conectados', icon: Check, tone: 'text-emerald-400' },
-  { status: 'needs-auth', label: 'Precisam de autorização', icon: Lock, tone: 'text-needs-you' },
-  { status: 'failed', label: 'Com erro', icon: AlertTriangle, tone: 'text-red-400' },
-  { status: 'pending', label: 'Conectando', icon: Loader2, tone: 'text-running' },
-  { status: 'disabled', label: 'Desligados', icon: Power, tone: 'text-faint' }
+  { status: 'connected', label: tr('Conectados', 'Connected'), icon: Check, tone: 'text-emerald-400' },
+  { status: 'needs-auth', label: tr('Precisam de autorização', 'Need authorization'), icon: Lock, tone: 'text-needs-you' },
+  { status: 'failed', label: tr('Com erro', 'Failed'), icon: AlertTriangle, tone: 'text-red-400' },
+  { status: 'pending', label: tr('Conectando', 'Connecting'), icon: Loader2, tone: 'text-running' },
+  { status: 'disabled', label: tr('Desligados', 'Disabled'), icon: Power, tone: 'text-faint' }
 ] as const
 
 const HINT: Partial<Record<McpServer['status'], string>> = {
-  'needs-auth': 'Autorize em uma conversa do Claude Code com o comando /mcp, ou nas configurações do serviço.',
-  failed: 'O Claude não conseguiu conectar. Veja o erro de cada um abaixo.'
+  'needs-auth': tr(
+    'Autorize em uma conversa do Claude Code com o comando /mcp, ou nas configurações do serviço.',
+    'Authorize in a Claude Code chat with the /mcp command, or in the service’s settings.'
+  ),
+  failed: tr('O Claude não conseguiu conectar. Veja o erro de cada um abaixo.', 'Claude couldn’t connect. See each error below.')
 }
 
 function ServerRow({ server }: { server: McpServer }) {
@@ -26,7 +30,7 @@ function ServerRow({ server }: { server: McpServer }) {
         <span className="truncate text-xs text-text">{server.name}</span>
         {server.tools > 0 && (
           <span className="shrink-0 text-[11px] text-faint">
-            {server.tools} {server.tools === 1 ? 'ferramenta' : 'ferramentas'}
+            {server.tools === 1 ? tr('1 ferramenta', '1 tool') : tr(`${server.tools} ferramentas`, `${server.tools} tools`)}
           </span>
         )}
         {server.scope && <span className="ml-auto shrink-0 text-[11px] text-faint">{server.scope}</span>}
@@ -86,17 +90,17 @@ export function McpPanel({
 
   return (
     <Modal
-      label="Servidores MCP"
+      label={tr('Servidores MCP', 'MCP servers')}
       size="auto"
       className="flex h-[min(560px,100%)] w-[min(520px,100%)] flex-col"
       onClose={onClose}
     >
       <header className="flex items-center gap-2 border-b border-line px-4 py-3">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium">Servidores MCP</div>
+          <div className="text-sm font-medium">{tr('Servidores MCP', 'MCP servers')}</div>
           <div className="mt-0.5 truncate font-mono text-[12px] text-faint">{cwd}</div>
         </div>
-        <IconButton label="Atualizar" onClick={refresh} disabled={loading}>
+        <IconButton label={tr('Atualizar', 'Refresh')} onClick={refresh} disabled={loading}>
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </IconButton>
         <ModalCloseButton />
@@ -106,12 +110,12 @@ export function McpPanel({
         {loading && servers.length === 0 && (
           <p className="flex items-center justify-center gap-2 py-8 text-xs text-faint">
             <Loader2 size={13} className="animate-spin" />
-            Perguntando aos servidores…
+            {tr('Perguntando aos servidores…', 'Asking the servers…')}
           </p>
         )}
         {status && !status.ok && <p className="px-2 py-4 text-xs text-red-400">{status.error}</p>}
         {status?.ok && servers.length === 0 && !loading && (
-          <p className="px-2 py-4 text-xs text-faint">Nenhum servidor MCP configurado para esta pasta.</p>
+          <p className="px-2 py-4 text-xs text-faint">{tr('Nenhum servidor MCP configurado para esta pasta.', 'No MCP servers configured for this folder.')}</p>
         )}
         {GROUPS.map(({ status: s, label, icon: Icon, tone }) => {
           const list = servers.filter((x) => x.status === s)

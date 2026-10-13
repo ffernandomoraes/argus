@@ -1,9 +1,10 @@
 import { Monitor, Smartphone, X } from 'lucide-react'
 import type { DesignDevice } from '../../../shared/design'
+import { tr } from '../i18n'
 
 const DEVICES: { value: DesignDevice; label: string }[] = [
-  { value: 'desktop', label: 'Ver no desktop' },
-  { value: 'mobile', label: 'Ver no celular' }
+  { value: 'desktop', label: tr('Ver no desktop', 'View on desktop') },
+  { value: 'mobile', label: tr('Ver no celular', 'View on mobile') }
 ]
 
 // Visualizar: só a largura da página e o sair, flutuando por cima da página na altura da barra de
@@ -37,8 +38,8 @@ export function ViewingControls({
       <button
         type="button"
         onClick={onExit}
-        title="Sair da visualização (Esc)"
-        aria-label="Sair da visualização"
+        title={tr('Sair da visualização (Esc)', 'Exit preview (Esc)')}
+        aria-label={tr('Sair da visualização', 'Exit preview')}
         className="grid size-7 place-items-center rounded-md bg-black/55 text-white shadow-lg backdrop-blur"
       >
         <X size={14} />

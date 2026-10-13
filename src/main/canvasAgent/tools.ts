@@ -1,5 +1,6 @@
 import { tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
+import { tr } from '../i18n'
 import { findFolders, isDir } from './findFolders'
 import { SYSTEM_NAME } from './prompt'
 
@@ -12,8 +13,9 @@ type ToolReply = ReturnType<typeof ok> | ReturnType<typeof fail>
 
 // O que as ferramentas usam da sessão (ver index.ts).
 export type ToolHost = {
-  // Ferramenta executada pela janela do canvas; o rótulo aparece na barra enquanto roda.
-  forward: (name: string, label: string) => (args: Args) => Promise<ToolReply>
+  // Ferramenta executada pela janela do canvas; o rótulo aparece na barra enquanto roda. É função
+  // para sair no idioma da interface da hora em que roda (a sessão dura mais que uma troca de idioma).
+  forward: (name: string, label: () => string) => (args: Args) => Promise<ToolReply>
   // Rótulo de uma ferramenta que roda aqui mesmo.
   activity: (label: string) => void
 }
@@ -26,13 +28,13 @@ export function canvasTools({ forward: f, activity }: ToolHost) {
       'ver_canvas',
       'Lista todos os blocos do canvas (grupos, pastas, terminais) com id, nome, posição e tamanho absolutos, e a área visível da tela.',
       {},
-      f('ver_canvas', 'Olhando o canvas')
+      f('ver_canvas', () => tr('Olhando o canvas', 'Looking at the canvas'))
     ),
     tool(
       'mover',
       'Move um ou mais blocos para posições absolutas (canto superior esquerdo). Bloco dentro de grupo continua no grupo; o grupo cresce se precisar.',
       { itens: z.array(z.object({ id, x: z.number(), y: z.number() })).min(1) },
-      f('mover', 'Movendo blocos')
+      f('mover', () => tr('Movendo blocos', 'Moving blocks'))
     ),
     tool(
       'organizar_em_grade',
@@ -43,7 +45,7 @@ export function canvasTools({ forward: f, activity }: ToolHost) {
         x: z.number().optional().describe('só para blocos soltos: onde começa a grade; padrão: onde está o primeiro'),
         y: z.number().optional()
       },
-      f('organizar_em_grade', 'Organizando blocos')
+      f('organizar_em_grade', () => tr('Organizando blocos', 'Arranging blocks'))
     ),
     tool(
       'criar_grupo',
@@ -56,14 +58,14 @@ export function canvasTools({ forward: f, activity }: ToolHost) {
         largura: z.number().optional(),
         altura: z.number().optional()
       },
-      f('criar_grupo', 'Criando grupo')
+      f('criar_grupo', () => tr('Criando grupo', 'Creating group'))
     ),
     tool(
       'procurar_pasta',
       'Procura pastas no disco pelo nome (Desktop, Documentos e perto das pastas que já estão no canvas). Devolve caminhos.',
       { nome: z.string() },
       async ({ nome }) => {
-        activity('Procurando pasta')
+        activity(tr('Procurando pasta', 'Searching for folder'))
         const found = await findFolders(nome)
         return ok(found.length ? found.join('\n') : 'Nenhuma pasta encontrada com esse nome.')
       }
@@ -79,7 +81,9 @@ export function canvasTools({ forward: f, activity }: ToolHost) {
       },
       async (args) => {
         if (args.caminho && !(await isDir(args.caminho))) return fail(`A pasta ${args.caminho} não existe.`)
-        return f('adicionar_pasta', args.caminho ? 'Adicionando pasta' : 'Esperando você escolher a pasta')(args)
+        return f('adicionar_pasta', () =>
+          args.caminho ? tr('Adicionando pasta', 'Adding folder') : tr('Esperando você escolher a pasta', 'Waiting for you to choose a folder')
+        )(args)
       }
     ),
     tool(
@@ -93,45 +97,45 @@ export function canvasTools({ forward: f, activity }: ToolHost) {
       },
       async (args) => {
         if (!(await isDir(args.caminho))) return fail(`A pasta ${args.caminho} não existe.`)
-        return f('abrir_terminal', 'Abrindo terminal')(args)
+        return f('abrir_terminal', () => tr('Abrindo terminal', 'Opening terminal'))(args)
       }
     ),
     tool(
       'mover_para_grupo',
       'Coloca uma pasta ou terminal dentro de um grupo (num lugar livre), ou tira do grupo com grupo_id null.',
       { id, grupo_id: z.string().nullable() },
-      f('mover_para_grupo', 'Mudando de grupo')
+      f('mover_para_grupo', () => tr('Mudando de grupo', 'Changing group'))
     ),
-    tool('renomear', 'Renomeia um bloco.', { id, nome: z.string() }, f('renomear', 'Renomeando')),
+    tool('renomear', 'Renomeia um bloco.', { id, nome: z.string() }, f('renomear', () => tr('Renomeando', 'Renaming'))),
     tool(
       'excluir',
       'Exclui um bloco. Grupo: por padrão exclui junto o que está dentro; com manter_conteudo, o conteúdo fica solto no canvas. Terminal: encerra o processo. Pasta: só sai do canvas, nada é apagado do disco.',
       { id, manter_conteudo: z.boolean().optional() },
-      f('excluir', 'Excluindo')
+      f('excluir', () => tr('Excluindo', 'Deleting'))
     ),
     tool(
       'recolher_grupo',
       'Recolhe (só a barra do título) ou expande um grupo.',
       { id, recolhido: z.boolean() },
-      f('recolher_grupo', 'Recolhendo grupo')
+      f('recolher_grupo', () => tr('Recolhendo grupo', 'Collapsing group'))
     ),
     tool(
       'cor_do_grupo',
       'Muda a cor de um grupo. Use um hex da paleta de criar_grupo.',
       { id, cor: z.string() },
-      f('cor_do_grupo', 'Mudando cor')
+      f('cor_do_grupo', () => tr('Mudando cor', 'Changing color'))
     ),
     tool(
       'ajustar_grupo',
       'Redimensiona o grupo para caber exatamente no que está dentro.',
       { id },
-      f('ajustar_grupo', 'Ajustando grupo')
+      f('ajustar_grupo', () => tr('Ajustando grupo', 'Fitting group'))
     ),
     tool(
       'focar',
       'Move a câmera para mostrar os blocos indicados. Sem ids, mostra o canvas todo.',
       { ids: z.array(z.string()).optional() },
-      f('focar', 'Ajustando a visão')
+      f('focar', () => tr('Ajustando a visão', 'Adjusting the view'))
     )
   ]
 }

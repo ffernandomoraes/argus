@@ -2,6 +2,7 @@ import { Bot, FolderOpen } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
 import { MENU_ACTIVE } from '../ui/menuStyles'
 import { POPOVER } from './popover'
+import { tr } from '../i18n'
 
 // Lista dos agentes acima do campo, enquanto o texto termina em "@" + palavra.
 export function AgentMenu({
@@ -36,7 +37,7 @@ export function AgentMenu({
             <Bot size={12} className="shrink-0 text-muted" />
             <span className="truncate">@{a.name}</span>
             {a.scope === 'project' && (
-              <FolderOpen size={11} className="shrink-0 text-faint" aria-label="Agente deste projeto" />
+              <FolderOpen size={11} className="shrink-0 text-faint" aria-label={tr('Agente deste projeto', 'Agent from this project')} />
             )}
           </span>
           <span className="truncate text-[12px] text-faint">{a.description}</span>

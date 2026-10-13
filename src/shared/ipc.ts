@@ -1,5 +1,6 @@
 import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
+import type { Lang, LangPreference } from './i18n'
 import type { AuthState, LoginMethod } from './auth'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
@@ -45,6 +46,7 @@ export type InvokeChannels = {
   'wsl:diagnostics': () => string
   'settings:get': () => AppSettings
   'settings:menuBarIcon': (on: boolean) => AppSettings
+  'settings:language': (pref: LangPreference) => AppSettings
   'updates:get': () => UpdateInfo
   'updates:check': () => UpdateState
   'popout:payload': (id: string) => unknown
@@ -163,6 +165,7 @@ export type SendChannels = {
   'sessions:watch': (paths: string[]) => void
   // Arquivos
   'files:reveal': (root: string, rel: string) => void
+  'files:view': (root: string, rel: string) => void
   'files:openInBrowser': (root: string, rel: string) => void
   'files:watch': (root: string, rel: string) => void
   'files:unwatch': () => void
@@ -179,6 +182,8 @@ export type SendChannels = {
 // ipcMain.on com returnValue.
 export type SendSyncChannels = {
   'accent:get': () => string | null
+  // Idioma da interface já resolvido (o do sistema, quando o ajuste é "system").
+  'language:get': () => Lang
   'canvas:load': () => unknown
   'canvas:viewport': () => CanvasViewport | null
 }
@@ -188,6 +193,8 @@ export type EventChannels = {
   edit: (action: EditAction) => void
   'reload-request': () => void
   'accent:changed': (color: string | null) => void
+  // Idioma trocado nos ajustes: a janela recarrega para redesenhar os textos.
+  'language:changed': () => void
   'popout:closed': (id: string) => void
   'updates:state': (state: UpdateState) => void
   'usage:update': (account: string, usage: Usage | null) => void

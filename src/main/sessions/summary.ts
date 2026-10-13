@@ -5,18 +5,17 @@ import type { Tail, Usage } from './tail'
 // listar: mudam sem o arquivo mudar.
 export type SummaryData = { id: string; title: string; updatedAt: string; usage?: Usage; design: boolean }
 
-// Conversa com mensagens mas sem texto para título (só prints, por exemplo) também aparece.
-const UNTITLED = 'Conversa sem título'
-
 // Título: o renomeado (/rename), senão o gerado pelo Claude, senão a primeira mensagem.
+// Conversa com mensagens mas sem texto para título (só prints, por exemplo) também aparece, com
+// título vazio: o "sem título" sai na hora de listar, no idioma da interface (este resumo fica guardado).
 export function summarize(id: string, mtime: Date, head: Head, tail: Tail): SummaryData | null {
   const title =
     tail.customTitle ??
     tail.aiTitle ??
     head.firstPrompt ??
     tail.firstPrompt ??
-    (head.hasMessages || tail.usage ? UNTITLED : null)
+    (head.hasMessages || tail.usage ? '' : null)
   // Sessão sem nenhuma mensagem (aberta e fechada) não entra na lista.
-  if (!title) return null
+  if (title === null) return null
   return { id, title: title.split('\n')[0].slice(0, 120), updatedAt: mtime.toISOString(), usage: tail.usage, design: head.design }
 }

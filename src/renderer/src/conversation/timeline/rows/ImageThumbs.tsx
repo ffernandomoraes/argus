@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { tr } from '../../../i18n'
 
 // Miniaturas das imagens de uma mensagem. Só carregam quando o balão aparece na tela: conversa
 // longa com muitos prints não lê todos de uma vez. Antes disso, quadros vazios do mesmo tamanho.
@@ -47,10 +48,10 @@ export function ImageThumbs({
           <button
             key={i}
             onClick={() => onOpen(i)}
-            title="Ver imagem"
+            title={tr('Ver imagem', 'View image')}
             className="overflow-hidden rounded-md border border-line hover:border-line-strong"
           >
-            <img src={url} alt={`Imagem ${i + 1}`} className="size-14 object-cover" />
+            <img src={url} alt={tr(`Imagem ${i + 1}`, `Image ${i + 1}`)} className="size-14 object-cover" />
           </button>
         ) : (
           <div key={i} className="size-14 rounded-md border border-line bg-surface" />

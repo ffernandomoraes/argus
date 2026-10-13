@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu } from 'electron'
 import type { EditAction } from '../../shared/ipc'
 import { sendTo } from '../ipc/events'
 import { IS_MAC } from '../platform'
+import { tr } from '../i18n'
 import { createCanvasWindow } from './windows'
 
 // Menu sem os itens de zoom padrão: ⌘+ / ⌘- / ⌘0 ficam para o canvas.
@@ -13,7 +14,15 @@ function sendEdit(win: Electron.BaseWindow | undefined, action: EditAction): voi
   if (win instanceof BrowserWindow) sendTo(win.webContents, 'edit', action)
 }
 
+let lastCheck: (() => Promise<void>) | null = null
+
+// Idioma trocado nos ajustes: refaz o menu com os textos novos.
+export function refreshAppMenu(): void {
+  if (lastCheck) setAppMenu(lastCheck)
+}
+
 export function setAppMenu(checkForUpdates: () => Promise<void>): void {
+  lastCheck = checkForUpdates
   if (!IS_MAC) return Menu.setApplicationMenu(null)
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
@@ -22,7 +31,7 @@ export function setAppMenu(checkForUpdates: () => Promise<void>): void {
         submenu: [
           { role: 'about' },
           {
-            label: 'Procurar atualizações…',
+            label: tr('Procurar atualizações…', 'Check for Updates…'),
             click: () => void checkForUpdates().catch((err: unknown) => console.error('[menu] atualizações:', err))
           },
           { type: 'separator' },
@@ -36,16 +45,16 @@ export function setAppMenu(checkForUpdates: () => Promise<void>): void {
         ]
       },
       {
-        label: 'Arquivo',
+        label: tr('Arquivo', 'File'),
         // Outra janela do mesmo canvas, para levar a outro monitor.
-        submenu: [{ label: 'Nova janela do canvas', accelerator: 'Shift+CmdOrCtrl+N', click: () => void createCanvasWindow() }]
+        submenu: [{ label: tr('Nova janela do canvas', 'New Canvas Window'), accelerator: 'Shift+CmdOrCtrl+N', click: () => void createCanvasWindow() }]
       },
       {
-        label: 'Editar',
+        label: tr('Editar', 'Edit'),
         submenu: [
           // Desfazer/refazer vão para a interface decidir: texto em edição ou canvas.
-          { label: 'Desfazer', accelerator: 'CmdOrCtrl+Z', click: (_i, win) => sendEdit(win, 'undo') },
-          { label: 'Refazer', accelerator: 'Shift+CmdOrCtrl+Z', click: (_i, win) => sendEdit(win, 'redo') },
+          { label: tr('Desfazer', 'Undo'), accelerator: 'CmdOrCtrl+Z', click: (_i, win) => sendEdit(win, 'undo') },
+          { label: tr('Refazer', 'Redo'), accelerator: 'Shift+CmdOrCtrl+Z', click: (_i, win) => sendEdit(win, 'redo') },
           { type: 'separator' },
           { role: 'cut' },
           { role: 'copy' },
@@ -54,11 +63,11 @@ export function setAppMenu(checkForUpdates: () => Promise<void>): void {
         ]
       },
       {
-        label: 'Ver',
+        label: tr('Ver', 'View'),
         submenu: [
           // A interface decide: com a página do protótipo aberta, recarrega só ela (ver preload/keys.ts).
           {
-            label: 'Recarregar',
+            label: tr('Recarregar', 'Reload'),
             accelerator: 'CmdOrCtrl+R',
             click: (_i, win) => win instanceof BrowserWindow && sendTo(win.webContents, 'reload-request')
           },

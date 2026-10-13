@@ -5,6 +5,7 @@ import { IS_WIN, lastSep, parentDir } from '../platform'
 import { Modal } from '../ui/Modal'
 import { TimeAgo } from './blocks/TimeAgo'
 import { displayPath } from './factory'
+import { tr } from '../i18n'
 
 // "Nova pasta": as pastas onde o Claude Code já conversou, da mais recente para a mais antiga,
 // para não confundir pastas de nome parecido no seletor do sistema. Pasta sem conversa
@@ -58,7 +59,7 @@ export function FolderPicker({
   }
 
   return (
-    <Modal variant="palette" label="Nova pasta" className="flex flex-col" onClose={onClose}>
+    <Modal variant="palette" label={tr('Nova pasta', 'New folder')} className="flex flex-col" onClose={onClose}>
       <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2.5">
         <Search size={15} className="shrink-0 text-muted" />
         <input
@@ -70,16 +71,16 @@ export function FolderPicker({
             setHighlight(0)
           }}
           onKeyDown={onKeyDown}
-          placeholder="Buscar pasta com conversa do Claude Code"
+          placeholder={tr('Buscar pasta com conversa do Claude Code', 'Search folders with Claude Code chats')}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-faint"
         />
       </div>
 
       {folders === null ? (
-        <p className="px-3 py-4 text-xs text-muted">Lendo as conversas…</p>
+        <p className="px-3 py-4 text-xs text-muted">{tr('Lendo as conversas…', 'Reading chats…')}</p>
       ) : shown.length === 0 ? (
         <p className="px-3 py-4 text-xs text-muted">
-          {query ? 'Nenhuma pasta com esse nome.' : 'Nenhuma pasta com conversa do Claude Code.'}
+          {query ? tr('Nenhuma pasta com esse nome.', 'No folder with that name.') : tr('Nenhuma pasta com conversa do Claude Code.', 'No folders with Claude Code chats.')}
         </p>
       ) : (
         <ul ref={list} className="min-h-0 flex-1 overflow-y-auto p-1">
@@ -102,7 +103,7 @@ export function FolderPicker({
         className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
       >
         <FolderOpen size={14} className="shrink-0" />
-        Escolher outra pasta…
+        {tr('Escolher outra pasta…', 'Choose another folder…')}
       </button>
       {distros.map((d) => (
         <button
@@ -111,7 +112,7 @@ export function FolderPicker({
           className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
         >
           <FolderOpen size={14} className="shrink-0" />
-          Escolher pasta do Linux - WSL ({d})…
+          {tr(`Escolher pasta do Linux - WSL (${d})…`, `Choose Linux folder - WSL (${d})…`)}
         </button>
       ))}
     </Modal>
@@ -150,7 +151,7 @@ const FolderRow = memo(function FolderRow({
         <span className="shrink-0 font-medium text-text">{path.slice(lastSep(path) + 1)}</span>
         <span className="min-w-0 truncate text-faint">{parent}</span>
         {onCanvas.has(path) && (
-          <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] text-faint">no canvas</span>
+          <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] text-faint">{tr('no canvas', 'on canvas')}</span>
         )}
         <TimeAgo iso={folder.updatedAt} className="pl-2" />
       </button>

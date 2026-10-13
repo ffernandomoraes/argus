@@ -5,6 +5,7 @@ import { KIND_COLOR, KIND_LABEL } from '../../conversation/ConversationView'
 import { NameInput } from './NameInput'
 import type { Kind } from './treePaths'
 import { indent } from './treeStyle'
+import { LOCALE, tr } from '../../i18n'
 
 // Itens desenhados por pasta antes do "mostrar mais": uma pasta com dezenas de milhares de arquivos
 // (node_modules aberta, uma pasta de imagens) travava o painel.
@@ -68,10 +69,10 @@ const TreeItem = memo(function TreeItem({ entry, depth, open, focused, draft, ch
         <Icon size={13} className="shrink-0 text-faint" />
         <span className={`truncate ${change ? KIND_COLOR[change] : ''}`}>{entry.name}</span>
         <span className="ml-auto" />
-        {draft && <span title="Alterações não salvas" className="size-1.5 shrink-0 rounded-full bg-text" />}
+        {draft && <span title={tr('Alterações não salvas', 'Unsaved changes')} className="size-1.5 shrink-0 rounded-full bg-text" />}
         {change &&
           (entry.isDir ? (
-            <span title="Tem mudanças não comitadas" className={`size-1.5 shrink-0 rounded-full bg-current ${KIND_COLOR[change]}`} />
+            <span title={tr('Tem mudanças não comitadas', 'Has uncommitted changes')} className={`size-1.5 shrink-0 rounded-full bg-current ${KIND_COLOR[change]}`} />
           ) : (
             <span title={KIND_LABEL[change]} className={`shrink-0 font-mono text-[12px] font-semibold ${KIND_COLOR[change]}`}>
               {change}
@@ -124,13 +125,13 @@ export function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: strin
             style={{ paddingLeft: indent(depth) + 24 }}
             className="w-full rounded-md py-1 pr-2 text-left text-[12px] text-muted hover:bg-fill hover:text-text"
           >
-            Mostrar mais - faltam {hidden.toLocaleString('pt-BR')}
+            {tr(`Mostrar mais - faltam ${hidden.toLocaleString(LOCALE)}`, `Show more - ${hidden.toLocaleString(LOCALE)} left`)}
           </button>
         </li>
       )}
       {entries?.length === 0 && !creating && (
         <li style={{ paddingLeft: indent(depth) + 24 }} className="py-1 text-[12px] text-faint">
-          vazia
+          {tr('vazia', 'empty')}
         </li>
       )}
     </ul>

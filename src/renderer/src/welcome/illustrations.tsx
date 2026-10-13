@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { IS_MAC, IS_WIN, SYSTEM_NAME } from '../platform'
+import { LANG, tr } from '../i18n'
 
 // Ilustrações das boas-vindas: esquemas do próprio app, nas cores do tema (claro ou escuro).
 // Todas no mesmo quadro, 360 x 160; os pontos do canvas são o fundo da moldura (WelcomeModal).
@@ -34,7 +35,7 @@ function Card({ x, y, w, name, rows }: { x: number; y: number; w: number; name: 
 
 export function CanvasArt() {
   return (
-    <Art label="Pastas de projeto como blocos no canvas, com o estado de cada conversa">
+    <Art label={tr('Pastas de projeto como blocos no canvas, com o estado de cada conversa', 'Project folders as blocks on the canvas, with the status of each chat')}>
       <Card x={26} y={30} w={130} name="site" rows={['fill-running', 'fill-done', 'fill-done']} />
       <Card x={182} y={16} w={150} name="api" rows={['fill-needs-you', 'fill-done']} />
       <Card x={182} y={92} w={150} name="app-mobile" rows={['fill-running']} />
@@ -64,16 +65,16 @@ function Group({ x, y, w, h, name, color }: { x: number; y: number; w: number; h
 
 export function OrganizeArt() {
   return (
-    <Art label="Blocos organizados em grupos coloridos, com um bloco sendo arrastado">
-      <Group x={14} y={22} w={186} h={124} name="Trabalho" color="trabalho" />
+    <Art label={tr('Blocos organizados em grupos coloridos, com um bloco sendo arrastado', 'Blocks organized into colored groups, with one block being dragged')}>
+      <Group x={14} y={22} w={186} h={124} name={tr('Trabalho', 'Work')} color="trabalho" />
       <Card x={26} y={38} w={78} name="api" rows={['fill-done']} />
       <Card x={112} y={38} w={78} name="site" rows={['fill-running']} />
       <Card x={26} y={94} w={78} name="docs" rows={['fill-done']} />
-      <Group x={222} y={22} w={124} h={124} name="Pessoal" color="pessoal" />
+      <Group x={222} y={22} w={124} h={124} name={tr('Pessoal', 'Personal')} color="pessoal" />
       <Card x={234} y={38} w={100} name="blog" rows={['fill-done']} />
       {/* Bloco no meio do arrasto, inclinado, com o cursor em cima. */}
       <g transform="translate(150 96) rotate(-6)" opacity="0.95">
-        <Card x={0} y={0} w={86} name="freela" rows={['fill-needs-you']} />
+        <Card x={0} y={0} w={86} name={tr('freela', 'freelance')} rows={['fill-needs-you']} />
       </g>
       <path d="M214 112 l0 15 l4 -4 l3 7 l3 -1.5 l-3 -7 l5.5 0 z" className="fill-text stroke-bg" strokeWidth="1" />
     </Art>
@@ -83,7 +84,7 @@ export function OrganizeArt() {
 export function ChatArt() {
   const prompt = IS_WIN ? 'PS C:\\proj>' : '~/proj ❯'
   return (
-    <Art label="Conversa com o Claude ao lado de um terminal">
+    <Art label={tr('Conversa com o Claude ao lado de um terminal', 'Chat with Claude next to a terminal')}>
       <g transform="translate(16 14)">
         <rect width="196" height="132" rx="8" className="fill-surface stroke-line" strokeWidth="1" />
         <rect x="10" y="10" width="70" height="6" rx="3" className="fill-surface-2" />
@@ -118,7 +119,7 @@ export function ChatArt() {
 export function AgentsArt() {
   const projects = [16, 132, 248]
   return (
-    <Art label="Biblioteca de agentes ligada a vários projetos">
+    <Art label={tr('Biblioteca de agentes ligada a vários projetos', 'Agent library linked to several projects')}>
       {projects.map((x) => (
         <path key={x} d={`M180 58 C180 84 ${x + 48} 80 ${x + 48} 108`} className="stroke-line-strong" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
       ))}
@@ -130,10 +131,10 @@ export function AgentsArt() {
         <circle cx="27.5" cy="22" r="1.6" className="fill-text" />
         <path d="M24 14 v-4" className="stroke-text" strokeWidth="1.6" />
         <text x="44" y="22" fontSize="9.5" fontWeight="600" className="fill-text">
-          Agentes
+          {tr('Agentes', 'Agents')}
         </text>
         <text x="44" y="34" fontSize="8" className="fill-faint">
-          revisor, testador…
+          {tr('revisor, testador…', 'reviewer, tester…')}
         </text>
       </g>
       {projects.map((x, i) => (
@@ -143,9 +144,9 @@ export function AgentsArt() {
           <rect x="26" y="12" width={44 - i * 6} height="4" rx="2" className="fill-surface-2" />
           {i === 1 && (
             <g transform="translate(26 21)">
-              <rect width="46" height="11" rx="5.5" className="fill-running/20" />
+              <rect width={LANG === 'en' ? 52 : 46} height="11" rx="5.5" className="fill-running/20" />
               <text x="6" y="8" fontSize="7.5" fontWeight="600" className="fill-running">
-                @revisor
+                {tr('@revisor', '@reviewer')}
               </text>
             </g>
           )}
@@ -158,9 +159,10 @@ export function AgentsArt() {
 // Janela do sistema com a lista do que precisa estar pronto. Mac: os três círculos à esquerda;
 // Windows e Linux: os botões à direita e o Git na lista.
 export function SetupArt() {
-  const items = IS_MAC ? ['Claude Code', 'Sua conta'] : ['Claude Code', IS_WIN ? 'Git for Windows' : 'Git', 'Sua conta']
+  const account = tr('Sua conta', 'Your account')
+  const items = IS_MAC ? ['Claude Code', account] : ['Claude Code', IS_WIN ? 'Git for Windows' : 'Git', account]
   return (
-    <Art label={`Configuração do Claude Code no ${SYSTEM_NAME}`}>
+    <Art label={tr(`Configuração do Claude Code no ${SYSTEM_NAME}`, `Claude Code setup on ${SYSTEM_NAME}`)}>
       <g transform="translate(70 14)">
         <rect width="220" height="132" rx="10" className="fill-surface stroke-line-strong" strokeWidth="1" />
         <path d="M0 26 h220" className="stroke-line" strokeWidth="1" />

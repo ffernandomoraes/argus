@@ -1,10 +1,13 @@
 import { app } from 'electron'
+import { tr } from '../i18n'
 import { MARK, SOCKET } from './locations'
 import { OPEN_FLAG } from './openArg'
 
 // O texto dos scripts do `argus`, gravados a cada vez que o app abre.
 
 const quote = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
+// Mensagens no terminal, no idioma do app quando o script foi gravado (a cada abertura).
+const notFound = () => tr('argus: pasta não encontrada:', 'argus: folder not found:')
 
 // Mac: o script manda o caminho pelo socket local; o app escuta enquanto está aberto.
 export function macScript(): string {
@@ -16,10 +19,10 @@ export function macScript(): string {
   return `#!/bin/sh
 # Gerado pelo Argus a cada vez que o app abre; mudanças aqui se perdem.
 target="\${1:-.}"
-dir=$(cd "$target" 2>/dev/null && pwd -P) || { echo "argus: pasta não encontrada: $target" >&2; exit 1; }
+dir=$(cd "$target" 2>/dev/null && pwd -P) || { echo "${notFound()} $target" >&2; exit 1; }
 send() { curl -sf --unix-socket ${quote(SOCKET)} --data-binary "$dir" http://argus/open >/dev/null 2>&1; }
 send && exit 0
-${launch}echo "argus: o app não está aberto." >&2
+${launch}echo "${tr('argus: o app não está aberto.', "argus: the app isn't open.")}" >&2
 exit 1
 `
 }
@@ -46,7 +49,7 @@ export function windowsScript(): string {
     'exit /b 0',
     '',
     ':missing',
-    'echo argus: pasta não encontrada: %target% 1>&2',
+    `echo ${notFound()} %target% 1>&2`,
     'chcp %argus_cp% >nul',
     'exit /b 1',
     ''
@@ -67,7 +70,7 @@ export function linuxScript(): string {
   return `#!/bin/sh
 # Gerado pelo Argus a cada vez que o app abre; mudanças aqui se perdem.
 target="\${1:-.}"
-dir=$(cd "$target" 2>/dev/null && pwd -P) || { echo "argus: pasta não encontrada: $target" >&2; exit 1; }
+dir=$(cd "$target" 2>/dev/null && pwd -P) || { echo "${notFound()} $target" >&2; exit 1; }
 if command -v setsid >/dev/null 2>&1; then
   setsid ${exe} "${OPEN_FLAG}$dir" >/dev/null 2>&1 &
 else

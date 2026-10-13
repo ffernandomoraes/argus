@@ -126,6 +126,8 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   const design = useMemo(() => designView(nodes, drawers.state.design), [nodes, drawers.state.design])
   const layout = drawerLayout(drawers.state, targets, shownDrawers.titles)
   const { shown } = layout
+  const codeRoot = layout.code?.root ?? null
+  useLayoutEffect(() => patchView(view, { codeRoot }), [view, codeRoot])
   const projects = useCanvasProjects(nodes)
   // Pasta do painel de todas as conversas; some junto com a pasta, se ela for excluída.
   const listId = overlays.state.allConversations

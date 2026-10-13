@@ -2,6 +2,7 @@ import { lstatSync, mkdirSync, readFileSync, readlinkSync, symlinkSync, unlinkSy
 import { homedir } from 'node:os'
 import { delimiter, dirname } from 'node:path'
 import type { CliStatus } from '../../shared/cli'
+import { tr } from '../i18n'
 import { getPath, IS_WIN, loginShellPath } from '../platform'
 import { powershell } from '../winProcesses'
 import { DIR_NAME, LINK, MARK, SCRIPT } from './locations'
@@ -50,11 +51,20 @@ async function binInPath(): Promise<boolean> {
 export async function cliStatus(): Promise<CliStatus> {
   const target = linkTarget()
   if (target === null) return { installed: false }
-  if (target !== SCRIPT) return { installed: false, error: `Já existe outro comando em ${LINK.replace(homedir(), '~')}.` }
+  if (target !== SCRIPT) {
+    const where = LINK.replace(homedir(), '~')
+    return { installed: false, error: tr(`Já existe outro comando em ${where}.`, `Another command already exists at ${where}.`) }
+  }
   if (await binInPath()) return { installed: true }
   const warning = IS_WIN
-    ? 'Adicione %USERPROFILE%\\.local\\bin ao PATH do Windows para o comando funcionar.'
-    : 'Adicione ~/.local/bin ao PATH do seu shell para o comando funcionar.'
+    ? tr(
+        'Adicione %USERPROFILE%\\.local\\bin ao PATH do Windows para o comando funcionar.',
+        'Add %USERPROFILE%\\.local\\bin to the Windows PATH for the command to work.'
+      )
+    : tr(
+        'Adicione ~/.local/bin ao PATH do seu shell para o comando funcionar.',
+        'Add ~/.local/bin to your shell PATH for the command to work.'
+      )
   return { installed: true, warning }
 }
 

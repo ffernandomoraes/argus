@@ -5,8 +5,12 @@ import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { ModalCloseButton } from '../ui/ModalCloseButton'
 import { useDevServers } from './useDevServers'
+import { tr } from '../i18n'
 
-const LOCK_REASON = 'Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão'
+const LOCK_REASON = tr(
+  'Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão',
+  'Opened by a Claude Code session: stopping it would end the session'
+)
 
 const folderName = (cwd: string) => baseName(cwd) || cwd
 
@@ -42,18 +46,20 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
   }
 
   return (
-    <Modal label="Servidores rodando" size="md" className="flex flex-col" onClose={onClose}>
+    <Modal label={tr('Servidores rodando', 'Running servers')} size="md" className="flex flex-col" onClose={onClose}>
       <header className="flex items-start gap-3 border-b border-line px-5 py-3">
         <Server size={15} className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">Servidores rodando</div>
-          <div className="mt-0.5 truncate text-[12px] text-faint">Portas abertas pelo Claude Code, pelo play ou dentro das pastas do canvas</div>
+          <div className="truncate text-sm font-medium">{tr('Servidores rodando', 'Running servers')}</div>
+          <div className="mt-0.5 truncate text-[12px] text-faint">
+            {tr('Portas abertas pelo Claude Code, pelo play ou dentro das pastas do canvas', 'Ports opened by Claude Code, by play or inside canvas folders')}
+          </div>
         </div>
         <ModalCloseButton />
       </header>
 
       {loaded && servers.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">Nenhum servidor rodando.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted">{tr('Nenhum servidor rodando.', 'No servers running.')}</p>
       ) : (
         <ul className="flex flex-col gap-1 overflow-y-auto p-3">
           {servers.map((s) => (
@@ -61,7 +67,7 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
                   <span className="truncate text-sm text-text">{s.appName ?? folderName(s.cwd)}</span>
-                  {s.current && <span className="shrink-0 text-xs text-muted">(este app)</span>}
+                  {s.current && <span className="shrink-0 text-xs text-muted">{tr('(este app)', '(this app)')}</span>}
                   <span className="shrink-0 font-mono text-xs text-muted">:{s.port}</span>
                 </div>
                 <MiddlePath path={tildify(s.cwd)} />
@@ -70,9 +76,9 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <Button size="sm" onClick={() => window.open(`http://localhost:${s.port}`)} title={`Abrir localhost:${s.port} no navegador`}>
+                <Button size="sm" onClick={() => window.open(`http://localhost:${s.port}`)} title={tr(`Abrir localhost:${s.port} no navegador`, `Open localhost:${s.port} in the browser`)}>
                   <ExternalLink size={12} />
-                  Abrir
+                  {tr('Abrir', 'Open')}
                 </Button>
                 {s.locked ? (
                   <span
@@ -80,7 +86,7 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                     className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs text-faint"
                   >
                     <Lock size={12} />
-                    Travado
+                    {tr('Travado', 'Locked')}
                   </span>
                 ) : (
                   <Button
@@ -88,11 +94,11 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                     danger
                     onClick={() => kill(s.pgid)}
                     disabled={killing.has(s.pgid)}
-                    title={s.current ? 'Encerrar o processo: fecha este app' : 'Encerrar o processo'}
+                    title={s.current ? tr('Encerrar o processo: fecha este app', 'Stop the process: closes this app') : tr('Encerrar o processo', 'Stop the process')}
                     className="disabled:animate-pulse"
                   >
                     <Power size={12} />
-                    {killing.has(s.pgid) ? 'Encerrando' : 'Encerrar'}
+                    {killing.has(s.pgid) ? tr('Encerrando', 'Stopping') : tr('Encerrar', 'Stop')}
                   </Button>
                 )}
               </div>

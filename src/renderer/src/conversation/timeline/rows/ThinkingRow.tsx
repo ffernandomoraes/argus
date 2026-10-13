@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Brain } from 'lucide-react'
 import type { Message } from '../../types'
 import { LazyDetails } from './LazyDetails'
+import { tr } from '../../../i18n'
 
 // Raciocínio do Claude: uma linha recolhida ("Pensou por 4s"), aberta com um clique.
 export const ThinkingRow = memo(function ThinkingRow({ message }: { message: Extract<Message, { role: 'thinking' }> }) {
@@ -12,7 +13,9 @@ export const ThinkingRow = memo(function ThinkingRow({ message }: { message: Ext
         <summary className="-ml-1 flex cursor-pointer list-none items-center gap-2 rounded-md px-1 py-1 leading-5 text-faint hover:bg-surface-2 hover:text-muted">
           <Brain size={12} className="shrink-0" />
           <span className="italic">
-            {message.seconds && message.seconds > 0 ? `Pensou por ${message.seconds}s` : 'Pensou um pouco'}
+            {message.seconds && message.seconds > 0
+              ? tr(`Pensou por ${message.seconds}s`, `Thought for ${message.seconds}s`)
+              : tr('Pensou um pouco', 'Thought briefly')}
           </span>
         </summary>
       }

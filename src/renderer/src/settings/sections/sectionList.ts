@@ -1,4 +1,5 @@
 import { Coffee, MessagesSquare, Palette, Settings2, Users } from 'lucide-react'
+import { tr } from '../../i18n'
 
 export type Section = 'general' | 'conversations' | 'appearance' | 'accounts' | 'coffee'
 
@@ -7,22 +8,41 @@ export type Section = 'general' | 'conversations' | 'appearance' | 'accounts' | 
 export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; description: string }[] = [
   {
     id: 'general',
-    label: 'Geral',
+    label: tr('Geral', 'General'),
     icon: Settings2,
-    description: 'Onde as conversas abrem, o ícone do sistema, o comando no terminal e as atualizações.'
+    description: tr(
+      'Onde as conversas abrem, o ícone do sistema, o comando no terminal e as atualizações.',
+      'Where chats open, the system icon, the terminal command and updates.'
+    )
   },
   {
     id: 'conversations',
-    label: 'Conversas',
+    label: tr('Conversas', 'Chats'),
     icon: MessagesSquare,
-    description: 'Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.'
+    description: tr(
+      'Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.',
+      'How each chat opens. What you change in the chat itself applies only to that chat.'
+    )
   },
-  { id: 'appearance', label: 'Aparência', icon: Palette, description: 'Tema claro, escuro ou o mesmo do sistema.' },
-  { id: 'accounts', label: 'Contas', icon: Users, description: 'As contas do Claude Code que o Argus usa.' },
+  {
+    id: 'appearance',
+    label: tr('Aparência', 'Appearance'),
+    icon: Palette,
+    description: tr('Tema claro, escuro ou o mesmo do sistema.', 'Light, dark or the same as the system.')
+  },
+  {
+    id: 'accounts',
+    label: tr('Contas', 'Accounts'),
+    icon: Users,
+    description: tr('As contas do Claude Code que o Argus usa.', 'The Claude Code accounts Argus uses.')
+  },
   {
     id: 'coffee',
-    label: 'Me pague um café',
+    label: tr('Me pague um café', 'Buy me a coffee'),
     icon: Coffee,
-    description: 'Se o Argus te ajuda no dia a dia, um Pix de qualquer valor ajuda a manter o projeto.'
+    description: tr(
+      'Se o Argus te ajuda no dia a dia, um Pix de qualquer valor ajuda a manter o projeto.',
+      'If Argus helps you every day, a Pix of any amount helps keep the project going.'
+    )
   }
 ]

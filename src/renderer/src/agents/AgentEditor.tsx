@@ -5,6 +5,7 @@ import { LAST_STEP, type Draft } from './agentDraft'
 import { InstructionsStep } from './InstructionsStep'
 import { StepTabs } from './StepTabs'
 import { ToolsStep } from './ToolsStep'
+import { tr } from '../i18n'
 
 // Agente aberto: as abas dos passos, o passo atual e o rodapé com Voltar, Salvar e Continuar.
 export function AgentEditor({
@@ -48,22 +49,26 @@ export function AgentEditor({
         {/* Na primeira aba, Voltar leva de volta para a lista de agentes. */}
         <Button size="lg" variant="subtle" onClick={() => (step > 0 ? onGo(step - 1) : onBack())}>
           <ArrowLeft size={12} />
-          Voltar
+          {tr('Voltar', 'Back')}
         </Button>
         <span className="flex-1" />
-        {lacking.length > 0 && <span className="text-[12px] text-faint">Falta preencher: {lacking.join(', ')}</span>}
+        {lacking.length > 0 && <span className="text-[12px] text-faint">{tr(`Falta preencher: ${lacking.join(', ')}`, `Still missing: ${lacking.join(', ')}`)}</span>}
         <Button
           size="lg"
           variant={step < LAST_STEP ? 'secondary' : 'primary'}
           onClick={onSave}
           disabled={!canSave}
-          title={lacking.length ? `Falta preencher: ${lacking.join(', ')}` : `Salvar (${keys('⌘S')})`}
+          title={
+            lacking.length
+              ? tr(`Falta preencher: ${lacking.join(', ')}`, `Still missing: ${lacking.join(', ')}`)
+              : tr(`Salvar (${keys('⌘S')})`, `Save (${keys('⌘S')})`)
+          }
         >
-          {draft.previousName && !dirty ? 'Salvo' : 'Salvar'}
+          {draft.previousName && !dirty ? tr('Salvo', 'Saved') : tr('Salvar', 'Save')}
         </Button>
         {step < LAST_STEP && (
           <Button size="lg" variant="primary" onClick={() => onGo(step + 1)} disabled={lacking.length > 0}>
-            Continuar
+            {tr('Continuar', 'Continue')}
             <ArrowRight size={12} />
           </Button>
         )}

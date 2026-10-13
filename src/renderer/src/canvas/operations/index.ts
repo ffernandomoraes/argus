@@ -15,7 +15,7 @@ export {
 export { findChatSpot } from './freeSpace'
 export { boundsOf, COLLAPSED_SIZE, FIT_PADDING, isPlaced, sizeOf, type Box } from './geometry'
 export { dropIntoGroup, groupUnder, leaveGroup, moveToGroup, removeGroup, terminalsIn, ungroup } from './groups'
-export { fitAfterResize, fitGroupToContent, growGroupsToFit } from './groupSize'
+export { fitAfterResize, fitGroupToContent, growGroupsToFit, withoutAutoGrow } from './groupSize'
 export { pushAway } from './push'
 export { absolutePosition, childrenOf } from './tree'
 export { toggleCollapse, toggleObscure, toggleProjectCollapse } from './visibility'

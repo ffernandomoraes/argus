@@ -4,15 +4,20 @@ import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
 import type { MenuState } from '../../canvas/ContextMenu'
 import { refreshNow } from '../../canvas/sessionsStore'
 import { useStableCallback } from '../../lib/useStableCallback'
-import { IS_MAC, isMod } from '../../platform'
+import { IS_MAC, IS_WIN, isMod } from '../../platform'
 import { moveDrafts } from '../drafts'
 import type { Editing } from './FileTree'
 import { treeMenu, type TreeMenuActions } from './treeMenu'
 import { dirsUpTo, parentOf } from './treePaths'
 import type { FileTree } from './useFileTree'
+import { tr } from '../../i18n'
 
 // A Lixeira do Windows abre direto da Área de Trabalho; a do Mac, pelo Finder.
-const RECOVER = IS_MAC ? 'Dá para recuperar pelo Finder.' : 'Dá para recuperar pela Lixeira.'
+// Em inglês, a Lixeira tem nome diferente em cada sistema.
+const TRASH = IS_WIN ? 'Recycle Bin' : 'Trash'
+const RECOVER = IS_MAC
+  ? tr('Dá para recuperar pelo Finder.', 'You can restore it from the Finder.')
+  : tr('Dá para recuperar pela Lixeira.', `You can restore it from the ${TRASH}.`)
 
 type Options = {
   root: string
@@ -86,9 +91,13 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
 
   const askDelete = (entry: FileEntry) =>
     setConfirm({
-      title: `Excluir ${entry.isDir ? 'a pasta' : 'o arquivo'} "${entry.name}"?`,
-      description: entry.isDir ? `A pasta e tudo o que há dentro dela vão para a Lixeira. ${RECOVER}` : `O arquivo vai para a Lixeira. ${RECOVER}`,
-      confirmLabel: 'Mover para a Lixeira',
+      title: entry.isDir
+        ? tr(`Excluir a pasta "${entry.name}"?`, `Delete the folder "${entry.name}"?`)
+        : tr(`Excluir o arquivo "${entry.name}"?`, `Delete the file "${entry.name}"?`),
+      description: entry.isDir
+        ? tr(`A pasta e tudo o que há dentro dela vão para a Lixeira. ${RECOVER}`, `The folder and everything in it go to the ${TRASH}. ${RECOVER}`)
+        : tr(`O arquivo vai para a Lixeira. ${RECOVER}`, `The file goes to the ${TRASH}. ${RECOVER}`),
+      confirmLabel: tr('Mover para a Lixeira', `Move to ${TRASH}`),
       onConfirm: () => {
         void (async () => {
           if (done(await window.api.files.trash(root, entry.path)) === null) return

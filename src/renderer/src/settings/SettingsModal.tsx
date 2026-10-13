@@ -1,6 +1,7 @@
 import type { ThemePreference } from '../theme/useTheme'
 import { Modal } from '../ui/Modal'
 import { SettingsPage } from './SettingsPage'
+import { tr } from '../i18n'
 
 // Configurações por cima do canvas; fecha no X, no Esc ou clicando fora.
 export function SettingsModal({
@@ -13,7 +14,7 @@ export function SettingsModal({
   onClose: () => void
 }) {
   return (
-    <Modal label="Configurações" onClose={onClose}>
+    <Modal label={tr('Configurações', 'Settings')} onClose={onClose}>
       <SettingsPage theme={theme} onThemeChange={onThemeChange} onClose={onClose} />
     </Modal>
   )

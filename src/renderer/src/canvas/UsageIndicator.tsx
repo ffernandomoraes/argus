@@ -9,6 +9,7 @@ import { useOutsideClick } from '../useOutsideClick'
 import { UsageBar } from './bars/UsageBar'
 import { UsagePanel } from './bars/UsagePanel'
 import { useUsages } from './bars/useUsages'
+import { tr } from '../i18n'
 
 // Limites do Claude na barra de título; o painel abre para baixo. Com mais de uma conta, o botão
 // mostra a sessão de cada uma, com o nome, e o painel traz sessão e semanal de todas.
@@ -38,7 +39,7 @@ export const UsageIndicator = memo(function UsageIndicator({
   return (
     <div ref={ref} className="no-drag relative flex items-center self-stretch">
       <button
-        aria-label="Ver limites do Claude"
+        aria-label={tr('Ver limites do Claude', 'View Claude limits')}
         aria-expanded={open}
         onClick={() => onOpenChange(!open)}
         className={`flex items-center gap-2 rounded-md px-2 py-0.5 text-[12px] text-faint hover:bg-fill hover:text-muted ${

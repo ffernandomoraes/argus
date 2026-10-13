@@ -8,14 +8,16 @@ import { Button } from '../ui/Button'
 import { commentsText } from './comments/commentsText'
 import type { PageComment } from './comments/types'
 import { withoutAppLines } from './prototype/appLines'
-import { SideResizer } from './SideResizer'
-import { useSideWidth } from './sideWidth'
+import { WidthResizer } from '../ui/WidthResizer'
+import { useWidth } from '../ui/widthStore'
+import { sideWidth as sideWidthStore } from './sideWidth'
 import type { usePrototypeSession } from './usePrototypeSession'
+import { tr } from '../i18n'
 
-const countText = (n: number) => (n === 1 ? '1 comentário' : `${n} comentários`)
+const countText = (n: number) => (n === 1 ? tr('1 comentário', '1 comment') : tr(`${n} comentários`, `${n} comments`))
 
 // Coluna da esquerda do drawer: a conversa inteira do protótipo, a mesma do chat, com o comentar
-// na página em cima do campo. A largura vem de useSideWidth (arrastando a borda).
+// na página em cima do campo. A largura vem de sideWidth (arrastando a borda).
 export function PrototypeChat({
   projectPath,
   sessionId,
@@ -47,7 +49,7 @@ export function PrototypeChat({
   }
   onSend: (text: string, files: File[]) => Promise<void>
 }) {
-  const sideWidth = useSideWidth()
+  const sideWidth = useWidth(sideWidthStore)
   // /mcp abre a lista de servidores aqui no app, como na conversa.
   const [mcpOpen, setMcpOpen] = useState(false)
   const { key, live, settings, history } = session
@@ -82,10 +84,14 @@ export function PrototypeChat({
                   pressed={comments.commenting}
                   disabled={!comments.available}
                   onClick={comments.onToggle}
-                  title={comments.available ? 'Clicar na página para deixar comentários, como no Figma' : 'A página ainda não abriu'}
+                  title={
+                    comments.available
+                      ? tr('Clicar na página para deixar comentários, como no Figma', 'Click the page to leave comments, like in Figma')
+                      : tr('A página ainda não abriu', 'The page hasn’t opened yet')
+                  }
                 >
                   <MessageSquarePlus size={13} />
-                  {comments.commenting ? 'Comentando…' : 'Comentar'}
+                  {comments.commenting ? tr('Comentando…', 'Commenting…') : tr('Comentar', 'Comment')}
                 </Button>
               </div>
             }
@@ -95,14 +101,14 @@ export function PrototypeChat({
               comments.all.length > 0 && (
                 <div className="flex flex-wrap gap-1 px-2 pt-2">
                   <span
-                    title={ready.length ? 'Vão junto com o próximo envio' : 'Escreva nos balões da página'}
+                    title={ready.length ? tr('Vão junto com o próximo envio', 'Sent with your next message') : tr('Escreva nos balões da página', 'Write in the bubbles on the page')}
                     className="flex min-w-0 max-w-full items-center gap-1 rounded-md bg-accent/15 py-0.5 pl-2 pr-1 text-[12px] text-accent"
                   >
                     <MessageSquarePlus size={11} className="shrink-0" />
                     <span className="truncate">{countText(ready.length)}</span>
                     <button
-                      aria-label="Descartar os comentários"
-                      title="Descartar os comentários"
+                      aria-label={tr('Descartar os comentários', 'Discard comments')}
+                      title={tr('Descartar os comentários', 'Discard comments')}
                       onClick={comments.onDiscard}
                       className="flex size-4 shrink-0 items-center justify-center rounded-md hover:bg-accent/20"
                     >
@@ -114,7 +120,7 @@ export function PrototypeChat({
             }
           />
         </div>
-        <SideResizer />
+        <WidthResizer width={sideWidthStore} />
       </section>
       <Presence kind="modal">
         {mcpOpen && <McpPanel conversationKey={key} cwd={projectPath} account={account} onClose={() => setMcpOpen(false)} />}

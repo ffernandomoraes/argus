@@ -3,6 +3,7 @@ import { useCopied } from '../../lib/useCopied'
 import { IS_WIN } from '../../platform'
 import { Button } from '../../ui/Button'
 import { Row } from '../controls'
+import { tr } from '../../i18n'
 
 // Windows com WSL: projetos no Linux rodam com o Claude Code de lá. Quando algo não funciona, o
 // diagnóstico junta o que o app achou em cada distro e o que pediu ao WSL, para mandar a quem ajuda.
@@ -34,10 +35,13 @@ export function WslRow() {
   return (
     <Row
       label="Linux (WSL)"
-      description={`Pastas do WSL (${distros.join(', ')}) rodam com o Claude Code, o login e o git de lá. Se algo não funcionar, copie o diagnóstico e mande para quem te ajuda.`}
+      description={tr(
+        `Pastas do WSL (${distros.join(', ')}) rodam com o Claude Code, o login e o git de lá. Se algo não funcionar, copie o diagnóstico e mande para quem te ajuda.`,
+        `WSL folders (${distros.join(', ')}) run with the Claude Code, login and git from there. If something does not work, copy the diagnostics and send them to whoever is helping you.`
+      )}
     >
       <Button disabled={busy} onClick={run}>
-        {copied ? 'Copiado' : busy ? 'Lendo…' : 'Copiar diagnóstico'}
+        {copied ? tr('Copiado', 'Copied') : busy ? tr('Lendo…', 'Reading…') : tr('Copiar diagnóstico', 'Copy diagnostics')}
       </Button>
     </Row>
   )

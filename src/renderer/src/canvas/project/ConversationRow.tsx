@@ -3,6 +3,7 @@ import { ConversationLabel } from '../blocks/ConversationLabel'
 import { TimeAgo } from '../blocks/TimeAgo'
 import type { ConversationSummary } from '../types'
 import { useIsPoppedOut } from '../useCanvasView'
+import { tr } from '../../i18n'
 
 // Conversa como linha dentro da caixa da pasta: ícone (conversa ou design), título com a bolinha
 // de status logo depois e, à direita, "esperando você" quando ela pede atenção ou há quanto
@@ -32,7 +33,7 @@ export const ConversationRow = memo(function ConversationRow({
     >
       <ConversationLabel conversation={c} poppedOut={poppedOut} />
       {c.status === 'needs-you' ? (
-        <span className="ml-auto shrink-0 pl-2 text-[11px] font-semibold text-needs-you">esperando você</span>
+        <span className="ml-auto shrink-0 pl-2 text-[11px] font-semibold text-needs-you">{tr('esperando você', 'waiting for you')}</span>
       ) : (
         c.status !== 'running' && <TimeAgo iso={c.updatedAt} className="pl-2" />
       )}

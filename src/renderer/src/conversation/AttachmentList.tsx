@@ -1,6 +1,7 @@
 import { FileText, X } from 'lucide-react'
 import { IconButton } from '../ui/IconButton'
 import type { Attachment } from './useAttachments'
+import { tr } from '../i18n'
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -37,7 +38,7 @@ export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRem
             </div>
           )}
           <IconButton
-            label={`Remover ${a.file.name}`}
+            label={tr(`Remover ${a.file.name}`, `Remove ${a.file.name}`)}
             variant="floating"
             size="xs"
             onClick={() => onRemove(a.id)}

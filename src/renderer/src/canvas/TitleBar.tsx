@@ -8,6 +8,7 @@ import { UpdateStatus } from './bars/UpdateStatus'
 import { updateProgress } from './bars/updateProgress'
 import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
 import { UsageIndicator } from './UsageIndicator'
+import { tr } from '../i18n'
 
 const Divider = () => <span className="h-4 w-px bg-line" />
 
@@ -50,7 +51,7 @@ export const TitleBar = memo(function TitleBar({
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
       {import.meta.env.DEV && (
         <span className="rounded-full border border-dev/40 bg-dev/10 px-2 py-px text-[11px] font-medium tracking-wide text-dev uppercase">
-          Desenvolvimento
+          {tr('Desenvolvimento', 'Development')}
         </span>
       )}
       {updates && (
@@ -60,7 +61,7 @@ export const TitleBar = memo(function TitleBar({
           {/* Fora da área que arrasta a janela, senão o botão não recebe o mouse. */}
           <span className="no-drag flex items-center gap-0.5">
             <NavButton
-              label={uiHidden ? 'Mostrar interface' : 'Ocultar interface'}
+              label={uiHidden ? tr('Mostrar interface', 'Show interface') : tr('Ocultar interface', 'Hide interface')}
               shortcut={'⌘ \\'}
               compact
               selected={uiHidden}
@@ -69,7 +70,7 @@ export const TitleBar = memo(function TitleBar({
             >
               {uiHidden ? <Eye size={14} /> : <EyeOff size={14} />}
             </NavButton>
-            <NavButton label="Nova janela do canvas" shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
+            <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
               <AppWindow size={14} />
             </NavButton>
           </span>

@@ -1,4 +1,5 @@
 import { net } from 'electron'
+import { tr } from '../i18n'
 import { apiFailure, type Release } from './releases'
 
 // Consultas à API do GitHub (repositório público, sem login).
@@ -20,7 +21,7 @@ async function getJson<T>(path: string): Promise<T | null> {
       signal: AbortSignal.timeout(TIMEOUT_MS)
     })
   } catch (err) {
-    if ((err as Error).name === 'TimeoutError') throw new Error('O GitHub não respondeu a tempo ao procurar a versão nova.')
+    if ((err as Error).name === 'TimeoutError') throw new Error(tr('O GitHub não respondeu a tempo ao procurar a versão nova.', "GitHub didn't respond in time while checking for a new version."))
     throw err
   }
   if (res.status === 304 && cached) return cached.body as T

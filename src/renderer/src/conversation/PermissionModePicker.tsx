@@ -8,6 +8,7 @@ import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { MenuArrow } from '../ui/MenuArrow'
 import { MENU_HOVER } from '../ui/menuStyles'
+import { tr } from '../i18n'
 
 // A lista dos modos mora em permissionModes.ts; sai daqui também, como antes, para as Configurações.
 export { MODES } from './permissionModes'
@@ -29,7 +30,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        title={`Modo: ${current.label}${value ? '' : ' (padrão)'}`}
+        title={tr(`Modo: ${current.label}${value ? '' : ' (padrão)'}`, `Mode: ${current.label}${value ? '' : ' (default)'}`)}
         className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : current.danger ? 'text-red-400' : 'text-muted'
         }`}
@@ -43,7 +44,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
         {open && (
           <div className={`absolute bottom-full right-0 z-10 mb-2.5 w-80 whitespace-normal ${POPOVER}`}>
             <MenuArrow side="bottom" align="end" />
-            <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modo</div>
+            <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">{tr('Modo', 'Mode')}</div>
             {MODES.map((m) => {
               const ModeIcon = m.icon
               return (
@@ -59,7 +60,7 @@ export function PermissionModePicker({ value, onChange }: { value: string; onCha
                   <span className="flex-1">
                     <span className={`block text-xs ${m.danger ? 'text-red-400' : 'text-text'}`}>
                       {m.label}
-                      {m.value === info?.defaultPermissionMode && <span className="text-faint"> - padrão</span>}
+                      {m.value === info?.defaultPermissionMode && <span className="text-faint">{tr(' - padrão', ' - default')}</span>}
                     </span>
                     <span className="mt-0.5 block text-[12px] leading-snug text-faint">{m.description}</span>
                   </span>

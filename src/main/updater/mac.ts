@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { promisify } from 'node:util'
+import { tr } from '../i18n'
 
 // Troca do app no Mac: baixa o .zip, confere se a assinatura é a mesma do app instalado e troca
 // o .app depois que o processo sai.
@@ -34,7 +35,7 @@ export async function extractApp(zip: string, dir: string): Promise<string> {
     const path = join(dir, name)
     if (name.endsWith('.app') && (await stat(path)).isDirectory()) return path
   }
-  throw new Error('A versão baixada não tem o app.')
+  throw new Error(tr('A versão baixada não tem o app.', "The downloaded version doesn't contain the app."))
 }
 
 // A versão baixada: assinatura íntegra e o mesmo certificado do app em uso.
@@ -42,10 +43,10 @@ export async function verifyApp(next: string, current: string): Promise<void> {
   try {
     await run('codesign', ['--verify', '--deep', '--strict', next])
   } catch {
-    throw new Error('A versão baixada não passou na conferência de assinatura.')
+    throw new Error(tr('A versão baixada não passou na conferência de assinatura.', 'The downloaded version failed the signature check.'))
   }
   const [installed, downloaded] = await Promise.all([requirement(current), requirement(next)])
-  if (!installed || installed !== downloaded) throw new Error('A versão baixada foi assinada por outro certificado.')
+  if (!installed || installed !== downloaded) throw new Error(tr('A versão baixada foi assinada por outro certificado.', 'The downloaded version was signed with a different certificate.'))
 }
 
 // O executável do app novo está lá? Sem ele, a troca deixaria no lugar um app que não abre.

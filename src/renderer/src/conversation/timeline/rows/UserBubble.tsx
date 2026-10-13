@@ -5,6 +5,7 @@ import { CopyButton } from '../../CopyButton'
 import { formatClock, formatImageCount } from '../../format'
 import type { ImageView } from '../imageViews'
 import { ImageThumbs } from './ImageThumbs'
+import { tr } from '../../../i18n'
 
 // Mensagem sua. queued: enviada enquanto o Claude trabalhava.
 // imageView: lê as imagens enviadas (miniaturas) e abre o preview grande numa delas.
@@ -34,7 +35,7 @@ export const UserBubble = memo(function UserBubble({
               <button
                 onClick={() => imageView?.open(0)}
                 disabled={!imageView}
-                title={imageView ? (images === 1 ? 'Ver imagem' : 'Ver imagens') : undefined}
+                title={imageView ? (images === 1 ? tr('Ver imagem', 'View image') : tr('Ver imagens', 'View images')) : undefined}
                 className="flex items-center gap-1.5 self-start rounded-md text-[13px] text-muted enabled:hover:text-text enabled:hover:underline"
               >
                 <ImageIcon size={12} className="shrink-0" />
@@ -60,12 +61,12 @@ export const UserBubble = memo(function UserBubble({
         <div className="flex items-center justify-end gap-1 px-1 text-[13px] text-faint">
           {(at || queued) && (
             <span>
-              {queued && 'enviada durante a resposta'}
+              {queued && tr('enviada durante a resposta', 'sent during the response')}
               {queued && at && ' - '}
               {at && formatClock(at)}
             </span>
           )}
-          {text && <CopyButton text={text} label="Copiar prompt" />}
+          {text && <CopyButton text={text} label={tr('Copiar prompt', 'Copy prompt')} />}
         </div>
       )}
     </div>

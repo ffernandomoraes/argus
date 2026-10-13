@@ -1,11 +1,12 @@
 import { MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '../../../../shared/auth'
 import { findAccount } from '../../auth/accounts'
+import { tr } from '../../i18n'
 
 const PROVIDERS: Record<string, string> = {
   bedrock: 'Amazon Bedrock',
   vertex: 'Google Vertex AI',
   foundry: 'Microsoft Foundry',
-  gateway: 'gateway da empresa'
+  gateway: tr('gateway da empresa', 'company gateway')
 }
 
 // O que o card de uma conta mostra, tirado do estado das contas.
@@ -39,8 +40,8 @@ export function accountSummary(account: ClaudeAccount, auth: AuthState): Account
     isDefault,
     loggedIn,
     external,
-    who: s?.email ?? (external ? (PROVIDERS[s.provider!] ?? s.provider!) : 'Conta conectada'),
-    footer: loggedIn ? [org, plan && `Plano ${plan}`, s?.method === 'console' && 'Anthropic Console'].filter(Boolean).join(' - ') : '',
+    who: s?.email ?? (external ? (PROVIDERS[s.provider!] ?? s.provider!) : tr('Conta conectada', 'Connected account')),
+    footer: loggedIn ? [org, plan && tr(`Plano ${plan}`, `${plan} plan`), s?.method === 'console' && 'Anthropic Console'].filter(Boolean).join(' - ') : '',
     fallback: isDefault ? auth.accounts.find((a) => a.id === MAIN_ACCOUNT)?.name : findAccount(auth)?.name
   }
 }

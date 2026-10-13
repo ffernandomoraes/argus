@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DESIGN_VERSION, type Design } from '../../../shared/design'
+import { tr } from '../i18n'
 
 // O design aberto no drawer: lido do disco (ou novo) e atualizado pelo que a tela e a conversa
 // informam. Design novo fica só aqui até começar (primeiro pedido ou tela aberta): não entra na
@@ -22,7 +23,7 @@ export function useDesign(designId: string, projectPath: string) {
           saved ?? {
             version: DESIGN_VERSION,
             id: designId,
-            name: 'Novo protótipo',
+            name: tr('Novo protótipo', 'New prototype'),
             projectPath,
             device: 'desktop',
             createdAt: now,

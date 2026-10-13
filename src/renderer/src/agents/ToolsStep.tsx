@@ -1,6 +1,7 @@
 import { Group, Row, Segmented, Select } from '../settings/controls'
 import { MODELS, TOOLS, type Draft } from './agentDraft'
 import { INPUT } from './Field'
+import { tr } from '../i18n'
 
 // Segundo passo: o modelo e as ferramentas que o agente pode usar.
 export function ToolsStep({
@@ -15,7 +16,10 @@ export function ToolsStep({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
       <Group>
-        <Row label="Modelo" description="Um modelo menor responde mais rápido e gasta menos; um maior pensa melhor.">
+        <Row
+          label={tr('Modelo', 'Model')}
+          description={tr('Um modelo menor responde mais rápido e gasta menos; um maior pensa melhor.', 'A smaller model answers faster and costs less; a larger one thinks better.')}
+        >
           <Select value={draft.model} onChange={(model) => onChange({ model })}>
             {MODELS.map((m) => (
               <option key={m.value} value={m.value}>
@@ -25,18 +29,18 @@ export function ToolsStep({
           </Select>
         </Row>
         <Row
-          label="Ferramentas"
+          label={tr('Ferramentas', 'Tools')}
           description={
             draft.allTools
-              ? 'Todas as da conversa, MCPs incluídos (Playwright, Figma...).'
-              : 'Só as marcadas abaixo. Menos ferramentas deixa o agente mais focado e mais seguro.'
+              ? tr('Todas as da conversa, MCPs incluídos (Playwright, Figma...).', 'All of the chat’s tools, MCPs included (Playwright, Figma...).')
+              : tr('Só as marcadas abaixo. Menos ferramentas deixa o agente mais focado e mais seguro.', 'Only the ones checked below. Fewer tools keep the agent more focused and safer.')
           }
         >
           <Segmented
             value={draft.allTools ? 'all' : 'some'}
             options={[
-              { value: 'all', label: 'Todas' },
-              { value: 'some', label: 'Só estas' }
+              { value: 'all', label: tr('Todas', 'All') },
+              { value: 'some', label: tr('Só estas', 'Only these') }
             ]}
             onChange={(v) => onChange({ allTools: v === 'all' })}
           />
@@ -56,7 +60,7 @@ export function ToolsStep({
           <input
             value={draft.extraTools}
             onChange={(e) => onChange({ extraTools: e.target.value })}
-            placeholder="Outras, separadas por vírgula: mcp__playwright__browser_navigate, ..."
+            placeholder={tr('Outras, separadas por vírgula: mcp__playwright__browser_navigate, ...', 'Others, comma-separated: mcp__playwright__browser_navigate, ...')}
             spellCheck={false}
             className={`${INPUT} font-mono text-[13px]`}
           />

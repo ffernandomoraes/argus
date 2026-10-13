@@ -5,6 +5,7 @@ import { Presence } from '../../motion'
 import { MENU_ACTIVE, MENU_HOVER } from '../../ui/menuStyles'
 import { groupByFamily } from '../modelOptions'
 import { POPOVER } from '../popover'
+import { tr } from '../../i18n'
 
 const PICKER_ROW = `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-text ${MENU_HOVER}`
 
@@ -26,13 +27,13 @@ export function ModelList({
   return (
     // Sem rolagem aqui: o submenu das versões sai para o lado e seria cortado
     <div>
-      <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">Modelo</div>
-      {models.length === 0 && <div className="px-2 py-1.5 text-xs text-faint">Carregando modelos…</div>}
+      <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">{tr('Modelo', 'Model')}</div>
+      {models.length === 0 && <div className="px-2 py-1.5 text-xs text-faint">{tr('Carregando modelos…', 'Loading models…')}</div>}
 
       {defaultModel && (
         <button onClick={() => onChange('')} className={PICKER_ROW}>
           <span className="flex-1">
-            Padrão
+            {tr('Padrão', 'Default')}
             {defaultModel.resolvedName && <span className="text-faint"> - {defaultModel.resolvedName}</span>}
           </span>
           {value === '' && <Check size={13} className="text-muted" />}

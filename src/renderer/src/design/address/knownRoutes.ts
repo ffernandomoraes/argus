@@ -4,6 +4,7 @@ import { createStore } from '../../lib/createStore'
 import { useStore } from '../../lib/useStore'
 import type { ProjectApp } from './projectApps'
 import { pathOnly } from './routeText'
+import { tr } from '../../i18n'
 
 export type RouteOption = { route: string; name?: string }
 
@@ -51,8 +52,8 @@ export function dedupe(options: RouteOption[]): RouteOption[] {
 // barra no fim), só as rotas dos arquivos da pasta dele.
 function knownOptions(k: Known, key: string, projectPath: string, dir: string): RouteOption[] {
   return dedupe([
-    ...(k.visited.get(key) ?? []).map((route) => ({ route, name: 'aberta' })),
-    ...[...(k.linked.get(key) ?? [])].map((route) => ({ route, name: 'link na página' })),
+    ...(k.visited.get(key) ?? []).map((route) => ({ route, name: tr('aberta', 'opened') })),
+    ...[...(k.linked.get(key) ?? [])].map((route) => ({ route, name: tr('link na página', 'link on page') })),
     ...(k.scanned.get(projectPath) ?? [])
       .filter((r) => !dir || r.from.startsWith(dir))
       .map((r) => ({ route: r.route, name: r.from.split('/').pop() }))

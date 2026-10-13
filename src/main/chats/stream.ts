@@ -1,5 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { ChatActivity, ChatState, RemoteControl } from '../../shared/chat'
+import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
 import { finishedAgents, subagentSteps, taskChange, type AgentsChange, type TaskMessage } from './subagents'
 import { closedFields, TOOL_INPUT_SCAN } from './toolPreview'
@@ -193,7 +194,7 @@ function readResult(m: Result, chat: ChatState, reader: Reader, ctx: ReadContext
       activity: undefined,
       // A prévia fica: a tela tira quando o histórico relido trouxer o mesmo texto (ver ChatSession).
       revision: chat.revision + 1,
-      error: failed ? ('result' in m && m.result ? m.result : 'O Claude parou com erro.') : undefined
+      error: failed ? ('result' in m && m.result ? m.result : tr('O Claude parou com erro.', 'Claude stopped with an error.')) : undefined
     }
   }
 }

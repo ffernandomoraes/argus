@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CliStatus } from '../../../../shared/cli'
 import { Button } from '../../ui/Button'
 import { Row } from '../controls'
+import { tr } from '../../i18n'
 
 // `argus .` em qualquer terminal abre a pasta no canvas, como o `code .` do VS Code.
 export function CliRow() {
@@ -29,15 +30,20 @@ export function CliRow() {
   const note = status?.error ?? status?.warning
   return (
     <Row
-      label="Comando argus no terminal"
-      description={`Digite "argus ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.${note ? ` ${note}` : ''}`}
+      label={tr('Comando argus no terminal', 'argus command in the terminal')}
+      description={
+        tr(
+          'Digite "argus ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.',
+          'Type "argus ." in any terminal to open the folder on the canvas. In the app\'s terminals it already works without installing.'
+        ) + (note ? ` ${note}` : '')
+      }
     >
       {status && (
         <Button
           disabled={busy || !!status.error}
           onClick={() => run(status.installed ? window.api.cli.uninstall : window.api.cli.install)}
         >
-          {status.installed ? 'Remover' : 'Instalar'}
+          {status.installed ? tr('Remover', 'Remove') : tr('Instalar', 'Install')}
         </Button>
       )}
     </Row>

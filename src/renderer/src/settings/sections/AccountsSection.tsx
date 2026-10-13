@@ -7,6 +7,7 @@ import { ConfirmDialog, type ConfirmRequest } from '../../canvas/ConfirmDialog'
 import { Presence } from '../../motion'
 import { THIS_COMPUTER } from '../../platform'
 import { AccountCard } from '../accounts/AccountCard'
+import { tr } from '../../i18n'
 
 // Contas do Claude Code. A principal é a do terminal e do VS Code: entrar e sair nela valem para o
 // Mac todo. As outras ficam só no Argus, cada uma com a pasta e o login dela, e cada grupo do
@@ -31,7 +32,7 @@ export function AccountsSection() {
     if ((prevStatus === 'starting' || prevStatus === 'waiting') && status === 'idle') setTarget(null)
   }
 
-  if (!auth || !login) return <p className="text-xs text-faint">Conferindo as contas…</p>
+  if (!auth || !login) return <p className="text-xs text-faint">{tr('Conferindo as contas…', 'Checking accounts…')}</p>
 
   // Login em andamento, mesmo que tenha começado na tela de boas-vindas.
   const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId } : target
@@ -41,10 +42,19 @@ export function AccountsSection() {
       <div className="max-w-sm">
         <p className="mb-4 text-xs leading-relaxed text-faint">
           {!account
-            ? 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.'
+            ? tr(
+                'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.',
+                'Sign in with the other account. It stays in Argus only: the terminal and VS Code keep the main one.'
+              )
             : account.id === MAIN_ACCOUNT
-              ? `Entre com a conta que vai ficar no lugar da principal, ou com a mesma para renovar o acesso. Vale também para o terminal e o VS Code ${THIS_COMPUTER}.`
-              : `Entre com a conta que vai ficar no lugar de ${account.name}, ou com a mesma para renovar o acesso.`}
+              ? tr(
+                  `Entre com a conta que vai ficar no lugar da principal, ou com a mesma para renovar o acesso. Vale também para o terminal e o VS Code ${THIS_COMPUTER}.`,
+                  `Sign in with the account that will replace the main one, or with the same one to renew access. This also applies to the terminal and VS Code ${THIS_COMPUTER}.`
+                )
+              : tr(
+                  `Entre com a conta que vai ficar no lugar de ${account.name}, ou com a mesma para renovar o acesso.`,
+                  `Sign in with the account that will replace ${account.name}, or with the same one to renew access.`
+                )}
         </p>
         <LoginPanel
           login={login}
@@ -60,8 +70,14 @@ export function AccountsSection() {
     <>
       <p className="mb-4 text-xs leading-relaxed text-faint">
         {multiple
-          ? 'Cada grupo do canvas usa uma conta: botão direito no grupo > Conta do Claude. Fora de grupo vale a padrão. Histórico, CLAUDE.md, agentes, skills, plugins e configurações são os mesmos em todas; o login e os MCPs são de cada conta.'
-          : 'Para usar outra conta em alguns grupos (uma pessoal e uma da empresa, por exemplo), adicione aqui. A principal continua sendo a do terminal e do VS Code.'}
+          ? tr(
+              'Cada grupo do canvas usa uma conta: botão direito no grupo > Conta do Claude. Fora de grupo vale a padrão. Histórico, CLAUDE.md, agentes, skills, plugins e configurações são os mesmos em todas; o login e os MCPs são de cada conta.',
+              'Each canvas group uses one account: right-click the group > Claude account. Outside groups, the default one is used. History, CLAUDE.md, agents, skills, plugins and settings are shared by all; login and MCPs belong to each account.'
+            )
+          : tr(
+              'Para usar outra conta em alguns grupos (uma pessoal e uma da empresa, por exemplo), adicione aqui. A principal continua sendo a do terminal e do VS Code.',
+              'To use another account in some groups (a personal one and a work one, for example), add it here. The main one is still the one used by the terminal and VS Code.'
+            )}
       </p>
       <div className="flex flex-col gap-3">
         {auth.accounts.map((account) => (
@@ -79,7 +95,7 @@ export function AccountsSection() {
         className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text"
       >
         <Plus size={13} />
-        Adicionar conta
+        {tr('Adicionar conta', 'Add account')}
       </button>
       <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>
     </>

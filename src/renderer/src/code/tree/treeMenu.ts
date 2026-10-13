@@ -3,6 +3,7 @@ import type { FileEntry } from '../../../../shared/files'
 import type { MenuItem } from '../../canvas/ContextMenu'
 import { FILE_MANAGER } from '../../platform'
 import { parentOf } from './treePaths'
+import { tr } from '../../i18n'
 
 export type TreeMenuActions = {
   create: (dir: string, isDir: boolean) => void
@@ -23,22 +24,22 @@ const BROWSER_FILE = /\.(html?|xhtml|pdf|svg|png|jpe?g|gif|webp|avif)$/i
 export function treeMenu(entry: FileEntry | null, a: TreeMenuActions): MenuItem[] {
   const dir = entry ? (entry.isDir ? entry.path : parentOf(entry.path)) : ''
   const items: MenuItem[] = [
-    { type: 'action', label: 'Novo arquivo', icon: FilePlus, onSelect: () => a.create(dir, false) },
-    { type: 'action', label: 'Nova pasta', icon: FolderPlus, onSelect: () => a.create(dir, true) },
+    { type: 'action', label: tr('Novo arquivo', 'New file'), icon: FilePlus, onSelect: () => a.create(dir, false) },
+    { type: 'action', label: tr('Nova pasta', 'New folder'), icon: FolderPlus, onSelect: () => a.create(dir, true) },
     { type: 'separator' }
   ]
-  if (entry) items.push({ type: 'action', label: 'Copiar', icon: Copy, onSelect: () => a.copy(entry.path) })
-  items.push({ type: 'action', label: 'Colar', icon: ClipboardPaste, onSelect: () => a.paste(dir) })
+  if (entry) items.push({ type: 'action', label: tr('Copiar', 'Copy'), icon: Copy, onSelect: () => a.copy(entry.path) })
+  items.push({ type: 'action', label: tr('Colar', 'Paste'), icon: ClipboardPaste, onSelect: () => a.paste(dir) })
   if (entry) {
     items.push(
       { type: 'separator' },
-      { type: 'action', label: 'Copiar caminho relativo', icon: Link, onSelect: () => a.copyPath(entry.path) },
-      { type: 'action', label: 'Renomear', icon: Pencil, onSelect: () => a.rename(entry.path) }
+      { type: 'action', label: tr('Copiar caminho relativo', 'Copy relative path'), icon: Link, onSelect: () => a.copyPath(entry.path) },
+      { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => a.rename(entry.path) }
     )
   }
   if (entry && !entry.isDir && BROWSER_FILE.test(entry.path))
-    items.push({ type: 'action', label: 'Abrir no navegador', icon: Globe, onSelect: () => a.openInBrowser(entry.path) })
-  items.push({ type: 'action', label: `Mostrar no ${FILE_MANAGER}`, icon: FolderSearch, onSelect: () => a.reveal(entry?.path ?? '') })
-  if (entry) items.push({ type: 'separator' }, { type: 'action', label: 'Excluir', icon: Trash2, danger: true, onSelect: () => a.remove(entry) })
+    items.push({ type: 'action', label: tr('Abrir no navegador', 'Open in browser'), icon: Globe, onSelect: () => a.openInBrowser(entry.path) })
+  items.push({ type: 'action', label: tr(`Mostrar no ${FILE_MANAGER}`, `Show in ${FILE_MANAGER}`), icon: FolderSearch, onSelect: () => a.reveal(entry?.path ?? '') })
+  if (entry) items.push({ type: 'separator' }, { type: 'action', label: tr('Excluir', 'Delete'), icon: Trash2, danger: true, onSelect: () => a.remove(entry) })
   return items
 }

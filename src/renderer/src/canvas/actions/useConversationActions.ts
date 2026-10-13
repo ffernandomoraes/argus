@@ -14,6 +14,8 @@ import { DESIGN_PREFIX, getSessions, refreshNow } from '../sessionsStore'
 import type { ConversationSummary, ProjectData } from '../types'
 import { chatPanelOf, ownerOf } from './lookup'
 import type { FocusNode, NodesApi } from './types'
+import { tr } from '../../i18n'
+import { TRASH_EN } from '../menus/shared'
 
 type Options = {
   api: NodesApi
@@ -32,7 +34,7 @@ type Options = {
 // quando ela chegar (a janela separada e o bloco no canvas acompanham a lista da pasta).
 const placeholder = (id: string): ConversationSummary => ({
   id,
-  title: 'Conversa',
+  title: tr('Conversa', 'Chat'),
   kind: 'conversa',
   status: 'idle',
   updatedAt: '',
@@ -100,7 +102,10 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
   const trashConversation = useCallback(
     (path: string, conversationId: string) => {
       void window.api.sessions.trash(path, conversationId).then((error) => {
-        if (error) return confirm({ title: 'Não deu para mover a conversa para a Lixeira', description: error })
+        if (error) return confirm({
+            title: tr('Não deu para mover a conversa para a Lixeira', `Couldn't move the chat to ${TRASH_EN}`),
+            description: error
+          })
         drawers.forget(conversationId)
         const panel = chatPanelOf(nodesRef.current, conversationId)
         if (panel) change((ns) => removeNode(ns, panel.id))
@@ -144,7 +149,9 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
       },
       // Link de arquivo clicado numa conversa do canvas: abre o código daquela pasta.
       openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) =>
-        drawers.openFile({ project }, project.path, path, lines, diff)
+        drawers.openFile({ project }, project.path, path, lines, diff),
+      toggleProjectCode: (project: ProjectData, open: boolean) =>
+        open ? drawers.closeCode() : drawers.openProjectCode(project)
     }),
     [nodesRef, change, drawers, popoutConversation, watchLoose]
   )

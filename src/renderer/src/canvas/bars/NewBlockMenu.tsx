@@ -8,6 +8,7 @@ import { NavButton } from '../../ui/NavButton'
 import { useEscape } from '../../useEscape'
 import { useOutsideClick } from '../../useOutsideClick'
 import { useCanvasActions } from '../CanvasContext'
+import { tr } from '../../i18n'
 
 // "Novo bloco" da barra lateral: grupo, pasta, conversa sem projeto ou nota, no meio da tela.
 export function NewBlockMenu() {
@@ -26,15 +27,15 @@ export function NewBlockMenu() {
   }
 
   const items = [
-    { label: 'Grupo', icon: SquareDashed, onClick: () => addGroup(center()) },
-    { label: 'Nova pasta', icon: FolderPlus, onClick: () => addFolder(center()) },
-    { label: 'Nova conversa', icon: MessageCirclePlus, onClick: () => newLooseConversation() },
-    { label: 'Nota', icon: StickyNote, shortcut: 'C', onClick: () => addNote(center()) }
+    { label: tr('Grupo', 'Group'), icon: SquareDashed, onClick: () => addGroup(center()) },
+    { label: tr('Nova pasta', 'New folder'), icon: FolderPlus, onClick: () => addFolder(center()) },
+    { label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, onClick: () => newLooseConversation() },
+    { label: tr('Nota', 'Note'), icon: StickyNote, shortcut: 'C', onClick: () => addNote(center()) }
   ]
 
   return (
     <div ref={ref} className="relative">
-      <NavButton label="Novo bloco" onClick={() => setOpen((o) => !o)} active={open} primary>
+      <NavButton label={tr('Novo bloco', 'New block')} onClick={() => setOpen((o) => !o)} active={open} primary>
         <Plus size={16} />
       </NavButton>
       <Presence kind="menu">

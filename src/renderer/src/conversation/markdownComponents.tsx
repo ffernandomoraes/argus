@@ -1,5 +1,6 @@
 import { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { inlineFileHref } from './fileLinks'
 import { MarkdownImage, MarkdownLink } from './MarkdownLink'
 
 export const REMARK_PLUGINS = [remarkGfm]
@@ -30,16 +31,20 @@ export const MARKDOWN_COMPONENTS: Components = {
   hr: () => <hr className="my-3 border-line" />,
   // Código em linha; o de bloco é estilizado pelo <pre> abaixo. Trecho curto sem espaço (comando,
   // nome de arquivo) não quebra no hífen: "/remote-control" fica inteiro. Caminho longo segue quebrando.
-  code: ({ children, className }) =>
-    className ? (
-      <code className={className}>{children}</code>
-    ) : (
+  // Caminho de arquivo vira link, como os links de arquivo das respostas.
+  code: ({ children, className }) => {
+    if (className) return <code className={className}>{children}</code>
+    const text = typeof children === 'string' ? children : null
+    const code = (
       <code
-        className={`rounded bg-surface-2 px-1 py-0.5 font-mono text-[13px] ${typeof children === 'string' && children.length <= 40 && !/\s/.test(children) ? 'whitespace-nowrap' : ''}`}
+        className={`rounded bg-surface-2 px-1 py-0.5 font-mono text-[13px] ${text && text.length <= 40 && !/\s/.test(text) ? 'whitespace-nowrap' : ''}`}
       >
         {children}
       </code>
-    ),
+    )
+    const href = text && inlineFileHref(text)
+    return href ? <MarkdownLink href={href}>{code}</MarkdownLink> : code
+  },
   pre: ({ children }) => (
     <pre className="my-2 overflow-x-auto rounded-md border border-line bg-bg p-3 font-mono text-[13px] leading-relaxed [&_code]:bg-transparent [&_code]:p-0">
       {children}

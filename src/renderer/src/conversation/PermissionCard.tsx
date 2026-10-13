@@ -2,6 +2,7 @@ import { ShieldQuestion } from 'lucide-react'
 import type { PermissionAnswer, PermissionRequest } from '../../../shared/chat'
 import { DiffView } from './DiffView'
 import { QuestionCard } from './QuestionCard'
+import { tr } from '../i18n'
 
 // O Claude quer usar uma ferramenta (editar, rodar comando...) e espera a resposta.
 export function PermissionCard({
@@ -49,18 +50,18 @@ export function PermissionCard({
           onClick={() => onAnswer('deny')}
           className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg"
         >
-          Negar
+          {tr('Negar', 'Deny')}
         </button>
         {request.canAlwaysAllow && (
           <button
             onClick={() => onAnswer('always')}
             className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg"
           >
-            Sempre permitir
+            {tr('Sempre permitir', 'Always allow')}
           </button>
         )}
         <button onClick={() => onAnswer('allow')} className="rounded-md bg-ask px-2.5 py-1 font-medium text-ask-text hover:brightness-110">
-          Permitir
+          {tr('Permitir', 'Allow')}
         </button>
       </div>
     </div>

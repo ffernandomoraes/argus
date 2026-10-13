@@ -6,6 +6,7 @@ import { useCopied } from '../lib/useCopied'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
+import { tr } from '../i18n'
 
 const GIT_URL = 'https://git-scm.com/download/win'
 // Linux: o git vem do gerenciador de pacotes da distribuição (apt no Ubuntu e no Debian, dnf no
@@ -50,7 +51,7 @@ function Command({ command }: { command: string }) {
       <code className="min-w-0 flex-1 truncate font-mono text-xs text-text" title={command}>
         {command}
       </code>
-      <IconButton label="Copiar comando" size="xs" onClick={() => copy(command)}>
+      <IconButton label={tr('Copiar comando', 'Copy command')} size="xs" onClick={() => copy(command)}>
         {copied ? <Check size={13} /> : <Copy size={13} />}
       </IconButton>
     </div>
@@ -59,16 +60,23 @@ function Command({ command }: { command: string }) {
 
 // Claude Code: um clique roda o instalador oficial. Se falhar, o erro e o comando para o terminal.
 function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
-  if (claude.status === 'found') return <Item state="done" title="Claude Code" detail="Instalado." />
+  if (claude.status === 'found') return <Item state="done" title="Claude Code" detail={tr('Instalado.', 'Installed.')} />
   if (claude.status === 'installing') {
-    return <Item state="busy" title="Claude Code" detail="Instalando… pode levar um minuto, conforme a internet." />
+    return <Item state="busy" title="Claude Code" detail={tr('Instalando… pode levar um minuto, conforme a internet.', 'Installing… this may take a minute, depending on your connection.')} />
   }
   const failed = claude.status === 'failed'
   return (
     <Item
       state="todo"
       title="Claude Code"
-      detail={failed ? 'Não deu para instalar.' : 'Ainda não está instalado. O instalador é o oficial da Anthropic e fica na sua pasta de usuário.'}
+      detail={
+        failed
+          ? tr('Não deu para instalar.', 'Could not install.')
+          : tr(
+              'Ainda não está instalado. O instalador é o oficial da Anthropic e fica na sua pasta de usuário.',
+              'Not installed yet. The installer is the official one from Anthropic and goes in your user folder.'
+            )
+      }
     >
       {failed && claude.message && (
         <pre className="mb-3 max-h-24 overflow-auto whitespace-pre-wrap rounded-md border border-line bg-bg px-2.5 py-1.5 font-mono text-[12px] text-red-400">
@@ -76,11 +84,13 @@ function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
         </pre>
       )}
       <Button size="xl" variant="primary" onClick={() => window.api.auth.install()}>
-        {failed ? 'Tentar de novo' : 'Instalar Claude Code'}
+        {failed ? tr('Tentar de novo', 'Try again') : tr('Instalar Claude Code', 'Install Claude Code')}
       </Button>
       {failed && (
         <div className="mt-3 flex flex-col gap-2">
-          <p className="text-xs text-faint">Ou rode no {IS_WIN ? 'PowerShell' : 'Terminal'} e confira de novo:</p>
+          <p className="text-xs text-faint">
+            {tr(`Ou rode no ${IS_WIN ? 'PowerShell' : 'Terminal'} e confira de novo:`, `Or run this in ${IS_WIN ? 'PowerShell' : 'Terminal'} and check again:`)}
+          </p>
           <Command command={claude.command} />
         </div>
       )}
@@ -101,11 +111,15 @@ export function SetupStep({ auth }: { auth: AuthState }) {
         <Item
           state={auth.claude.git ? 'done' : 'todo'}
           title="Git for Windows"
-          detail={auth.claude.git ? 'Instalado.' : 'O Claude Code usa o Git para rodar comandos no Windows. Instale e confira de novo.'}
+          detail={
+            auth.claude.git
+              ? tr('Instalado.', 'Installed.')
+              : tr('O Claude Code usa o Git para rodar comandos no Windows. Instale e confira de novo.', 'Claude Code uses Git to run commands on Windows. Install it and check again.')
+          }
         >
           {!auth.claude.git && (
             <Button size="xl" onClick={() => window.api.auth.open(GIT_URL)}>
-              Baixar o Git
+              {tr('Baixar o Git', 'Download Git')}
             </Button>
           )}
         </Item>
@@ -114,25 +128,33 @@ export function SetupStep({ auth }: { auth: AuthState }) {
         <Item
           state={auth.claude.git ? 'done' : 'todo'}
           title="Git"
-          detail={auth.claude.git ? 'Instalado.' : 'O Claude Code e o Argus usam o Git. Instale pelo terminal e confira de novo.'}
+          detail={
+            auth.claude.git
+              ? tr('Instalado.', 'Installed.')
+              : tr('O Claude Code e o Argus usam o Git. Instale pelo terminal e confira de novo.', 'Claude Code and Argus use Git. Install it from the terminal and check again.')
+          }
         >
           {!auth.claude.git && <Command command={LINUX_GIT} />}
         </Item>
       )}
       {account ? (
-        <Item state="done" title="Sua conta" detail={account.status?.email ?? account.name} />
+        <Item state="done" title={tr('Sua conta', 'Your account')} detail={account.status?.email ?? account.name} />
       ) : !claudeOk ? (
-        <Item state="todo" title="Sua conta" detail="Depois de instalar o Claude Code." />
+        <Item state="todo" title={tr('Sua conta', 'Your account')} detail={tr('Depois de instalar o Claude Code.', 'After installing Claude Code.')} />
       ) : checking ? (
-        <Item state="busy" title="Sua conta" detail="Conferindo o login…" />
+        <Item state="busy" title={tr('Sua conta', 'Your account')} detail={tr('Conferindo o login…', 'Checking login…')} />
       ) : (
-        <Item state="todo" title="Sua conta" detail="Entre com sua assinatura do Claude ou pague pelo uso da API.">
+        <Item
+          state="todo"
+          title={tr('Sua conta', 'Your account')}
+          detail={tr('Entre com sua assinatura do Claude ou pague pelo uso da API.', 'Sign in with your Claude subscription or pay per use with the API.')}
+        >
           <LoginPanel login={auth.login} onStart={(method) => window.api.auth.login(MAIN_ACCOUNT, method)} />
         </Item>
       )}
       {!busy && !(claudeOk && account && auth.claude.git) && (
         <button onClick={() => window.api.auth.refresh()} className="mt-3 self-start text-xs text-muted underline hover:text-text">
-          Já instalei - conferir de novo
+          {tr('Já instalei - conferir de novo', 'Already installed - check again')}
         </button>
       )}
     </div>

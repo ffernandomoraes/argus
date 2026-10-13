@@ -5,6 +5,7 @@ import { NavButton } from '../ui/NavButton'
 import { MENU_HOVER, MENU_ROW } from '../ui/menuStyles'
 import type { AreaNode } from './types'
 import { useFitAll, ZOOM_DURATION } from './useCanvasShortcuts'
+import { LOCALE, tr } from '../i18n'
 
 // Só muda quando um grupo muda: arrastar uma pasta não redesenha a barra.
 const sameGroups = (a: AreaNode[], b: AreaNode[]) => a.length === b.length && a.every((g, i) => g === b[i])
@@ -18,7 +19,7 @@ export const ViewBar = memo(function ViewBar() {
   const groups = useStore((s) => s.nodes.filter((n): n is AreaNode => n.type === 'area'), sameGroups)
   const colorOf = new Map(groups.map((g) => [g.id, g.data.color]))
   // Em ordem alfabética: com muitos grupos, acha-se pelo nome.
-  const anchors = [...groups].sort((a, b) => a.data.label.localeCompare(b.data.label, 'pt-BR'))
+  const anchors = [...groups].sort((a, b) => a.data.label.localeCompare(b.data.label, LOCALE))
 
   // No minimapa, o grupo é a área tingida na cor dele e o que está dentro, a cor cheia; fora de
   // grupo, o cinza padrão.
@@ -57,21 +58,21 @@ export const ViewBar = memo(function ViewBar() {
           />
         )}
         <div className="flex items-center justify-between gap-0.5">
-          <NavButton label="Diminuir zoom" shortcut="⌘ −" compact side="top" onClick={() => zoomOut({ duration: ZOOM_DURATION })}>
+          <NavButton label={tr('Diminuir zoom', 'Zoom out')} shortcut="⌘ −" compact side="top" onClick={() => zoomOut({ duration: ZOOM_DURATION })}>
             <Minus size={14} />
           </NavButton>
-          <NavButton label="Zoom em 100%" shortcut="⇧ 0" compact side="top" onClick={() => zoomTo(1, { duration: ZOOM_DURATION })}>
+          <NavButton label={tr('Zoom em 100%', 'Zoom to 100%')} shortcut="⇧ 0" compact side="top" onClick={() => zoomTo(1, { duration: ZOOM_DURATION })}>
             <span className="px-1 font-mono text-[11px]">{Math.round(zoom * 100)}%</span>
           </NavButton>
-          <NavButton label="Aumentar zoom" shortcut="⌘ +" compact side="top" onClick={() => zoomIn({ duration: ZOOM_DURATION })}>
+          <NavButton label={tr('Aumentar zoom', 'Zoom in')} shortcut="⌘ +" compact side="top" onClick={() => zoomIn({ duration: ZOOM_DURATION })}>
             <Plus size={14} />
           </NavButton>
-          <NavButton label="Ver tudo" shortcut="⇧ 1" compact side="top" onClick={fitAll}>
+          <NavButton label={tr('Ver tudo', 'Show all')} shortcut="⇧ 1" compact side="top" onClick={fitAll}>
             <Maximize size={14} />
           </NavButton>
           <span className="mx-0.5 h-4 w-px bg-line" />
           <NavButton
-            label={mapOpen ? 'Recolher minimapa' : 'Mostrar minimapa'}
+            label={mapOpen ? tr('Recolher minimapa', 'Hide minimap') : tr('Mostrar minimapa', 'Show minimap')}
             side="top-end"
             compact
             selected={mapOpen}

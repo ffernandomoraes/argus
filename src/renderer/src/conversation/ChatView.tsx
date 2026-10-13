@@ -17,11 +17,12 @@ import { useOptimisticSends, type OutgoingMessage } from './timeline/useOptimist
 import { useStickyScroll } from './timeline/useStickyScroll'
 import { useTimeline } from './timeline/useTimeline'
 import type { Message } from './types'
+import { tr } from '../i18n'
 
 const NO_AGENTS: AgentDef[] = []
 const NO_PROMPTS: string[] = []
 const asIs = (text: string) => text
-const LOST = 'A mensagem não chegou ao Claude. Tente enviar de novo.'
+const LOST = tr('A mensagem não chegou ao Claude. Tente enviar de novo.', 'The message didn’t reach Claude. Try sending it again.')
 
 export type ChatViewProps = {
   // Conversa dona do rascunho guardado.

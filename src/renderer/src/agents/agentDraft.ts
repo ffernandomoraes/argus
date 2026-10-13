@@ -1,30 +1,31 @@
 import type { AgentDef, AgentSaveRequest } from '../../../shared/agents'
+import { tr } from '../i18n'
 
 // Ferramentas do Claude Code que dá para marcar uma a uma. Outras (MCPs, por exemplo) vão no
 // campo de texto, pelo nome completo.
 export const TOOLS = [
-  { name: 'Read', label: 'Ler arquivos' },
-  { name: 'Grep', label: 'Buscar no código' },
-  { name: 'Glob', label: 'Procurar arquivos' },
-  { name: 'Edit', label: 'Editar' },
-  { name: 'Write', label: 'Criar arquivos' },
-  { name: 'Bash', label: 'Rodar comandos' },
-  { name: 'WebFetch', label: 'Abrir páginas' },
-  { name: 'WebSearch', label: 'Pesquisar na web' },
-  { name: 'TodoWrite', label: 'Lista de tarefas' },
-  { name: 'Skill', label: 'Usar skills' }
+  { name: 'Read', label: tr('Ler arquivos', 'Read files') },
+  { name: 'Grep', label: tr('Buscar no código', 'Search code') },
+  { name: 'Glob', label: tr('Procurar arquivos', 'Find files') },
+  { name: 'Edit', label: tr('Editar', 'Edit') },
+  { name: 'Write', label: tr('Criar arquivos', 'Create files') },
+  { name: 'Bash', label: tr('Rodar comandos', 'Run commands') },
+  { name: 'WebFetch', label: tr('Abrir páginas', 'Open web pages') },
+  { name: 'WebSearch', label: tr('Pesquisar na web', 'Search the web') },
+  { name: 'TodoWrite', label: tr('Lista de tarefas', 'To-do list') },
+  { name: 'Skill', label: tr('Usar skills', 'Use skills') }
 ]
 const TOOL_NAMES = new Set(TOOLS.map((t) => t.name))
 
 export const MODELS = [
-  { value: '', label: 'O mesmo da conversa' },
+  { value: '', label: tr('O mesmo da conversa', 'Same as the chat') },
   { value: 'opus', label: 'Opus' },
   { value: 'sonnet', label: 'Sonnet' },
   { value: 'haiku', label: 'Haiku' }
 ]
 
 // Criar um agente vai passo a passo; um agente salvo abre com os passos livres, como abas.
-export const STEPS = ['Instruções', 'Ferramentas e modelo']
+export const STEPS = [tr('Instruções', 'Instructions'), tr('Ferramentas e modelo', 'Tools and model')]
 export const LAST_STEP = STEPS.length - 1
 
 export type Draft = {
@@ -76,7 +77,11 @@ export const toSaveRequest = (d: Draft): AgentSaveRequest => ({
 
 // Campos obrigatórios ainda vazios, com o nome que aparece na tela.
 export function missing(d: Draft): string[] {
-  return [!d.name.trim() && 'nome', !d.description.trim() && 'quando usar', !d.prompt.trim() && 'instruções'].filter(
+  return [
+    !d.name.trim() && tr('nome', 'name'),
+    !d.description.trim() && tr('quando usar', 'when to use'),
+    !d.prompt.trim() && tr('instruções', 'instructions')
+  ].filter(
     (m): m is string => !!m
   )
 }

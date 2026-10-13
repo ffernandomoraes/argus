@@ -11,6 +11,7 @@ import { useEscape } from '../useEscape'
 import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { MenuArrow } from '../ui/MenuArrow'
+import { tr } from '../i18n'
 
 // Níveis de esforço e famílias de modelo moram em modelOptions.ts; saem daqui também, como antes,
 // para as Configurações.
@@ -38,8 +39,8 @@ export function ModelEffortPicker({
   const current = models.find((m) => m.value === settings.model)
   // Padrão mostra o modelo a que aponta hoje: "Opus 5.5".
   const currentName = current
-    ? current.value === '' ? (current.resolvedName ?? 'Padrão') : current.displayName
-    : settings.model || 'Padrão'
+    ? current.value === '' ? (current.resolvedName ?? tr('Padrão', 'Default')) : current.displayName
+    : settings.model || tr('Padrão', 'Default')
   // Sem lista ainda, mostra a régua inteira; modelo sem esforço (Haiku) esconde a régua.
   const allowed = current ? EFFORTS.filter((e) => current.efforts.includes(e.value)) : EFFORTS
   const dots = EFFORTS.findIndex((e) => e.value === settings.effort) + 1
@@ -48,7 +49,10 @@ export function ModelEffortPicker({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        title={`Modelo: ${currentName} - Esforço: ${allowed.length ? effortLabel(settings.effort) : 'não se aplica'}`}
+        title={tr(
+          `Modelo: ${currentName} - Esforço: ${allowed.length ? effortLabel(settings.effort) : 'não se aplica'}`,
+          `Model: ${currentName} - Effort: ${allowed.length ? effortLabel(settings.effort) : 'not applicable'}`
+        )}
         className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-surface-2 hover:text-text ${
           open ? 'bg-surface-2 text-text' : 'text-muted'
         }`}
@@ -60,7 +64,7 @@ export function ModelEffortPicker({
             <span className="text-faint">{effortLabel(settings.effort)}</span>
           </>
         )}
-        {settings.ultracode && <Workflow size={12} className="text-running" aria-label="Ultracode ligado" />}
+        {settings.ultracode && <Workflow size={12} className="text-running" aria-label={tr('Ultracode ligado', 'Ultracode on')} />}
         <ChevronUp size={12} className="text-faint" />
       </button>
 
@@ -78,14 +82,20 @@ export function ModelEffortPicker({
             <div className="my-1 h-px bg-line" />
             <Toggle
               label="Thinking"
-              description="Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas."
+              description={tr(
+                'Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas.',
+                'Thinks before responding. Better answers on hard tasks, a bit slower.'
+              )}
               checked={settings.thinking}
               onChange={(thinking) => onChange({ thinking })}
             />
             <Toggle
               label="Ultracode"
               icon={<Workflow size={12} />}
-              description="Usa vários subagentes em paralelo em toda tarefa, só nesta sessão. Gasta bem mais tokens."
+              description={tr(
+                'Usa vários subagentes em paralelo em toda tarefa, só nesta sessão. Gasta bem mais tokens.',
+                'Uses multiple subagents in parallel on every task, for this session only. Uses many more tokens.'
+              )}
               checked={settings.ultracode}
               onChange={(ultracode) => onChange({ ultracode })}
             />

@@ -1,6 +1,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { SessionSummary } from '../../shared/sessions'
+import { tr } from '../i18n'
 import { liveSessions } from '../liveSessions'
 import { mapLimit } from '../transcripts/mapLimit'
 import { projectDir } from '../transcripts/projectDir'
@@ -33,7 +34,7 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
     .filter((s): s is SummaryData => s !== null)
     .map((s) => ({
       id: s.id,
-      title: s.title,
+      title: s.title || tr('Conversa sem título', 'Untitled chat'),
       updatedAt: s.updatedAt,
       contextPercent: percentOf(s.usage),
       live: live.get(s.id) ?? null,

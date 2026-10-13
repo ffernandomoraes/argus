@@ -1,6 +1,7 @@
 import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
+import type { Lang, LangPreference } from './i18n'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
 import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
@@ -35,6 +36,11 @@ export type Api = {
   accent: {
     get: () => string | null
     onChange: (cb: (color: string | null) => void) => Off
+  }
+  // Idioma da interface já resolvido; o aviso chega quando muda nos ajustes.
+  language: {
+    get: () => Lang
+    onChange: (cb: () => void) => Off
   }
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   pickFolder: (distro?: string) => Promise<string | null>
@@ -225,6 +231,8 @@ export type Api = {
     // Cola na pasta os arquivos copiados no Finder (ou na árvore).
     paste: (root: string, dir: string) => Promise<FileOpResult>
     reveal: (root: string, rel: string) => void
+    // Abre no visualizador do sistema: Quick Look no Mac, app padrão no Windows e no Linux.
+    view: (root: string, rel: string) => void
     openInBrowser: (root: string, rel: string) => void
     watch: (root: string, rel: string) => void
     unwatch: () => void
@@ -256,6 +264,7 @@ export type Api = {
   settings: {
     get: () => Promise<AppSettings>
     setMenuBarIcon: (on: boolean) => Promise<AppSettings>
+    setLanguage: (pref: LangPreference) => Promise<AppSettings>
   }
   // Atualização do app pelos releases do GitHub.
   updates: {

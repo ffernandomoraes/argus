@@ -1,4 +1,5 @@
 import type { UpdateState } from '../../../../shared/updates'
+import { tr } from '../../i18n'
 
 export type UpdateProgress = {
   // Versão baixada e pronta para entrar ao reiniciar.
@@ -12,9 +13,9 @@ export function updateProgress(state: UpdateState | undefined): UpdateProgress {
     ready: state?.status === 'ready' ? state.version : null,
     progress:
       state?.status === 'checking'
-        ? 'Procurando atualização…'
+        ? tr('Procurando atualização…', 'Checking for updates…')
         : state?.status === 'downloading'
-          ? `Baixando ${state.version} - ${Math.round(state.progress * 100)}%`
+          ? tr(`Baixando ${state.version} - ${Math.round(state.progress * 100)}%`, `Downloading ${state.version} - ${Math.round(state.progress * 100)}%`)
           : null
   }
 }

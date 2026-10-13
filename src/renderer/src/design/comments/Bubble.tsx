@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import type { PageComment } from './types'
+import { tr } from '../../i18n'
 
 const TEXT = 'whitespace-pre-wrap break-words text-[13px] leading-snug'
 
@@ -63,14 +64,14 @@ export function Bubble({
         {editing ? (
           <div className="grid min-w-0 flex-1">
             <span aria-hidden className={`invisible col-start-1 row-start-1 ${TEXT}`}>
-              {(draft || 'O que mudar aqui?') + ' '}
+              {(draft || tr('O que mudar aqui?', 'What should change here?')) + ' '}
             </span>
             <textarea
               ref={field}
               value={draft}
               rows={1}
               cols={1}
-              placeholder="O que mudar aqui?"
+              placeholder={tr('O que mudar aqui?', 'What should change here?')}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 // Enter guarda; Shift, Ctrl ou ⌘ + Enter pulam linha. Esc guarda o que tiver (vazio sai).
@@ -93,8 +94,8 @@ export function Bubble({
         )}
         {editing && (
           <button
-            aria-label="Apagar comentário"
-            title="Apagar comentário"
+            aria-label={tr('Apagar comentário', 'Delete comment')}
+            title={tr('Apagar comentário', 'Delete comment')}
             // Antes do blur do campo, que guardaria.
             onMouseDown={(e) => {
               e.preventDefault()

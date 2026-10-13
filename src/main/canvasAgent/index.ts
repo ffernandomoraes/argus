@@ -3,6 +3,7 @@ import { createSdkMcpServer, query, type Query } from '@anthropic-ai/claude-agen
 import type { WebContents } from 'electron'
 import type { CanvasAgentState, CanvasToolResult } from '../../shared/canvasAgent'
 import { claudeProcess, Inbox } from '../chats'
+import { tr } from '../i18n'
 import { PendingCalls } from './pendingCalls'
 import { MODEL, SYSTEM_PROMPT } from './prompt'
 import { canvasTools, fail, ok } from './tools'
@@ -37,8 +38,8 @@ export class CanvasAgent {
   }
 
   // Ferramenta executada pela janela do canvas; o rótulo aparece na barra enquanto roda.
-  private forward = (name: string, label: string) => async (args: Record<string, unknown>) => {
-    this.update({ activity: label })
+  private forward = (name: string, label: () => string) => async (args: Record<string, unknown>) => {
+    this.update({ activity: label() })
     const r = await this.calls.call(name, args)
     return r.error ? fail(r.text) : ok(r.text)
   }
@@ -80,7 +81,7 @@ export class CanvasAgent {
             status: 'idle',
             activity: undefined,
             reply: failed ? '' : text,
-            error: failed ? text || 'O Claude parou com erro.' : undefined
+            error: failed ? text || tr('O Claude parou com erro.', 'Claude stopped with an error.') : undefined
           })
         }
       }

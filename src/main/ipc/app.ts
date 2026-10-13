@@ -3,7 +3,10 @@ import { resolveAccount } from '../accounts'
 import { accentColor, setTheme } from '../app/appearance'
 import type { Lifecycle } from '../app/lifecycle'
 import type { Services } from '../app/services'
+import { refreshAppMenu } from '../app/menu'
 import { loadAppSettings, saveAppSettings } from '../appSettings'
+import { lang, setLang, tr } from '../i18n'
+import { broadcast } from './events'
 import { ensureDistro, homeUnc, listDistros } from '../wsl'
 import { wslDiagnostics } from '../wsl/diagnostics'
 import { handle, on, onSync } from './register'
@@ -12,13 +15,16 @@ import { handle, on, onSync } from './register'
 export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('theme:set', (_e, theme) => setTheme(theme))
   onSync('accent:get', () => accentColor())
+  onSync('language:get', () => lang())
   handle('dialog:pickFolder', async (e, distro) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     // Pasta do WSL: abre na pasta do usuário no Linux (\\wsl.localhost\<distro>\home\<usuário>).
     const wslHome = typeof distro === 'string' && distro ? (await ensureDistro(distro), homeUnc(distro)) : null
     const options: Electron.OpenDialogOptions = {
-      title: wslHome ? `Escolha a pasta do projeto no WSL (${distro})` : 'Escolha a pasta do projeto',
-      buttonLabel: 'Adicionar',
+      title: wslHome
+        ? tr(`Escolha a pasta do projeto no WSL (${distro})`, `Choose the project folder in WSL (${distro})`)
+        : tr('Escolha a pasta do projeto', 'Choose the project folder'),
+      buttonLabel: tr('Adicionar', 'Add'),
       defaultPath: wslHome ?? app.getPath('desktop'),
       properties: ['openDirectory', 'createDirectory']
     }
@@ -31,6 +37,15 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('settings:menuBarIcon', (_e, enabled) => {
     s.tray.set(enabled)
     return saveAppSettings({ menuBarIcon: enabled })
+  })
+  // Idioma trocado: menu e ícone do sistema refeitos aqui; as janelas recarregam (renderer/i18n).
+  handle('settings:language', (_e, pref) => {
+    const saved = saveAppSettings({ language: pref })
+    setLang(pref)
+    refreshAppMenu()
+    s.tray.refresh()
+    broadcast('language:changed')
+    return saved
   })
   handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }))
   handle('updates:check', () => s.updater.check())

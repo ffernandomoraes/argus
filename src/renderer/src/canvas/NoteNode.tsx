@@ -7,6 +7,7 @@ import { useCanvasActions } from './CanvasContext'
 import { NOTE_MAX_WIDTH, NOTE_MIN_WIDTH } from './factory'
 import type { NoteNode as NoteNodeType } from './types'
 import { useIsRenaming } from './useCanvasView'
+import { tr } from '../i18n'
 
 const TEXT = 'whitespace-pre-wrap break-words text-[13px] leading-snug'
 
@@ -61,7 +62,7 @@ function NoteNodeView({ id, data, selected }: NodeProps<NoteNodeType>) {
       ) : data.text ? (
         <p className={`text-text ${TEXT}`}>{data.text}</p>
       ) : (
-        <p className={`text-faint ${TEXT}`}>Nota vazia - dois cliques para escrever</p>
+        <p className={`text-faint ${TEXT}`}>{tr('Nota vazia - dois cliques para escrever', 'Empty note - double-click to write')}</p>
       )}
 
       {/* Puxador da largura: a borda direita, com a nota selecionada. */}
@@ -92,7 +93,7 @@ function NoteEditor({ text, onDone }: { text: string; onDone: (text: string) => 
     // O texto escondido embaixo dá o tamanho; o campo ocupa a mesma célula e acompanha.
     <div className="grid">
       <span aria-hidden className={`invisible col-start-1 row-start-1 ${TEXT}`}>
-        {(draft || 'Escreva a nota') + ' '}
+        {(draft || tr('Escreva a nota', 'Write a note')) + ' '}
       </span>
       {/* nodrag/nowheel: selecionar texto e rolar valem para a nota, não para o canvas. */}
       <textarea
@@ -101,7 +102,7 @@ function NoteEditor({ text, onDone }: { text: string; onDone: (text: string) => 
         // rows/cols mínimos: o tamanho natural do campo não pode alargar o balão.
         rows={1}
         cols={1}
-        placeholder="Escreva a nota"
+        placeholder={tr('Escreva a nota', 'Write a note')}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           // Compondo um acento ou um ideograma (IME), Enter e Esc são da composição.

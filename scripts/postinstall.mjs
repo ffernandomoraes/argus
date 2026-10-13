@@ -44,7 +44,7 @@ function buildSpeechHelper() {
   try {
     execFileSync('swiftc', [
       '-O', `${dir}/main.swift`, '-o', `${dir}/build/speech-helper`,
-      '-framework', 'Speech', '-framework', 'AVFoundation',
+      '-framework', 'AVFoundation',
       '-Xlinker', '-sectcreate', '-Xlinker', '__TEXT', '-Xlinker', '__info_plist', '-Xlinker', `${dir}/Info.plist`
     ], { stdio: 'inherit' })
   } catch {

@@ -6,7 +6,8 @@ import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
 import { ChatView } from './ChatView'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
-import { FileLinkContext, type LineRange } from './fileLinks'
+import { fileInFolder } from '../canvas/drawers/fileInFolder'
+import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
 import { ConversationHeader } from './header/ConversationHeader'
 import { useAgentList } from './hooks/useAgentList'
 import { useConversationActions } from './hooks/useConversationActions'
@@ -104,6 +105,10 @@ export const ConversationView = memo(function ConversationView({
   // O valor do contexto é fixo: com uma função nova a cada desenho, todo link de toda mensagem
   // redesenhava (o drawer mandava uma nova a cada arraste no canvas).
   const openFile = useStableCallback((path: string, lines?: LineRange) => onOpenFile?.(path, lines))
+  const revealFile = useStableCallback((path: string) => {
+    const rel = fileInFolder(cwd, path)
+    if (rel) window.api.files.reveal(cwd, rel)
+  })
   const [mcpOpen, setMcpOpen] = useState(false)
   const openMcp = useCallback(() => setMcpOpen(true), [])
   const closeMcp = useCallback(() => setMcpOpen(false), [])
@@ -125,6 +130,7 @@ export const ConversationView = memo(function ConversationView({
 
       {/* key: trocar de conversa recria o conteúdo (rolagem); o rascunho fica guardado por conversa */}
       <FileLinkContext.Provider value={onOpenFile ? openFile : null}>
+      <FileRevealContext.Provider value={onOpenFile ? revealFile : null}>
         <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
           <ChatView
             key={viewKey}
@@ -147,6 +153,7 @@ export const ConversationView = memo(function ConversationView({
             autoFocus={autoFocus}
           />
         </div>
+      </FileRevealContext.Provider>
       </FileLinkContext.Provider>
       <Presence kind="modal">
         {mcpOpen && <McpPanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeMcp} />}

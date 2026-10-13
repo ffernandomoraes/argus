@@ -4,6 +4,7 @@ import type { AgentDef, AgentSaveRequest, AgentSaveResult } from '../../shared/a
 import { exists } from '../files/fsHelpers'
 import { isReservedOnWindows } from '../files/names'
 import { writeTextFile } from '../files/textFile'
+import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { findByName, globalDir, projectDir, readDir } from './folder'
 import { serializeAgent } from './format'
@@ -25,13 +26,22 @@ export async function listAgents(projectPath?: string): Promise<AgentDef[]> {
 }
 
 function invalid(req: AgentSaveRequest, name: string): string | null {
-  if (!NAME.test(name)) return 'Use só letras minúsculas, números e hífen no nome (ex.: clone-de-paginas).'
+  if (!NAME.test(name))
+    return tr(
+      'Use só letras minúsculas, números e hífen no nome (ex.: clone-de-paginas).',
+      'Use only lowercase letters, numbers and hyphens in the name (e.g. page-cloner).'
+    )
   // O arquivo do agente leva o nome: no Windows, "con", "nul", "com1"... não podem ser arquivo.
-  if (isReservedOnWindows(name)) return `O Windows reserva o nome ${name}. Escolha outro.`
-  if (!req.description.trim()) return 'Escreva quando usar este agente: o Claude decide por essa descrição.'
-  if (!req.prompt.trim()) return 'Escreva as instruções do agente.'
+  if (isReservedOnWindows(name)) return tr(`O Windows reserva o nome ${name}. Escolha outro.`, `Windows reserves the name ${name}. Choose another one.`)
+  if (!req.description.trim())
+    return tr(
+      'Escreva quando usar este agente: o Claude decide por essa descrição.',
+      'Describe when to use this agent: Claude decides based on this description.'
+    )
+  if (!req.prompt.trim()) return tr('Escreva as instruções do agente.', 'Write the agent’s instructions.')
   // Cada um vai numa linha do cabeçalho: uma quebra de linha criaria outro campo.
-  if ([...(req.tools ?? []), req.model ?? ''].some((v) => /[\r\n]/.test(v))) return 'Ferramentas e modelo não podem ter quebra de linha.'
+  if ([...(req.tools ?? []), req.model ?? ''].some((v) => /[\r\n]/.test(v)))
+    return tr('Ferramentas e modelo não podem ter quebra de linha.', 'Tools and model can’t contain line breaks.')
   return null
 }
 
@@ -47,10 +57,10 @@ export async function saveAgent(req: AgentSaveRequest): Promise<AgentSaveResult>
   const renamed = !previous || previous.name !== name
   const path = renamed ? join(globalDir(), `${name}.md`) : previous.path
   if (renamed) {
-    if (agents.some((a) => a !== previous && a.name === name)) return { ok: false, error: `Já existe um agente chamado ${name}.` }
+    if (agents.some((a) => a !== previous && a.name === name)) return { ok: false, error: tr(`Já existe um agente chamado ${name}.`, `An agent named ${name} already exists.`) }
     // Um arquivo com esse nome que não é deste agente (escrito à mão, sem cabeçalho) não é sobrescrito.
     if ((!previous || !sameFile(previous.path, path)) && (await exists(path))) {
-      return { ok: false, error: `Já existe um arquivo ${name}.md na pasta de agentes.` }
+      return { ok: false, error: tr(`Já existe um arquivo ${name}.md na pasta de agentes.`, `A file named ${name}.md already exists in the agents folder.`) }
     }
   }
   const data = { ...req, name }
@@ -61,7 +71,7 @@ export async function saveAgent(req: AgentSaveRequest): Promise<AgentSaveResult>
     await writeTextFile(path, serializeAgent(data))
     if (previous && renamed && !sameFile(previous.path, path)) await unlink(previous.path).catch(() => undefined)
   } catch (err) {
-    return { ok: false, error: `Não consegui salvar: ${errorMessage(err)}` }
+    return { ok: false, error: tr(`Não consegui salvar: ${errorMessage(err)}`, `Couldn’t save: ${errorMessage(err)}`) }
   }
   return { ok: true, agent: { ...data, description: data.description.trim(), prompt: data.prompt.trim(), scope: 'global', path } }
 }

@@ -1,5 +1,5 @@
 import type { SpeechEvent } from '../../shared/speech'
-import { listen, send } from '../ipc'
+import { listen, send, sendSync } from '../ipc'
 import { micError } from './audio'
 import { record } from './record'
 
@@ -10,6 +10,8 @@ import { record } from './record'
 type Listener = (event: SpeechEvent) => void
 const listeners = new Set<Listener>()
 const emit = (event: SpeechEvent) => listeners.forEach((l) => l(event))
+// Texto no idioma da interface, perguntado na hora (pode mudar com o app aberto).
+const tr = (pt: string, en: string) => (sendSync('language:get') === 'en' ? en : pt)
 
 let running: { stop: () => void } | null = null
 // Cada start ganha um número: parar enquanto o microfone abre cancela a abertura.
@@ -37,7 +39,7 @@ export const winMic = {
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       })
     } catch (err) {
-      return fail(micError(err), 'dictation-settings')
+      return fail(micError(err, tr), 'dictation-settings')
     }
     const closeStream = () => stream.getTracks().forEach((t) => t.stop())
     if (mine !== seq) return closeStream()
@@ -54,14 +56,15 @@ export const winMic = {
       }
     } catch (err) {
       closeStream()
-      return fail(`Não deu para gravar o microfone (${(err as Error).message}).`, 'dictation-settings')
+      const message = (err as Error).message
+      return fail(tr(`Não deu para gravar o microfone (${message}).`, `Couldn’t record from the microphone (${message}).`), 'dictation-settings')
     }
     // Microfone desconectado no meio (USB, Bluetooth): o ditado para com o aviso, em vez de seguir
     // gravando silêncio. Parar o microfone de propósito não dispara isto.
     stream.getAudioTracks().forEach((track) => {
       track.onended = () => {
         if (mine !== seq) return
-        fail('O microfone foi desconectado.')
+        fail(tr('O microfone foi desconectado.', 'The microphone was disconnected.'))
         winMic.stop()
       }
     })

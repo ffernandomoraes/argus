@@ -20,6 +20,7 @@ import {
 } from '../operations'
 import type { TerminalKind } from '../types'
 import type { NodesApi } from './types'
+import { tr } from '../../i18n'
 
 // Criar, renomear e mexer nos blocos (grupo, nota, terminal) a partir dos menus e dos próprios
 // blocos. Bloco novo nunca entra por cima de outro (addNode). O bloco em renomeação fica no
@@ -82,11 +83,14 @@ export function useNodeActions(
         const node = nodesRef.current.find((n) => n.id === nodeId)
         const shell = node?.type === 'terminal' && node.data.kind === 'shell'
         confirm({
-          title: `Fechar o terminal "${name}"?`,
+          title: tr(`Fechar o terminal "${name}"?`, `Close the terminal "${name}"?`),
           description: shell
-            ? 'O shell e o que estiver rodando nele são encerrados.'
-            : 'A sessão do Claude que roda nele é encerrada. A conversa continua salva.',
-          confirmLabel: 'Fechar terminal',
+            ? tr('O shell e o que estiver rodando nele são encerrados.', 'The shell and anything running in it will be stopped.')
+            : tr(
+                'A sessão do Claude que roda nele é encerrada. A conversa continua salva.',
+                'The Claude session running in it will end. The chat stays saved.'
+              ),
+          confirmLabel: tr('Fechar terminal', 'Close terminal'),
           onConfirm: () => {
             window.api.terminal.kill(nodeId)
             change((ns) => removeNode(ns, nodeId))

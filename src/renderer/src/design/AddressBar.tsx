@@ -8,6 +8,7 @@ import { appLabel } from './address/projectApps'
 import { RouteField } from './address/RouteField'
 import { routesIn } from './prototype/appLines'
 import type { PrototypeAddress } from './usePrototypeAddress'
+import { tr } from '../i18n'
 
 // Barra de endereço da página: o app (num monorepo), o caminho, recarregar, visualizar e abrir no
 // navegador. Também em Visualizar, com folga à direita para os botões dela.
@@ -42,7 +43,7 @@ export function AddressBar({
   )
   const options = dedupe([
     ...(design.route ? [{ route: design.route, name: design.name }] : []),
-    ...said.map((r) => ({ route: r, name: 'do Claude' })),
+    ...said.map((r) => ({ route: r, name: tr('do Claude', 'from Claude') })),
     ...known
   ])
 
@@ -52,7 +53,7 @@ export function AddressBar({
         <select
           value={port ?? undefined}
           onChange={(e) => address.switchApp(Number(e.target.value))}
-          title="App do projeto (o comando dev sobe vários)"
+          title={tr('App do projeto (o comando dev sobe vários)', 'Project app (the dev command starts several)')}
           className="h-6 max-w-40 shrink-0 rounded-md bg-fill px-1.5 text-[12px] text-text outline-none"
         >
           {allApps
@@ -67,13 +68,13 @@ export function AddressBar({
         <span className="shrink-0 text-[12px] text-faint">{app ? appLabel(app) : `localhost:${port}`}</span>
       )}
       <RouteField value={address.routeDraft} onChange={address.setRouteDraft} onGo={address.goTo} options={options} />
-      <IconButton label="Recarregar a página" variant="subtle" size="sm" onClick={address.reloadHere}>
+      <IconButton label={tr('Recarregar a página', 'Reload page')} variant="subtle" size="sm" onClick={address.reloadHere}>
         <RotateCw size={13} />
       </IconButton>
       {onViewing && (
         <IconButton
-          label="Visualizar"
-          title={viewing ? 'Voltar ao chat (Esc)' : 'Visualizar: ver só a página, sem o chat'}
+          label={tr('Visualizar', 'Preview')}
+          title={viewing ? tr('Voltar ao chat (Esc)', 'Back to chat (Esc)') : tr('Visualizar: ver só a página, sem o chat', 'Preview: see only the page, without the chat')}
           variant="subtle"
           size="sm"
           pressed={viewing}
@@ -83,7 +84,7 @@ export function AddressBar({
         </IconButton>
       )}
       {url && (
-        <IconButton label="Abrir no navegador" variant="subtle" size="sm" onClick={() => window.open(origin && here ? origin + here : url)}>
+        <IconButton label={tr('Abrir no navegador', 'Open in browser')} variant="subtle" size="sm" onClick={() => window.open(origin && here ? origin + here : url)}>
           <ExternalLink size={13} />
         </IconButton>
       )}

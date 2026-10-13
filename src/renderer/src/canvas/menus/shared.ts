@@ -4,8 +4,13 @@ import type { MenuItem } from '../ContextMenu'
 import { moveToGroup } from '../operations'
 import type { AreaNode, CanvasNode, ConversationSummary, TerminalKind } from '../types'
 import type { Deps } from './types'
+import { IS_WIN } from '../../platform'
+import { tr } from '../../i18n'
 
 // Peças repetidas nos menus do canvas.
+
+// A Lixeira em inglês: no Windows, Recycle Bin.
+export const TRASH_EN = IS_WIN ? 'Recycle Bin' : 'Trash'
 
 // Rodando ou esperando resposta: tirar do canvas ou apagar agora atropelaria a sessão.
 export const isBusy = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'
@@ -36,18 +41,18 @@ export function moveSubmenu(deps: MoveDeps, node: CanvasNode): MenuItem {
     onSelect: () => setNodes((ns) => moveToGroup(ns, node.id, g.id))
   }))
   if (moveItems.length === 0) {
-    moveItems.push({ type: 'action', label: 'Nenhum outro grupo', disabled: true, onSelect: () => {} })
+    moveItems.push({ type: 'action', label: tr('Nenhum outro grupo', 'No other groups'), disabled: true, onSelect: () => {} })
   }
   if (node.parentId) {
     moveItems.push(
       { type: 'separator' },
       {
         type: 'action',
-        label: 'Tirar do grupo',
+        label: tr('Tirar do grupo', 'Remove from group'),
         icon: FolderOpen,
         onSelect: () => deps.leaveGroup(node.id)
       }
     )
   }
-  return { type: 'submenu', label: 'Mover para grupo', icon: FolderInput, items: moveItems }
+  return { type: 'submenu', label: tr('Mover para grupo', 'Move to group'), icon: FolderInput, items: moveItems }
 }

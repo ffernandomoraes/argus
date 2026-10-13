@@ -1,4 +1,5 @@
 import { STEPS } from './agentDraft'
+import { tr } from '../i18n'
 
 // Abas do agente. No agente novo, a seguinte só abre depois desta.
 export function StepTabs({ step, reached, onGo }: { step: number; reached: number; onGo: (step: number) => void }) {
@@ -14,7 +15,7 @@ export function StepTabs({ step, reached, onGo }: { step: number; reached: numbe
             aria-selected={active}
             disabled={!enabled}
             onClick={() => onGo(i)}
-            title={enabled ? undefined : 'Preencha as instruções primeiro'}
+            title={enabled ? undefined : tr('Preencha as instruções primeiro', 'Fill in the instructions first')}
             className={`-mb-px border-b-2 py-2.5 text-[13px] ${
               active ? 'border-accent font-medium text-text' : enabled ? 'border-transparent text-muted hover:text-text' : 'border-transparent text-faint'
             }`}

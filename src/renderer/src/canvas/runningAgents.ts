@@ -2,6 +2,7 @@ import type { RunningAgent } from '../../../shared/agents'
 import { createStore } from '../lib/createStore'
 import { shallowEqual } from '../lib/shallowEqual'
 import { useStore } from '../lib/useStore'
+import { tr } from '../i18n'
 
 // Subagentes rodando em cada conversa aberta pelo chat do app. Vêm junto do estado do chat,
 // que o processo principal manda para todas as janelas com cada chave da conversa (o id
@@ -58,5 +59,5 @@ export function agentActivity(a: RunningAgent): string {
   if (a.summary) return a.summary
   const last = a.steps.at(-1)
   if (last) return last.summary ? `${last.label} - ${last.summary}` : last.label
-  return 'Começando…'
+  return tr('Começando…', 'Starting…')
 }

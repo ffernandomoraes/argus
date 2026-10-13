@@ -28,6 +28,7 @@ export function useCanvasCommands({ nodeActions, conversations, overlays, openCo
     chatPanelToDrawer: conversations.chatPanelToDrawer,
     chatPanelPopout: conversations.chatPanelPopout,
     openFileFrom: conversations.openFileFrom,
+    toggleProjectCode: conversations.toggleProjectCode,
     openConversationMenu,
     openAllConversations: overlays.openAllConversations,
     openSettings,

@@ -1,4 +1,5 @@
 import { EFFORTS, effortLabel, MAX_WARNING } from '../modelOptions'
+import { tr } from '../../i18n'
 
 type Effort = (typeof EFFORTS)[number]
 
@@ -17,7 +18,7 @@ export function EffortSlider({
   return (
     <div className="px-2 pb-2 pt-1.5">
       <div className="flex items-center justify-between text-[12px]">
-        <span className="text-faint">Esforço</span>
+        <span className="text-faint">{tr('Esforço', 'Effort')}</span>
         <span className="text-text">{effortLabel(value)}</span>
       </div>
       <div className="relative mt-2.5 flex h-4 items-center justify-between">

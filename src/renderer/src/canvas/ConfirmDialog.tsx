@@ -1,5 +1,6 @@
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
+import { tr } from '../i18n'
 
 // Sem onConfirm, é um aviso de bloqueio: só o botão de fechar.
 export type ConfirmRequest = {
@@ -22,7 +23,7 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
       <p className="mt-2 text-xs leading-relaxed text-muted">{request.description}</p>
       <div className="mt-5 flex justify-end gap-2">
         <Button autoFocus onClick={onClose}>
-          {request.onConfirm ? 'Cancelar' : 'Entendi'}
+          {request.onConfirm ? tr('Cancelar', 'Cancel') : tr('Entendi', 'OK')}
         </Button>
         {request.onConfirm && (
           <Button

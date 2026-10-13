@@ -13,6 +13,8 @@ export type CanvasView = {
   // Conversa e design abertos nos drawers (espelho do estado dos drawers, no Canvas).
   activeConversation: ActiveConversation | null
   activeDesign: ActiveDesign | null
+  // Pasta do painel de código aberto (nula: fechado).
+  codeRoot: string | null
   // Conversas abertas em janela separada.
   poppedOut: ReadonlySet<string>
   // Bloco que acabou de ser criado pela pessoa (terminal, conversa no canvas): só ele pega o foco
@@ -28,6 +30,7 @@ export function createCanvasView(): CanvasViewStore {
     dropTargetId: null,
     activeConversation: null,
     activeDesign: null,
+    codeRoot: null,
     poppedOut: new Set(),
     newBlockId: null
   })

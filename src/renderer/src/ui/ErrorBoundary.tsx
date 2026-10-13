@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button } from './Button'
+import { tr } from '../i18n'
 
 // `fallback` no lugar do aviso padrão; como função, recebe o erro e um `reset` que tenta desenhar
 // a tela de novo (útil num drawer, sem recarregar a janela inteira).
@@ -36,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
 function ErrorNotice({ error }: { error: Error }) {
   return (
     <div role="alert" className="flex h-full w-full flex-col items-center justify-center gap-3 bg-bg p-6 text-center">
-      <p className="text-sm text-muted">Algo deu errado nesta tela.</p>
+      <p className="text-sm text-muted">{tr('Algo deu errado nesta tela.', 'Something went wrong on this screen.')}</p>
       {/* A mensagem do erro, pequena, para quem for relatar o problema. */}
       {error.message && (
         <p className="max-w-md truncate font-mono text-[11px] text-faint select-text" title={error.message}>
@@ -44,7 +45,7 @@ function ErrorNotice({ error }: { error: Error }) {
         </p>
       )}
       <Button variant="primary" onClick={() => location.reload()}>
-        Recarregar
+        {tr('Recarregar', 'Reload')}
       </Button>
     </div>
   )

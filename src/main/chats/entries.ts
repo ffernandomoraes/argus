@@ -1,4 +1,5 @@
 import type { ActiveChat, ChatState } from '../../shared/chat'
+import { tr } from '../i18n'
 
 // Uma conversa aberta no app (ver Chats.list), como a bandeja e as notificações enxergam.
 export type ChatEntry = { id: string; cwd: string; state: ChatState }
@@ -6,11 +7,11 @@ export type ChatEntry = { id: string; cwd: string; state: ChatState }
 type Status = ChatState['status']
 
 // Título que aparece no lugar do da conversa: nova, ou o arquivo da sessão não deu para ler.
-const UNTITLED = 'Conversa nova'
+const untitled = () => tr('Conversa nova', 'New chat')
 
 // Título da conversa entre os lidos dos arquivos das sessões (ver sessionTitles).
 export function titleOf(titles: Map<string, string>, sessionId?: string): string {
-  return (sessionId && titles.get(sessionId)) || UNTITLED
+  return (sessionId && titles.get(sessionId)) || untitled()
 }
 
 // Resumo do que muda o ícone da bandeja e as notificações: status, erro e subagentes de cada

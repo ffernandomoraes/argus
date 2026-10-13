@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { join } from 'node:path'
+import { tr } from '../i18n'
 import { childEnv, IS_WIN, prependPath, SYSTEM32, userShell } from '../platform'
 import { APP_MARK } from '../processScan'
 import { OutputBuffer } from '../terminals/outputBuffer'
@@ -90,7 +91,7 @@ function track(root: string, run: ProjectScript, entry: Started): void {
     if (done) return
     done = true
     if (started.get(root) === entry) started.delete(root)
-    if (failed && !entry.stopping) errors.set(root, lastLine(entry.output.text()) || `${run.command} parou`)
+    if (failed && !entry.stopping) errors.set(root, lastLine(entry.output.text()) || tr(`${run.command} parou`, `${run.command} stopped`))
   }
   child.on('error', (err) => {
     keep(err.message)

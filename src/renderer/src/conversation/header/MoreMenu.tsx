@@ -6,6 +6,7 @@ import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles'
 import { useEscape } from '../../useEscape'
 import { useOutsideClick } from '../../useOutsideClick'
 import { HeaderButton } from './HeaderButton'
+import { tr } from '../../i18n'
 
 export type MoreMenuItem = { label: string; icon: LucideIcon; onClick: () => void }
 
@@ -18,7 +19,7 @@ export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
   useEscape(() => setOpen(false), open)
   return (
     <div ref={ref} className="relative">
-      <HeaderButton label="Mais opções" onClick={() => setOpen((o) => !o)} active={open}>
+      <HeaderButton label={tr('Mais opções', 'More options')} onClick={() => setOpen((o) => !o)} active={open}>
         <Ellipsis size={15} />
       </HeaderButton>
       <Presence kind="menu">

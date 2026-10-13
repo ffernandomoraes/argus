@@ -1,6 +1,11 @@
-import { createContext, useContext, type MouseEvent, type ReactNode } from 'react'
-import { FileLinkContext, parseFileLink } from './fileLinks'
+import { createContext, useContext, useState, type MouseEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { ExternalLink, FolderSearch } from 'lucide-react'
+import { ContextMenu, type MenuState } from '../canvas/ContextMenu'
+import { FILE_MANAGER } from '../platform'
+import { FileLinkContext, FileRevealContext, parseFileLink } from './fileLinks'
 import { scrollWithin } from './scrollWithin'
+import { tr } from '../i18n'
 
 const LINK = 'text-running underline underline-offset-2'
 
@@ -38,6 +43,8 @@ export function MarkdownLink({ href = '', id, children }: { href?: string; id?: 
 
 function LinkView({ href, id, children }: { href: string; id?: string; children?: ReactNode }) {
   const openFile = useContext(FileLinkContext)
+  const revealFile = useContext(FileRevealContext)
+  const [menu, setMenu] = useState<MenuState | null>(null)
   if (href.startsWith('#')) {
     return (
       <a id={id} href={href} onClick={(e) => goToAnchor(e, href)} className={LINK}>
@@ -60,19 +67,39 @@ function LinkView({ href, id, children }: { href: string; id?: string; children?
       </span>
     )
   }
+  // Botão direito: abrir ou mostrar no Finder (às vezes a pessoa quer o arquivo na pasta, não a prévia).
+  const showMenu = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!revealFile) return
+    // Sem subir: no canvas, o card do chat abriria o menu dele junto.
+    e.preventDefault()
+    e.stopPropagation()
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { type: 'action', label: tr('Abrir', 'Open'), icon: ExternalLink, onSelect: () => openFile(file.path, file.lines) },
+        { type: 'action', label: tr(`Mostrar no ${FILE_MANAGER}`, `Show in ${FILE_MANAGER}`), icon: FolderSearch, onSelect: () => revealFile(file.path) }
+      ]
+    })
+  }
   return (
-    <a
-      id={id}
-      href={href}
-      title={href}
-      onClick={(e) => {
-        e.preventDefault()
-        openFile(file.path, file.lines)
-      }}
-      className={`${LINK} cursor-pointer`}
-    >
-      {children}
-    </a>
+    <>
+      <a
+        id={id}
+        href={href}
+        title={href}
+        onClick={(e) => {
+          e.preventDefault()
+          openFile(file.path, file.lines)
+        }}
+        onContextMenu={showMenu}
+        className={`${LINK} cursor-pointer`}
+      >
+        {children}
+      </a>
+      {/* No body: dentro do canvas o `fixed` seguiria o zoom e o deslocamento dele. */}
+      {menu && createPortal(<ContextMenu menu={menu} onClose={() => setMenu(null)} />, document.body)}
+    </>
   )
 }
 
@@ -83,6 +110,6 @@ function LinkView({ href, id, children }: { href: string; id?: string; children?
 export function MarkdownImage({ src, alt }: { src?: unknown; alt?: string }) {
   const inLink = useContext(InsideLink)
   const href = typeof src === 'string' ? src : ''
-  const label = `[imagem: ${alt || href || 'sem endereço'}]`
+  const label = tr(`[imagem: ${alt || href || 'sem endereço'}]`, `[image: ${alt || href || 'no address'}]`)
   return href && !inLink ? <MarkdownLink href={href}>{label}</MarkdownLink> : <span>{label}</span>
 }

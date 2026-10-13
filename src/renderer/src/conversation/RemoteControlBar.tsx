@@ -4,6 +4,7 @@ import { ConfirmDialog } from '../canvas/ConfirmDialog'
 import type { RemoteControl } from '../../../shared/chat'
 import { useCopied } from '../lib/useCopied'
 import { Presence } from '../motion'
+import { tr } from '../i18n'
 
 const ACTION = 'flex items-center gap-1 rounded-md px-1 text-faint hover:text-text'
 
@@ -16,10 +17,10 @@ export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl;
 
   const label =
     remote.status === 'connected'
-      ? 'Remote control ligado'
+      ? tr('Remote control ligado', 'Remote control on')
       : remote.status === 'failed'
-        ? `Remote control não conectou${remote.detail ? `: ${remote.detail}` : '.'}`
-        : 'Ligando remote control…'
+        ? tr(`Remote control não conectou${remote.detail ? `: ${remote.detail}` : '.'}`, `Remote control didn’t connect${remote.detail ? `: ${remote.detail}` : '.'}`)
+        : tr('Ligando remote control…', 'Turning on remote control…')
 
   return (
     <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[12px] text-faint">
@@ -35,26 +36,34 @@ export function RemoteControlBar({ remote, onTurnOff }: { remote: RemoteControl;
         <>
           <a href={remote.url} target="_blank" rel="noreferrer" className={ACTION}>
             <ExternalLink size={11} />
-            Abrir
+            {tr('Abrir', 'Open')}
           </a>
           <button onClick={() => remote.url && copy(remote.url)} className={ACTION}>
             {copied ? <Check size={11} /> : <Copy size={11} />}
-            {copied ? 'Copiado' : 'Copiar'}
+            {copied ? tr('Copiado', 'Copied') : tr('Copiar', 'Copy')}
           </button>
         </>
       )}
-      <button onClick={turnOff} aria-label="Desligar remote control" title="Desligar remote control" className={ACTION}>
+      <button
+        onClick={turnOff}
+        aria-label={tr('Desligar remote control', 'Turn off remote control')}
+        title={tr('Desligar remote control', 'Turn off remote control')}
+        className={ACTION}
+      >
         <X size={11} />
       </button>
       <Presence kind="modal">
         {confirming && (
           <ConfirmDialog
             request={{
-              title: 'Desligar o remote control?',
+              title: tr('Desligar o remote control?', 'Turn off remote control?'),
               // \u2011: hífen que não quebra linha, para "/remote-control" não partir no meio.
               description:
-                'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote\u2011control liga de novo.',
-              confirmLabel: 'Desligar',
+                tr(
+                  'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote\u2011control liga de novo.',
+                  'You won’t be able to continue this chat on claude.ai or your phone. It keeps working here in the app, and /remote\u2011control turns it back on.'
+                ),
+              confirmLabel: tr('Desligar', 'Turn off'),
               onConfirm: onTurnOff
             }}
             onClose={() => setConfirming(false)}

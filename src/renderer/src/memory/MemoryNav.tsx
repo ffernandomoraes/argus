@@ -3,6 +3,7 @@ import { Brain, ChevronRight, FileText, Globe, ListTree } from 'lucide-react'
 import type { MemoryGroup } from '../../../shared/memory'
 import { tildify } from '../platform'
 import { fileLabel } from './memoryText'
+import { tr } from '../i18n'
 
 // Lista da esquerda: os arquivos de memória por pasta (o global primeiro).
 export function MemoryNav({
@@ -31,7 +32,7 @@ export function MemoryNav({
     <nav className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-2/40 p-3">
       <div className="mb-3 flex items-center gap-2 px-2 pt-1 text-sm font-semibold">
         <Brain size={15} />
-        <span className="truncate">{only ? `Memória - ${groups[0]?.label ?? ''}` : 'Memória'}</span>
+        <span className="truncate">{only ? tr(`Memória - ${groups[0]?.label ?? ''}`, `Memory - ${groups[0]?.label ?? ''}`) : tr('Memória', 'Memory')}</span>
       </div>
       {groups.map((g) => (
         <div key={g.id} className="mb-3">
@@ -62,7 +63,7 @@ export function MemoryNav({
               >
                 {f.kind === 'index' ? <ListTree size={13} className="shrink-0" /> : <FileText size={13} className="shrink-0" />}
                 <span className={`truncate ${f.exists ? '' : 'italic text-faint'}`}>{fileLabel(f)}</span>
-                {!f.exists && <span className="ml-auto shrink-0 text-[11px] text-faint">criar</span>}
+                {!f.exists && <span className="ml-auto shrink-0 text-[11px] text-faint">{tr('criar', 'create')}</span>}
               </button>
             ))}
         </div>

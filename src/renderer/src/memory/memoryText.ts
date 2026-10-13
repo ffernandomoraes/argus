@@ -1,15 +1,16 @@
 import type { MemoryFile } from '../../../shared/memory'
 import { parentDir, relativeTo } from '../platform'
+import { tr } from '../i18n'
 
 export const TYPE_LABEL: Record<string, string> = {
-  user: 'sobre você',
-  feedback: 'como trabalhar',
-  project: 'projeto',
-  reference: 'referência'
+  user: tr('sobre você', 'about you'),
+  feedback: tr('como trabalhar', 'how to work'),
+  project: tr('projeto', 'project'),
+  reference: tr('referência', 'reference')
 }
 
 export function fileLabel(f: MemoryFile): string {
-  if (f.kind === 'index') return 'Índice (MEMORY.md)'
+  if (f.kind === 'index') return tr('Índice (MEMORY.md)', 'Index (MEMORY.md)')
   if (f.kind === 'instructions') return f.fileName
   return f.name ?? f.fileName.replace(/\.md$/, '')
 }

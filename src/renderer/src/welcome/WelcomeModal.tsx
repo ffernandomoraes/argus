@@ -6,6 +6,7 @@ import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
 import { setupReady } from './SetupStep'
 import { welcomeSteps } from './steps'
+import { tr } from '../i18n'
 
 // Boas-vindas em até 5 etapas: o que o Argus faz e, por último, a configuração do Claude Code.
 // startAtSetup: já viu o passo a passo e só falta configurar (sem login, Claude desinstalado).
@@ -20,10 +21,16 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
   const closeBlocked = !ready && index === last
 
   return (
-    <Modal variant="blocking" className="flex flex-col" label="Boas-vindas ao Argus" onClose={onDone} onRequestClose={() => ready}>
+    <Modal variant="blocking" className="flex flex-col" label={tr('Boas-vindas ao Argus', 'Welcome to Argus')} onClose={onDone} onRequestClose={() => ready}>
       <IconButton
-        label="Fechar"
-        title={ready ? 'Fechar' : closeBlocked ? 'Termine a configuração para fechar' : 'Ir para a configuração'}
+        label={tr('Fechar', 'Close')}
+        title={
+          ready
+            ? tr('Fechar', 'Close')
+            : closeBlocked
+              ? tr('Termine a configuração para fechar', 'Finish setup to close')
+              : tr('Ir para a configuração', 'Go to setup')
+        }
         variant="subtle"
         disabled={closeBlocked}
         onClick={() => (ready ? onDone() : setIndex(last))}
@@ -41,14 +48,14 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
           {step.art}
         </div>
         <p className="mt-5 text-[12px] font-medium uppercase tracking-wide text-faint">
-          {index + 1} de {list.length}
+          {tr(`${index + 1} de ${list.length}`, `${index + 1} of ${list.length}`)}
         </p>
         <h1 className="mt-1 text-lg font-semibold text-text">{step.title}</h1>
         <div className="mt-2 text-sm leading-relaxed text-muted">{step.body}</div>
       </div>
 
       <footer className="flex shrink-0 items-center gap-3 border-t border-line px-6 py-3">
-        <div className="flex gap-1.5" role="tablist" aria-label="Etapas">
+        <div className="flex gap-1.5" role="tablist" aria-label={tr('Etapas', 'Steps')}>
           {list.map((s, i) => (
             <button
               key={s.title}
@@ -65,16 +72,16 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
         <div className="flex-1" />
         {index > 0 && (
           <Button size="xl" onClick={() => setIndex(index - 1)}>
-            Voltar
+            {tr('Voltar', 'Back')}
           </Button>
         )}
         {index < last ? (
           <Button size="xl" variant="primary" onClick={() => setIndex(index + 1)}>
-            Próximo
+            {tr('Próximo', 'Next')}
           </Button>
         ) : (
-          <Button size="xl" variant="primary" disabled={!ready} onClick={onDone} title={ready ? undefined : 'Termine a configuração acima'}>
-            Começar
+          <Button size="xl" variant="primary" disabled={!ready} onClick={onDone} title={ready ? undefined : tr('Termine a configuração acima', 'Finish the setup above')}>
+            {tr('Começar', 'Get started')}
           </Button>
         )}
       </footer>

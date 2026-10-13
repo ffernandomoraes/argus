@@ -14,6 +14,7 @@ import { ConversationStack } from './project/ConversationStack'
 import { ProjectActions } from './project/ProjectActions'
 import { useSessions } from './sessionsStore'
 import type { ProjectNode as ProjectNodeType } from './types'
+import { tr } from '../i18n'
 
 // Pasta no canvas: uma caixa só, com a pasta no cabeçalho e as conversas como linhas dentro dela
 // (project/ConversationStack). Branch e ações ficam fora da caixa, logo acima (project/ProjectActions).
@@ -29,7 +30,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
 
   return (
     <div className="relative" style={{ width: INSTANCE_WIDTH }}>
-      <ProjectActions nodeId={id} path={data.path} />
+      <ProjectActions nodeId={id} project={data} />
 
       {/* O ícone fica num quadradinho tingido de leve: na cor do grupo, para não brigar com ele;
           fora de grupo, no azul de pasta do Finder. Selecionada, a borda vai para a cor de destaque. */}
@@ -39,7 +40,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
       >
         <header className="flex h-14 shrink-0 items-center gap-2.5 px-3">
           <IconTile color={groupColor ?? '#3d9df5'} size={28} soft>
-            {running ? <CodeTyping size={16} label="Conversa em andamento" /> : <Folder size={15} />}
+            {running ? <CodeTyping size={16} label={tr('Conversa em andamento', 'Chat in progress')} /> : <Folder size={15} />}
           </IconTile>
           <div className="flex min-w-0 flex-1 flex-col">
             <EditableName id={id} value={data.name} className="text-[15px] font-semibold leading-tight" />
@@ -47,7 +48,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
           </div>
           {conversations.length > 0 && (
             <IconButton
-              label={collapsed ? 'Mostrar conversas' : 'Recolher conversas'}
+              label={collapsed ? tr('Mostrar conversas', 'Show chats') : tr('Recolher conversas', 'Hide chats')}
               variant="subtle"
               size="sm"
               className="nodrag -mr-1"
@@ -62,7 +63,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
         </header>
 
         {conversations.length === 0 ? (
-          <p className="border-t border-line px-3 py-2.5 text-xs text-faint">Nenhuma conversa ainda</p>
+          <p className="border-t border-line px-3 py-2.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</p>
         ) : (
           <ConversationStack nodeId={id} conversations={conversations} collapsed={collapsed} flowColor={flowColor} />
         )}

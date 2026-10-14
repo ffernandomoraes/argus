@@ -61,7 +61,8 @@ export function ModelList({
             <Presence kind="menu">
               {isOpen && (
                 <div className="absolute left-full top-0 z-10 pl-1">
-                  <div className={`w-44 ${POPOVER}`}>
+                  {/* Agentes com muitas versões de uma família (o Cursor): rola dentro do submenu. */}
+                  <div className={`max-h-80 w-52 overflow-y-auto ${POPOVER}`}>
                     {versions.map((v) => (
                       <button key={v.value} onClick={() => onChange(v.value)} className={PICKER_ROW}>
                         <span className="flex-1">{v.displayName}</span>

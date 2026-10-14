@@ -56,11 +56,13 @@ function Submenu({ item, onClose }: { item: Extract<MenuItem, { type: 'submenu' 
   }, [open])
 
   return (
-    <div className="group/sub relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <div className={`${ROW} text-text group-hover/sub:bg-accent group-hover/sub:text-white`}>
+    // Destaque pelo próprio estado, não pelo hover do grupo: num submenu dentro de outro, o hover do
+    // de fora acendia todos os itens de dentro.
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <div className={`${ROW} ${open ? 'bg-accent text-white' : 'text-text'}`}>
         {Icon && <Icon size={14} />}
         {item.label}
-        <ChevronRight size={14} className="ml-auto text-faint group-hover/sub:text-white" />
+        <ChevronRight size={14} className={`ml-auto ${open ? 'text-white' : 'text-faint'}`} />
       </div>
       {open && (
         <div

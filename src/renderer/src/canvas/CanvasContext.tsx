@@ -58,7 +58,7 @@ export type CanvasActions = {
   // Servidores locais que o Claude Code deixou rodando.
   openDevServers: () => void
   // Terminal no canvas; sem pasta (folder vazio), abre na do usuário.
-  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => void
+  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string) => void
   // Guarda no nó a conversa que o terminal criou, para ele retomá-la depois.
   bindTerminalSession: (nodeId: string, sessionId: string) => void
   closeTerminal: (nodeId: string, name: string) => void

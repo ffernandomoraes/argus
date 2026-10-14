@@ -73,8 +73,8 @@ export function useNodeActions(
       // Terminal solto no canvas. Sem pasta conhecida, abre na pasta do usuário, sem perguntar.
       // Novo: pega o foco ao aparecer (useIsNewBlock). Num grupo recolhido ou oculto ele nasce
       // escondido e não é marcado: senão roubaria o foco quando o grupo abrisse, bem depois.
-      addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind) => {
-        const node = createTerminal(position, folder ?? window.api.homeDir, kind)
+      addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string) => {
+        const node = createTerminal(position, folder ?? window.api.homeDir, kind, account)
         const next = addNode(nodesRef.current, node, groupId)
         if (!hidingGroup(next, node.id)) patchView(view, { newBlockId: node.id })
         change(next)

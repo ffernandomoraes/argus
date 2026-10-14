@@ -1,7 +1,7 @@
 import { ExternalLink, MessageCirclePlus, PenTool, Pencil, StickyNote, Trash2 } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { MenuItem } from '../ContextMenu'
-import { removeNode } from '../operations'
+import { groupAccount, removeNode } from '../operations'
 import { getSessions } from '../sessionsStore'
 import type { ConversationSummary, ProjectNode } from '../types'
 import { isBusy, moveSubmenu, terminalSubmenu } from './shared'
@@ -32,7 +32,7 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, onSelect: () => deps.addNote(at) },
     { type: 'separator' },
     { type: 'action', label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
-    terminalSubmenu(tr('Novo terminal aqui', 'New terminal here'), (kind) => deps.addTerminal(node.position, node.parentId, node.data.path, kind)),
+    terminalSubmenu(tr('Novo terminal aqui', 'New terminal here'), (kind, account) => deps.addTerminal(node.position, node.parentId, node.data.path, kind, account), groupAccount(deps.nodes, node)),
     { type: 'action', label: tr('Novo design', 'New design'), icon: PenTool, onSelect: () => deps.openDesign(node.id) },
     { type: 'separator' },
     ...(repo.length ? [...repo, { type: 'separator' } as const] : []),

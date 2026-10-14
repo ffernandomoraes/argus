@@ -1,4 +1,5 @@
 import { memo, useRef } from 'react'
+import { parseAgentRef } from '../../../shared/providers'
 import type { NodeProps } from '@xyflow/react'
 import { Maximize2, Minimize2, X } from 'lucide-react'
 import { TerminalView } from '../conversation/TerminalView'
@@ -25,7 +26,9 @@ const HEADER_BUTTON = 'nodrag last:-mr-1'
 function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNodeType>) {
   const shell = data.kind === 'shell'
   // Conta do grupo onde o terminal está. Vale ao abrir: o terminal aberto segue na dele.
-  const { account } = useGroupOf(parentId)
+  const group = useGroupOf(parentId)
+  const account = data.account ?? group.account
+  const agent = parseAgentRef(account)?.provider
   const { closeTerminal } = useCanvasActions()
   const focusRef = useRef<HTMLDivElement>(null)
   const focus = useFocusMode(focusRef)
@@ -51,7 +54,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       {/* Até saber qual é a conversa que o `claude` daqui criou (ver TerminalBinding). */}
       {!shell && !data.sessionId && <TerminalBinding nodeId={id} />}
       <BlockFrame selected={selected} minHeight={220} className="bg-surface">
-        <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell}>
+        <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell} agent={agent}>
           <IconButton label={tr('Modo foco', 'Focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.enter}>
             <Maximize2 size={13} />
           </IconButton>
@@ -83,7 +86,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
 
       {focus.active && (
         <TerminalFocusLayer panelRef={focusRef}>
-          <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell}>
+          <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell} agent={agent}>
             <IconButton label={tr('Sair do modo foco', 'Exit focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.exit}>
               <Minimize2 size={13} />
             </IconButton>

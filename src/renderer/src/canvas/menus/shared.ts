@@ -1,4 +1,9 @@
 import { FolderInput, FolderOpen, SquareTerminal, Terminal } from 'lucide-react'
+import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
+import { getAuth, resolveAccount } from '../../auth/useAuth'
+import { getProviders } from '../../providers/useProviders'
+import { getPreferences } from '../../settings/preferences'
+import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import type { MenuItem } from '../ContextMenu'
 import { moveToGroup } from '../operations'
@@ -16,16 +21,49 @@ export const TRASH_EN = IS_WIN ? 'Recycle Bin' : 'Trash'
 export const isBusy = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'
 
 // "Novo terminal ▸ Claude Code / Shell": os dois abrem na mesma pasta e no mesmo lugar.
-export function terminalSubmenu(label: string, open: (kind: TerminalKind) => void): MenuItem {
+// Num grupo com outro agente, o primeiro abre o CLI dele (Codex, Gemini, Cursor) com a conta do grupo.
+// Com o experimento dos outros agentes ligado, lista todos os conectados (e as contas de cada um),
+// em qualquer lugar: o terminal guarda o escolhido.
+export function terminalSubmenu(label: string, open: (kind: TerminalKind, account?: string) => void, account?: string): MenuItem {
+  if (getPreferences().multiAgents) return agentTerminalSubmenu(label, open, account)
+  const agent = parseAgentRef(account)
   return {
     type: 'submenu',
     label,
     icon: SquareTerminal,
     items: [
-      { type: 'action', label: 'Claude Code', icon: ClaudeIcon, onSelect: () => open('claude') },
+      agent
+        ? { type: 'action', label: PROVIDER_NAMES[agent.provider], icon: AGENT_MENU_ICONS[agent.provider], onSelect: () => open('claude') }
+        : { type: 'action', label: 'Claude Code', icon: ClaudeIcon, onSelect: () => open('claude') },
       { type: 'action', label: 'Shell', icon: Terminal, onSelect: () => open('shell') }
     ]
   }
+}
+
+function agentTerminalSubmenu(label: string, open: (kind: TerminalKind, account?: string) => void, group?: string): MenuItem {
+  const auth = getAuth()
+  // Claude num grupo de outro agente: a conta padrão do Claude, não a do grupo.
+  const claude = parseAgentRef(group) ? resolveAccount(auth, undefined) : group
+  const items: MenuItem[] = [{ type: 'action', label: 'Claude Code', icon: ClaudeIcon, onSelect: () => open('claude', claude) }]
+  const state = getProviders()
+  for (const provider of PROVIDERS) {
+    const accounts = state?.providers[provider].accounts ?? []
+    if (!accounts.length) continue
+    const name = PROVIDER_NAMES[provider]
+    const icon = AGENT_MENU_ICONS[provider]
+    items.push(
+      accounts.length === 1
+        ? { type: 'action', label: name, icon, onSelect: () => open('claude', agentRef(provider, accounts[0].id)) }
+        : {
+            type: 'submenu',
+            label: name,
+            icon,
+            items: accounts.map((a) => ({ type: 'action', label: a.name, onSelect: () => open('claude', agentRef(provider, a.id)) }))
+          }
+    )
+  }
+  items.push({ type: 'action', label: 'Shell', icon: Terminal, onSelect: () => open('shell', group) })
+  return { type: 'submenu', label, icon: SquareTerminal, items }
 }
 
 export type MoveDeps = Pick<Deps, 'nodes' | 'setNodes' | 'leaveGroup'>

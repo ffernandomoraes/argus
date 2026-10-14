@@ -11,6 +11,8 @@ import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { childEnv, defaultShell, prependPath } from '../platform'
 import { distroFor, toLinux } from '../wsl'
+import { parseAgentRef, PROVIDER_NAMES, type AgentRef } from '../../shared/providers'
+import { providerLaunch } from '../providers/env'
 import { wslLaunch } from '../wsl/launch'
 
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
@@ -37,7 +39,36 @@ function claudeArgs(req: TerminalOpenRequest, promptFile?: string): string[] {
 // WSL: dentro da distro (ver wsl/index.ts).
 export async function spawnTerminal(req: TerminalOpenRequest, cwd: string): Promise<Spawned> {
   const distro = distroFor(cwd)
+  const agent = parseAgentRef(req.account)
+  if (agent && distro)
+    return {
+      ok: false,
+      error: tr(
+        `O ${PROVIDER_NAMES[agent.provider]} ainda não roda em pastas do WSL pelo Argus. Use o Claude neste grupo.`,
+        `${PROVIDER_NAMES[agent.provider]} doesn’t run in WSL folders through Argus yet. Use Claude in this group.`
+      )
+    }
+  if (agent) return agentTerminal(req, cwd, agent)
   return distro ? wslTerminal(req, cwd, distro) : nativeTerminal(req, cwd)
+}
+
+// Outro agente (Codex, Gemini, Cursor): a tela interativa do CLI dele, com a conta do grupo. O shell
+// do terminal também fica com a conta: o `codex` digitado nele entra com ela.
+function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): Spawned {
+  const name = PROVIDER_NAMES[agent.provider]
+  const launch = providerLaunch(agent.provider, [], agent.account)
+  if (!launch) return { ok: false, error: tr(`O ${name} não está instalado ou a conta não existe mais.`, `${name} isn’t installed or the account no longer exists.`) }
+  const env = launch.env
+  env.TERM = 'xterm-256color'
+  env.COLORTERM = 'truecolor'
+  prependPath(env, [CLI_BIN])
+  const shell = defaultShell()
+  try {
+    const pty = spawn(req.shell ? shell.file : launch.file, req.shell ? shell.args : launch.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd, env })
+    return { ok: true, pty, account: req.account!, shell: req.shell ? basename(shell.file) : undefined }
+  } catch (err) {
+    return { ok: false, error: tr(`Não consegui abrir o ${name}: ${errorMessage(err)}`, `Couldn’t open ${name}: ${errorMessage(err)}`) }
+  }
 }
 
 // Texto de várias linhas como argumento quebra no Windows e no WSL: vai num arquivo. Um só para

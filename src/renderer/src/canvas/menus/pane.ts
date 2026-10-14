@@ -14,7 +14,7 @@ export function paneMenu(deps: PaneDeps, position: XYPosition): MenuItem[] {
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, shortcut: 'C', onSelect: () => deps.addNote(position) },
     { type: 'separator' },
     { type: 'action', label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, shortcut: '⌘N', onSelect: () => deps.newLooseConversation(position) },
-    terminalSubmenu(tr('Novo terminal', 'New terminal'), (kind) => deps.addTerminal(position, undefined, undefined, kind)),
+    terminalSubmenu(tr('Novo terminal', 'New terminal'), (kind, account) => deps.addTerminal(position, undefined, undefined, kind, account)),
     { type: 'separator' },
     { type: 'action', label: tr('Nova pasta', 'New folder'), icon: FolderPlus, shortcut: '⌘P', onSelect: () => deps.addFolder(position) },
     { type: 'action', label: tr('Criar grupo', 'Create group'), icon: SquareDashed, shortcut: '⌘G', onSelect: () => deps.addGroup(position) },

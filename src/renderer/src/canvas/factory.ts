@@ -50,14 +50,14 @@ export function displayPath(path: string): string {
 // Tamanho que dá para trabalhar sem ocupar o canvas inteiro.
 export const TERMINAL_SIZE = { width: 620, height: 380 }
 
-export function createTerminal(position: XYPosition, folder: string, kind: TerminalKind = 'claude'): TerminalNode {
+export function createTerminal(position: XYPosition, folder: string, kind: TerminalKind = 'claude', account?: string): TerminalNode {
   const path = displayPath(folder)
   return {
     id: `t-${crypto.randomUUID()}`,
     type: 'terminal',
     position,
     style: { ...TERMINAL_SIZE },
-    data: { name: baseName(path), path, kind }
+    data: { name: baseName(path), path, kind, ...(account && { account }) }
   }
 }
 

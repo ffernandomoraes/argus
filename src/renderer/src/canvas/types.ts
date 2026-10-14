@@ -35,6 +35,9 @@ export type ConversationSummary = {
   design?: boolean
   // Item do modo design: o design que ele abre.
   designId?: string
+  // Conversa com outro agente: agente e conta dela ("codex:main"). Continua com ele mesmo se o
+  // grupo trocar de agente.
+  agent?: string
 }
 
 export type ProjectData = {
@@ -55,6 +58,9 @@ type TerminalData = {
   kind?: TerminalKind
   // Conversa que ele retoma; vazio = conversa nova.
   sessionId?: string
+  // Agente e conta escolhidos no "Novo terminal" ("codex:main", ou uma conta do Claude). Sem ela,
+  // vale a do grupo.
+  account?: string
 }
 
 // Conversa sem projeto: roda na pasta do usuário e entra no canvas no primeiro envio,

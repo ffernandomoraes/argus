@@ -10,6 +10,8 @@ import { lang, setLang, tr } from '../i18n'
 import { broadcast } from './events'
 import { ensureDistro, homeUnc, listDistros } from '../wsl'
 import { wslDiagnostics } from '../wsl/diagnostics'
+import { parseAgentRef } from '../../shared/providers'
+import { agentInfo } from '../agentChats/models'
 import { handle, on, onSync } from './register'
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
@@ -57,7 +59,11 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('media:get', () => nowPlaying())
   handle('media:command', (_e, command) => mediaCommand(command))
   handle('media:volume', (_e, volume) => setVolume(volume))
-  handle('claude:info', (_e, account) => s.usage.info(resolveAccount(account)))
+  handle('claude:info', (_e, account) => {
+    // Conta de outro agente ("codex:main"): os modelos que ela oferece, no mesmo formato.
+    const agent = parseAgentRef(account)
+    return agent ? agentInfo(agent) : s.usage.info(resolveAccount(account))
+  })
   handle('claudeVersion:get', () => s.claudeVersion.state)
   handle('claudeVersion:check', () => s.claudeVersion.check())
   handle('claudeVersion:update', () => s.claudeVersion.update())

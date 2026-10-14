@@ -13,7 +13,8 @@ function toConversation(s: SessionSummary): ConversationSummary {
     updatedAt: s.updatedAt,
     contextPercent: s.contextPercent,
     sessionId: s.id,
-    ...(s.design && { design: true })
+    ...(s.design && { design: true }),
+    ...(s.agent && { agent: s.agent })
   }
 }
 

@@ -6,7 +6,7 @@ import { findAllInPath, findInPath } from '../platform'
 // Instalado pelo npm, o Windows tem só o claude.cmd, que nem o SDK nem o terminal conseguem abrir
 // direto (o Windows só roda .cmd por um shell). Vale o arquivo para onde ele aponta: o cli.js do
 // pacote, rodado pelo node, ou o executável.
-function cmdTarget(cmd: string): string | null {
+export function cmdTarget(cmd: string): string | null {
   let text: string
   try {
     text = readFileSync(cmd, 'utf8')

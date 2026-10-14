@@ -1,4 +1,7 @@
 import { Auth } from '../auth'
+import { Providers } from '../providers'
+import { onConversationSaved } from '../agentChats/store'
+import { agentRef } from '../../shared/providers'
 import { CanvasAgent } from '../canvasAgent'
 import { CanvasHub } from '../canvasHub'
 import { ChatHolders } from '../chatHolders'
@@ -106,6 +109,26 @@ export function createServices() {
     }
   )
 
+  // Contas dos outros agentes (Codex, Gemini, Cursor; ver src/main/providers/). Login trocado: as
+  // conversas paradas da conta abrem de novo com o novo. Conta removida: fecham na hora.
+  // Limites: só o Codex informa (Gemini e Cursor não têm leitura por programa); um monitor por conta
+  // logada, que some com ela.
+  const providers = new Providers(
+    (state) => {
+      broadcast('providers:state', state)
+      usage.codex.sync(state.providers.codex.accounts.filter((a) => a.status?.signedIn).map((a) => a.id))
+    },
+    (provider, id) => {
+      chats.releaseAll(agentRef(provider, id))
+      if (provider === 'codex') usage.codex.reread(id)
+    },
+    (provider, id) => {
+      chats.closeAccount(agentRef(provider, id))
+      terminals.killAccount(agentRef(provider, id))
+    }
+  )
+  onConversationSaved((cwd) => sessionWatch.conversationChanged(cwd))
+
   // O canvas é um só em todas as janelas: a mudança de uma vai para as outras.
   const canvasHub = new CanvasHub((nodes, except) => {
     for (const win of canvasWindowList()) if (win.webContents !== except) sendTo(win.webContents, 'canvas:remote', nodes)
@@ -154,6 +177,7 @@ export function createServices() {
     notifier,
     usage,
     auth,
+    providers,
     canvasHub,
     canvasAgent,
     speech,

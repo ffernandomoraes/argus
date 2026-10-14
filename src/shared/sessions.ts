@@ -13,6 +13,9 @@ export type SessionSummary = {
   live: LiveStatus | null
   // Conversa de um protótipo do modo design (começou com as instruções <modo-design>).
   design?: boolean
+  // Conversa com outro agente (Codex, Gemini, Cursor), gravada pelo Argus: agente e conta dela
+  // ("codex:main", ver providers.ts). Sem ele: Claude Code.
+  agent?: string
 }
 
 // Pasta onde o Claude Code já conversou (lista do "Nova pasta").
@@ -37,3 +40,10 @@ export type UncommittedFile = {
 // ou o .git mudou (git: checkout, add, commit). A janela relê só o que o motivo pede: o git status,
 // o mais caro, só no aviso do git.
 export type SessionChange = 'transcript' | 'status' | 'git'
+
+// Branch para o seletor acima da pasta. Sem `remote`: existe aqui. Com: só no remoto (origin/x),
+// e escolher cria a local que acompanha ela.
+export type BranchOption = { name: string; remote?: string }
+
+// Branches do repositório da pasta, da usada mais recentemente para a mais antiga.
+export type BranchList = { current: string | null; branches: BranchOption[] }

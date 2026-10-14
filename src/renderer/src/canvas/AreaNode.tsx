@@ -2,7 +2,11 @@ import { memo } from 'react'
 import { NodeResizer, useStore, type NodeProps, type ReactFlowState } from '@xyflow/react'
 import { ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import { findAccount, useAuth } from '../auth/useAuth'
+import { parseAgentRef, PROVIDER_NAMES } from '../../../shared/providers'
+import { AgentIcon } from '../icons/AgentIcon'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
+import { useProviders } from '../providers/useProviders'
+import { usePreference } from '../settings/preferences'
 import { shallowEqual } from '../lib/shallowEqual'
 import { Tooltip } from '../ui/Tooltip'
 import { sameNodeProps } from './blocks/sameNodeProps'
@@ -70,20 +74,43 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
 // só, não há o que mostrar.
 function AccountTag({ account, color }: { account?: string; color: string }) {
   const auth = useAuth()
-  const current = auth && auth.accounts.length > 1 ? findAccount(auth, account) : undefined
+  const providers = useProviders()
+  const multiAgents = usePreference('multiAgents')
+  const ref = multiAgents ? parseAgentRef(account) : null
+  if (ref) {
+    const { accounts, defaultId } = providers?.providers[ref.provider] ?? { accounts: [], defaultId: null }
+    const chosen = accounts.find((a) => a.id === ref.account) ?? accounts.find((a) => a.id === defaultId)
+    const name = `${PROVIDER_NAMES[ref.provider]}${chosen && accounts.length > 1 ? ` - ${chosen.name}` : ''}`
+    return (
+      <Tag color={color} title={tr(`Agente deste grupo: ${name}`, `Agent for this group: ${name}`)}>
+        <AgentIcon provider={ref.provider} size={10} />
+        <span className="truncate">{name}</span>
+      </Tag>
+    )
+  }
+  // Com o experimento ligado, o Claude aparece mesmo com uma conta só: deixa claro qual agente roda.
+  const current = auth && (auth.accounts.length > 1 || multiAgents) ? findAccount(auth, ref ? undefined : account) : undefined
   if (!current) return null
   return (
+    <Tag color={color} title={tr(`Conta do Claude deste grupo: ${current.name}`, `Claude account for this group: ${current.name}`)}>
+      <ClaudeIcon size={10} />
+      <span className="truncate">{current.name}</span>
+    </Tag>
+  )
+}
+
+function Tag({ color, title, children }: { color: string; title: string; children: React.ReactNode }) {
+  return (
     <span
-      title={tr(`Conta do Claude deste grupo: ${current.name}`, `Claude account for this group: ${current.name}`)}
-      className="flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
+      title={title}
+      className="flex max-w-48 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
       style={{
         color,
         borderColor: `color-mix(in srgb, ${color} 35%, transparent)`,
         background: `color-mix(in srgb, ${color} 12%, var(--color-bg))`
       }}
     >
-      <ClaudeIcon size={10} />
-      <span className="truncate">{current.name}</span>
+      {children}
     </span>
   )
 }

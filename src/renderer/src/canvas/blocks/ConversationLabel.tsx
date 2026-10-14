@@ -1,19 +1,27 @@
 import { Bot, ExternalLink, MessageCircle, PenTool } from 'lucide-react'
+import { parseAgentRef, PROVIDER_NAMES } from '../../../../shared/providers'
+import { AgentIcon } from '../../icons/AgentIcon'
 import { useIsUnread } from '../sessionsStore'
 import { StatusDot } from '../StatusBadge'
 import type { ConversationSummary } from '../types'
 import { tr } from '../../i18n'
 
 // Começo de toda linha de conversa (card solto, painel de todas e lista da pasta): o ícone
-// (conversa ou design), o título com a bolinha de status logo depois e os selos de agente e de
+// (conversa, design ou o do agente), o título com a bolinha de status logo depois e os selos de agente e de
 // "aberta em janela separada". Fica dentro do flex de quem usa, que decide o espaçamento.
 export function ConversationLabel({ conversation: c, poppedOut }: { conversation: ConversationSummary; poppedOut: boolean }) {
   // Resposta que você ainda não viu: bolinha verde, para não se confundir com as paradas.
   const unread = useIsUnread(c.id)
+  // Conversa com outro agente (Codex, Gemini, Cursor): o ícone dele no lugar do balão.
+  const agent = parseAgentRef(c.agent)
   return (
     <>
       {c.design || c.kind === 'design' ? (
         <PenTool size={13} className="shrink-0 text-muted" aria-label={tr('Modo design', 'Design mode')} />
+      ) : agent ? (
+        <span className="flex shrink-0" title={PROVIDER_NAMES[agent.provider]}>
+          <AgentIcon provider={agent.provider} size={13} />
+        </span>
       ) : (
         <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
       )}

@@ -6,6 +6,7 @@ import { tr } from '../../i18n'
 export function ExperimentsSection() {
   const mascot = usePreference('mascot')
   const orchestrator = usePreference('orchestratorEnabled')
+  const multiAgents = usePreference('multiAgents')
   return (
     <Group>
       <Row
@@ -25,6 +26,15 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Orquestrador', 'Orchestrator')} checked={orchestrator} onChange={(next) => setPreferences({ orchestratorEnabled: next })} />
+      </Row>
+      <Row
+        label={tr('Codex, Gemini e Cursor', 'Codex, Gemini and Cursor')}
+        description={tr(
+          'Outros agentes além do Claude, cada um com as próprias contas. Liga as seções deles em Contas.',
+          'Other agents besides Claude, each with its own accounts. Turns on their sections in Accounts.'
+        )}
+      >
+        <Switch label={tr('Codex, Gemini e Cursor', 'Codex, Gemini and Cursor')} checked={multiAgents} onChange={(next) => setPreferences({ multiAgents: next })} />
       </Row>
     </Group>
   )

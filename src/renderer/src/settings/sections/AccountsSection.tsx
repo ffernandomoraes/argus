@@ -7,6 +7,10 @@ import { ConfirmDialog, type ConfirmRequest } from '../../canvas/ConfirmDialog'
 import { Presence } from '../../motion'
 import { THIS_COMPUTER } from '../../platform'
 import { AccountCard } from '../accounts/AccountCard'
+import { ProviderSection } from '../accounts/ProviderSection'
+import { usePreference } from '../preferences'
+import { useProviders } from '../../providers/useProviders'
+import { PROVIDERS } from '../../../../shared/providers'
 import { tr } from '../../i18n'
 
 // Contas do Claude Code. A principal é a do terminal e do VS Code: entrar e sair nela valem para o
@@ -14,6 +18,8 @@ import { tr } from '../../i18n'
 // canvas escolhe a sua.
 export function AccountsSection() {
   const auth = useAuth()
+  const multiAgents = usePreference('multiAgents')
+  const providers = useProviders()
   // Login aberto aqui: numa conta da lista ou numa nova (adding).
   const [target, setTarget] = useState<{ accountId?: string } | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
@@ -23,6 +29,10 @@ export function AccountsSection() {
   useEffect(() => {
     window.api.auth.refresh()
   }, [])
+
+  useEffect(() => {
+    if (multiAgents) window.api.providers.refresh()
+  }, [multiAgents])
 
   // Login terminou ou foi cancelado: volta para a lista.
   const status = login?.status
@@ -97,6 +107,7 @@ export function AccountsSection() {
         <Plus size={13} />
         {tr('Adicionar conta', 'Add account')}
       </button>
+      {multiAgents && providers && PROVIDERS.map((p) => <ProviderSection key={p} provider={p} state={providers} onConfirm={setConfirm} />)}
       <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>
     </>
   )

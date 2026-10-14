@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext } from '../auth/useAuth'
 import { useViewing } from '../canvas/sessionsStore'
 import type { ConversationSummary } from '../canvas/types'
@@ -60,7 +61,7 @@ type Props = {
 // Memorizado: arrastar o canvas ou o painel não redesenha a conversa.
 export const ConversationView = memo(function ConversationView({
   cwd,
-  account,
+  account: groupAccount,
   project,
   conversation,
   onOpenFile,
@@ -87,6 +88,7 @@ export const ConversationView = memo(function ConversationView({
   // Com o chat ligado aqui, o status dele manda: o registro do Claude Code demora a dizer
   // que parou, e isso deixava a conversa como "trabalhando" depois de você mandar parar.
   const status = live ? live.status : conversation.status
+  const account = conversationAccount(conversation, groupAccount, live?.agent)
   // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
   const settings = useConversationSettings(conversation.sessionId ?? conversation.id)
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, account, settings, agents })
@@ -161,3 +163,11 @@ export const ConversationView = memo(function ConversationView({
     </AccountContext.Provider>
   )
 })
+
+// Agente e conta que rodam a conversa: a que já existe continua com o dela (outro agente, ou o
+// Claude mesmo num grupo que agora é de outro agente); a nova usa o do grupo.
+function conversationAccount(conversation: ConversationSummary, group?: string, running?: string): string | undefined {
+  if (conversation.agent ?? running) return conversation.agent ?? running
+  const started = !conversation.draft && !!conversation.sessionId
+  return started && parseAgentRef(group) ? undefined : group
+}

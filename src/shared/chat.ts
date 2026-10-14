@@ -55,6 +55,8 @@ export type ChatState = {
   backgroundTasks: number
   // Mensagens suas na fila do Claude, ainda fora do histórico (ele só grava o texto ao entregar).
   queued?: QueuedMessage[]
+  // Conversa com outro agente: agente e conta ("codex:main"). Sem ele: Claude.
+  agent?: string
 }
 
 // Mensagem enviada com o Claude no meio de um pedido. at: hora do envio (ms).

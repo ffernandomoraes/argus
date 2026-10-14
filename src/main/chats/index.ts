@@ -2,7 +2,30 @@ import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, Permi
 import type { McpStatus } from '../../shared/mcp'
 import type { ChatEntry } from './entries'
 import { mcpStatusFor } from './mcpStatus'
-import { ChatSession, type OpenRequest, type SessionEvents } from './session'
+import { parseAgentRef, type AgentRef } from '../../shared/providers'
+import { AgentChatSession } from '../agentChats/session'
+import { indexEntry, isAgentConversation } from '../agentChats/store'
+import { ChatSession, type OpenRequest } from './session'
+
+// Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
+// as mesmas operações.
+type AnySession = ChatSession | AgentChatSession
+
+type Events = {
+  changed: (s: AnySession) => void
+  identified: (s: AnySession, id: string) => void
+  ended: (s: AnySession) => void
+}
+
+// Quem roda a conversa: uma já gravada continua com o agente dela, seja qual for o do grupo agora;
+// uma nova usa o do grupo. Nulo: o Claude.
+function agentFor(req: OpenRequest): AgentRef | null {
+  if (req.sessionId) {
+    const entry = isAgentConversation(req.sessionId) ? indexEntry(req.sessionId) : undefined
+    return entry ? { provider: entry.provider, account: entry.account } : null
+  }
+  return parseAgentRef(req.account)
+}
 
 export { claudeEnv, claudeLaunch, claudeProcess } from './env'
 export { Inbox } from './inbox'
@@ -15,14 +38,14 @@ const RELEASE_DELAY_MS = 5_000
 // Uma sessão do Claude por conversa aberta no chat. A chave é o id da conversa no app;
 // conversa nova ganha também o id da sessão como chave, assim que o Claude informa.
 export class Chats {
-  private sessions = new Map<string, ChatSession>()
+  private sessions = new Map<string, AnySession>()
   // Conversas fechadas esperando encerrar.
-  private releasing = new Map<ChatSession, NodeJS.Timeout>()
+  private releasing = new Map<AnySession, NodeJS.Timeout>()
   // Chaves abertas em alguma janela agora (ver ChatHolders). A sessão vale enquanto qualquer chave
   // dela estiver aberta: conversa nova tem duas, e cada janela pode estar usando uma.
   private held = new Set<string>()
   // Avisos das sessões (ver SessionEvents): o mesmo objeto para todas.
-  private events: SessionEvents = {
+  private events: Events = {
     changed: (s) => {
       s.keys.forEach((k) => this.onState(k, s.state))
       this.closeIfDone(s)
@@ -73,12 +96,12 @@ export class Chats {
     new Set(this.sessions.values()).forEach((s) => s.account === account && this.closeSession(s))
   }
 
-  private isHeld(session: ChatSession): boolean {
+  private isHeld(session: AnySession): boolean {
     return [...session.keys].some((k) => this.held.has(k))
   }
 
   // Ninguém mais precisa da sessão: fecha já se está parada; senão, quando o Claude parar.
-  private letGo(session: ChatSession): void {
+  private letGo(session: AnySession): void {
     // Remote control ligado: a conversa segue pelo celular mesmo fechada aqui, até ele cair.
     if (session.remoteOn) session.keepForRemote = true
     else if (!session.busy) this.closeSession(session)
@@ -86,11 +109,11 @@ export class Chats {
   }
 
   // Fechada na tela e o Claude parou: encerra agora, sem deixar processo aberto.
-  private closeIfDone(session: ChatSession): void {
+  private closeIfDone(session: AnySession): void {
     if (session.readyToClose) this.closeSession(session)
   }
 
-  private closeSession(session: ChatSession): void {
+  private closeSession(session: AnySession): void {
     clearTimeout(this.releasing.get(session))
     this.releasing.delete(session)
     session.keys.forEach((k) => this.sessions.get(k) === session && this.sessions.delete(k))
@@ -120,15 +143,19 @@ export class Chats {
     void this.open(req).remoteControl(req.enabled)
   }
 
-  private find(req: { key: string; sessionId?: string }): ChatSession | undefined {
+  private find(req: { key: string; sessionId?: string }): AnySession | undefined {
     return this.sessions.get(req.key) ?? (req.sessionId ? this.sessions.get(req.sessionId) : undefined)
   }
 
   // Sessão da conversa, aberta agora se ainda não existe.
-  private open(req: OpenRequest): ChatSession {
+  private open(req: OpenRequest): AnySession {
     let session = this.find(req)
     if (!session) {
-      session = new ChatSession(req.key, req, this.events)
+      const agent = agentFor(req)
+      // Conversa do Claude num grupo com outro agente: a conta do grupo não serve, vale a padrão.
+      session = agent
+        ? new AgentChatSession(req.key, req, agent, this.events)
+        : new ChatSession(req.key, parseAgentRef(req.account) ? { ...req, account: undefined } : req, this.events)
       this.sessions.set(req.key, session)
     }
     return session
@@ -142,7 +169,7 @@ export class Chats {
   async mcpStatus(key: string, cwd: string, account?: string): Promise<McpStatus> {
     try {
       const session = this.sessions.get(key)
-      return { ok: true, servers: session ? await session.mcpServers() : await mcpStatusFor(cwd, account) }
+      return { ok: true, servers: session ? await session.mcpServers() : parseAgentRef(account) ? [] : await mcpStatusFor(cwd, account) }
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }

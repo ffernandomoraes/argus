@@ -60,6 +60,11 @@ export class SessionWatch {
     })
   }
 
+  // Conversa de outro agente gravada pelo Argus (agentChats/store.ts): a lista da pasta relê.
+  conversationChanged(path: string): void {
+    this.notify(path, 'transcript')
+  }
+
   // Pastas do canvas que estão na tela; troca a lista inteira a cada chamada.
   setProjects(paths: string[]): void {
     const wanted = new Set(paths)

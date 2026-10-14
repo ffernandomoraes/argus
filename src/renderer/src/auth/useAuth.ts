@@ -17,6 +17,9 @@ window.api.auth.state().then(
   (err: unknown) => console.error('[contas] estado inicial:', err)
 )
 
+// Fora de componente (menus do canvas): o estado de agora.
+export const getAuth = (): AuthState | null => auth.get()
+
 // Nulo até o processo principal responder.
 export function useAuth(): AuthState | null {
   return useStore(auth)

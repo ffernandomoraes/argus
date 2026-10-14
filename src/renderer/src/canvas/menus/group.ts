@@ -1,5 +1,9 @@
 import { ChevronDown, ChevronUp, FolderPlus, Fullscreen, LayoutGrid, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react'
+import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
 import { resolveAccount } from '../../auth/useAuth'
+import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
+import { getProviders } from '../../providers/useProviders'
+import { getPreferences } from '../../settings/preferences'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import type { MenuItem } from '../ContextMenu'
 import { childrenOf, fitGroupToContent, removeGroup, setGroupAccount, setGroupColor, terminalsIn, ungroup } from '../operations'
@@ -38,10 +42,53 @@ function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
   return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project')?.data.path
 }
 
+// "Agente ▸ Claude/Codex/Gemini/Cursor ▸ conta", com o experimento dos outros agentes ligado. O
+// visto fica na que vale: a escolhida ou, sem ela, a padrão do agente. Só entram os agentes com
+// conta conectada. As conversas novas do grupo usam o escolhido; as que já existem continuam com o
+// agente delas.
+function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): MenuItem[] {
+  const { auth } = deps
+  const state = getProviders()
+  const ref = parseAgentRef(group.data.account)
+  const set = (account: string) => deps.setNodes((ns) => setGroupAccount(ns, group.id, account))
+  const claudeCurrent = ref ? null : resolveAccount(auth, group.data.account)
+  const agents: MenuItem[] = [
+    {
+      type: 'submenu',
+      label: 'Claude',
+      icon: ClaudeIcon,
+      items: (auth?.accounts ?? []).map((a) => ({
+        type: 'action',
+        label: a.status?.loggedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
+        checked: a.id === claudeCurrent,
+        onSelect: () => set(a.id)
+      }))
+    }
+  ]
+  for (const provider of PROVIDERS) {
+    const { accounts, defaultId } = state?.providers[provider] ?? { accounts: [], defaultId: null }
+    if (!accounts.length) continue
+    const chosen = ref?.provider === provider ? (accounts.some((a) => a.id === ref.account) ? ref.account : defaultId) : null
+    agents.push({
+      type: 'submenu',
+      label: PROVIDER_NAMES[provider],
+      icon: AGENT_MENU_ICONS[provider],
+      items: accounts.map((a) => ({
+        type: 'action',
+        label: a.status?.signedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
+        checked: a.id === chosen,
+        onSelect: () => set(agentRef(provider, a.id))
+      }))
+    })
+  }
+  return [{ type: 'submenu', label: tr('Agente', 'Agent'), icon: ref ? AGENT_MENU_ICONS[ref.provider] : ClaudeIcon, items: agents }]
+}
+
 // "Conta do Claude ▸", só com mais de uma conta. O visto fica na que vale: a escolhida ou, sem
 // escolha, a padrão.
 function accountSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): MenuItem[] {
   const { auth } = deps
+  if (getPreferences().multiAgents) return agentSubmenu(deps, group)
   if (!auth || auth.accounts.length < 2) return []
   const current = resolveAccount(auth, group.data.account)
   return [
@@ -79,8 +126,10 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
       onSelect: () => deps.addFolder(group.position, group.id)
     },
     // Dentro de um grupo com pastas, abre na primeira delas; senão na pasta do usuário.
-    terminalSubmenu(tr('Novo terminal', 'New terminal'), (kind) =>
-      deps.addTerminal(group.position, group.id, folderOf(deps.nodes, group.id), kind)
+    terminalSubmenu(
+      tr('Novo terminal', 'New terminal'),
+      (kind, account) => deps.addTerminal(group.position, group.id, folderOf(deps.nodes, group.id), kind, account),
+      group.data.account
     ),
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, onSelect: () => deps.addNote(group.position, group.id) },
     { type: 'separator' },

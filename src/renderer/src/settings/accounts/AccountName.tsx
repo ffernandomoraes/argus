@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
 import { Pencil } from 'lucide-react'
-import type { ClaudeAccount } from '../../../../shared/auth'
 import { tr } from '../../i18n'
 
 // Apelido editável no próprio card: Enter grava, Esc desiste. Vazio volta para o nome sugerido.
-export function AccountName({ account }: { account: ClaudeAccount }) {
+// Sem onRename, grava numa conta do Claude.
+export function AccountName({ account, onRename }: { account: { id: string; name: string }; onRename?: (name: string) => void }) {
   const [value, setValue] = useState<string | null>(null)
   // O campo some ao terminar, e sumir também tira o foco: o blur que vem junto não grava de novo
   // (nem grava depois de um Esc).
@@ -30,7 +30,7 @@ export function AccountName({ account }: { account: ClaudeAccount }) {
     if (finished.current) return
     finished.current = true
     setValue(null)
-    if (save && value.trim() !== account.name) window.api.auth.rename(account.id, value)
+    if (save && value.trim() !== account.name) (onRename ?? ((name: string) => window.api.auth.rename(account.id, name)))(value)
   }
   return (
     <input

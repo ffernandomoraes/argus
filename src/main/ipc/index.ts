@@ -9,6 +9,7 @@ import { registerCliIpc } from './cli'
 import { registerDesignIpc } from './design'
 import { registerFilesIpc } from './files'
 import { registerMemoryIpc } from './memory'
+import { registerProvidersIpc } from './providers'
 import { registerServersIpc } from './servers'
 import { registerSessionsIpc } from './sessions'
 import { registerSpeechIpc } from './speech'
@@ -19,6 +20,7 @@ import { registerTerminalIpc } from './terminal'
 export function registerIpc(s: Services, life: Lifecycle): void {
   registerAppIpc(s, life)
   registerAuthIpc(s.auth)
+  registerProvidersIpc(s.providers)
   registerSpeechIpc(s.speech)
   registerCanvasIpc(s.canvasHub, s.canvasAgent)
   registerDesignIpc()

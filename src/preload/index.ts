@@ -89,6 +89,20 @@ const api: Api = {
     open: (url) => send('auth:open', url),
     onState: (cb) => listen('auth:state', cb)
   },
+  providers: {
+    state: () => invoke('providers:state'),
+    refresh: (provider) => send('providers:refresh', provider),
+    install: (provider) => send('providers:install', provider),
+    add: (provider) => send('providers:add', provider),
+    login: (provider, accountId) => send('providers:login', provider, accountId),
+    clipboardKey: () => invoke('providers:clipboardKey'),
+    submitKey: (key) => send('providers:submitKey', key),
+    cancel: () => send('providers:cancel'),
+    remove: (provider, accountId) => send('providers:remove', provider, accountId),
+    rename: (provider, accountId, name) => send('providers:rename', provider, accountId, name),
+    setDefault: (provider, accountId) => send('providers:setDefault', provider, accountId),
+    onState: (cb) => listen('providers:state', cb)
+  },
   filePath: (file) => webUtils.getPathForFile(file),
   chat: {
     state: (key) => invoke('chat:state', key),
@@ -152,6 +166,9 @@ const api: Api = {
     folders: () => invoke('sessions:folders'),
     trash: (path, id) => invoke('sessions:trash', path, id),
     branch: (path) => invoke('sessions:branch', path),
+    branches: (path) => invoke('sessions:branches', path),
+    fetch: (path) => invoke('sessions:fetch', path),
+    checkout: (path, option, create) => invoke('sessions:checkout', path, option, create),
     repoUrl: (path) => invoke('sessions:repoUrl', path),
     openRepo: (path) => send('sessions:openRepo', path),
     changes: (path) => invoke('sessions:changes', path),

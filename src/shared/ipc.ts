@@ -2,6 +2,7 @@ import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { Lang, LangPreference } from './i18n'
 import type { AuthState, LoginMethod } from './auth'
+import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
 import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
@@ -15,7 +16,7 @@ import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
-import type { KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
+import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { UpdateInfo, UpdateState } from './updates'
@@ -67,6 +68,9 @@ export type InvokeChannels = {
   'auth:state': () => AuthState
   'auth:logout': () => boolean
   'auth:remove': (accountId: string) => boolean
+  // Contas dos outros agentes (Codex, Gemini, Cursor)
+  'providers:state': () => ProvidersState
+  'providers:clipboardKey': () => ClipboardKey
   // Conversas
   'chat:state': (key: string) => ChatState | null
   'chat:active': () => ActiveChat[]
@@ -92,6 +96,9 @@ export type InvokeChannels = {
   'sessions:folders': () => KnownFolder[]
   'sessions:trash': (path: string, id: string) => string | null
   'sessions:branch': (path: string) => string | null
+  'sessions:branches': (path: string) => BranchList | null
+  'sessions:fetch': (path: string) => boolean
+  'sessions:checkout': (path: string, option: BranchOption, create?: boolean) => string | null
   'sessions:repoUrl': (path: string) => string | null
   'sessions:changes': (path: string) => UncommittedFile[] | null
   'sessions:history': (path: string, id: string) => Message[]
@@ -144,6 +151,15 @@ export type SendChannels = {
   'auth:rename': (accountId: string, name: string) => void
   'auth:setDefault': (accountId: string) => void
   'auth:open': (url: string) => void
+  'providers:refresh': (provider?: ProviderId) => void
+  'providers:install': (provider: ProviderId) => void
+  'providers:add': (provider: ProviderId) => void
+  'providers:login': (provider: ProviderId, accountId: string) => void
+  'providers:submitKey': (key?: string) => void
+  'providers:cancel': () => void
+  'providers:remove': (provider: ProviderId, accountId: string) => void
+  'providers:rename': (provider: ProviderId, accountId: string, name: string) => void
+  'providers:setDefault': (provider: ProviderId, accountId: string) => void
   // Conversas
   'chat:send': (req: ChatSendRequest) => void
   'chat:remote-control': (req: ChatRemoteRequest) => void
@@ -210,6 +226,7 @@ export type EventChannels = {
   'claudeVersion:state': (state: ClaudeVersionState) => void
   'cli:open': (path: string) => void
   'auth:state': (state: AuthState) => void
+  'providers:state': (state: ProvidersState) => void
   'chat:state': (key: string, state: ChatState) => void
   // As conversas trabalhando ou esperando você mudaram.
   'chat:active': (chats: ActiveChat[]) => void

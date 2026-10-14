@@ -25,6 +25,8 @@ export type Preferences = {
   mascotSpot: { x: number; y: number } | null
   // Modo orquestrador disponível (Configurações > Experimentos): mostra a aba e o item no seletor.
   orchestratorEnabled: boolean
+  // Codex, Gemini e Cursor além do Claude (Configurações > Experimentos): contas e conversas.
+  multiAgents: boolean
   // Modelo e esforço do orquestrador e as regras de delegação dele (Configurações > Orquestrador).
   orchestrator: OrchestratorConfig
 }
@@ -41,6 +43,7 @@ const DEFAULTS: Preferences = {
   mascot: false,
   mascotSpot: null,
   orchestratorEnabled: false,
+  multiAgents: false,
   orchestrator: defaultOrchestrator()
 }
 

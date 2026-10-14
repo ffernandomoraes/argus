@@ -27,6 +27,8 @@ export function startApp(s: Services, life: Lifecycle): void {
   // Os monitores de uso sobem quando o login de cada conta é conferido.
   step('limpar contas', cleanupAccounts)
   step('conferir o login', () => s.auth.refresh())
+  // Contas do Codex, Gemini e Cursor: o nome (e-mail) delas aparece no menu Agente do grupo.
+  step('conferir os agentes', () => s.providers.refresh())
   // Windows com WSL: o Claude Code de cada distro aparece em segundo plano (o primeiro wsl.exe liga
   // a máquina virtual). Com a resposta, o login é conferido de novo: sem o `claude` do Windows, é o
   // do WSL que vale.

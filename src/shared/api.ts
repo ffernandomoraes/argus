@@ -1,6 +1,7 @@
 import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
+import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { Lang, LangPreference } from './i18n'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
@@ -16,7 +17,7 @@ import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
-import type { KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
+import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { UpdateInfo, UpdateState } from './updates'
@@ -101,6 +102,24 @@ export type Api = {
     setDefault: (accountId: string) => void
     open: (url: string) => void
     onState: (cb: (state: AuthState) => void) => Off
+  }
+  // Contas dos outros agentes (Codex, Gemini, Cursor): instalação, login pelo navegador e chaves.
+  providers: {
+    state: () => Promise<ProvidersState>
+    refresh: (provider?: ProviderId) => void
+    install: (provider: ProviderId) => void
+    // Conta nova: login pelo navegador ou a página da chave, conforme o agente.
+    add: (provider: ProviderId) => void
+    login: (provider: ProviderId, accountId: string) => void
+    // Chave copiada esperando confirmação: só o final dela.
+    clipboardKey: () => Promise<ClipboardKey>
+    // Sem argumento: usa a da área de transferência, que não passa pela tela.
+    submitKey: (key?: string) => void
+    cancel: () => void
+    remove: (provider: ProviderId, accountId: string) => void
+    rename: (provider: ProviderId, accountId: string, name: string) => void
+    setDefault: (provider: ProviderId, accountId: string) => void
+    onState: (cb: (state: ProvidersState) => void) => Off
   }
   // Caminho no disco de um arquivo escolhido ou arrastado (anexos do chat).
   filePath: (file: File) => string
@@ -191,6 +210,13 @@ export type Api = {
     trash: (path: string, id: string) => Promise<string | null>
     // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.
     branch: (path: string) => Promise<string | null>
+    // Branches locais e só do remoto, para o seletor acima da pasta; nulo fora de repositório.
+    branches: (path: string) => Promise<BranchList | null>
+    // git fetch do remoto; devolve se deu certo (sem rede ou pedindo senha, não).
+    fetch: (path: string) => Promise<boolean>
+    // Troca de branch (ou cria uma nova com `create`); devolve o erro ou nulo. Com arquivos não
+    // comitados, a troca é recusada.
+    checkout: (path: string, option: BranchOption, create?: boolean) => Promise<string | null>
     // Página do repositório no GitHub (ou outro host) a partir do remoto; nulo sem remoto.
     repoUrl: (path: string) => Promise<string | null>
     // Abre essa página no navegador.

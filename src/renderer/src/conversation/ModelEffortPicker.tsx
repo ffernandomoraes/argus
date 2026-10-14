@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { ChevronUp, Network, Workflow } from 'lucide-react'
 import type { SessionSettings } from './SessionSettings'
 import { EFFORTS, effortLabel } from './modelOptions'
+import { parseAgentRef } from '../../../shared/providers'
+import { useConversationAccount } from '../auth/useAuth'
 import { useModels } from './useModels'
 import { EffortDots, EffortSlider } from './composer/EffortSlider'
 import { ModelList } from './composer/ModelList'
@@ -35,11 +37,15 @@ export function ModelEffortPicker({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const models = useModels()
-  const orchestratorEnabled = usePreference('orchestratorEnabled')
+  // Outro agente (Codex, Gemini, Cursor): os modelos e esforços são os da conta dele; thinking,
+  // Ultracode e orquestrador são do Claude Code.
+  const agent = !!parseAgentRef(useConversationAccount())
+  const orchestratorEnabled = usePreference('orchestratorEnabled') && !agent
   useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
-  const current = models.find((m) => m.value === settings.model)
+  // Modelo salvo que a conta não tem (um do Claude numa conversa do Codex): vale o padrão dela.
+  const current = models.find((m) => m.value === settings.model) ?? (agent ? models.find((m) => m.value === '') : undefined)
   // Padrão mostra o modelo a que aponta hoje: "Opus 5.5".
   const currentName = current
     ? current.value === '' ? (current.resolvedName ?? tr('Padrão', 'Default')) : current.displayName
@@ -67,7 +73,7 @@ export function ModelEffortPicker({
             <span className="text-faint">{effortLabel(settings.effort)}</span>
           </>
         )}
-        {settings.ultracode && <Workflow size={12} className="text-running" aria-label={tr('Ultracode ligado', 'Ultracode on')} />}
+        {settings.ultracode && !agent && <Workflow size={12} className="text-running" aria-label={tr('Ultracode ligado', 'Ultracode on')} />}
         {orchestratorEnabled && settings.orchestrator && <Network size={12} className="text-running" aria-label={tr('Orquestrador ligado', 'Orchestrator on')} />}
         <ChevronUp size={12} className="text-faint" />
       </button>
@@ -83,8 +89,8 @@ export function ModelEffortPicker({
                 <EffortSlider allowed={allowed} value={settings.effort} onChange={(effort) => onChange({ effort })} />
               </>
             )}
-            <div className="my-1 h-px bg-line" />
-            <Toggle
+            {!agent && <div className="my-1 h-px bg-line" />}
+            {!agent && <Toggle
               label="Thinking"
               description={tr(
                 'Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas.',
@@ -92,8 +98,8 @@ export function ModelEffortPicker({
               )}
               checked={settings.thinking}
               onChange={(thinking) => onChange({ thinking })}
-            />
-            <Toggle
+            />}
+            {!agent && <Toggle
               label="Ultracode"
               icon={<Workflow size={12} />}
               description={tr(
@@ -102,7 +108,7 @@ export function ModelEffortPicker({
               )}
               checked={settings.ultracode}
               onChange={(ultracode) => onChange({ ultracode })}
-            />
+            />}
             {orchestratorEnabled && (
               <Toggle
                 label={tr('Orquestrador', 'Orchestrator')}

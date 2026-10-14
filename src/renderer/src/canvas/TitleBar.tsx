@@ -42,13 +42,14 @@ export const TitleBar = memo(function TitleBar({
 
   return (
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
-    // painel de limites aberto sobe acima dos painéis, senão um drawer aberto cobriria o painel. Com o
-    // mouse em cima também sobe: os tooltips dos botões abrem para baixo, por cima do drawer.
+    // painel de limites aberto sobe acima de todos, senão um drawer aberto (z-40, ou z-50 no modo
+    // foco) cobriria o painel. Com o mouse em cima também sobe: os tooltips dos botões abrem para
+    // baixo, por cima do drawer. Modal aberto cobre a barra, então o mouse nem chega nela.
     // O recuo acompanha o grupo da direita (limites, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[45]' : 'z-[35] hover:z-[45]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
+      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[55]' : 'z-[35] hover:z-[55]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
     >
       {/* Logo depois dos botões da janela (os semáforos do Mac). Desligado, nem consulta o sistema. */}
       {mediaPlayer && (

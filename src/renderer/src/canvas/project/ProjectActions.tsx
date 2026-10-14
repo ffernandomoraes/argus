@@ -3,14 +3,14 @@ import { Code2, Plus } from 'lucide-react'
 import { ProjectServerButton } from '../../devServers/ProjectServerButton'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
-import { BranchLabel } from '../BranchLabel'
 import { useCanvasActions } from '../CanvasContext'
 import { useBranch, useUncommitted } from '../sessionsStore'
 import { useIsCodeOpen } from '../useCanvasView'
+import { BranchSwitcher } from './BranchSwitcher'
 import type { ProjectData } from '../types'
 import { tr } from '../../i18n'
 
-// O que fica fora do card da pasta, logo acima dele: a branch atual no canto esquerdo e as
+// O que fica fora do card da pasta, logo acima dele: a branch atual (clicar troca) no canto esquerdo e as
 // ações (servidor, código e "+") no direito, na mesma altura e no mesmo estilo.
 export const ProjectActions = memo(function ProjectActions({ nodeId, project }: { nodeId: string; project: ProjectData }) {
   const { path } = project
@@ -19,8 +19,8 @@ export const ProjectActions = memo(function ProjectActions({ nodeId, project }: 
   return (
     <>
       {branch && (
-        <div className="absolute bottom-full left-0 mb-1.5 flex h-6 max-w-[calc(100%-92px)] items-center rounded-md border border-line bg-surface px-2 text-[12px] text-muted shadow-sm">
-          <BranchLabel branch={branch} changes={uncommitted?.length} highlight />
+        <div className="absolute bottom-full left-0 mb-1.5 flex max-w-[calc(100%-92px)]">
+          <BranchSwitcher path={path} branch={branch} changes={uncommitted?.length} />
         </div>
       )}
       <div className="nodrag absolute bottom-full right-0 mb-1.5 flex items-center gap-1">

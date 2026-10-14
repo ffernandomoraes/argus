@@ -14,7 +14,7 @@ const run = promisify(execFile)
 // versão do git; "false" só a partir da 2.36 (antes viraria o nome de um programa a rodar).
 export const SAFE_GIT = ['-c', 'core.fsmonitor=']
 
-export type GitOptions = { timeout?: number; maxBuffer?: number }
+export type GitOptions = { timeout?: number; maxBuffer?: number; env?: NodeJS.ProcessEnv }
 
 // Programa, argumentos e pasta para rodar o git em `cwd`. Pasta do WSL: o git de lá, pelo wsl.exe.
 // O do Windows recusa a pasta (o dono é outro usuário) e veria como alterado todo arquivo
@@ -30,9 +30,17 @@ export function gitCommand(cwd: string, args: string[]): { file: string; args: s
 }
 
 // No WSL o prazo é maior: o primeiro wsl.exe pode ligar a máquina virtual.
-export async function git(cwd: string, args: string[], { timeout = 5000, maxBuffer = 1024 * 1024 }: GitOptions = {}): Promise<string> {
+export async function git(cwd: string, args: string[], { timeout = 5000, maxBuffer = 1024 * 1024, env }: GitOptions = {}): Promise<string> {
   const cmd = gitCommand(cwd, args)
-  return (await run(cmd.file, cmd.args, { cwd: cmd.cwd, timeout: cmd.wsl ? Math.max(timeout, 20_000) : timeout, maxBuffer, windowsHide: true })).stdout
+  return (
+    await run(cmd.file, cmd.args, {
+      cwd: cmd.cwd,
+      timeout: cmd.wsl ? Math.max(timeout, 20_000) : timeout,
+      maxBuffer,
+      windowsHide: true,
+      ...(env && { env: { ...process.env, ...env } })
+    })
+  ).stdout
 }
 
 // git diff sai com código 1 quando há diferença (--no-index); a saída ainda serve.

@@ -179,7 +179,10 @@ export const ChatView = memo(function ChatView({
           onPointerDown={sticky.onPointerDown}
           className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
         >
-          {(loading || messages.length === 0) && <ChatPlaceholder loading={loading} />}
+          {/* Com mensagem a caminho, sem o "Nova conversa": centralizado, ele empurrava o balão para
+              baixo, perto da caixa de escrever, e o balão pulava para o topo quando o histórico
+              chegava (e voltava se o histórico sumisse por um instante). */}
+          {(loading || messages.length === 0) && sends.waiting.length === 0 && <ChatPlaceholder loading={loading} />}
           {/* O app inteiro tem seleção de texto desligada (index.css); as mensagens, não: dá para copiar. */}
           <div ref={content} className="flex select-text flex-col gap-3">
             <Timeline items={items} />

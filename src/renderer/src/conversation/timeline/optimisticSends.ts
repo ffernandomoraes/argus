@@ -18,6 +18,8 @@ export type PendingSend = {
   after?: string
   // Estado do chat no envio: se nenhum estado novo chegar até o prazo, o envio não chegou ao Claude.
   live: ChatState | null
+  // Sobrou na fila do Claude quando o pedido terminou: ele começa outro com ela (ver useOptimisticSends).
+  held?: boolean
 }
 
 // Folga entre a hora do envio e a hora gravada pelo Claude Code.
@@ -39,6 +41,11 @@ export function isDelivered(s: PendingSend, messages: Message[]): boolean {
   return false
 }
 
+// A mensagem ainda está na fila do Claude (o processo principal guarda o texto e a hora do envio).
+export function inQueue(s: PendingSend, queued: QueuedMessage[] | undefined): boolean {
+  return !!queued?.some((q) => Math.abs(s.sentAt - q.at) < CLOCK_SLACK_MS && q.text.startsWith(s.text))
+}
+
 const NO_IMAGES = () => Promise.resolve<string[]>([])
 
 // Mensagens na fila do Claude sem balão nesta tela (a conversa foi fechada e aberta de novo no meio
@@ -47,7 +54,7 @@ const NO_IMAGES = () => Promise.resolve<string[]>([])
 export function queuedSends(queued: QueuedMessage[] | undefined, own: PendingSend[], messages: Message[]): PendingSend[] {
   const list: PendingSend[] = []
   for (const q of queued ?? []) {
-    if (own.some((s) => Math.abs(s.sentAt - q.at) < CLOCK_SLACK_MS && q.text.startsWith(s.text))) continue
+    if (own.some((s) => inQueue(s, [q]))) continue
     const s: PendingSend = { id: q.id, text: q.text, typed: q.text, files: [], images: 0, read: NO_IMAGES, sentAt: q.at, live: null }
     if (!isDelivered(s, messages)) list.push(s)
   }

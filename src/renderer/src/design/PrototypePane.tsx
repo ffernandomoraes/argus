@@ -4,7 +4,7 @@ import { AccountContext } from '../auth/accountContext'
 import { agentHint, mentionedAgents } from '../conversation/agentMentions'
 import { imagesForSend } from '../conversation/chatImages'
 import { DESIGN_PREFIX, useViewing } from '../canvas/sessionsStore'
-import { pressEscape } from '../useEscape'
+import { pressEscape, useEscape } from '../useEscape'
 import { AddressBar } from './AddressBar'
 import { CommentLayer } from './comments/CommentLayer'
 import { commentsHint } from './comments/commentsText'
@@ -49,9 +49,11 @@ export function PrototypePane({
   const session = usePrototypeSession(design, onUpdate)
   useViewing(DESIGN_PREFIX + design.id)
   const { live, running } = session
-  const address = usePrototypeAddress(design, onUpdate, running)
+  const address = usePrototypeAddress(design, onUpdate)
   const { origin, url, here } = address
   const comments = useComments(origin, here)
+  // Esc com o modo comentar ligado só desliga ele (o balão em edição trata o próprio Esc antes).
+  useEscape(comments.stop, comments.commenting)
   const agents = useProjectAgents(projectPath)
   const contextPercent = useContextPercent(projectPath, design.sessionId, live?.revision, running)
   const frameRef = useRef<HTMLIFrameElement>(null)

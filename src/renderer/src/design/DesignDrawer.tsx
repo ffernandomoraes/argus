@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { DesignDevice } from '../../../shared/design'
 import { PANEL_MARGIN, PANEL_TOP } from '../conversation/FloatingPanel'
 import { useEscape } from '../useEscape'
@@ -29,7 +29,13 @@ export function DesignDrawer({
 }) {
   const { designId, projectPath, projectName } = target
   const { design, update } = useDesign(designId, projectPath)
-  useEscape(onClose)
+  // Esc com o cursor num campo do drawer (o chat, o endereço) só sai do campo; o seguinte fecha.
+  const panel = useRef<HTMLElement>(null)
+  useEscape(() => {
+    const field = document.activeElement
+    if (field instanceof HTMLElement && panel.current?.contains(field) && field.matches('input, textarea, [contenteditable="true"]')) field.blur()
+    else onClose()
+  })
 
   const started = !!design && (!!design.sessionId || !!design.existing || !!design.route)
   // Ver a página em outra largura sem mudar o dispositivo do design.
@@ -42,6 +48,7 @@ export function DesignDrawer({
 
   return (
     <aside
+      ref={panel}
       className="absolute z-40 flex flex-col overflow-hidden rounded-xl border border-line bg-bg shadow-2xl shadow-black/50"
       style={{
         left: PANEL_MARGIN,

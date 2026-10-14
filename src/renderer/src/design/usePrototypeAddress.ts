@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import type { Design } from '../../../shared/design'
 import { useProjectServer } from '../devServers/projectServers'
 import { rememberLinks, rememberRoute, routesKey } from './address/knownRoutes'
@@ -8,9 +8,8 @@ import { usePagePort } from './page/usePagePort'
 const NO_PORTS: readonly number[] = []
 
 // Endereço da página do protótipo: o servidor do projeto, o app (porta) na tela, o caminho que o
-// quadro carrega e onde a pessoa está, e o recarregar. `running`: a conversa trabalhando (no fim de
-// cada pedido, a página recarrega).
-export function usePrototypeAddress(design: Design, onUpdate: (patch: Partial<Design>) => void, running: boolean) {
+// quadro carrega e onde a pessoa está, e o recarregar.
+export function usePrototypeAddress(design: Design, onUpdate: (patch: Partial<Design>) => void) {
   const { projectPath, route } = design
   // O protótipo é visto pelo servidor do projeto. Parado, não sobe sozinho (abrir o design pode ter
   // sido um clique sem querer): o painel mostra o botão de iniciar.
@@ -48,7 +47,9 @@ export function usePrototypeAddress(design: Design, onUpdate: (patch: Partial<De
     if (!current) setRouteDraft(opening ?? '')
   }
 
-  // Recarregar (e o fim de cada pedido) abre de novo a página em que a pessoa está.
+  // Recarregar abre de novo a página em que a pessoa está. O fim do pedido não recarrega: o
+  // servidor do projeto já atualiza a página a cada arquivo salvo, e recarregar perdia o estado
+  // da tela (o passo em que a pessoa estava, o modal aberto, o que digitou).
   const [reload, setReload] = useState(0)
   const reloadHere = () => {
     if (here) setOpening(here)
@@ -57,11 +58,6 @@ export function usePrototypeAddress(design: Design, onUpdate: (patch: Partial<De
   const reloadEvent = useEffectEvent(() => reloadHere())
   // ⌘R / Ctrl+R com a página aberta: recarrega ela, não o app.
   useEffect(() => (url ? window.api.onReloadKey(() => reloadEvent()) : undefined), [url])
-  const wasRunning = useRef(running)
-  useEffect(() => {
-    if (wasRunning.current && !running) reloadEvent()
-    wasRunning.current = running
-  }, [running])
 
   // A página avisou que navegou (endereço já conferido, ver pageMessages).
   const onLocation = (path: string, title: string) => {

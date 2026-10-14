@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, ChevronRight } from 'lucide-react'
 import type { ClaudeModel } from '../../../../shared/models'
+import { useClaudeVersion } from '../../claudeVersion/useClaudeVersion'
 import { Presence } from '../../motion'
 import { MENU_ACTIVE, MENU_HOVER } from '../../ui/menuStyles'
 import { groupByFamily } from '../modelOptions'
@@ -74,6 +75,31 @@ export function ModelList({
           </div>
         )
       })}
+      <OutdatedNotice />
+    </div>
+  )
+}
+
+// Claude Code bem atrás da versão publicada: os modelos novos faltam na lista. O botão atualiza ali
+// mesmo; o erro, se houver, fica por extenso em Configurações > Geral.
+function OutdatedNotice() {
+  const version = useClaudeVersion()
+  if (!version?.farBehind || !version.current) return null
+  return (
+    <div className="mx-1 mb-1 mt-1.5 rounded-md bg-fill px-2 py-1.5 text-[12px] leading-relaxed text-muted">
+      {version.updating
+        ? tr('Atualizando o Claude Code…', 'Updating Claude Code…')
+        : version.error
+          ? tr('A atualização do Claude Code falhou. Detalhes em Configurações > Geral.', 'The Claude Code update failed. Details in Settings > General.')
+          : tr(
+              `Claude Code ${version.current.version} desatualizado: a ${version.latest} traz os modelos novos.`,
+              `Claude Code ${version.current.version} is outdated: ${version.latest} brings the new models.`
+            )}
+      {!version.updating && (
+        <button onClick={() => void window.api.claudeVersion.update()} className="ml-1 text-accent hover:underline">
+          {version.error ? tr('Tentar de novo', 'Try again') : tr('Atualizar', 'Update')}
+        </button>
+      )}
     </div>
   )
 }

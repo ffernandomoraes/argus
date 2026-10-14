@@ -14,6 +14,7 @@ import type { DesignCommentAction, DesignRoute, EditAction, ThemeSource } from '
 import type { McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
+import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
 import type { KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
@@ -70,6 +71,13 @@ export type Api = {
   claude: {
     info: (account?: string) => Promise<ClaudeInfo | null>
     onInfo: (cb: (account: string, info: ClaudeInfo) => void) => Off
+  }
+  // Qual `claude` o app usa, a versão dele e a publicada; update roda o `claude update`.
+  claudeVersion: {
+    get: () => Promise<ClaudeVersionState>
+    check: () => Promise<ClaudeVersionState>
+    update: () => Promise<ClaudeVersionState>
+    onState: (cb: (state: ClaudeVersionState) => void) => Off
   }
   // Contas do Claude Code: a principal (a mesma do terminal e do VS Code) e as que têm pasta própria.
   auth: {

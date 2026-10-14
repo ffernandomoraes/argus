@@ -116,6 +116,15 @@ export function findInPath(name: string, exts: string[] = IS_WIN ? ['.exe'] : ['
   return null
 }
 
+// Todos os programas com esse nome nas pastas do PATH, na ordem dele (findInPath para no primeiro).
+export function findAllInPath(name: string, exts: string[] = IS_WIN ? ['.exe'] : ['']): string[] {
+  return getPath()
+    .split(delimiter)
+    .filter(Boolean)
+    .flatMap((dir) => exts.map((ext) => join(dir, name + ext)))
+    .filter((full) => existsSync(full))
+}
+
 // Caminho absoluto no Mac: aberto pelo Dock, o app não herda o PATH do terminal. No Linux, o do
 // PATH (o Ubuntu Desktop não traz o git: só existe depois de instalado). No Windows, o do Git for
 // Windows (entra no PATH do usuário na instalação; se não entrou, nas pastas padrão).

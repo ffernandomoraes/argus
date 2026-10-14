@@ -1,6 +1,7 @@
 import { AppWindow, PanelRight, PictureInPicture2 } from 'lucide-react'
 import { Group, Row, Segmented, Switch } from '../controls'
 import { setPreferences, usePreference } from '../preferences'
+import { ClaudeVersionRow } from './ClaudeVersionRow'
 import { CliRow } from './CliRow'
 import { LanguageRow } from './LanguageRow'
 import { MenuBarIconRow } from './MenuBarIconRow'
@@ -38,6 +39,7 @@ export function GeneralSection() {
       <CliRow />
       <WslRow />
       <UpdatesRow />
+      <ClaudeVersionRow />
     </Group>
   )
 }

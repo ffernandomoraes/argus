@@ -2,6 +2,7 @@ import { Auth } from '../auth'
 import { CanvasAgent } from '../canvasAgent'
 import { CanvasHub } from '../canvasHub'
 import { ChatHolders } from '../chatHolders'
+import { ClaudeVersion } from '../claudeVersion'
 import { Chats } from '../chats'
 import { activeChats, activeSignature } from '../chats/entries'
 import { Cli } from '../cli'
@@ -124,6 +125,17 @@ export function createServices() {
 
   const cli = new Cli(openFolder)
 
+  // Versão do Claude Code: usa o `claude` mais novo da máquina e avisa quando há versão nova. Trocado
+  // ou atualizado, os monitores de uso abrem de novo e a lista de modelos vem do novo.
+  const claudeVersion = new ClaudeVersion(
+    (state) => broadcast('claudeVersion:state', state),
+    () => {
+      usage.reconnectAll()
+      // Instalado agora pelo botão (não havia nenhum): a tela de instalação sai.
+      void auth.refresh()
+    }
+  )
+
   // Janela de conversa fechada: a sessão dela é solta pelo ChatHolders (a limpeza do React não chega
   // a rodar quando a janela é destruída).
   const popouts = new Popouts(createConversationWindow, (id) => broadcast('popout:closed', id))
@@ -146,6 +158,7 @@ export function createServices() {
     canvasAgent,
     speech,
     updater,
+    claudeVersion,
     cli,
     popouts,
     unsavedFiles

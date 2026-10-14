@@ -13,6 +13,7 @@ import type { Message } from './history'
 import type { McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
+import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
 import type { KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
@@ -56,6 +57,9 @@ export type InvokeChannels = {
   'media:command': (command: MediaCommand) => void
   'media:volume': (volume: number) => void
   'claude:info': (account?: string) => ClaudeInfo | null
+  'claudeVersion:get': () => ClaudeVersionState
+  'claudeVersion:check': () => ClaudeVersionState
+  'claudeVersion:update': () => ClaudeVersionState
   'cli:status': () => CliStatus
   'cli:install': () => CliStatus
   'cli:uninstall': () => CliStatus
@@ -203,6 +207,7 @@ export type EventChannels = {
   'updates:state': (state: UpdateState) => void
   'usage:update': (account: string, usage: Usage | null) => void
   'claude:info': (account: string, info: ClaudeInfo) => void
+  'claudeVersion:state': (state: ClaudeVersionState) => void
   'cli:open': (path: string) => void
   'auth:state': (state: AuthState) => void
   'chat:state': (key: string, state: ChatState) => void

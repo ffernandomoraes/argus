@@ -47,6 +47,11 @@ export function knownClaude(): string | null {
   return null
 }
 
+// Todos os lugares conhecidos que têm um `claude`, não só o primeiro (ver claudeVersion).
+export function knownClaudes(): string[] {
+  return [...candidates()].filter((p) => existsSync(p))
+}
+
 // Reserva: o PATH do shell de login da pessoa (loginShellPath, de platform.ts), para instalações
 // fora dos lugares conhecidos. Roda em segundo plano (lookupLoginShell) e fica guardado; sem
 // achar, pode tentar de novo depois de um tempo, para um `claude` instalado com o app aberto.

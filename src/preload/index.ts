@@ -68,6 +68,12 @@ const api: Api = {
     info: (account) => invoke('claude:info', account),
     onInfo: (cb) => listen('claude:info', cb)
   },
+  claudeVersion: {
+    get: () => invoke('claudeVersion:get'),
+    check: () => invoke('claudeVersion:check'),
+    update: () => invoke('claudeVersion:update'),
+    onState: (cb) => listen('claudeVersion:state', cb)
+  },
   auth: {
     state: () => invoke('auth:state'),
     refresh: () => send('auth:refresh'),

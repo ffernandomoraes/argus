@@ -21,5 +21,6 @@ export function shutdown(s: Services, install: boolean): void {
   step('assistente do canvas', () => s.canvasAgent.close())
   step('vigia das sessões', () => s.sessionWatch.close())
   step('atualizações', () => s.updater.stop())
+  step('versão do Claude Code', () => s.claudeVersion.stop())
   if (install) step('instalar a atualização', () => s.updater.install(false))
 }

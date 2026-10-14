@@ -34,6 +34,7 @@ export function startApp(s: Services, life: Lifecycle): void {
   if (IS_WIN) step('WSL', () => warmUp().then(() => s.auth.refresh()))
   step('comando argus', () => s.cli.start())
   step('atualizações', () => s.updater.start())
+  step('versão do Claude Code', () => s.claudeVersion.start())
   step('ícone da barra de menus', () => s.tray.set(loadAppSettings().menuBarIcon))
   app.on('browser-window-focus', () => s.tray.seen())
   step('janelas do canvas', restoreCanvasWindows)

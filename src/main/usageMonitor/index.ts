@@ -35,6 +35,11 @@ export class UsageMonitors {
     this.monitors.get(account)?.reconnect()
   }
 
+  // O `claude` do app trocou (ver claudeVersion): todos abrem de novo com ele.
+  reconnectAll(): void {
+    this.monitors.forEach((m) => m.reconnect())
+  }
+
   remove(account: string): void {
     const monitor = this.monitors.get(account)
     if (monitor) this.drop(account, monitor)

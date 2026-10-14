@@ -58,4 +58,7 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('media:command', (_e, command) => mediaCommand(command))
   handle('media:volume', (_e, volume) => setVolume(volume))
   handle('claude:info', (_e, account) => s.usage.info(resolveAccount(account)))
+  handle('claudeVersion:get', () => s.claudeVersion.state)
+  handle('claudeVersion:check', () => s.claudeVersion.check())
+  handle('claudeVersion:update', () => s.claudeVersion.update())
 }

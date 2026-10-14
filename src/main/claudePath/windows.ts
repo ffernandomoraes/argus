@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { findInPath } from '../platform'
+import { findAllInPath, findInPath } from '../platform'
 
 // Instalado pelo npm, o Windows tem só o claude.cmd, que nem o SDK nem o terminal conseguem abrir
 // direto (o Windows só roda .cmd por um shell). Vale o arquivo para onde ele aponta: o cli.js do
@@ -29,4 +29,14 @@ export function windowsClaude(): string {
   if (exe) return exe
   const cmd = findInPath('claude', ['.cmd'])
   return (cmd && cmdTarget(cmd)) || 'claude.exe'
+}
+
+// Todos os `claude` do Windows, na ordem de windowsClaude: o do instalador oficial, os .exe do
+// PATH e o destino de cada claude.cmd do npm (ver claudeVersion).
+export function windowsClaudes(): string[] {
+  const local = join(homedir(), '.local', 'bin', 'claude.exe')
+  const cmds = findAllInPath('claude', ['.cmd'])
+    .map(cmdTarget)
+    .filter((t): t is string => !!t)
+  return [...(existsSync(local) ? [local] : []), ...findAllInPath('claude'), ...cmds]
 }

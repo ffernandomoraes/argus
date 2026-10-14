@@ -18,15 +18,40 @@ export function zoomStepOf(e: KeyboardEvent): 1 | -1 | 0 | null {
   return null
 }
 
+// O zoom escolhido fica guardado: ao abrir o design de novo, a página volta com ele.
+const KEY = 'argus.design.zoom'
+
+function savedZoom(): number | null {
+  try {
+    const value = Number(localStorage.getItem(KEY))
+    return STEPS.includes(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+function saveZoom(zoom: number | null) {
+  try {
+    if (zoom === null) localStorage.removeItem(KEY)
+    else localStorage.setItem(KEY, String(zoom))
+  } catch {
+    // Sem armazenamento: vale até fechar o design.
+  }
+}
+
 // Zoom da página do protótipo. Sem escolha (null), ela cabe na largura do quadro ("ajustar");
-// com zoom, fica do tamanho escolhido e, maior que o quadro, rola para os lados. Vale enquanto o
-// design está aberto. `enabled`: os atalhos só com a página na tela.
+// com zoom, fica do tamanho escolhido e, maior que o quadro, rola para os lados.
+// `enabled`: os atalhos só com a página na tela.
 export function usePreviewZoom(enabled: boolean) {
-  const [zoom, setZoom] = useState<number | null>(null)
+  const [zoom, setZoomState] = useState<number | null>(savedZoom)
   // A escala do ajustar, medida pelo quadro (PrototypeFrame).
   const [fit, setFit] = useState(1)
   const scale = zoom ?? fit
 
+  const setZoom = (next: number | null) => {
+    setZoomState(next)
+    saveZoom(next)
+  }
   const step = (s: 1 | -1 | 0) => setZoom(s === 0 ? null : stepFrom(scale, s))
   const stepEvent = useEffectEvent(step)
 

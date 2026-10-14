@@ -29,16 +29,12 @@ export function claudeJsonDir(account: string, path?: string): string {
   return accountDir(account) ?? homedir()
 }
 
-// Pasta de configuração da conta (CLAUDE_CONFIG_DIR), onde fica o .credentials.json no Windows e
-// no Linux: a dela, ou o ~/.claude na principal.
+// Pasta onde fica o .credentials.json da conta no Windows e no Linux: a dela, que o `claude` do
+// WSL também usa (ver wsl/accounts.ts), ou o ~/.claude na principal.
 export function configDir(account: string, path?: string): string {
-  const distro = distroFor(path)
-  const info = distro ? distroInfo(distro) : null
-  if (distro && info) {
-    const dir = wslAccountDir(info, account)
-    return dir ? toUnc(distro, dir) : claudeDir(path)
-  }
-  return accountDir(account) ?? join(homedir(), '.claude')
+  const dir = accountDir(account)
+  if (dir) return dir
+  return distroFor(path) ? claudeDir(path) : join(homedir(), '.claude')
 }
 
 // Distros com o Claude Code instalado, que o app acompanha junto com o do próprio sistema.

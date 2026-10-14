@@ -25,6 +25,21 @@ export function resetLabel(resetsAt: string, now: number): string {
   return tr(`${day.replace('.', '')} às ${time}`, `${day} at ${time}`)
 }
 
+// Nome de uma janela pela duração que o agente informa (Codex): "Sessão (5 horas)", como a do
+// Claude; "Semanal"; "30 dias" (plano free). Sem duração, só "Limite".
+export function windowTitle(minutes?: number): string {
+  if (!minutes || minutes <= 0) return tr('Limite', 'Limit')
+  if (minutes === 10_080) return tr('Semanal', 'Weekly')
+  if (minutes === 1440) return tr('Diário', 'Daily')
+  if (minutes >= 1440) {
+    const d = Math.round(minutes / 1440)
+    return tr(`${d} dias`, `${d} days`)
+  }
+  if (minutes < 60) return tr(`Sessão (${minutes} min)`, `Session (${minutes} min)`)
+  const h = Math.round(minutes / 60)
+  return h === 1 ? tr('Sessão (1 hora)', 'Session (1 hour)') : tr(`Sessão (${h} horas)`, `Session (${h} hours)`)
+}
+
 export function barColor(percent: number): string {
   if (percent >= 90) return 'bg-red-500'
   if (percent >= 75) return 'bg-needs-you'

@@ -1,19 +1,24 @@
 import type { ClaudeInfo } from '../../shared/models'
 import type { Usage } from '../../shared/usage'
+import { CodexUsageMonitors } from './codex'
 import { UsageMonitor } from './monitor'
 
 export { UsageMonitor } from './monitor'
 
 // Um monitor por conta logada. Quem sai ou é removida para, e o uso dela some da tela.
+// As contas do Codex vão pelo mesmo aviso ('usage:update'), com a chave "codex:<id>" (ver codex.ts).
 export class UsageMonitors {
   private monitors = new Map<string, UsageMonitor>()
   // App fechando: um aviso de login que chegue depois não abre processo novo.
   private closed = false
+  readonly codex: CodexUsageMonitors
 
   constructor(
     private onUpdate: (account: string, usage: Usage | null) => void,
     private onInfo: (account: string, info: ClaudeInfo) => void
-  ) {}
+  ) {
+    this.codex = new CodexUsageMonitors(onUpdate)
+  }
 
   sync(loggedIn: string[]): void {
     if (this.closed) return
@@ -54,7 +59,7 @@ export class UsageMonitors {
   all(): Record<string, Usage> {
     const out: Record<string, Usage> = {}
     for (const [account, monitor] of this.monitors) if (monitor.last) out[account] = monitor.last
-    return out
+    return { ...out, ...this.codex.all() }
   }
 
   info(account: string): ClaudeInfo | null {
@@ -65,5 +70,6 @@ export class UsageMonitors {
     this.closed = true
     this.monitors.forEach((m) => m.stop())
     this.monitors.clear()
+    this.codex.stop()
   }
 }

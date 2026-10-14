@@ -114,3 +114,19 @@
     animation: none;
   }
 }
+
+/* Passo novo na conversa (Step): aparece subindo um pouco, bem de leve. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.step-in {
+  animation: step-in 220ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-in {
+    animation: none;
+  }
+}

@@ -28,6 +28,21 @@ function toWindow(raw: RawWindow): UsageWindow | null {
   return { percent: typeof raw.utilization === 'number' ? raw.utilization : 0, resetsAt: raw.resets_at ?? null }
 }
 
+type RawScoped = { display_name?: unknown; utilization?: number | null; resets_at?: string | null }
+
+// Semanais de um modelo só, na mesma regra da extensão do VS Code: o do Sonnet (campo próprio, só
+// nos planos max e team) e a lista `model_scoped`, que o servidor preenche com o modelo que tem
+// limite próprio (hoje, o Fable). Janela nula ou sem porcentagem não aparece.
+function toModelWindows(limits: any, plan: unknown): Usage['models'] {
+  const all: { name: string; raw: RawWindow }[] = []
+  if (plan === 'max' || plan === 'team' || plan == null) all.push({ name: 'Sonnet', raw: limits.seven_day_sonnet })
+  const scoped: RawScoped[] = Array.isArray(limits.model_scoped) ? limits.model_scoped : []
+  for (const m of scoped) if (typeof m?.display_name === 'string') all.push({ name: m.display_name, raw: m })
+  return all.flatMap(({ name, raw }) =>
+    raw && typeof raw.utilization === 'number' ? [{ name, window: toWindow(raw)! }] : []
+  )
+}
+
 // info: resposta ao "init" (modelos, modo de permissão, conta). usage: resposta a um "usage-N"
 // com os limites. Vazio: outra resposta de sucesso, sem nada para o app.
 export type ControlReply = { info?: ClaudeInfo; usage?: Usage }
@@ -60,5 +75,7 @@ export function parseControlReply(line: string, now: number): ControlReply | nul
   if (!limits) return {}
   // Sessão ausente com o resto presente: a janela de 5 horas ainda não começou.
   const session = toWindow(limits.five_hour) ?? { percent: 0, resetsAt: null }
-  return { usage: { session, weekly: toWindow(limits.seven_day), updatedAt: now } }
+  return {
+    usage: { session, weekly: toWindow(limits.seven_day), models: toModelWindows(limits, res.response.subscription_type), updatedAt: now }
+  }
 }

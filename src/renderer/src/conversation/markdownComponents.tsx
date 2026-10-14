@@ -2,6 +2,8 @@ import { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { inlineFileHref } from './fileLinks'
 import { MarkdownImage, MarkdownLink } from './MarkdownLink'
+import { CopyButton } from './CopyButton'
+import { tr } from '../i18n'
 
 export const REMARK_PLUGINS = [remarkGfm]
 
@@ -45,10 +47,19 @@ export const MARKDOWN_COMPONENTS: Components = {
     const href = text && inlineFileHref(text)
     return href ? <MarkdownLink href={href}>{code}</MarkdownLink> : code
   },
-  pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto rounded-md border border-line bg-bg p-3 font-mono text-[13px] leading-relaxed [&_code]:bg-transparent [&_code]:p-0">
-      {children}
-    </pre>
+  // Bloco de código com botão de copiar no canto, que aparece ao passar o mouse. Copia o texto
+  // cru do bloco, sem a quebra de linha final que o markdown acrescenta.
+  pre: ({ children, node }) => (
+    <div className="group/code relative my-2">
+      <pre className="overflow-x-auto rounded-md border border-line bg-bg p-3 font-mono text-[13px] leading-relaxed [&_code]:bg-transparent [&_code]:p-0">
+        {children}
+      </pre>
+      <CopyButton
+        text={nodeText(node).replace(/\n$/, '')}
+        label={tr('Copiar código', 'Copy code')}
+        className="absolute right-1.5 top-1.5 bg-bg opacity-0 transition-opacity focus-visible:opacity-100 group-hover/code:opacity-100"
+      />
+    </div>
   ),
   table: ({ children }) => (
     <div className="my-2 overflow-x-auto">
@@ -65,4 +76,12 @@ export const MARKDOWN_COMPONENTS: Components = {
 // sem aceitar assim, o link do caminho do Windows saía vazio e não fazia nada.
 export function urlTransform(url: string, key: string): string {
   return key !== 'src' && /^([a-zA-Z]:([\\/]|%5[cC])|file:)/.test(url) ? url : defaultUrlTransform(url)
+}
+
+// Texto puro de um trecho da árvore do markdown (o conteúdo do bloco de código).
+type TextNode = { type: string; value?: string; children?: TextNode[] }
+function nodeText(node: TextNode | undefined): string {
+  if (!node) return ''
+  if (node.type === 'text') return node.value ?? ''
+  return node.children?.map(nodeText).join('') ?? ''
 }

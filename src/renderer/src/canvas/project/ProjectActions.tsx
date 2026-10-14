@@ -17,18 +17,20 @@ export const ProjectActions = memo(function ProjectActions({ nodeId, project }: 
   const branch = useBranch(path)
   const uncommitted = useUncommitted(path)
   return (
-    <>
+    // Uma linha só: a branch ocupa o que sobra e corta o nome; as ações nunca encolhem (a pílula
+    // do servidor muda de largura). A linha não pega clique, só o que está nela.
+    <div className="pointer-events-none absolute bottom-full left-0 right-0 mb-1.5 flex items-center gap-2">
       {branch && (
-        <div className="absolute bottom-full left-0 mb-1.5 flex max-w-[calc(100%-92px)]">
+        <div className="pointer-events-auto flex min-w-0">
           <BranchSwitcher path={path} branch={branch} changes={uncommitted?.length} />
         </div>
       )}
-      <div className="nodrag absolute bottom-full right-0 mb-1.5 flex items-center gap-1">
+      <div className="nodrag pointer-events-auto ml-auto flex shrink-0 items-center gap-1">
         <ProjectServerButton path={path} />
         <CodeButton project={project} />
         <NewButton nodeId={nodeId} />
       </div>
-    </>
+    </div>
   )
 })
 

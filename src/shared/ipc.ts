@@ -16,6 +16,7 @@ import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
+import type { ReportProblem, ReportState } from './report'
 import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
@@ -47,6 +48,8 @@ export type InvokeChannels = {
   'wsl:distros': () => string[]
   // Texto para copiar e mandar quando algo do WSL não funciona.
   'wsl:diagnostics': () => string
+  // Reportar problema: a investigação em andamento ou o relatório pronto.
+  'report:state': () => ReportState
   'settings:get': () => AppSettings
   'settings:menuBarIcon': (on: boolean) => AppSettings
   'settings:language': (pref: LangPreference) => AppSettings
@@ -143,6 +146,10 @@ export type SendChannels = {
   'speech:openSettings': () => void
   // Contas
   'auth:refresh': () => void
+  // Reportar problema
+  'report:start': (problem: ReportProblem) => void
+  'report:stop': () => void
+  'report:reset': () => void
   'auth:install': () => void
   'auth:login': (accountId: string, method: LoginMethod) => void
   'auth:add': (method: LoginMethod) => void
@@ -234,6 +241,7 @@ export type EventChannels = {
   'chat:open': (cwd: string, sessionId: string) => void
   'canvas:remote': (nodes: unknown) => void
   'canvasAgent:state': (state: CanvasAgentState) => void
+  'report:state': (state: ReportState) => void
   'canvasAgent:call': (call: CanvasToolCall) => void
   // A ação `id` foi respondida no lugar da janela (parar, tempo esgotado): não executar mais.
   'canvasAgent:cancel': (id: string) => void

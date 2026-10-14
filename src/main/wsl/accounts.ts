@@ -26,9 +26,12 @@ import { toLinux, toUnc } from './path'
 
 const ROOT = app.isPackaged ? '.argus/accounts' : '.argus-dev/accounts'
 
+// Pasta das contas no Linux.
+export const wslAccountsRoot = (info: DistroInfo): string => `${info.home}/${ROOT}`
+
 // Pasta da conta no Linux; nada na principal (o `claude` sem a variável usa ~/.claude).
 export function wslAccountDir(info: DistroInfo, id: string): string | undefined {
-  return id === MAIN_ACCOUNT ? undefined : `${info.home}/${ROOT}/${id}`
+  return id === MAIN_ACCOUNT ? undefined : `${wslAccountsRoot(info)}/${id}`
 }
 
 // Pastas de status (<pasta>/sessions) das contas no Linux, vistas pelo Windows.

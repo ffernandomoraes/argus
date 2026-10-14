@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react'
-import { AppWindow, Eye, EyeOff } from 'lucide-react'
+import { AppWindow, Eye, EyeOff, LifeBuoy } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { useUpdates } from '../updates/useUpdates'
@@ -9,6 +9,8 @@ import { UpdateStatus } from './bars/UpdateStatus'
 import { updateProgress } from './bars/updateProgress'
 import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
 import { usePreference } from '../settings/preferences'
+import { openReport } from '../report/reportStore'
+import { useReportState } from '../report/useReportState'
 import { UsageIndicator } from './UsageIndicator'
 import { tr } from '../i18n'
 
@@ -33,6 +35,7 @@ export const TitleBar = memo(function TitleBar({
   const mediaPlayer = usePreference('mediaPlayer')
   const [usageOpen, setUsageOpen] = useState(false)
   const status = updateProgress(updates?.state)
+  const investigating = useReportState().status === 'running'
   useNewWindowShortcut()
 
   // Aparece no menu Janela e no Mission Control.
@@ -45,11 +48,11 @@ export const TitleBar = memo(function TitleBar({
     // painel de limites aberto sobe acima de todos, senão um drawer aberto (z-40, ou z-50 no modo
     // foco) cobriria o painel. Com o mouse em cima também sobe: os tooltips dos botões abrem para
     // baixo, por cima do drawer. Modal aberto cobre a barra, então o mouse nem chega nela.
-    // O recuo acompanha o grupo da direita (limites, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
+    // O recuo acompanha o grupo da direita (limites, reportar problema, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
     // o título segue no centro sem encostar nele.
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[55]' : 'z-[35] hover:z-[55]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[29rem]' : 'px-[19rem]'}`}
+      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[55]' : 'z-[35] hover:z-[55]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[31rem]' : 'px-[21rem]'}`}
     >
       {/* Logo depois dos botões da janela (os semáforos do Mac). Desligado, nem consulta o sistema. */}
       {mediaPlayer && (
@@ -82,6 +85,16 @@ export const TitleBar = memo(function TitleBar({
             </NavButton>
             <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
               <AppWindow size={14} />
+            </NavButton>
+            {/* Ligado enquanto o Claude investiga, para achar o caminho de volta ao relatório. */}
+            <NavButton
+              label={investigating ? tr('Investigando o problema', 'Investigating the problem') : tr('Reportar problema', 'Report a problem')}
+              compact
+              selected={investigating}
+              side="bottom-end"
+              onClick={() => openReport()}
+            >
+              <LifeBuoy size={14} />
             </NavButton>
           </span>
           <Divider />

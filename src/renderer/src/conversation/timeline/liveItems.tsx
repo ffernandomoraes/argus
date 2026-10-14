@@ -11,6 +11,7 @@ import { WorkingRow } from './rows/WorkingRow'
 import { StreamingMarkdown } from './StreamingMarkdown'
 import { stepItem, type TimelineItem } from './timelineItem'
 import { tr } from '../../i18n'
+import { InvestigateButton } from '../../report/InvestigateButton'
 
 export type LiveOptions = {
   messages: Message[]
@@ -50,7 +51,15 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
     const label = activityLabel(o.live?.activity, (o.live?.agents ?? []).filter((a) => !a.background).length)
     items.push(stepItem('working', 'bg-running animate-pulse', <WorkingRow label={label} startedAt={startedAt} tokens={tokens} />))
   }
-  if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <p className="py-0.5 text-[13px] text-red-400">{o.live.error}</p>))
+  if (o.live?.error) {
+    const error = (
+      <div className="flex items-start gap-2 py-0.5">
+        <p className="min-w-0 flex-1 text-[13px] text-red-400">{o.live.error}</p>
+        <InvestigateButton error={o.live.error} where="conversa" />
+      </div>
+    )
+    items.push(stepItem('error', 'bg-red-400', error))
+  }
   if (o.status === 'needs-you' && !o.live?.permissions.length) {
     const notice = (
       <div className="rounded-lg border border-ask/40 bg-ask/10 px-3 py-2 text-[13px] text-text">

@@ -7,6 +7,7 @@ import { SettingsModal } from './settings/SettingsModal'
 import { setPreferences, usePreference } from './settings/preferences'
 import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
+import { ReportHost } from './report/ReportHost'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { WelcomeModal } from './welcome/WelcomeModal'
 
@@ -63,6 +64,7 @@ export function App() {
           <SettingsModal theme={theme.preference} onThemeChange={theme.setPreference} onClose={closeSettings} />
         )}
       </Presence>
+      <ReportHost />
     </main>
   )
 }

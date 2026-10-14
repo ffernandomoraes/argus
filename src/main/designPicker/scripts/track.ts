@@ -49,6 +49,16 @@ export const TRACK = `(() => {
       parent.postMessage({ argus: 'reload' }, '*')
     }, true)
   }
+  // Zoom da página no drawer (⌘+ / ⌘- / ⌘0; Ctrl fora do Mac): com o foco aqui dentro, o teclado
+  // não chega ao app; a página avisa.
+  addEventListener('keydown', (e) => {
+    const mod = /Mac/.test(navigator.platform) ? e.metaKey : e.ctrlKey
+    if (!mod || e.altKey) return
+    const step = e.key === '=' || e.key === '+' ? 1 : e.key === '-' || e.key === '_' ? -1 : e.key === '0' ? 0 : null
+    if (step === null) return
+    e.preventDefault()
+    parent.postMessage({ argus: 'zoom', step }, '*')
+  }, true)
   addEventListener('popstate', () => send(false))
   addEventListener('hashchange', () => send(false))
   send(true)

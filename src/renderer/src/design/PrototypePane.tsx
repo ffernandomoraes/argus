@@ -18,6 +18,7 @@ import { ServerPlaceholder } from './ServerPlaceholder'
 import { useContextPercent } from './useContextPercent'
 import { useProjectAgents } from './useProjectAgents'
 import { usePrototypeAddress } from './usePrototypeAddress'
+import { usePreviewZoom } from './usePreviewZoom'
 import { usePrototypeSession } from './usePrototypeSession'
 import { tr } from '../i18n'
 
@@ -57,8 +58,9 @@ export function PrototypePane({
   const agents = useProjectAgents(projectPath)
   const contextPercent = useContextPercent(projectPath, design.sessionId, live?.revision, running)
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const zoom = usePreviewZoom(!!url)
 
-  // Avisos da página (scripts de designPicker): endereço, links, recarregar, Esc e comentários.
+  // Avisos da página (scripts de designPicker): endereço, links, recarregar, Esc, zoom e comentários.
   usePageMessages(frameRef, origin, (m) => {
     if (m.kind === 'location') address.onLocation(m.path, m.title)
     else if (m.kind === 'links') address.onLinks(m.paths)
@@ -66,6 +68,7 @@ export function PrototypePane({
     // Na visualização, o Esc dado dentro da página sai dela.
     else if (m.kind === 'escape' && viewing) pressEscape()
     else if (m.kind === 'comment-add') comments.add(m.comment)
+    else if (m.kind === 'zoom') zoom.step(m.step)
   })
   useEffect(() => {
     if (origin) window.api.design.escape(origin, viewing)
@@ -136,13 +139,15 @@ export function PrototypePane({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {origin && !fresh && (
-          <AddressBar design={design} address={address} messages={session.history.messages} viewing={viewing} onViewing={toggleViewing} />
+          <AddressBar design={design} address={address} zoom={url ? zoom : undefined} messages={session.history.messages} viewing={viewing} onViewing={toggleViewing} />
         )}
         {url ? (
           <PrototypeFrame
             url={url}
             device={device ?? design.device}
             reload={address.reload}
+            zoom={zoom.zoom}
+            onFit={zoom.setFit}
             frameRef={frameRef}
             overlay={(scale, loads) => (
               <CommentLayer

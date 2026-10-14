@@ -158,7 +158,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           spaceHeld={spaceHeld}
           uiHidden={uiHidden}
           arranging={arranging}
-          zoomShortcuts={!shown}
+          zoomShortcuts={!shown && !design}
         />
         <Mascot nodesRef={nodesRef} hidden={uiHidden} />
         {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}

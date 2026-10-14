@@ -2,13 +2,14 @@ import { pagePath } from '../address/routeText'
 import type { CommentPositions, NewComment } from '../comments/types'
 
 // Avisos da página do protótipo, por postMessage (scripts de designPicker/scripts): endereço,
-// links, recarregar, Esc e comentários. Qualquer página pode mandar mensagem, então cada campo é
-// conferido e cortado no mesmo tamanho que o script do app manda.
+// links, recarregar, Esc, zoom e comentários. Qualquer página pode mandar mensagem, então cada
+// campo é conferido e cortado no mesmo tamanho que o script do app manda.
 export type PageMessage =
   | { kind: 'location'; path: string; title: string }
   | { kind: 'links'; paths: string[] }
   | { kind: 'reload' }
   | { kind: 'escape' }
+  | { kind: 'zoom'; step: 1 | -1 | 0 }
   | { kind: 'comment-add'; comment: NewComment }
   | { kind: 'comment-pos'; pos: CommentPositions }
 
@@ -62,6 +63,8 @@ export function parsePageMessage(data: unknown, origin: string): PageMessage | n
       return { kind: 'reload' }
     case 'escape':
       return { kind: 'escape' }
+    case 'zoom':
+      return d.step === 1 || d.step === -1 || d.step === 0 ? { kind: 'zoom', step: d.step } : null
     case 'comment-add': {
       const comment = newComment(d)
       return comment && { kind: 'comment-add', comment }

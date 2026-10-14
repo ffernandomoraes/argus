@@ -1,26 +1,31 @@
 import { useMemo } from 'react'
-import { ExternalLink, Eye, RotateCw } from 'lucide-react'
+import { ExternalLink, Eye, Minus, Plus, RotateCw } from 'lucide-react'
 import type { Design } from '../../../shared/design'
 import type { Message } from '../conversation/types'
+import { keys } from '../platform'
 import { IconButton } from '../ui/IconButton'
 import { dedupe, useKnownRoutes } from './address/knownRoutes'
 import { appLabel } from './address/projectApps'
 import { RouteField } from './address/RouteField'
 import { routesIn } from './prototype/appLines'
+import type { PreviewZoom } from './usePreviewZoom'
 import type { PrototypeAddress } from './usePrototypeAddress'
 import { tr } from '../i18n'
 
-// Barra de endereço da página: o app (num monorepo), o caminho, recarregar, visualizar e abrir no
+// Barra de endereço da página: o app (num monorepo), o caminho, o zoom, recarregar, visualizar e abrir no
 // navegador. Também em Visualizar, com folga à direita para os botões dela.
 export function AddressBar({
   design,
   address,
+  zoom,
   messages,
   viewing,
   onViewing
 }: {
   design: Design
   address: PrototypeAddress
+  // Só com a página na tela.
+  zoom?: PreviewZoom
   // A conversa do protótipo: as rotas que o Claude informou nela entram na lista do campo.
   messages: Message[]
   viewing: boolean
@@ -68,6 +73,24 @@ export function AddressBar({
         <span className="shrink-0 text-[12px] text-faint">{app ? appLabel(app) : `localhost:${port}`}</span>
       )}
       <RouteField value={address.routeDraft} onChange={address.setRouteDraft} onGo={address.goTo} options={options} />
+      {zoom && (
+        <div className="flex shrink-0 items-center">
+          <IconButton label={`${tr('Diminuir zoom', 'Zoom out')} (${keys('⌘-')})`} variant="subtle" size="sm" onClick={() => zoom.step(-1)}>
+            <Minus size={13} />
+          </IconButton>
+          <button
+            type="button"
+            onClick={() => zoom.step(0)}
+            title={zoom.fitting ? tr('Ajustado à largura', 'Fit to width') : `${tr('Ajustar à largura', 'Fit to width')} (${keys('⌘0')})`}
+            className={`h-6 w-11 rounded-md text-[12px] tabular-nums hover:bg-fill ${zoom.fitting ? 'text-faint' : 'text-text'}`}
+          >
+            {Math.round(zoom.scale * 100)}%
+          </button>
+          <IconButton label={`${tr('Aumentar zoom', 'Zoom in')} (${keys('⌘+')})`} variant="subtle" size="sm" onClick={() => zoom.step(1)}>
+            <Plus size={13} />
+          </IconButton>
+        </div>
+      )}
       <IconButton label={tr('Recarregar a página', 'Reload page')} variant="subtle" size="sm" onClick={address.reloadHere}>
         <RotateCw size={13} />
       </IconButton>

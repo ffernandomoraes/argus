@@ -13,7 +13,8 @@ const POLL_MS = 2000
 
 // Player na barra de título, ao lado dos botões da janela: o nome da música, tocar/pausar e o
 // volume do sistema, de qualquer app (Spotify, uma aba do navegador; ver main/media). Sem nada
-// tocando, ou desligado nas configurações, não aparece. O volume é um ícone; o controle abre num
+// tocando, ou desligado nas configurações, não aparece. O botão de tocar/pausar só aparece se o
+// app aceita o comando. O volume é um ícone; o controle abre num
 // painel abaixo, ao clicar. Sem dicas ao passar o mouse: os controles se explicam pelo ícone.
 
 const CONTROL = 'flex h-6 min-w-6 items-center justify-center rounded-md'
@@ -61,9 +62,11 @@ export const MediaControls = memo(function MediaControls() {
   const VolumeIcon = media.volume === 0 ? VolumeX : media.volume < 50 ? Volume1 : Volume2
   return (
     <div className="no-drag flex items-center gap-1.5">
-      <button aria-label={media.playing ? tr('Pausar', 'Pause') : tr('Tocar', 'Play')} onClick={toggle} className={`${CONTROL} ${tone(false)}`}>
-        {media.playing ? <Pause size={14} /> : <Play size={14} />}
-      </button>
+      {media.canToggle && (
+        <button aria-label={media.playing ? tr('Pausar', 'Pause') : tr('Tocar', 'Play')} onClick={toggle} className={`${CONTROL} ${tone(false)}`}>
+          {media.playing ? <Pause size={14} /> : <Play size={14} />}
+        </button>
+      )}
       <span className="max-w-40 truncate text-[12px] text-muted">{media.title}</span>
       <div ref={volumeRef} className="relative flex items-center">
         <button aria-label={tr('Volume', 'Volume')} onClick={() => setVolumeOpen((o) => !o)} className={`${CONTROL} ${tone(volumeOpen)}`}>

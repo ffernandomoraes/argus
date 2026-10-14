@@ -55,6 +55,9 @@ export const linuxMedia: MediaSource = {
       title: field(player.info, 'xesam:title'),
       artist: field(player.info, 'xesam:artist'),
       playing: player.playing,
+      canToggle: /'Can(Play|Pause)': <true>/.test(player.info),
+      // mpris:length vem em microssegundos.
+      duration: Math.round(Number(player.info.match(/'mpris:length': <(?:int64|uint64) (\d+)>/)?.[1] ?? 0) / 1e6),
       volume: await readVolume()
     }
   },

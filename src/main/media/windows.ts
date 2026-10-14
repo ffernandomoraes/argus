@@ -50,8 +50,12 @@ while ($null -ne ($line = [Console]::In.ReadLine())) {
       'get' {
         if (-not $s) { 'null'; break }
         $p = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
-        $playing = $s.GetPlaybackInfo().PlaybackStatus -eq [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionPlaybackStatus]::Playing
-        @{ title = [string]$p.Title; artist = [string]$p.Artist; playing = $playing; volume = [ArgusVolume]::Get() } | ConvertTo-Json -Compress
+        $info = $s.GetPlaybackInfo()
+        $playing = $info.PlaybackStatus -eq [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionPlaybackStatus]::Playing
+        $c = $info.Controls
+        $canToggle = $c.IsPlayPauseToggleEnabled -or $c.IsPlayEnabled -or $c.IsPauseEnabled
+        $duration = [int]($s.GetTimelineProperties().EndTime.TotalSeconds)
+        @{ title = [string]$p.Title; artist = [string]$p.Artist; playing = $playing; canToggle = $canToggle; duration = $duration; volume = [ArgusVolume]::Get() } | ConvertTo-Json -Compress
       }
       'toggle' { if ($s) { $null = Await ($s.TryTogglePlayPauseAsync()) ([bool]) }; 'ok' }
       'next' { if ($s) { $null = Await ($s.TrySkipNextAsync()) ([bool]) }; 'ok' }

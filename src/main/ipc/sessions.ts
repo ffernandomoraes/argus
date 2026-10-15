@@ -44,6 +44,7 @@ function agentSessions(path: string): SessionSummary[] {
     id: c.id,
     title: c.title,
     updatedAt: c.updatedAt,
+    repliedAt: c.repliedAt ?? c.updatedAt,
     contextPercent: c.contextPercent,
     live: null,
     agent: agentRef(c.provider, c.account),

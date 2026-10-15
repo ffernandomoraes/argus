@@ -23,8 +23,10 @@ export type ConversationSummary = {
   // design: uma conversa do modo design (o drawer de design, não o chat).
   kind: 'conversa' | 'agente' | 'design'
   status: SessionStatus
-  // Última mensagem, em ISO. Ordena a lista e mostra "há 2h".
+  // Última gravação, em ISO: avisa a conversa aberta para reler o histórico.
   updatedAt: string
+  // Última resposta do agente, em ISO. Ordena a lista e mostra "há 2h".
+  repliedAt: string
   // Quanto da janela de contexto a conversa já ocupa, de 0 a 100.
   contextPercent: number
   // Sessão do Claude Code; com ela o terminal retoma a conversa (`claude --resume`).

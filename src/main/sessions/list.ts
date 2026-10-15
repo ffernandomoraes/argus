@@ -36,6 +36,7 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
       id: s.id,
       title: s.title || tr('Conversa sem título', 'Untitled chat'),
       updatedAt: s.updatedAt,
+      repliedAt: s.repliedAt,
       contextPercent: percentOf(s.usage),
       live: live.get(s.id) ?? null,
       ...(s.design && { design: true })

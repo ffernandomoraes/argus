@@ -7,6 +7,9 @@ export type SessionSummary = {
   title: string
   // Última gravação no arquivo, em ISO.
   updatedAt: string
+  // Última resposta do agente, em ISO: ordena a lista (comando e retorno de ferramenta não
+  // mexem nela, senão a lista embaralha a cada passo).
+  repliedAt: string
   // Quanto da janela de contexto a última resposta ocupou, de 0 a 100.
   contextPercent: number
   // Nulo: nenhum processo do Claude Code está com a sessão aberta.

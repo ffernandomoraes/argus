@@ -39,6 +39,7 @@ const placeholder = (id: string): ConversationSummary => ({
   kind: 'conversa',
   status: 'idle',
   updatedAt: '',
+  repliedAt: '',
   contextPercent: 0,
   sessionId: id
 })

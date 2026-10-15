@@ -30,7 +30,10 @@ export type StoredConversation = {
   messages: Message[]
 }
 
-export type IndexEntry = Pick<StoredConversation, 'provider' | 'account' | 'cwd' | 'title' | 'updatedAt' | 'contextPercent' | 'design'>
+// repliedAt: última resposta do agente (ver SessionSummary). Índice antigo não tem: vale o updatedAt.
+export type IndexEntry = Pick<StoredConversation, 'provider' | 'account' | 'cwd' | 'title' | 'updatedAt' | 'contextPercent' | 'design'> & {
+  repliedAt?: string
+}
 
 const root = () => join(homedir(), app.isPackaged ? '.argus' : '.argus-dev', 'conversations')
 const fileOf = (id: string) => join(root(), `${id}.json`)
@@ -65,7 +68,7 @@ export function conversationsIn(cwd: string): (IndexEntry & { id: string })[] {
   return Object.entries(readIndex())
     .filter(([, e]) => samePath(e.cwd, cwd))
     .map(([id, e]) => ({ id, ...e }))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .sort((a, b) => (b.repliedAt ?? b.updatedAt).localeCompare(a.repliedAt ?? a.updatedAt))
 }
 
 export function loadConversation(id: string): StoredConversation | null {
@@ -79,7 +82,8 @@ export function saveConversation(c: StoredConversation): void {
     mkdirSync(root(), { recursive: true })
     writeJsonAtomicSync(fileOf(c.id), c)
     const { provider, account, cwd, title, updatedAt, contextPercent, design } = c
-    readIndex()[c.id] = { provider, account, cwd, title, updatedAt, contextPercent, ...(design && { design }) }
+    const repliedAt = [...c.messages].reverse().find((m) => m.role === 'assistant' && m.at)?.at ?? c.createdAt
+    readIndex()[c.id] = { provider, account, cwd, title, updatedAt, repliedAt, contextPercent, ...(design && { design }) }
     writeJsonAtomicSync(indexFile(), readIndex())
     onSaved(c.cwd)
   } catch (err) {

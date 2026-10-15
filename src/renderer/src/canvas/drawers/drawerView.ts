@@ -78,6 +78,7 @@ export function draftConversation(active: ActiveConversation): ConversationSumma
     kind: 'conversa',
     status: 'idle',
     updatedAt: '',
+    repliedAt: '',
     contextPercent: 0,
     sessionId: active.sessionId,
     draft: true

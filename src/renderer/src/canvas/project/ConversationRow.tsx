@@ -35,7 +35,7 @@ export const ConversationRow = memo(function ConversationRow({
       {c.status === 'needs-you' ? (
         <span className="ml-auto shrink-0 pl-2 text-[11px] font-semibold text-needs-you">{tr('esperando você', 'waiting for you')}</span>
       ) : (
-        c.status !== 'running' && <TimeAgo iso={c.updatedAt} className="pl-2" />
+        c.status !== 'running' && <TimeAgo iso={c.repliedAt} className="pl-2" />
       )}
     </li>
   )

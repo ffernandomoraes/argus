@@ -1,11 +1,14 @@
-import type { AgentDef } from '../../../../shared/agents'
+import { agentProviderOf, type AgentDef } from '../../../../shared/agents'
 import type { PermissionAnswer } from '../../../../shared/chat'
 import { orchestratorPrompt } from '../../../../shared/orchestrator'
+import { parseAgentRef } from '../../../../shared/providers'
+import { getAuth, resolveAccount } from '../../auth/useAuth'
 import type { ConversationSummary } from '../../canvas/types'
 import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { agentHint, mentionedAgents } from '../agentMentions'
 import { imagesForSend, isSendableImage } from '../chatImages'
+import { freezeConversationAccount } from '../conversationAccount'
 import { freezeConversationSettings, setConversationSettings } from '../conversationSettings'
 import { addLocalEvent } from '../localEvents'
 import { liveCommands, type SessionSettings } from '../SessionSettings'
@@ -14,8 +17,8 @@ import { useClaudeInfo } from '../useModels'
 
 // Agentes chamados com @ e, com o orquestrador ligado, as regras dele. Vão em toda mensagem: valem
 // assim que a pessoa liga, sem reabrir a conversa, e sobrevivem à compactação.
-function hintFor(text: string, agents: AgentDef[], settings: SessionSettings): string | undefined {
-  const parts = [agentHint(mentionedAgents(text, agents)), settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined]
+function hintFor(text: string, agents: AgentDef[], settings: SessionSettings, account?: string): string | undefined {
+  const parts = [agentHint(mentionedAgents(text, agents), agentProviderOf(account)), settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined]
   return parts.filter(Boolean).join('\n\n') || undefined
 }
 
@@ -24,6 +27,8 @@ type Options = {
   chatKey: string
   conversation: ConversationSummary
   cwd: string
+  // Workspace: as pastas dele, que o agente recebe como pastas adicionais.
+  folders?: string[]
   account?: string
   settings: SessionSettings
   agents: AgentDef[]
@@ -32,7 +37,7 @@ type Options = {
 // O que a conversa pede ao Claude: enviar, trocar modelo/esforço/modo, remote control, parar,
 // responder permissões e ler as imagens de uma mensagem. Todas com identidade fixa (vão para o
 // chat memorizado) e lendo os valores do último desenho.
-export function useConversationActions({ chatKey, conversation, cwd, account, settings, agents }: Options) {
+export function useConversationActions({ chatKey, conversation, cwd, folders, account, settings, agents }: Options) {
   // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
   const settingsId = conversation.sessionId ?? conversation.id
   const info = useClaudeInfo(account)
@@ -44,15 +49,18 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
     const paths = files.filter((f) => !isSendableImage(f)).map((f) => window.api.filePath(f)).filter(Boolean)
     const full = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
     freezeConversationSettings(settingsId, settings)
+    // A conta fica fixa no primeiro envio; a de outro agente já fica guardada com a conversa.
+    if (!parseAgentRef(account)) freezeConversationAccount(settingsId, resolveAccount(getAuth(), account))
     window.api.chat.send({
       key: chatKey,
       cwd,
+      folders,
       account,
       sessionId: conversation.sessionId,
       settings,
       text: full,
       images,
-      hint: hintFor(text, agents, settings)
+      hint: hintFor(text, agents, settings, account)
     })
   })
 
@@ -68,7 +76,7 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
   })
 
   const remoteControl = useStableCallback((enabled: boolean) =>
-    window.api.chat.remoteControl({ key: chatKey, cwd, account, sessionId: conversation.sessionId, settings, enabled })
+    window.api.chat.remoteControl({ key: chatKey, cwd, folders, account, sessionId: conversation.sessionId, settings, enabled })
   )
   const interrupt = useStableCallback(() => window.api.chat.interrupt(chatKey))
   const answer = useStableCallback((id: string, a: PermissionAnswer) => window.api.chat.answer(chatKey, id, a))

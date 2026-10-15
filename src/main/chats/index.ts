@@ -4,8 +4,10 @@ import type { ChatEntry } from './entries'
 import { mcpStatusFor } from './mcpStatus'
 import { parseAgentRef, type AgentRef } from '../../shared/providers'
 import { AgentChatSession } from '../agentChats/session'
-import { indexEntry, isAgentConversation } from '../agentChats/store'
+import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
 import { ChatSession, type OpenRequest } from './session'
+import { memoryTight } from './systemMemory'
+import { tr } from '../i18n'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
 // as mesmas operações.
@@ -31,9 +33,21 @@ export { claudeEnv, claudeLaunch, claudeProcess } from './env'
 export { Inbox } from './inbox'
 export type { ChatEntry } from './entries'
 
-// Conversa fechada espera um pouco antes de encerrar: trocar de conversa ou a tela
-// se redesenhar não pode derrubar uma sessão que volta em seguida.
-const RELEASE_DELAY_MS = 5_000
+// Conversa fechada na tela continua com a sessão aberta por um tempo: no canvas a pessoa troca de
+// conversa, de painel e de projeto o tempo todo, e lê com calma uma resposta grande antes de
+// voltar; voltar nela não pode custar reabrir o agente. (O VS Code encerra na hora, ao fechar a aba.)
+const RELEASE_DELAY_MS = 20 * 60_000
+// Fechadas na tela esperando o prazo, no máximo estas: além disso, a fechada há mais tempo encerra.
+const MAX_RELEASING = 10
+// Cada sessão parada não gasta CPU, mas ocupa memória: medido em 2026-10-14, ~300 MB do Claude
+// mais os servidores MCP globais da pessoa (~550 MB no total aqui). Com o computador apertado de
+// memória (systemMemory.ts), as sessões fechadas na tela encerram antes do prazo, da fechada há mais
+// tempo para a mais nova, uma de cada vez, até a máquina sair do aperto. Com folga, nada encerra
+// antes: máquina mais forte aguenta mais. As abertas na tela e as que estão trabalhando nunca entram.
+// Com sessão esperando, a memória é conferida a cada minuto; depois de encerrar uma, de novo pouco
+// depois (o processo leva um instante para sair e o sistema, para recuperar a memória).
+const MEMORY_CHECK_MS = 60_000
+const MEMORY_SETTLE_MS = 10_000
 
 // Uma sessão do Claude por conversa aberta no chat. A chave é o id da conversa no app;
 // conversa nova ganha também o id da sessão como chave, assim que o Claude informa.
@@ -41,6 +55,8 @@ export class Chats {
   private sessions = new Map<string, AnySession>()
   // Conversas fechadas esperando encerrar.
   private releasing = new Map<AnySession, NodeJS.Timeout>()
+  // Próxima conferência da memória (ver MEMORY_CHECK_MS); só existe com sessão esperando.
+  private memoryTimer: NodeJS.Timeout | null = null
   // Chaves abertas em alguma janela agora (ver ChatHolders). A sessão vale enquanto qualquer chave
   // dela estiver aberta: conversa nova tem duas, e cada janela pode estar usando uma.
   private held = new Set<string>()
@@ -54,7 +70,11 @@ export class Chats {
       s.keys.add(id)
       this.sessions.set(id, s)
     },
-    ended: (s) => s.keys.forEach((k) => this.sessions.get(k) === s && this.sessions.delete(k))
+    ended: (s) => {
+      s.keys.forEach((k) => this.sessions.get(k) === s && this.sessions.delete(k))
+      clearTimeout(this.releasing.get(s))
+      this.releasing.delete(s)
+    }
   }
 
   constructor(private onState: (key: string, state: ChatState) => void) {}
@@ -83,12 +103,49 @@ export class Chats {
         if (!this.isHeld(session)) this.letGo(session)
       }, RELEASE_DELAY_MS)
     )
+    // O Map guarda a ordem de entrada: a primeira é a fechada há mais tempo.
+    if (this.releasing.size > MAX_RELEASING) this.endEarly(this.releasing.keys().next().value!)
+    this.watchMemory(MEMORY_CHECK_MS)
+  }
+
+  // Encerra antes do prazo uma sessão fechada na tela (trabalhando, espera ela terminar: letGo).
+  private endEarly(session: AnySession): void {
+    clearTimeout(this.releasing.get(session))
+    this.releasing.delete(session)
+    this.letGo(session)
+  }
+
+  private watchMemory(delay: number): void {
+    if (this.memoryTimer || this.releasing.size === 0) return
+    this.memoryTimer = setTimeout(() => void this.checkMemory(), delay)
+  }
+
+  // Computador apertado de memória: encerra a sessão parada fechada há mais tempo e confere de novo
+  // em seguida. Sem conseguir ler a memória, fica só com o prazo e o limite de quantidade.
+  private async checkMemory(): Promise<void> {
+    this.memoryTimer = null
+    if (this.releasing.size === 0) return
+    const tight = await memoryTight().catch(() => null)
+    const oldest = tight ? [...this.releasing.keys()].find((s) => !s.busy && !s.remoteOn) : undefined
+    if (oldest) this.endEarly(oldest)
+    this.watchMemory(oldest ? MEMORY_SETTLE_MS : MEMORY_CHECK_MS)
   }
 
   // Nenhuma janela aberta: nada precisa das sessões de chat. Com a conta, só as dela (o login dela
   // mudou e as conversas paradas precisam abrir de novo com o novo).
   releaseAll(account?: string): void {
     new Set(this.sessions.values()).forEach((s) => (!account || s.account === account) && this.letGo(s))
+  }
+
+  // Workspace ganhou ou perdeu pasta: as sessões abertas na pasta dele encerram, e a próxima
+  // mensagem reabre cada uma com a lista nova (o histórico continua). Parada encerra já; trabalhando,
+  // quando terminar. Com o remote control ligado, fica como está: encerrar derrubaria o celular.
+  restartIn(cwd: string): void {
+    new Set(this.sessions.values()).forEach((s) => {
+      if (!samePath(s.cwd, cwd) || s.remoteOn) return
+      if (s.busy) s.closeWhenIdle = true
+      else this.closeSession(s)
+    })
   }
 
   // Conta removida: as conversas dela fecham na hora, mesmo trabalhando.
@@ -165,11 +222,25 @@ export class Chats {
     this.sessions.get(key)?.answer(id, answer)
   }
 
-  // Conversa aberta responde pela própria sessão; sem ela, uma consulta avulsa com a conta do grupo.
+  // Conversa aberta responde pela própria sessão, na hora (com quem ainda está conectando); sem ela,
+  // uma consulta avulsa com a conta do grupo, que espera todos terminarem.
   async mcpStatus(key: string, cwd: string, account?: string): Promise<McpStatus> {
     try {
       const session = this.sessions.get(key)
-      return { ok: true, servers: session ? await session.mcpServers() : parseAgentRef(account) ? [] : await mcpStatusFor(cwd, account) }
+      if (session) return { ok: true, servers: await session.mcpServers(false), live: true }
+      return { ok: true, servers: parseAgentRef(account) ? [] : await mcpStatusFor(cwd, account), live: false }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  }
+
+  // "Reconectar" de um servidor no painel; só com a sessão da conversa aberta.
+  async reconnectMcp(key: string, name: string): Promise<McpStatus> {
+    const session = this.sessions.get(key)
+    if (!session) return { ok: false, error: tr('A conversa não está aberta.', 'The chat isn’t open.') }
+    try {
+      await session.reconnectMcp(name)
+      return { ok: true, servers: await session.mcpServers(false), live: true }
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }
@@ -189,6 +260,8 @@ export class Chats {
   }
 
   closeAll(): void {
+    if (this.memoryTimer) clearTimeout(this.memoryTimer)
+    this.memoryTimer = null
     this.releasing.forEach((timer) => clearTimeout(timer))
     this.releasing.clear()
     new Set(this.sessions.values()).forEach((s) => s.close())

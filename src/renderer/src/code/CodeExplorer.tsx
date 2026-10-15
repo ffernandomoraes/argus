@@ -4,7 +4,7 @@ import { FilePlus, Folder, FolderPlus, RefreshCw } from 'lucide-react'
 import { ConfirmDialog } from '../canvas/ConfirmDialog'
 import { ContextMenu } from '../canvas/ContextMenu'
 import { useUncommitted } from '../canvas/sessionsStore'
-import { PANEL_TOP } from '../conversation/FloatingPanel'
+import { PANEL_BOTTOM, PANEL_TOP } from '../conversation/FloatingPanel'
 import { Presence } from '../motion'
 import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
@@ -65,8 +65,8 @@ export function CodeExplorer({
   return (
     <aside
       // Sem arquivo aberto, o painel acompanha a largura da árvore (arrastada pela borda).
-      style={{ top: PANEL_TOP, ...(children ? { right: rightOffset } : {}) }}
-      className="absolute bottom-2 left-2 z-40 flex overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
+      style={{ top: PANEL_TOP, bottom: PANEL_BOTTOM, ...(children ? { right: rightOffset } : {}) }}
+      className="absolute left-2 z-40 flex overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50"
     >
       <div style={{ width }} className={`relative flex shrink-0 flex-col ${children ? 'border-r border-line' : ''}`}>
         <header className="flex h-12 items-center gap-1 border-b border-line pr-3 pl-3">

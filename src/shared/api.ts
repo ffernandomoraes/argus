@@ -1,4 +1,4 @@
-import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
+import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
@@ -23,6 +23,7 @@ import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
+import type { WorktreeReserved, WorktreeStatus } from './worktrees'
 
 // Formato de `window.api`, a ponte entre a interface e o processo principal. Escrito só aqui: o
 // preload implementa (`const api: Api`) e a interface usa (preload/index.d.ts). Os `on...` devolvem
@@ -48,6 +49,9 @@ export type Api = {
   }
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   pickFolder: (distro?: string) => Promise<string | null>
+  pickFolders: (distro?: string) => Promise<string[]>
+  // Pasta do workspace (nova, sem dir), com o aviso das pastas dele; devolve o caminho.
+  syncWorkspace: (folders: string[], dir?: string) => Promise<string>
   wsl: {
     // Distros do WSL instaladas (só no Windows; vazio sem WSL).
     distros: () => Promise<string[]>
@@ -140,7 +144,9 @@ export type Api = {
     interrupt: (key: string) => void
     retain: (key: string) => void
     mcpStatus: (key: string, cwd: string, account?: string) => Promise<McpStatus>
+    mcpReconnect: (key: string, name: string) => Promise<McpStatus>
     release: (key: string) => void
+    restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void
     onState: (cb: (key: string, state: ChatState) => void) => Off
     // Clique na notificação do sistema.
@@ -151,11 +157,11 @@ export type Api = {
     // Respostas não vistas nesta janela: o ícone da barra de menus conta e lista.
     setUnread: (chats: UnreadChat[]) => void
   }
-  // Biblioteca de agentes (~/.claude/agents). Com a pasta, inclui os do projeto.
+  // Biblioteca de agentes de cada provedor (main/agents/folder.ts). Com a pasta, inclui os do projeto.
   agents: {
-    list: (projectPath?: string) => Promise<AgentDef[]>
-    save: (req: AgentSaveRequest) => Promise<AgentSaveResult>
-    remove: (name: string) => Promise<boolean>
+    list: (provider: AgentProvider, projectPath?: string) => Promise<AgentDef[]>
+    save: (provider: AgentProvider, req: AgentSaveRequest) => Promise<AgentSaveResult>
+    remove: (provider: AgentProvider, name: string) => Promise<boolean>
   }
   memory: {
     list: (projects: MemoryProject[]) => Promise<MemoryGroup[]>
@@ -174,6 +180,8 @@ export type Api = {
     record: () => void
     undo: () => void
     redo: () => void
+    // Blocos que saíram de vez: somem também do histórico (nenhum desfazer os traz de volta).
+    forget: (ids: string[]) => void
     // Câmera desta janela, para ela reabrir olhando o mesmo lugar.
     viewport: () => CanvasViewport | null
     setViewport: (viewport: CanvasViewport) => void
@@ -244,6 +252,17 @@ export type Api = {
   }
   // Servidores locais: os que o Claude Code ou o play deixaram rodando e qualquer porta aberta
   // dentro das pastas do canvas (`paths`).
+  // Tarefa isolada num git worktree (ver shared/worktrees.ts).
+  worktrees: {
+    // Reserva a pasta da tarefa a partir da pasta do card (sai da branch atual dela); o worktree
+    // nasce no primeiro envio da conversa. Devolve a pasta do card filho.
+    reserve: (folder: string) => Promise<WorktreeReserved>
+    // Situação (preparando, erro), apps tocados, arquivos alterados e commits não enviados; nulo se
+    // não é um worktree do Argus.
+    status: (path: string) => Promise<WorktreeStatus | null>
+    // Apaga a pasta (a branch fica); devolve o erro ou nulo.
+    remove: (path: string) => Promise<string | null>
+  }
   devServers: {
     list: (paths: string[]) => Promise<DevServer[]>
     kill: (pgid: number, paths: string[]) => Promise<boolean>
@@ -258,6 +277,8 @@ export type Api = {
   files: {
     list: (root: string, rel: string) => Promise<FileEntry[]>
     read: (root: string, rel: string) => Promise<FileContent>
+    // Caminho absoluto de um link do chat; acha o arquivo mesmo com o começo do caminho cortado.
+    locate: (root: string, rel: string) => Promise<string | null>
     // Imagem em qualquer caminho (data URL), para o preview do que o Claude leu; null se não der.
     image: (path: string) => Promise<string | null>
     // Mudanças do arquivo desde o último commit.
@@ -275,6 +296,8 @@ export type Api = {
     // Cola na pasta os arquivos copiados no Finder (ou na árvore).
     paste: (root: string, dir: string) => Promise<FileOpResult>
     reveal: (root: string, rel: string) => void
+    // Abre a própria pasta no Finder ou no Explorador de Arquivos.
+    openFolder: (path: string) => void
     // Abre no visualizador do sistema: Quick Look no Mac, app padrão no Windows e no Linux.
     view: (root: string, rel: string) => void
     openInBrowser: (root: string, rel: string) => void

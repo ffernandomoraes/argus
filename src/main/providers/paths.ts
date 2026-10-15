@@ -15,6 +15,10 @@ export function providerAccountDir(provider: ProviderId, id: string): string | u
 
 export const providerRoot = (provider: ProviderId) => join(DATA(), 'agents', provider)
 
+// Biblioteca de agentes do Cursor: o CLI dele só lê agentes da pasta do projeto, então os globais
+// ficam com o Argus e vão no texto da mensagem (ver agentMentions.ts).
+export const cursorAgentsDir = () => join(DATA(), 'cursor-agents')
+
 // CLIs que o próprio Argus instala (o Gemini, rodado pelo Node do Electron).
 export const toolsDir = () => join(DATA(), 'tools')
 

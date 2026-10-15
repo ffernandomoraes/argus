@@ -9,6 +9,7 @@ import { dirHoldsCwd } from '../transcripts/projectDir'
 import { distroInfo, fromLinux, toUnc } from '../wsl'
 import { readSlice } from '../transcripts/read'
 import { TAIL_BYTES } from './tail'
+import { isWorkspaceDir } from '../workspaces'
 
 // Pastas (e arquivos de cada uma) lidos ao mesmo tempo.
 const PARALLEL = 8
@@ -103,6 +104,7 @@ async function listIn({ root, home, toPath }: Root): Promise<KnownFolder[]> {
       const cwd = await folderPath(root, dir, used)
       if (!cwd || cwd === home || isTemp(cwd)) return null
       const path = toPath(cwd)
+      if (isWorkspaceDir(path)) return null
       if (!(await stat(path)).isDirectory()) return null
       return { path, updatedAt: used[0].mtime.toISOString() }
     } catch {

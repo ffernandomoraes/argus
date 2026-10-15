@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Bot, FolderOpen } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
 import { MENU_ACTIVE } from '../ui/menuStyles'
@@ -16,11 +17,23 @@ export function AgentMenu({
   onHover: (index: number) => void
   onSelect: (agent: AgentDef) => void
 }) {
+  const list = useRef<HTMLDivElement>(null)
+
+  // Muitos agentes (plugins somam dezenas): a lista rola, e o item marcado pelas setas fica à vista.
+  useEffect(() => {
+    const box = list.current
+    const row = box?.children[active] as HTMLElement | undefined
+    if (!box || !row) return
+    if (row.offsetTop < box.scrollTop) box.scrollTop = row.offsetTop
+    else if (row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = row.offsetTop + row.offsetHeight - box.clientHeight
+  }, [active])
+
   return (
     // Grade com subgrid, como o SlashMenu: a coluna do nome cresce até o maior nome
     // (sem cortar "@vercel:performance-optimizer"); só um nome enorme é truncado.
     <div
-      className={`absolute bottom-full left-0 right-0 z-10 mb-2 grid grid-cols-[minmax(0,max-content)_minmax(0,1fr)] ${POPOVER}`}
+      ref={list}
+      className={`absolute bottom-full left-0 right-0 z-10 mb-2 grid max-h-72 grid-cols-[minmax(0,max-content)_minmax(0,1fr)] overflow-y-auto ${POPOVER}`}
     >
       {items.map((a, i) => (
         <button

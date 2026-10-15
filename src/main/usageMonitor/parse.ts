@@ -43,6 +43,25 @@ function toModelWindows(limits: any, plan: unknown): Usage['models'] {
   )
 }
 
+type RawLimit = { kind?: unknown; percent?: unknown; resets_at?: string | null; scope?: { model?: { display_name?: unknown } | null } | null }
+
+// Lista `limits`, o formato novo (conferido na 2.1.300): uma linha por janela, com o tipo em `kind`.
+// É o que o /usage do Claude Code desenha. Os campos antigos (five_hour...) podem vir nulos com a
+// lista preenchida: a sessão estourada aparecia como 0%. null: lista ausente ou sem a sessão.
+function fromLimits(raw: unknown): Usage | null {
+  if (!Array.isArray(raw)) return null
+  const rows = (raw as RawLimit[]).filter((r) => typeof r?.percent === 'number')
+  const win = (r: RawLimit): UsageWindow => ({ percent: r.percent as number, resetsAt: r.resets_at ?? null })
+  const session = rows.find((r) => r.kind === 'session')
+  if (!session) return null
+  const weekly = rows.find((r) => r.kind === 'weekly_all')
+  const models = rows.flatMap((r) => {
+    const name = r.scope?.model?.display_name
+    return r.kind === 'weekly_scoped' && typeof name === 'string' ? [{ name, window: win(r) }] : []
+  })
+  return { session: win(session), weekly: weekly ? win(weekly) : null, models, updatedAt: 0 }
+}
+
 // info: resposta ao "init" (modelos, modo de permissão, conta). usage: resposta a um "usage-N"
 // com os limites. Vazio: outra resposta de sucesso, sem nada para o app.
 export type ControlReply = { info?: ClaudeInfo; usage?: Usage }
@@ -73,6 +92,8 @@ export function parseControlReply(line: string, now: number): ControlReply | nul
 
   const limits = res.response?.rate_limits
   if (!limits) return {}
+  const fresh = fromLimits(limits.limits)
+  if (fresh) return { usage: { ...fresh, updatedAt: now } }
   // Sessão ausente com o resto presente: a janela de 5 horas ainda não começou.
   const session = toWindow(limits.five_hour) ?? { percent: 0, resetsAt: null }
   return {

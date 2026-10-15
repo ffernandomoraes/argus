@@ -77,6 +77,9 @@ const normalize = (path: string) => (IS_WIN ? fromGitBash(path).replace(/\//g, '
 // Pasta do Linux do WSL vista pelo Windows: o começo "\\wsl.localhost\Ubuntu" (ou "\\wsl$\Ubuntu").
 const WSL_ROOT = /^[\\/]{2}(?:wsl\.localhost|wsl\$)[\\/][^\\/]+(?=[\\/]|$)/i
 
+// Pasta do WSL: o que vai para a Lixeira vai para a do Linux, não para a do Windows.
+export const isWslFolder = (path: string) => IS_WIN && WSL_ROOT.test(path)
+
 // O Claude que roda no WSL escreve caminhos do Linux ("/home/ana/proj/x.ts"). Numa pasta do WSL,
 // viram o caminho que o Windows enxerga; "/mnt/c/x" é o disco C: do Windows.
 function fromLinux(path: string, dir: string): string {

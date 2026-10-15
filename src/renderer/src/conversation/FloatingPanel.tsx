@@ -5,14 +5,18 @@ import { tr } from '../i18n'
 // Painel flutuante: a geometria fica em panelGeometry.ts e o arraste em hooks/useFloatingRect.ts.
 // Daqui saem também os dois, como antes, para o canvas, o código e o design.
 export {
+  BOTTOM_BAR_HEIGHT,
   DRAWER_DEFAULT_WIDTH,
   PANEL_DEFAULT_WIDTH,
+  PANEL_BOTTOM,
   PANEL_MARGIN,
   PANEL_TOP,
   TITLE_BAR_HEIGHT,
   cascadeSpot,
+  fitBeside,
   freeSpot,
   type AreaSize,
+  type PanelSide,
   type PanelRect
 } from './panelGeometry'
 export { useFloatingRect } from './hooks/useFloatingRect'

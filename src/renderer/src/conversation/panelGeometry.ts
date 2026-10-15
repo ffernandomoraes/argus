@@ -7,12 +7,15 @@ export type PanelRect = { x: number; y: number; width: number; height: number; a
 export type AreaSize = { width: number; height: number }
 export type Edges = { left?: boolean; right?: boolean; top?: boolean; bottom?: boolean }
 
-// Folga mínima entre o painel e as bordas da área (laterais, embaixo e abaixo da barra de título).
+// Folga mínima entre o painel e as bordas da área (laterais, acima da barra de baixo e abaixo da barra de título).
 export const PANEL_MARGIN = 8
 const MARGIN = PANEL_MARGIN
 // Barra de título transparente no topo da janela (TitleBar): os painéis começam abaixo dela.
-export const TITLE_BAR_HEIGHT = 40
+export const TITLE_BAR_HEIGHT = 34
 export const PANEL_TOP = TITLE_BAR_HEIGHT + MARGIN
+// Barra de baixo (BottomBar), também fora do canvas: os painéis param acima dela.
+export const BOTTOM_BAR_HEIGHT = 30
+export const PANEL_BOTTOM = BOTTOM_BAR_HEIGHT + MARGIN
 export const PANEL_MIN = { width: 360, height: 320 }
 export const PANEL_DEFAULT_WIDTH = 550
 // O painel da conversa nasce um pouco mais largo que os outros: é onde se lê e escreve.
@@ -20,16 +23,20 @@ export const DRAWER_DEFAULT_WIDTH = PANEL_DEFAULT_WIDTH + 50
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 
-// Sem posição definida ainda, o painel nasce encostado à direita, na altura toda.
-export function defaultRect(area: AreaSize, defaultWidth: number): PanelRect {
+export type PanelSide = 'left' | 'right'
+
+// Sem posição definida ainda, o painel nasce encostado num dos lados (a direita, por padrão), na
+// altura toda.
+export function defaultRect(area: AreaSize, defaultWidth: number, side: PanelSide = 'right'): PanelRect {
   const width = Math.min(defaultWidth, area.width - MARGIN * 2)
-  return { x: area.width - MARGIN - width, y: PANEL_TOP, width, height: area.height - PANEL_TOP - MARGIN, area }
+  const x = side === 'left' ? MARGIN : area.width - MARGIN - width
+  return { x, y: PANEL_TOP, width, height: area.height - PANEL_TOP - PANEL_BOTTOM, area }
 }
 
 // Reposiciona o rect da área antiga para a nova mantendo a proporção do espaço útil
 // (descontadas as margens e a barra de título), e garante que caiba inteiro na nova.
 export function rescale(rect: PanelRect, from: AreaSize, to: AreaSize): PanelRect {
-  const usable = (a: AreaSize) => ({ width: a.width - MARGIN * 2, height: a.height - PANEL_TOP - MARGIN })
+  const usable = (a: AreaSize) => ({ width: a.width - MARGIN * 2, height: a.height - PANEL_TOP - PANEL_BOTTOM })
   const a = usable(from)
   const b = usable(to)
   const sx = a.width > 0 ? b.width / a.width : 1
@@ -37,7 +44,7 @@ export function rescale(rect: PanelRect, from: AreaSize, to: AreaSize): PanelRec
   const width = clamp(rect.width * sx, Math.min(PANEL_MIN.width, b.width), b.width)
   const height = clamp(rect.height * sy, Math.min(PANEL_MIN.height, b.height), b.height)
   const x = clamp(MARGIN + (rect.x - MARGIN) * sx, MARGIN, to.width - MARGIN - width)
-  const y = clamp(PANEL_TOP + (rect.y - PANEL_TOP) * sy, PANEL_TOP, to.height - MARGIN - height)
+  const y = clamp(PANEL_TOP + (rect.y - PANEL_TOP) * sy, PANEL_TOP, to.height - PANEL_BOTTOM - height)
   return { x, y, width, height, area: to }
 }
 
@@ -45,6 +52,25 @@ export function rescale(rect: PanelRect, from: AreaSize, to: AreaSize): PanelRec
 const near = (a: number, aLen: number, b: number, bLen: number) => a < b + bLen + MARGIN && b < a + aLen + MARGIN
 const overlaps = (a: PanelRect, b: PanelRect) =>
   near(a.x, a.width, b.x, b.width) && near(a.y, a.height, b.y, b.height)
+
+// Drawer que cobre o painel `aside` (a lista de conversas): vai para o lado dele com mais espaço,
+// encolhendo só o que precisa. Sem cobrir, ou sem espaço nem para o mínimo, fica como está.
+export function fitBeside(rect: PanelRect, aside: PanelRect): PanelRect {
+  const area = rect.area ?? aside.area
+  if (!area || !overlaps(rect, aside)) return rect
+  const asideRight = aside.x + aside.width + MARGIN
+  const rightSpace = area.width - MARGIN - asideRight
+  const leftSpace = aside.x - MARGIN - MARGIN
+  if (Math.max(rightSpace, leftSpace) < PANEL_MIN.width) return rect
+  if (rightSpace >= leftSpace) {
+    const x = Math.max(rect.x, asideRight)
+    const right = clamp(rect.x + rect.width, x + PANEL_MIN.width, area.width - MARGIN)
+    return { ...rect, x, width: right - x, area }
+  }
+  const right = Math.min(rect.x + rect.width, aside.x - MARGIN)
+  const x = clamp(rect.x, MARGIN, right - PANEL_MIN.width)
+  return { ...rect, x, width: right - x, area }
+}
 
 // Rect depois de arrastar (dx, dy) a partir de `rect`: todas as bordas juntas (mover) ou só
 // algumas (redimensionar), sem sair da área nem ficar menor que o mínimo. Com `obstacles` (os
@@ -59,7 +85,7 @@ export function dragRect(
   obstacles: readonly PanelRect[] = []
 ): PanelRect {
   const os = obstacles.filter((o) => !overlaps(rect, o))
-  const max = { right: area.width - MARGIN, bottom: area.height - MARGIN }
+  const max = { right: area.width - MARGIN, bottom: area.height - PANEL_BOTTOM }
   if (edges === 'move') {
     const moved = {
       ...rect,
@@ -123,7 +149,7 @@ function slideAround(
 // Lugares ao redor de um painel: na mesma coluna, acima e abaixo dele (onde sobrar mais altura
 // primeiro); depois ao lado, na largura padrão (ou no que couber), encostado nele e na altura toda.
 function spotsAround(o: PanelRect, area: AreaSize, width: number): PanelRect[] {
-  const bottom = area.height - MARGIN
+  const bottom = area.height - PANEL_BOTTOM
   const above = o.y - MARGIN - PANEL_TOP
   const below = bottom - (o.y + o.height + MARGIN)
   const vertical = [
@@ -157,7 +183,7 @@ export function cascadeSpot(last: PanelRect, area: AreaSize): PanelRect {
   const width = Math.min(last.width, area.width - MARGIN * 2)
   const maxX = area.width - MARGIN - width
   const x = last.x - CASCADE_STEP >= MARGIN ? last.x - CASCADE_STEP : clamp(last.x + CASCADE_STEP, MARGIN, maxX)
-  const y = Math.min(last.y + CASCADE_STEP, area.height - MARGIN - PANEL_MIN.height)
-  const height = clamp(last.height, PANEL_MIN.height, area.height - MARGIN - y)
+  const y = Math.min(last.y + CASCADE_STEP, area.height - PANEL_BOTTOM - PANEL_MIN.height)
+  const height = clamp(last.height, PANEL_MIN.height, area.height - PANEL_BOTTOM - y)
   return { x, y: Math.max(PANEL_TOP, y), width, height, area }
 }

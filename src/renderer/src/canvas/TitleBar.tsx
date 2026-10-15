@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect } from 'react'
 import { AppWindow, Bug, Eye, EyeOff } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
@@ -11,7 +11,6 @@ import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
 import { usePreference } from '../settings/preferences'
 import { openReport } from '../report/reportStore'
 import { useReportState } from '../report/useReportState'
-import { UsageIndicator } from './UsageIndicator'
 import { tr } from '../i18n'
 
 const Divider = () => <span className="h-4 w-px bg-line" />
@@ -33,7 +32,6 @@ export const TitleBar = memo(function TitleBar({
   const updates = useUpdates()
   const controls = useWindowControls()
   const mediaPlayer = usePreference('mediaPlayer')
-  const [usageOpen, setUsageOpen] = useState(false)
   const status = updateProgress(updates?.state)
   const investigating = useReportState().status === 'running'
   useNewWindowShortcut()
@@ -45,14 +43,14 @@ export const TitleBar = memo(function TitleBar({
 
   return (
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
-    // painel de limites aberto sobe acima de todos, senão um drawer aberto (z-40, ou z-50 no modo
-    // foco) cobriria o painel. Com o mouse em cima também sobe: os tooltips dos botões abrem para
-    // baixo, por cima do drawer. Modal aberto cobre a barra, então o mouse nem chega nela.
-    // O recuo acompanha o grupo da direita (limites, reportar problema, nova janela e, às vezes, atualizar ao lado da versão) dos dois lados:
-    // o título segue no centro sem encostar nele.
+    // mouse em cima sobe acima de todos: os tooltips dos botões abrem para baixo, por cima do drawer.
+    // Modal aberto cobre a barra, então o mouse nem chega nela.
+    // O recuo acompanha o maior dos lados (o player à esquerda; ocultar, nova janela, reportar
+    // problema e, às vezes, atualizar ao lado da versão à direita) dos dois lados: o título segue no
+    // centro sem encostar nele. Os limites ficam na barra de baixo (BottomBar).
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 ${usageOpen ? 'z-[55]' : 'z-[35] hover:z-[55]'} flex items-center justify-center gap-2 border-b border-line bg-surface ${status.ready || status.progress ? 'px-[31rem]' : 'px-[21rem]'}`}
+      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface hover:z-[55] ${status.ready || status.progress || mediaPlayer ? 'px-[22rem]' : 'px-[12rem]'}`}
     >
       {/* Logo depois dos botões da janela (os semáforos do Mac). Desligado, nem consulta o sistema. */}
       {mediaPlayer && (
@@ -69,8 +67,6 @@ export const TitleBar = memo(function TitleBar({
       )}
       {updates && (
         <div className="absolute inset-y-0 flex items-center gap-2.5" style={{ right: 12 + controls.right }}>
-          <UsageIndicator open={usageOpen} onOpenChange={setUsageOpen} />
-          <Divider />
           {/* Fora da área que arrasta a janela, senão o botão não recebe o mouse. */}
           <span className="no-drag flex items-center gap-0.5">
             <NavButton

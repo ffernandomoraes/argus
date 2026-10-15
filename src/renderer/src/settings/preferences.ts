@@ -27,6 +27,12 @@ export type Preferences = {
   orchestratorEnabled: boolean
   // Codex, Gemini e Cursor além do Claude (Configurações > Experimentos): contas e conversas.
   multiAgents: boolean
+  // Modo design (Configurações > Experimentos): "Novo design" na pasta, os designs na lista dela e o
+  // drawer do design. Desligado, nada disso aparece (os designs continuam guardados).
+  designMode: boolean
+  // Worktrees (Configurações > Experimentos): "Nova tarefa em paralelo" no menu da pasta, que cria um git
+  // worktree como card filho dela.
+  worktrees: boolean
   // Modelo e esforço do orquestrador e as regras de delegação dele (Configurações > Orquestrador).
   orchestrator: OrchestratorConfig
 }
@@ -44,6 +50,8 @@ const DEFAULTS: Preferences = {
   mascotSpot: null,
   orchestratorEnabled: false,
   multiAgents: false,
+  designMode: false,
+  worktrees: false,
   orchestrator: defaultOrchestrator()
 }
 

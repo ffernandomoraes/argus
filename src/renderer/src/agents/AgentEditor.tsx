@@ -1,7 +1,8 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { keys } from '../platform'
 import { Button } from '../ui/Button'
-import { LAST_STEP, type Draft } from './agentDraft'
+import type { AgentProvider } from '../../../shared/agents'
+import { lastStep, type Draft } from './agentDraft'
 import { InstructionsStep } from './InstructionsStep'
 import { StepTabs } from './StepTabs'
 import { ToolsStep } from './ToolsStep'
@@ -9,6 +10,7 @@ import { tr } from '../i18n'
 
 // Agente aberto: as abas dos passos, o passo atual e o rodapé com Voltar, Salvar e Continuar.
 export function AgentEditor({
+  provider,
   draft,
   step,
   reached,
@@ -22,6 +24,7 @@ export function AgentEditor({
   onChange,
   onToggleTool
 }: {
+  provider: AgentProvider
   draft: Draft
   step: number
   reached: number
@@ -37,12 +40,13 @@ export function AgentEditor({
   onChange: (patch: Partial<Draft>) => void
   onToggleTool: (name: string) => void
 }) {
+  const LAST_STEP = lastStep(provider)
   return (
     <>
-      <StepTabs step={step} reached={reached} onGo={onGo} />
+      <StepTabs provider={provider} step={step} reached={reached} onGo={onGo} />
       {error && <p className="border-b border-line px-5 py-2 text-xs text-red-400">{error}</p>}
 
-      {step === 0 && <InstructionsStep draft={draft} onChange={onChange} />}
+      {step === 0 && <InstructionsStep provider={provider} draft={draft} onChange={onChange} />}
       {step === 1 && <ToolsStep draft={draft} onChange={onChange} onToggleTool={onToggleTool} />}
 
       <footer className="flex items-center gap-2 border-t border-line px-5 py-3">

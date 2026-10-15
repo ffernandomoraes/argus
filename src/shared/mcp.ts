@@ -12,4 +12,6 @@ export type McpServer = {
   version?: string
 }
 
-export type McpStatus = { ok: true; servers: McpServer[] } | { ok: false; error: string }
+// live: lido da sessão aberta da conversa (dá para reconectar e acompanhar quem está conectando).
+// Sem ela, de uma consulta avulsa, que espera todos terminarem de conectar.
+export type McpStatus = { ok: true; servers: McpServer[]; live: boolean } | { ok: false; error: string }

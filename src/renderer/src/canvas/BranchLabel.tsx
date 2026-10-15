@@ -8,15 +8,20 @@ export function BranchLabel({
   branch,
   changes,
   highlight = false,
-  className
+  className,
+  changesTitle
 }: {
   branch: string
   changes?: number
   highlight?: boolean
   className?: string
+  // Outro sentido para o número (na tarefa isolada, todos os arquivos que ela alterou).
+  changesTitle?: string
 }) {
   const dirty = !!changes && changes > 0
-  const title = dirty
+  const title = dirty && changesTitle
+    ? `Branch: ${branch} - ${changesTitle}`
+    : dirty
     ? tr(
         `Branch: ${branch} - ${changes} ${changes === 1 ? 'arquivo não comitado' : 'arquivos não comitados'}`,
         `Branch: ${branch} - ${changes} ${changes === 1 ? 'uncommitted file' : 'uncommitted files'}`

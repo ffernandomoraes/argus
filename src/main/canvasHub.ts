@@ -53,6 +53,30 @@ export class CanvasHub {
     this.step(this.past, this.future)
   }
 
+  // Blocos que saíram de vez (tarefa em paralelo com a pasta apagada, espaço de trabalho removido):
+  // somem também de todo o histórico, para nenhum ⌘Z nem ⌘⇧Z trazer de volta um card sem pasta.
+  // Passo que ficou igual ao vizinho (era só a remoção dele) sai junto, para o ⌘Z não "fazer nada".
+  forget(ids: string[]): void {
+    const gone = new Set(ids)
+    const without = (snapshot: unknown) =>
+      Array.isArray(snapshot) ? snapshot.filter((n) => !gone.has((n as { id?: unknown })?.id as string)) : snapshot
+    const clean = (stack: unknown[], edge: unknown): unknown[] => {
+      const kept: unknown[] = []
+      let last = JSON.stringify(edge)
+      for (let i = stack.length - 1; i >= 0; i--) {
+        const s = without(stack[i])
+        const key = JSON.stringify(s)
+        if (key === last) continue
+        kept.unshift(s)
+        last = key
+      }
+      return kept
+    }
+    const now = without(this.nodes)
+    this.past = clean(this.past, now)
+    this.future = clean(this.future, now)
+  }
+
   redo(): void {
     this.step(this.future, this.past)
   }

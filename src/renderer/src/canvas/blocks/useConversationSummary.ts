@@ -26,6 +26,7 @@ export function useConversationSummary(
         kind: 'conversa',
         status,
         updatedAt: since,
+        repliedAt: since,
         contextPercent: 0,
         sessionId
       },

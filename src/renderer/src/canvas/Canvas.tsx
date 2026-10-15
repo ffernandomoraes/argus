@@ -16,6 +16,7 @@ import { drawerLayout } from './drawers/drawerLayout'
 import { designView, slotTarget } from './drawers/drawerView'
 import { useCanvasProjects } from './drawers/useCanvasProjects'
 import { useDrawers } from './drawers/useDrawers'
+import { useFitBeside } from './drawers/useFitBeside'
 import { useOverlays } from './drawers/useOverlays'
 import { looseDrawer } from './drawers/drawerState'
 import { useShownDrawers } from './drawers/useShownDrawers'
@@ -28,7 +29,7 @@ import { useCanvasKeys } from './keys/useCanvasKeys'
 import { useSpaceHeld } from './keys/useSpaceHeld'
 import { useUiHidden } from './keys/useUiHidden'
 import { loadNodes, useCanvasSync } from './persistence'
-import { RunningIndicator } from './RunningIndicator'
+import { BottomBar } from './BottomBar'
 import { setPoppedOut } from './sessionsStore'
 import { TitleBar } from './TitleBar'
 import type { CanvasNode } from './types'
@@ -36,6 +37,8 @@ import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
 import { Mascot } from './mascot/Mascot'
+import { usePreference } from '../settings/preferences'
+import { useWorktreeActions } from './worktrees/useWorktreeActions'
 
 type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
 
@@ -83,6 +86,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     confirm: overlays.commands.confirm
   })
   const drop = useGroupDrop(api, view)
+  const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm)
   const menus = useMenuHandlers({
     nodesRef,
     setMenu: overlays.commands.setMenu,
@@ -92,6 +96,9 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
       setNodes: change,
       confirm: overlays.commands.confirm,
       addFolder: overlays.commands.addFolder,
+      addWorkspace: overlays.commands.addWorkspace,
+      newWorktree: worktrees.newWorktree,
+      removeWorktree: worktrees.removeWorktree,
       isPoppedOut,
       organizeBoard,
       organizeGroup
@@ -100,6 +107,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   const commands = useCanvasCommands({
     nodeActions,
     conversations,
+    worktrees,
     overlays: overlays.commands,
     openConversationMenu: menus.openConversationMenu,
     openSettings: onOpenSettings
@@ -127,7 +135,9 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   useLayoutEffect(() => patchView(view, { activeConversation: main, activeDesign }), [view, main, activeDesign])
 
   const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open])
-  const design = useMemo(() => designView(nodes, drawers.state.design), [nodes, drawers.state.design])
+  // Modo design desligado (experimento): nenhum design abre, nem um que já estava aberto.
+  const designMode = usePreference('designMode')
+  const design = useMemo(() => (designMode ? designView(nodes, drawers.state.design) : null), [designMode, nodes, drawers.state.design])
   const layout = drawerLayout(drawers.state, targets, shownDrawers.titles)
   const { shown } = layout
   const codeRoot = layout.code?.root ?? null
@@ -139,6 +149,8 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     const node = nodes.find((n) => n.id === listId)
     return node?.type === 'project' ? node : null
   }, [nodes, listId])
+  const aside = allConversations ? overlays.state.allConversationsRect : null
+  useFitBeside(aside, open, drawers.commands)
 
   return (
     <CanvasContext.Provider value={commands}>
@@ -169,7 +181,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           }`}
         />
         {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
-        <RunningIndicator hidden={uiHidden} onOpen={openChat} />
+        <BottomBar onOpenChat={openChat} />
         <TitleBar
           windowTitle={
             shown ? `${shown.title} - ${shown.target.project.name}` : design ? `Design - ${design.projectName}` : 'Argus'
@@ -185,6 +197,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           commands={drawers.commands}
           actions={conversations}
           onShown={shownDrawers.report}
+          aside={aside}
         />
         <CanvasOverlays
           state={overlays.state}

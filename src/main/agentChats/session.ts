@@ -46,6 +46,8 @@ export class AgentChatSession {
   private driver: Driver | null = null
   private starting: Promise<void> | null = null
   private settings: ChatSettings
+  // Outras pastas do workspace (ver workspaceFolders.ts).
+  private folders: string[]
   // Mensagens enviadas com o agente trabalhando: entram no histórico quando chega a vez delas.
   private queue: (QueuedMessage & { prompt: string; images: ChatSendRequest['images']; message: Message })[] = []
   private running = false
@@ -65,6 +67,7 @@ export class AgentChatSession {
   ) {
     this.keys.add(key)
     this.cwd = req.cwd
+    this.folders = req.folders ?? []
     this.settings = req.settings
     const stored = req.sessionId ? loadConversation(req.sessionId) : null
     this.ref = stored ? { provider: stored.provider, account: stored.account } : ref
@@ -108,6 +111,9 @@ export class AgentChatSession {
   async mcpServers(): Promise<McpServer[]> {
     return []
   }
+
+  // Os MCPs dos outros agentes não aparecem no painel: não há o que reconectar.
+  async reconnectMcp(): Promise<void> {}
 
   // Remote control é do Claude Code.
   async remoteControl(): Promise<void> {
@@ -179,8 +185,8 @@ export class AgentChatSession {
       this.settings = await sanitizeSettings(this.ref, this.settings)
       const driver: Driver =
         this.ref.provider === 'codex'
-          ? new CodexDriver(this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents())
-          : new AcpDriver(this.ref.provider, this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents())
+          ? new CodexDriver(this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents(), this.folders)
+          : new AcpDriver(this.ref.provider, this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents(), this.folders)
       try {
         this.conversation.nativeId = await driver.start(this.conversation.nativeId)
         this.driver = driver

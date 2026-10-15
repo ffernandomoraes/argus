@@ -1,4 +1,4 @@
-import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
+import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { Lang, LangPreference } from './i18n'
 import type { AuthState, LoginMethod } from './auth'
@@ -22,6 +22,7 @@ import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
+import type { WorktreeReserved, WorktreeStatus } from './worktrees'
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -44,6 +45,10 @@ export type DesignRoute = { route: string; from: string }
 export type InvokeChannels = {
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   'dialog:pickFolder': (distro?: string) => string | null
+  // Várias pastas de uma vez (workspace); cancelado: vazio.
+  'dialog:pickFolders': (distro?: string) => string[]
+  // Workspace: cria (sem dir) ou atualiza a pasta dele (src/main/workspaces.ts); devolve o caminho.
+  'workspace:sync': (folders: string[], dir?: string) => string
   // Distros do WSL instaladas (só no Windows; vazio sem WSL).
   'wsl:distros': () => string[]
   // Texto para copiar e mandar quando algo do WSL não funciona.
@@ -78,9 +83,10 @@ export type InvokeChannels = {
   'chat:state': (key: string) => ChatState | null
   'chat:active': () => ActiveChat[]
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
-  'agents:list': (projectPath?: string) => AgentDef[]
-  'agents:save': (req: AgentSaveRequest) => AgentSaveResult
-  'agents:remove': (name: string) => boolean
+  'mcp:reconnect': (key: string, name: string) => McpStatus
+  'agents:list': (provider: AgentProvider, projectPath?: string) => AgentDef[]
+  'agents:save': (provider: AgentProvider, req: AgentSaveRequest) => AgentSaveResult
+  'agents:remove': (provider: AgentProvider, name: string) => boolean
   'memory:list': (projects: MemoryProject[]) => MemoryGroup[]
   'memory:read': (path: string, projects: MemoryProject[]) => string | null
   // base: o texto lido quando a edição começou; com ela, não grava por cima de mudança do disco.
@@ -107,6 +113,10 @@ export type InvokeChannels = {
   'sessions:history': (path: string, id: string) => Message[]
   'sessions:images': (path: string, id: string, messageId: string) => string[]
   'sessions:context': (path: string, id: string) => number
+  // Worktrees criados pelo Argus (ver shared/worktrees.ts)
+  'worktrees:reserve': (folder: string) => WorktreeReserved
+  'worktrees:status': (path: string) => WorktreeStatus | null
+  'worktrees:remove': (path: string) => string | null
   // Servidores
   'devServers:list': (paths: string[]) => DevServer[]
   'devServers:kill': (pgid: number, paths: string[]) => boolean
@@ -116,6 +126,7 @@ export type InvokeChannels = {
   // Arquivos
   'files:list': (root: string, rel: string) => FileEntry[]
   'files:read': (root: string, rel: string) => FileContent
+  'files:locate': (root: string, rel: string) => string | null
   'files:image': (path: string) => string | null
   'files:diff': (root: string, rel: string) => FileDiff
   // base: o texto do disco na última leitura ou gravação; com ela, não grava por cima de mudança
@@ -173,6 +184,8 @@ export type SendChannels = {
   'chat:answer': (key: string, id: string, answer: PermissionAnswer) => void
   'chat:retain': (key: string) => void
   'chat:release': (key: string) => void
+  // Workspace mudou de pastas: as sessões abertas na pasta dele reabrem com a lista nova.
+  'chat:restartIn': (cwd: string) => void
   // Conversas com resposta não vista nesta janela (para o ícone da barra de menus).
   'chat:unread': (chats: UnreadChat[]) => void
   'chat:interrupt': (key: string) => void
@@ -181,6 +194,7 @@ export type SendChannels = {
   'canvas:sync': (nodes: unknown) => void
   'canvas:record': () => void
   'canvas:undo': () => void
+  'canvas:forget': (ids: string[]) => void
   'canvas:redo': () => void
   'canvas:setViewport': (viewport: CanvasViewport) => void
   'canvas:newWindow': () => void
@@ -196,6 +210,7 @@ export type SendChannels = {
   'sessions:watch': (paths: string[]) => void
   // Arquivos
   'files:reveal': (root: string, rel: string) => void
+  'files:openFolder': (path: string) => void
   'files:view': (root: string, rel: string) => void
   'files:openInBrowser': (root: string, rel: string) => void
   'files:watch': (root: string, rel: string) => void

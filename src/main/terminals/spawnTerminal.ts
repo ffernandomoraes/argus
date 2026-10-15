@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { app } from 'electron'
@@ -14,6 +14,10 @@ import { distroFor, toLinux } from '../wsl'
 import { parseAgentRef, PROVIDER_NAMES, type AgentRef } from '../../shared/providers'
 import { providerLaunch } from '../providers/env'
 import { wslLaunch } from '../wsl/launch'
+import { folderArgs } from '../workspaceFolders'
+import { trustGemini } from '../workspaces'
+import { FOLDERS_CLAUDE_MD } from '../chats/env'
+import { materializeWorktree, withWorktreeHint } from '../worktrees'
 
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
 // wsl: roda dentro do WSL; o pid do pseudo-terminal é o do wsl.exe, não o do `claude`. newSession:
@@ -23,10 +27,11 @@ export type Spawned =
   | { ok: false; error: string }
 
 // Opções do `claude` que valem nos dois lugares. promptFile: as regras do orquestrador, já no
-// caminho que o `claude` enxerga.
-function claudeArgs(req: TerminalOpenRequest, promptFile?: string): string[] {
+// caminho que o `claude` enxerga; dir: o mesmo para as pastas do workspace.
+function claudeArgs(req: TerminalOpenRequest, promptFile?: string, dir?: (path: string) => string): string[] {
   return [
     ...(promptFile ? ['--append-system-prompt-file', promptFile] : []),
+    ...folderArgs('claude', req.folders, dir),
     ...(req.sessionId ? ['--resume', req.sessionId] : []),
     ...(req.model ? ['--model', req.model] : []),
     ...(req.effort ? ['--effort', req.effort] : []),
@@ -37,7 +42,11 @@ function claudeArgs(req: TerminalOpenRequest, promptFile?: string): string[] {
 
 // Abre o `claude` (ou o shell do sistema, com req.shell) num pseudo-terminal na pasta. Pasta do
 // WSL: dentro da distro (ver wsl/index.ts).
-export async function spawnTerminal(req: TerminalOpenRequest, cwd: string): Promise<Spawned> {
+export async function spawnTerminal(open: TerminalOpenRequest, cwd: string): Promise<Spawned> {
+  // Tarefa isolada reservada: o worktree nasce agora. Num worktree, o aviso dele vai junto das
+  // regras do orquestrador.
+  await materializeWorktree(cwd, '')
+  const req = { ...open, systemPrompt: withWorktreeHint(open.systemPrompt, cwd) }
   const distro = distroFor(cwd)
   const agent = parseAgentRef(req.account)
   if (agent && distro)
@@ -56,7 +65,8 @@ export async function spawnTerminal(req: TerminalOpenRequest, cwd: string): Prom
 // do terminal também fica com a conta: o `codex` digitado nele entra com ela.
 function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): Spawned {
   const name = PROVIDER_NAMES[agent.provider]
-  const launch = providerLaunch(agent.provider, [], agent.account)
+  const launch = providerLaunch(agent.provider, folderArgs(agent.provider, req.folders), agent.account)
+  if (launch && agent.provider === 'gemini') trustGemini(cwd, launch.env.GEMINI_CLI_HOME)
   if (!launch) return { ok: false, error: tr(`O ${name} não está instalado ou a conta não existe mais.`, `${name} isn’t installed or the account no longer exists.`) }
   const env = launch.env
   env.TERM = 'xterm-256color'
@@ -72,9 +82,13 @@ function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): 
 }
 
 // Texto de várias linhas como argumento quebra no Windows e no WSL: vai num arquivo. Um só para
-// todos os terminais, porque as regras são as mesmas (vêm das Configurações).
+// todos os terminais, porque as regras são as mesmas (vêm das Configurações). Com o aviso de um
+// worktree, que muda de pasta para pasta, um por texto.
 function writePrompt(text: string): string {
-  const path = join(app.getPath('userData'), 'orchestrator-prompt.md')
+  const name = text.includes('<worktree>')
+    ? `worktree-prompt-${createHash('sha1').update(text).digest('hex').slice(0, 12)}.md`
+    : 'orchestrator-prompt.md'
+  const path = join(app.getPath('userData'), name)
   writeFileSync(path, text)
   return path
 }
@@ -84,8 +98,8 @@ function writePrompt(text: string): string {
 async function wslTerminal(req: TerminalOpenRequest, cwd: string, distro: string): Promise<Spawned> {
   const newSession = req.shell || req.sessionId ? undefined : randomUUID()
   const prompt = req.systemPrompt && !req.shell ? toLinux(writePrompt(req.systemPrompt)) : undefined
-  const args = [...claudeArgs(req, prompt), ...(newSession ? ['--session-id', newSession] : [])]
-  const env = { TERM: 'xterm-256color', COLORTERM: 'truecolor' }
+  const args = [...claudeArgs(req, prompt, toLinux), ...(newSession ? ['--session-id', newSession] : [])]
+  const env = { TERM: 'xterm-256color', COLORTERM: 'truecolor', ...(req.folders?.length && { [FOLDERS_CLAUDE_MD]: '1' }) }
   const l = await wslLaunch(distro, { args, shell: req.shell, account: req.account, cwd, env, visibleInstall: true })
   if (!l.ok) return l
   try {
@@ -106,6 +120,7 @@ function nativeTerminal(req: TerminalOpenRequest, cwd: string): Spawned {
   prependPath(env, [CLI_BIN, dirname(claude)])
   // A conta do grupo vale também no shell: o `claude` digitado nele entra com ela.
   const account = applyAccount(env, req.account)
+  if (req.folders?.length) env[FOLDERS_CLAUDE_MD] = '1'
 
   // No Mac, shell de login, como o Terminal: carrega .zprofile e .zshrc. No Windows, PowerShell.
   const shell = defaultShell()

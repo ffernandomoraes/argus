@@ -34,6 +34,7 @@ export function ConversationWindow({
     <div className="absolute inset-0 flex flex-col overflow-hidden bg-bg">
       <ConversationView
         cwd={project.path}
+        folders={project.folders}
         account={account}
         project={project.name}
         conversation={conversation}

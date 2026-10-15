@@ -12,7 +12,7 @@ import { HeaderButton } from './header/HeaderButton'
 import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
 import { useFloatingRect } from './hooks/useFloatingRect'
 import { useFocusMode } from './hooks/useFocusMode'
-import { DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
+import { BOTTOM_BAR_HEIGHT, DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
 import { ResizeHandles } from './FloatingPanel'
 import { useDrawerZoom } from './useDrawerZoom'
 import { tr } from '../i18n'
@@ -114,8 +114,8 @@ export function ConversationDrawer(props: Props) {
       }`}
       style={{
         ...(focus
-          ? // A barra de título fica de fora: é por ela que a janela arrasta.
-            { left: 0, right: 0, top: TITLE_BAR_HEIGHT, bottom: 0, borderRadius: 0 }
+          ? // As barras de título e de baixo ficam de fora: é pela de cima que a janela arrasta.
+            { left: 0, right: 0, top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, borderRadius: 0 }
           : rect
             ? { left: rect.x, top: rect.y, width: rect.width, height: rect.height }
             : { visibility: 'hidden', inset: 0 }),
@@ -133,7 +133,9 @@ export function ConversationDrawer(props: Props) {
       <div ref={contentRef} className={`flex min-h-0 w-full flex-1 flex-col ${focus ? 'mx-auto max-w-[1100px]' : ''}`}>
         <ConversationView
           cwd={project.path}
+          folders={project.folders}
           account={account}
+          project={project.name}
           conversation={conversation}
           onOpenFile={openFile}
           onOpenDiff={openDiff}
@@ -157,6 +159,8 @@ export function ConversationDrawer(props: Props) {
 function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>) {
   const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, loose = false, codeOpen, onToggleCode } = props
   const draft = !!conversation.draft
+  // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
+  const workspace = !!props.project.folders
   return useMemo(() => {
     if (focus) return null
     const items: MoreMenuItem[] = [
@@ -173,12 +177,12 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
     return (
       <>
         <MoreMenu items={items} />
-        {!loose && (
+        {!loose && !workspace && (
           <HeaderButton label={codeOpen ? tr('Fechar código', 'Close code') : tr('Abrir código', 'Open code')} onClick={onToggleCode} active={codeOpen}>
             <Code2 size={14} />
           </HeaderButton>
         )}
       </>
     )
-  }, [focus, setFocus, onTogglePin, pinned, draft, onPinToCanvas, onPopout, loose, codeOpen, onToggleCode])
+  }, [focus, setFocus, onTogglePin, pinned, draft, onPinToCanvas, onPopout, loose, workspace, codeOpen, onToggleCode])
 }

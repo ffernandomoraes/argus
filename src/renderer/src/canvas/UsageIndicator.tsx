@@ -15,12 +15,12 @@ import { tr } from '../i18n'
 // Agentes sem limite legível por programa: aparecem só como aviso no painel (ver UsagePanel).
 const SILENT: ProviderId[] = ['gemini', 'cursor']
 
-// Limites na barra de título; o painel abre para baixo. O botão mostra a janela mais curta de cada
+// Limites no canto direito da barra de baixo; o painel abre para cima. O botão mostra a janela mais curta de cada
 // conta (a sessão de 5 horas no Claude), com o logo antes das contas de cada agente e o nome quando
 // o agente tem mais de uma; o painel traz todas as janelas de todas. As contas dos outros agentes
 // (hoje, só o Codex informa limite) entram só com o experimento de vários agentes ligado.
-// O contêiner ocupa a altura da barra: o painel abre abaixo dela, não sobre a borda.
-// O aberto fica com a TitleBar: enquanto o painel está à vista, ela sobe acima dos drawers.
+// O contêiner ocupa a altura da barra: o painel abre acima dela, não sobre a borda.
+// O aberto fica com a BottomBar: enquanto o painel está à vista, ela sobe acima dos drawers.
 export const UsageIndicator = memo(function UsageIndicator({
   open,
   onOpenChange
@@ -54,7 +54,7 @@ export const UsageIndicator = memo(function UsageIndicator({
   const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
 
   return (
-    <div ref={ref} className="no-drag relative flex items-center self-stretch">
+    <div ref={ref} className="relative flex items-center self-stretch">
       <button
         aria-label={mixed ? tr('Ver limites de uso', 'View usage limits') : tr('Ver limites do Claude', 'View Claude limits')}
         aria-expanded={open}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Check, ChevronRight } from 'lucide-react'
 import type { ClaudeModel } from '../../../../shared/models'
 import { useClaudeVersion } from '../../claudeVersion/useClaudeVersion'
@@ -57,26 +57,49 @@ export function ModelList({
               {selected && <Check size={13} className="text-muted" />}
               <ChevronRight size={12} className="shrink-0 text-faint" />
             </button>
-            {/* Submenu ao lado; o pl-1 mantém o mouse "dentro" ao atravessar o vão */}
             <Presence kind="menu">
               {isOpen && (
-                <div className="absolute left-full top-0 z-10 pl-1">
-                  {/* Agentes com muitas versões de uma família (o Cursor): rola dentro do submenu. */}
-                  <div className={`max-h-80 w-52 overflow-y-auto ${POPOVER}`}>
-                    {versions.map((v) => (
-                      <button key={v.value} onClick={() => onChange(v.value)} className={PICKER_ROW}>
-                        <span className="flex-1">{v.displayName}</span>
-                        {value === v.value && <Check size={13} className="text-muted" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <VersionsSubmenu>
+                  {versions.map((v) => (
+                    <button key={v.value} onClick={() => onChange(v.value)} className={PICKER_ROW}>
+                      <span className="flex-1">{v.displayName}</span>
+                      {value === v.value && <Check size={13} className="text-muted" />}
+                    </button>
+                  ))}
+                </VersionsSubmenu>
               )}
             </Presence>
           </div>
         )
       })}
       <OutdatedNotice />
+    </div>
+  )
+}
+
+// Folga até a borda da janela.
+const EDGE = 8
+
+// Submenu ao lado do item. Perto do pé da janela (o menu abre logo acima do campo), sobe o quanto
+// faltar, como o submenu do menu de contexto. Medido ao montar, antes de aparecer na tela.
+function VersionsSubmenu({ children }: { children: ReactNode }) {
+  const [up, setUp] = useState(0)
+  const panel = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const el = panel.current
+    const row = el?.parentElement
+    if (!el || !row) return
+    const anchor = row.getBoundingClientRect()
+    const height = el.offsetHeight
+    setUp(Math.max(0, Math.min(anchor.top + height - (window.innerHeight - EDGE), anchor.top - EDGE)))
+  }, [])
+
+  return (
+    // O pl-1 mantém o mouse "dentro" ao atravessar o vão
+    <div ref={panel} className="absolute left-full z-10 pl-1" style={{ top: -up }}>
+      {/* Agentes com muitas versões de uma família (o Cursor): rola dentro do submenu. */}
+      <div className={`max-h-80 w-52 overflow-y-auto ${POPOVER}`}>{children}</div>
     </div>
   )
 }

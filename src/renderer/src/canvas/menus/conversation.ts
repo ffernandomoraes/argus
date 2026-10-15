@@ -1,5 +1,5 @@
 import { MessageCircle, PenTool, Trash2 } from 'lucide-react'
-import { SYSTEM_NAME } from '../../platform'
+import { isWslFolder, SYSTEM_NAME } from '../../platform'
 import type { MenuItem } from '../ContextMenu'
 import type { ConversationSummary, ProjectNode } from '../types'
 import { isBusy, TRASH_EN } from './shared'
@@ -73,10 +73,15 @@ export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conv
         }
         deps.confirm({
           title: tr(`Mover "${conversation.title}" para a Lixeira?`, `Move "${conversation.title}" to ${TRASH_EN}?`),
-          description: tr(
-            `O arquivo da conversa vai para a Lixeira do ${SYSTEM_NAME}. Ela some do Argus e do \`claude --resume\`; para recuperar, restaure pela Lixeira. O projeto não é afetado.`,
-            `The chat file goes to the ${SYSTEM_NAME} ${TRASH_EN}. It disappears from Argus and from \`claude --resume\`; to recover it, restore it from the ${TRASH_EN}. The project is not affected.`
-          ),
+          description: isWslFolder(node.data.path)
+            ? tr(
+                'O arquivo da conversa vai para a Lixeira do Linux (WSL), em ~/.local/share/Trash, e não para a do Windows. Ela some do Argus e do `claude --resume`. O projeto não é afetado.',
+                'The chat file goes to the Linux (WSL) Trash, in ~/.local/share/Trash, not the Windows Recycle Bin. It disappears from Argus and from `claude --resume`. The project is not affected.'
+              )
+            : tr(
+                `O arquivo da conversa vai para a Lixeira do ${SYSTEM_NAME}. Ela some do Argus e do \`claude --resume\`; para recuperar, restaure pela Lixeira. O projeto não é afetado.`,
+                `The chat file goes to the ${SYSTEM_NAME} ${TRASH_EN}. It disappears from Argus and from \`claude --resume\`; to recover it, restore it from the ${TRASH_EN}. The project is not affected.`
+              ),
           confirmLabel: tr('Mover para a Lixeira', `Move to ${TRASH_EN}`),
           onConfirm: () => deps.trashConversation(node.data.path, conversation.id)
         })

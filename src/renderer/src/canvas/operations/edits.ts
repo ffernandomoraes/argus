@@ -43,3 +43,9 @@ export function groupAccount(nodes: CanvasNode[], node: CanvasNode | undefined):
   const group = node?.parentId ? nodes.find((n) => n.id === node.parentId) : undefined
   return group?.type === 'area' ? group.data.account : undefined
 }
+
+// Pastas do workspace (ver ProjectData.folders). Fica pelo menos uma.
+export function setWorkspaceFolders(nodes: CanvasNode[], id: string, folders: string[]): CanvasNode[] {
+  if (folders.length === 0) return nodes
+  return nodes.map((n) => (n.id === id && n.type === 'project' ? { ...n, data: { ...n.data, folders } } : n))
+}

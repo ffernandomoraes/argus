@@ -90,7 +90,7 @@ export class ChatSession {
     this.account = resolveAccount(req.account)
     this.settings = req.settings
     const s = req.settings
-    const options = claudeCodeOptions(req.cwd, this.account)
+    const options = claudeCodeOptions(req.cwd, this.account, req.folders)
     this.q = query({
       prompt: this.inbox,
       options: {
@@ -188,8 +188,13 @@ export class ChatSession {
     return !this.busy && (this.closeWhenIdle || (this.keepForRemote && !this.remoteOn))
   }
 
-  mcpServers(): Promise<McpServer[]> {
-    return mcpServersOf(this.q)
+  mcpServers(wait = true): Promise<McpServer[]> {
+    return mcpServersOf(this.q, wait)
+  }
+
+  // Reconecta um servidor MCP desta sessão (o "Reconectar" do painel, como no VS Code).
+  reconnectMcp(name: string): Promise<void> {
+    return this.q.reconnectMcpServer(name)
   }
 
   async interrupt(): Promise<void> {

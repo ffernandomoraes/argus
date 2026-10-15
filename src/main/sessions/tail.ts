@@ -1,4 +1,4 @@
-import { num, obj, parseLine, type Line } from '../transcripts/line'
+import { arr, num, obj, parseLine, str, type Line } from '../transcripts/line'
 import { readSlice } from '../transcripts/read'
 import { userText } from './prompt'
 
@@ -12,6 +12,8 @@ export type Tail = {
   customTitle?: string
   aiTitle?: string
   usage?: Usage
+  // Hora da última resposta do Claude com texto (ferramentas e resultados não contam).
+  repliedAt?: string
   // Primeira mensagem da pessoa no trecho: só procurada quando o começo do arquivo não tinha.
   firstPrompt?: string
 }
@@ -28,6 +30,16 @@ function usageOf(l: Line): Usage | undefined {
   return tokens === 0 ? undefined : { tokens, model }
 }
 
+// Resposta de verdade: texto do Claude na conversa principal, fora os avisos do próprio Claude Code.
+function replyAt(l: Line): string | undefined {
+  if (l.type !== 'assistant' || l.isSidechain) return undefined
+  const message = obj(l.message)
+  if (message?.model === '<synthetic>') return undefined
+  const content = arr(message?.content)
+  const hasText = content?.some((c) => obj(c)?.type === 'text' && typeof obj(c)?.text === 'string' && String(obj(c)?.text).trim())
+  return hasText ? str(l.timestamp) : undefined
+}
+
 const title = (x: unknown) => (typeof x === 'string' && x.trim() ? x : undefined)
 
 export async function readTail(file: string, size: number, wantPrompt: boolean): Promise<Tail> {
@@ -38,12 +50,13 @@ export async function readTail(file: string, size: number, wantPrompt: boolean):
   let ai = false
   // De trás para frente, montando só as linhas que podem ter o que falta (o texto é conferido
   // antes): parsear os 512 KB inteiros de cada conversa pesava com centenas delas.
-  for (let i = lines.length - 1; i >= 0 && !(custom && ai && tail.usage); i--) {
+  for (let i = lines.length - 1; i >= 0 && !(custom && ai && tail.usage && tail.repliedAt); i--) {
     const raw = lines[i]
     const wantCustom = !custom && raw.includes('"custom-title"')
     const wantAi = !ai && raw.includes('"ai-title"')
     const wantUsage = !tail.usage && raw.includes('"usage"')
-    if (!wantCustom && !wantAi && !wantUsage) continue
+    const wantReply = !tail.repliedAt && raw.includes('"assistant"') && raw.includes('"text"')
+    if (!wantCustom && !wantAi && !wantUsage && !wantReply) continue
     const l = parseLine(raw)
     if (!l) continue
     if (wantCustom && l.type === 'custom-title') {
@@ -55,6 +68,7 @@ export async function readTail(file: string, size: number, wantPrompt: boolean):
       tail.aiTitle = title(l.aiTitle)
     }
     if (wantUsage) tail.usage = usageOf(l)
+    if (wantReply) tail.repliedAt = replyAt(l)
   }
   if (wantPrompt) {
     for (const raw of lines) {

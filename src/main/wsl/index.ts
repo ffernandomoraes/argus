@@ -12,6 +12,7 @@ import { parseWslPath } from './path'
 
 export { claudeDistro, distroInfo, ensureDistro, homeUnc, knownDistros, listDistros, loadDistro, warmUp } from './distros'
 export type { DistroInfo } from './distros'
+export { trashPath } from './trash'
 export { fromLinux, isWslPath, parseWslPath, sameDistro, toLinux, toUnc } from './path'
 
 // O `claude` do Windows existe? Perguntado a cada leitura de conversa, e procurar no PATH abre

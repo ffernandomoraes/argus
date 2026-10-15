@@ -1,5 +1,6 @@
 import type { CanvasNode } from '../types'
 import { freeSpot, freeY } from './freeSpace'
+import { INSTANCE_WIDTH, WORKTREE_WIDTH } from '../factory'
 import { boxOf, GAP, isPlaced } from './geometry'
 import { growGroupsToFit } from './groupSize'
 import { moveToGroup } from './groups'
@@ -17,6 +18,31 @@ export function addNode(nodes: CanvasNode[], node: CanvasNode, groupId?: string)
   if (groupId) return moveToGroup([...nodes, node], node.id, groupId)
   const placed = { ...node, position: freeSpot(nodes, node) } as CanvasNode
   return placed.type === 'area' ? [placed, ...nodes] : [...nodes, placed]
+}
+
+// Tarefas isoladas ficam logo embaixo da pasta como numa árvore: recuadas até a borda direita
+// alinhar com a da pasta (o card delas é mais estreito), e a linha desce pela esquerda da pasta e
+// entra em cada uma pelo lado (ver worktrees/WorktreeEdge). Perto: só o espaço mínimo entre blocos.
+const WORKTREE_INDENT = INSTANCE_WIDTH - WORKTREE_WIDTH
+const BELOW_GAP = GAP
+
+// Tarefa isolada nasce embaixo da pasta (ou da última irmã), recuada para a direita. No mesmo
+// grupo da pasta, como o placeBeside.
+export function placeBelow(nodes: CanvasNode[], anchorId: string, node: CanvasNode): CanvasNode[] {
+  if (present(nodes, node)) return nodes
+  const anchor = nodes.find((n) => n.id === anchorId)
+  if (!anchor || !isPlaced(anchor)) return addNode(nodes, node)
+  const a = boxOf(anchor)
+  const offset = boxOf({ ...node, position: { x: 0, y: 0 } })
+  const box = { ...offset, x: a.x + WORKTREE_INDENT, y: a.y + a.height + BELOW_GAP }
+  const occupied = nodes.filter((n) => n.parentId === anchor.parentId && isPlaced(n)).map(boxOf)
+  const position = { x: box.x - offset.x, y: freeY(box, occupied) - offset.y }
+  const group = nodes.find((n) => n.id === anchor.parentId)
+  if (group?.type !== 'area') return [...nodes, { ...node, position } as CanvasNode]
+  const collapsed = !!group.data.collapsed
+  const inside = { ...node, parentId: group.id, extent: 'parent', hidden: collapsed, position } as CanvasNode
+  const grown = growGroupsToFit([...nodes, inside], [inside.id])
+  return collapsed ? grown : pushAway(grown, [group.id])
 }
 
 // Bloco que nasce de outro (a conversa posta no canvas a partir da pasta): à direita dele,

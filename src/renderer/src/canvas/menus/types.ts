@@ -14,10 +14,16 @@ export type Deps = {
   startRename: (id: string) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
+  addWorkspace: (position: XYPosition, groupId?: string) => void
+  addWorkspaceFolder: (id: string) => void
+  removeWorkspaceFolder: (id: string, folder: string) => void
   addNote: (position: XYPosition, groupId?: string) => void
   // folder vazio = pasta do usuário.
-  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string) => void
+  // folders: aberto num workspace, as outras pastas dele.
+  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string, folders?: string[], name?: string) => void
   closeTerminal: (nodeId: string, name: string) => void
+  // Tira o bloco do canvas e do histórico: nenhum desfazer o traz de volta.
+  removeForever: (id: string) => void
   toggleGroup: (id: string) => void
   leaveGroup: (id: string) => void
   newConversation: (nodeId: string) => void
@@ -30,6 +36,9 @@ export type Deps = {
   isPoppedOut: (conversationId: string) => boolean
   trashConversation: (path: string, conversationId: string) => void
   openDesign: (nodeId: string, designId?: string) => void
+  // Tarefa isolada (git worktree): criar a partir da pasta (abre a conversa dela) e remover.
+  newWorktree: (nodeId: string) => void
+  removeWorktree: (nodeId: string) => void
   organizeBoard: () => void
   organizeGroup: (id: string) => void
 }

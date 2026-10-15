@@ -11,6 +11,7 @@ function toConversation(s: SessionSummary): ConversationSummary {
     kind: 'conversa',
     status: s.live ?? 'idle',
     updatedAt: s.updatedAt,
+    repliedAt: s.repliedAt,
     contextPercent: s.contextPercent,
     sessionId: s.id,
     ...(s.design && { design: true }),
@@ -28,6 +29,7 @@ function designToConversation(d: DesignSummary): ConversationSummary {
     kind: 'design',
     status: d.live ?? 'idle',
     updatedAt: d.updatedAt,
+    repliedAt: d.updatedAt,
     contextPercent: 0,
     designId: d.id,
     // A conversa do protótipo: os agentes dela aparecem embaixo do item, como numa conversa comum.
@@ -39,6 +41,6 @@ function designToConversation(d: DesignSummary): ConversationSummary {
 // conversas contam com essa ordem e não ordenam de novo.
 export function folderList(sessions: SessionSummary[], designs: DesignSummary[]): ConversationSummary[] {
   return [...sessions.map(toConversation), ...designs.map(designToConversation)].sort((a, b) =>
-    b.updatedAt.localeCompare(a.updatedAt)
+    b.repliedAt.localeCompare(a.repliedAt)
   )
 }

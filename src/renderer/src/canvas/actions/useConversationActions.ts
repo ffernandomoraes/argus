@@ -5,6 +5,7 @@ import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { patchView, type CanvasViewStore } from '../canvasView'
 import type { ConfirmRequest } from '../ConfirmDialog'
+import { codeProject } from '../drawers/codeProject'
 import { projectOf } from '../drawers/drawerView'
 import type { DrawerCommands } from '../drawers/useDrawers'
 import { createChatPanel } from '../factory'
@@ -38,6 +39,7 @@ const placeholder = (id: string): ConversationSummary => ({
   kind: 'conversa',
   status: 'idle',
   updatedAt: '',
+  repliedAt: '',
   contextPercent: 0,
   sessionId: id
 })
@@ -86,6 +88,7 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
   const openConversation = useStableCallback((nodeId: string, conversationId: string) => {
     // Conversa do modo design: abre o drawer do design, não o chat.
     if (conversationId.startsWith(DESIGN_PREFIX)) {
+      if (!getPreferences().designMode) return
       return drawers.openDesign({ nodeId, designId: conversationId.slice(DESIGN_PREFIX.length) })
     }
     const openIn = getPreferences().openIn
@@ -148,8 +151,10 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
         change((ns) => removeNode(ns, nodeId))
       },
       // Link de arquivo clicado numa conversa do canvas: abre o código daquela pasta.
-      openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) =>
-        drawers.openFile({ project }, project.path, path, lines, diff),
+      openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => {
+        const code = codeProject(project, path)
+        drawers.openFile({ project: code }, code.path, path, lines, diff)
+      },
       toggleProjectCode: (project: ProjectData, open: boolean) =>
         open ? drawers.closeCode() : drawers.openProjectCode(project)
     }),

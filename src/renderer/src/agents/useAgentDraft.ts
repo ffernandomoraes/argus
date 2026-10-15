@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AgentDef } from '../../../shared/agents'
-import { EMPTY_DRAFT, LAST_STEP, missing, sameDraft, toDraft, toggleTool, toSaveRequest, type Draft } from './agentDraft'
+import type { AgentDef, AgentProvider } from '../../../shared/agents'
+import { EMPTY_DRAFT, importedDraft, lastStep, missing, sameDraft, toDraft, toggleTool, toSaveRequest, type Draft } from './agentDraft'
 
-// A biblioteca de agentes e o agente aberto: o rascunho, como ele estava ao abrir (para saber se
-// há mudança), o passo em que está e até onde o agente novo já chegou.
-export function useAgentDraft() {
+// A biblioteca de agentes de um provedor e o agente aberto: o rascunho, como ele estava ao abrir
+// (para saber se há mudança), o passo em que está e até onde o agente novo já chegou.
+export function useAgentDraft(provider: AgentProvider) {
   const [agents, setAgents] = useState<AgentDef[]>([])
   const [loaded, setLoaded] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -22,15 +22,19 @@ export function useAgentDraft() {
   const lacking = draft ? missing(draft) : []
   const canSave = dirty && !lacking.length
 
+  const LAST_STEP = lastStep(provider)
+
   const reload = async () => {
-    const list = await window.api.agents.list()
+    const list = await window.api.agents.list(provider)
     setAgents(list)
     setLoaded(true)
   }
 
+  // Outro provedor: outra biblioteca (a tela só troca com nenhum agente aberto).
   useEffect(() => {
     let alive = true
-    window.api.agents.list().then(
+    setLoaded(false)
+    window.api.agents.list(provider).then(
       (list) => {
         if (!alive) return
         setAgents(list)
@@ -41,7 +45,7 @@ export function useAgentDraft() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [provider])
 
   // A trava de gravação sai quando a tela já mostra o agente salvo.
   useEffect(() => {
@@ -71,7 +75,7 @@ export function useAgentDraft() {
   const save = async () => {
     if (!draft || !canSave || saving.current) return
     saving.current = true
-    const r = await window.api.agents.save(toSaveRequest(draft)).catch((err: unknown) => ({ ok: false as const, error: String(err) }))
+    const r = await window.api.agents.save(provider, toSaveRequest(draft)).catch((err: unknown) => ({ ok: false as const, error: String(err) }))
     if (!r.ok) {
       saving.current = false
       return setError(r.error)
@@ -86,7 +90,7 @@ export function useAgentDraft() {
 
   const remove = async () => {
     if (!draft?.previousName) return
-    await window.api.agents.remove(draft.previousName)
+    await window.api.agents.remove(provider, draft.previousName)
     await reload()
     close()
   }
@@ -104,6 +108,8 @@ export function useAgentDraft() {
     canSave,
     select: (a: AgentDef) => open(toDraft(a)),
     create: () => open({ ...EMPTY_DRAFT }, null),
+    // Cópia de um agente de outro provedor, como agente novo: só passa a existir aqui ao salvar.
+    importFrom: (a: AgentDef) => open(importedDraft(a), null),
     go,
     close,
     save,

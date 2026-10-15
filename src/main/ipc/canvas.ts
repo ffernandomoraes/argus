@@ -10,6 +10,7 @@ export function registerCanvasIpc(hub: CanvasHub, agent: CanvasAgent): void {
   on('canvas:sync', (e, nodes) => hub.sync(nodes, e.sender))
   on('canvas:record', () => hub.record())
   on('canvas:undo', () => hub.undo())
+  on('canvas:forget', (_e, ids) => hub.forget(ids))
   on('canvas:redo', () => hub.redo())
   onSync('canvas:viewport', (e) => windowViewport(e.sender))
   on('canvas:setViewport', (e, viewport) => setWindowViewport(e.sender, viewport))

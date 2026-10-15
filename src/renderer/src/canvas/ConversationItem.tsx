@@ -39,7 +39,7 @@ export const ConversationItem = memo(function ConversationItem({
       }
     >
       <ConversationLabel conversation={c} poppedOut={poppedOut} />
-      <TimeAgo iso={c.updatedAt} className="pl-1" />
+      <TimeAgo iso={c.repliedAt} className="pl-1" />
     </li>
   )
 })

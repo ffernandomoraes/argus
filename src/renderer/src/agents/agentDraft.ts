@@ -1,4 +1,4 @@
-import type { AgentDef, AgentSaveRequest } from '../../../shared/agents'
+import type { AgentDef, AgentProvider, AgentSaveRequest } from '../../../shared/agents'
 import { tr } from '../i18n'
 
 // Ferramentas do Claude Code que dá para marcar uma a uma. Outras (MCPs, por exemplo) vão no
@@ -24,9 +24,11 @@ export const MODELS = [
   { value: 'haiku', label: 'Haiku' }
 ]
 
-// Criar um agente vai passo a passo; um agente salvo abre com os passos livres, como abas.
-export const STEPS = [tr('Instruções', 'Instructions'), tr('Ferramentas e modelo', 'Tools and model')]
-export const LAST_STEP = STEPS.length - 1
+// Criar um agente vai passo a passo; um agente salvo abre com os passos livres, como abas. Só o
+// Claude tem o passo de ferramentas e modelo: nos outros, o modelo (quando vale) fica nas instruções.
+const STEPS = [tr('Instruções', 'Instructions'), tr('Ferramentas e modelo', 'Tools and model')]
+export const stepsFor = (provider: AgentProvider): string[] => (provider === 'claude' ? STEPS : STEPS.slice(0, 1))
+export const lastStep = (provider: AgentProvider): number => stepsFor(provider).length - 1
 
 export type Draft = {
   name: string
@@ -56,6 +58,10 @@ export function toDraft(a: AgentDef): Draft {
     previousName: a.name
   }
 }
+
+// Agente de outro provedor como ponto de partida de um novo: nome, quando usar e instruções.
+// Ferramentas e modelo ficam no padrão: os nomes não valem de um agente para outro.
+export const importedDraft = (a: AgentDef): Draft => ({ ...EMPTY_DRAFT, name: a.name, description: a.description, prompt: a.prompt })
 
 function toolList(d: Draft): string[] | undefined {
   if (d.allTools) return undefined

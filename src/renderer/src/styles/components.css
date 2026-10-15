@@ -24,6 +24,19 @@
   display: none;
 }
 
+/* Alças das linhas até as tarefas isoladas (ProjectNode): só marcam de onde a linha sai e onde
+   entra; não aparecem nem pegam clique. */
+.react-flow__handle.worktree-handle {
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Espaço segurado: os blocos deixam de receber o mouse e o arraste vai para a câmera.
    !important porque o React Flow define pointer-events inline em cada nó. */
 .react-flow.camera-mode .react-flow__node {

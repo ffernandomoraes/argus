@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
-import type { AgentDef } from '../../../../shared/agents'
+import type { AgentDef, AgentProvider } from '../../../../shared/agents'
 
 const NONE: AgentDef[] = []
 
-// Agentes para o @: globais e os da pasta. Relidos a cada conversa aberta (refreshKey), para pegar
-// os criados na biblioteca.
-export function useAgentList(cwd: string, refreshKey: string): AgentDef[] {
+// Agentes para o @: os do agente que roda a conversa, globais e os da pasta. Relidos a cada conversa
+// aberta (refreshKey) e ao trocar de agente, para pegar os criados na biblioteca.
+export function useAgentList(cwd: string, refreshKey: string, provider: AgentProvider): AgentDef[] {
   const [agents, setAgents] = useState<AgentDef[]>(NONE)
   useEffect(() => {
     let alive = true
-    window.api.agents.list(cwd).then(
+    window.api.agents.list(provider, cwd).then(
       (list) => {
         if (alive) setAgents(list)
       },
@@ -19,6 +19,6 @@ export function useAgentList(cwd: string, refreshKey: string): AgentDef[] {
     return () => {
       alive = false
     }
-  }, [cwd, refreshKey])
+  }, [cwd, refreshKey, provider])
   return agents
 }

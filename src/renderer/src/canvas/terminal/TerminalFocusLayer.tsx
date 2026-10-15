@@ -1,12 +1,12 @@
 import type { ReactNode, Ref } from 'react'
 import { createPortal } from 'react-dom'
-import { TITLE_BAR_HEIGHT } from '../../conversation/FloatingPanel'
+import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../../conversation/FloatingPanel'
 import { drawerZoomKey } from '../../conversation/useDrawerZoom'
 import { IS_MAC } from '../../platform'
 
 const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
 
-// Modo foco: o terminal cobre a área toda abaixo da barra de título, como a conversa no drawer.
+// Modo foco: o terminal cobre a área toda entre a barra de título e a de baixo, como a conversa no drawer.
 // O bloco não sai do lugar no canvas; enquanto isso, o terminal mora só nesta camada. Trocar de
 // lugar recria a tela do xterm, mas o processo é o mesmo e devolve o que já tinha escrito.
 export function TerminalFocusLayer({ panelRef, children }: { panelRef: Ref<HTMLDivElement>; children: ReactNode }) {
@@ -22,8 +22,8 @@ export function TerminalFocusLayer({ panelRef, children }: { panelRef: Ref<HTMLD
       onContextMenu={stop}
       onPointerDown={stop}
       onMouseDown={stop}
-      className="fixed inset-x-0 bottom-0 z-40 flex flex-col bg-surface"
-      style={{ top: TITLE_BAR_HEIGHT }}
+      className="fixed inset-x-0 z-40 flex flex-col bg-surface"
+      style={{ top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT }}
     >
       {children}
     </div>,

@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { agentProviderOf } from '../../../shared/agents'
 import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext } from '../auth/useAuth'
 import { useViewing } from '../canvas/sessionsStore'
@@ -7,9 +8,11 @@ import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
 import { ReportContext } from '../report/reportStore'
 import { ChatView } from './ChatView'
+import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
 import { fileInFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
+import { isAbsolutePath } from '../platform'
 import { ConversationHeader } from './header/ConversationHeader'
 import { useAgentList } from './hooks/useAgentList'
 import { useConversationActions } from './hooks/useConversationActions'
@@ -28,8 +31,10 @@ export { KIND_COLOR, KIND_LABEL } from './header/changeKinds'
 type Props = {
   // Pasta onde o Claude roda.
   cwd: string
-  // Conta do Claude do grupo da pasta; vazia = a padrão. Só vale ao abrir a sessão: a conversa já
-  // aberta segue na conta com que abriu.
+  // Workspace: as pastas dele; o cwd é a pasta do workspace nos dados do Argus (ver ProjectData.folders).
+  folders?: string[]
+  // Conta do Claude do grupo da pasta; vazia = a padrão. Vale para a conversa nova sem conta
+  // escolhida e para as antigas sem conta guardada (ver conversationAccount.ts).
   account?: string
   // Nome da pasta, mostrado no cabeçalho.
   project?: ReactNode
@@ -62,6 +67,7 @@ type Props = {
 // Memorizado: arrastar o canvas ou o painel não redesenha a conversa.
 export const ConversationView = memo(function ConversationView({
   cwd,
+  folders,
   account: groupAccount,
   project,
   conversation,
@@ -82,23 +88,29 @@ export const ConversationView = memo(function ConversationView({
   const live = useLiveChat(viewKey)
   // Na tela: a resposta que chegar aqui já foi vista (a bolinha da lista não fica verde).
   useViewing(conversation.sessionId ?? live?.sessionId ?? conversation.id)
-  const agents = useAgentList(cwd, viewKey)
   const history = useConversationHistory(cwd, conversation.sessionId, conversation.updatedAt, live?.revision)
   const localEvents = useLocalEvents(conversation.sessionId)
   const messages = useMemo(() => mergeEvents(history.messages, localEvents), [history.messages, localEvents])
   // Com o chat ligado aqui, o status dele manda: o registro do Claude Code demora a dizer
   // que parou, e isso deixava a conversa como "trabalhando" depois de você mandar parar.
   const status = live ? live.status : conversation.status
-  const account = conversationAccount(conversation, groupAccount, live?.agent)
-  // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
-  const settings = useConversationSettings(conversation.sessionId ?? conversation.id)
-  const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, account, settings, agents })
+  // Conversa nova ainda sem sessão guarda as trocas (e a conta) pelo id provisório.
+  const settingsId = conversation.sessionId ?? conversation.id
+  const chosen = useConversationAccountChoice(settingsId)
+  const account = conversationAccount(conversation, chosen ?? groupAccount, live?.agent)
+  const agents = useAgentList(cwd, viewKey, agentProviderOf(account))
+  // A conta só troca com a conversa vazia: nada enviado e nenhuma sessão aberta.
+  const canChangeAccount = !!conversation.draft && !live && !messages.length
+  const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
+  const settings = useConversationSettings(settingsId)
+  const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
 
   // Conversa nova recebeu o id da sessão: as trocas feitas antes vão junto, e quem mostra fica sabendo.
   const sessionId = live?.sessionId
   const started = useEffectEvent((sid: string) => {
     if (!conversation.draft) return
     moveConversationSettings(conversation.id, sid)
+    moveConversationAccount(conversation.id, sid)
     onSessionStarted?.(sid)
   })
   useEffect(() => {
@@ -107,10 +119,17 @@ export const ConversationView = memo(function ConversationView({
 
   // O valor do contexto é fixo: com uma função nova a cada desenho, todo link de toda mensagem
   // redesenhava (o drawer mandava uma nova a cada arraste no canvas).
-  const openFile = useStableCallback((path: string, lines?: LineRange) => onOpenFile?.(path, lines))
+  // No workspace o arquivo é procurado em cada pasta dele: a da conversa só tem o aviso para os agentes.
+  const roots = folders ?? [cwd]
+  const openFile = useStableCallback((path: string, lines?: LineRange) => {
+    void locate(roots, path).then((found) => onOpenFile?.(found, lines))
+  })
   const revealFile = useStableCallback((path: string) => {
-    const rel = fileInFolder(cwd, path)
-    if (rel) window.api.files.reveal(cwd, rel)
+    void locate(roots, path).then((found) => {
+      const root = roots.find((r) => fileInFolder(r, found) !== null && isAbsolutePath(found))
+      const rel = root ? fileInFolder(root, found) : fileInFolder(cwd, found)
+      if (rel) window.api.files.reveal(root ?? cwd, rel)
+    })
   })
   // O "Investigar" de um erro do chat leva a pasta, a conta e a conversa.
   const reportSessionId = conversation.sessionId ?? sessionId
@@ -125,7 +144,10 @@ export const ConversationView = memo(function ConversationView({
       <ConversationHeader
         title={conversation.title}
         cwd={cwd}
+        folders={folders}
         project={project}
+        account={account}
+        onAccountChange={canChangeAccount ? chooseAccount : undefined}
         minimal={minimalHeader}
         actions={actions}
         onOpenDiff={onOpenDiff}
@@ -176,4 +198,15 @@ function conversationAccount(conversation: ConversationSummary, group?: string, 
   if (conversation.agent ?? running) return conversation.agent ?? running
   const started = !conversation.draft && !!conversation.sessionId
   return started && parseAgentRef(group) ? undefined : group
+}
+
+// Caminho relativo do link: o Claude às vezes corta o começo ("conversation/X.tsx" dentro de
+// src/renderer/src). O principal acha o arquivo; sem achar, segue o original e o erro aparece.
+async function locate(roots: string[], path: string): Promise<string> {
+  if (isAbsolutePath(path) || path.startsWith('~')) return path
+  for (const root of roots) {
+    const found = await window.api.files.locate(root, path).catch(() => null)
+    if (found) return found
+  }
+  return path
 }

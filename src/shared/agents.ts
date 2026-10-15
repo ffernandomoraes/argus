@@ -1,12 +1,29 @@
-// Agente do Claude Code: um arquivo .md com cabeçalho (name, description, tools, model) e as
-// instruções no corpo. Globais em ~/.claude/agents; de um projeto, em <pasta>/.claude/agents.
+import { parseAgentRef, PROVIDER_NAMES, PROVIDERS, type ProviderId } from './providers'
+
+// Cada agente (Claude, Codex, Gemini, Cursor) tem a biblioteca dele: cada um tem pontos fortes
+// próprios, e o @ de uma conversa lista só os do agente que roda nela.
+export type AgentProvider = 'claude' | ProviderId
+
+export const AGENT_PROVIDERS: AgentProvider[] = ['claude', ...PROVIDERS]
+
+export const agentProviderName = (p: AgentProvider): string => (p === 'claude' ? 'Claude' : PROVIDER_NAMES[p])
+
+// Provedor de uma conversa pela conta dela ("codex:main"); a conta do Claude não tem prefixo.
+export const agentProviderOf = (account?: string): AgentProvider => parseAgentRef(account)?.provider ?? 'claude'
+
+export const isAgentProvider = (v: unknown): v is AgentProvider => typeof v === 'string' && (AGENT_PROVIDERS as string[]).includes(v)
+
+// Um agente da biblioteca. No Claude, no Gemini e no Cursor, um .md com cabeçalho (name,
+// description, tools, model) e as instruções no corpo; no Codex, um .toml (name, description,
+// developer_instructions, model). Pastas de cada um em main/agents/folder.ts.
 export type AgentDef = {
   name: string
   // Quando usar: o Claude lê para decidir sozinho se delega para este agente.
   description: string
   // Instruções do agente (o prompt de sistema dele).
   prompt: string
-  // Vazio: todas as ferramentas da conversa, MCPs incluídos.
+  // Vazio: todas as ferramentas da conversa, MCPs incluídos. Só o Claude escolhe: os nomes das
+  // ferramentas mudam de um agente para outro.
   tools?: string[]
   // Vazio: o mesmo modelo da conversa.
   model?: string

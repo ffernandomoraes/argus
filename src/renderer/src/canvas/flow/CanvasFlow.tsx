@@ -8,6 +8,8 @@ import { EdgeFade } from '../EdgeFade'
 import { NavBar } from '../NavBar'
 import type { CanvasNode } from '../types'
 import { ViewBar } from '../ViewBar'
+import { worktreeEdges } from '../worktrees/edges'
+import { edgeTypes } from '../worktrees/WorktreeEdge'
 import { displayNodes } from './displayNodes'
 import { FIT_VIEW_OPTIONS, keepPointerEvents, nodeTypes, PAN_ON_DRAG, PRO_OPTIONS, saveViewport } from './flowConfig'
 import { useNodeMotion } from './useNodeMotion'
@@ -39,6 +41,8 @@ type Props = {
 function CanvasFlowView(props: Props) {
   const { nodes, nodesRef, setNodes, trackGesture, spaceHeld, uiHidden, arranging, savedViewport } = props
   const flowNodes = useMemo(() => displayNodes(nodes), [nodes])
+  // Linhas das tarefas isoladas (a mesma lista enquanto nenhuma entra, sai ou muda de pasta).
+  const edges = worktreeEdges(nodes)
   const motion = useNodeMotion(flowNodes)
   const { onNodesChange, guides } = useNodesChange({ nodesRef, setNodes, trackGesture, leaving: motion.leaving })
   const className = [
@@ -53,6 +57,9 @@ function CanvasFlowView(props: Props) {
   return (
     <ReactFlow
       nodes={motion.shown}
+      edges={edges}
+      edgeTypes={edgeTypes}
+      nodesConnectable={false}
       onNodeClick={keepPointerEvents}
       zoomOnDoubleClick={false}
       onNodesChange={onNodesChange}

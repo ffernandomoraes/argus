@@ -1,12 +1,13 @@
 import { access } from 'node:fs/promises'
 import { join } from 'node:path'
-import { shell } from 'electron'
 import { tr } from '../i18n'
 import { liveSessions } from '../liveSessions'
 import { isSessionId, projectDir } from '../transcripts/projectDir'
+import { trashPath } from '../wsl'
 
 // Conversa vai para a Lixeira do sistema: o .jsonl e, se houver, a pasta com o mesmo id (os
-// subagentes dela). Some também do `claude --resume`; volta restaurando pela Lixeira.
+// subagentes dela). Some também do `claude --resume`; volta restaurando pela Lixeira. Projeto do
+// WSL: a Lixeira do Linux (ver wsl/trash.ts).
 // Recusa conversa aberta em algum Claude Code: ele regravaria o arquivo na hora.
 export async function trashSession(projectPath: string, id: string): Promise<string | null> {
   if (!isSessionId(id)) return tr('Conversa inválida.', 'Invalid chat.')
@@ -18,9 +19,9 @@ export async function trashSession(projectPath: string, id: string): Promise<str
     )
   const base = join(projectDir(projectPath), id)
   try {
-    await shell.trashItem(`${base}.jsonl`)
+    await trashPath(`${base}.jsonl`)
     await access(base).then(
-      () => shell.trashItem(base),
+      () => trashPath(base),
       () => undefined
     )
     return null

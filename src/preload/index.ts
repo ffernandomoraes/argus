@@ -35,6 +35,8 @@ const api: Api = {
     onChange: (cb) => listen('language:changed', cb)
   },
   pickFolder: (distro) => invoke('dialog:pickFolder', distro),
+  pickFolders: (distro) => invoke('dialog:pickFolders', distro),
+  syncWorkspace: (folders, dir) => invoke('workspace:sync', folders, dir),
   wsl: {
     distros: () => invoke('wsl:distros'),
     diagnostics: () => invoke('wsl:diagnostics')
@@ -119,7 +121,9 @@ const api: Api = {
     interrupt: (key) => send('chat:interrupt', key),
     retain: (key) => send('chat:retain', key),
     mcpStatus: (key, cwd, account) => invoke('mcp:status', key, cwd, account),
+    mcpReconnect: (key, name) => invoke('mcp:reconnect', key, name),
     release: (key) => send('chat:release', key),
+    restartIn: (cwd) => send('chat:restartIn', cwd),
     configure: (key, patch) => send('chat:configure', key, patch),
     onState: (cb) => listen('chat:state', cb),
     onOpen: (cb) => listen('chat:open', cb),
@@ -128,9 +132,9 @@ const api: Api = {
     setUnread: (chats) => send('chat:unread', chats)
   },
   agents: {
-    list: (projectPath) => invoke('agents:list', projectPath),
-    save: (req) => invoke('agents:save', req),
-    remove: (name) => invoke('agents:remove', name)
+    list: (provider, projectPath) => invoke('agents:list', provider, projectPath),
+    save: (provider, req) => invoke('agents:save', provider, req),
+    remove: (provider, name) => invoke('agents:remove', provider, name)
   },
   memory: {
     list: (projects) => invoke('memory:list', projects),
@@ -143,6 +147,7 @@ const api: Api = {
     onRemote: (cb) => listen('canvas:remote', cb),
     record: () => send('canvas:record'),
     undo: () => send('canvas:undo'),
+    forget: (ids) => send('canvas:forget', ids),
     redo: () => send('canvas:redo'),
     viewport: () => sendSync('canvas:viewport'),
     setViewport: (viewport) => send('canvas:setViewport', viewport),
@@ -185,6 +190,11 @@ const api: Api = {
     watch: (paths) => send('sessions:watch', paths),
     onChanged: (cb) => listen('sessions:changed', cb)
   },
+  worktrees: {
+    reserve: (folder) => invoke('worktrees:reserve', folder),
+    status: (path) => invoke('worktrees:status', path),
+    remove: (path) => invoke('worktrees:remove', path)
+  },
   devServers: {
     list: (paths) => invoke('devServers:list', paths),
     kill: (pgid, paths) => invoke('devServers:kill', pgid, paths)
@@ -197,6 +207,7 @@ const api: Api = {
   files: {
     list: (root, rel) => invoke('files:list', root, rel),
     read: (root, rel) => invoke('files:read', root, rel),
+    locate: (root, rel) => invoke('files:locate', root, rel),
     image: (path) => invoke('files:image', path),
     diff: (root, rel) => invoke('files:diff', root, rel),
     write: (root, rel, text, base) => invoke('files:write', root, rel, text, base),
@@ -206,6 +217,7 @@ const api: Api = {
     copy: (root, rels) => invoke('files:copy', root, rels),
     paste: (root, dir) => invoke('files:paste', root, dir),
     reveal: (root, rel) => send('files:reveal', root, rel),
+    openFolder: (path) => send('files:openFolder', path),
     view: (root, rel) => send('files:view', root, rel),
     openInBrowser: (root, rel) => send('files:openInBrowser', root, rel),
     watch: (root, rel) => send('files:watch', root, rel),

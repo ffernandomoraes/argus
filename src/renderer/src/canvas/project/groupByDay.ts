@@ -11,7 +11,7 @@ export function groupByDay(conversations: ConversationSummary[], now: number): D
   const today = new Date(now)
   const groups: DayGroup[] = []
   for (const c of conversations) {
-    const d = new Date(c.updatedAt)
+    const d = new Date(c.repliedAt)
     const key = dayKey(d)
     let group = groups[groups.length - 1]
     if (group?.key !== key) {

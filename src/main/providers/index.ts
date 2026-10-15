@@ -16,6 +16,7 @@ import {
   type ProviderLogin,
   type ProvidersState
 } from '../../shared/providers'
+import { unlinkAgentsDir } from '../agents/accountLinks'
 import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { findCommand, lookupShellPath } from './bins'
@@ -357,6 +358,7 @@ export class Providers {
 function removeDir(provider: ProviderId, id: string): void {
   const dir = providerAccountDir(provider, id)
   if (!dir || !ID.test(id)) return
+  unlinkAgentsDir(provider, dir)
   try {
     rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 })
   } catch (err) {

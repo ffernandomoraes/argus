@@ -23,8 +23,10 @@ export type ConversationSummary = {
   // design: uma conversa do modo design (o drawer de design, não o chat).
   kind: 'conversa' | 'agente' | 'design'
   status: SessionStatus
-  // Última mensagem, em ISO. Ordena a lista e mostra "há 2h".
+  // Última gravação, em ISO: avisa a conversa aberta para reler o histórico.
   updatedAt: string
+  // Última resposta do agente, em ISO. Ordena a lista e mostra "há 2h".
+  repliedAt: string
   // Quanto da janela de contexto a conversa já ocupa, de 0 a 100.
   contextPercent: number
   // Sessão do Claude Code; com ela o terminal retoma a conversa (`claude --resume`).
@@ -44,8 +46,24 @@ export type ProjectData = {
   name: string
   path: string
   color: string
-  // Recolhida: embaixo da pasta ficam só as conversas rodando ou esperando você.
+  // Workspace: as pastas dele (como displayPath), todas iguais. `path` é a pasta do workspace nos
+  // dados do Argus (src/main/workspaces.ts): as conversas abrem nela e enxergam estas como pastas
+  // adicionais. Sem ela, pasta comum.
+  folders?: string[]
+  // Recolhida: embaixo da pasta ficam só as conversas rodando ou esperando você; as tarefas em
+  // paralelo dela e, no espaço de trabalho, a lista das pastas somem.
   collapsed?: boolean
+  // Tarefa isolada (git worktree): card filho da pasta `of`, abaixo dela e ligado por uma linha.
+  // Anda e recolhe junto com ela. `path` é a pasta da cópia (~/.argus/worktrees/<repo>/<tarefa>).
+  worktree?: WorktreeLink
+}
+
+export type WorktreeLink = {
+  // Id do card da pasta de onde a tarefa saiu.
+  of: string
+  // Branch em que a pasta estava ao pedir a tarefa: é dela que a tarefa sai. A branch da própria
+  // tarefa é lida do git (o agente renomeia a provisória).
+  base: string
 }
 
 // Terminal solto no canvas: o `claude` ou o shell do sistema, numa pasta.
@@ -58,6 +76,8 @@ type TerminalData = {
   kind?: TerminalKind
   // Conversa que ele retoma; vazio = conversa nova.
   sessionId?: string
+  // Aberto num workspace: as pastas dele (ver ProjectData.folders).
+  folders?: string[]
   // Agente e conta escolhidos no "Novo terminal" ("codex:main", ou uma conta do Claude). Sem ela,
   // vale a do grupo.
   account?: string
@@ -80,6 +100,8 @@ type ChatPanelData = {
   path: string
   // Nome da pasta, para o cabeçalho; sem ele, é conversa sem projeto.
   projectName?: string
+  // Conversa de workspace: as pastas dele (ver ProjectData.folders).
+  folders?: string[]
   sessionId: string
 }
 

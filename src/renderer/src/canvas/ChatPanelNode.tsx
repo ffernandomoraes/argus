@@ -29,8 +29,11 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
 
   // Tudo fixo enquanto a pasta não muda: o ConversationView é memorizado, e arrastar o bloco não
   // pode redesenhar a conversa.
-  const { projectName, path } = data
-  const project = useMemo(() => ({ name: projectName ?? tr('Sem projeto', 'No project'), path, color: '#71717a' }), [projectName, path])
+  const { projectName, path, folders } = data
+  const project = useMemo(
+    () => ({ name: projectName ?? tr('Sem projeto', 'No project'), path, color: '#71717a', ...(folders && { folders }) }),
+    [projectName, path, folders]
+  )
   const onOpenFile = useCallback(
     (file: string, lines?: LineRange) => openFileFrom(project, file, lines),
     [openFileFrom, project]
@@ -57,6 +60,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
     <BlockFrame selected={selected} minHeight={320} className="nowheel relative bg-bg" style={style}>
       <ConversationView
         cwd={data.path}
+        folders={folders}
         account={account}
         project={data.projectName}
         conversation={conversation}

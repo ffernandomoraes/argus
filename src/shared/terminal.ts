@@ -2,6 +2,8 @@ export type TerminalOpenRequest = {
   // Uma sessão por conversa: reabrir a mesma conversa reconecta no mesmo processo.
   key: string
   cwd: string
+  // Workspace: as pastas dele (`claude --add-dir`); o cwd é a pasta do workspace.
+  folders?: string[]
   // Shell do sistema (zsh) em vez do `claude`; os campos do Claude abaixo não valem.
   shell?: boolean
   // Conta do Claude do grupo onde o terminal está; vazia = a padrão. Vale também para o

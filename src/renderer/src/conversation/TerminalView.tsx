@@ -11,6 +11,7 @@ import { InvestigateButton } from '../report/InvestigateButton'
 export function TerminalView({
   sessionKey,
   cwd,
+  folders,
   account,
   shell,
   sessionId,
@@ -19,6 +20,8 @@ export function TerminalView({
 }: {
   sessionKey: string
   cwd: string
+  // Workspace: as outras pastas dele (`claude --add-dir`). Só entra ao abrir.
+  folders?: string[]
   // Conta do Claude do grupo; vazia = a padrão. Como modelo e esforço, só entra ao abrir.
   account?: string
   shell?: boolean
@@ -30,7 +33,7 @@ export function TerminalView({
   autoFocus?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const { error, exitCode, reopen } = useXterm(ref, { sessionKey, cwd, shell, account, sessionId, fontScale, autoFocus })
+  const { error, exitCode, reopen } = useXterm(ref, { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus })
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" style={{ background: TERMINAL_THEME.background }}>

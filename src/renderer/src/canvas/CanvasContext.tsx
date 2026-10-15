@@ -28,6 +28,10 @@ export type CanvasActions = {
   finishRename: (id: string, value: string | null) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
+  // Várias pastas num card só (ver ProjectData.folders).
+  addWorkspace: (position: XYPosition, groupId?: string) => void
+  addWorkspaceFolder: (id: string) => void
+  removeWorkspaceFolder: (id: string, folder: string) => void
   // Nota nova já abre para escrever.
   addNote: (position: XYPosition, groupId?: string) => void
   // Fim da edição da nota (NoteNode): guarda o texto e sai da edição.
@@ -58,7 +62,7 @@ export type CanvasActions = {
   // Servidores locais que o Claude Code deixou rodando.
   openDevServers: () => void
   // Terminal no canvas; sem pasta (folder vazio), abre na do usuário.
-  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string) => void
+  addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string, folders?: string[], name?: string) => void
   // Guarda no nó a conversa que o terminal criou, para ele retomá-la depois.
   bindTerminalSession: (nodeId: string, sessionId: string) => void
   closeTerminal: (nodeId: string, name: string) => void
@@ -71,6 +75,8 @@ export type CanvasActions = {
   openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => void
   // Botão de código do card da pasta: abre o código dela; `open` (já aberto com ela) fecha.
   toggleProjectCode: (project: ProjectData, open: boolean) => void
+  // Tarefa isolada (git worktree): remover a pasta (a branch fica).
+  removeWorktree: (nodeId: string) => void
 }
 
 export const CanvasContext = createContext<CanvasActions | null>(null)

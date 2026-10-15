@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { DesignDevice } from '../../../shared/design'
-import { PANEL_MARGIN, PANEL_TOP } from '../conversation/FloatingPanel'
+import { PANEL_BOTTOM, PANEL_MARGIN, PANEL_TOP } from '../conversation/FloatingPanel'
 import { useEscape } from '../useEscape'
 import { rememberRoute, routesKey } from './address/knownRoutes'
 import { DesignHeader } from './DesignHeader'
@@ -54,7 +54,7 @@ export function DesignDrawer({
         left: PANEL_MARGIN,
         right: PANEL_MARGIN,
         top: PANEL_TOP,
-        bottom: PANEL_MARGIN,
+        bottom: PANEL_BOTTOM,
         ...(tint && { background: `color-mix(in srgb, ${tint} 3%, var(--color-bg))` })
       }}
     >

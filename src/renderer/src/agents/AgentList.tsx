@@ -1,19 +1,35 @@
 import { Bot, Plus } from 'lucide-react'
-import type { AgentDef } from '../../../shared/agents'
+import { agentProviderName, type AgentDef, type AgentProvider } from '../../../shared/agents'
 import { Button } from '../ui/Button'
 import { tr } from '../i18n'
 
 // Agentes da biblioteca em cartões; sem nenhum, o que é um agente e o botão de criar.
-export function AgentList({ agents, onSelect, onCreate }: { agents: AgentDef[]; onSelect: (a: AgentDef) => void; onCreate: () => void }) {
+export function AgentList({
+  provider,
+  agents,
+  onSelect,
+  onCreate
+}: {
+  provider: AgentProvider
+  agents: AgentDef[]
+  onSelect: (a: AgentDef) => void
+  onCreate: () => void
+}) {
   if (!agents.length) {
+    const name = agentProviderName(provider)
     return (
       <div className="m-auto max-w-sm text-center">
         <p className="text-sm text-text">{tr('Nenhum agente ainda', 'No agents yet')}</p>
         <p className="mt-1 text-xs leading-relaxed text-faint">
-          {tr(
-            'Um agente é um especialista que você chama em qualquer conversa com @nome, ou que o Claude chama sozinho quando o pedido combina com a descrição dele. Vale em todos os projetos.',
-            'An agent is a specialist you call in any chat with @name, or that Claude calls on its own when the request matches its description. It works in every project.'
-          )}
+          {provider === 'cursor'
+            ? tr(
+                'Um agente é um especialista que você chama com @nome nas conversas com o Cursor: as instruções dele vão junto da mensagem. Vale em todos os projetos.',
+                'An agent is a specialist you call with @name in chats with Cursor: its instructions go along with your message. It works in every project.'
+              )
+            : tr(
+                `Um agente é um especialista que você chama com @nome nas conversas com o ${name}, ou que o ${name} chama sozinho quando o pedido combina com a descrição dele. Vale em todos os projetos.`,
+                `An agent is a specialist you call with @name in chats with ${name}, or that ${name} calls on its own when the request matches its description. It works in every project.`
+              )}
         </p>
         <Button size="lg" variant="primary" onClick={onCreate} className="mx-auto mt-4">
           <Plus size={12} />

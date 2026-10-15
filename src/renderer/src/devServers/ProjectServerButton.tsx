@@ -11,8 +11,9 @@ import { tr } from '../i18n'
 
 const appNameOf = (app?: { name?: string }) => (app?.name ? `${app.name} - ` : '')
 
-// Itens do menu do servidor rodando: abrir cada porta no navegador e encerrar.
-function menuItems(server: ProjectServer, stop: () => void): MenuItem[] {
+// Itens do menu do servidor rodando: abrir cada porta no navegador e encerrar. Também no botão
+// direito de cada pasta do workspace (WorkspaceFolders).
+export function serverMenuItems(server: ProjectServer, stop: () => void): MenuItem[] {
   const stopItem: MenuItem = server.locked
     ? { type: 'action', label: tr('Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão', 'Opened by a Claude Code session: stopping it would end the session'), icon: Lock, disabled: true, onSelect: () => {} }
     : { type: 'action', label: tr('Encerrar servidor', 'Stop server'), icon: Power, danger: true, onSelect: stop }
@@ -106,7 +107,7 @@ export function ProjectServerButton({ path }: { path: string }) {
       {menu.open &&
         pos &&
         createPortal(
-          <ContextMenu menu={{ ...pos, items: menuItems(server, () => void act('stopping')) }} onClose={menu.close} />,
+          <ContextMenu menu={{ ...pos, items: serverMenuItems(server, () => void act('stopping')) }} onClose={menu.close} />,
           document.body
         )}
     </>

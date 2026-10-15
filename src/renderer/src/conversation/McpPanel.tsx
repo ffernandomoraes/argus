@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AlertTriangle, Check, Loader2, Lock, Power, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Check, Loader2, Lock, Power, RefreshCw, RotateCw } from 'lucide-react'
 import type { McpServer, McpStatus } from '../../../shared/mcp'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
@@ -23,9 +23,13 @@ const HINT: Partial<Record<McpServer['status'], string>> = {
   failed: tr('O Claude não conseguiu conectar. Veja o erro de cada um abaixo.', 'Claude couldn’t connect. See each error below.')
 }
 
-function ServerRow({ server }: { server: McpServer }) {
+// Enquanto algum servidor conecta (ou reconecta), o painel pergunta de novo neste intervalo.
+const POLL_MS = 1000
+
+// onReconnect: só com a sessão da conversa aberta (sem ela, não há conexão para refazer).
+function ServerRow({ server, reconnecting, onReconnect }: { server: McpServer; reconnecting: boolean; onReconnect?: () => void }) {
   return (
-    <li className="rounded-md px-2 py-1.5 hover:bg-surface-2">
+    <li className="group rounded-md px-2 py-1.5 hover:bg-surface-2">
       <div className="flex items-center gap-2">
         <span className="truncate text-xs text-text">{server.name}</span>
         {server.tools > 0 && (
@@ -34,6 +38,19 @@ function ServerRow({ server }: { server: McpServer }) {
           </span>
         )}
         {server.scope && <span className="ml-auto shrink-0 text-[11px] text-faint">{server.scope}</span>}
+        {onReconnect && server.status !== 'disabled' && (
+          <button
+            onClick={onReconnect}
+            disabled={reconnecting}
+            // Com erro ou sem autorização, à vista; nos outros, ao passar o mouse.
+            className={`${server.scope ? '' : 'ml-auto '}flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted hover:bg-fill hover:text-text disabled:opacity-100 ${
+              reconnecting || server.status === 'failed' || server.status === 'needs-auth' ? '' : 'opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            {reconnecting ? <Loader2 size={11} className="animate-spin" /> : <RotateCw size={11} />}
+            {reconnecting ? tr('Reconectando…', 'Reconnecting…') : tr('Reconectar', 'Reconnect')}
+          </button>
+        )}
       </div>
       {server.error && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-muted">{server.error}</p>}
     </li>
@@ -55,6 +72,9 @@ export function McpPanel({
 }) {
   const [status, setStatus] = useState<McpStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  // Servidores reconectando agora (pelo botão de cada um).
+  const [reconnecting, setReconnecting] = useState<ReadonlySet<string>>(new Set())
+  const [reconnectError, setReconnectError] = useState<string | null>(null)
 
   // Pergunta aos servidores; a resposta (ou o erro dela) troca a lista e tira o "carregando".
   const fetchStatus = useCallback(
@@ -87,6 +107,33 @@ export function McpPanel({
   }
 
   const servers = status?.ok ? status.servers : []
+  const live = status?.ok === true && status.live
+
+  // Com a sessão aberta, a lista vem na hora; enquanto alguém conecta, pergunta de novo sozinho.
+  const connecting = live && (reconnecting.size > 0 || servers.some((x) => x.status === 'pending'))
+  useEffect(() => {
+    if (!connecting) return
+    const timer = setTimeout(() => void fetchStatus().then(setStatus), POLL_MS)
+    return () => clearTimeout(timer)
+  }, [connecting, status, fetchStatus])
+
+  const reconnect = (name: string) => {
+    setReconnectError(null)
+    setReconnecting((r) => new Set(r).add(name))
+    void window.api.chat
+      .mcpReconnect(conversationKey, name)
+      .then(
+        (s) => (s.ok ? setStatus(s) : setReconnectError(s.error)),
+        (err: unknown) => setReconnectError(err instanceof Error ? err.message : String(err))
+      )
+      .finally(() =>
+        setReconnecting((r) => {
+          const next = new Set(r)
+          next.delete(name)
+          return next
+        })
+      )
+  }
 
   return (
     <Modal
@@ -114,6 +161,15 @@ export function McpPanel({
           </p>
         )}
         {status && !status.ok && <p className="px-2 py-4 text-xs text-red-400">{status.error}</p>}
+        {reconnectError && <p className="px-2 pb-3 text-xs text-red-400">{reconnectError}</p>}
+        {status?.ok && !live && servers.length > 0 && (
+          <p className="mb-3 px-2 text-[12px] leading-snug text-faint">
+            {tr(
+              'Esta conversa ainda não abriu o agente: a lista mostra como os servidores ficam ao abrir. Para reconectar um, mande uma mensagem antes.',
+              'This chat hasn’t started the agent yet: the list shows how the servers look when it starts. To reconnect one, send a message first.'
+            )}
+          </p>
+        )}
         {status?.ok && servers.length === 0 && !loading && (
           <p className="px-2 py-4 text-xs text-faint">{tr('Nenhum servidor MCP configurado para esta pasta.', 'No MCP servers configured for this folder.')}</p>
         )}
@@ -130,7 +186,12 @@ export function McpPanel({
               {HINT[s] && <p className="mb-1 px-2 text-[12px] leading-snug text-faint">{HINT[s]}</p>}
               <ul className="flex flex-col">
                 {list.map((server) => (
-                  <ServerRow key={server.name} server={server} />
+                  <ServerRow
+                    key={server.name}
+                    server={server}
+                    reconnecting={reconnecting.has(server.name)}
+                    onReconnect={live ? () => reconnect(server.name) : undefined}
+                  />
                 ))}
               </ul>
             </section>

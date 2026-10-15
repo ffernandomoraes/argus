@@ -1,5 +1,5 @@
 import type { XYPosition } from '@xyflow/react'
-import type { AreaNode, ChatNode, ChatPanelNode, NoteNode, ProjectData, ProjectNode, TerminalKind, TerminalNode } from './types'
+import type { AreaNode, ChatNode, ChatPanelNode, NoteNode, ProjectData, ProjectNode, TerminalKind, TerminalNode, WorktreeLink } from './types'
 import { baseName, tildify } from '../platform'
 import { tr } from '../i18n'
 
@@ -33,6 +33,8 @@ export function createGroup(position: XYPosition): AreaNode {
 // Instância = uma pasta de projeto. Largura fixa; a altura acompanha as conversas.
 export const INSTANCE_WIDTH = 400
 export const INSTANCE_MIN_HEIGHT = 130
+// Tarefa isolada (worktree): menor que a pasta de onde saiu, para a hierarquia ficar à vista.
+export const WORKTREE_WIDTH = 340
 
 // O que a pasta desenha fora da própria caixa: os botões flutuantes, acima (24px de botão
 // + 6px de respiro). O grupo precisa contar com isso ao crescer ou se ajustar, senão corta
@@ -50,14 +52,22 @@ export function displayPath(path: string): string {
 // Tamanho que dá para trabalhar sem ocupar o canvas inteiro.
 export const TERMINAL_SIZE = { width: 620, height: 380 }
 
-export function createTerminal(position: XYPosition, folder: string, kind: TerminalKind = 'claude', account?: string): TerminalNode {
+// folders e name: aberto num workspace, as pastas dele e o nome (a pasta dele é só um id).
+export function createTerminal(
+  position: XYPosition,
+  folder: string,
+  kind: TerminalKind = 'claude',
+  account?: string,
+  folders?: string[],
+  name?: string
+): TerminalNode {
   const path = displayPath(folder)
   return {
     id: `t-${crypto.randomUUID()}`,
     type: 'terminal',
     position,
     style: { ...TERMINAL_SIZE },
-    data: { name: baseName(path), path, kind, ...(account && { account }) }
+    data: { name: name ?? baseName(path), path, kind, ...(account && { account }), ...(folders?.length && { folders }) }
   }
 }
 
@@ -71,6 +81,28 @@ export function createFolderInstance(position: XYPosition, folder: string): Proj
       path: displayPath(folder),
       color: '#71717a'
     }
+  }
+}
+
+// Tarefa isolada (git worktree): card filho da pasta, com o nome da tarefa. A posição é decidida
+// por placeBelow, embaixo da pasta.
+export function createWorktreeNode(folder: string, name: string, link: WorktreeLink): ProjectNode {
+  return {
+    id: `p-${crypto.randomUUID()}`,
+    type: 'project',
+    position: { x: 0, y: 0 },
+    data: { name, path: displayPath(folder), color: '#71717a', worktree: link }
+  }
+}
+
+// Workspace: várias pastas num card só, todas iguais. `dir`: a pasta dele (nos dados do Argus, ou no
+// Linux do WSL quando as pastas são todas de lá), onde as conversas abrem (ver ProjectData.folders e src/main/workspaces.ts).
+export function createWorkspace(position: XYPosition, folders: string[], dir: string): ProjectNode {
+  return {
+    id: `p-${crypto.randomUUID()}`,
+    type: 'project',
+    position,
+    data: { name: tr('Espaço de trabalho', 'Workspace'), path: displayPath(dir), color: '#71717a', folders: folders.map(displayPath) }
   }
 }
 
@@ -107,6 +139,7 @@ export function createChatPanel(project: ProjectData, loose: boolean, conversati
       name: conversation.title,
       path: project.path,
       ...(!loose && { projectName: project.name }),
+      ...(project.folders && { folders: project.folders }),
       sessionId: conversation.id
     }
   }

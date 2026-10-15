@@ -4,11 +4,14 @@ import type { AuthState } from '../../../shared/auth'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
+import { useProviders } from '../providers/useProviders'
+import { usePreference } from '../settings/preferences'
 import { setupReady } from './SetupStep'
 import { welcomeSteps } from './steps'
 import { tr } from '../i18n'
 
-// Boas-vindas em até 5 etapas: o que o Argus faz e, por último, a configuração do Claude Code.
+// Boas-vindas em até 5 etapas: o que o Argus faz e, por último, a configuração do Claude Code ou
+// de outro agente (Codex, Gemini, Cursor).
 // startAtSetup: já viu o passo a passo e só falta configurar (sem login, Claude desinstalado).
 // Só fecha com a configuração pronta: sem ela, o canvas não funciona. Antes disso, o X leva à
 // configuração, e o Esc fica aqui (não fecha o drawer que está atrás).
@@ -16,7 +19,9 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
   const list = welcomeSteps(auth)
   const last = list.length - 1
   const [index, setIndex] = useState(startAtSetup ? last : 0)
-  const ready = setupReady(auth)
+  const providers = useProviders()
+  const multiAgents = usePreference('multiAgents')
+  const ready = setupReady(auth, providers, multiAgents)
   const step = list[index]
   const closeBlocked = !ready && index === last
 

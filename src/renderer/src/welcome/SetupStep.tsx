@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Check, CheckCircle2, Circle, Copy, Loader2 } from 'lucide-react'
 import { MAIN_ACCOUNT, type AuthState, type ClaudeInstall } from '../../../shared/auth'
+import type { ProvidersState } from '../../../shared/providers'
+import { claudeReady, fallbackAgent } from '../auth/accounts'
 import { LoginPanel } from '../auth/LoginPanel'
 import { useCopied } from '../lib/useCopied'
 import { IS_LINUX, IS_WIN } from '../platform'
@@ -13,12 +15,10 @@ const GIT_URL = 'https://git-scm.com/download/win'
 // Fedora).
 const LINUX_GIT = 'sudo apt install git   # Fedora: sudo dnf install git'
 
-// Pronto para começar: Claude Code instalado e nenhuma conta confirmada sem login. Conta que não
-// respondeu (null) não trava a pessoa aqui; é a mesma regra do App para abrir o canvas. O Git
-// falta só avisa.
-export function setupReady(auth: AuthState): boolean {
-  const loggedOut = !!auth.accounts.length && auth.accounts.every((a) => a.status?.loggedIn === false)
-  return auth.claude.status === 'found' && !loggedOut
+// Pronto para começar: o Claude pronto (ver claudeReady) ou outro agente conectado. O Git falta
+// só avisa.
+export function setupReady(auth: AuthState, providers: ProvidersState | null, multiAgents: boolean): boolean {
+  return claudeReady(auth) || !!fallbackAgent(auth, providers, multiAgents)
 }
 
 // Uma linha da lista: feito (verde), em andamento ou pendente, com a ação embaixo quando falta.

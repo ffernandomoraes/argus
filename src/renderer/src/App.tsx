@@ -9,6 +9,8 @@ import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { WelcomeModal } from './welcome/WelcomeModal'
+import { setupReady } from './welcome/SetupStep'
+import { useProviders } from './providers/useProviders'
 
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -18,10 +20,11 @@ export function App() {
   const auth = useAuth()
   // Só a preferência que o App usa: mudar outra (tema, zoom do drawer...) não redesenha aqui.
   const welcomeSeen = usePreference('welcomeSeen')
-  // Nenhuma conta logada, depois de conferir todas. Com outra conta logada, a principal sem login
-  // aparece só em Configurações. Sem o Claude Code na máquina, também falta configurar.
-  const loggedOut = !!auth?.accounts.length && auth.accounts.every((a) => a.status?.loggedIn === false)
-  const needsSetup = !!auth && (auth.claude.status !== 'found' || loggedOut)
+  const providers = useProviders()
+  const multiAgents = usePreference('multiAgents')
+  // Falta configurar: sem o Claude Code pronto (instalado e com uma conta logada) e sem outro agente
+  // conectado. Com outra conta logada, a principal sem login aparece só em Configurações.
+  const needsSetup = !!auth && !setupReady(auth, providers, multiAgents)
   // Boas-vindas: na primeira vez, o passo a passo inteiro; depois, só se faltar configurar.
   const welcome = !!auth && (!welcomeSeen || needsSetup)
 

@@ -1,3 +1,4 @@
+import { getFallbackAgent } from '../../auth/useAuth'
 import type { CanvasNode } from '../types'
 
 // Mudanças nos dados de um bloco (nome, cor, texto, conta), sem mexer na posição.
@@ -38,10 +39,11 @@ export function setGroupAccount(nodes: CanvasNode[], id: string, account: string
   return nodes.map((n) => (n.id === id && n.type === 'area' ? { ...n, data: { ...n.data, account } } : n))
 }
 
-// Conta escolhida no grupo onde o bloco está; fora de grupo, nenhuma (vale a padrão).
+// Conta escolhida no grupo onde o bloco está; fora de grupo, nenhuma (vale a padrão). Sem o Claude
+// pronto, vale o outro agente conectado (quem entrou só com o Codex, por exemplo).
 export function groupAccount(nodes: CanvasNode[], node: CanvasNode | undefined): string | undefined {
   const group = node?.parentId ? nodes.find((n) => n.id === node.parentId) : undefined
-  return group?.type === 'area' ? group.data.account : undefined
+  return (group?.type === 'area' ? group.data.account : undefined) ?? getFallbackAgent()
 }
 
 // Pastas do workspace (ver ProjectData.folders). Fica pelo menos uma.

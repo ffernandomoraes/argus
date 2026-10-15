@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { AuthState } from '../../../shared/auth'
 import { IS_LINUX, IS_WIN, keys } from '../platform'
 import { AgentsArt, CanvasArt, ChatArt, OrganizeArt, SetupArt } from './illustrations'
+import { OtherAgents } from './OtherAgents'
 import { SetupStep } from './SetupStep'
 import { tr } from '../i18n'
 
@@ -15,7 +16,8 @@ const Code = ({ children }: { children: ReactNode }) => (
   <code className="whitespace-nowrap rounded bg-bg px-1 py-0.5 font-mono text-[12px] text-text">{children}</code>
 )
 
-// As etapas das boas-vindas: o que o Argus faz e, por último, a configuração do Claude Code.
+// As etapas das boas-vindas: o que o Argus faz e, por último, a configuração do Claude Code (ou de
+// outro agente).
 export function welcomeSteps(auth: AuthState): Step[] {
   return [
     {
@@ -93,7 +95,7 @@ export function welcomeSteps(auth: AuthState): Step[] {
       )
     },
     {
-      title: tr('Configure o Claude Code', 'Set up Claude Code'),
+      title: tr('Conecte um agente', 'Connect an agent'),
       art: <SetupArt />,
       body: (
         <>
@@ -114,6 +116,7 @@ export function welcomeSteps(auth: AuthState): Step[] {
                   )}
           </p>
           <SetupStep auth={auth} />
+          <OtherAgents />
         </>
       )
     }

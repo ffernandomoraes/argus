@@ -1,9 +1,12 @@
 import type { AuthState } from '../../../shared/auth'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
+import { getProviders } from '../providers/useProviders'
+import { getPreferences } from '../settings/preferences'
+import { fallbackAgent } from './accounts'
 
 // Os de fora importam daqui (canvas, conversa): as peças moram em arquivos próprios.
-export { findAccount, resolveAccount } from './accounts'
+export { claudeReady, fallbackAgent, findAccount, resolveAccount } from './accounts'
 export { AccountContext, useConversationAccount } from './accountContext'
 
 // Contas do Claude Code e o login em andamento, acompanhando o processo principal. Um estado só
@@ -19,6 +22,9 @@ window.api.auth.state().then(
 
 // Fora de componente (menus do canvas): o estado de agora.
 export const getAuth = (): AuthState | null => auth.get()
+
+// Fora de componente: o agente de quem não tem o Claude pronto (ver fallbackAgent).
+export const getFallbackAgent = (): string | undefined => fallbackAgent(auth.get(), getProviders(), getPreferences().multiAgents)
 
 // Nulo até o processo principal responder.
 export function useAuth(): AuthState | null {

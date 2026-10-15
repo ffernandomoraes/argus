@@ -87,6 +87,7 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
   const openConversation = useStableCallback((nodeId: string, conversationId: string) => {
     // Conversa do modo design: abre o drawer do design, não o chat.
     if (conversationId.startsWith(DESIGN_PREFIX)) {
+      if (!getPreferences().designMode) return
       return drawers.openDesign({ nodeId, designId: conversationId.slice(DESIGN_PREFIX.length) })
     }
     const openIn = getPreferences().openIn

@@ -37,6 +37,7 @@ import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
 import { Mascot } from './mascot/Mascot'
+import { usePreference } from '../settings/preferences'
 import { useWorktreeActions } from './worktrees/useWorktreeActions'
 
 type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
@@ -134,7 +135,9 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   useLayoutEffect(() => patchView(view, { activeConversation: main, activeDesign }), [view, main, activeDesign])
 
   const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open])
-  const design = useMemo(() => designView(nodes, drawers.state.design), [nodes, drawers.state.design])
+  // Modo design desligado (experimento): nenhum design abre, nem um que já estava aberto.
+  const designMode = usePreference('designMode')
+  const design = useMemo(() => (designMode ? designView(nodes, drawers.state.design) : null), [designMode, nodes, drawers.state.design])
   const layout = drawerLayout(drawers.state, targets, shownDrawers.titles)
   const { shown } = layout
   const codeRoot = layout.code?.root ?? null

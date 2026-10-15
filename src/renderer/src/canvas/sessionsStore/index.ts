@@ -4,6 +4,7 @@ import { shallowEqual } from '../../lib/shallowEqual'
 import { useBackgroundBusy } from '../backgroundTasks'
 import { canvasScope, inScope } from '../canvasScope'
 import { useStore } from '../../lib/useStore'
+import { usePreference } from '../../settings/preferences'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
@@ -63,12 +64,17 @@ function withBackground(list: ConversationSummary[], busy: ReadonlySet<string>):
   return list.map((c) => (marked(c) ? { ...c, status: 'running' } : c))
 }
 
+// Modo design desligado (é experimento): os designs saem da lista; continuam guardados.
+const withoutDesigns = (list: ConversationSummary[], designs: boolean): ConversationSummary[] =>
+  designs || !list.some((c) => c.kind === 'design') ? list : list.filter((c) => c.kind !== 'design')
+
 // Conversas de uma pasta; mantém a lista atualizada enquanto o componente estiver na tela.
 export function useSessions(path: string): ConversationSummary[] {
   useEffect(() => watch(path), [path])
   const list = useStore(store, (s) => s.sessions.get(path) ?? EMPTY)
   const busy = useBackgroundBusy()
-  return useMemo(() => withBackground(list, busy), [list, busy])
+  const designs = usePreference('designMode')
+  return useMemo(() => withBackground(withoutDesigns(list, designs), busy), [list, busy, designs])
 }
 
 // Conversas de várias pastas (o resumo do grupo recolhido, cujas pastas não estão na tela):
@@ -82,7 +88,8 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
   }, [key])
   const lists = useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual)
   const busy = useBackgroundBusy()
-  return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy])
+  const designs = usePreference('designMode')
+  return useMemo(() => lists.map((list) => withBackground(withoutDesigns(list, designs), busy)), [lists, busy, designs])
 }
 
 // Conversas que terminaram sem você ver (bolinha verde), nas pastas lidas que estão no canvas: a

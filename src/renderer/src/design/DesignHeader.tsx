@@ -3,6 +3,7 @@ import type { DesignDevice } from '../../../shared/design'
 import { Segmented } from '../settings/controls'
 import { IconButton } from '../ui/IconButton'
 import { tr } from '../i18n'
+import { ExperimentTag } from '../ui/ExperimentTag'
 
 const NOT_STARTED = tr('Comece o protótipo primeiro', 'Start the prototype first')
 
@@ -42,6 +43,7 @@ export function DesignHeader({
       <div className="flex min-w-0 items-center gap-2 justify-self-start">
         <PenTool size={13} className="shrink-0 text-muted" />
         <span className="truncate text-[13px] font-medium">{name ?? 'Design'}</span>
+        <ExperimentTag />
         <span className="flex min-w-0 items-center gap-1 text-[12px] text-faint" title={tr(`Projeto ${projectName}`, `Project ${projectName}`)}>
           <Folder size={12} className="shrink-0" />
           <span className="truncate">{projectName}</span>

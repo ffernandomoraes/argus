@@ -5,6 +5,7 @@ import { useEscape } from '../useEscape'
 import { keys } from '../platform'
 import { MENU_PANEL, MENU_ROW } from '../ui/menuStyles'
 import { useOutsideClick } from '../useOutsideClick'
+import { ExperimentTag } from '../ui/ExperimentTag'
 
 type Icon = ComponentType<{ size?: number }>
 
@@ -20,6 +21,8 @@ export type MenuItem =
       disabled?: boolean
       checked?: boolean
       shortcut?: string
+      // Recurso de Configurações > Experimentos: o selo depois do nome.
+      experiment?: boolean
     }
   | { type: 'submenu'; label: string; icon?: Icon; items: MenuItem[] }
   | { type: 'colors'; label: string; value: string; onSelect: (color: string) => void }
@@ -123,6 +126,7 @@ function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () => void }
           >
             {Icon && <Icon size={14} />}
             {item.label}
+            {item.experiment && <ExperimentTag />}
             {item.checked && <Check size={14} className="ml-auto shrink-0 text-muted group-hover/item:text-white" />}
             {item.shortcut && <kbd className="ml-auto pl-4 font-mono text-faint group-hover/item:text-white">{keys(item.shortcut)}</kbd>}
           </button>

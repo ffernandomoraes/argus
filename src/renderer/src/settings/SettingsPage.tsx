@@ -48,7 +48,7 @@ export function SettingsPage({
                 selected ? 'bg-selection text-white' : 'text-muted hover:bg-fill hover:text-text'
               }`}
             >
-              <Icon size={15} />
+              <Icon size={15} className="shrink-0" />
               <span className="flex-1">{s.label}</span>
               {s.experimental && <ExperimentTag />}
             </button>

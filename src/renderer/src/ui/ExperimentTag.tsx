@@ -1,11 +1,13 @@
+import { FlaskConical } from 'lucide-react'
 import { tr } from '../i18n'
 
-// Selo dos recursos ligados em Configurações > Experimentos, na frente do nome deles. Na cor do
-// texto em volta: serve na linha comum e na selecionada (fundo de destaque).
+// Selo dos recursos ligados em Configurações > Experimentos, na frente do nome deles: só o frasco,
+// cinza e sem fundo, como os ícones soltos da barra do projeto. O nome fica no title, ao passar o mouse.
 export function ExperimentTag() {
+  const label = tr('Experimento', 'Experiment')
   return (
-    <span className="shrink-0 rounded-[4px] border border-current px-1 text-[10px] font-medium leading-[14px] opacity-70">
-      {tr('Experimento', 'Experiment')}
+    <span title={label} className="inline-flex shrink-0 items-center opacity-60">
+      <FlaskConical size={12} aria-label={label} />
     </span>
   )
 }

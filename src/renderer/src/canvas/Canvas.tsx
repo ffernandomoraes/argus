@@ -16,6 +16,7 @@ import { drawerLayout } from './drawers/drawerLayout'
 import { designView, slotTarget } from './drawers/drawerView'
 import { useCanvasProjects } from './drawers/useCanvasProjects'
 import { useDrawers } from './drawers/useDrawers'
+import { useFitBeside } from './drawers/useFitBeside'
 import { useOverlays } from './drawers/useOverlays'
 import { looseDrawer } from './drawers/drawerState'
 import { useShownDrawers } from './drawers/useShownDrawers'
@@ -145,6 +146,8 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     const node = nodes.find((n) => n.id === listId)
     return node?.type === 'project' ? node : null
   }, [nodes, listId])
+  const aside = allConversations ? overlays.state.allConversationsRect : null
+  useFitBeside(aside, open, drawers.commands)
 
   return (
     <CanvasContext.Provider value={commands}>
@@ -191,6 +194,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           commands={drawers.commands}
           actions={conversations}
           onShown={shownDrawers.report}
+          aside={aside}
         />
         <CanvasOverlays
           state={overlays.state}

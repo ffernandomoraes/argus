@@ -1,9 +1,10 @@
-import { memo, useCallback, useRef } from 'react'
+import { memo, useCallback, useRef, type MouseEvent as ReactMouseEvent } from 'react'
 import { Folder, Plus, X } from 'lucide-react'
 import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
 import { useNow } from '../lib/clock'
 import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
+import { useCanvasActions } from './CanvasContext'
 import { ConversationItem } from './ConversationItem'
 import { groupByDay } from './project/groupByDay'
 import { useSessions } from './sessionsStore'
@@ -12,7 +13,10 @@ import { useActiveConversationIn, usePoppedOutSet } from './useCanvasView'
 import { tr } from '../i18n'
 
 // Todas as conversas de uma pasta, num painel flutuante: no canvas só as mais recentes
-// viram card.
+// viram card. Nasce à esquerda, para ficar ao lado do drawer da conversa (à direita), e continua
+// aberto ao abrir uma: dá para ir passando de uma para outra.
+const LIST_WIDTH = 400
+
 export const AllConversationsPanel = memo(function AllConversationsPanel({
   project,
   nodeId,
@@ -38,10 +42,16 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
   // Só para separar os dias (o "há 5min" de cada linha acompanha o relógio sozinho).
   const now = useNow(60_000)
   const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, rect, onRectChange)
+  const floating = useFloatingRect(panelRef, rect, onRectChange, LIST_WIDTH, undefined, 'left')
   useEscape(onClose)
   // A mesma função para todas as linhas.
   const open = useCallback((c: ConversationSummary) => onOpen(c.id), [onOpen])
+  // Botão direito: o mesmo menu da lista na pasta (abrir, mover para a Lixeira).
+  const { openConversationMenu } = useCanvasActions()
+  const openMenu = useCallback(
+    (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c),
+    [openConversationMenu, nodeId]
+  )
 
   return (
     <aside
@@ -92,6 +102,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
                   poppedOut={poppedOut.has(c.id)}
                   active={!!active && (active.conversationId === c.id || active.sessionId === c.id)}
                   onOpen={open}
+                  onContextMenu={openMenu}
                 />
               ))}
             </ul>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { PanelRect } from '../../conversation/FloatingPanel'
 import { MOTION, Presence } from '../../motion'
 import { CodePanel } from './CodePanel'
 import { DesignPanel } from './DesignPanel'
@@ -17,12 +18,14 @@ type Props = {
   commands: DrawerCommands
   actions: SlotActions
   onShown: (slot: SlotId, title: string | null) => void
+  // Lista de conversas aberta: nenhum drawer entra nela ao mover ou redimensionar.
+  aside: PanelRect | null
 }
 
 // Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código, os
 // drawers de conversa (do mais antigo ao mais novo) e o do design. O drawer de conversa só existe
 // com a conversa na lista: se ela for excluída, sai daqui e a saída anima.
-export function DrawerHost({ state, targets, design, layout, commands, actions, onShown }: Props) {
+export function DrawerHost({ state, targets, design, layout, commands, actions, onShown, aside }: Props) {
   const { code } = layout
   const leaving = useLeaving(state.drawers)
   // Com vários drawers de conversa à vista, um não passa por cima nem por baixo dos outros.
@@ -41,7 +44,7 @@ export function DrawerHost({ state, targets, design, layout, commands, actions, 
         )}
       </Presence>
       {leaving.map((id) => (
-        <DrawerEntry key={id} slot={id} drawer={null} target={null} obstacles={NO_OBSTACLES} codeOpen={false} {...{ commands, actions, onShown }} />
+        <DrawerEntry key={id} slot={id} drawer={null} target={null} obstacles={NO_OBSTACLES} aside={null} codeOpen={false} {...{ commands, actions, onShown }} />
       ))}
       {state.drawers.map((d) => (
         <DrawerEntry
@@ -50,6 +53,7 @@ export function DrawerHost({ state, targets, design, layout, commands, actions, 
           drawer={d}
           target={targets[d.id] ?? null}
           obstacles={placed}
+          aside={aside}
           codeOpen={state.code.open && state.code.slot === d.id}
           {...{ commands, actions, onShown }}
         />
@@ -68,6 +72,7 @@ type EntryProps = {
   target: SlotTarget | null
   // Drawers à vista com lugar definido (este incluso: sai da conta aqui).
   obstacles: Drawer[]
+  aside: PanelRect | null
   codeOpen: boolean
   commands: DrawerCommands
   actions: SlotActions
@@ -76,13 +81,13 @@ type EntryProps = {
 
 // Um drawer de conversa com a sua entrada e saída. A conversa é procurada aqui, fora do Presence,
 // para a saída animar quando ela some da lista.
-function DrawerEntry({ slot, drawer, target, obstacles, codeOpen, commands, actions, onShown }: EntryProps) {
+function DrawerEntry({ slot, drawer, target, obstacles, aside, codeOpen, commands, actions, onShown }: EntryProps) {
   const active = drawer?.conversation ?? null
   const conversation = useSlotConversation(active, target)
-  const others = useMemo(
-    () => obstacles.flatMap((o) => (o.id !== slot && o.rect ? [o.rect] : [])),
-    [obstacles, slot]
-  )
+  const others = useMemo(() => {
+    const rects = obstacles.flatMap((o) => (o.id !== slot && o.rect ? [o.rect] : []))
+    return aside ? [...rects, aside] : rects
+  }, [obstacles, slot, aside])
   return (
     <Presence>
       {drawer && active && target && conversation && (

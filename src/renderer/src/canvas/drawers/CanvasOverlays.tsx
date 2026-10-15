@@ -38,19 +38,16 @@ function CanvasOverlaysView(props: Props) {
   const onCanvas = useMemo(() => new Set(paths), [paths])
   const listId = allConversations?.id
 
+  // A lista continua aberta: a conversa abre no drawer ao lado dela.
   const openFromList = useCallback(
     (conversationId: string) => {
-      if (!listId) return
-      openConversation(listId, conversationId)
-      commands.closeAllConversations()
+      if (listId) openConversation(listId, conversationId)
     },
-    [listId, openConversation, commands]
+    [listId, openConversation]
   )
   const newFromList = useCallback(() => {
-    if (!listId) return
-    newConversation(listId)
-    commands.closeAllConversations()
-  }, [listId, newConversation, commands])
+    if (listId) newConversation(listId)
+  }, [listId, newConversation])
 
   // Dentro de um grupo, a pasta entra num lugar livre e o grupo cresce se precisar.
   const { folderPicker } = state

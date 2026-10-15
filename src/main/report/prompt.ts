@@ -58,8 +58,9 @@ na máquina.
 ## Como investigar
 
 1. Veja na máquina o que acontece (dados iniciais, status_login, conferir_wsl, arquivos).
-2. Leia no código o caminho que leva a esse comportamento, para confirmar a causa com o
-   mecanismo, e não só com o sintoma.
+2. Leia sempre no código o caminho que leva ao sintoma relatado, para confirmar a causa com o
+   mecanismo, e não só com o sintoma. Mesmo que a máquina não reproduza o problema, leia: o
+   desenvolvedor precisa saber onde o sintoma pode nascer, com arquivo:linha.
 3. Pare quando máquina e código contarem a mesma história, ou quando as conferências acabarem.
 
 ## Regras

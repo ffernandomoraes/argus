@@ -7,6 +7,7 @@ import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
 import { ChatView } from './ChatView'
+import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
 import { fileInFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
@@ -28,10 +29,10 @@ export { KIND_COLOR, KIND_LABEL } from './header/changeKinds'
 type Props = {
   // Pasta onde o Claude roda.
   cwd: string
-  // Conta do Claude do grupo da pasta; vazia = a padrão. Só vale ao abrir a sessão: a conversa já
-  // aberta segue na conta com que abriu.
   // Workspace: as pastas dele; o cwd é a pasta do workspace nos dados do Argus (ver ProjectData.folders).
   folders?: string[]
+  // Conta do Claude do grupo da pasta; vazia = a padrão. Vale para a conversa nova sem conta
+  // escolhida e para as antigas sem conta guardada (ver conversationAccount.ts).
   account?: string
   // Nome da pasta, mostrado no cabeçalho.
   project?: ReactNode
@@ -85,23 +86,29 @@ export const ConversationView = memo(function ConversationView({
   const live = useLiveChat(viewKey)
   // Na tela: a resposta que chegar aqui já foi vista (a bolinha da lista não fica verde).
   useViewing(conversation.sessionId ?? live?.sessionId ?? conversation.id)
-  const agents = useAgentList(cwd, viewKey)
   const history = useConversationHistory(cwd, conversation.sessionId, conversation.updatedAt, live?.revision)
   const localEvents = useLocalEvents(conversation.sessionId)
   const messages = useMemo(() => mergeEvents(history.messages, localEvents), [history.messages, localEvents])
   // Com o chat ligado aqui, o status dele manda: o registro do Claude Code demora a dizer
   // que parou, e isso deixava a conversa como "trabalhando" depois de você mandar parar.
   const status = live ? live.status : conversation.status
-  const account = conversationAccount(conversation, groupAccount, live?.agent)
-  // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
-  const settings = useConversationSettings(conversation.sessionId ?? conversation.id)
-  const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, account, settings, agents })
+  // Conversa nova ainda sem sessão guarda as trocas (e a conta) pelo id provisório.
+  const settingsId = conversation.sessionId ?? conversation.id
+  const chosen = useConversationAccountChoice(settingsId)
+  const account = conversationAccount(conversation, chosen ?? groupAccount, live?.agent)
+  const agents = useAgentList(cwd, viewKey, agentProviderOf(account))
+  // A conta só troca com a conversa vazia: nada enviado e nenhuma sessão aberta.
+  const canChangeAccount = !!conversation.draft && !live && !messages.length
+  const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
+  const settings = useConversationSettings(settingsId)
+  const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
 
   // Conversa nova recebeu o id da sessão: as trocas feitas antes vão junto, e quem mostra fica sabendo.
   const sessionId = live?.sessionId
   const started = useEffectEvent((sid: string) => {
     if (!conversation.draft) return
     moveConversationSettings(conversation.id, sid)
+    moveConversationAccount(conversation.id, sid)
     onSessionStarted?.(sid)
   })
   useEffect(() => {
@@ -124,7 +131,10 @@ export const ConversationView = memo(function ConversationView({
       <ConversationHeader
         title={conversation.title}
         cwd={cwd}
+        folders={folders}
         project={project}
+        account={account}
+        onAccountChange={canChangeAccount ? chooseAccount : undefined}
         minimal={minimalHeader}
         actions={actions}
         onOpenDiff={onOpenDiff}

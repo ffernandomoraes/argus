@@ -1,11 +1,14 @@
 import { agentProviderOf, type AgentDef } from '../../../../shared/agents'
 import type { PermissionAnswer } from '../../../../shared/chat'
 import { orchestratorPrompt } from '../../../../shared/orchestrator'
+import { parseAgentRef } from '../../../../shared/providers'
+import { getAuth, resolveAccount } from '../../auth/useAuth'
 import type { ConversationSummary } from '../../canvas/types'
 import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { agentHint, mentionedAgents } from '../agentMentions'
 import { imagesForSend, isSendableImage } from '../chatImages'
+import { freezeConversationAccount } from '../conversationAccount'
 import { freezeConversationSettings, setConversationSettings } from '../conversationSettings'
 import { addLocalEvent } from '../localEvents'
 import { liveCommands, type SessionSettings } from '../SessionSettings'
@@ -46,6 +49,8 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
     const paths = files.filter((f) => !isSendableImage(f)).map((f) => window.api.filePath(f)).filter(Boolean)
     const full = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
     freezeConversationSettings(settingsId, settings)
+    // A conta fica fixa no primeiro envio; a de outro agente já fica guardada com a conversa.
+    if (!parseAgentRef(account)) freezeConversationAccount(settingsId, resolveAccount(getAuth(), account))
     window.api.chat.send({
       key: chatKey,
       cwd,

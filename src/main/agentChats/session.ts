@@ -112,6 +112,9 @@ export class AgentChatSession {
     return []
   }
 
+  // Os MCPs dos outros agentes não aparecem no painel: não há o que reconectar.
+  async reconnectMcp(): Promise<void> {}
+
   // Remote control é do Claude Code.
   async remoteControl(): Promise<void> {
     this.update({ remote: { status: 'failed', detail: tr('Só o Claude tem remote control.', 'Only Claude has remote control.') } })

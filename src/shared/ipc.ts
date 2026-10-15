@@ -80,6 +80,7 @@ export type InvokeChannels = {
   'chat:state': (key: string) => ChatState | null
   'chat:active': () => ActiveChat[]
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
+  'mcp:reconnect': (key: string, name: string) => McpStatus
   'agents:list': (provider: AgentProvider, projectPath?: string) => AgentDef[]
   'agents:save': (provider: AgentProvider, req: AgentSaveRequest) => AgentSaveResult
   'agents:remove': (provider: AgentProvider, name: string) => boolean

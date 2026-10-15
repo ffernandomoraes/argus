@@ -21,8 +21,10 @@ function toMcpServers(raw: Awaited<ReturnType<Query['mcpServerStatus']>>): McpSe
 const MCP_SETTLE_MS = 10_000
 const MCP_RETRY_MS = 400
 
-export async function mcpServersOf(q: Query): Promise<McpServer[]> {
+// wait: false devolve como está agora, com os que ainda estão conectando (o painel pergunta de novo).
+export async function mcpServersOf(q: Query, wait = true): Promise<McpServer[]> {
   const ask = (): Promise<McpServer[]> => q.mcpServerStatus().then(toMcpServers)
+  if (!wait) return ask()
   const deadline = Date.now() + MCP_SETTLE_MS
   let last = await ask()
   while (last.some((m) => m.status === 'pending') && Date.now() < deadline) {

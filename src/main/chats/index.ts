@@ -7,6 +7,7 @@ import { AgentChatSession } from '../agentChats/session'
 import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
 import { ChatSession, type OpenRequest } from './session'
 import { memoryTight } from './systemMemory'
+import { tr } from '../i18n'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
 // as mesmas operações.
@@ -221,11 +222,25 @@ export class Chats {
     this.sessions.get(key)?.answer(id, answer)
   }
 
-  // Conversa aberta responde pela própria sessão; sem ela, uma consulta avulsa com a conta do grupo.
+  // Conversa aberta responde pela própria sessão, na hora (com quem ainda está conectando); sem ela,
+  // uma consulta avulsa com a conta do grupo, que espera todos terminarem.
   async mcpStatus(key: string, cwd: string, account?: string): Promise<McpStatus> {
     try {
       const session = this.sessions.get(key)
-      return { ok: true, servers: session ? await session.mcpServers() : parseAgentRef(account) ? [] : await mcpStatusFor(cwd, account) }
+      if (session) return { ok: true, servers: await session.mcpServers(false), live: true }
+      return { ok: true, servers: parseAgentRef(account) ? [] : await mcpStatusFor(cwd, account), live: false }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  }
+
+  // "Reconectar" de um servidor no painel; só com a sessão da conversa aberta.
+  async reconnectMcp(key: string, name: string): Promise<McpStatus> {
+    const session = this.sessions.get(key)
+    if (!session) return { ok: false, error: tr('A conversa não está aberta.', 'The chat isn’t open.') }
+    try {
+      await session.reconnectMcp(name)
+      return { ok: true, servers: await session.mcpServers(false), live: true }
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }

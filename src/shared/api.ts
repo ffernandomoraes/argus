@@ -135,6 +135,7 @@ export type Api = {
     interrupt: (key: string) => void
     retain: (key: string) => void
     mcpStatus: (key: string, cwd: string, account?: string) => Promise<McpStatus>
+    mcpReconnect: (key: string, name: string) => Promise<McpStatus>
     release: (key: string) => void
     restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void

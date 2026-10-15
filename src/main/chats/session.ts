@@ -188,8 +188,13 @@ export class ChatSession {
     return !this.busy && (this.closeWhenIdle || (this.keepForRemote && !this.remoteOn))
   }
 
-  mcpServers(): Promise<McpServer[]> {
-    return mcpServersOf(this.q)
+  mcpServers(wait = true): Promise<McpServer[]> {
+    return mcpServersOf(this.q, wait)
+  }
+
+  // Reconecta um servidor MCP desta sessão (o "Reconectar" do painel, como no VS Code).
+  reconnectMcp(name: string): Promise<void> {
+    return this.q.reconnectMcpServer(name)
   }
 
   async interrupt(): Promise<void> {

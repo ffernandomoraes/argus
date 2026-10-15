@@ -114,6 +114,7 @@ const api: Api = {
     interrupt: (key) => send('chat:interrupt', key),
     retain: (key) => send('chat:retain', key),
     mcpStatus: (key, cwd, account) => invoke('mcp:status', key, cwd, account),
+    mcpReconnect: (key, name) => invoke('mcp:reconnect', key, name),
     release: (key) => send('chat:release', key),
     restartIn: (cwd) => send('chat:restartIn', cwd),
     configure: (key, patch) => send('chat:configure', key, patch),

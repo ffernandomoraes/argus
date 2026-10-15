@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LifeBuoy, X } from 'lucide-react'
+import { Bug, X } from 'lucide-react'
 import type { AuthState } from '../../../shared/auth'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
@@ -75,7 +75,7 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
             atrás das boas-vindas, então o reportar problema abre daqui. */}
         {closeBlocked && (
           <Button size="xl" variant="ghost" onClick={() => openReport({ where: tr('configuração inicial', 'initial setup') })}>
-            <LifeBuoy size={14} />
+            <Bug size={14} />
             {tr('Reportar problema', 'Report a problem')}
           </Button>
         )}

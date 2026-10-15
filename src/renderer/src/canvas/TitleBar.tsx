@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react'
-import { AppWindow, Eye, EyeOff, LifeBuoy } from 'lucide-react'
+import { AppWindow, Bug, Eye, EyeOff } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { useUpdates } from '../updates/useUpdates'
@@ -94,7 +94,7 @@ export const TitleBar = memo(function TitleBar({
               side="bottom-end"
               onClick={() => openReport()}
             >
-              <LifeBuoy size={14} />
+              <Bug size={14} />
             </NavButton>
           </span>
           <Divider />

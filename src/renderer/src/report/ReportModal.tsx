@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Copy, LifeBuoy, Loader2 } from 'lucide-react'
+import { Bug, Check, Copy, Loader2 } from 'lucide-react'
 import type { ReportState } from '../../../shared/report'
 import { INPUT } from '../agents/Field'
 import { useCopied } from '../lib/useCopied'
@@ -24,7 +24,7 @@ export function ReportModal({ request, onClose }: { request: ReportRequest; onCl
   return (
     <Modal label={tr('Reportar problema', 'Report a problem')} variant="blocking" closeOnBackdrop size="md" className="flex flex-col" onClose={onClose}>
       <header className="flex items-start gap-3 border-b border-line px-5 py-3">
-        <LifeBuoy size={15} className="mt-0.5 shrink-0" />
+        <Bug size={15} className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{tr('Reportar problema', 'Report a problem')}</div>
           <div className="mt-0.5 text-[12px] text-faint">

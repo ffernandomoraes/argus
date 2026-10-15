@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { LifeBuoy } from 'lucide-react'
+import { Bug } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { tr } from '../i18n'
 import { openReport, ReportContext, type ReportRequest } from './reportStore'
@@ -10,7 +10,7 @@ export function InvestigateButton({ error, ...request }: ReportRequest & { error
   const around = useContext(ReportContext)
   return (
     <Button size="sm" variant="ghost" className="-my-0.5" onClick={() => openReport({ ...around, ...request, error })}>
-      <LifeBuoy size={12} />
+      <Bug size={12} />
       {tr('Investigar', 'Investigate')}
     </Button>
   )

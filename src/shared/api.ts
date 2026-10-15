@@ -267,6 +267,8 @@ export type Api = {
   files: {
     list: (root: string, rel: string) => Promise<FileEntry[]>
     read: (root: string, rel: string) => Promise<FileContent>
+    // Caminho absoluto de um link do chat; acha o arquivo mesmo com o começo do caminho cortado.
+    locate: (root: string, rel: string) => Promise<string | null>
     // Imagem em qualquer caminho (data URL), para o preview do que o Claude leu; null se não der.
     image: (path: string) => Promise<string | null>
     // Mudanças do arquivo desde o último commit.

@@ -122,6 +122,7 @@ export type InvokeChannels = {
   // Arquivos
   'files:list': (root: string, rel: string) => FileEntry[]
   'files:read': (root: string, rel: string) => FileContent
+  'files:locate': (root: string, rel: string) => string | null
   'files:image': (path: string) => string | null
   'files:diff': (root: string, rel: string) => FileDiff
   // base: o texto do disco na última leitura ou gravação; com ela, não grava por cima de mudança

@@ -11,6 +11,7 @@ import { moveConversationAccount, setConversationAccount, useConversationAccount
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
 import { fileInFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
+import { isAbsolutePath } from '../platform'
 import { ConversationHeader } from './header/ConversationHeader'
 import { useAgentList } from './hooks/useAgentList'
 import { useConversationActions } from './hooks/useConversationActions'
@@ -117,10 +118,17 @@ export const ConversationView = memo(function ConversationView({
 
   // O valor do contexto é fixo: com uma função nova a cada desenho, todo link de toda mensagem
   // redesenhava (o drawer mandava uma nova a cada arraste no canvas).
-  const openFile = useStableCallback((path: string, lines?: LineRange) => onOpenFile?.(path, lines))
+  // No workspace o arquivo é procurado em cada pasta dele: a da conversa só tem o aviso para os agentes.
+  const roots = folders ?? [cwd]
+  const openFile = useStableCallback((path: string, lines?: LineRange) => {
+    void locate(roots, path).then((found) => onOpenFile?.(found, lines))
+  })
   const revealFile = useStableCallback((path: string) => {
-    const rel = fileInFolder(cwd, path)
-    if (rel) window.api.files.reveal(cwd, rel)
+    void locate(roots, path).then((found) => {
+      const root = roots.find((r) => fileInFolder(r, found) !== null && isAbsolutePath(found))
+      const rel = root ? fileInFolder(root, found) : fileInFolder(cwd, found)
+      if (rel) window.api.files.reveal(root ?? cwd, rel)
+    })
   })
   const [mcpOpen, setMcpOpen] = useState(false)
   const openMcp = useCallback(() => setMcpOpen(true), [])
@@ -184,4 +192,15 @@ function conversationAccount(conversation: ConversationSummary, group?: string, 
   if (conversation.agent ?? running) return conversation.agent ?? running
   const started = !conversation.draft && !!conversation.sessionId
   return started && parseAgentRef(group) ? undefined : group
+}
+
+// Caminho relativo do link: o Claude às vezes corta o começo ("conversation/X.tsx" dentro de
+// src/renderer/src). O principal acha o arquivo; sem achar, segue o original e o erro aparece.
+async function locate(roots: string[], path: string): Promise<string> {
+  if (isAbsolutePath(path) || path.startsWith('~')) return path
+  for (const root of roots) {
+    const found = await window.api.files.locate(root, path).catch(() => null)
+    if (found) return found
+  }
+  return path
 }

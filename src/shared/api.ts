@@ -266,6 +266,8 @@ export type Api = {
     // Cola na pasta os arquivos copiados no Finder (ou na árvore).
     paste: (root: string, dir: string) => Promise<FileOpResult>
     reveal: (root: string, rel: string) => void
+    // Abre a própria pasta no Finder ou no Explorador de Arquivos.
+    openFolder: (path: string) => void
     // Abre no visualizador do sistema: Quick Look no Mac, app padrão no Windows e no Linux.
     view: (root: string, rel: string) => void
     openInBrowser: (root: string, rel: string) => void

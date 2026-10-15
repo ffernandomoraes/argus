@@ -3,6 +3,7 @@ import {
   copyToClipboard,
   createItem,
   listDir,
+  openFolder,
   openInBrowser,
   pasteFromClipboard,
   readFile,
@@ -31,6 +32,7 @@ export function registerFilesIpc(unsaved: UnsavedFiles): void {
   handle('files:copy', (_e, root, rels) => copyToClipboard(root, rels))
   handle('files:paste', (_e, root, dir) => pasteFromClipboard(root, dir))
   on('files:reveal', (_e, root, rel) => revealItem(root, rel))
+  on('files:openFolder', (_e, path) => openFolder(path))
   on('files:view', (e, root, rel) => void viewItem(BrowserWindow.fromWebContents(e.sender), root, rel))
   on('files:openInBrowser', (_e, root, rel) => void openInBrowser(root, rel))
   // Um arquivo vigiado por janela: o que está aberto no painel de código.

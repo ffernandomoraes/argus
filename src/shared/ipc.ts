@@ -189,6 +189,7 @@ export type SendChannels = {
   'sessions:watch': (paths: string[]) => void
   // Arquivos
   'files:reveal': (root: string, rel: string) => void
+  'files:openFolder': (path: string) => void
   'files:view': (root: string, rel: string) => void
   'files:openInBrowser': (root: string, rel: string) => void
   'files:watch': (root: string, rel: string) => void

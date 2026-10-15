@@ -89,6 +89,11 @@ export async function trashItem(root: string, rel: string): Promise<FileOpResult
   }
 }
 
+// A própria pasta aberta no Finder ou no Explorador de Arquivos (não ela selecionada na de cima).
+export function openFolder(path: string): void {
+  void shell.openPath(expandHome(path))
+}
+
 export function revealItem(root: string, rel: string): void {
   const full = insideRoot(root, rel)
   if (full) shell.showItemInFolder(full)

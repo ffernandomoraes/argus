@@ -1,6 +1,7 @@
 import { memo, useState } from 'react'
 import { MiniMap, Panel, useReactFlow, useStore, type Node } from '@xyflow/react'
 import { Map as MapIcon, Maximize, Minus, Plus } from 'lucide-react'
+import { BOTTOM_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { MENU_HOVER, MENU_ROW } from '../ui/menuStyles'
 import type { AreaNode } from './types'
@@ -10,7 +11,7 @@ import { LOCALE, tr } from '../i18n'
 // Só muda quando um grupo muda: arrastar uma pasta não redesenha a barra.
 const sameGroups = (a: AreaNode[], b: AreaNode[]) => a.length === b.length && a.every((g, i) => g === b[i])
 
-// Zoom, "ver tudo" e minimapa juntos no canto inferior direito; o minimapa abre acima da barra.
+// Zoom, "ver tudo" e minimapa juntos no canto inferior direito, acima da barra de baixo; o minimapa abre acima da barra.
 export const ViewBar = memo(function ViewBar() {
   const [mapOpen, setMapOpen] = useState(false)
   const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow()
@@ -35,7 +36,7 @@ export const ViewBar = memo(function ViewBar() {
   }
 
   return (
-    <Panel position="bottom-right" className="!m-4">
+    <Panel position="bottom-right" className="!m-4" style={{ bottom: BOTTOM_BAR_HEIGHT }}>
       <div className={`flex flex-col gap-1 border border-line bg-surface/90 p-1 shadow-md shadow-black/20 backdrop-blur-xl ${mapOpen ? 'rounded-2xl' : 'rounded-xl'}`}>
         {/* Âncoras: um clique leva ao grupo e recolhe o minimapa. */}
         {mapOpen && anchors.length > 0 && (

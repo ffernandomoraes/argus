@@ -28,7 +28,7 @@ import { useCanvasKeys } from './keys/useCanvasKeys'
 import { useSpaceHeld } from './keys/useSpaceHeld'
 import { useUiHidden } from './keys/useUiHidden'
 import { loadNodes, useCanvasSync } from './persistence'
-import { RunningIndicator } from './RunningIndicator'
+import { BottomBar } from './BottomBar'
 import { setPoppedOut } from './sessionsStore'
 import { TitleBar } from './TitleBar'
 import type { CanvasNode } from './types'
@@ -175,7 +175,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           }`}
         />
         {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
-        <RunningIndicator hidden={uiHidden} onOpen={openChat} />
+        <BottomBar onOpenChat={openChat} />
         <TitleBar
           windowTitle={
             shown ? `${shown.title} - ${shown.target.project.name}` : design ? `Design - ${design.projectName}` : 'Argus'

@@ -69,7 +69,7 @@ function WindowDetail({ title, window, now }: { title: string; window: UsageWind
   )
 }
 
-// Painel dos limites, aberto pelo botão da barra de título: as janelas de cada conta. Só com o
+// Painel dos limites, aberto pelo botão da barra de baixo (abre para cima): as janelas de cada conta. Só com o
 // Claude, fica como sempre foi; com conta de outro agente, cada conta leva o logo do agente.
 // silent: agentes com conta logada que não informam limite (Gemini, Cursor): uma linha no rodapé,
 // sem número inventado.
@@ -83,9 +83,9 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
 
   return (
     // A rolagem fica num filho: a caixa não corta a seta, que vaza para fora dela.
-    <div className="absolute right-0 top-full mt-2.5 w-72 origin-top-right rounded-2xl border border-line bg-surface/90 shadow-xl shadow-black/40 backdrop-blur-xl">
+    <div className="absolute right-0 bottom-full mb-2.5 w-72 origin-bottom-right rounded-2xl border border-line bg-surface/90 shadow-xl shadow-black/40 backdrop-blur-xl">
       {/* Depois da curva do canto (rounded-2xl, 16px): no padrão, a seta caía em cima dela. */}
-      <MenuArrow side="top" align="end" at={30} />
+      <MenuArrow side="bottom" align="end" at={30} />
       <div className="max-h-[70vh] overflow-y-auto p-4 text-left">
         <div className="mb-4 flex items-center gap-2">
           {!mixed && <ClaudeIcon size={14} />}

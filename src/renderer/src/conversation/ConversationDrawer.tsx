@@ -12,7 +12,7 @@ import { HeaderButton } from './header/HeaderButton'
 import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
 import { useFloatingRect } from './hooks/useFloatingRect'
 import { useFocusMode } from './hooks/useFocusMode'
-import { DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
+import { BOTTOM_BAR_HEIGHT, DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
 import { ResizeHandles } from './FloatingPanel'
 import { useDrawerZoom } from './useDrawerZoom'
 import { tr } from '../i18n'
@@ -114,8 +114,8 @@ export function ConversationDrawer(props: Props) {
       }`}
       style={{
         ...(focus
-          ? // A barra de título fica de fora: é por ela que a janela arrasta.
-            { left: 0, right: 0, top: TITLE_BAR_HEIGHT, bottom: 0, borderRadius: 0 }
+          ? // As barras de título e de baixo ficam de fora: é pela de cima que a janela arrasta.
+            { left: 0, right: 0, top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, borderRadius: 0 }
           : rect
             ? { left: rect.x, top: rect.y, width: rect.width, height: rect.height }
             : { visibility: 'hidden', inset: 0 }),

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type PointerEvent, type RefObject } from 'react'
-import { defaultRect, dragRect, PANEL_DEFAULT_WIDTH, rescale, type AreaSize, type Edges, type PanelRect } from '../panelGeometry'
+import { defaultRect, dragRect, PANEL_BOTTOM, PANEL_DEFAULT_WIDTH, rescale, type AreaSize, type Edges, type PanelRect, type PanelSide } from '../panelGeometry'
 
 // Painel flutuante com posição e tamanho livres dentro da área do canvas: arrasta pelo cabeçalho
 // e redimensiona pelas quatro bordas e pelos cantos (ver ResizeHandles em FloatingPanel).
@@ -9,19 +9,20 @@ function areaSize(el: HTMLElement | null): AreaSize | null {
   return area ? { width: area.clientWidth, height: area.clientHeight } : null
 }
 
-// Sem posição definida ainda, o painel nasce encostado à direita, na altura toda.
+// Sem posição definida ainda, o painel nasce encostado à direita (ou em `side`), na altura toda.
 export function useFloatingRect(
   ref: RefObject<HTMLElement | null>,
   rect: PanelRect | null,
   onChange: (rect: PanelRect) => void,
   defaultWidth = PANEL_DEFAULT_WIDTH,
   // Outros painéis à vista que este não pode cobrir ao mover nem ao redimensionar.
-  obstacles?: readonly PanelRect[]
+  obstacles?: readonly PanelRect[],
+  side?: PanelSide
 ) {
   useLayoutEffect(() => {
     if (rect) return
     const area = areaSize(ref.current)
-    if (area) onChange(defaultRect(area, defaultWidth))
+    if (area) onChange(defaultRect(area, defaultWidth, side))
   }, [rect]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // A área mudou de tamanho (janela redimensionada, outro monitor), com o painel aberto ou
@@ -42,6 +43,8 @@ export function useFloatingRect(
       const from = current.area ?? area
       if (from.width === area.width && from.height === area.height) {
         if (!current.area) onChange({ ...current, area })
+        // Salvo antes da barra de baixo existir: desce até a borda e ficaria por baixo dela.
+        else if (current.y + current.height > area.height - PANEL_BOTTOM) onChange(rescale(current, area, area))
         return
       }
       onChange(rescale(current, from, area))

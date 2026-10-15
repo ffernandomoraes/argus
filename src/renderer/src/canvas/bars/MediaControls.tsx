@@ -69,7 +69,7 @@ export const MediaControls = memo(function MediaControls() {
       )}
       <span className="max-w-40 truncate text-[12px] text-muted">{media.title}</span>
       <div ref={volumeRef} className="relative flex items-center">
-        <button aria-label={tr('Volume', 'Volume')} onClick={() => setVolumeOpen((o) => !o)} className={`${CONTROL} ${tone(volumeOpen)}`}>
+        <button aria-label={tr('Volume', 'Volume')} aria-expanded={volumeOpen} onClick={() => setVolumeOpen((o) => !o)} className={`${CONTROL} ${tone(volumeOpen)}`}>
           <VolumeIcon size={14} />
         </button>
         <Presence kind="menu">

@@ -14,15 +14,12 @@ import { useFinishedChats, useSessions, type FinishedChat } from './sessionsStor
 import { StatusDot } from './StatusBadge'
 import { tr } from '../i18n'
 
-// Pílula no canto inferior esquerdo enquanto alguma conversa do app trabalha, espera você ou
-// terminou sem você ver (bolinha verde): mostra quantas de cada, e o clique abre a lista com cada
-// uma. Clicar numa linha abre a conversa (a concluída sai da lista ao ser vista).
+// No canto esquerdo da barra de baixo, enquanto alguma conversa do app trabalha, espera você ou
+// terminou sem você ver (bolinha verde): quantas de cada, numa linha, e o clique abre a lista com
+// cada uma, para cima. Clicar numa linha abre a conversa (a concluída sai da lista ao ser vista).
 export const RunningIndicator = memo(function RunningIndicator({
-  hidden,
   onOpen
 }: {
-  // Interface oculta (⌘\): some junto com as barras do canvas.
-  hidden: boolean
   onOpen: (cwd: string, sessionId: string) => void
 }) {
   const chats = useActiveChatsInCanvas()
@@ -33,12 +30,12 @@ export const RunningIndicator = memo(function RunningIndicator({
   const empty = !chats.length && !finished.length
   // Tudo visto: na próxima vez a pílula volta fechada.
   if (empty && open) setOpen(false)
-  if (hidden || empty) return null
+  if (empty) return null
 
   const waiting = chats.filter((c) => c.status === 'needs-you').length
   const working = chats.length - waiting
   const done = finished.length
-  // Um estado por linha, cada um com a sua bolinha: a pílula fica estreita.
+  // Cada estado com a sua bolinha, lado a lado.
   const lines = [
     { status: 'needs-you', n: waiting, text: tr(`${waiting} precisa${waiting > 1 ? 'm' : ''} de você`, `${waiting} need${waiting > 1 ? '' : 's'} you`) },
     { status: 'running', n: working, text: tr(`${working} trabalhando`, `${working} working`) },
@@ -50,11 +47,11 @@ export const RunningIndicator = memo(function RunningIndicator({
   }
 
   return (
-    <div ref={ref} className="absolute bottom-4 left-4 z-20 flex flex-col items-start gap-2.5">
+    <div ref={ref} className="relative flex items-center self-stretch">
       <Presence kind="menu">
         {open && (
-          <div className={`relative w-80 ${MENU_PANEL}`}>
-            <MenuArrow side="bottom" />
+          <div className={`absolute bottom-full left-0 mb-2.5 w-80 origin-bottom-left ${MENU_PANEL}`}>
+            <MenuArrow side="bottom" align="start" at={24} />
             <ul className="max-h-[50vh] overflow-y-auto">
               {chats.map((c) => (
                 <ActiveRow key={c.key} chat={c} onOpen={() => pick(c.cwd, c.sessionId ?? c.key)} />
@@ -69,19 +66,21 @@ export const RunningIndicator = memo(function RunningIndicator({
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-md border border-line bg-surface/90 px-2.5 py-1.5 text-xs shadow-xl shadow-black/40 backdrop-blur-xl hover:bg-fill"
+        className={`flex items-center gap-2 rounded-md px-2 py-0.5 text-[12px] text-muted hover:bg-fill hover:text-text ${
+          open ? 'bg-fill text-text' : ''
+        }`}
       >
-        <span className="flex flex-col gap-1">
+        <span className="flex items-center gap-3">
           {lines
             .filter((l) => l.n > 0)
             .map((l) => (
-              <span key={l.status} className="flex items-center gap-2">
+              <span key={l.status} className="flex items-center gap-1.5">
                 <StatusDot status={l.status} />
                 {l.text}
               </span>
             ))}
         </span>
-        {open ? <ChevronDown size={13} className="text-faint" /> : <ChevronUp size={13} className="text-faint" />}
+        {open ? <ChevronDown size={12} className="text-faint" /> : <ChevronUp size={12} className="text-faint" />}
       </button>
     </div>
   )

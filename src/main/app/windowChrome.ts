@@ -5,8 +5,9 @@ import { linuxIcon } from './linuxDesktop'
 // Moldura das janelas: barra de título própria, os botões do sistema na cor dela e os atalhos que,
 // sem menu, o Windows não teria.
 
-// Altura da barra de título do app (TITLE_BAR_HEIGHT, em conversation/panelGeometry.ts).
-const TITLE_BAR_HEIGHT = 40
+// Altura da barra de título do canvas (TITLE_BAR_HEIGHT, em conversation/panelGeometry.ts). A janela
+// da conversa segue com a altura de antes, a do cabeçalho dela.
+const TITLE_BAR_HEIGHT = { canvas: 34, conversation: 40 }
 
 export type WindowKind = 'canvas' | 'conversation'
 const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
@@ -16,7 +17,9 @@ const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
 // a barra de título do canvas (surface) ou o cabeçalho da conversa (bg), como no index.css.
 // No Linux a janela recebe também o ícone do app (a barra de tarefas não o pega do executável).
 export function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
-  if (IS_MAC) return { titleBarStyle: 'hiddenInset' }
+  // Na do canvas, os semáforos descem para o meio da barra (mais baixa que a padrão do hiddenInset).
+  // A da conversa tem cabeçalho próprio, alinhado com a posição padrão.
+  if (IS_MAC) return kind === 'canvas' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 11 } } : { titleBarStyle: 'hiddenInset' }
   const icon = linuxIcon()
   return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind), ...(icon ? { icon } : {}) }
 }
@@ -24,7 +27,7 @@ export function frame(kind: WindowKind): Electron.BrowserWindowConstructorOption
 function overlay(kind: WindowKind): Electron.TitleBarOverlay {
   const dark = nativeTheme.shouldUseDarkColors
   const color = kind === 'canvas' ? (dark ? '#282828' : '#ffffff') : dark ? '#1c1c1c' : '#ececec'
-  return { color, symbolColor: dark ? '#a5a5a5' : '#6e6e73', height: TITLE_BAR_HEIGHT }
+  return { color, symbolColor: dark ? '#a5a5a5' : '#6e6e73', height: TITLE_BAR_HEIGHT[kind] }
 }
 
 // Guarda o tipo da janela para pintar os botões do Windows de novo quando o tema trocar.

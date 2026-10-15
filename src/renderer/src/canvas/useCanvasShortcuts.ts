@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import { getViewportForBounds, useReactFlow, useStoreApi, type Rect } from '@xyflow/react'
-import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { isMod } from '../platform'
 import { FADE_SIZE } from './EdgeFade'
 import { isEditableTarget } from './keys/keyTargets'
@@ -22,7 +22,7 @@ type Insets = Record<Side, number>
 // a barra do zoom bem mais alta. Cada uma conta só na borda em que encosta; a de canto, na borda
 // em que ocupa menos (a do zoom com o minimapa aberto empurra a direita, não o rodapé inteiro).
 function coveredInsets(container: HTMLElement | null): Insets {
-  const out: Insets = { top: TITLE_BAR_HEIGHT + FADE_SIZE, right: FADE_SIZE, bottom: FADE_SIZE, left: FADE_SIZE }
+  const out: Insets = { top: TITLE_BAR_HEIGHT + FADE_SIZE, right: FADE_SIZE, bottom: BOTTOM_BAR_HEIGHT + FADE_SIZE, left: FADE_SIZE }
   // Com a interface oculta (⌘\), as barras ficam transparentes e não cobrem nada.
   if (container && !container.classList.contains('ui-hidden')) {
     const box = container.getBoundingClientRect()

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 
 // Largura da faixa esfumaçada em cada borda. O "ver tudo" deixa folga maior que ela, para os
 // nomes dos grupos não caírem no borrão (useCanvasShortcuts).
@@ -12,9 +12,9 @@ const TOWARD: Record<Side, string> = { top: 'to bottom', bottom: 'to top', left:
 
 const PLACE: Record<Side, CSSProperties> = {
   top: { top: TITLE_BAR_HEIGHT, left: 0, right: 0, height: FADE_SIZE },
-  bottom: { bottom: 0, left: 0, right: 0, height: FADE_SIZE },
-  left: { top: TITLE_BAR_HEIGHT, bottom: 0, left: 0, width: FADE_SIZE },
-  right: { top: TITLE_BAR_HEIGHT, bottom: 0, right: 0, width: FADE_SIZE }
+  bottom: { bottom: BOTTOM_BAR_HEIGHT, left: 0, right: 0, height: FADE_SIZE },
+  left: { top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, left: 0, width: FADE_SIZE },
+  right: { top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, right: 0, width: FADE_SIZE }
 }
 
 // Bordas do canvas esfumaçadas: desfoque e a cor do fundo, fortes na beirada e sumindo para o

@@ -31,6 +31,28 @@
   }
 }
 
+/* Tarefa em paralelo sendo removida (ProjectNode): o card pisca, alternando a opacidade, até o git
+   apagar a pasta e ele sair do canvas. O card é filho direto do nó do React Flow, onde a entrada
+   (node-in, mais abaixo) também põe animação: o seletor com o nó ganha dela, e a saída
+   (node-leaving, mais abaixo e com o mesmo peso) ganha deste. */
+@keyframes worktree-removing {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.25;
+  }
+}
+.react-flow__node > .worktree-removing {
+  animation: worktree-removing 0.7s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-flow__node > .worktree-removing {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
 /* CodeTyping: cada linha cresce da esquerda aos saltos, como letras digitadas, fica um tempo
    e some; o atraso de cada uma (no componente) faz as linhas se revezarem. */
 @keyframes code-typing {

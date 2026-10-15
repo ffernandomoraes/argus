@@ -14,6 +14,7 @@ import { registerServersIpc } from './servers'
 import { registerSessionsIpc } from './sessions'
 import { registerSpeechIpc } from './speech'
 import { registerTerminalIpc } from './terminal'
+import { registerWorktreesIpc } from './worktrees'
 
 // Todos os canais que a janela usa, por assunto. O contrato (nomes, argumentos e respostas) está em
 // src/shared/ipc.ts; cada registro recebe só os serviços de que precisa.
@@ -27,6 +28,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerMemoryIpc()
   registerAgentsIpc()
   registerSessionsIpc(s.sessionWatch)
+  registerWorktreesIpc()
   registerServersIpc()
   registerFilesIpc(s.unsavedFiles)
   registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread)

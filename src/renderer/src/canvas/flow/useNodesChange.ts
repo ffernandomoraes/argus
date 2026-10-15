@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { applyNodeChanges, useReactFlow, type NodeChange } from '@xyflow/react'
 import { useStableCallback } from '../../lib/useStableCallback'
 import type { NodesApi } from '../actions/types'
-import { fitAfterResize, withoutAutoGrow } from '../operations'
+import { fitAfterResize, followParents, withoutAutoGrow } from '../operations'
 import { snap, type Guide } from '../snapping'
 import type { CanvasNode } from '../types'
 
@@ -44,7 +44,8 @@ export function useNodesChange({ nodesRef, setNodes, trackGesture, leaving }: Op
       setGuides(move.dragging ? snapped.guides : NO_GUIDES)
     } else if (moves.length) setGuides(NO_GUIDES)
     setNodes((ns) => {
-      const changed = applyNodeChanges(applied, ns)
+      // A pasta arrastada leva as tarefas isoladas dela (operations/worktrees.ts).
+      const changed = moves.length ? followParents(ns, applyNodeChanges(applied, ns)) : applyNodeChanges(applied, ns)
       const next = handResized.size
         ? changed.map((n) => (n.type === 'area' && handResized.has(n.id) ? { ...n, data: withoutAutoGrow(n.data) } : n))
         : changed

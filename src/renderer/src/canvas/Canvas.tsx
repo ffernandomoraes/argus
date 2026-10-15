@@ -36,6 +36,7 @@ import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
 import { Mascot } from './mascot/Mascot'
+import { useWorktreeActions } from './worktrees/useWorktreeActions'
 
 type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
 
@@ -83,6 +84,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     confirm: overlays.commands.confirm
   })
   const drop = useGroupDrop(api, view)
+  const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm)
   const menus = useMenuHandlers({
     nodesRef,
     setMenu: overlays.commands.setMenu,
@@ -93,6 +95,8 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
       confirm: overlays.commands.confirm,
       addFolder: overlays.commands.addFolder,
       addWorkspace: overlays.commands.addWorkspace,
+      newWorktree: worktrees.newWorktree,
+      removeWorktree: worktrees.removeWorktree,
       isPoppedOut,
       organizeBoard,
       organizeGroup
@@ -101,6 +105,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   const commands = useCanvasCommands({
     nodeActions,
     conversations,
+    worktrees,
     overlays: overlays.commands,
     openConversationMenu: menus.openConversationMenu,
     openSettings: onOpenSettings

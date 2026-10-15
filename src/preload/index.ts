@@ -181,6 +181,11 @@ const api: Api = {
     watch: (paths) => send('sessions:watch', paths),
     onChanged: (cb) => listen('sessions:changed', cb)
   },
+  worktrees: {
+    reserve: (folder) => invoke('worktrees:reserve', folder),
+    status: (path) => invoke('worktrees:status', path),
+    remove: (path) => invoke('worktrees:remove', path)
+  },
   devServers: {
     list: (paths) => invoke('devServers:list', paths),
     kill: (pgid, paths) => invoke('devServers:kill', pgid, paths)

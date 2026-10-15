@@ -33,6 +33,8 @@ export function createGroup(position: XYPosition): AreaNode {
 // Instância = uma pasta de projeto. Largura fixa; a altura acompanha as conversas.
 export const INSTANCE_WIDTH = 400
 export const INSTANCE_MIN_HEIGHT = 130
+// Tarefa isolada (worktree): menor que a pasta de onde saiu, para a hierarquia ficar à vista.
+export const WORKTREE_WIDTH = 340
 
 // O que a pasta desenha fora da própria caixa: os botões flutuantes, acima (24px de botão
 // + 6px de respiro). O grupo precisa contar com isso ao crescer ou se ajustar, senão corta

@@ -7,6 +7,8 @@ export function ExperimentsSection() {
   const mascot = usePreference('mascot')
   const orchestrator = usePreference('orchestratorEnabled')
   const multiAgents = usePreference('multiAgents')
+  const designMode = usePreference('designMode')
+  const worktrees = usePreference('worktrees')
   return (
     <Group>
       <Row
@@ -35,6 +37,24 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Codex, Gemini e Cursor', 'Codex, Gemini and Cursor')} checked={multiAgents} onChange={(next) => setPreferences({ multiAgents: next })} />
+      </Row>
+      <Row
+        label={tr('Modo design', 'Design mode')}
+        description={tr(
+          'Protótipos de tela no código do projeto, com a página do servidor de desenvolvimento ao lado do chat. Liga o "Novo design" no menu da pasta e os designs na lista dela.',
+          'Screen prototypes in the project’s code, with the dev server page next to the chat. Turns on "New design" in the folder menu and the designs in its list.'
+        )}
+      >
+        <Switch label={tr('Modo design', 'Design mode')} checked={designMode} onChange={(next) => setPreferences({ designMode: next })} />
+      </Row>
+      <Row
+        label={tr('Tarefas em paralelo (worktrees)', 'Parallel tasks (worktrees)')}
+        description={tr(
+          'Várias tarefas no mesmo projeto ao mesmo tempo, sem uma mexer nos arquivos da outra: cada uma ganha uma cópia da pasta (git worktree) e uma branch própria, num card ligado à pasta. Liga o "Nova tarefa em paralelo" no menu da pasta.',
+          'Several tasks in the same project at once, without one touching the other’s files: each gets its own copy of the folder (git worktree) and branch, in a card linked to the folder. Turns on "New parallel task" in the folder menu.'
+        )}
+      >
+        <Switch label={tr('Tarefas em paralelo', 'Parallel tasks')} checked={worktrees} onChange={(next) => setPreferences({ worktrees: next })} />
       </Row>
     </Group>
   )

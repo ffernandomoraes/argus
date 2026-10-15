@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { app } from 'electron'
@@ -17,6 +17,7 @@ import { wslLaunch } from '../wsl/launch'
 import { folderArgs } from '../workspaceFolders'
 import { trustGemini } from '../workspaces'
 import { FOLDERS_CLAUDE_MD } from '../chats/env'
+import { materializeWorktree, withWorktreeHint } from '../worktrees'
 
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
 // wsl: roda dentro do WSL; o pid do pseudo-terminal é o do wsl.exe, não o do `claude`. newSession:
@@ -41,7 +42,11 @@ function claudeArgs(req: TerminalOpenRequest, promptFile?: string, dir?: (path: 
 
 // Abre o `claude` (ou o shell do sistema, com req.shell) num pseudo-terminal na pasta. Pasta do
 // WSL: dentro da distro (ver wsl/index.ts).
-export async function spawnTerminal(req: TerminalOpenRequest, cwd: string): Promise<Spawned> {
+export async function spawnTerminal(open: TerminalOpenRequest, cwd: string): Promise<Spawned> {
+  // Tarefa isolada reservada: o worktree nasce agora. Num worktree, o aviso dele vai junto das
+  // regras do orquestrador.
+  await materializeWorktree(cwd, '')
+  const req = { ...open, systemPrompt: withWorktreeHint(open.systemPrompt, cwd) }
   const distro = distroFor(cwd)
   const agent = parseAgentRef(req.account)
   if (agent && distro)
@@ -77,9 +82,13 @@ function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): 
 }
 
 // Texto de várias linhas como argumento quebra no Windows e no WSL: vai num arquivo. Um só para
-// todos os terminais, porque as regras são as mesmas (vêm das Configurações).
+// todos os terminais, porque as regras são as mesmas (vêm das Configurações). Com o aviso de um
+// worktree, que muda de pasta para pasta, um por texto.
 function writePrompt(text: string): string {
-  const path = join(app.getPath('userData'), 'orchestrator-prompt.md')
+  const name = text.includes('<worktree>')
+    ? `worktree-prompt-${createHash('sha1').update(text).digest('hex').slice(0, 12)}.md`
+    : 'orchestrator-prompt.md'
+  const path = join(app.getPath('userData'), name)
   writeFileSync(path, text)
   return path
 }

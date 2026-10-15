@@ -14,7 +14,7 @@ const LOCKFILES: [string, string][] = [
 ]
 
 // Em monorepo, a trava do gerenciador fica numa pasta acima do pacote.
-function packageManager(root: string, declared: unknown): string {
+export function packageManager(root: string, declared: unknown): string {
   const name = typeof declared === 'string' ? declared.split('@')[0] : ''
   if (MANAGERS.test(name)) return name
   for (let dir = root; ; dir = dirname(dir)) {

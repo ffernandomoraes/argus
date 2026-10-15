@@ -22,6 +22,7 @@ import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
+import type { WorktreeReserved, WorktreeStatus } from './worktrees'
 
 // Formato de `window.api`, a ponte entre a interface e o processo principal. Escrito só aqui: o
 // preload implementa (`const api: Api`) e a interface usa (preload/index.d.ts). Os `on...` devolvem
@@ -239,6 +240,17 @@ export type Api = {
   }
   // Servidores locais: os que o Claude Code ou o play deixaram rodando e qualquer porta aberta
   // dentro das pastas do canvas (`paths`).
+  // Tarefa isolada num git worktree (ver shared/worktrees.ts).
+  worktrees: {
+    // Reserva a pasta da tarefa a partir da pasta do card (sai da branch atual dela); o worktree
+    // nasce no primeiro envio da conversa. Devolve a pasta do card filho.
+    reserve: (folder: string) => Promise<WorktreeReserved>
+    // Situação (preparando, erro), apps tocados, arquivos alterados e commits não enviados; nulo se
+    // não é um worktree do Argus.
+    status: (path: string) => Promise<WorktreeStatus | null>
+    // Apaga a pasta (a branch fica); devolve o erro ou nulo.
+    remove: (path: string) => Promise<string | null>
+  }
   devServers: {
     list: (paths: string[]) => Promise<DevServer[]>
     kill: (pgid: number, paths: string[]) => Promise<boolean>

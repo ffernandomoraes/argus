@@ -1,4 +1,4 @@
-import { AREA_OUTSET, CHAT_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, NOTE_SIZE, PROJECT_OUTSET } from '../factory'
+import { AREA_OUTSET, CHAT_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, NOTE_SIZE, PROJECT_OUTSET, WORKTREE_WIDTH } from '../factory'
 import type { CanvasNode } from '../types'
 
 // Medidas dos blocos: o tamanho de cada um, a caixa que ele ocupa na tela e quando duas caixas
@@ -34,7 +34,7 @@ const styleSize = (value: unknown, fallback: number) => {
 export function sizeOf(node: CanvasNode): { width: number; height: number } {
   // Instância recém-criada ainda não foi medida pelo React Flow.
   if (node.type === 'project' && !node.measured?.height) {
-    return { width: INSTANCE_WIDTH, height: INSTANCE_MIN_HEIGHT }
+    return { width: node.data.worktree ? WORKTREE_WIDTH : INSTANCE_WIDTH, height: INSTANCE_MIN_HEIGHT }
   }
   if (node.type === 'chat' && !node.measured?.height) return { ...CHAT_SIZE }
   if (node.type === 'note' && !node.measured?.height) return { ...NOTE_SIZE }

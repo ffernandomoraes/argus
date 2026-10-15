@@ -1,6 +1,6 @@
 // Funções puras sobre a lista de nós do canvas, sem React nem Electron. Cada arquivo cuida de
 // um assunto; quem usa importa daqui (./operations).
-export { addNode, placeBeside } from './add'
+export { addNode, placeBelow, placeBeside } from './add'
 export { organizeBoard, organizeGroup } from './arrange'
 export {
   groupAccount,
@@ -20,3 +20,4 @@ export { fitAfterResize, fitGroupToContent, growGroupsToFit, withoutAutoGrow } f
 export { pushAway } from './push'
 export { absolutePosition, childrenOf } from './tree'
 export { toggleCollapse, toggleObscure, toggleProjectCollapse } from './visibility'
+export { followParents, hiddenWorktrees, worktreesOf } from './worktrees'

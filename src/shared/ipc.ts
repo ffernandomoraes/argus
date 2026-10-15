@@ -21,6 +21,7 @@ import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
+import type { WorktreeReserved, WorktreeStatus } from './worktrees'
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -108,6 +109,10 @@ export type InvokeChannels = {
   'sessions:history': (path: string, id: string) => Message[]
   'sessions:images': (path: string, id: string, messageId: string) => string[]
   'sessions:context': (path: string, id: string) => number
+  // Worktrees criados pelo Argus (ver shared/worktrees.ts)
+  'worktrees:reserve': (folder: string) => WorktreeReserved
+  'worktrees:status': (path: string) => WorktreeStatus | null
+  'worktrees:remove': (path: string) => string | null
   // Servidores
   'devServers:list': (paths: string[]) => DevServer[]
   'devServers:kill': (pgid: number, paths: string[]) => boolean

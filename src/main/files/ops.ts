@@ -9,6 +9,7 @@ import { changedOnDisk } from './diskBase'
 import { tr } from '../i18n'
 import { exists, failure, nameTaken, outside, relOf } from './fsHelpers'
 import { invalidName, invalidPath } from './names'
+import { trashPath } from '../wsl'
 
 const invalid = (): FileOpResult => ({ ok: false, error: tr('Nome inválido.', 'Invalid name.') })
 const projectRoot = (): FileOpResult => ({
@@ -77,12 +78,13 @@ export async function renameItem(root: string, rel: string, name: string): Promi
   }
 }
 
-// Vai para a Lixeira (do macOS ou do Windows): dá para recuperar depois.
+// Vai para a Lixeira (do macOS ou do Windows; numa pasta do WSL, a do Linux): dá para recuperar
+// depois.
 export async function trashItem(root: string, rel: string): Promise<FileOpResult> {
   const full = itemIn(root, rel)
   if (typeof full !== 'string') return full
   try {
-    await shell.trashItem(full)
+    await trashPath(full)
     return { ok: true, path: rel }
   } catch (err) {
     return failure(err)

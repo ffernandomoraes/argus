@@ -4,7 +4,7 @@ import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
 import type { MenuState } from '../../canvas/ContextMenu'
 import { refreshNow } from '../../canvas/sessionsStore'
 import { useStableCallback } from '../../lib/useStableCallback'
-import { IS_MAC, IS_WIN, isMod } from '../../platform'
+import { IS_MAC, IS_WIN, isMod, isWslFolder } from '../../platform'
 import { moveDrafts } from '../drafts'
 import type { Editing } from './FileTree'
 import { treeMenu, type TreeMenuActions } from './treeMenu'
@@ -18,6 +18,8 @@ const TRASH = IS_WIN ? 'Recycle Bin' : 'Trash'
 const RECOVER = IS_MAC
   ? tr('Dá para recuperar pelo Finder.', 'You can restore it from the Finder.')
   : tr('Dá para recuperar pela Lixeira.', `You can restore it from the ${TRASH}.`)
+// Pasta do WSL não tem Lixeira do Windows: vai para a do Linux (ver main/wsl/trash.ts).
+const WSL_RECOVER = tr('Fica em ~/.local/share/Trash, não na Lixeira do Windows.', 'It stays in ~/.local/share/Trash, not the Windows Recycle Bin.')
 
 type Options = {
   root: string
@@ -94,9 +96,13 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
       title: entry.isDir
         ? tr(`Excluir a pasta "${entry.name}"?`, `Delete the folder "${entry.name}"?`)
         : tr(`Excluir o arquivo "${entry.name}"?`, `Delete the file "${entry.name}"?`),
-      description: entry.isDir
-        ? tr(`A pasta e tudo o que há dentro dela vão para a Lixeira. ${RECOVER}`, `The folder and everything in it go to the ${TRASH}. ${RECOVER}`)
-        : tr(`O arquivo vai para a Lixeira. ${RECOVER}`, `The file goes to the ${TRASH}. ${RECOVER}`),
+      description: isWslFolder(root)
+        ? entry.isDir
+          ? tr(`A pasta e tudo o que há dentro dela vão para a Lixeira do Linux (WSL). ${WSL_RECOVER}`, `The folder and everything in it go to the Linux (WSL) Trash. ${WSL_RECOVER}`)
+          : tr(`O arquivo vai para a Lixeira do Linux (WSL). ${WSL_RECOVER}`, `The file goes to the Linux (WSL) Trash. ${WSL_RECOVER}`)
+        : entry.isDir
+          ? tr(`A pasta e tudo o que há dentro dela vão para a Lixeira. ${RECOVER}`, `The folder and everything in it go to the ${TRASH}. ${RECOVER}`)
+          : tr(`O arquivo vai para a Lixeira. ${RECOVER}`, `The file goes to the ${TRASH}. ${RECOVER}`),
       confirmLabel: tr('Mover para a Lixeira', `Move to ${TRASH}`),
       onConfirm: () => {
         void (async () => {

@@ -10,11 +10,13 @@ import { wslAccountDir, wslAccountsRoot, wslLoginDir } from '../wsl/accounts'
 import { WSL_EXE } from '../wsl/distros'
 import { placeOf } from './context'
 import { scrub } from './scrub'
+import type { Source } from './source'
 
-// Ferramentas do app para a investigação: conferências prontas, que só leem. O Claude que investiga
-// não roda comando livre: o que ele precisa ver da máquina passa por aqui.
+// Ferramentas do app para a investigação: conferências prontas, que só leem, e o código do Argus na
+// versão instalada (ver source.ts). O Claude que investiga não roda comando livre: o que ele
+// precisa ver da máquina passa por aqui.
 
-const OUTPUT_MAX = 20_000
+const OUTPUT_MAX = 40_000
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: scrub(t.length > OUTPUT_MAX ? `${t.slice(0, OUTPUT_MAX)}\n(cortado)` : t) }] })
 
 // `claude auth status` da conta, rodando onde o projeto rodaria: é o mesmo `claude`, com as mesmas
@@ -90,7 +92,61 @@ async function probeWsl(distro: string, account: string | undefined): Promise<st
   })
 }
 
-export function reportTools(diagnostics: () => Promise<string>) {
+const LIST_MAX = 300
+const READ_MAX = 400
+const MATCH_MAX = 100
+
+// Cabeçalho de toda resposta de código: de qual versão ele é.
+const sourceHead = (src: Source) => `Código do Argus em ${src.ref}${src.note ? ` (${src.note})` : ''}`
+
+async function withSource(source: () => Promise<Source>, run: (src: Source) => string) {
+  try {
+    const src = await source()
+    return text(`${sourceHead(src)}\n${run(src)}`)
+  } catch (err) {
+    return text(`${(err as Error).message} Siga só com o que dá para ver na máquina.`)
+  }
+}
+
+function listFiles(src: Source, filter?: string): string {
+  const f = filter?.toLowerCase()
+  const paths = [...src.files.keys()].filter((p) => !f || p.toLowerCase().includes(f)).sort()
+  const shown = paths.slice(0, LIST_MAX)
+  return `${paths.length} arquivo(s)${paths.length > LIST_MAX ? `, mostrando ${LIST_MAX}` : ''}\n${shown.join('\n')}`
+}
+
+function readFile(src: Source, path: string, from = 1, count = READ_MAX): string {
+  const clean = path.replace(/\\/g, '/').replace(/^\.?\//, '')
+  const body = src.files.get(clean)
+  if (body === undefined) return `Arquivo não encontrado: ${clean}. Use codigo_arquivos para achar o caminho.`
+  const lines = body.split('\n')
+  const start = Math.max(1, Math.floor(from))
+  const end = Math.min(lines.length, start + Math.min(READ_MAX, Math.max(1, Math.floor(count))) - 1)
+  const out = lines.slice(start - 1, end).map((l, i) => `${start + i}\t${l}`)
+  return `${clean} (linhas ${start}-${end} de ${lines.length})\n${out.join('\n')}`
+}
+
+function searchCode(src: Source, query: string, folder?: string): string {
+  let re: RegExp
+  try {
+    re = new RegExp(query, 'i')
+  } catch {
+    re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+  }
+  const dir = folder?.replace(/\\/g, '/').replace(/^\.?\//, '')
+  const hits: string[] = []
+  for (const [path, body] of src.files) {
+    if (dir && !path.startsWith(dir)) continue
+    const lines = body.split('\n')
+    for (let i = 0; i < lines.length && hits.length < MATCH_MAX; i++) {
+      if (re.test(lines[i])) hits.push(`${path}:${i + 1}: ${lines[i].trim().slice(0, 200)}`)
+    }
+    if (hits.length >= MATCH_MAX) break
+  }
+  return hits.length ? `${hits.length} resultado(s)${hits.length >= MATCH_MAX ? ' (limite)' : ''}\n${hits.join('\n')}` : 'Nada encontrado.'
+}
+
+export function reportTools(diagnostics: () => Promise<string>, source: () => Promise<Source>) {
   return [
     tool(
       'diagnostico_app',
@@ -119,6 +175,31 @@ export function reportTools(diagnostics: () => Promise<string>) {
         conta: z.string().optional().describe('id da conta ("main" é a principal); sem ela, a padrão')
       },
       async ({ distro, conta }) => text(await probeWsl(distro, conta))
+    ),
+    tool(
+      'codigo_arquivos',
+      'Lista os arquivos do código do Argus na versão instalada (a mesma deste app). Com filtro, só os caminhos que contêm o texto (ex.: "wsl", "accounts", "auth").',
+      { filtro: z.string().optional() },
+      async ({ filtro }) => withSource(source, (src) => listFiles(src, filtro))
+    ),
+    tool(
+      'codigo_ler',
+      `Lê um arquivo do código do Argus na versão instalada, com o número de cada linha (até ${READ_MAX} linhas por vez).`,
+      {
+        caminho: z.string().describe('caminho a partir da raiz do repositório, ex.: src/main/wsl/launch.ts'),
+        linha_inicial: z.number().optional(),
+        linhas: z.number().optional()
+      },
+      async ({ caminho, linha_inicial, linhas }) => withSource(source, (src) => readFile(src, caminho, linha_inicial, linhas))
+    ),
+    tool(
+      'codigo_buscar',
+      'Procura um texto ou expressão regular no código do Argus na versão instalada; devolve arquivo:linha de cada ocorrência.',
+      {
+        texto: z.string(),
+        pasta: z.string().optional().describe('só dentro desta pasta, ex.: src/main/wsl')
+      },
+      async ({ texto, pasta }) => withSource(source, (src) => searchCode(src, texto, pasta))
     )
   ]
 }

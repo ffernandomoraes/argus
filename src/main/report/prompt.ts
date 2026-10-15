@@ -2,8 +2,9 @@ import { homedir } from 'node:os'
 import { app } from 'electron'
 import { placeOf } from './context'
 
-// Instruções do Claude que investiga um problema do Argus na máquina da pessoa. Ele não tem o
-// código do app: o mapa de como o Argus funciona vai aqui, e o resto ele confere na máquina.
+// Instruções do Claude que investiga um problema do Argus na máquina da pessoa. O mapa de como o
+// Argus funciona vai aqui; o código da versão instalada ele lê pelas ferramentas codigo_* (ver
+// source.ts), e a máquina ele confere pelas outras.
 
 const ARGUS = (dev: boolean) => `
 ## Como o Argus funciona
@@ -27,6 +28,12 @@ const ARGUS = (dev: boolean) => `
   pasta da conta no Windows (/mnt/c/Users/<usuário>/${dev ? '.argus-dev' : '.argus'}/accounts/<id>). Na principal, o
   ~/.claude do Windows só é usado no Linux quando o Linux não tem login próprio. Os argumentos e
   variáveis vão por um arquivo em ~/${dev ? '.argus-dev' : '.argus'}/run no Linux.
+- Onde fica cada parte no código (pasta src/): main/ é o processo principal e renderer/ a
+  interface. Em main/: accounts/ (contas e pastas), auth/ (login e status), chats/ (conversas
+  pelo SDK; env.ts monta o processo do claude), terminals/ (terminais), wsl/ (distros, launch.ts e
+  run.ts abrem o claude no Linux, accounts.ts as pastas das contas lá), claudePath/ (onde está o
+  claude), claudeHome.ts (pastas de dados), usageMonitor/ (limites), report/ (esta investigação).
+  docs/decisoes.md tem as decisões do projeto.
 - Os erros mais comuns: \`claude\` não instalado ou antigo; conta sem login no lugar onde o projeto
   roda (pede /login no primeiro prompt); WSL que não responde ou sem o claude; disco do Windows
   montado fora de /mnt/c; caminho com caractere especial; antivírus ou permissão bloqueando a pasta.
@@ -44,14 +51,24 @@ nomes de arquivos (Glob). No Windows, as pastas do WSL abrem por \\\\wsl.localho
 WSL, as do Windows por /mnt/c/... As ferramentas do app (diagnostico_app, status_login,
 conferir_wsl) conferem login e WSL do jeito que o app faz: prefira elas.
 
+O código do Argus na versão instalada (${app.getVersion()}) está em codigo_arquivos, codigo_ler e
+codigo_buscar. O app instalado não tem o código legível: use essas ferramentas, não procure o código
+na máquina.
+
+## Como investigar
+
+1. Veja na máquina o que acontece (dados iniciais, status_login, conferir_wsl, arquivos).
+2. Leia no código o caminho que leva a esse comportamento, para confirmar a causa com o
+   mecanismo, e não só com o sintoma.
+3. Pare quando máquina e código contarem a mesma história, ou quando as conferências acabarem.
+
 ## Regras
 
 - Só leia e confira. Nunca tente mudar, criar ou apagar nada, nem pedir para a pessoa fazer isso.
 - Nunca leia arquivos de login ou chave (.credentials.json, auth.json, .env, chaves): o app recusa.
   Para saber se uma conta tem login num lugar, use status_login.
 - Nunca escreva no relatório tokens, chaves ou emails completos.
-- Seja objetivo: confira as hipóteses mais prováveis primeiro e pare quando tiver a causa, ou
-  quando as conferências acabarem. Não passe de uns 25 passos.
+- Seja objetivo: confira as hipóteses mais prováveis primeiro. Não passe de uns 40 passos.
 
 ## Resposta
 
@@ -70,6 +87,7 @@ O que você conferiu e viu, em tópicos curtos, com caminhos e saídas relevante
 Um contorno seguro, se houver. Se não houver, diga que é preciso esperar a correção.
 
 ## Para o desenvolvedor
-Onde provavelmente está o erro no Argus e o que mudar, em termos do funcionamento descrito acima.
+Onde está o erro no código do Argus, com arquivo:linha desta versão, e o que mudar. Separe o que
+você confirmou no código do que é suposição.
 `
 }

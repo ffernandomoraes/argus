@@ -1,4 +1,5 @@
 import { homedir } from 'node:os'
+import { app } from 'electron'
 import { createSdkMcpServer, query, type CanUseTool, type Query } from '@anthropic-ai/claude-agent-sdk'
 import { MAIN_ACCOUNT } from '../../shared/auth'
 import { parseAgentRef } from '../../shared/providers'
@@ -10,18 +11,19 @@ import { describeTool } from '../toolLabels'
 import { collectContext, type ContextSources } from './context'
 import { systemPrompt } from './prompt'
 import { scrub, SECRET_FILE } from './scrub'
+import { sourceFor } from './source'
 import { reportTools } from './tools'
 
 export { captureAppLog } from './appLog'
 
 // Reportar problema: junta o que o app sabe da máquina, pede ao Claude da própria pessoa que
-// investigue (só lendo, com as ferramentas de tools.ts) e monta um texto para ela copiar e mandar
-// ao desenvolvedor. Sem conta logada, ou se o Claude falhar, o texto vai só com os dados do app:
+// investigue (só lendo, com as ferramentas de tools.ts, que incluem o código do Argus na versão
+// instalada) e monta um texto para ela copiar e mandar ao desenvolvedor. Sem conta logada, ou se o Claude falhar, o texto vai só com os dados do app:
 // muitas vezes o problema é justamente o Claude não funcionar. Um relatório por vez, o mesmo em
 // todas as janelas.
 
-const TIME_LIMIT_MS = 8 * 60_000
-const MAX_TURNS = 40
+const TIME_LIMIT_MS = 10 * 60_000
+const MAX_TURNS = 60
 const STEPS_MAX = 60
 // Os dados vão inteiros para o Claude; no texto para copiar, o começo e o fim (os avisos mais
 // recentes ficam no fim).
@@ -56,6 +58,12 @@ function stepLabel(name: string, input: Record<string, unknown>): string {
     }
     case 'mcp__argus__conferir_wsl':
       return tr(`Conferindo o WSL (${str(input.distro) ?? ''})`, `Checking WSL (${str(input.distro) ?? ''})`)
+    case 'mcp__argus__codigo_arquivos':
+      return tr('Olhando os arquivos do código do Argus', 'Browsing the Argus source files')
+    case 'mcp__argus__codigo_ler':
+      return tr(`Lendo o código: ${str(input.caminho) ?? ''}`, `Reading the code: ${str(input.caminho) ?? ''}`)
+    case 'mcp__argus__codigo_buscar':
+      return tr(`Procurando no código: “${str(input.texto) ?? ''}”`, `Searching the code: “${str(input.texto) ?? ''}”`)
   }
   const d = describeTool(name, input)
   return d.summary ? `${d.label}: ${d.summary}` : d.label
@@ -80,7 +88,7 @@ function compose(problem: ReportProblem, analysis: string, note: string | undefi
   const lines = [
     '# Relatório de problema do Argus',
     '',
-    analysis ? `Investigado pelo Claude da conta ${account}.` : `Sem a análise do Claude: ${note ?? 'não rodou'}`,
+    analysis ? `Investigado pelo Claude da conta ${account}, com o código do Argus ${app.getVersion()}.` : `Sem a análise do Claude: ${note ?? 'não rodou'}`,
     '',
     '## O que a pessoa relatou',
     ...reported,
@@ -186,7 +194,12 @@ export class ProblemReport {
 
   private async ask(run: Run, account: string, context: string): Promise<string> {
     const inbox = new Inbox()
-    const server = createSdkMcpServer({ name: 'argus', tools: reportTools(() => collectContext(this.sources)), alwaysLoad: true })
+    // O código da versão instalada já começa a baixar: quando o Claude pedir, ele está pronto. O
+    // catch só evita o aviso de rejeição sem tratamento; a ferramenta recebe o erro.
+    const version = app.getVersion()
+    sourceFor(version).catch(() => {})
+    const tools = reportTools(() => collectContext(this.sources), () => sourceFor(version))
+    const server = createSdkMcpServer({ name: 'argus', tools, alwaysLoad: true })
     const q = query({
       prompt: inbox,
       options: {

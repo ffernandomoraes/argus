@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { agentProviderOf } from '../../../shared/agents'
 import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext } from '../auth/useAuth'
 import { useViewing } from '../canvas/sessionsStore'

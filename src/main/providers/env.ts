@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join } from 'node:path'
 import type { ProviderId } from '../../shared/providers'
+import { linkAgentsDir } from '../agents/accountLinks'
 import { childEnv, prependPath } from '../platform'
 import { findCommand, shellPathDirs, type Command } from './bins'
 import { readKey } from './keys'
@@ -42,7 +43,10 @@ export function providerLaunch(provider: ProviderId, args: string[], accountId?:
   Object.assign(env, cmd.env)
   prependPath(env, [isAbsolute(cmd.file) ? dirname(cmd.file) : undefined, ...shellPathDirs()])
   const dir = providerAccountDir(provider, entry.id)
-  if (dir) mkdirSync(dir, { recursive: true })
+  if (dir) {
+    mkdirSync(dir, { recursive: true })
+    linkAgentsDir(provider, dir)
+  }
   const extra: string[] = []
 
   if (provider === 'codex' && dir) {

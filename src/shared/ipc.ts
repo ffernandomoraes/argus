@@ -1,4 +1,4 @@
-import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
+import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { Lang, LangPreference } from './i18n'
 import type { AuthState, LoginMethod } from './auth'
@@ -75,9 +75,9 @@ export type InvokeChannels = {
   'chat:state': (key: string) => ChatState | null
   'chat:active': () => ActiveChat[]
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
-  'agents:list': (projectPath?: string) => AgentDef[]
-  'agents:save': (req: AgentSaveRequest) => AgentSaveResult
-  'agents:remove': (name: string) => boolean
+  'agents:list': (provider: AgentProvider, projectPath?: string) => AgentDef[]
+  'agents:save': (provider: AgentProvider, req: AgentSaveRequest) => AgentSaveResult
+  'agents:remove': (provider: AgentProvider, name: string) => boolean
   'memory:list': (projects: MemoryProject[]) => MemoryGroup[]
   'memory:read': (path: string, projects: MemoryProject[]) => string | null
   // base: o texto lido quando a edição começou; com ela, não grava por cima de mudança do disco.

@@ -1,4 +1,4 @@
-import type { AgentDef, AgentSaveRequest, AgentSaveResult } from './agents'
+import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents'
 import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
@@ -142,11 +142,11 @@ export type Api = {
     // Respostas não vistas nesta janela: o ícone da barra de menus conta e lista.
     setUnread: (chats: UnreadChat[]) => void
   }
-  // Biblioteca de agentes (~/.claude/agents). Com a pasta, inclui os do projeto.
+  // Biblioteca de agentes de cada provedor (main/agents/folder.ts). Com a pasta, inclui os do projeto.
   agents: {
-    list: (projectPath?: string) => Promise<AgentDef[]>
-    save: (req: AgentSaveRequest) => Promise<AgentSaveResult>
-    remove: (name: string) => Promise<boolean>
+    list: (provider: AgentProvider, projectPath?: string) => Promise<AgentDef[]>
+    save: (provider: AgentProvider, req: AgentSaveRequest) => Promise<AgentSaveResult>
+    remove: (provider: AgentProvider, name: string) => Promise<boolean>
   }
   memory: {
     list: (projects: MemoryProject[]) => Promise<MemoryGroup[]>

@@ -1,4 +1,4 @@
-import type { AgentDef } from '../../../../shared/agents'
+import { agentProviderOf, type AgentDef } from '../../../../shared/agents'
 import type { PermissionAnswer } from '../../../../shared/chat'
 import { orchestratorPrompt } from '../../../../shared/orchestrator'
 import type { ConversationSummary } from '../../canvas/types'
@@ -14,8 +14,8 @@ import { useClaudeInfo } from '../useModels'
 
 // Agentes chamados com @ e, com o orquestrador ligado, as regras dele. Vão em toda mensagem: valem
 // assim que a pessoa liga, sem reabrir a conversa, e sobrevivem à compactação.
-function hintFor(text: string, agents: AgentDef[], settings: SessionSettings): string | undefined {
-  const parts = [agentHint(mentionedAgents(text, agents)), settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined]
+function hintFor(text: string, agents: AgentDef[], settings: SessionSettings, account?: string): string | undefined {
+  const parts = [agentHint(mentionedAgents(text, agents), agentProviderOf(account)), settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined]
   return parts.filter(Boolean).join('\n\n') || undefined
 }
 
@@ -52,7 +52,7 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
       settings,
       text: full,
       images,
-      hint: hintFor(text, agents, settings)
+      hint: hintFor(text, agents, settings, account)
     })
   })
 

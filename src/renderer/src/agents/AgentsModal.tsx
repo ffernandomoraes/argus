@@ -1,22 +1,44 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowLeft, Bot, Plus, Trash2 } from 'lucide-react'
+import { AGENT_PROVIDERS, agentProviderName, type AgentProvider } from '../../../shared/agents'
 import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
 import { useSaveShortcut } from '../lib/useSaveShortcut'
 import { Presence } from '../motion'
 import { IS_WIN, tildify } from '../platform'
+import { useProviders } from '../providers/useProviders'
+import { usePreference } from '../settings/preferences'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
 import { ModalCloseButton } from '../ui/ModalCloseButton'
 import { AgentEditor } from './AgentEditor'
 import { AgentList } from './AgentList'
+import { ImportMenu } from './ImportMenu'
+import { ProviderLogo } from './ProviderLogo'
 import { useAgentDraft } from './useAgentDraft'
 import { tr } from '../i18n'
 
-// Biblioteca de agentes globais: os arquivos de ~/.claude/agents, que valem em todo projeto
-// (aqui, no terminal e no VS Code). O app só lê e grava esses arquivos.
+// Pasta de cada biblioteca, como aparece no cabeçalho (main/agents/folder.ts).
+function libraryPath(provider: AgentProvider): string {
+  if (provider === 'cursor') return tr('Guardados pelo Argus: o Cursor não tem agentes globais', 'Kept by Argus: Cursor has no global agents')
+  return IS_WIN ? `~\\.${provider}\\agents\\` : `~/.${provider}/agents/`
+}
+
+// Biblioteca de agentes globais de cada provedor: arquivos que valem em todo projeto (aqui, no
+// terminal e no VS Code). O app só lê e grava esses arquivos. Com os outros agentes ligados, uma
+// aba por provedor com conta conectada.
 export function AgentsModal({ onClose }: { onClose: () => void }) {
-  const agent = useAgentDraft()
+  const multiAgents = usePreference('multiAgents')
+  const providersState = useProviders()
+  const available = useMemo(
+    () => AGENT_PROVIDERS.filter((p) => p === 'claude' || (multiAgents && !!providersState?.providers[p]?.accounts.length)),
+    [multiAgents, providersState]
+  )
+  const [chosen, setProvider] = useState<AgentProvider>('claude')
+  // A aba escolhida some se a conta dela for desconectada: volta para o Claude.
+  const provider = available.includes(chosen) ? chosen : 'claude'
+  const others = useMemo(() => available.filter((p) => p !== provider), [available, provider])
+  const agent = useAgentDraft(provider)
   const { draft, dirty } = agent
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
 
@@ -69,10 +91,11 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
           )}
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{draft ? (draft.previousName ?? tr('Novo agente', 'New agent')) : tr('Agentes', 'Agents')}</div>
-            <div className="mt-0.5 truncate font-mono text-[12px] text-faint">
-              {agent.current ? tildify(agent.current.path) : IS_WIN ? '~\\.claude\\agents\\' : '~/.claude/agents/'}
+            <div className={`mt-0.5 truncate text-[12px] text-faint ${agent.current || provider !== 'cursor' ? 'font-mono' : ''}`}>
+              {agent.current ? tildify(agent.current.path) : libraryPath(provider)}
             </div>
           </div>
+          {!draft && others.length > 0 && <ImportMenu others={others} onPick={agent.importFrom} />}
           {!draft && agent.loaded && agent.agents.length > 0 && (
             <Button size="lg" variant="primary" onClick={agent.create}>
               <Plus size={12} />
@@ -88,10 +111,31 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
           <ModalCloseButton />
         </header>
 
+        {/* Uma aba por provedor; some com um agente aberto (trocar descartaria o rascunho). */}
+        {!draft && available.length > 1 && (
+          <div role="tablist" className="flex gap-6 border-b border-line px-5">
+            {available.map((p) => (
+              <button
+                key={p}
+                role="tab"
+                aria-selected={p === provider}
+                onClick={() => setProvider(p)}
+                className={`-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-[13px] ${
+                  p === provider ? 'border-accent font-medium text-text' : 'border-transparent text-muted hover:text-text'
+                }`}
+              >
+                <ProviderLogo provider={p} size={13} />
+                {agentProviderName(p)}
+              </button>
+            ))}
+          </div>
+        )}
+
         {!draft ? (
-          agent.loaded && <AgentList agents={agent.agents} onSelect={agent.select} onCreate={agent.create} />
+          agent.loaded && <AgentList provider={provider} agents={agent.agents} onSelect={agent.select} onCreate={agent.create} />
         ) : (
           <AgentEditor
+            provider={provider}
             draft={draft}
             step={agent.step}
             reached={agent.reached}

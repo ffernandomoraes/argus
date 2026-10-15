@@ -1,9 +1,14 @@
+import { agentProviderName, type AgentProvider } from '../../../shared/agents'
 import type { Draft } from './agentDraft'
 import { Field, INPUT } from './Field'
 import { tr } from '../i18n'
 
-// Primeiro passo: nome, quando usar e as instruções do agente.
-export function InstructionsStep({ draft, onChange }: { draft: Draft; onChange: (patch: Partial<Draft>) => void }) {
+// Primeiro passo: nome, quando usar e as instruções do agente. No Codex e no Gemini, também o
+// modelo (no Claude ele fica no passo de ferramentas; no Cursor, o agente vai no texto da mensagem
+// e roda no modelo da conversa).
+export function InstructionsStep({ provider, draft, onChange }: { provider: AgentProvider; draft: Draft; onChange: (patch: Partial<Draft>) => void }) {
+  const name = agentProviderName(provider)
+  const injected = provider === 'cursor'
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
       <Field
@@ -21,10 +26,14 @@ export function InstructionsStep({ draft, onChange }: { draft: Draft; onChange: 
       </Field>
       <Field
         label={tr('Quando usar', 'When to use')}
-        hint={tr(
-          'O Claude lê isto para decidir sozinho se chama este agente. Diga a tarefa e quando ela aparece.',
-          'Claude reads this to decide on its own whether to call this agent. Describe the task and when it comes up.'
-        )}
+        hint={
+          injected
+            ? tr('Aparece no @ da conversa, para lembrar quando usar este agente.', 'Shown in the chat’s @ menu, as a reminder of when to use this agent.')
+            : tr(
+                `O ${name} lê isto para decidir se chama este agente. Diga a tarefa e quando ela aparece.`,
+                `${name} reads this to decide whether to call this agent. Describe the task and when it comes up.`
+              )
+        }
       >
         <textarea
           value={draft.description}
@@ -39,10 +48,17 @@ export function InstructionsStep({ draft, onChange }: { draft: Draft; onChange: 
       </Field>
       <Field
         label={tr('Instruções', 'Instructions')}
-        hint={tr(
-          'O que o agente sabe e como trabalha, passo a passo. Ele não vê a conversa: só o pedido que recebe.',
-          'What the agent knows and how it works, step by step. It doesn’t see the chat: only the request it receives.'
-        )}
+        hint={
+          injected
+            ? tr(
+                'O que o agente sabe e como trabalha, passo a passo. Vai junto da mensagem quando você chama com @.',
+                'What the agent knows and how it works, step by step. It goes along with your message when you call it with @.'
+              )
+            : tr(
+                'O que o agente sabe e como trabalha, passo a passo. Ele não vê a conversa: só o pedido que recebe.',
+                'What the agent knows and how it works, step by step. It doesn’t see the chat: only the request it receives.'
+              )
+        }
         className="min-h-72 flex-1"
       >
         <textarea
@@ -55,6 +71,17 @@ export function InstructionsStep({ draft, onChange }: { draft: Draft; onChange: 
           className={`${INPUT} flex-1 resize-none text-[14px] leading-relaxed`}
         />
       </Field>
+      {(provider === 'codex' || provider === 'gemini') && (
+        <Field
+          label={tr('Modelo', 'Model')}
+          hint={tr(
+            `Opcional. O nome do modelo do ${name}, como aparece no seletor da conversa. Vazio: o mesmo da conversa.`,
+            `Optional. The ${name} model name, as shown in the chat’s picker. Empty: same as the chat.`
+          )}
+        >
+          <input value={draft.model} onChange={(e) => onChange({ model: e.target.value.trim() })} spellCheck={false} className={`${INPUT} font-mono`} />
+        </Field>
+      )}
     </div>
   )
 }

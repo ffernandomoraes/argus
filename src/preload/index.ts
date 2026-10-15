@@ -121,9 +121,9 @@ const api: Api = {
     setUnread: (chats) => send('chat:unread', chats)
   },
   agents: {
-    list: (projectPath) => invoke('agents:list', projectPath),
-    save: (req) => invoke('agents:save', req),
-    remove: (name) => invoke('agents:remove', name)
+    list: (provider, projectPath) => invoke('agents:list', provider, projectPath),
+    save: (provider, req) => invoke('agents:save', provider, req),
+    remove: (provider, name) => invoke('agents:remove', provider, name)
   },
   memory: {
     list: (projects) => invoke('memory:list', projects),

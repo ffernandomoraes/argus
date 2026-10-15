@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { agentProviderOf } from '../../../shared/agents'
 import type { Design, DesignDevice } from '../../../shared/design'
 import { AccountContext } from '../auth/accountContext'
 import { agentHint, mentionedAgents } from '../conversation/agentMentions'
@@ -55,7 +56,8 @@ export function PrototypePane({
   const comments = useComments(origin, here)
   // Esc com o modo comentar ligado só desliga ele (o balão em edição trata o próprio Esc antes).
   useEscape(comments.stop, comments.commenting)
-  const agents = useProjectAgents(projectPath)
+  const provider = agentProviderOf(account)
+  const agents = useProjectAgents(projectPath, provider)
   const contextPercent = useContextPercent(projectPath, design.sessionId, live?.revision, running)
   const frameRef = useRef<HTMLIFrameElement>(null)
   const zoom = usePreviewZoom(!!url)
@@ -110,7 +112,7 @@ export function PrototypePane({
       : undefined
     const hint = command
       ? ''
-      : requestHint(design, here, page) + (withComments ? commentsHint(ready) : '') + (agentHint(mentionedAgents(text, agents)) ?? '') + marks
+      : requestHint(design, here, page) + (withComments ? commentsHint(ready) : '') + (agentHint(mentionedAgents(text, agents), provider) ?? '') + marks
     sendPrototype({ design, cwd: projectPath, account, text, images, hint })
     // O pedido já foi: os comentários somem e o modo comentar desliga.
     if (withComments) comments.discard()

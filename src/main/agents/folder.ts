@@ -1,27 +1,43 @@
 import { readdir, readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
-import type { AgentDef } from '../../shared/agents'
+import type { AgentDef, AgentProvider } from '../../shared/agents'
 import { claudeDir } from '../claudeHome'
 import { expandHome } from '../paths'
-import { parseAgent } from './format'
+import { cursorAgentsDir } from '../providers/paths'
+import { parseAgent, parseCodexAgent } from './format'
 
-// ~/.claude/agents de quem roda o Claude Code de `path`; sem ela, o do app (a biblioteca de agentes).
-// Num projeto do WSL, o do Linux.
-export const globalDir = (path?: string): string => join(claudeDir(path), 'agents')
-export const projectDir = (projectPath: string): string => join(expandHome(projectPath), '.claude', 'agents')
+// Biblioteca de cada agente, na pasta que o próprio CLI lê (a da conta principal; as extras ganham
+// um link para ela, em accountLinks.ts):
+// - Claude: ~/.claude/agents de quem roda o Claude Code de `path`; num projeto do WSL, o do Linux.
+// - Codex: ~/.codex/agents, em .toml.
+// - Gemini: ~/.gemini/agents.
+// - Cursor: o CLI não tem agentes globais; ficam na pasta do Argus.
+export function globalDir(provider: AgentProvider, path?: string): string {
+  if (provider === 'claude') return join(claudeDir(path), 'agents')
+  if (provider === 'cursor') return cursorAgentsDir()
+  return join(homedir(), `.${provider}`, 'agents')
+}
 
-export async function readDir(dir: string, scope: AgentDef['scope']): Promise<AgentDef[]> {
+// <pasta>/.claude/agents, .codex/agents, .gemini/agents ou .cursor/agents.
+export const projectDir = (provider: AgentProvider, projectPath: string): string => join(expandHome(projectPath), `.${provider}`, 'agents')
+
+export const agentExt = (provider: AgentProvider): string => (provider === 'codex' ? '.toml' : '.md')
+
+export async function readDir(provider: AgentProvider, dir: string, scope: AgentDef['scope']): Promise<AgentDef[]> {
+  const ext = agentExt(provider)
   let names: string[]
   try {
-    names = (await readdir(dir)).filter((n) => n.endsWith('.md'))
+    names = (await readdir(dir)).filter((n) => n.endsWith(ext))
   } catch {
     return []
   }
+  const parse = provider === 'codex' ? parseCodexAgent : parseAgent
   const agents = await Promise.all(
     names.map(async (n) => {
       const path = join(dir, n)
       try {
-        return parseAgent(await readFile(path, 'utf8'), path, scope)
+        return parse(await readFile(path, 'utf8'), path, scope)
       } catch {
         return null
       }
@@ -31,9 +47,9 @@ export async function readDir(dir: string, scope: AgentDef['scope']): Promise<Ag
 }
 
 // O agente pelo nome do cabeçalho, como a tela mostra: o arquivo pode ter outro nome (escrito à
-// mão). Com dois de mesmo nome, vale o do arquivo <nome>.md. O caminho vem da própria pasta, nunca
-// do nome que chegou da tela.
-export function findByName(agents: AgentDef[], name: string): AgentDef | undefined {
+// mão). Com dois de mesmo nome, vale o do arquivo <nome>.<ext>. O caminho vem da própria pasta,
+// nunca do nome que chegou da tela.
+export function findByName(agents: AgentDef[], name: string, ext: string): AgentDef | undefined {
   const same = agents.filter((a) => a.name === name)
-  return same.find((a) => basename(a.path) === `${name}.md`) ?? same[0]
+  return same.find((a) => basename(a.path) === `${name}${ext}`) ?? same[0]
 }

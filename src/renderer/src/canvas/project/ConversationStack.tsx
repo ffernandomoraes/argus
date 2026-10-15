@@ -8,6 +8,7 @@ import { ConversationRow } from './ConversationRow'
 import { TasksRow } from './TasksRow'
 import { INDENT, legPath } from './geometry'
 import { useProjectRows } from './useProjectRows'
+import { MAX_CONVERSATIONS } from './projectRows'
 import { tr } from '../../i18n'
 
 // Lista de conversas dentro da caixa da pasta: as mais recentes (recolhida, só as que pedem
@@ -37,13 +38,17 @@ export const ConversationStack = memo(function ConversationStack({
     [openConversationMenu, nodeId]
   )
   if (rows.length === 0 && collapsed) return null
+  // À direita, os mesmos 12px do ícone da pasta à esquerda (o px-3 do cabeçalho).
+  // "Ver todas" só quando sobra conversa fora da pilha. Sem ele, a última conversa ganha mais
+  // respiro até o fim do card (ou até a divisória das pastas do espaço de trabalho).
+  const showAll = !collapsed && conversations.length > MAX_CONVERSATIONS
 
   const isActive = (c: ConversationSummary) =>
     (!!activeConversation && (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)) ||
     (!!c.designId && activeDesign === c.designId)
 
   return (
-    <ul className="relative flex flex-col gap-1 pb-1.5 pr-1.5" style={{ paddingLeft: INDENT }}>
+    <ul className={`relative flex flex-col gap-1 pr-3 ${showAll ? 'pb-1.5' : 'pb-3'}`} style={{ paddingLeft: INDENT }}>
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute left-0 top-0 h-full overflow-visible"
@@ -95,8 +100,8 @@ export const ConversationStack = memo(function ConversationStack({
           />
         )
       )}
-      {/* Fecha a lista: abre todas no painel flutuante. */}
-      {!collapsed && (
+      {/* Fecha a lista: abre todas no painel flutuante. Só quando sobra conversa fora da pilha. */}
+      {showAll && (
         <li>
           <button
             onClick={() => openAllConversations(nodeId)}

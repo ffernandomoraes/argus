@@ -35,6 +35,8 @@ const api: Api = {
     onChange: (cb) => listen('language:changed', cb)
   },
   pickFolder: (distro) => invoke('dialog:pickFolder', distro),
+  pickFolders: (distro) => invoke('dialog:pickFolders', distro),
+  syncWorkspace: (folders, dir) => invoke('workspace:sync', folders, dir),
   wsl: {
     distros: () => invoke('wsl:distros'),
     diagnostics: () => invoke('wsl:diagnostics')
@@ -113,6 +115,7 @@ const api: Api = {
     retain: (key) => send('chat:retain', key),
     mcpStatus: (key, cwd, account) => invoke('mcp:status', key, cwd, account),
     release: (key) => send('chat:release', key),
+    restartIn: (cwd) => send('chat:restartIn', cwd),
     configure: (key, patch) => send('chat:configure', key, patch),
     onState: (cb) => listen('chat:state', cb),
     onOpen: (cb) => listen('chat:open', cb),

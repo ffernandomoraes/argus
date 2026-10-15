@@ -5,7 +5,7 @@ import { applyAccount } from '../accounts'
 import { claudeCommand, claudePath } from '../claudePath'
 import { expandHome } from '../paths'
 import { childEnv, prependPath } from '../platform'
-import { distroFor, distroInfo } from '../wsl'
+import { distroFor, distroInfo, toLinux } from '../wsl'
 import { wslLaunch, wslSdkProcess } from '../wsl/launch'
 
 // O app aberto pelo Finder não herda o PATH do terminal, e as variáveis do Electron
@@ -38,14 +38,30 @@ export function claudeProcess(account?: string, cwd?: string): ProcessOptions {
 }
 
 // Sessão como a do Claude Code no terminal, na pasta do projeto: mesmo prompt, CLAUDE.md,
-// configurações e MCPs.
+// configurações e MCPs. folders: as pastas do workspace, como pastas adicionais, cada uma com o
+// CLAUDE.md dela (ver workspaces.ts).
 export function claudeCodeOptions(
   cwd: string,
-  account?: string
-): Pick<Options, 'cwd' | 'pathToClaudeCodeExecutable' | 'env' | 'systemPrompt' | 'spawnClaudeCodeProcess'> {
+  account?: string,
+  folders: string[] = []
+): Pick<Options, 'cwd' | 'pathToClaudeCodeExecutable' | 'env' | 'systemPrompt' | 'spawnClaudeCodeProcess' | 'additionalDirectories'> {
   const full = expandHome(cwd)
-  return { cwd: full, ...claudeProcess(account, full), systemPrompt: { type: 'preset', preset: 'claude_code' } }
+  const proc = claudeProcess(account, full)
+  // Rodando no WSL, o `claude` do Linux só entende os caminhos de lá (C:\ vira /mnt/c).
+  const inWsl = !!distroFor(full)
+  const dirs = folders.map((f) => (inWsl ? toLinux(expandHome(f)) : expandHome(f)))
+  return {
+    cwd: full,
+    ...proc,
+    ...(dirs.length > 0 && { env: { ...proc.env, [FOLDERS_CLAUDE_MD]: '1' } }),
+    systemPrompt: { type: 'preset', preset: 'claude_code' },
+    ...(dirs.length > 0 && { additionalDirectories: dirs })
+  }
 }
+
+// Opção do Claude Code que liga a leitura do CLAUDE.md das pastas adicionais (o nome existe no
+// binário da 2.1; sem ela, só o CLAUDE.md da pasta onde ele abre).
+export const FOLDERS_CLAUDE_MD = 'CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD'
 
 export type ClaudeLaunch =
   | { ok: true; file: string; args: string[]; env: Record<string, string>; cwd: string }

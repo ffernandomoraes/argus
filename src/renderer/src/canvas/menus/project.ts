@@ -1,16 +1,31 @@
-import { ExternalLink, MessageCirclePlus, PenTool, Pencil, StickyNote, Trash2 } from 'lucide-react'
+import { ExternalLink, FolderMinus, FolderOpen, FolderPlus, GitBranchPlus, MessageCirclePlus, PenTool, Pencil, StickyNote, Trash2 } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { MenuItem } from '../ContextMenu'
 import { groupAccount, removeNode } from '../operations'
 import { getSessions } from '../sessionsStore'
+import { getPreferences } from '../../settings/preferences'
 import type { ConversationSummary, ProjectNode } from '../types'
+import { baseName, FILE_MANAGER } from '../../platform'
 import { isBusy, moveSubmenu, terminalSubmenu } from './shared'
 import type { Deps } from './types'
 import { tr } from '../../i18n'
 
 type ProjectDeps = Pick<
   Deps,
-  'nodes' | 'setNodes' | 'leaveGroup' | 'confirm' | 'startRename' | 'addNote' | 'addTerminal' | 'newConversation' | 'openDesign'
+  | 'nodes'
+  | 'setNodes'
+  | 'leaveGroup'
+  | 'confirm'
+  | 'startRename'
+  | 'addNote'
+  | 'addTerminal'
+  | 'newConversation'
+  | 'openDesign'
+  | 'addWorkspaceFolder'
+  | 'removeWorkspaceFolder'
+  | 'newWorktree'
+  | 'removeWorktree'
+  | 'removeForever'
 >
 
 // Lista de títulos para o aviso de bloqueio, entre aspas.
@@ -24,26 +39,70 @@ function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
   return [{ type: 'action', label, icon: ExternalLink, onSelect: () => window.api.sessions.openRepo(node.data.path) }]
 }
 
+// Workspace: pôr e tirar pastas e abrir cada uma no Finder. Sem repositório nem design: cada
+// pasta pode ser um repositório diferente.
+function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[]): MenuItem[] {
+  return [
+    { type: 'action', label: tr('Adicionar pasta', 'Add folder'), icon: FolderPlus, onSelect: () => deps.addWorkspaceFolder(node.id) },
+    {
+      type: 'submenu',
+      label: tr('Tirar pasta', 'Remove folder'),
+      icon: FolderMinus,
+      items: folders.map((f) => ({
+        type: 'action' as const,
+        label: baseName(f),
+        // Fica pelo menos uma.
+        disabled: folders.length < 2,
+        onSelect: () => deps.removeWorkspaceFolder(node.id, f)
+      }))
+    },
+    {
+      type: 'submenu',
+      label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
+      icon: FolderOpen,
+      items: folders.map((f) => ({ type: 'action' as const, label: baseName(f), onSelect: () => window.api.files.openFolder(f) }))
+    }
+  ]
+}
+
 // Menu da pasta. `at`: onde foi o clique; a nota nasce ali, em cima da pasta.
 export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: string | null, at: XYPosition): MenuItem[] {
   const { setNodes } = deps
   const repo = repoItem(node, repoUrl)
+  const workspace = node.data.folders
+  const worktree = node.data.worktree
   return [
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, onSelect: () => deps.addNote(at) },
     { type: 'separator' },
     { type: 'action', label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
-    terminalSubmenu(tr('Novo terminal aqui', 'New terminal here'), (kind, account) => deps.addTerminal(node.position, node.parentId, node.data.path, kind, account), groupAccount(deps.nodes, node)),
-    { type: 'action', label: tr('Novo design', 'New design'), icon: PenTool, onSelect: () => deps.openDesign(node.id) },
+    terminalSubmenu(tr('Novo terminal aqui', 'New terminal here'), (kind, account) => deps.addTerminal(node.position, node.parentId, node.data.path, kind, account, workspace, workspace && node.data.name), groupAccount(deps.nodes, node)),
+    // Modo design é experimento (Configurações > Experimentos). Sem design no workspace: o design é
+    // do código e do servidor de um projeto só.
+    ...(workspace || !getPreferences().designMode
+      ? []
+      : [{ type: 'action', label: tr('Novo design', 'New design'), icon: PenTool, experiment: true, onSelect: () => deps.openDesign(node.id) } as const]),
+    // Tarefa em paralelo (git worktree) é experimento. Não sai de workspace (várias pastas, vários repositórios) nem de
+    // outra tarefa: sai da pasta principal.
+    ...(workspace || worktree || !getPreferences().worktrees
+      ? []
+      : [{ type: 'action', label: tr('Nova tarefa em paralelo', 'New parallel task'), icon: GitBranchPlus, experiment: true, onSelect: () => deps.newWorktree(node.id) } as const]),
     { type: 'separator' },
-    ...(repo.length ? [...repo, { type: 'separator' } as const] : []),
+    ...(workspace
+      ? workspaceItems(deps, node, workspace)
+      : [{ type: 'action', label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`), icon: FolderOpen, onSelect: () => window.api.files.openFolder(node.data.path) } as const, ...repo]),
+    { type: 'separator' },
     moveSubmenu(deps, node),
     { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
+    // Tarefa isolada: remover apaga a pasta da cópia (a branch fica), depois de confirmar.
+    ...(worktree
+      ? [{ type: 'action', label: tr('Remover tarefa', 'Remove task'), icon: Trash2, danger: true, onSelect: () => deps.removeWorktree(node.id) } as const]
+      : []),
     // Só sai do canvas: pasta e conversas ficam no disco. Com conversa em andamento, bloqueia
     // e diz qual é, para a pessoa interromper antes.
-    {
+    ...(worktree ? [] : [{
       type: 'action',
-      label: tr('Tirar projeto do canvas', 'Remove project from canvas'),
+      label: workspace ? tr('Tirar espaço de trabalho do canvas', 'Remove workspace from canvas') : tr('Tirar projeto do canvas', 'Remove project from canvas'),
       icon: Trash2,
       danger: true,
       onSelect: () => {
@@ -81,9 +140,10 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
             } the canvas. Nothing is deleted from disk: the folder and chats stay there, and the project can come back through "New folder".`
           ),
           confirmLabel: tr('Tirar do canvas', 'Remove from canvas'),
-          onConfirm: () => setNodes((ns) => removeNode(ns, node.id))
+          // Espaço de trabalho sai sem volta pelo ⌘Z; pasta comum pode voltar.
+          onConfirm: () => (workspace ? deps.removeForever(node.id) : setNodes((ns) => removeNode(ns, node.id)))
         })
       }
-    }
+    } as const])
   ]
 }

@@ -1,6 +1,7 @@
 import { basename } from 'node:path'
 import type { ChatSettings } from '../../shared/chat'
 import { tr } from '../i18n'
+import { expandHome } from '../paths'
 import { providerLaunch } from '../providers/env'
 import { RpcError, type JsonRpcProcess } from '../providers/rpc'
 import { openCodex } from '../providers/status'
@@ -17,12 +18,13 @@ type Item = { type: string; id: string; [k: string]: unknown }
 type Turn = { id: string; status: 'completed' | 'interrupted' | 'failed' | 'inProgress'; error?: { message: string } | null }
 
 // Modo de permissão do app → política de aprovação e área de escrita do Codex.
-function policies(mode: string): { approvalPolicy: string; sandboxPolicy: object; sandbox: string } {
+// writableRoots: as outras pastas do workspace, onde ele também pode escrever.
+function policies(mode: string, writableRoots: string[] = []): { approvalPolicy: string; sandboxPolicy: object; sandbox: string } {
   if (mode === 'bypassPermissions') return { approvalPolicy: 'never', sandboxPolicy: { type: 'dangerFullAccess' }, sandbox: 'danger-full-access' }
   if (mode === 'plan') return { approvalPolicy: 'on-request', sandboxPolicy: { type: 'readOnly', networkAccess: false }, sandbox: 'read-only' }
   return {
     approvalPolicy: 'on-request',
-    sandboxPolicy: { type: 'workspaceWrite', writableRoots: [], networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false },
+    sandboxPolicy: { type: 'workspaceWrite', writableRoots, networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false },
     sandbox: 'workspace-write'
   }
 }
@@ -44,7 +46,8 @@ export class CodexDriver implements Driver {
     private account: string,
     private cwd: string,
     private settings: ChatSettings,
-    private events: DriverEvents
+    private events: DriverEvents,
+    private folders: string[] = []
   ) {}
 
   async start(nativeId?: string): Promise<string> {
@@ -60,6 +63,8 @@ export class CodexDriver implements Driver {
       this.events.exited(rpc.lastError() || undefined)
     }
     const p = policies(this.settings.permissionMode)
+    // Workspace: o aviso das pastas vem do AGENTS.md da pasta dele (ver workspaces.ts); aqui só a
+    // permissão de escrever nelas (no turn/start).
     const common = { cwd: this.cwd, approvalPolicy: p.approvalPolicy, sandbox: p.sandbox, ...(this.settings.model && { model: this.settings.model }) }
     const res = nativeId
       ? await rpc.request<{ thread: { id: string } }>('thread/resume', { threadId: nativeId, excludeTurns: true, ...common })
@@ -72,7 +77,7 @@ export class CodexDriver implements Driver {
     const rpc = this.rpc
     if (!rpc) throw new Error(tr('O Codex não abriu.', 'Codex didn’t open.'))
     this.lastError = null
-    const p = policies(this.settings.permissionMode)
+    const p = policies(this.settings.permissionMode, this.folders.map(expandHome))
     const done = new Promise<Turn>((resolve) => (this.turnDone = resolve))
     const res = await rpc.request<{ turn: Turn }>('turn/start', {
       threadId: this.threadId,

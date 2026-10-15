@@ -20,6 +20,7 @@ export function useCanvasCommands({ nodeActions, conversations, overlays, openCo
   return useStableCommands<CanvasActions>({
     ...nodeActions,
     addFolder: overlays.addFolder,
+    addWorkspace: overlays.addWorkspace,
     openConversation: conversations.openConversation,
     newConversation: conversations.newConversation,
     newLooseConversation: conversations.newLooseConversation,

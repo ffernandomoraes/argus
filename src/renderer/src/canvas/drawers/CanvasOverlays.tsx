@@ -9,11 +9,12 @@ import { AllConversationsPanel } from '../AllConversationsPanel'
 import { CommandBar } from '../CommandBar'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { ContextMenu } from '../ContextMenu'
-import { createFolderInstance } from '../factory'
+import { createFolderInstance, createWorkspace, displayPath } from '../factory'
 import { FolderPicker } from '../FolderPicker'
 import { addNode } from '../operations'
 import type { ProjectNode } from '../types'
 import type { OverlayCommands, OverlayState } from './useOverlays'
+import { tr } from '../../i18n'
 
 type Props = {
   state: OverlayState
@@ -62,10 +63,24 @@ function CanvasOverlaysView(props: Props) {
     },
     [folderPicker, change, commands]
   )
+  const pickWorkspace = useCallback(
+    async (folders: string[]) => {
+      if (!folderPicker) return
+      const dir = await window.api.syncWorkspace(folders.map(displayPath)).catch((err: Error) => {
+        commands.confirm({ title: tr('Não deu para criar o espaço de trabalho', 'Couldn’t create the workspace'), description: err.message })
+        return null
+      })
+      if (!dir) return
+      const node = createWorkspace(folderPicker.position, folders, dir)
+      change((ns) => addNode(ns, node, folderPicker.groupId))
+      commands.closeFolderPicker()
+    },
+    [folderPicker, change, commands]
+  )
 
   return (
     <>
-      {/* Depois do drawer: os dois nascem no mesmo lugar, e a lista tem que aparecer por cima. */}
+      {/* Depois do drawer: no mesmo nível, se um encostar no outro, a lista fica por cima. */}
       <Presence>
         {allConversations && (
           <AllConversationsPanel
@@ -94,7 +109,14 @@ function CanvasOverlaysView(props: Props) {
         {state.devServers && <DevServersModal paths={paths} onClose={commands.closeDevServers} />}
       </Presence>
       <Presence kind="modal">
-        {folderPicker && <FolderPicker onCanvas={onCanvas} onPick={pickFolder} onClose={commands.closeFolderPicker} />}
+        {folderPicker && (
+          <FolderPicker
+            onCanvas={onCanvas}
+            onPick={pickFolder}
+            onPickMany={folderPicker.workspace ? pickWorkspace : undefined}
+            onClose={commands.closeFolderPicker}
+          />
+        )}
       </Presence>
       <Presence kind="menu">{state.menu && <ContextMenu menu={state.menu} onClose={commands.closeMenu} />}</Presence>
       <Presence kind="modal">

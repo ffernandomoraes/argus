@@ -16,6 +16,7 @@ import { TerminalHeader } from './terminal/TerminalHeader'
 import { useFocusMode } from './terminal/useFocusMode'
 import type { TerminalNode as TerminalNodeType } from './types'
 import { useIsNewBlock } from './useCanvasView'
+import { baseName } from '../platform'
 import { tr } from '../i18n'
 
 // Botões do cabeçalho: o último encosta na borda direita, como nos outros blocos.
@@ -36,11 +37,14 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
   const zoom = usePreferences().drawerZoom
   // Só o terminal recém-criado pega o foco no canvas; o do modo foco sempre (a pessoa pediu).
   const isNew = useIsNewBlock(id)
+  // Workspace: as pastas dele no lugar do caminho (a pasta do workspace em si é só um id).
+  const pathLabel = data.folders ? data.folders.map(baseName).join(', ') : data.path
 
   const terminal = (inFocusMode: boolean) => (
     <TerminalView
       sessionKey={id}
       cwd={data.path}
+      folders={data.folders}
       account={account}
       shell={shell}
       sessionId={data.sessionId}
@@ -54,7 +58,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       {/* Até saber qual é a conversa que o `claude` daqui criou (ver TerminalBinding). */}
       {!shell && !data.sessionId && <TerminalBinding nodeId={id} />}
       <BlockFrame selected={selected} minHeight={220} className="bg-surface">
-        <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell} agent={agent}>
+        <TerminalHeader nodeId={id} name={data.name} path={pathLabel} shell={shell} agent={agent}>
           <IconButton label={tr('Modo foco', 'Focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.enter}>
             <Maximize2 size={13} />
           </IconButton>
@@ -86,7 +90,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
 
       {focus.active && (
         <TerminalFocusLayer panelRef={focusRef}>
-          <TerminalHeader nodeId={id} name={data.name} path={data.path} shell={shell} agent={agent}>
+          <TerminalHeader nodeId={id} name={data.name} path={pathLabel} shell={shell} agent={agent}>
             <IconButton label={tr('Sair do modo foco', 'Exit focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.exit}>
               <Minimize2 size={13} />
             </IconButton>

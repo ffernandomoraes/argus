@@ -47,6 +47,9 @@ export type Api = {
   }
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   pickFolder: (distro?: string) => Promise<string | null>
+  pickFolders: (distro?: string) => Promise<string[]>
+  // Pasta do workspace (nova, sem dir), com o aviso das pastas dele; devolve o caminho.
+  syncWorkspace: (folders: string[], dir?: string) => Promise<string>
   wsl: {
     // Distros do WSL instaladas (só no Windows; vazio sem WSL).
     distros: () => Promise<string[]>
@@ -132,6 +135,7 @@ export type Api = {
     retain: (key: string) => void
     mcpStatus: (key: string, cwd: string, account?: string) => Promise<McpStatus>
     release: (key: string) => void
+    restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void
     onState: (cb: (key: string, state: ChatState) => void) => Off
     // Clique na notificação do sistema.

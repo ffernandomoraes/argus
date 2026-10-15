@@ -5,6 +5,7 @@ import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { patchView, type CanvasViewStore } from '../canvasView'
 import type { ConfirmRequest } from '../ConfirmDialog'
+import { codeProject } from '../drawers/codeProject'
 import { projectOf } from '../drawers/drawerView'
 import type { DrawerCommands } from '../drawers/useDrawers'
 import { createChatPanel } from '../factory'
@@ -148,8 +149,10 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
         change((ns) => removeNode(ns, nodeId))
       },
       // Link de arquivo clicado numa conversa do canvas: abre o código daquela pasta.
-      openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) =>
-        drawers.openFile({ project }, project.path, path, lines, diff),
+      openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => {
+        const code = codeProject(project, path)
+        drawers.openFile({ project: code }, code.path, path, lines, diff)
+      },
       toggleProjectCode: (project: ProjectData, open: boolean) =>
         open ? drawers.closeCode() : drawers.openProjectCode(project)
     }),

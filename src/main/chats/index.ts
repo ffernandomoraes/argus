@@ -4,7 +4,7 @@ import type { ChatEntry } from './entries'
 import { mcpStatusFor } from './mcpStatus'
 import { parseAgentRef, type AgentRef } from '../../shared/providers'
 import { AgentChatSession } from '../agentChats/session'
-import { indexEntry, isAgentConversation } from '../agentChats/store'
+import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
 import { ChatSession, type OpenRequest } from './session'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
@@ -89,6 +89,17 @@ export class Chats {
   // mudou e as conversas paradas precisam abrir de novo com o novo).
   releaseAll(account?: string): void {
     new Set(this.sessions.values()).forEach((s) => (!account || s.account === account) && this.letGo(s))
+  }
+
+  // Workspace ganhou ou perdeu pasta: as sessões abertas na pasta dele encerram, e a próxima
+  // mensagem reabre cada uma com a lista nova (o histórico continua). Parada encerra já; trabalhando,
+  // quando terminar. Com o remote control ligado, fica como está: encerrar derrubaria o celular.
+  restartIn(cwd: string): void {
+    new Set(this.sessions.values()).forEach((s) => {
+      if (!samePath(s.cwd, cwd) || s.remoteOn) return
+      if (s.busy) s.closeWhenIdle = true
+      else this.closeSession(s)
+    })
   }
 
   // Conta removida: as conversas dela fecham na hora, mesmo trabalhando.

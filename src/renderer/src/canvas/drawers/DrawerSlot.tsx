@@ -5,6 +5,7 @@ import type { LineRange } from '../../conversation/fileLinks'
 import type { ActiveConversation } from '../CanvasContext'
 import type { ConversationSummary } from '../types'
 import type { SlotId } from './drawerState'
+import { codeProject } from './codeProject'
 import { sameTarget, type SlotTarget } from './drawerView'
 import type { DrawerCommands } from './useDrawers'
 
@@ -42,18 +43,25 @@ function DrawerSlotView(props: Props) {
   }, [onShown, slot, title])
   useLayoutEffect(() => () => onShown(slot, null), [onShown, slot])
 
-  const root = target.project.path
+  const { project } = target
   const { nodeId } = target
   const conversationId = conversation.id
   const onRectChange = useCallback((next: PanelRect) => commands.setRect(slot, next), [commands, slot])
   const onToggleCode = useCallback(() => commands.toggleCode(slot), [commands, slot])
+  // No workspace, o código que abre é o da pasta dele onde o arquivo está (codeProject).
   const onOpenFile = useCallback(
-    (path: string, lines?: LineRange) => commands.openFile({ slot }, root, path, lines),
-    [commands, slot, root]
+    (path: string, lines?: LineRange) => {
+      const code = codeProject(project, path)
+      commands.openFile({ slot, ...(code !== project && { project: code }) }, code.path, path, lines)
+    },
+    [commands, slot, project]
   )
   const onOpenDiff = useCallback(
-    (path: string) => commands.openFile({ slot }, root, path, undefined, true),
-    [commands, slot, root]
+    (path: string) => {
+      const code = codeProject(project, path)
+      commands.openFile({ slot, ...(code !== project && { project: code }) }, code.path, path, undefined, true)
+    },
+    [commands, slot, project]
   )
   // O card da conversa sem projeto não nasce aqui: o Canvas cria (actions/useLooseCards), mesmo
   // com o drawer já fechado.

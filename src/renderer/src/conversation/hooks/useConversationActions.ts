@@ -24,6 +24,8 @@ type Options = {
   chatKey: string
   conversation: ConversationSummary
   cwd: string
+  // Workspace: as pastas dele, que o agente recebe como pastas adicionais.
+  folders?: string[]
   account?: string
   settings: SessionSettings
   agents: AgentDef[]
@@ -32,7 +34,7 @@ type Options = {
 // O que a conversa pede ao Claude: enviar, trocar modelo/esforço/modo, remote control, parar,
 // responder permissões e ler as imagens de uma mensagem. Todas com identidade fixa (vão para o
 // chat memorizado) e lendo os valores do último desenho.
-export function useConversationActions({ chatKey, conversation, cwd, account, settings, agents }: Options) {
+export function useConversationActions({ chatKey, conversation, cwd, folders, account, settings, agents }: Options) {
   // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
   const settingsId = conversation.sessionId ?? conversation.id
   const info = useClaudeInfo(account)
@@ -47,6 +49,7 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
     window.api.chat.send({
       key: chatKey,
       cwd,
+      folders,
       account,
       sessionId: conversation.sessionId,
       settings,
@@ -68,7 +71,7 @@ export function useConversationActions({ chatKey, conversation, cwd, account, se
   })
 
   const remoteControl = useStableCallback((enabled: boolean) =>
-    window.api.chat.remoteControl({ key: chatKey, cwd, account, sessionId: conversation.sessionId, settings, enabled })
+    window.api.chat.remoteControl({ key: chatKey, cwd, folders, account, sessionId: conversation.sessionId, settings, enabled })
   )
   const interrupt = useStableCallback(() => window.api.chat.interrupt(chatKey))
   const answer = useStableCallback((id: string, a: PermissionAnswer) => window.api.chat.answer(chatKey, id, a))

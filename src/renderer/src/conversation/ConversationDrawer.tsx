@@ -133,7 +133,9 @@ export function ConversationDrawer(props: Props) {
       <div ref={contentRef} className={`flex min-h-0 w-full flex-1 flex-col ${focus ? 'mx-auto max-w-[1100px]' : ''}`}>
         <ConversationView
           cwd={project.path}
+          folders={project.folders}
           account={account}
+          project={project.name}
           conversation={conversation}
           onOpenFile={openFile}
           onOpenDiff={openDiff}
@@ -157,6 +159,8 @@ export function ConversationDrawer(props: Props) {
 function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>) {
   const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, loose = false, codeOpen, onToggleCode } = props
   const draft = !!conversation.draft
+  // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
+  const workspace = !!props.project.folders
   return useMemo(() => {
     if (focus) return null
     const items: MoreMenuItem[] = [
@@ -173,12 +177,12 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
     return (
       <>
         <MoreMenu items={items} />
-        {!loose && (
+        {!loose && !workspace && (
           <HeaderButton label={codeOpen ? tr('Fechar código', 'Close code') : tr('Abrir código', 'Open code')} onClick={onToggleCode} active={codeOpen}>
             <Code2 size={14} />
           </HeaderButton>
         )}
       </>
     )
-  }, [focus, setFocus, onTogglePin, pinned, draft, onPinToCanvas, onPopout, loose, codeOpen, onToggleCode])
+  }, [focus, setFocus, onTogglePin, pinned, draft, onPinToCanvas, onPopout, loose, workspace, codeOpen, onToggleCode])
 }

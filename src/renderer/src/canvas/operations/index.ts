@@ -8,6 +8,7 @@ export {
   rename,
   setGroupAccount,
   setGroupColor,
+  setWorkspaceFolders,
   setNoteColor,
   setNoteText,
   setNoteWidth

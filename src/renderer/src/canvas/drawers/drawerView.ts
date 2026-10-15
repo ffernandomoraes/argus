@@ -8,7 +8,13 @@ import { tr } from '../../i18n'
 export function projectOf(node: CanvasNode | undefined): ProjectData | null {
   if (node?.type === 'project') return node.data
   if (node?.type === 'chat') return looseProject()
-  if (node?.type === 'chatPanel') return { name: node.data.projectName ?? tr('Sem projeto', 'No project'), path: node.data.path, color: '#71717a' }
+  if (node?.type === 'chatPanel')
+    return {
+      name: node.data.projectName ?? tr('Sem projeto', 'No project'),
+      path: node.data.path,
+      color: '#71717a',
+      ...(node.data.folders && { folders: node.data.folders })
+    }
   return null
 }
 
@@ -58,7 +64,8 @@ export function sameTarget(a: SlotTarget, b: SlotTarget): boolean {
     a.tint === b.tint &&
     a.project.name === b.project.name &&
     a.project.path === b.project.path &&
-    a.project.color === b.project.color
+    a.project.color === b.project.color &&
+    a.project.folders?.join('\n') === b.project.folders?.join('\n')
   )
 }
 

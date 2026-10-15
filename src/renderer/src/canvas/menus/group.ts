@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, FolderPlus, Fullscreen, LayoutGrid, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react'
+import { ChevronDown, ChevronUp, FolderPlus, Folders, Fullscreen, LayoutGrid, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react'
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
 import { resolveAccount } from '../../auth/useAuth'
 import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
@@ -20,6 +20,7 @@ type GroupDeps = Pick<
   | 'confirm'
   | 'startRename'
   | 'addFolder'
+  | 'addWorkspace'
   | 'addTerminal'
   | 'addNote'
   | 'toggleGroup'
@@ -38,8 +39,9 @@ const terminalsPhrase = (n: number) =>
       : tr(`, e os ${n} terminais serão encerrados`, `, and the ${n} terminals will be closed`)
 
 // Pasta de um grupo, para o terminal já abrir no lugar certo.
+// Workspace não conta: a pasta dele é só o ponto de partida das conversas, sem projeto.
 function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
-  return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project')?.data.path
+  return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project' && !n.data.folders)?.data.path
 }
 
 // "Agente ▸ Claude/Codex/Gemini/Cursor ▸ conta", com o experimento dos outros agentes ligado. O
@@ -124,6 +126,12 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
       label: tr('Nova pasta', 'New folder'),
       icon: FolderPlus,
       onSelect: () => deps.addFolder(group.position, group.id)
+    },
+    {
+      type: 'action',
+      label: tr('Novo espaço de trabalho', 'New workspace'),
+      icon: Folders,
+      onSelect: () => deps.addWorkspace(group.position, group.id)
     },
     // Dentro de um grupo com pastas, abre na primeira delas; senão na pasta do usuário.
     terminalSubmenu(

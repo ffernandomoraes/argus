@@ -13,27 +13,41 @@ import { wslDiagnostics } from '../wsl/diagnostics'
 import { parseAgentRef } from '../../shared/providers'
 import { agentInfo } from '../agentChats/models'
 import { handle, on, onSync } from './register'
+import { syncWorkspace } from '../workspaces'
+import { IS_MAC } from '../platform'
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
 export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('theme:set', (_e, theme) => setTheme(theme))
   onSync('accent:get', () => accentColor())
   onSync('language:get', () => lang())
-  handle('dialog:pickFolder', async (e, distro) => {
-    const win = BrowserWindow.fromWebContents(e.sender)
+  handle('dialog:pickFolder', async (e, distro) => (await pickFolders(e.sender, distro, false))[0] ?? null)
+  handle('dialog:pickFolders', (e, distro) => pickFolders(e.sender, distro, true))
+  // Uma pasta, ou várias de uma vez (workspace: sem abrir o seletor uma vez por pasta). O seletor do
+  // Mac, do Windows e do GTK no Linux aceitam marcar várias pastas.
+  const MOD = IS_MAC ? '⌘' : 'Ctrl'
+  async function pickFolders(sender: Electron.WebContents, distro: string | undefined, multiple: boolean): Promise<string[]> {
+    const win = BrowserWindow.fromWebContents(sender)
     // Pasta do WSL: abre na pasta do usuário no Linux (\\wsl.localhost\<distro>\home\<usuário>).
     const wslHome = typeof distro === 'string' && distro ? (await ensureDistro(distro), homeUnc(distro)) : null
     const options: Electron.OpenDialogOptions = {
-      title: wslHome
-        ? tr(`Escolha a pasta do projeto no WSL (${distro})`, `Choose the project folder in WSL (${distro})`)
-        : tr('Escolha a pasta do projeto', 'Choose the project folder'),
+      title: multiple
+        ? wslHome
+          ? tr(`Escolha as pastas no WSL (${distro}) - marque várias com Ctrl ou Shift`, `Choose the folders in WSL (${distro}) - select several with Ctrl or Shift`)
+          : tr(`Escolha as pastas - marque várias com ${MOD} ou Shift`, `Choose the folders - select several with ${MOD} or Shift`)
+        : wslHome
+          ? tr(`Escolha a pasta do projeto no WSL (${distro})`, `Choose the project folder in WSL (${distro})`)
+          : tr('Escolha a pasta do projeto', 'Choose the project folder'),
+      // O Mac não mostra o título no seletor, só esta mensagem.
+      ...(multiple && { message: tr(`Marque várias pastas com ${MOD} ou Shift`, `Select several folders with ${MOD} or Shift`) }),
       buttonLabel: tr('Adicionar', 'Add'),
       defaultPath: wslHome ?? app.getPath('desktop'),
-      properties: ['openDirectory', 'createDirectory']
+      properties: ['openDirectory', 'createDirectory', ...(multiple ? (['multiSelections'] as const) : [])]
     }
     const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
-    return result.canceled ? null : result.filePaths[0]
-  })
+    return result.canceled ? [] : result.filePaths
+  }
+  handle('workspace:sync', (_e, folders, dir) => syncWorkspace(folders, dir))
   handle('wsl:distros', () => listDistros())
   handle('wsl:diagnostics', () => wslDiagnostics())
   handle('settings:get', () => loadAppSettings())

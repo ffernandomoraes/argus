@@ -4,8 +4,9 @@ import type { PanelRect } from '../../conversation/FloatingPanel'
 import type { ConfirmRequest } from '../ConfirmDialog'
 import type { MenuState } from '../ContextMenu'
 
-// "Nova pasta" aberto: onde a pasta entra e, se veio de um grupo, em qual.
-type FolderPickerState = { position: XYPosition; groupId?: string }
+// "Nova pasta" aberto: onde a pasta entra e, se veio de um grupo, em qual. workspace: "Novo
+// workspace", que escolhe várias pastas para um card só.
+type FolderPickerState = { position: XYPosition; groupId?: string; workspace?: boolean }
 
 export type OverlayState = {
   menu: MenuState | null
@@ -36,6 +37,7 @@ export type OverlayCommands = {
   openCommandBar: () => void
   closeCommandBar: () => void
   addFolder: (position: XYPosition, groupId?: string) => void
+  addWorkspace: (position: XYPosition, groupId?: string) => void
   closeFolderPicker: () => void
   openAllConversations: (nodeId: string) => void
   closeAllConversations: () => void
@@ -77,6 +79,7 @@ export function useOverlays(): { state: OverlayState; commands: OverlayCommands 
       closeCommandBar: () => setCommandBar(null),
       // A pasta é escolhida no FolderPicker (CanvasOverlays).
       addFolder: (position, groupId) => setFolderPicker({ position, groupId }),
+      addWorkspace: (position, groupId) => setFolderPicker({ position, groupId, workspace: true }),
       closeFolderPicker: () => setFolderPicker(null),
       openAllConversations: (nodeId) => setAllConversations(nodeId),
       closeAllConversations: () => setAllConversations(null),

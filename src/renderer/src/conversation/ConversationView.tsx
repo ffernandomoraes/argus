@@ -30,6 +30,8 @@ type Props = {
   cwd: string
   // Conta do Claude do grupo da pasta; vazia = a padrão. Só vale ao abrir a sessão: a conversa já
   // aberta segue na conta com que abriu.
+  // Workspace: as pastas dele; o cwd é a pasta do workspace nos dados do Argus (ver ProjectData.folders).
+  folders?: string[]
   account?: string
   // Nome da pasta, mostrado no cabeçalho.
   project?: ReactNode
@@ -62,6 +64,7 @@ type Props = {
 // Memorizado: arrastar o canvas ou o painel não redesenha a conversa.
 export const ConversationView = memo(function ConversationView({
   cwd,
+  folders,
   account: groupAccount,
   project,
   conversation,

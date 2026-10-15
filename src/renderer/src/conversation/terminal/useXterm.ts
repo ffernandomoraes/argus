@@ -10,6 +10,8 @@ import { fontSizeFor } from './theme'
 export type XtermOptions = {
   sessionKey: string
   cwd: string
+  // Workspace: as outras pastas dele. Só vale ao abrir, como a conta.
+  folders?: string[]
   shell?: boolean
   // Conta do Claude do grupo; vazia = a padrão. Como modelo e esforço, só entra ao abrir.
   account?: string
@@ -27,7 +29,7 @@ type Ended = { generation: string; error: string | null; exitCode: number | null
 // pasta ou o tipo (claude ou shell), ou com `reopen`; a escala da fonte só ajusta o que está aberto.
 export function useXterm(
   ref: RefObject<HTMLElement | null>,
-  { sessionKey, cwd, shell, account, sessionId, fontScale, autoFocus }: XtermOptions
+  { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus }: XtermOptions
 ): { error: string | null; exitCode: number | null; reopen: () => void } {
   const [attempt, setAttempt] = useState(0)
   // Erro ou fim do processo da abertura atual; o de uma abertura anterior não vale mais.
@@ -45,6 +47,7 @@ export function useXterm(
       {
         key: sessionKey,
         cwd,
+        folders,
         shell,
         account,
         sessionId,

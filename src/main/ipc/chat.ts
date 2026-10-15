@@ -26,6 +26,7 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   // Quem está com cada conversa na tela (ver ChatHolders): a sessão só fecha quando a última solta.
   on('chat:retain', (e, key) => holders.hold(key, e.sender))
   on('chat:release', (e, key) => holders.drop(key, e.sender.id))
+  on('chat:restartIn', (_e, cwd) => chats.restartIn(cwd))
   on('chat:interrupt', (_e, key) => chats.interrupt(key))
   on('chat:configure', (_e, key, patch) => chats.configure(key, patch))
   on('chat:unread', (e, list) => unread.set(e.sender, list))

@@ -92,6 +92,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
       setNodes: change,
       confirm: overlays.commands.confirm,
       addFolder: overlays.commands.addFolder,
+      addWorkspace: overlays.commands.addWorkspace,
       isPoppedOut,
       organizeBoard,
       organizeGroup

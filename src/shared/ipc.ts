@@ -43,6 +43,10 @@ export type DesignRoute = { route: string; from: string }
 export type InvokeChannels = {
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   'dialog:pickFolder': (distro?: string) => string | null
+  // Várias pastas de uma vez (workspace); cancelado: vazio.
+  'dialog:pickFolders': (distro?: string) => string[]
+  // Workspace: cria (sem dir) ou atualiza a pasta dele (src/main/workspaces.ts); devolve o caminho.
+  'workspace:sync': (folders: string[], dir?: string) => string
   // Distros do WSL instaladas (só no Windows; vazio sem WSL).
   'wsl:distros': () => string[]
   // Texto para copiar e mandar quando algo do WSL não funciona.
@@ -166,6 +170,8 @@ export type SendChannels = {
   'chat:answer': (key: string, id: string, answer: PermissionAnswer) => void
   'chat:retain': (key: string) => void
   'chat:release': (key: string) => void
+  // Workspace mudou de pastas: as sessões abertas na pasta dele reabrem com a lista nova.
+  'chat:restartIn': (cwd: string) => void
   // Conversas com resposta não vista nesta janela (para o ícone da barra de menus).
   'chat:unread': (chats: UnreadChat[]) => void
   'chat:interrupt': (key: string) => void

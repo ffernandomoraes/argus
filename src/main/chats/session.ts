@@ -90,7 +90,7 @@ export class ChatSession {
     this.account = resolveAccount(req.account)
     this.settings = req.settings
     const s = req.settings
-    const options = claudeCodeOptions(req.cwd, this.account)
+    const options = claudeCodeOptions(req.cwd, this.account, req.folders)
     this.q = query({
       prompt: this.inbox,
       options: {

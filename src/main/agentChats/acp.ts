@@ -4,6 +4,8 @@ import type { ChatSettings } from '../../shared/chat'
 import type { ProviderId } from '../../shared/providers'
 import { tr } from '../i18n'
 import { providerLaunch } from '../providers/env'
+import { folderArgs } from '../workspaceFolders'
+import { trustGemini } from '../workspaces'
 import { JsonRpcProcess, RpcError } from '../providers/rpc'
 import { fromTexts } from './diff'
 import type { Driver, DriverEvents, PermissionReply, PromptInput, ToolEvent } from './driver'
@@ -49,13 +51,17 @@ const KIND_LABEL: Record<string, string> = {
 
 const KIND_NAME: Record<string, string> = { execute: 'command', edit: 'edit', delete: 'edit', move: 'edit', read: 'read', search: 'search', fetch: 'fetch' }
 
-export function launchArgs(provider: ProviderId): string[] {
-  return provider === 'gemini' ? ['--acp'] : ['acp']
+// folders: as outras pastas do workspace (ver workspaceFolders.ts). No Cursor a opção é do `agent`,
+// antes do `acp` (o `agent acp --help` não lista opção nenhuma).
+export function launchArgs(provider: ProviderId, folders: string[] = []): string[] {
+  const dirs = folderArgs(provider, folders)
+  return provider === 'gemini' ? ['--acp', ...dirs] : [...dirs, 'acp']
 }
 
 // Abre o agente e se apresenta. Usado também para listar modelos (models.ts).
-export async function openAcp(provider: ProviderId, account: string, cwd: string): Promise<JsonRpcProcess> {
-  const launch = providerLaunch(provider, launchArgs(provider), account)
+export async function openAcp(provider: ProviderId, account: string, cwd: string, folders: string[] = []): Promise<JsonRpcProcess> {
+  const launch = providerLaunch(provider, launchArgs(provider, folders), account)
+  if (launch && provider === 'gemini') trustGemini(cwd, launch.env.GEMINI_CLI_HOME)
   if (!launch) throw new Error(tr('O agente não está instalado ou a conta não existe mais.', 'The agent isn’t installed or the account no longer exists.'))
   const rpc = new JsonRpcProcess(launch, cwd)
   await rpc.request('initialize', {
@@ -85,11 +91,12 @@ export class AcpDriver implements Driver {
     private account: string,
     private cwd: string,
     private settings: ChatSettings,
-    private events: DriverEvents
+    private events: DriverEvents,
+    private folders: string[] = []
   ) {}
 
   async start(nativeId?: string): Promise<string> {
-    const rpc = await openAcp(this.provider, this.account, this.cwd)
+    const rpc = await openAcp(this.provider, this.account, this.cwd, this.folders)
     this.rpc = rpc
     rpc.onNotification = (method, params) => method === 'session/update' && this.update((params as { update: Record<string, unknown> }).update)
     rpc.onRequest = (method, params) => this.request(method, params as Record<string, unknown>)

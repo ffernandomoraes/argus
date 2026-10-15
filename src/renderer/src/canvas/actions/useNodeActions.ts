@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useReactFlow, type XYPosition } from '@xyflow/react'
 import { patchView, type CanvasViewStore } from '../canvasView'
 import type { ConfirmRequest } from '../ConfirmDialog'
-import { createGroup, createNote, createTerminal } from '../factory'
+import { createGroup, createNote, createTerminal, displayPath } from '../factory'
 import { hidingGroup } from '../focus/reveal'
 import { selectOnly } from '../focus/selectOnly'
 import {
@@ -13,6 +13,7 @@ import {
   rename,
   setNoteText,
   setNoteWidth,
+  setWorkspaceFolders,
   sizeOf,
   toggleCollapse,
   toggleObscure,
@@ -73,11 +74,41 @@ export function useNodeActions(
       // Terminal solto no canvas. Sem pasta conhecida, abre na pasta do usuário, sem perguntar.
       // Novo: pega o foco ao aparecer (useIsNewBlock). Num grupo recolhido ou oculto ele nasce
       // escondido e não é marcado: senão roubaria o foco quando o grupo abrisse, bem depois.
-      addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string) => {
-        const node = createTerminal(position, folder ?? window.api.homeDir, kind, account)
+      addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string, folders?: string[], name?: string) => {
+        const node = createTerminal(position, folder ?? window.api.homeDir, kind, account, folders, name)
         const next = addNode(nodesRef.current, node, groupId)
         if (!hidingGroup(next, node.id)) patchView(view, { newBlockId: node.id })
         change(next)
+      },
+      // Workspace: pôr ou tirar pasta só muda a lista (o histórico fica na pasta do workspace, não
+      // nas dele) e o aviso que os agentes leem. As sessões abertas do workspace reiniciam
+      // (chat:restartIn): a próxima mensagem de cada conversa já vai com a lista nova.
+      addWorkspaceFolder: async (id: string) => {
+        const chosen = await window.api.pickFolders()
+        const node = nodesRef.current.find((n) => n.id === id)
+        if (node?.type !== 'project' || !node.data.folders) return
+        const current = node.data.folders
+        const added = chosen.map(displayPath).filter((p, i, all) => !current.includes(p) && all.indexOf(p) === i)
+        if (!added.length) return
+        const folders = [...current, ...added]
+        // Workspace criado antes da pasta própria (o caminho é a 1ª pasta dele): só a lista muda.
+        await window.api.syncWorkspace(folders, node.data.path).catch(() => {})
+        change((ns) => setWorkspaceFolders(ns, id, folders))
+        window.api.chat.restartIn(node.data.path)
+      },
+      removeWorkspaceFolder: (id: string, folder: string) => {
+        const node = nodesRef.current.find((n) => n.id === id)
+        if (node?.type !== 'project' || !node.data.folders || node.data.folders.length < 2) return
+        const folders = node.data.folders.filter((f) => f !== folder)
+        void window.api.syncWorkspace(folders, node.data.path).catch(() => {})
+        change((ns) => setWorkspaceFolders(ns, id, folders))
+        window.api.chat.restartIn(node.data.path)
+      },
+      // Sai do canvas sem volta: nem o ⌘Z traz de novo (tarefa em paralelo com a pasta apagada,
+      // espaço de trabalho removido). Some também de todo o histórico (main/canvasHub.ts).
+      removeForever: (id: string) => {
+        setNodes((ns) => removeNode(ns, id))
+        window.api.canvas.forget([id])
       },
       closeTerminal: (nodeId: string, name: string) => {
         const node = nodesRef.current.find((n) => n.id === nodeId)

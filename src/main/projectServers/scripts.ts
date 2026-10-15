@@ -24,7 +24,8 @@ export function packageManager(root: string, declared: unknown): string {
   }
 }
 
-export type ProjectScript = { script: string; command: string }
+// body: o texto do script no package.json (ver freePort.ts); manager: o gerenciador que roda.
+export type ProjectScript = { script: string; command: string; body: string; manager: string }
 
 // O script que o play roda na pasta (dev; sem ele, start), com o gerenciador do projeto.
 export async function projectScript(root: string): Promise<ProjectScript | null> {
@@ -32,5 +33,6 @@ export async function projectScript(root: string): Promise<ProjectScript | null>
   if (!pkg) return null
   const script = SCRIPTS.find((s) => typeof pkg.scripts?.[s] === 'string')
   if (!script) return null
-  return { script, command: `${packageManager(root, pkg.packageManager)} run ${script}` }
+  const manager = packageManager(root, pkg.packageManager)
+  return { script, command: `${manager} run ${script}`, body: String(pkg.scripts?.[script]), manager }
 }

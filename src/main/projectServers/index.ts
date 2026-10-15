@@ -5,6 +5,7 @@ import { errors, launch, launchWsl, started } from './launch'
 import { isWslPath } from '../wsl'
 import { ofProject, rootsOf } from './matching'
 import { keepPages, pageKey } from './pageCheck'
+import { freePort } from './freePort'
 import { projectScript } from './scripts'
 import { statusOf, wslPorts } from './status'
 
@@ -35,7 +36,7 @@ export async function startProjectServer(path: string, noBrowser = false): Promi
     const run = await projectScript(root)
     if (!run) return false
     if (isWslPath(root)) await launchWsl(root, run, noBrowser)
-    else launch(root, run, noBrowser)
+    else launch(root, await freePort(root, run), noBrowser)
     invalidateScan()
     return true
   } finally {

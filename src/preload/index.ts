@@ -139,6 +139,7 @@ const api: Api = {
     onRemote: (cb) => listen('canvas:remote', cb),
     record: () => send('canvas:record'),
     undo: () => send('canvas:undo'),
+    forget: (ids) => send('canvas:forget', ids),
     redo: () => send('canvas:redo'),
     viewport: () => sendSync('canvas:viewport'),
     setViewport: (viewport) => send('canvas:setViewport', viewport),

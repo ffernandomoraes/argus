@@ -170,6 +170,8 @@ export type Api = {
     record: () => void
     undo: () => void
     redo: () => void
+    // Blocos que saíram de vez: somem também do histórico (nenhum desfazer os traz de volta).
+    forget: (ids: string[]) => void
     // Câmera desta janela, para ela reabrir olhando o mesmo lugar.
     viewport: () => CanvasViewport | null
     setViewport: (viewport: CanvasViewport) => void

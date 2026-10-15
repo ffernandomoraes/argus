@@ -185,6 +185,7 @@ export type SendChannels = {
   'canvas:sync': (nodes: unknown) => void
   'canvas:record': () => void
   'canvas:undo': () => void
+  'canvas:forget': (ids: string[]) => void
   'canvas:redo': () => void
   'canvas:setViewport': (viewport: CanvasViewport) => void
   'canvas:newWindow': () => void

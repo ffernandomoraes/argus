@@ -63,6 +63,7 @@ Substituída por D8: a interface foi montada direto no app.
 - Comandos de barra, painel de MCPs e remote control no chat.
 - Instalador, atualização automática e release a cada push (D15, D16, D20).
 - Confirmação antes de fechar ou atualizar com conversa ou terminal rodando.
+- Reportar problema: botão na barra de título, "Investigar" nos erros da conversa e do terminal e na configuração inicial. O Claude da própria pessoa investiga a máquina só lendo (`src/main/report/`) e o app monta um relatório, sem tokens nem emails, para ela copiar e mandar.
 
 ## Depois
 

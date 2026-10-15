@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { Bug, X } from 'lucide-react'
 import type { AuthState } from '../../../shared/auth'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
+import { openReport } from '../report/reportStore'
 import { setupReady } from './SetupStep'
 import { welcomeSteps } from './steps'
 import { tr } from '../i18n'
@@ -70,6 +71,14 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
           ))}
         </div>
         <div className="flex-1" />
+        {/* Presa na configuração (o Claude não aparece, o login não entra): a barra de título fica
+            atrás das boas-vindas, então o reportar problema abre daqui. */}
+        {closeBlocked && (
+          <Button size="xl" variant="ghost" onClick={() => openReport({ where: tr('configuração inicial', 'initial setup') })}>
+            <Bug size={14} />
+            {tr('Reportar problema', 'Report a problem')}
+          </Button>
+        )}
         {index > 0 && (
           <Button size="xl" onClick={() => setIndex(index - 1)}>
             {tr('Voltar', 'Back')}

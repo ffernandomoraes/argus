@@ -6,6 +6,7 @@ import { useViewing } from '../canvas/sessionsStore'
 import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
+import { ReportContext } from '../report/reportStore'
 import { ChatView } from './ChatView'
 import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
@@ -130,12 +131,16 @@ export const ConversationView = memo(function ConversationView({
       if (rel) window.api.files.reveal(root ?? cwd, rel)
     })
   })
+  // O "Investigar" de um erro do chat leva a pasta, a conta e a conversa.
+  const reportSessionId = conversation.sessionId ?? sessionId
+  const reportRequest = useMemo(() => ({ cwd, account, sessionId: reportSessionId }), [cwd, account, reportSessionId])
   const [mcpOpen, setMcpOpen] = useState(false)
   const openMcp = useCallback(() => setMcpOpen(true), [])
   const closeMcp = useCallback(() => setMcpOpen(false), [])
 
   return (
     <AccountContext.Provider value={account}>
+    <ReportContext.Provider value={reportRequest}>
       <ConversationHeader
         title={conversation.title}
         cwd={cwd}
@@ -182,6 +187,7 @@ export const ConversationView = memo(function ConversationView({
       <Presence kind="modal">
         {mcpOpen && <McpPanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeMcp} />}
       </Presence>
+    </ReportContext.Provider>
     </AccountContext.Provider>
   )
 })

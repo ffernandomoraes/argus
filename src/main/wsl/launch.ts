@@ -2,7 +2,7 @@ import { homedir } from 'node:os'
 import { resolveAccount } from '../accounts'
 import { tr } from '../i18n'
 import { childEnv } from '../platform'
-import { prepareWslAccount, wslAccountDir } from './accounts'
+import { prepareWslAccount, wslAccountDir, wslLoginDir } from './accounts'
 import { ensureDistro, WSL_EXE, type DistroInfo } from './distros'
 import { installInWsl, watchInstall, WSL_INSTALL } from './install'
 import { log } from './log'
@@ -14,11 +14,16 @@ import { deferredWslProcess, linuxEnv, wslCommand } from './run'
 
 export type WslLaunch = { ok: true; file: string; args: string[]; env: Record<string, string>; cwd: string; account: string } | { ok: false; error: string }
 
-// Pasta da conta, no formato do Linux; a principal vai sem a variável.
+// Pasta da conta e pasta do login (a do Windows, ver wsl/accounts.ts), no formato do Linux; a
+// principal vai sem a primeira.
 async function accountEnv(distro: string, info: DistroInfo, account: string): Promise<Record<string, string>> {
   await prepareWslAccount(distro, info, account)
+  const env: Record<string, string> = {}
   const dir = wslAccountDir(info, account)
-  return dir ? { CLAUDE_CONFIG_DIR: dir } : {}
+  if (dir) env.CLAUDE_CONFIG_DIR = dir
+  const login = wslLoginDir(distro, info, account)
+  if (login) env.CLAUDE_SECURESTORAGE_CONFIG_DIR = login
+  return env
 }
 
 // Pasta de trabalho no Linux; sem pasta (login, uso), a do usuário.

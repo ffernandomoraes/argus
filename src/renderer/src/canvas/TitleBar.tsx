@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react'
-import { AppWindow, Eye, EyeOff } from 'lucide-react'
+import { AppWindow, Bug, Eye, EyeOff } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { useUpdates } from '../updates/useUpdates'
@@ -9,6 +9,8 @@ import { UpdateStatus } from './bars/UpdateStatus'
 import { updateProgress } from './bars/updateProgress'
 import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
 import { usePreference } from '../settings/preferences'
+import { openReport } from '../report/reportStore'
+import { useReportState } from '../report/useReportState'
 import { tr } from '../i18n'
 
 const Divider = () => <span className="h-4 w-px bg-line" />
@@ -31,6 +33,7 @@ export const TitleBar = memo(function TitleBar({
   const controls = useWindowControls()
   const mediaPlayer = usePreference('mediaPlayer')
   const status = updateProgress(updates?.state)
+  const investigating = useReportState().status === 'running'
   useNewWindowShortcut()
 
   // Aparece no menu Janela e no Mission Control.
@@ -42,12 +45,12 @@ export const TitleBar = memo(function TitleBar({
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
     // mouse em cima sobe acima de todos: os tooltips dos botões abrem para baixo, por cima do drawer.
     // Modal aberto cobre a barra, então o mouse nem chega nela.
-    // O recuo acompanha o maior dos lados (o player à esquerda; ocultar, nova janela e, às vezes,
-    // atualizar ao lado da versão à direita) dos dois lados: o título segue no centro sem encostar
-    // nele. Os limites ficam na barra de baixo (BottomBar).
+    // O recuo acompanha o maior dos lados (o player à esquerda; ocultar, nova janela, reportar
+    // problema e, às vezes, atualizar ao lado da versão à direita) dos dois lados: o título segue no
+    // centro sem encostar nele. Os limites ficam na barra de baixo (BottomBar).
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface hover:z-[55] ${status.ready || status.progress || mediaPlayer ? 'px-[20rem]' : 'px-[10rem]'}`}
+      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface hover:z-[55] ${status.ready || status.progress || mediaPlayer ? 'px-[22rem]' : 'px-[12rem]'}`}
     >
       {/* Logo depois dos botões da janela (os semáforos do Mac). Desligado, nem consulta o sistema. */}
       {mediaPlayer && (
@@ -78,6 +81,16 @@ export const TitleBar = memo(function TitleBar({
             </NavButton>
             <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
               <AppWindow size={14} />
+            </NavButton>
+            {/* Ligado enquanto o Claude investiga, para achar o caminho de volta ao relatório. */}
+            <NavButton
+              label={investigating ? tr('Investigando o problema', 'Investigating the problem') : tr('Reportar problema', 'Report a problem')}
+              compact
+              selected={investigating}
+              side="bottom-end"
+              onClick={() => openReport()}
+            >
+              <Bug size={14} />
             </NavButton>
           </span>
           <Divider />

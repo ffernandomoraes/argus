@@ -12,6 +12,7 @@ import { Cli } from '../cli'
 import { broadcast, sendTo } from '../ipc/events'
 import { ChatNotifier } from '../notifications'
 import { Popouts } from '../popouts'
+import { ProblemReport } from '../report'
 import { SessionWatch } from '../sessionWatch'
 import { Speech } from '../speech'
 import { Terminals } from '../terminals'
@@ -141,6 +142,12 @@ export function createServices() {
     (state) => broadcast('canvasAgent:state', state)
   )
 
+  // Reportar problema: o Claude da pessoa investiga e o app monta o relatório para ela mandar.
+  const problemReport = new ProblemReport(
+    { auth: () => auth.state, claudeVersion: () => claudeVersion.state },
+    (state) => broadcast('report:state', state)
+  )
+
   const speech = new Speech()
 
   // Versão nova baixada em segundo plano: entra com o botão da barra de título ou ao fechar o app.
@@ -180,6 +187,7 @@ export function createServices() {
     providers,
     canvasHub,
     canvasAgent,
+    problemReport,
     speech,
     updater,
     claudeVersion,

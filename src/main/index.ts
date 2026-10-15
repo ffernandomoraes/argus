@@ -5,6 +5,7 @@ import { setupLifecycle } from './app/lifecycle'
 import { createServices } from './app/services'
 import { startApp } from './app/startup'
 import { openArg } from './cli'
+import { captureAppLog } from './report'
 import { cleanAppImageEnv, IS_MAC, IS_WIN } from './platform'
 
 // Partida do processo principal. As peças ficam em app/ (janelas, serviços, saída, segurança) e
@@ -31,6 +32,8 @@ else start()
 function start(): void {
   // Windows: identifica o app nas notificações, com o mesmo id do atalho que o instalador cria.
   if (IS_WIN) app.setAppUserModelId(app.isPackaged ? 'dev.argus.app' : process.execPath)
+  // Os avisos e erros a partir daqui também vão no relatório de problema (ver report/).
+  captureAppLog()
   // Antes dos serviços: um erro ao criá-los já oferece voltar de versão (ver app/crashGuard.ts).
   const crashedBefore = armCrashGuard()
   const services = createServices()

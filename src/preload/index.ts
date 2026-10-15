@@ -41,6 +41,13 @@ const api: Api = {
     distros: () => invoke('wsl:distros'),
     diagnostics: () => invoke('wsl:diagnostics')
   },
+  report: {
+    state: () => invoke('report:state'),
+    start: (problem) => send('report:start', problem),
+    stop: () => send('report:stop'),
+    reset: () => send('report:reset'),
+    onState: (cb) => listen('report:state', cb)
+  },
   onReloadKey,
   onEdit,
   // No Windows e no Linux o microfone é gravado aqui mesmo (winMic); no Mac, pelo programa

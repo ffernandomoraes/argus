@@ -17,6 +17,7 @@ import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
+import type { ReportProblem, ReportState } from './report'
 import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
@@ -56,6 +57,14 @@ export type Api = {
     distros: () => Promise<string[]>
     // Texto com o que o app sabe do WSL e o que pediu a ele, para mandar quando algo não funciona.
     diagnostics: () => Promise<string>
+  }
+  // Reportar problema: o Claude da pessoa investiga, só lendo, e o app monta o relatório.
+  report: {
+    state: () => Promise<ReportState>
+    start: (problem: ReportProblem) => void
+    stop: () => void
+    reset: () => void
+    onState: (cb: (state: ReportState) => void) => Off
   }
   onEdit: (cb: (action: EditAction) => void) => Off
   // ⌘R / Ctrl+R: quem escuta (o último) recarrega o que é seu em vez da janela inteira.

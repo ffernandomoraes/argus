@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSessions } from '../canvas/sessionsStore'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useTheme } from '../theme/useTheme'
+import { ReportHost } from '../report/ReportHost'
 import { ConversationWindow } from './ConversationWindow'
 
 export type PopoutPayload = {
@@ -49,6 +50,7 @@ function PopoutConversation({ payload }: { payload: PopoutPayload }) {
   return (
     <div className="relative h-full">
       <ConversationWindow project={payload.project} account={payload.account} conversation={conversation} onClose={closeWindow} />
+      <ReportHost />
     </div>
   )
 }

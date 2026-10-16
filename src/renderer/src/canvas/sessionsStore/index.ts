@@ -96,6 +96,7 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
 // pasta como está no store, o id e o título. A que voltou a trabalhar sai daqui (já aparece como
 // ativa). Pasta que saiu do canvas mas ainda tem a lista guardada não entra (ver canvasScope).
 export type FinishedChat = { path: string; id: string; title: string }
+const NO_FINISHED: FinishedChat[] = []
 
 export function useFinishedChats(): FinishedChat[] {
   const ids = useStore(unread)
@@ -103,13 +104,16 @@ export function useFinishedChats(): FinishedChat[] {
   const scope = useStore(canvasScope)
   return useMemo(() => {
     const list: FinishedChat[] = []
-    if (!ids.size) return list
-    for (const [path, conversations] of sessions) {
-      for (const c of conversations) {
-        if (ids.has(c.id) && c.status === 'idle' && inScope(scope, path, c.id)) list.push({ path, id: c.id, title: c.title })
+    if (ids.size) {
+      for (const [path, conversations] of sessions) {
+        for (const c of conversations) {
+          if (ids.has(c.id) && c.status === 'idle' && inScope(scope, path, c.id)) list.push({ path, id: c.id, title: c.title })
+        }
       }
     }
-    return list
+    // Nenhuma: sempre a mesma lista vazia. A lista das pastas muda a cada passo do Claude, e uma
+    // vazia nova redesenhava a barra de baixo e o mascote à toa.
+    return list.length ? list : NO_FINISHED
   }, [ids, sessions, scope])
 }
 

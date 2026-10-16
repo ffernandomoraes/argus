@@ -33,6 +33,18 @@ export const without = <T>(map: ReadonlyMap<string, T>, key: string) => {
   return next
 }
 
+// Lista que mudou: as conversas iguais às de antes continuam sendo o mesmo objeto, e só a linha da
+// que mudou redesenha (o memo das outras compara pela referência). Cada passo do Claude muda a
+// data de uma conversa só, e a lista chegava toda nova.
+function keepSame(before: ConversationSummary[] | undefined, list: ConversationSummary[]): ConversationSummary[] {
+  if (!before?.length) return list
+  const byId = new Map(before.map((c) => [c.id, c]))
+  return list.map((c) => {
+    const old = byId.get(c.id)
+    return old && sameJson(old, c) ? old : c
+  })
+}
+
 // Resultado de uma leitura no estado. Sem mudança, o mesmo estado (ninguém redesenha); a lista de
 // conversas igual mantém a mesma referência, então só quem mostra a parte que mudou redesenha.
 export function merge(s: State, path: string, part: ReadPart): State {
@@ -42,7 +54,7 @@ export function merge(s: State, path: string, part: ReadPart): State {
   const sameChanges = changes === undefined || (s.changes.has(path) && sameJson(s.changes.get(path), changes))
   if (sameList && sameBranch && sameChanges) return s
   return {
-    sessions: list === undefined || sameList ? s.sessions : new Map(s.sessions).set(path, list),
+    sessions: list === undefined || sameList ? s.sessions : new Map(s.sessions).set(path, keepSame(s.sessions.get(path), list)),
     branch: branch === undefined || sameBranch ? s.branch : new Map(s.branch).set(path, branch),
     changes: changes === undefined || sameChanges ? s.changes : new Map(s.changes).set(path, changes)
   }

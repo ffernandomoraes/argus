@@ -28,7 +28,8 @@ export function usePollWorktree(path: string): WorktreeStatus | null {
     const read = () =>
       void window.api.worktrees
         .status(path)
-        .then((s) => alive && store.set((prev) => new Map(prev).set(path, s)))
+        // Igual ao que já estava (o caso comum, a cada 2 ou 15 s): nada muda e a faixa não redesenha.
+        .then((s) => alive && store.set((prev) => (prev.has(path) && JSON.stringify(prev.get(path)) === JSON.stringify(s) ? prev : new Map(prev).set(path, s))))
         .catch(() => {})
     read()
     const timer = setInterval(read, settling ? FAST_MS : SLOW_MS)

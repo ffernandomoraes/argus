@@ -30,9 +30,10 @@ export const MediaControls = memo(function MediaControls() {
 
   useEffect(() => {
     let alive = true
+    // A mesma música do jeito que estava: fica o objeto anterior, e a barra não redesenha a cada leitura.
     const read = () => {
       if (document.hidden) return
-      void window.api.media.get().then((m) => alive && setMedia(m))
+      void window.api.media.get().then((m) => alive && setMedia((prev) => (JSON.stringify(prev) === JSON.stringify(m) ? prev : m)))
     }
     read()
     const id = setInterval(read, POLL_MS)

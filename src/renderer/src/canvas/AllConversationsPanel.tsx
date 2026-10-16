@@ -1,5 +1,5 @@
-import { memo, useCallback, useRef, type MouseEvent as ReactMouseEvent } from 'react'
-import { Folder, Plus, X } from 'lucide-react'
+import { memo, useCallback, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { ChevronDown, Folder, Plus, X } from 'lucide-react'
 import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
 import { useNow } from '../lib/clock'
 import { IconButton } from '../ui/IconButton'
@@ -16,6 +16,9 @@ import { tr } from '../i18n'
 // viram card. Nasce à esquerda, para ficar ao lado do drawer da conversa (à direita), e continua
 // aberto ao abrir uma: dá para ir passando de uma para outra.
 const LIST_WIDTH = 400
+// Quantas conversas a lista mostra de cada vez; "Ver mais" mostra outras tantas. Pasta com
+// centenas de conversas montava todas as linhas ao abrir o painel.
+const PAGE = 50
 
 export const AllConversationsPanel = memo(function AllConversationsPanel({
   project,
@@ -36,6 +39,10 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
 }) {
   // Já vem da mais recente para a mais antiga (sessionsStore).
   const conversations = useSessions(project.path)
+  // Trocou de pasta: volta à primeira leva.
+  const [page, setPage] = useState({ path: project.path, count: PAGE })
+  const count = page.path === project.path ? page.count : PAGE
+  const shown = conversations.length > count ? conversations.slice(0, count) : conversations
   // A conversa aberta no drawer, se for desta pasta, e as que estão em janela separada.
   const active = useActiveConversationIn(nodeId)
   const poppedOut = usePoppedOutSet()
@@ -89,7 +96,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
       </header>
 
       <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {groupByDay(conversations, now).map((g, i) => (
+        {groupByDay(shown, now).map((g, i) => (
           <li key={g.key} className="flex flex-col gap-1">
             {g.label && (
               <div className={`px-2 pb-0.5 text-[11px] font-medium text-faint ${i > 0 ? 'pt-3' : ''}`}>{g.label}</div>
@@ -108,6 +115,17 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
             </ul>
           </li>
         ))}
+        {conversations.length > count && (
+          <li>
+            <button
+              onClick={() => setPage({ path: project.path, count: count + PAGE })}
+              className="flex h-7 w-full items-center gap-2.5 rounded-lg px-2 text-xs text-faint hover:bg-fill hover:text-text"
+            >
+              <ChevronDown size={12} className="shrink-0" />
+              {tr(`Ver mais (${conversations.length - count} restantes)`, `Show more (${conversations.length - count} left)`)}
+            </button>
+          </li>
+        )}
         {conversations.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</li>}
       </ul>
     </aside>

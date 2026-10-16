@@ -1,6 +1,5 @@
 import { app } from 'electron'
 import { cleanupAccounts } from '../accounts'
-import { loadAppSettings } from '../appSettings'
 import { registerIpc } from '../ipc'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { warmUp } from '../wsl'
@@ -37,7 +36,9 @@ export function startApp(s: Services, life: Lifecycle): void {
   step('comando argus', () => s.cli.start())
   step('atualizações', () => s.updater.start())
   step('versão do Claude Code', () => s.claudeVersion.start())
-  step('ícone da barra de menus', () => s.tray.set(loadAppSettings().menuBarIcon))
+  // Ícone da barra de menus desligado por ora, mesmo para quem ligou: com conversa rodando, o
+  // spinner trocava a imagem a cada 90 ms e mantinha o WindowServer ocupado. A barra de baixo mostra
+  // o mesmo. Para voltar: s.tray.set(loadAppSettings().menuBarIcon) e o MenuBarIconRow nos ajustes.
   app.on('browser-window-focus', () => s.tray.seen())
   step('janelas do canvas', restoreCanvasWindows)
   const firstCanvas = activeCanvas()

@@ -4,7 +4,6 @@ import { setPreferences, usePreference } from '../preferences'
 import { ClaudeVersionRow } from './ClaudeVersionRow'
 import { CliRow } from './CliRow'
 import { LanguageRow } from './LanguageRow'
-import { MenuBarIconRow } from './MenuBarIconRow'
 import { UpdatesRow } from './UpdatesRow'
 import { WslRow } from './WslRow'
 import { tr } from '../../i18n'
@@ -26,7 +25,6 @@ export function GeneralSection() {
           ]}
         />
       </Row>
-      <MenuBarIconRow />
       <Row
         label={tr('Player de música', 'Music player')}
         description={tr(

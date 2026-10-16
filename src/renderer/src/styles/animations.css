@@ -15,7 +15,10 @@
 }
 
 /* Linha da conversa que está rodando, na pilha da pasta (ProjectNode): o tracejado anda
-   da pasta para a conversa. */
+   da pasta para a conversa. Em degraus de 1px (steps(8): 8px por volta), não contínuo: o
+   tracejado de SVG é redesenhado a cada mudança, e o navegador só desenha quando o degrau muda
+   (13 vezes por segundo, em vez de a cada quadro da tela). Numa janela de teste com o mesmo
+   Electron, a GPU caiu de 12,6% para 1,9% (2026-10-16); na linha fina, o andar parece o mesmo. */
 @keyframes conversation-flow {
   to {
     stroke-dashoffset: -8;
@@ -23,7 +26,7 @@
 }
 .conversation-flow {
   stroke-dasharray: 4 4;
-  animation: conversation-flow 0.6s linear infinite;
+  animation: conversation-flow 0.6s steps(8) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .conversation-flow {

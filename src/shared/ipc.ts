@@ -19,6 +19,7 @@ import type { ClaudeInfo } from './models'
 import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
+import type { TranscriptionModel } from './transcription'
 import type { UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
@@ -139,6 +140,9 @@ export type InvokeChannels = {
   'terminal:open': (req: TerminalOpenRequest) => TerminalOpenResult
   // Conversa que o `claude` do terminal criou ou retomou, já gravada; nula se ainda não há.
   'terminal:session': (key: string) => string | null
+  // Transcrição de áudio anexado: situação do modelo e o texto de um áudio (mono, 16 kHz).
+  'transcription:model': () => TranscriptionModel
+  'transcription:transcribe': (samples: Float32Array) => string
 }
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
@@ -153,6 +157,9 @@ export type SendChannels = {
   // Windows: o áudio do microfone, gravado pela janela (ver preload/winMic/).
   'speech:audio': (chunk: Uint8Array) => void
   'speech:openSettings': () => void
+  // Download do modelo de transcrição (só depois de a pessoa aceitar).
+  'transcription:download': () => void
+  'transcription:cancel': () => void
   // Contas
   'auth:refresh': () => void
   'auth:install': () => void
@@ -264,6 +271,8 @@ export type EventChannels = {
   'speech:started': () => void
   // Windows: o ditado começou em outra janela.
   'speech:micStop': () => void
+  // Situação do modelo de transcrição mudou (download andando, pronto, erro).
+  'transcription:model': (state: TranscriptionModel) => void
 }
 
 type InvokeChannel = keyof InvokeChannels

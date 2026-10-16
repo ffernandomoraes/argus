@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { forgetTranscripts, watchAudio } from './audio/transcripts'
 
 export type Attachment = {
   id: string
@@ -39,14 +40,20 @@ export function useAttachments(key: string) {
   const add = useCallback((files: FileList | File[]) => {
     const next = Array.from(files).map((file) => withPreview({ id: crypto.randomUUID(), file }, urls.current))
     if (next.length) setItems((all) => [...all, ...next])
+    // Áudio, com a transcrição ligada (Experimentos), começa a ser transcrito já ao anexar.
+    for (const a of next) void watchAudio(a.file)
   }, [])
 
-  const remove = useCallback((id: string) => {
-    const url = urls.current.get(id)
-    if (url) URL.revokeObjectURL(url)
-    urls.current.delete(id)
-    setItems((all) => all.filter((a) => a.id !== id))
-  }, [])
+  const remove = useCallback(
+    (id: string) => {
+      const url = urls.current.get(id)
+      if (url) URL.revokeObjectURL(url)
+      urls.current.delete(id)
+      forgetTranscripts(items.filter((a) => a.id === id).map((a) => a.file))
+      setItems((all) => all.filter((a) => a.id !== id))
+    },
+    [items]
+  )
 
   // Depois de enviar: o campo fica limpo.
   const clear = useCallback(() => {

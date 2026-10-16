@@ -7,6 +7,7 @@ import type { ConversationSummary } from '../../canvas/types'
 import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { agentHint, mentionedAgents } from '../agentMentions'
+import { forgetTranscripts, transcriptsText } from '../audio/transcripts'
 import { imagesForSend, isSendableImage } from '../chatImages'
 import { freezeConversationAccount } from '../conversationAccount'
 import { freezeConversationSettings, setConversationSettings } from '../conversationSettings'
@@ -43,11 +44,15 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
   const info = useClaudeInfo(account)
 
   // Imagens vão junto da mensagem (reduzidas se passarem do limite); outros arquivos, pelo caminho
-  // no disco. Falha ao preparar as imagens rejeita a promessa: o chat devolve o texto ao campo.
+  // no disco; e o texto dos áudios transcritos no fim, à vista no balão da mensagem. Falha ao
+  // preparar as imagens rejeita a promessa: o chat devolve o texto ao campo.
   const send = useStableCallback(async (text: string, files: File[]) => {
     const images = await imagesForSend(files)
     const paths = files.filter((f) => !isSendableImage(f)).map((f) => window.api.filePath(f)).filter(Boolean)
-    const full = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
+    const withPaths = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
+    const transcripts = transcriptsText(files)
+    const full = transcripts ? `${withPaths}\n\n${transcripts}`.trim() : withPaths
+    forgetTranscripts(files)
     freezeConversationSettings(settingsId, settings)
     // A conta fica fixa no primeiro envio; a de outro agente já fica guardada com a conversa.
     if (!parseAgentRef(account)) freezeConversationAccount(settingsId, resolveAccount(getAuth(), account))

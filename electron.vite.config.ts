@@ -52,7 +52,20 @@ export default defineConfig({
     // ~12 MB (o zod sozinho vem com o código-fonte e as versões v3 e v4). Ficam de fora o
     // node-pty, que tem binário nativo, e o ws: embutido, o Vite troca o `bufferutil` opcional
     // por um objeto vazio e o envio de mensagens grandes do ditado quebra.
-    plugins: [externalizeDepsPlugin({ exclude: BUNDLED })]
+    plugins: [externalizeDepsPlugin({ exclude: BUNDLED })],
+    // O transformers.js (devDependency) entra no código do processo da transcrição; o motor nativo
+    // dele (onnxruntime-node) fica de fora, como o node-pty. O sharp vira um vazio (ver sharpStub.ts).
+    resolve: {
+      alias: { sharp: resolve('src/main/transcription/sharpStub.ts') }
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/main/index.ts'),
+          transcriber: resolve('src/main/transcription/worker.ts')
+        }
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

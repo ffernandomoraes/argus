@@ -15,6 +15,9 @@ files:
   - '!node_modules/node-pty/build/Release/obj.target/**'
   - '!node_modules/node-pty/build/Release/.deps/**'
   - '!node_modules/node-pty/build/**/*.mk'
+  # Motor da transcrição de áudio (onnxruntime-node): o pacote traz binário de todos os sistemas
+  # (~290 MB); cada build leva só o dele (ver mac/win/linux abaixo). Os scripts são do npm install.
+  - '!node_modules/onnxruntime-node/script/**'
 
 # Só as traduções do Chromium em português e inglês (as outras ~200 somavam ~48 MB). Valem para
 # os textos do próprio Chromium, como o menu do botão direito nos campos de texto.
@@ -24,9 +27,11 @@ electronLanguages:
   - en
   - en-US
 
-# node-pty carrega .node e executa o spawn-helper: os dois precisam estar fora do asar.
+# node-pty carrega .node e executa o spawn-helper: os dois precisam estar fora do asar. O
+# onnxruntime-node (transcrição de áudio) carrega .node e a biblioteca do motor, também de fora.
 asarUnpack:
   - node_modules/node-pty/**
+  - node_modules/onnxruntime-node/**
 
 npmRebuild: false
 
@@ -37,6 +42,11 @@ mac:
     - target: zip
       arch: arm64
   category: public.app-category.developer-tools
+  # Só o motor da transcrição do Mac ARM. O .node carrega o libonnxruntime.1.dylib; o
+  # libonnxruntime.1.30.0.dylib é uma cópia igual (44 MB).
+  files:
+    - '!node_modules/onnxruntime-node/bin/napi-v6/{linux,win32}/**'
+    - '!node_modules/onnxruntime-node/bin/napi-v6/darwin/arm64/libonnxruntime.1.30.0.dylib'
   artifactName: Argus-${version}-${arch}.${ext}
   icon: build/icon.icns
   # A assinatura é feita no afterPack (scripts/afterPack.mjs -> sign.mjs), com certificado próprio ou ad-hoc.
@@ -55,6 +65,10 @@ win:
   target:
     - target: nsis
       arch: x64
+  # Só o motor da transcrição do Windows x64.
+  files:
+    - '!node_modules/onnxruntime-node/bin/napi-v6/{darwin,linux}/**'
+    - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
   icon: build/icon.ico
 
 # Instala na pasta do usuário, sem pedir administrador, e abre o app no fim. O nome do arquivo é o
@@ -75,6 +89,10 @@ linux:
   target:
     - target: AppImage
       arch: x64
+  # Só o motor da transcrição do Linux x64.
+  files:
+    - '!node_modules/onnxruntime-node/bin/napi-v6/{darwin,win32}/**'
+    - '!node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**'
   icon: build/icon.png
   category: Development
   artifactName: Argus-${version}-${arch}.${ext}

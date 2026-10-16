@@ -15,6 +15,7 @@ import { Presence } from '../../motion'
 import { keys } from '../../platform'
 import { AgentMenu } from '../AgentMenu'
 import { AttachmentList } from '../AttachmentList'
+import { transcriptsPending } from '../audio/transcripts'
 import type { SessionSettings } from '../SessionSettings'
 import { SlashMenu } from '../SlashMenu'
 import type { SlashCommand } from '../slashCommands'
@@ -135,6 +136,11 @@ export const Composer = memo(function Composer(props: Props) {
       return onToggleRemote()
     }
     const files = attachments.items.map((a) => a.file)
+    // Áudio ainda sem transcrição (ou sem resposta à pergunta de baixar o modelo): espera.
+    if (transcriptsPending(files)) {
+      setSendError(tr('Espere a transcrição do áudio terminar, ou escolha "Agora não" nele.', 'Wait for the audio transcript to finish, or choose "Not now" on it.'))
+      return
+    }
     if (typed) history.remember(typed)
     setDraft('')
     setSendError(null)

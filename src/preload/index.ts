@@ -61,6 +61,13 @@ const api: Api = {
       }
     }
   },
+  transcription: {
+    model: () => invoke('transcription:model'),
+    download: () => send('transcription:download'),
+    cancel: () => send('transcription:cancel'),
+    onModel: (cb) => listen('transcription:model', cb),
+    transcribe: (samples) => invoke('transcription:transcribe', samples)
+  },
   popout: {
     open: (id, payload) => send('popout:open', id, payload),
     payload: (id) => invoke('popout:payload', id),

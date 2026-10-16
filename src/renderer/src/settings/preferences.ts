@@ -33,6 +33,9 @@ export type Preferences = {
   // Worktrees (Configurações > Experimentos): "Nova tarefa em paralelo" no menu da pasta, que cria um git
   // worktree como card filho dela.
   worktrees: boolean
+  // Transcrição de áudio anexado (Configurações > Experimentos): o texto do áudio vai junto da
+  // mensagem. O modelo é baixado na primeira vez, se a pessoa aceitar.
+  audioTranscription: boolean
   // Modelo e esforço do orquestrador e as regras de delegação dele (Configurações > Orquestrador).
   orchestrator: OrchestratorConfig
 }
@@ -52,6 +55,7 @@ const DEFAULTS: Preferences = {
   multiAgents: false,
   designMode: false,
   worktrees: false,
+  audioTranscription: false,
   orchestrator: defaultOrchestrator()
 }
 

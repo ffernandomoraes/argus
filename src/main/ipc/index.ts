@@ -14,6 +14,7 @@ import { registerServersIpc } from './servers'
 import { registerSessionsIpc } from './sessions'
 import { registerSpeechIpc } from './speech'
 import { registerTerminalIpc } from './terminal'
+import { registerTranscriptionIpc } from './transcription'
 import { registerWorktreesIpc } from './worktrees'
 
 // Todos os canais que a janela usa, por assunto. O contrato (nomes, argumentos e respostas) está em
@@ -23,6 +24,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerAuthIpc(s.auth)
   registerProvidersIpc(s.providers)
   registerSpeechIpc(s.speech)
+  registerTranscriptionIpc()
   registerCanvasIpc(s.canvasHub, s.canvasAgent)
   registerDesignIpc()
   registerMemoryIpc()

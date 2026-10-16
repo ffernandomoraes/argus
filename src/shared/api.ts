@@ -20,6 +20,7 @@ import type { ClaudeInfo } from './models'
 import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
+import type { TranscriptionModel } from './transcription'
 import type { UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
@@ -66,6 +67,15 @@ export type Api = {
     stop: () => void
     openSettings: () => void
     onEvent: (cb: (event: SpeechEvent) => void) => Off
+  }
+  // Transcrição de áudio anexado (Experimentos): o modelo é baixado só quando a pessoa aceita.
+  transcription: {
+    model: () => Promise<TranscriptionModel>
+    download: () => void
+    cancel: () => void
+    onModel: (cb: (state: TranscriptionModel) => void) => Off
+    // Texto do áudio já decodificado (mono, 16 kHz).
+    transcribe: (samples: Float32Array) => Promise<string>
   }
   popout: {
     open: (id: string, payload: unknown) => void

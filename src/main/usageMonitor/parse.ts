@@ -90,13 +90,17 @@ export function parseControlReply(line: string, now: number): ControlReply | nul
   }
   if (!String(res.request_id).startsWith('usage-')) return {}
 
-  const limits = res.response?.rate_limits
-  if (!limits) return {}
+  const usage = parseRateLimits(res.response?.rate_limits, res.response?.subscription_type, now)
+  return usage ? { usage } : {}
+}
+
+// Os limites no formato do servidor: o corpo do GET /api/oauth/usage, que o `claude` repassa como
+// rate_limits na resposta ao get_usage. `plan`: o tipo de assinatura (pro, max, team...). null: sem limites.
+export function parseRateLimits(limits: any, plan: unknown, now: number): Usage | null {
+  if (!limits || typeof limits !== 'object') return null
   const fresh = fromLimits(limits.limits)
-  if (fresh) return { usage: { ...fresh, updatedAt: now } }
+  if (fresh) return { ...fresh, updatedAt: now }
   // Sessão ausente com o resto presente: a janela de 5 horas ainda não começou.
   const session = toWindow(limits.five_hour) ?? { percent: 0, resetsAt: null }
-  return {
-    usage: { session, weekly: toWindow(limits.seven_day), models: toModelWindows(limits, res.response.subscription_type), updatedAt: now }
-  }
+  return { session, weekly: toWindow(limits.seven_day), models: toModelWindows(limits, plan), updatedAt: now }
 }

@@ -18,6 +18,7 @@ import { INSTALL_COMMAND, runClaudeInstaller } from '../claudeInstall'
 import { claudeFound, lookupClaude } from '../claudePath'
 import { tr } from '../i18n'
 import { gitFound } from '../platform'
+import { createBackoff } from '../lib/backoff'
 import { distroFor } from '../wsl'
 import { openLoginQuery, type LoginQuery } from './loginQuery'
 import { readAccount, runClaude, type AccountRead } from './status'
@@ -43,6 +44,13 @@ export class Auth {
   private loginState: LoginState = { status: 'idle' }
   private install = installState(claudeFound() ? 'found' : 'missing')
   private session: LoginSession | null = null
+  // Contas cuja última conferência falhou (tempo esgotado, `claude` que não abriu), refeita sozinha
+  // em 30 s, 1 min, 2 min... até 10 min. Sem isso, uma falha na abertura deixava a conta sem status,
+  // e sem monitor de uso, até a pessoa abrir as Configurações ou reabrir o app.
+  private unsure = new Set<string>()
+  private retry: NodeJS.Timeout | null = null
+  private retryBackoff = createBackoff({ initialMs: 30_000, maxMs: 10 * 60_000 })
+  private closed = false
   state: AuthState
 
   constructor(
@@ -91,10 +99,34 @@ export class Auth {
     if (this.checks.get(id) !== seq) return
     if (read.ok) this.statuses.set(id, read.account)
     else if (!claudeFound()) this.statuses.set(id, null)
+    if (read.ok || !claudeFound()) this.unsure.delete(id)
+    else this.unsure.add(id)
+  }
+
+  // Refaz a conferência das contas que falharam, com espera crescente; tudo certo, a espera volta ao
+  // início.
+  private retryLater(): void {
+    const ids = accountIds()
+    for (const id of this.unsure) if (!ids.includes(id)) this.unsure.delete(id)
+    if (!this.unsure.size || this.closed) {
+      if (this.retry) clearTimeout(this.retry)
+      this.retry = null
+      if (!this.unsure.size) this.retryBackoff.reset()
+      return
+    }
+    if (this.retry) return
+    this.retry = setTimeout(() => {
+      this.retry = null
+      void this.check([...this.unsure])
+    }, this.retryBackoff.next())
   }
 
   // Confere de novo o login de uma conta ou, sem ela, de todas.
-  async refresh(id?: string): Promise<void> {
+  refresh(id?: string): Promise<void> {
+    return this.check(id ? [id] : accountIds())
+  }
+
+  private async check(ids: string[]): Promise<void> {
     // No Mac, um `claude` fora dos lugares conhecidos só aparece pelo shell de login.
     await lookupClaude()
     // Instalado por fora (no terminal) enquanto o app estava aberto, ou desinstalado.
@@ -103,7 +135,6 @@ export class Auth {
       if (claudeFound()) this.install = installState('found')
       else this.install = installState(status === 'found' ? 'missing' : status, message)
     }
-    const ids = id ? [id] : accountIds()
     await Promise.all(
       ids.map(async (a) => {
         const seq = this.nextCheck(a)
@@ -111,6 +142,7 @@ export class Auth {
       })
     )
     this.emit()
+    this.retryLater()
   }
 
   // Claude Code não achado: roda o instalador oficial e confere as contas de novo. Com um login já
@@ -205,6 +237,13 @@ export class Auth {
     })
   }
 
+  // App fechando: encerra o login em andamento e não confere mais nada.
+  close(): void {
+    this.closed = true
+    this.retryLater()
+    this.cancel()
+  }
+
   cancel(): void {
     const busy = !!this.session || this.loginState.status !== 'idle'
     this.stop()
@@ -236,6 +275,7 @@ export class Auth {
     await runClaude(['auth', 'logout'], id).catch(() => {})
     removeAccount(id)
     this.statuses.delete(id)
+    this.unsure.delete(id)
     // Uma conferência ainda em andamento não traz a conta de volta.
     this.checks.delete(id)
     this.emit()

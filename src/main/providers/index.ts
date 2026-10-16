@@ -18,6 +18,7 @@ import {
 } from '../../shared/providers'
 import { unlinkAgentsDir } from '../agents/accountLinks'
 import { tr } from '../i18n'
+import { createBackoff } from '../lib/backoff'
 import { errorMessage } from '../lib/errors'
 import { findCommand, lookupShellPath } from './bins'
 import { providerLaunch } from './env'
@@ -62,6 +63,12 @@ export class Providers {
   private installs: Record<ProviderId, ProviderInstall>
   private loginState: ProviderLogin = { status: 'idle' }
   private session: LoginSession | null = null
+  // Contas cuja última conferência falhou ("provider/id"), refeita sozinha em 30 s, 1 min... até
+  // 10 min: sem isso, a conta ficava sem status (e sem os limites) até reabrir o app.
+  private unsure = new Set<string>()
+  private retry: NodeJS.Timeout | null = null
+  private retryBackoff = createBackoff({ initialMs: 30_000, maxMs: 10 * 60_000 })
+  private closed = false
   state: ProvidersState
 
   constructor(
@@ -112,8 +119,41 @@ export class Providers {
     this.checks.set(k, seq)
     const status = await readStatus(provider, id, kind)
     // Resposta velha chegando por último é descartada; falha passageira mantém o que se sabia.
-    if (this.checks.get(k) === seq && (status || !findCommand(provider))) this.statuses.set(k, status)
+    if (this.checks.get(k) === seq) {
+      if (status || !findCommand(provider)) {
+        this.statuses.set(k, status)
+        this.unsure.delete(k)
+      } else this.unsure.add(k)
+    }
     return status
+  }
+
+  // Refaz a conferência das contas que falharam, com espera crescente; tudo certo, a espera volta ao
+  // início.
+  private retryLater(): void {
+    const all = PROVIDERS.flatMap((p) => entries(p).map((e) => ({ ...e, key: `${p}/${e.id}` })))
+    for (const k of this.unsure) if (!all.some((e) => e.key === k)) this.unsure.delete(k)
+    if (!this.unsure.size || this.closed) {
+      if (this.retry) clearTimeout(this.retry)
+      this.retry = null
+      if (!this.unsure.size) this.retryBackoff.reset()
+      return
+    }
+    if (this.retry) return
+    this.retry = setTimeout(() => {
+      this.retry = null
+      const again = all.filter((e) => this.unsure.has(e.key))
+      void Promise.all(again.map((e) => this.check(e.provider, e.id, e.kind))).then(() => {
+        this.emit()
+        this.retryLater()
+      })
+    }, this.retryBackoff.next())
+  }
+
+  // App fechando: não confere mais nada.
+  close(): void {
+    this.closed = true
+    this.retryLater()
   }
 
   // Confere de novo a instalação e as contas de um agente ou, sem ele, de todos.
@@ -123,6 +163,7 @@ export class Providers {
     for (const p of list) if (this.installs[p].status !== 'installing') this.installs[p] = this.installState(p, findCommand(p) ? 'found' : this.installs[p].status === 'failed' ? 'failed' : 'missing', this.installs[p].message)
     await Promise.all(list.flatMap((p) => entries(p).map((e) => this.check(p, e.id, e.kind))))
     this.emit()
+    this.retryLater()
   }
 
   async install(provider: ProviderId): Promise<void> {
@@ -340,6 +381,7 @@ export class Providers {
     removeDir(provider, id)
     this.statuses.delete(`${provider}/${id}`)
     this.checks.delete(`${provider}/${id}`)
+    this.unsure.delete(`${provider}/${id}`)
     this.emit()
   }
 

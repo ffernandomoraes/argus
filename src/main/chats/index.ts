@@ -36,9 +36,11 @@ export type { ChatEntry } from './entries'
 // Conversa fechada na tela continua com a sessão aberta por um tempo: no canvas a pessoa troca de
 // conversa, de painel e de projeto o tempo todo, e lê com calma uma resposta grande antes de
 // voltar; voltar nela não pode custar reabrir o agente. (O VS Code encerra na hora, ao fechar a aba.)
-const RELEASE_DELAY_MS = 20 * 60_000
+const RELEASE_DELAY_MS = 10 * 60_000
 // Fechadas na tela esperando o prazo, no máximo estas: além disso, a fechada há mais tempo encerra.
-const MAX_RELEASING = 10
+// Eram 10 por 20 minutos: até ~5,5 GB parados, e o aviso de memória do macOS chega tarde (com 62%
+// "livre", já havia 3 GB comprimidos e 1 GB em swap), então o computador engasgava antes.
+const MAX_RELEASING = 3
 // Cada sessão parada não gasta CPU, mas ocupa memória: medido em 2026-10-14, ~300 MB do Claude
 // mais os servidores MCP globais da pessoa (~550 MB no total aqui). Com o computador apertado de
 // memória (systemMemory.ts), as sessões fechadas na tela encerram antes do prazo, da fechada há mais

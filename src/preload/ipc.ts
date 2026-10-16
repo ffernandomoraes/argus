@@ -57,3 +57,37 @@ export function listen<C extends keyof EventChannels>(channel: C, cb: EventChann
     mine.delete(entry)
   }
 }
+
+// Os argumentos de um evento depois da chave (o primeiro).
+type AfterKey<F> = F extends (key: string, ...rest: infer R) => void ? R : never
+
+// Ouvintes de um canal cujo primeiro argumento é uma chave (a saída de cada terminal): só quem se
+// inscreveu naquela chave recebe, já sem ela. Com o listen, cada pedaço de saída passava por todos
+// os terminais abertos, e cada passagem para a página copia o texto (10 terminais, 10 cópias).
+const keyed = new Map<string, Map<string, Set<Callback>>>()
+
+export function listenKey<C extends keyof EventChannels>(channel: C, key: string, cb: (...args: AfterKey<EventChannels[C]>) => void): () => void {
+  let byKey = keyed.get(channel)
+  if (!byKey) {
+    const created = new Map<string, Set<Callback>>()
+    keyed.set(channel, created)
+    ipcRenderer.on(channel, (_e, k: unknown, ...rest: unknown[]) => {
+      const set = typeof k === 'string' ? created.get(k) : undefined
+      if (set) dispatch(channel, set, rest)
+    })
+    byKey = created
+  }
+  let set = byKey.get(key)
+  if (!set) {
+    set = new Set<Callback>()
+    byKey.set(key, set)
+  }
+  const entry: Callback = (...args) => (cb as Callback)(...args)
+  set.add(entry)
+  const mine = set
+  const owner = byKey
+  return () => {
+    mine.delete(entry)
+    if (!mine.size && owner.get(key) === mine) owner.delete(key)
+  }
+}

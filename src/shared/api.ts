@@ -306,7 +306,8 @@ export type Api = {
     write: (key: string, data: string) => void
     resize: (key: string, cols: number, rows: number) => void
     kill: (key: string) => void
-    onData: (cb: (key: string, data: string) => void) => Off
+    // A saída do terminal `key` (só a dele).
+    onData: (key: string, cb: (data: string) => void) => Off
     onExit: (cb: (key: string, code: number) => void) => Off
     // Conversa do `claude` do terminal, amarrada pelo processo dele (sem adivinhar pela pasta).
     session: (key: string) => Promise<string | null>

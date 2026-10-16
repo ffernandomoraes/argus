@@ -1,4 +1,5 @@
 import { FitAddon } from '@xterm/addon-fit'
+import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { IS_LINUX, IS_WIN } from '../../platform'
@@ -50,11 +51,25 @@ function linuxClipboard(term: Terminal): void {
 // o ConPTY redesenha a tela do jeito dele (ver windowsPty em @xterm/xterm/typings/xterm.d.ts).
 const windowsPty = IS_WIN ? { backend: 'conpty' as const, buildNumber: window.api.windowsBuild ?? undefined } : undefined
 
+// Desenho pela placa de vídeo (WebGL), bem mais leve que o padrão (o texto em HTML) com muita
+// saída. Só fora do canvas: lá o zoom escala o bloco, e o WebGL desenha numa imagem que borra ao
+// ampliar, enquanto o HTML refaz o texto em cada zoom. Sem WebGL (a placa recusou, ou o navegador
+// tirou o contexto, que tem limite por página), fica o padrão.
+function drawWithGpu(term: Terminal): void {
+  try {
+    const webgl = new WebglAddon()
+    webgl.onContextLoss(() => webgl.dispose())
+    term.loadAddon(webgl)
+  } catch (err) {
+    console.warn('[terminal] sem WebGL, fica o desenho padrão:', err)
+  }
+}
+
 // Terminal do xterm dentro de `el`, já encaixado no tamanho dele e, com `focus`, com o foco. O
 // tamanho segue o do elemento: cada mudança reencaixa uma vez por quadro (arrastar a borda do bloco
 // muda a cada quadro). `el` não pode ter padding: o encaixe mede o elemento inteiro e cortaria a
-// última linha.
-export function createXterm(el: HTMLElement, fontSize: number, focus = true): Xterm {
+// última linha. `gpu`: desenha pelo WebGL (só onde não há zoom, ver drawWithGpu).
+export function createXterm(el: HTMLElement, fontSize: number, focus = true, gpu = false): Xterm {
   const term = new Terminal({
     windowsPty,
     fontFamily: TERMINAL_FONT,
@@ -68,6 +83,8 @@ export function createXterm(el: HTMLElement, fontSize: number, focus = true): Xt
   const fit = new FitAddon()
   term.loadAddon(fit)
   term.open(el)
+  // Depois do open: o WebGL precisa do elemento na página.
+  if (gpu) drawWithGpu(term)
   fixMouseForZoom(term)
   if (IS_WIN) windowsClipboard(term)
   if (IS_LINUX) linuxClipboard(term)

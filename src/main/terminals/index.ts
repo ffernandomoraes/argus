@@ -12,6 +12,10 @@ import { spawnTerminal } from './spawnTerminal'
 
 // Guarda o fim da saída de cada terminal para redesenhar a tela ao reconectar.
 const BUFFER_LIMIT = 200_000
+// A saída vai para a janela em lotes: o `claude` no terminal redesenha a tela aos pedacinhos, e cada
+// pedaço virava uma mensagem e uma escrita no xterm (o VS Code junta do mesmo jeito, a cada 5 ms).
+// Quem digita não sente a diferença.
+const SEND_EVERY_MS = 5
 
 // key: a chave com que o terminal atende. account: conta do Claude com que
 // o terminal abriu. shell: nome do shell, quando não é o `claude`. sessionId: a conversa do
@@ -27,6 +31,9 @@ type Session = {
   // Roda no WSL: o status vem pelo id da conversa, não pelo pid (ver busy).
   wsl?: boolean
   unwatch?: () => void
+  // Saída que ainda não foi para a janela (ver SEND_EVERY_MS).
+  pending: string[]
+  sendTimer?: NodeJS.Timeout
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -52,6 +59,9 @@ export class Terminals {
     const existing = this.sessions.get(req.key)
     if (existing) {
       if (!req.keepSize) existing.pty.resize(req.cols, req.rows)
+      // O lote pendente já está no buffer: sai antes da resposta, que a tela ainda descarta, em
+      // vez de chegar depois e repetir o fim.
+      this.send(existing)
       return { ok: true, buffer: existing.output.text() }
     }
     const p = this.start(req)
@@ -77,7 +87,8 @@ export class Terminals {
       cwd,
       shell: opened.shell,
       sessionId: req.shell ? undefined : req.sessionId,
-      wsl: opened.wsl
+      wsl: opened.wsl,
+      pending: []
     }
     // Só a sessão que ainda ocupa a chave fala por ela. Terminal fechado e reaberto na mesma chave
     // (desfazer logo depois de fechar): a saída e o fim do antigo chegam depois (no Windows, ~1 s)
@@ -86,11 +97,13 @@ export class Terminals {
     session.pty.onData((data) => {
       if (!current()) return
       session.output.push(data)
-      this.onData(session.key, data)
+      session.pending.push(data)
+      session.sendTimer ??= setTimeout(() => this.send(session), SEND_EVERY_MS)
     })
     session.pty.onExit(({ exitCode }) => {
       session.unwatch?.()
       if (!current()) return
+      this.send(session)
       this.sessions.delete(session.key)
       this.onExit(session.key, exitCode)
     })
@@ -109,6 +122,16 @@ export class Terminals {
     }
     this.sessions.set(req.key, session)
     return { ok: true, buffer: '' }
+  }
+
+  // Manda à janela a saída juntada. Também antes do fim do terminal, para ela chegar antes do aviso.
+  private send(session: Session): void {
+    clearTimeout(session.sendTimer)
+    session.sendTimer = undefined
+    const data = session.pending.join('')
+    session.pending = []
+    // Fechado e reaberto na mesma chave: o resto do antigo não vai para o novo (ver current()).
+    if (data && this.sessions.get(session.key) === session) this.onData(session.key, data)
   }
 
   // Conversa do `claude` do terminal; nula no shell e enquanto a dele não foi gravada.
@@ -131,6 +154,7 @@ export class Terminals {
   kill(key: string): void {
     const session = this.sessions.get(key)
     if (!session) return
+    this.send(session)
     this.sessions.delete(key)
     session.unwatch?.()
     // Fora do mapa, o fim real do processo é descartado (current() em open): a janela fica sabendo

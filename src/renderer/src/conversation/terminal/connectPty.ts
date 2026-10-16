@@ -18,8 +18,8 @@ export function connectPty(
   // Até a resposta do open, o que chega já está no buffer que ela devolve (o processo guarda a
   // saída para redesenhar a tela ao reconectar): escrever as duas coisas repetia o começo.
   let opened = false
-  const offData = api.onData((k, data) => {
-    if (k === key && opened) term.write(data)
+  const offData = api.onData(key, (data) => {
+    if (opened) term.write(data)
   })
   const offExit = api.onExit((k, code) => {
     if (k === key) events.onExit(code)

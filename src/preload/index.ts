@@ -1,6 +1,6 @@
 import { contextBridge, webUtils } from 'electron'
 import type { Api } from '../shared/api'
-import { invoke, listen, send, sendSync } from './ipc'
+import { invoke, listen, listenKey, send, sendSync } from './ipc'
 import { onEdit, onReloadKey } from './keys'
 import { winMic } from './winMic'
 
@@ -224,7 +224,7 @@ const api: Api = {
     write: (key, data) => send('terminal:write', key, data),
     resize: (key, cols, rows) => send('terminal:resize', key, cols, rows),
     kill: (key) => send('terminal:kill', key),
-    onData: (cb) => listen('terminal:data', cb),
+    onData: (key, cb) => listenKey('terminal:data', key, cb),
     onExit: (cb) => listen('terminal:exit', cb),
     session: (key) => invoke('terminal:session', key),
     onSession: (cb) => listen('terminal:session', cb)

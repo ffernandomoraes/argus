@@ -66,7 +66,7 @@ const NO_PROMPTS: string[] = []
 // de modelo e modo embaixo.
 export const Composer = memo(function Composer(props: Props) {
   const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onToggleRemote, onInterrupt, extraSend } = props
-  const attachments = useAttachments()
+  const attachments = useAttachments(draftKey)
   const field = useRef<HTMLTextAreaElement>(null)
   const [draft, setDraft] = useDraft(draftKey)
   const menus = useComposerMenus(draft, agents)

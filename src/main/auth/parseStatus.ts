@@ -39,3 +39,9 @@ export function userNameFrom(config: unknown, email: string | undefined): string
   const name = [a.displayName, a.fullName].find((v): v is string => typeof v === 'string' && !!v.trim())
   return name?.trim()
 }
+
+// E-mail do login no .claude.json da conta (o mesmo oauthAccount de userNameFrom), sem rodar o
+// `claude`: só para conferir de quem é o uso guardado na abertura (ver usageMonitor/saved.ts).
+export function emailFrom(config: unknown): string | undefined {
+  return str((config as { oauthAccount?: Record<string, unknown> } | null)?.oauthAccount?.emailAddress)
+}

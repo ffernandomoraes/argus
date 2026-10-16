@@ -17,4 +17,33 @@ export type Usage = {
   // um modelo, com a duração de cada janela.
   models: { name: string; window: UsageWindow }[]
   updatedAt: number
+  // Lido numa abertura anterior do app e guardado (ver usageMonitor/saved.ts): nesta abertura ainda
+  // não veio leitura nova da conta.
+  saved?: boolean
+}
+
+// Guardado há mais tempo que isso não aparece mais.
+export const SAVED_MAX_MS = 12 * 60 * 60_000
+
+// O que dá para mostrar agora, sem nunca mostrar uma porcentagem que já não vale. Janela que já
+// recomeçou (hora de recomeçar no passado) some: o número dela era da janela anterior. Do guardado,
+// some também a janela que ainda não tinha começado (pode ter começado depois) e tudo o que for
+// antigo demais. A tela some com a janela; a conta sem sessão sai da barra de baixo.
+export function usableUsage(usage: Usage, now: number): Usage | null {
+  if (usage.saved && (now - usage.updatedAt > SAVED_MAX_MS || usage.updatedAt > now)) return null
+  const valid = (w: UsageWindow | null): UsageWindow | null => {
+    if (!w) return null
+    if (!w.resetsAt) return usage.saved ? null : w
+    const resetsAt = Date.parse(w.resetsAt)
+    return Number.isFinite(resetsAt) && resetsAt > now ? w : null
+  }
+  return {
+    ...usage,
+    session: valid(usage.session),
+    weekly: valid(usage.weekly),
+    models: usage.models.flatMap((m) => {
+      const window = valid(m.window)
+      return window ? [{ ...m, window }] : []
+    })
+  }
 }

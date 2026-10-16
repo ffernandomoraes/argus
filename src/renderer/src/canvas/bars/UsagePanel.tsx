@@ -78,8 +78,11 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
   const now = useNow(30_000)
   const mixed = shown.some((x) => x.provider)
   const named = shown.length > 1 || mixed
-  const updatedAt = Math.max(...shown.map((x) => x.usage.updatedAt))
+  // A leitura mais antiga das contas à vista: o rodapé nunca diz mais novo do que é.
+  const updatedAt = Math.min(...shown.map((x) => x.usage.updatedAt))
   const updatedTime = new Date(updatedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
+  const updatedToday = new Date(updatedAt).toDateString() === new Date(now).toDateString()
+  const saved = shown.some((x) => x.usage.saved)
 
   return (
     // A rolagem fica num filho: a caixa não corta a seta, que vaza para fora dela.
@@ -100,9 +103,10 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
                 <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
                   {mixed && <AgentIcon provider={entry.provider} size={12} />}
                   <span className="truncate">{entry.name}</span>
+                  {entry.usage.saved && <span className="shrink-0 normal-case tracking-normal font-normal">- {tr('guardado', 'saved')}</span>}
                 </div>
               )}
-              <div className="flex flex-col gap-4">
+              <div className={`flex flex-col gap-4 ${entry.usage.saved ? 'opacity-60' : ''}`}>
                 {rowsOf(entry).map((row) => (
                   <WindowDetail key={row.title} title={row.title} window={row.window} now={now} />
                 ))}
@@ -112,7 +116,19 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
         </div>
         <div className="mt-4 flex flex-col gap-1 border-t border-line pt-2 text-[11px] text-faint">
           {silent.length > 0 && <span>{silentNote(silent)}</span>}
-          <span>{tr(`Atualizado às ${updatedTime}`, `Updated at ${updatedTime}`)}</span>
+          {saved && (
+            <span>
+              {tr(
+                'Último uso guardado, da abertura anterior. Conferindo de novo.',
+                'Last saved usage, from the previous launch. Checking again.'
+              )}
+            </span>
+          )}
+          <span>
+            {updatedToday
+              ? tr(`Atualizado às ${updatedTime}`, `Updated at ${updatedTime}`)
+              : tr(`Atualizado ${resetLabel(new Date(updatedAt).toISOString(), now)}`, `Updated ${resetLabel(new Date(updatedAt).toISOString(), now)}`)}
+          </span>
         </div>
       </div>
     </div>

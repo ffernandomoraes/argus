@@ -6,7 +6,7 @@ import { claudeLaunch } from '../chats'
 import { readJsonFile } from '../lib/jsonFile'
 import { claudeJsonDir } from '../claudeHome'
 import { distroFor } from '../wsl'
-import { parseAuthStatus, parseFailedStatus, userNameFrom } from './parseStatus'
+import { emailFrom, parseAuthStatus, parseFailedStatus, userNameFrom } from './parseStatus'
 
 const run = promisify(execFile)
 
@@ -22,6 +22,12 @@ export async function runClaude(args: string[], account: string) {
 function readUserName(id: string, email: string | undefined): string | undefined {
   const read = readJsonFile(join(claudeJsonDir(id), '.claude.json'))
   return read.status === 'ok' ? userNameFrom(read.data, email) : undefined
+}
+
+// E-mail do login atual da conta, lido do .claude.json dela. undefined se não deu para ler.
+export function configEmail(id: string): string | undefined {
+  const read = readJsonFile(join(claudeJsonDir(id), '.claude.json'))
+  return read.status === 'ok' ? emailFrom(read.data) : undefined
 }
 
 // ok: o `claude` respondeu (logado ou não). Falha (tempo esgotado, `claude` que não abriu): quem

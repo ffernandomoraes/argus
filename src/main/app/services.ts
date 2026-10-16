@@ -95,7 +95,7 @@ export function createServices() {
   const auth = new Auth(
     (state) => {
       broadcast('auth:state', state)
-      usage.sync(state.accounts.filter((a) => a.status?.loggedIn).map((a) => a.id))
+      usage.sync(state.accounts)
       sessionWatch.refreshStatusDirs()
     },
     (id) => {
@@ -116,7 +116,7 @@ export function createServices() {
   const providers = new Providers(
     (state) => {
       broadcast('providers:state', state)
-      usage.codex.sync(state.providers.codex.accounts.filter((a) => a.status?.signedIn).map((a) => a.id))
+      usage.codex.sync(state.providers.codex.accounts)
     },
     (provider, id) => {
       chats.releaseAll(agentRef(provider, id))

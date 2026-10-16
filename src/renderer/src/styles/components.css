@@ -59,11 +59,11 @@
   pointer-events: none;
 }
 
-/* Item da conversa (ChatView): fora da tela, o navegador não calcula nem desenha o conteúdo,
-   então conversa longa continua leve. A altura real fica guardada depois da primeira vez na
-   tela (o `auto`); antes disso vale a estimativa. Corta o que vazar da caixa: a linha do tempo
-   fica fora dela. */
+/* Item da conversa (ChatView). Conversa longa continua leve pela virtualização (Timeline: só o
+   que está perto da tela fica montado), e não mais pelo content-visibility, que daria a altura
+   estimada aos itens montados fora da tela e erraria a medida. Fica a contenção que ele aplicava
+   com o item à vista, para o desenho ser o mesmo: corta o que vazar da caixa (a linha do tempo
+   fica fora dela). */
 .timeline-item {
-  content-visibility: auto;
-  contain-intrinsic-block-size: auto 4rem;
+  contain: layout style paint;
 }

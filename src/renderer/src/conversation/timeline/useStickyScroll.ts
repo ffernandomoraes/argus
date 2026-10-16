@@ -5,8 +5,20 @@ const UP_KEYS = new Set(['ArrowUp', 'PageUp', 'Home'])
 
 // Rolagem da conversa: segue o fim quando chega coisa nova (a menos que a pessoa tenha subido para
 // ler) e acha o prompt do trecho na tela, que fica preso no topo enquanto ela rola para cima.
-// Os refs são de quem chama (o nome com Ref: o React Compiler reconhece que são refs).
-export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, contentRef: RefObject<HTMLDivElement | null>) {
+// Os refs são de quem chama (o nome com Ref: o React Compiler reconhece que são refs). A conversa é
+// virtualizada (Timeline): só os itens perto da tela estão montados, então quem diz qual balão vem
+// antes de um item e como rolar até um que não está montado é a linha do tempo (`timeline`).
+export type StickyTimeline = {
+  // O último balão seu antes do item `index` (data-index); nulo se não houver.
+  promptBefore: (index: number) => string | null
+  scrollToKey: (key: string) => void
+}
+
+export function useStickyScroll(
+  scrollerRef: RefObject<HTMLDivElement | null>,
+  contentRef: RefObject<HTMLDivElement | null>,
+  timeline: StickyTimeline
+) {
   const following = useRef(true)
   const lastTop = useRef(0)
   const [pinnedKey, setPinnedKey] = useState<string | null>(null)
@@ -26,27 +38,29 @@ export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, c
   }, [toEnd])
 
   // Prompt do trecho que está na tela fica preso no topo: o último cujo balão já subiu para
-  // fora da área visível. Rolando para trás, troca para o prompt daquele ponto do histórico.
+  // fora da área visível. Rolando para trás, troca para o prompt daquele ponto do histórico. Acha o
+  // primeiro item à vista; o balão vem antes dele, montado ou não.
+  const { promptBefore } = timeline
   const findPinned = useCallback(() => {
     const root = scrollerRef.current
     if (!root) return
     const top = root.getBoundingClientRect().top + 8
-    let key: string | null = null
-    for (const el of root.querySelectorAll<HTMLElement>('[data-prompt]')) {
-      if (el.getBoundingClientRect().bottom > top) break
-      key = el.dataset.prompt ?? null
+    for (const el of root.querySelectorAll<HTMLElement>('[data-index]')) {
+      if (el.getBoundingClientRect().bottom > top) return setPinnedKey(promptBefore(Number(el.dataset.index)))
     }
-    setPinnedKey(key)
-  }, [scrollerRef])
+    setPinnedKey(null)
+  }, [scrollerRef, promptBefore])
 
-  // Mensagem fora da tela começa com altura estimada (.timeline-item) e cresce ao aparecer.
+  // Item fora da tela começa com altura estimada (useTimelineVirtualizer) e cresce ao ser medido.
   // Grudado no fim, acompanha esse crescimento para não parar no meio da última resposta.
+  // Seguindo o fim, o prompt preso não aparece (só rolando para cima, e aí o onScroll o acha): a
+  // busca, que mede cada item, fica de fora enquanto a resposta cresce, ~20 vezes por segundo.
   useEffect(() => {
     const inner = contentRef.current
     if (!inner) return
     const observer = new ResizeObserver(() => {
       toEnd()
-      findPinned()
+      if (!following.current) findPinned()
     })
     observer.observe(inner)
     return () => observer.disconnect()
@@ -100,7 +114,8 @@ export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, c
       else if (distance < 40) following.current = true
       trackDirection(delta)
     }
-    findPinned()
+    // Rolagem feita pelo toEnd, no fim e seguindo: o prompt preso não está à vista (ver o observer).
+    if (!(following.current && distance <= 1)) findPinned()
   }
 
   // Roda do mouse ou trackpad para cima solta antes mesmo de a rolagem acontecer (sem rolagem
@@ -119,9 +134,12 @@ export function useStickyScroll(scrollerRef: RefObject<HTMLDivElement | null>, c
     if (e.nativeEvent.offsetX >= el.clientWidth && el.scrollTop > 0) following.current = false
   }
 
+  // Balão montado: rola suave até ele. Fora da tela (não montado): a linha do tempo leva até lá.
   const scrollToPrompt = () => {
-    const el = scrollerRef.current?.querySelector(`[data-prompt="${CSS.escape(pinnedKey ?? '')}"]`)
+    if (!pinnedKey) return
+    const el = scrollerRef.current?.querySelector(`[data-prompt="${CSS.escape(pinnedKey)}"]`)
     if (el) scrollWithin(el, 'start')
+    else timeline.scrollToKey(pinnedKey)
   }
 
   return { onScroll, onWheel, onKeyDown, onPointerDown, toEnd, follow, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }

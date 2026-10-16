@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react'
 import type { AgentDef } from '../../../shared/agents'
 import type { ChatState, PermissionAnswer } from '../../../shared/chat'
 import type { SessionStatus } from '../canvas/types'
@@ -9,10 +9,12 @@ import { ImageViewer } from './ImageViewer'
 import { RemoteControlBar } from './RemoteControlBar'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
+import { olderRow } from './timeline/olderRow'
 import { PinnedPrompt } from './timeline/PinnedPrompt'
 import { promptOf } from './timeline/promptOf'
-import { Timeline } from './timeline/Timeline'
+import { Timeline, type TimelineHandle } from './timeline/Timeline'
 import { useImageViews } from './timeline/useImageViews'
+import { useOlderMessages, type OlderMessages } from './timeline/useOlderMessages'
 import { useOptimisticSends, type OutgoingMessage } from './timeline/useOptimisticSends'
 import { useStickyScroll } from './timeline/useStickyScroll'
 import { useTimeline } from './timeline/useTimeline'
@@ -29,6 +31,8 @@ export type ChatViewProps = {
   draftKey: string
   messages: Message[]
   loading?: boolean
+  // Mensagens anteriores às da tela: carregam ao rolar perto do topo (ver useOlderMessages).
+  older?: OlderMessages
   status: SessionStatus
   // Sessão aberta pelo chat: resposta em andamento, mensagens a caminho, permissões.
   live: ChatState | null
@@ -74,6 +78,7 @@ export const ChatView = memo(function ChatView({
   draftKey,
   messages,
   loading = false,
+  older,
   status,
   live,
   onSend,
@@ -95,7 +100,14 @@ export const ChatView = memo(function ChatView({
   cleanText
 }: ChatViewProps) {
   const scroller = useRef<HTMLDivElement>(null)
+  // A mesma área, para a linha do tempo virtualizada: ela precisa saber quando a área montou.
+  const [scrollerEl, setScrollerEl] = useState<HTMLDivElement | null>(null)
+  const attachScroller = useCallback((el: HTMLDivElement | null) => {
+    scroller.current = el
+    setScrollerEl(el)
+  }, [])
   const content = useRef<HTMLDivElement>(null)
+  const timeline = useRef<TimelineHandle>(null)
   const composer = useRef<ComposerHandle>(null)
   const images = useImageViews(loadImages)
   // Envio que não chegou ao Claude no prazo: o texto e os anexos voltam para o campo.
@@ -107,6 +119,8 @@ export const ChatView = memo(function ChatView({
     )
   )
   const running = status === 'running' || status === 'needs-you' || sends.waiting.length > 0
+  // Com mensagem a caminho, sem o "Nova conversa" (ver o comentário onde ele aparece).
+  const placeholder = (loading || messages.length === 0) && sends.waiting.length === 0
   const answer = useStableCallback(onAnswer)
   const items = useTimeline({
     messages,
@@ -121,8 +135,23 @@ export const ChatView = memo(function ChatView({
     onAnswer: answer
   })
 
-  const sticky = useStickyScroll(scroller, content)
+  // Enquanto há anteriores, o loader delas vai na frente (olderRow).
+  const olderMore = !!older?.more
+  const olderLoading = !!older?.loading
+  const rows = useMemo(() => (olderMore ? [olderRow(olderLoading), ...items] : items), [olderMore, olderLoading, items])
+  const promptBefore = useStableCallback((index: number) => {
+    for (let i = Math.min(index, rows.length) - 1; i >= 0; i--) if (rows[i].kind === 'user') return rows[i].key
+    return null
+  })
+  const scrollToKey = useStableCallback((key: string) => timeline.current?.scrollToKey(key))
+  const stickyTimeline = useMemo(() => ({ promptBefore, scrollToKey }), [promptBefore, scrollToKey])
+  const sticky = useStickyScroll(scroller, content, stickyTimeline)
   const { toEnd, follow } = sticky
+  const olderMessages = useOlderMessages(scroller, older)
+  const onScroll = (e: UIEvent<HTMLDivElement>) => {
+    sticky.onScroll(e)
+    olderMessages.onScroll()
+  }
   // Mudou algo na conversa: vai para o fim, se estiver seguindo.
   useLayoutEffect(() => toEnd(), [items, toEnd])
 
@@ -172,20 +201,22 @@ export const ChatView = memo(function ChatView({
           />
         )}
         <div
-          ref={scroller}
-          onScroll={sticky.onScroll}
+          ref={attachScroller}
+          onScroll={onScroll}
           onWheel={sticky.onWheel}
           onKeyDown={sticky.onKeyDown}
           onPointerDown={sticky.onPointerDown}
-          className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
+          // relative: a lista mede onde começa a partir daqui (offsetTop). Sem a âncora do navegador:
+          // quem segura a posição quando algo acima muda de tamanho é a linha do tempo virtualizada.
+          className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 [overflow-anchor:none]"
         >
           {/* Com mensagem a caminho, sem o "Nova conversa": centralizado, ele empurrava o balão para
               baixo, perto da caixa de escrever, e o balão pulava para o topo quando o histórico
               chegava (e voltava se o histórico sumisse por um instante). */}
-          {(loading || messages.length === 0) && sends.waiting.length === 0 && <ChatPlaceholder loading={loading} />}
+          {placeholder && <ChatPlaceholder loading={loading} />}
           {/* O app inteiro tem seleção de texto desligada (index.css); as mensagens, não: dá para copiar. */}
           <div ref={content} className="flex select-text flex-col gap-3">
-            <Timeline items={items} />
+            <Timeline rows={rows} scroller={scrollerEl} placeholder={placeholder} handle={timeline} />
           </div>
         </div>
       </div>

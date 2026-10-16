@@ -22,6 +22,10 @@ type Take = () => number | undefined
 // arquivo é lido uma vez só (ver cache.ts).
 export class HistoryParser {
   private list: Message[] = []
+  // Linhas já lidas, pelo uuid. Ao retomar uma sessão, o Claude Code às vezes grava a conversa de
+  // novo no mesmo arquivo (visto em 2026-10-16: um trecho de ~600 mensagens três vezes); a mesma
+  // linha entra uma vez só, como no próprio Claude Code.
+  private seenLines = new Set<string>()
   // Resultado de ferramenta chega numa linha depois do pedido; liga os dois pelo id.
   private tools = new Map<unknown, ToolMessage>()
   // A mesma resposta da API vem em várias linhas (raciocínio, texto, ferramenta): tokens contam uma vez.
@@ -38,6 +42,10 @@ export class HistoryParser {
   }
 
   feed(l: Line): void {
+    if (typeof l.uuid === 'string') {
+      if (this.seenLines.has(l.uuid)) return
+      this.seenLines.add(l.uuid)
+    }
     const marker = compactEvent(l) ?? interruptEvent(l) ?? commandEvent(l)
     if (marker) {
       if (marker.kind === 'model') this.lastModelEvent = marker.text

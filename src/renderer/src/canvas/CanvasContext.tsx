@@ -65,6 +65,8 @@ export type CanvasActions = {
   addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string, folders?: string[], name?: string) => void
   // Guarda no nó a conversa que o terminal criou, para ele retomá-la depois.
   bindTerminalSession: (nodeId: string, sessionId: string) => void
+  // Conta escolhida na etiqueta do terminal; quem chama reabre o `claude` com ela.
+  setTerminalAccount: (nodeId: string, account: string) => void
   closeTerminal: (nodeId: string, name: string) => void
   // Conversa no canvas (ChatPanelNode): fechar tira o bloco (a conversa continua salva); os outros
   // dois tiram o bloco e abrem a conversa no painel lateral ou numa janela própria.

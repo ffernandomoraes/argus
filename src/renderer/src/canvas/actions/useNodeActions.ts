@@ -135,6 +135,9 @@ export function useNodeActions(
             n.id === nodeId && n.type === 'terminal' && !n.data.sessionId ? { ...n, data: { ...n.data, sessionId } } : n
           )
         ),
+      // Também sem histórico: desfazer não reabriria o terminal com a conta de antes.
+      setTerminalAccount: (nodeId: string, account: string) =>
+        setNodes((ns) => ns.map((n) => (n.id === nodeId && n.type === 'terminal' ? { ...n, data: { ...n.data, account } } : n))),
       toggleGroup: (id: string) => change((ns) => toggleCollapse(ns, id)),
       toggleObscure: (id: string) => change((ns) => toggleObscure(ns, id)),
       toggleProject: (id: string) => change((ns) => toggleProjectCollapse(ns, id)),

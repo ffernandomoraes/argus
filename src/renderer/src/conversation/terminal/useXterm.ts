@@ -21,6 +21,10 @@ export type XtermOptions = {
   fontScale: number
   // Pega o foco ao abrir. Vale na abertura, como a conta: mudar depois não mexe no foco.
   autoFocus: boolean
+  // Desenha pela placa de vídeo (ver createXterm). Vale na abertura: o modo foco já recria o terminal.
+  gpu?: boolean
+  // Mudou: abre de novo, lendo conta e conversa outra vez (a troca de conta já encerrou o processo).
+  relaunch?: number
 }
 
 type Ended = { generation: string; error: string | null; exitCode: number | null }
@@ -29,18 +33,18 @@ type Ended = { generation: string; error: string | null; exitCode: number | null
 // pasta ou o tipo (claude ou shell), ou com `reopen`; a escala da fonte só ajusta o que está aberto.
 export function useXterm(
   ref: RefObject<HTMLElement | null>,
-  { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus }: XtermOptions
+  { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus, gpu, relaunch = 0 }: XtermOptions
 ): { error: string | null; exitCode: number | null; reopen: () => void } {
   const [attempt, setAttempt] = useState(0)
   // Erro ou fim do processo da abertura atual; o de uma abertura anterior não vale mais.
   const [ended, setEnded] = useState<Ended | null>(null)
-  const generation = `${sessionKey}\n${cwd}\n${shell ? 'shell' : 'claude'}\n${attempt}`
+  const generation = `${sessionKey}\n${cwd}\n${shell ? 'shell' : 'claude'}\n${attempt}\n${relaunch}`
   const live = useRef<{ xterm: Xterm; scale: number } | null>(null)
 
   // Conta, sessão, modelo, esforço e modo valem ao abrir, como no terminal comum (os da conversa
   // que ele retoma): lidos aqui, mudar depois não recria o terminal.
   const open = useEffectEvent((el: HTMLElement, generation: string) => {
-    const xterm = createXterm(el, fontSizeFor(fontScale), autoFocus)
+    const xterm = createXterm(el, fontSizeFor(fontScale), autoFocus, gpu)
     const settings = getConversationSettings(sessionId)
     const disconnect = connectPty(
       xterm.term,

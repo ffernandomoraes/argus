@@ -1,13 +1,13 @@
 import { memo, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { useBranch, useUncommitted } from '../../canvas/sessionsStore'
-import { AccountTag } from './AccountTag'
+import { AccountTag, useCurrentAccount } from './AccountTag'
 import { BranchTag } from './BranchTag'
 import { FolderTag } from './FolderTag'
 import { HeaderButton } from './HeaderButton'
 import { tr } from '../../i18n'
 
-// Cabeçalho da conversa: o logo do agente e o título numa linha e, embaixo, os selos da pasta e da
+// Cabeçalho da conversa: o título numa linha e, embaixo, os selos da conta, da pasta e da
 // branch; à direita, os botões de quem a mostra e o fechar. Memorizado: o chat andando não
 // redesenha o cabeçalho.
 export const ConversationHeader = memo(function ConversationHeader({
@@ -46,7 +46,8 @@ export const ConversationHeader = memo(function ConversationHeader({
   const repoBranch = useBranch(cwd)
   const branch = folders ? null : repoBranch
   const uncommitted = useUncommitted(cwd)
-  const secondRow = !minimal && (!!project || !!branch)
+  const showAccount = !!useCurrentAccount(account)
+  const secondRow = !minimal && (showAccount || !!project || !!branch)
 
   return (
     <header
@@ -56,14 +57,11 @@ export const ConversationHeader = memo(function ConversationHeader({
       style={style}
     >
       <div className="min-w-0 flex-1">
-        {/* O logo do agente vem antes do título; no foco, só o título. */}
-        <div className="flex min-w-0 items-center gap-1.5">
-          {!minimal && <AccountTag account={account} onChange={onAccountChange} />}
-          <div className="min-w-0 truncate text-sm font-medium text-text">{title}</div>
-        </div>
-        {/* Pasta e branch (fora de repositório, não aparece), com o mesmo selo. */}
+        <div className="min-w-0 truncate text-sm font-medium text-text">{title}</div>
+        {/* Conta, pasta e branch (fora de repositório, não aparece), com o mesmo selo. */}
         {secondRow && (
           <div className="mt-1 flex min-w-0 items-center gap-2 text-[12px] text-faint">
+            {showAccount && <AccountTag account={account} onChange={onAccountChange} />}
             {project && (
               <FolderTag cwd={cwd} folders={folders}>
                 {project}

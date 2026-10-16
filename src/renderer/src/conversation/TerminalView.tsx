@@ -15,7 +15,9 @@ export function TerminalView({
   shell,
   sessionId,
   fontScale = 1,
-  autoFocus = true
+  autoFocus = true,
+  gpu = false,
+  relaunch
 }: {
   sessionKey: string
   cwd: string
@@ -30,9 +32,13 @@ export function TerminalView({
   // Pega o foco ao abrir (padrão). No canvas, só o bloco recém-criado: um terminal que só remonta
   // (abrir o app, expandir o grupo) roubava as teclas do canvas.
   autoFocus?: boolean
+  // Desenha pela placa de vídeo: só fora do zoom do canvas (modo foco), onde não borra.
+  gpu?: boolean
+  // Ver useXterm.
+  relaunch?: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const { error, exitCode, reopen } = useXterm(ref, { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus })
+  const { error, exitCode, reopen } = useXterm(ref, { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus, gpu, relaunch })
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" style={{ background: TERMINAL_THEME.background }}>

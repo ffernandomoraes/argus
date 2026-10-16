@@ -13,6 +13,7 @@ import { MENU_HOVER } from '../../ui/menuStyles'
 import { useEscape } from '../../useEscape'
 import { useOutsideClick } from '../../useOutsideClick'
 import { POPOVER } from '../popover'
+import { TAG } from './BranchTag'
 import { tr } from '../../i18n'
 
 type Option = { id: string; name: string; signedOut: boolean }
@@ -41,63 +42,90 @@ function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, m
   return sections.filter((s) => s.options.length)
 }
 
-// Logo do agente que roda a conversa, antes do título; o nome da conta fica no tooltip. Com
-// `onChange` (conversa vazia) vira botão que abre o seletor; depois do primeiro envio só mostra. Com uma conta só do Claude e
-// sem outros agentes, como a etiqueta do grupo, não há o que mostrar.
-export function AccountTag({ account, onChange }: { account?: string; onChange?: (account: string) => void }) {
+type Current = { id: string; icon: ReactNode; name: string; label: string }
+
+// A conta que vale agora: a pedida ou, sem ela (ou removida), a padrão do agente. Null quando não
+// há o que mostrar: com uma conta só do Claude e sem outros agentes, como a etiqueta do grupo.
+// Exportado para o cabeçalho saber se a linha de baixo tem o selo.
+export function useCurrentAccount(account?: string): Current | null {
   const auth = useAuth()
   const providers = useProviders()
   const multiAgents = usePreference('multiAgents')
+  const agent = parseAgentRef(account)
+  if (agent) {
+    const { accounts, defaultId } = providers?.providers[agent.provider] ?? { accounts: [], defaultId: null }
+    const chosen = accounts.find((a) => a.id === agent.account) ?? accounts.find((a) => a.id === defaultId)
+    return {
+      id: chosen ? agentRef(agent.provider, chosen.id) : account!,
+      icon: <AgentIcon provider={agent.provider} size={12} />,
+      name: `${PROVIDER_NAMES[agent.provider]}${chosen && accounts.length > 1 ? ` - ${chosen.name}` : ''}`,
+      // Sem conta achada, o nome do agente.
+      label: chosen?.name ?? PROVIDER_NAMES[agent.provider]
+    }
+  }
+  if (!auth || (auth.accounts.length < 2 && !multiAgents)) return null
+  const id = resolveAccount(auth, account)
+  const chosen = auth.accounts.find((a) => a.id === id)
+  if (!chosen) return null
+  return { id, icon: <ClaudeIcon size={12} />, name: chosen.name, label: chosen.name }
+}
+
+// Selo da conta que roda a conversa (logo do agente e nome), antes do da pasta. Com `onChange`
+// (conversa vazia) vira botão que abre o seletor; depois do primeiro envio só mostra.
+// claudeOnly: só as contas do Claude (o terminal do `claude` troca de conta, não de agente).
+export function AccountTag({
+  account,
+  onChange,
+  claudeOnly
+}: {
+  account?: string
+  onChange?: (account: string) => void
+  claudeOnly?: boolean
+}) {
+  const auth = useAuth()
+  const providers = useProviders()
+  const multiAgents = usePreference('multiAgents')
+  const current = useCurrentAccount(account)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
-  const sections = sectionsFor(auth, providers, multiAgents)
+  if (!current) return null
+  const sections = sectionsFor(auth, providers, multiAgents && !claudeOnly)
   const total = sections.reduce((n, s) => n + s.options.length, 0)
-
-  // O que vale agora: a conta pedida ou, sem ela (ou removida), a padrão do agente.
-  const agent = parseAgentRef(account)
-  let currentId: string
-  let icon: ReactNode
-  let name: string
-  if (agent) {
-    const { accounts, defaultId } = providers?.providers[agent.provider] ?? { accounts: [], defaultId: null }
-    const chosen = accounts.find((a) => a.id === agent.account) ?? accounts.find((a) => a.id === defaultId)
-    currentId = chosen ? agentRef(agent.provider, chosen.id) : account!
-    icon = <AgentIcon provider={agent.provider} size={14} />
-    name = `${PROVIDER_NAMES[agent.provider]}${chosen && accounts.length > 1 ? ` - ${chosen.name}` : ''}`
-  } else {
-    if (!auth || (auth.accounts.length < 2 && !multiAgents)) return null
-    currentId = resolveAccount(auth, account)
-    const chosen = auth.accounts.find((a) => a.id === currentId)
-    if (!chosen) return null
-    icon = <ClaudeIcon size={14} />
-    name = chosen.name
-  }
-
-  const title = tr(`Conta desta conversa: ${name}`, `Account for this chat: ${name}`)
+  const currentId = current.id
+  const content = (
+    <>
+      <span className="flex shrink-0">{current.icon}</span>
+      <span className="truncate">{current.label}</span>
+    </>
+  )
+  const title = tr(`Conta desta conversa: ${current.name}`, `Account for this chat: ${current.name}`)
 
   if (!onChange || total < 2)
     return (
-      <span title={`${title}. ${tr('Só dá para trocar antes do primeiro envio.', 'It can only be changed before the first message.')}`} className="flex size-6 shrink-0 items-center justify-center">
-        {icon}
+      <span
+        title={`${title}. ${tr('Só dá para trocar antes do primeiro envio.', 'It can only be changed before the first message.')}`}
+        className={`${TAG} min-w-0 max-w-[40%] shrink-0 gap-1`}
+      >
+        {content}
       </span>
     )
 
   return (
     // Clicar no logo não arrasta a janela (no-drag), o bloco no canvas (nodrag) nem o painel
     // (o pointerdown não sobe para o cabeçalho).
-    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex shrink-0">
+    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex min-w-0 max-w-[40%] shrink-0">
       <button
         aria-expanded={open}
         aria-label={title}
         onClick={() => setOpen((o) => !o)}
         title={title}
         // A setinha mostra que dá para escolher; some depois do primeiro envio, junto com o seletor.
-        className={`flex h-6 items-center gap-0.5 rounded-md px-1 ${open ? 'bg-surface-2 text-text' : 'text-faint hover:bg-surface-2 hover:text-text'}`}
+        className={`${TAG} min-w-0 gap-1 ${open ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`}
       >
-        {icon}
+        {content}
         <ChevronDown size={12} className="shrink-0" />
       </button>
 

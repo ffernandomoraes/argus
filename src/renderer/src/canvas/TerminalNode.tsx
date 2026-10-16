@@ -1,7 +1,9 @@
-import { memo, useRef } from 'react'
+import { memo, useRef, useState } from 'react'
 import { parseAgentRef } from '../../../shared/providers'
 import type { NodeProps } from '@xyflow/react'
 import { Maximize2, Minimize2, X } from 'lucide-react'
+import { useAuth } from '../auth/useAuth'
+import { AccountTag } from '../conversation/header/AccountTag'
 import { TerminalView } from '../conversation/TerminalView'
 import { usePreferences } from '../settings/preferences'
 import { Button } from '../ui/Button'
@@ -30,7 +32,24 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
   const group = useGroupOf(parentId)
   const account = data.account ?? group.account
   const agent = parseAgentRef(account)?.provider
-  const { closeTerminal } = useCanvasActions()
+  const { closeTerminal, setTerminalAccount } = useCanvasActions()
+  // Trocar a conta encerra o `claude` e abre de novo com ela, na mesma conversa (as conversas
+  // ficam numa pasta só para todas as contas). Só no do Claude, com mais de uma conta dele.
+  const [relaunch, setRelaunch] = useState(0)
+  const claudeAccounts = useAuth()?.accounts.length ?? 0
+  const accountTag =
+    !shell && !agent && claudeAccounts > 1 ? (
+      <AccountTag
+        account={account}
+        claudeOnly
+        onChange={(next) => {
+          if (next === account) return
+          window.api.terminal.kill(id)
+          setTerminalAccount(id, next)
+          setRelaunch((n) => n + 1)
+        }}
+      />
+    ) : undefined
   const focusRef = useRef<HTMLDivElement>(null)
   const focus = useFocusMode(focusRef)
   // No foco, ⌘+ e ⌘- mudam a fonte, na mesma escala do drawer.
@@ -50,6 +69,8 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       sessionId={data.sessionId}
       fontScale={inFocusMode ? zoom : undefined}
       autoFocus={inFocusMode || isNew}
+      gpu={inFocusMode}
+      relaunch={relaunch}
     />
   )
 
@@ -58,7 +79,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       {/* Até saber qual é a conversa que o `claude` daqui criou (ver TerminalBinding). */}
       {!shell && !data.sessionId && <TerminalBinding nodeId={id} />}
       <BlockFrame selected={selected} minHeight={220} className="bg-surface">
-        <TerminalHeader nodeId={id} name={data.name} path={pathLabel} shell={shell} agent={agent}>
+        <TerminalHeader nodeId={id} name={data.name} path={pathLabel} shell={shell} agent={agent} account={accountTag}>
           <IconButton label={tr('Modo foco', 'Focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.enter}>
             <Maximize2 size={13} />
           </IconButton>
@@ -90,7 +111,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
 
       {focus.active && (
         <TerminalFocusLayer panelRef={focusRef}>
-          <TerminalHeader nodeId={id} name={data.name} path={pathLabel} shell={shell} agent={agent}>
+          <TerminalHeader nodeId={id} name={data.name} path={pathLabel} shell={shell} agent={agent} account={accountTag}>
             <IconButton label={tr('Sair do modo foco', 'Exit focus mode')} variant="subtle" size="sm" className={HEADER_BUTTON} onClick={focus.exit}>
               <Minimize2 size={13} />
             </IconButton>

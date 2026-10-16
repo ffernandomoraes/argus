@@ -2,11 +2,12 @@ import { shell } from 'electron'
 import { WatchedFolders } from '../app/watchedFolders'
 import { designSessionIds } from '../designStore'
 import { checkoutBranch, currentBranch, fetchBranches, listBranches, repoUrl, uncommittedFiles } from '../gitBranch'
-import { readHistory, readImages } from '../history'
+import { readHistory, readHistoryPage, readImages } from '../history'
 import type { SessionWatch } from '../sessionWatch'
 import { listKnownFolders, listSessions, sessionContext, trashSession } from '../sessions'
 import { conversationsIn, indexEntry, isAgentConversation, loadConversation, loadImages, trashConversation } from '../agentChats/store'
 import type { SessionSummary } from '../../shared/sessions'
+import { pageOf } from '../../shared/history'
 import { agentRef } from '../../shared/providers'
 import { handle, on } from './register'
 
@@ -34,6 +35,11 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   handle('sessions:changes', (_e, path) => uncommittedFiles(path))
   on('sessions:watch', (e, paths) => watched.set(e.sender, paths))
   handle('sessions:history', async (_e, path, id) => (isAgentConversation(id) ? (loadConversation(id)?.messages ?? []) : readHistory(path, id)))
+  handle('sessions:historyPage', async (_e, path, id, request) => {
+    // Vem da tela: um número de verdade, ou a abertura padrão.
+    const wanted = { since: typeof request?.since === 'string' ? request.since : undefined, count: Math.max(1, Math.floor(Number(request?.count)) || 200) }
+    return isAgentConversation(id) ? pageOf(loadConversation(id)?.messages ?? [], wanted) : readHistoryPage(path, id, wanted)
+  })
   handle('sessions:context', async (_e, path, id) => (isAgentConversation(id) ? (indexEntry(id)?.contextPercent ?? 0) : sessionContext(path, id)))
   handle('sessions:images', async (_e, path, id, messageId) => (isAgentConversation(id) ? loadImages(id, messageId) : readImages(path, id, messageId)))
 }

@@ -10,7 +10,7 @@ import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
-import type { Message } from './history'
+import type { HistoryPage, HistoryRequest, Message } from './history'
 import type { DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
 import type { McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
@@ -232,6 +232,8 @@ export type Api = {
     // Arquivos não comitados do repositório da pasta; nulo fora de repositório.
     changes: (path: string) => Promise<UncommittedFile[] | null>
     history: (path: string, id: string) => Promise<Message[]>
+    // O trecho do fim que a conversa mostra (ver HistoryRequest em shared/history).
+    historyPage: (path: string, id: string, request: HistoryRequest) => Promise<HistoryPage>
     // Imagens de uma mensagem sua (data URLs), lidas só quando o preview abre.
     images: (path: string, id: string, messageId: string) => Promise<string[]>
     // Porcentagem da janela de contexto que a conversa ocupa agora.

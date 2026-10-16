@@ -161,6 +161,7 @@ export const ConversationView = memo(function ConversationView({
             draftKey={conversation.id}
             messages={messages}
             loading={history.loading}
+            older={history.older}
             status={status}
             live={live}
             onSend={actionsFor.send}

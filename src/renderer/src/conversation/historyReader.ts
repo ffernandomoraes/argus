@@ -10,6 +10,8 @@ export type HistoryReader = {
   // revision: sobe quando o chat grava na sessão; relê sempre que muda.
   // updatedAt: hora do arquivo (ms); relê só se a gravação pode ter ficado de fora da última leitura.
   sync(revision: number, updatedAt: number): void
+  // Relê agora, sem aviso de mudança (a tela pediu mais mensagens).
+  now(): void
   dispose(): void
 }
 
@@ -55,6 +57,7 @@ export function createHistoryReader<T>(
       updatedAt = Math.max(updatedAt, nextUpdatedAt)
       if (changedRevision || (newerFile && nextUpdatedAt >= startedAt - SLACK_MS)) request()
     },
+    now: request,
     dispose() {
       disposed = true
     }

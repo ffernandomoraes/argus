@@ -1,8 +1,9 @@
 import { open, stat } from 'node:fs/promises'
 import { parseLine } from '../transcripts/line'
 import { markHolds, readLines, readMark } from '../transcripts/lineReader'
+import type { HistoryRequest } from '../../shared/history'
 import { ImageIndex } from './images'
-import { HistoryParser } from './parser'
+import { HistoryParser, MESSAGES_MAX } from './parser'
 
 // As últimas conversas lidas ficam na memória com o ponto onde a leitura parou: reler depois de
 // uma mensagem nova lê só o que o Claude Code acrescentou, não os 100 MB do arquivo.
@@ -12,10 +13,12 @@ const MARK_BYTES = 64
 
 export type Transcript = { history: HistoryParser; images: ImageIndex }
 
-const fresh = (): Transcript => ({ history: new HistoryParser(), images: new ImageIndex() })
+const fresh = (keep: number): Transcript => ({ history: new HistoryParser(keep), images: new ImageIndex() })
 
 class TranscriptFile {
-  data = fresh()
+  // Quantas mensagens guardar ao ler do zero (sobe quando a tela rola para trás; ver widen).
+  private keep = MESSAGES_MAX
+  data = fresh(this.keep)
   private ino = -1
   private size = -1
   private mtimeMs = -1
@@ -23,13 +26,17 @@ class TranscriptFile {
   private mark: Buffer = Buffer.alloc(0)
   private latest: Promise<boolean> = Promise.resolve(true)
   private queued: Promise<boolean> | null = null
+  // Trechos pedidos pela tela desde a última leitura (ver widen).
+  private wanted: HistoryRequest[] = []
 
   constructor(private file: string) {}
 
   // Leituras pedidas ao mesmo tempo se juntam: no máximo uma rodando e uma esperando.
-  update(): Promise<boolean> {
+  update(request?: HistoryRequest): Promise<boolean> {
+    if (request) this.wanted.push(request)
     this.queued ??= this.latest.then(() => {
       this.queued = null
+      this.widen()
       this.latest = this.read().catch(() => false)
       return this.latest
     })
@@ -82,8 +89,23 @@ class TranscriptFile {
     return true
   }
 
+  // A tela rolou para mensagens que já saíram da memória: a próxima leitura é do arquivo inteiro,
+  // guardando o dobro do que ela precisa (o lote seguinte não relê de novo). Antes de ler, nunca no
+  // meio de uma leitura: ela continuaria alimentando o histórico novo do ponto em que estava.
+  private widen(): void {
+    const need = Math.max(0, ...this.wanted.map((r) => this.data.history.need(r)))
+    this.wanted = []
+    if (this.data.history.hold(need)) {
+      // Vale também se o arquivo for regravado e lido do zero (reset).
+      this.keep = Math.max(this.keep, need)
+      return
+    }
+    this.keep = need * 2
+    this.reset(this.ino)
+  }
+
   private reset(ino: number): void {
-    this.data = fresh()
+    this.data = fresh(this.keep)
     this.ino = ino
     this.size = -1
     this.mtimeMs = -1
@@ -95,7 +117,8 @@ class TranscriptFile {
 const files = new Map<string, TranscriptFile>()
 
 // Histórico e índice de imagens do arquivo, em dia com o disco; nulo se não deu para ler.
-export async function loadTranscript(file: string): Promise<Transcript | null> {
+// `request`: o trecho que a tela vai pedir (ver widen).
+export async function loadTranscript(file: string, request?: HistoryRequest): Promise<Transcript | null> {
   let entry = files.get(file)
   if (entry) files.delete(file)
   else entry = new TranscriptFile(file)
@@ -105,7 +128,7 @@ export async function loadTranscript(file: string): Promise<Transcript | null> {
     if (files.size <= MAX_FILES) break
     files.delete(old)
   }
-  if (!(await entry.update())) {
+  if (!(await entry.update(request))) {
     if (files.get(file) === entry) files.delete(file)
     return null
   }

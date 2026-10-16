@@ -1,4 +1,4 @@
-import type { Message } from '../../shared/history'
+import type { HistoryPage, HistoryRequest, Message } from '../../shared/history'
 import { parseLine } from '../transcripts/line'
 import { sessionFile } from '../transcripts/projectDir'
 import { readSlice } from '../transcripts/read'
@@ -10,6 +10,14 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
   const file = sessionFile(projectPath, sessionId)
   const transcript = file ? await loadTranscript(file) : null
   return transcript ? transcript.history.messages() : []
+}
+
+// O trecho do fim do histórico que a conversa mostra (ver HistoryRequest): abre com as últimas e
+// carrega as anteriores conforme você rola para cima.
+export async function readHistoryPage(projectPath: string, sessionId: string, request: HistoryRequest): Promise<HistoryPage> {
+  const file = sessionFile(projectPath, sessionId)
+  const transcript = file ? await loadTranscript(file, request) : null
+  return transcript ? transcript.history.page(request) : { messages: [], more: false }
 }
 
 // Imagens enviadas numa mensagem sua, prontas para o <img>. O histórico só conta quantas são:

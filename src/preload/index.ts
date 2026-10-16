@@ -178,6 +178,7 @@ const api: Api = {
     openRepo: (path) => send('sessions:openRepo', path),
     changes: (path) => invoke('sessions:changes', path),
     history: (path, id) => invoke('sessions:history', path, id),
+    historyPage: (path, id, request) => invoke('sessions:historyPage', path, id, request),
     images: (path, id, messageId) => invoke('sessions:images', path, id, messageId),
     context: (path, id) => invoke('sessions:context', path, id),
     watch: (paths) => send('sessions:watch', paths),

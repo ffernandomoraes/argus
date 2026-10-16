@@ -10,7 +10,7 @@ import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
-import type { Message } from './history'
+import type { HistoryPage, HistoryRequest, Message } from './history'
 import type { McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
@@ -108,6 +108,7 @@ export type InvokeChannels = {
   'sessions:repoUrl': (path: string) => string | null
   'sessions:changes': (path: string) => UncommittedFile[] | null
   'sessions:history': (path: string, id: string) => Message[]
+  'sessions:historyPage': (path: string, id: string, request: HistoryRequest) => HistoryPage
   'sessions:images': (path: string, id: string, messageId: string) => string[]
   'sessions:context': (path: string, id: string) => number
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)

@@ -1,4 +1,4 @@
-import type { Message } from '../../shared/history'
+import { pageOf, type HistoryPage, type HistoryRequest, type Message } from '../../shared/history'
 import { diffFromResult } from '../diffs'
 import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
@@ -9,8 +9,12 @@ import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEve
 const RESULT_MAX = 2000
 // O relatório de um subagente é o que ele entregou: cabe bem mais.
 const AGENT_RESULT_MAX = 20000
-// O chat recebe só as últimas mensagens; as mais antigas nem ficam na memória.
-const MESSAGES_MAX = 400
+// Quantas mensagens ficam na memória: as últimas. As mais antigas só voltam quando a tela rola até
+// elas e pede (ver hold e cache.ts).
+export const MESSAGES_MAX = 400
+// Folga acima do que a tela pede: as que chegam entre um pedido e outro não empurram o começo do
+// trecho dela para fora da memória.
+const HOLD_SLACK = 100
 
 type ToolMessage = Extract<Message, { role: 'tool' }>
 type DiffSource = Parameters<typeof diffFromResult>[0]
@@ -22,6 +26,8 @@ type Take = () => number | undefined
 // arquivo é lido uma vez só (ver cache.ts).
 export class HistoryParser {
   private list: Message[] = []
+  // Quantas mensagens antigas já saíram da memória (ver trim).
+  private dropped = 0
   // Linhas já lidas, pelo uuid. Ao retomar uma sessão, o Claude Code às vezes grava a conversa de
   // novo no mesmo arquivo (visto em 2026-10-16: um trecho de ~600 mensagens três vezes); a mesma
   // linha entra uma vez só, como no próprio Claude Code.
@@ -37,8 +43,29 @@ export class HistoryParser {
   private lastModel: string | undefined
   private lastModelEvent: string | undefined
 
+  // `keep`: quantas mensagens guardar, no mínimo (a lista corta quando chega ao dobro).
+  constructor(private keep = MESSAGES_MAX) {}
+
   messages(): Message[] {
     return this.list.slice(-MESSAGES_MAX)
+  }
+
+  page(request: HistoryRequest): HistoryPage {
+    return pageOf(this.list, request, this.dropped)
+  }
+
+  // Quantas mensagens o pedido precisa na memória: do começo do trecho da tela até o fim.
+  need(request: HistoryRequest): number {
+    const at = request.since === undefined ? -1 : this.list.findIndex((m) => m.id === request.since)
+    return Math.max(request.count, at >= 0 ? this.list.length - at : 0)
+  }
+
+  // Passa a guardar `count` daqui em diante. Falso quando faltam mensagens que já saíram: só
+  // relendo o arquivo.
+  hold(count: number): boolean {
+    if (count > this.list.length && this.dropped > 0) return false
+    this.keep = Math.max(this.keep, count + HOLD_SLACK)
+    return true
   }
 
   feed(l: Line): void {
@@ -66,13 +93,15 @@ export class HistoryParser {
     const attachment = obj(l.attachment)
     if (l.type !== 'attachment' || attachment?.type !== 'queued_command' || l.isSidechain) return false
     const text = promptText(attachment.prompt)
-    if (text) {
-      this.push({ id: idOf(l), role: 'user', text, at: atOf(l), queued: true, marks: marksOf(attachment.prompt) })
+    const images = arr(attachment.prompt)?.filter((c) => obj(c)?.type === 'image').length ?? 0
+    // Mensagem só com print, sem texto, também aparece.
+    if (text || images) {
+      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), queued: true, images: images || undefined, marks: marksOf(attachment.prompt) })
       // A mesma mensagem pode vir depois como linha comum, com o id que o anexo guarda em
       // source_uuid: é por ele que o SDK junta as duas. Sessões sem esse id: pelo texto.
       const source = str(attachment.source_uuid)
       if (source) this.queuedIds.add(source)
-      else this.queuedTexts.add(text)
+      else if (text) this.queuedTexts.add(text)
     }
     return true
   }
@@ -170,16 +199,17 @@ export class HistoryParser {
 
   private push(m: Message): void {
     this.list.push(m)
-    if (this.list.length >= MESSAGES_MAX * 2) this.trim()
+    if (this.list.length >= this.keep * 2) this.trim()
   }
 
   // Fica só com as últimas: as que saem nunca mais voltam para o fim da lista, e a ferramenta
   // delas deixa de esperar resultado.
   private trim(): void {
-    const drop = this.list.length - MESSAGES_MAX
+    const drop = this.list.length - this.keep
     for (const m of this.list.slice(0, drop)) {
       if (m.role === 'tool' && this.tools.get(m.toolUseId) === m) this.tools.delete(m.toolUseId)
     }
     this.list = this.list.slice(drop)
+    this.dropped += drop
   }
 }

@@ -63,6 +63,7 @@ export function PrototypeChat({
             draftKey={key}
             messages={history.messages}
             loading={history.loading}
+            older={history.older}
             status={live?.status ?? 'idle'}
             live={live}
             onSend={onSend}

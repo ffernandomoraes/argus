@@ -1,5 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
+import { BrowserWindow } from 'electron'
 import type { ClaudeInfo } from '../../shared/models'
 import type { Usage } from '../../shared/usage'
 import { claudeLaunch } from '../chats'
@@ -10,7 +11,7 @@ import { parseControlReply, parseRateLimits } from './parse'
 
 // Os limites de uso de uma conta do Claude. Vêm do mesmo endereço que o Claude Code consulta para
 // o /usage (GET /api/oauth/usage, conferido no binário da 2.1.300), com o login que ele guarda: uma
-// chamada por minuto, sem processo aberto. Antes era um `claude` aberto por conta só para isso
+// chamada por minuto com o Argus em foco (5 sem), sem processo aberto. Antes era um `claude` aberto por conta só para isso
 // (~155 MB cada, medido em 2026-10-16), o caminho da extensão do VS Code, que já tem um aberto
 // para a conversa.
 // O `claude` ainda entra em três casos, e fecha ao responder (o pedido de controle get_usage, que
@@ -21,6 +22,13 @@ import { parseControlReply, parseRateLimits } from './parse'
 // conhece).
 
 const POLL_MS = 60_000
+// Sem nenhuma janela do Argus em foco, ninguém está olhando a barra: pergunta só a cada 5 minutos.
+// Ao voltar o foco, pergunta na hora se a última passou de 1 minuto (ver refresh): perder e voltar o
+// foco várias vezes seguidas não faz mais chamadas que antes.
+const UNFOCUSED_MS = 5 * 60_000
+// O relógio bate a cada POLL_MS e a última pergunta saiu no mesmo ritmo: sem a folga, um atraso de
+// milissegundos no relógio pulava uma batida (e a leitura vinha a cada 2 minutos).
+const SLACK_MS = 5_000
 // --strict-mcp-config sem --mcp-config: nenhum MCP. Só para ler o limite, subir os MCPs da pessoa
 // custava centenas de MB por conta (o Playwright, por exemplo).
 const ARGS = [
@@ -74,6 +82,8 @@ export class UsageMonitor {
   private renewedAt = 0
   private failures = 0
   private polling = false
+  // Quando saiu a última pergunta (chamada direta ou o `claude`), para o intervalo com e sem foco.
+  private askedAt = 0
   last: Usage | null = null
   info: ClaudeInfo | null = null
 
@@ -110,15 +120,23 @@ export class UsageMonitor {
     this.failures = 0
     this.quietUntil = 0
     this.renewedAt = 0
+    this.askedAt = 0
     this.backoff.reset()
     this.start()
   }
 
+  // Uma janela do Argus ganhou foco: pergunta já, se a última pergunta passou de 1 minuto.
+  refresh(): void {
+    void this.poll()
+  }
+
   private async poll(): Promise<void> {
     if (this.stopped || this.polling) return
+    const every = BrowserWindow.getFocusedWindow() ? POLL_MS : UNFOCUSED_MS
+    if (Date.now() - this.askedAt < every - SLACK_MS) return
     // O `claude` aberto responde (o de reserva pergunta a cada minuto; o de uma vez só já perguntou).
     if (this.proc) {
-      if (!this.oneShot) this.send({ subtype: 'get_usage', skip_behaviors: true }, `usage-${++this.seq}`)
+      if (!this.oneShot) this.askUsage()
       return
     }
     // Na reserva, sem `claude` aberto (o de uma vez só fechou depois que ela foi escolhida): abre o
@@ -133,6 +151,7 @@ export class UsageMonitor {
       const token = await this.validToken()
       if (token === 'none') return this.fallBack()
       if (!token) return this.renewLogin()
+      this.askedAt = Date.now()
       await this.fetchUsage(token)
     } finally {
       this.polling = false
@@ -244,7 +263,7 @@ export class UsageMonitor {
     })
 
     this.send({ subtype: 'initialize' }, 'init')
-    this.send({ subtype: 'get_usage', skip_behaviors: true }, `usage-${++this.seq}`)
+    this.askUsage()
     if (oneShot) this.oneShotTimer = setTimeout(() => this.proc === proc && this.closeProc(), ONE_SHOT_TIMEOUT_MS)
   }
 
@@ -254,6 +273,11 @@ export class UsageMonitor {
       this.restart = null
       this.launch(false)
     }, this.backoff.next())
+  }
+
+  private askUsage(): void {
+    this.askedAt = Date.now()
+    this.send({ subtype: 'get_usage', skip_behaviors: true }, `usage-${++this.seq}`)
   }
 
   private send(request: Record<string, unknown>, id = `req-${++this.seq}`): void {

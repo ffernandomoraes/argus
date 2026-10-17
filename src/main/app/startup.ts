@@ -39,7 +39,10 @@ export function startApp(s: Services, life: Lifecycle): void {
   // Ícone da barra de menus desligado por ora, mesmo para quem ligou: com conversa rodando, o
   // spinner trocava a imagem a cada 90 ms e mantinha o WindowServer ocupado. A barra de baixo mostra
   // o mesmo. Para voltar: s.tray.set(loadAppSettings().menuBarIcon) e o MenuBarIconRow nos ajustes.
-  app.on('browser-window-focus', () => s.tray.seen())
+  app.on('browser-window-focus', () => {
+    s.tray.seen()
+    s.usage.refresh()
+  })
   step('janelas do canvas', restoreCanvasWindows)
   const firstCanvas = activeCanvas()
   watchOpening(firstCanvas)

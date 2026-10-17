@@ -80,6 +80,12 @@ export class UsageMonitors {
     this.onUpdate(account, null)
   }
 
+  // Uma janela do Argus ganhou foco: cada conta do Claude atualiza, se a última leitura passou de
+  // 1 minuto. As do Codex seguem a cada 5 minutos, com ou sem foco (cada leitura abre um processo).
+  refresh(): void {
+    this.monitors.forEach((m) => m.refresh())
+  }
+
   // O `claude` do app trocou (ver claudeVersion): todos abrem de novo com ele.
   reconnectAll(): void {
     this.monitors.forEach((m) => m.reconnect())

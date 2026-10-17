@@ -7,6 +7,7 @@ import { AgentChatSession } from '../agentChats/session'
 import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
 import { ChatSession, type OpenRequest } from './session'
 import { memoryTight } from './systemMemory'
+import { resolveAccount } from '../accounts'
 import { tr } from '../i18n'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
@@ -209,6 +210,14 @@ export class Chats {
   // Sessão da conversa, aberta agora se ainda não existe.
   private open(req: OpenRequest): AnySession {
     let session = this.find(req)
+    // Trocou a conta do Claude na conversa já começada: a sessão parada fecha e abre de novo com a
+    // nova, retomando a mesma conversa. Trabalhando ou com o remote control, segue na de antes.
+    if (session instanceof ChatSession && !parseAgentRef(req.account) && session.account !== resolveAccount(req.account)) {
+      if (!session.busy && !session.remoteOn) {
+        this.closeSession(session)
+        session = undefined
+      }
+    }
     if (!session) {
       const agent = agentFor(req)
       // Conversa do Claude num grupo com outro agente: a conta do grupo não serve, vale a padrão.

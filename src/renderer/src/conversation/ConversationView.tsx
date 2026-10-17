@@ -98,8 +98,12 @@ export const ConversationView = memo(function ConversationView({
   const chosen = useConversationAccountChoice(settingsId)
   const account = conversationAccount(conversation, chosen ?? groupAccount, live?.agent)
   const agents = useAgentList(cwd, viewKey, agentProviderOf(account))
-  // A conta só troca com a conversa vazia: nada enviado e nenhuma sessão aberta.
-  const canChangeAccount = !!conversation.draft && !live && !messages.length
+  // Conversa vazia (nada enviado e nenhuma sessão aberta) troca para qualquer conta. Depois, só entre
+  // as do Claude e com ela parada: a próxima mensagem reabre a sessão com a nova, na mesma conversa
+  // (as conversas ficam numa pasta só para todas as contas; ver Chats.open).
+  const empty = !!conversation.draft && !live && !messages.length
+  const canSwitchClaude = !empty && !parseAgentRef(account) && status !== 'running' && status !== 'needs-you'
+  const canChangeAccount = empty || canSwitchClaude
   const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
   const settings = useConversationSettings(settingsId)
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
@@ -143,6 +147,7 @@ export const ConversationView = memo(function ConversationView({
         project={project}
         account={account}
         onAccountChange={canChangeAccount ? chooseAccount : undefined}
+        claudeOnly={!empty}
         minimal={minimalHeader}
         actions={actions}
         onOpenDiff={onOpenDiff}

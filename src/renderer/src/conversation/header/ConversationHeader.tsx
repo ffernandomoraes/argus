@@ -17,6 +17,7 @@ export const ConversationHeader = memo(function ConversationHeader({
   project,
   account,
   onAccountChange,
+  claudeOnly,
   minimal,
   actions,
   onOpenDiff,
@@ -30,9 +31,10 @@ export const ConversationHeader = memo(function ConversationHeader({
   // Workspace: as pastas dele. Sem branch no selo: cada pasta pode ser um repositório diferente.
   folders?: string[]
   project?: ReactNode
-  // Conta que roda a conversa; com onAccountChange (conversa vazia), o selo vira seletor.
+  // Conta que roda a conversa; com onAccountChange, o selo vira seletor (claudeOnly: só as do Claude).
   account?: string
   onAccountChange?: (account: string) => void
+  claudeOnly?: boolean
   // Modo foco: uma linha só, com o título e o fechar, sem a borda de baixo.
   minimal: boolean
   actions?: ReactNode
@@ -61,7 +63,7 @@ export const ConversationHeader = memo(function ConversationHeader({
         {/* Conta, pasta e branch (fora de repositório, não aparece), com o mesmo selo. */}
         {secondRow && (
           <div className="mt-1 flex min-w-0 items-center gap-2 text-[12px] text-faint">
-            {showAccount && <AccountTag account={account} onChange={onAccountChange} />}
+            {showAccount && <AccountTag account={account} onChange={onAccountChange} claudeOnly={claudeOnly} />}
             {project && (
               <FolderTag cwd={cwd} folders={folders}>
                 {project}

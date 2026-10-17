@@ -71,8 +71,9 @@ export function useCurrentAccount(account?: string): Current | null {
 }
 
 // Selo da conta que roda a conversa (logo do agente e nome), antes do da pasta. Com `onChange`
-// (conversa vazia) vira botão que abre o seletor; depois do primeiro envio só mostra.
-// claudeOnly: só as contas do Claude (o terminal do `claude` troca de conta, não de agente).
+// vira botão que abre o seletor; sem ele só mostra.
+// claudeOnly: só as contas do Claude (conversa já começada e o terminal do `claude` trocam de
+// conta, não de agente).
 export function AccountTag({
   account,
   onChange,
@@ -106,7 +107,7 @@ export function AccountTag({
   if (!onChange || total < 2)
     return (
       <span
-        title={`${title}. ${tr('Só dá para trocar antes do primeiro envio.', 'It can only be changed before the first message.')}`}
+        title={`${title}. ${tr('Dá para trocar com a conversa parada.', 'It can be changed while the chat is idle.')}`}
         className={`${TAG} min-w-0 max-w-[40%] shrink-0 gap-1`}
       >
         {content}

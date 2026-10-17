@@ -21,8 +21,10 @@ export function connectPty(
   const offData = api.onData(key, (data) => {
     if (opened) term.write(data)
   })
+  // Antes da resposta do open, o fim é do processo anterior na mesma chave (trocar a conta encerra
+  // o `claude` e abre outro logo depois): não é deste, que acabou de abrir.
   const offExit = api.onExit((k, code) => {
-    if (k === key) events.onExit(code)
+    if (k === key && opened) events.onExit(code)
   })
   const input = term.onData((data) => api.write(key, data))
 

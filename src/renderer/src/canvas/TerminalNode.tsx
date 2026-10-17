@@ -30,12 +30,15 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
   const shell = data.kind === 'shell'
   // Conta do grupo onde o terminal está. Vale ao abrir: o terminal aberto segue na dele.
   const group = useGroupOf(parentId)
-  const account = data.account ?? group.account
+  const groupAccount = data.account ?? group.account
+  // Trocar a conta encerra o `claude` e abre de novo com ela, na mesma conversa (as conversas
+  // ficam numa pasta só para todas as contas). Só no do Claude, com mais de uma conta dele. A
+  // escolhida vale já aqui: o `data` do nó só chega no render seguinte, e o terminal reabria
+  // antes disso, com a conta antiga.
+  const [switched, setSwitched] = useState<{ account: string; n: number }>()
+  const account = switched?.account ?? groupAccount
   const agent = parseAgentRef(account)?.provider
   const { closeTerminal, setTerminalAccount } = useCanvasActions()
-  // Trocar a conta encerra o `claude` e abre de novo com ela, na mesma conversa (as conversas
-  // ficam numa pasta só para todas as contas). Só no do Claude, com mais de uma conta dele.
-  const [relaunch, setRelaunch] = useState(0)
   const claudeAccounts = useAuth()?.accounts.length ?? 0
   const accountTag =
     !shell && !agent && claudeAccounts > 1 ? (
@@ -46,7 +49,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
           if (next === account) return
           window.api.terminal.kill(id)
           setTerminalAccount(id, next)
-          setRelaunch((n) => n + 1)
+          setSwitched((s) => ({ account: next, n: (s?.n ?? 0) + 1 }))
         }}
       />
     ) : undefined
@@ -70,7 +73,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       fontScale={inFocusMode ? zoom : undefined}
       autoFocus={inFocusMode || isNew}
       gpu={inFocusMode}
-      relaunch={relaunch}
+      relaunch={switched?.n}
     />
   )
 

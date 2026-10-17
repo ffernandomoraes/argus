@@ -2,6 +2,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
+import { focusWhenVisible } from '../../canvas/blocks/useFocusWhenVisible'
 import { IS_LINUX, IS_WIN } from '../../platform'
 import { TERMINAL_FONT, TERMINAL_THEME } from './theme'
 import { fixMouseForZoom } from './zoomCorrection'
@@ -89,7 +90,9 @@ export function createXterm(el: HTMLElement, fontSize: number, focus = true, gpu
   if (IS_WIN) windowsClipboard(term)
   if (IS_LINUX) linuxClipboard(term)
   fit.fit()
-  if (focus) term.focus()
+  // O bloco recém-criado no canvas nasce invisível até o React Flow medir o tamanho dele, e o
+  // term.focus() direto falhava: a pessoa tinha que clicar no terminal para digitar.
+  const stopFocus = focus ? focusWhenVisible(() => term.textarea ?? null) : () => {}
 
   let frame = 0
   const observer = new ResizeObserver(() => {
@@ -105,6 +108,7 @@ export function createXterm(el: HTMLElement, fontSize: number, focus = true, gpu
       fit.fit()
     },
     dispose() {
+      stopFocus()
       cancelAnimationFrame(frame)
       observer.disconnect()
       term.dispose()

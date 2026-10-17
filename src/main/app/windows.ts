@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import { loadCanvasWindows, saveCanvasWindows, type SavedCanvasWindow } from '../canvasWindows'
 import { IS_MAC } from '../platform'
 import { rendererEntry } from './appUrl'
@@ -33,8 +33,24 @@ function prepare(win: BrowserWindow, kind: WindowKind, hash?: string): void {
   loadRenderer(win, hash)
 }
 
+// A última janela do canvas fechada (Mac: o app segue no Dock). Volta no mesmo lugar ao clicar no
+// Dock e é a que fica guardada se o app fechar sem nenhuma aberta.
+let lastClosed: SavedCanvasWindow | null = null
+
+// Onde a janela está. Maximizada, o Electron devolve o lugar de antes de maximizar, que pode ser
+// outro monitor (a janela abriu maximizada no principal e foi levada para outro): aí vale o atual.
+function placementOf(win: BrowserWindow): SavedCanvasWindow {
+  const maximized = win.isMaximized()
+  const normal = win.getNormalBounds()
+  const current = win.getBounds()
+  const sameDisplay = screen.getDisplayMatching(normal).id === screen.getDisplayMatching(current).id
+  return { bounds: maximized && !sameDisplay ? current : normal, maximized, viewport: windowViewport(win.webContents) }
+}
+
 export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
-  const place = placeCanvas(saved)
+  // Sem lugar guardado e sem outra janela aberta (clique no Dock): volta onde a última fechou.
+  const where = saved ?? (canvasWindowList().length ? undefined : (lastClosed ?? undefined))
+  const place = placeCanvas(where)
   const win = new BrowserWindow({
     ...place.bounds,
     minWidth: 900,
@@ -43,8 +59,12 @@ export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
     backgroundColor: '#1c1c1c',
     webPreferences
   })
-  addCanvasWindow(win, saved?.viewport)
+  addCanvasWindow(win, where?.viewport)
+  lastClosed = null
   if (place.maximize) win.maximize()
+  win.on('close', () => {
+    if (canvasWindowList().length === 1) lastClosed = placementOf(win)
+  })
   prepare(win, 'canvas')
   return win
 }
@@ -76,13 +96,7 @@ export function saveCanvasWindowLayout(): void {
   const active = activeCanvas()
   const open = canvasWindowList().filter((w) => !w.isDestroyed())
   const ordered = [...open.filter((w) => w !== active), ...open.filter((w) => w === active)]
-  saveCanvasWindows(
-    ordered.map((w) => ({
-      bounds: w.getNormalBounds(),
-      maximized: w.isMaximized(),
-      viewport: windowViewport(w.webContents)
-    }))
-  )
+  saveCanvasWindows(ordered.length ? ordered.map(placementOf) : lastClosed ? [lastClosed] : [])
 }
 
 // Traz o canvas para frente (ou abre de novo, se as janelas foram fechadas).

@@ -4,7 +4,7 @@ import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
 import type { MenuState } from '../../canvas/ContextMenu'
 import { refreshNow } from '../../canvas/sessionsStore'
 import { useStableCallback } from '../../lib/useStableCallback'
-import { IS_MAC, IS_WIN, isMod, isWslFolder } from '../../platform'
+import { IS_MAC, IS_WIN, SEP, isMod, isWslFolder, untildify } from '../../platform'
 import { moveDrafts } from '../drafts'
 import type { Editing } from './FileTree'
 import { treeMenu, type TreeMenuActions } from './treeMenu'
@@ -130,6 +130,9 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     copy: (path) => void window.api.files.copy(root, [path]),
     paste: (dir) => void paste(dir),
     copyPath: (path) => void navigator.clipboard.writeText(path),
+    // Pasta do projeto + caminho da árvore, com as barras do sistema ("~/proj" vira o caminho completo).
+    copyAbsolutePath: (path) =>
+      void navigator.clipboard.writeText(untildify(root).replace(/[\\/]+$/, '') + SEP + (IS_WIN ? path.replace(/\//g, '\\') : path)),
     rename: (path) => setEditing({ kind: 'rename', path }),
     reveal: (path) => window.api.files.reveal(root, path),
     openInBrowser: (path) => window.api.files.openInBrowser(root, path),

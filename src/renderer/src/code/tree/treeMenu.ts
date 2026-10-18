@@ -10,6 +10,7 @@ export type TreeMenuActions = {
   copy: (path: string) => void
   paste: (dir: string) => void
   copyPath: (path: string) => void
+  copyAbsolutePath: (path: string) => void
   rename: (path: string) => void
   reveal: (path: string) => void
   openInBrowser: (path: string) => void
@@ -33,6 +34,7 @@ export function treeMenu(entry: FileEntry | null, a: TreeMenuActions): MenuItem[
   if (entry) {
     items.push(
       { type: 'separator' },
+      { type: 'action', label: tr('Copiar caminho absoluto', 'Copy absolute path'), icon: Link, onSelect: () => a.copyAbsolutePath(entry.path) },
       { type: 'action', label: tr('Copiar caminho relativo', 'Copy relative path'), icon: Link, onSelect: () => a.copyPath(entry.path) },
       { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => a.rename(entry.path) }
     )

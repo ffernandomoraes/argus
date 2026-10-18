@@ -41,7 +41,7 @@ export function keys(mac: string): string {
 
 // --- Caminhos ---
 
-const SEP = IS_WIN ? '\\' : '/'
+export const SEP = IS_WIN ? '\\' : '/'
 const SEPARATORS = IS_WIN ? /[\\/]/ : /\//
 
 // O Claude no Windows às vezes escreve no formato do Git Bash ("/c/Users/ana"): volta para "C:\Users\ana".

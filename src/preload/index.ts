@@ -251,6 +251,7 @@ const api: Api = {
   updates: {
     get: () => invoke('updates:get'),
     check: () => invoke('updates:check'),
+    notes: () => invoke('updates:notes'),
     install: () => send('updates:install'),
     onState: (cb) => listen('updates:state', cb)
   },

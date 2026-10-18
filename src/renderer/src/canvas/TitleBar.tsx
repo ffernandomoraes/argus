@@ -1,7 +1,10 @@
-import { memo, useEffect } from 'react'
-import { AppWindow, Eye, EyeOff } from 'lucide-react'
+import { memo, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
+import { Presence } from '../motion'
+import { ReleaseNotesModal } from '../updates/ReleaseNotesModal'
 import { useUpdates } from '../updates/useUpdates'
 import { useWindowControls } from '../useWindowControls'
 import { MediaControls } from './bars/MediaControls'
@@ -31,6 +34,7 @@ export const TitleBar = memo(function TitleBar({
   const controls = useWindowControls()
   const mediaPlayer = usePreference('mediaPlayer')
   const status = updateProgress(updates?.state)
+  const [notesOpen, setNotesOpen] = useState(false)
   useNewWindowShortcut()
 
   // Aparece no menu Janela e no Mission Control.
@@ -82,7 +86,18 @@ export const TitleBar = memo(function TitleBar({
           </span>
           <Divider />
           <UpdateStatus version={updates.version} {...status} />
+          {/* Novidades à direita da versão: o que mudou nela e nas anteriores. */}
+          <span className="no-drag flex">
+            <NavButton label={tr('Novidades', "What's new")} compact side="bottom-end" onClick={() => setNotesOpen(true)}>
+              <ScrollText size={14} />
+            </NavButton>
+          </span>
         </div>
+      )}
+      {/* No body: dentro da barra, o modal ficaria preso na camada (z-35) dela. */}
+      {createPortal(
+        <Presence kind="modal">{notesOpen && updates && <ReleaseNotesModal current={updates.version} onClose={() => setNotesOpen(false)} />}</Presence>,
+        document.body
       )}
     </div>
   )

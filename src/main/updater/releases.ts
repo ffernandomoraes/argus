@@ -9,6 +9,9 @@ export type Release = {
   draft?: boolean
   prerelease?: boolean
   assets: ReleaseAsset[]
+  // Notas da versão (markdown, uma linha "- " por mudança) e data de publicação.
+  body?: string | null
+  published_at?: string | null
 }
 
 // App do Mac (Apple Silicon), em .zip.

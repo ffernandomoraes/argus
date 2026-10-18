@@ -13,6 +13,16 @@ export type UpdateState =
   | { status: 'waiting'; version: string; message: string }
   | { status: 'error'; message: string }
 
+// Notas de uma versão publicada, lidas do release no GitHub (Novidades, na barra de título).
+// kind: a etiqueta da frente da linha ([BUG], [MELHORIA], [FUNCIONALIDADE]); null sem etiqueta.
+export type ReleaseNoteKind = 'bug' | 'improvement' | 'feature'
+export type ReleaseNote = {
+  version: string
+  date: string | null
+  url: string
+  items: { kind: ReleaseNoteKind | null; text: string }[]
+}
+
 export type UpdateInfo = {
   // Versão em uso, a do package.json.
   version: string

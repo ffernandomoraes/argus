@@ -15,6 +15,7 @@ import { agentInfo } from '../agentChats/models'
 import { handle, on, onSync } from './register'
 import { syncWorkspace } from '../workspaces'
 import { IS_MAC } from '../platform'
+import { fetchReleaseNotes } from '../updater/notes'
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
 export function registerAppIpc(s: Services, life: Lifecycle): void {
@@ -66,6 +67,7 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   })
   handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }))
   handle('updates:check', () => s.updater.check())
+  handle('updates:notes', () => fetchReleaseNotes())
   on('updates:install', () => life.restartToUpdate())
   on('popout:open', (_e, id, payload) => s.popouts.show(id, payload))
   handle('popout:payload', (_e, id) => s.popouts.payload(id))

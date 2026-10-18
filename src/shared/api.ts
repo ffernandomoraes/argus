@@ -21,7 +21,7 @@ import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSumma
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { TranscriptionModel } from './transcription'
-import type { UpdateInfo, UpdateState } from './updates'
+import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
 
@@ -341,6 +341,8 @@ export type Api = {
   updates: {
     get: () => Promise<UpdateInfo>
     check: () => Promise<UpdateState>
+    // Notas das últimas versões, direto do GitHub.
+    notes: () => Promise<ReleaseNote[]>
     install: () => void
     onState: (cb: (state: UpdateState) => void) => Off
   }

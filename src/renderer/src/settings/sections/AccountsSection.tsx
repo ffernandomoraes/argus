@@ -49,8 +49,8 @@ export function AccountsSection() {
   if (active) {
     const account = active.accountId ? auth.accounts.find((a) => a.id === active.accountId) : undefined
     return (
-      <div className="max-w-sm">
-        <p className="mb-4 text-xs leading-relaxed text-faint">
+      <div className="mx-auto max-w-sm">
+        <p className="mb-4 text-center text-xs leading-relaxed text-faint">
           {!account
             ? tr(
                 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.',

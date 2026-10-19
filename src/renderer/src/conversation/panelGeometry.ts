@@ -19,7 +19,7 @@ export const PANEL_BOTTOM = BOTTOM_BAR_HEIGHT + MARGIN
 export const PANEL_MIN = { width: 360, height: 320 }
 export const PANEL_DEFAULT_WIDTH = 550
 // O painel da conversa nasce um pouco mais largo que os outros: é onde se lê e escreve.
-export const DRAWER_DEFAULT_WIDTH = PANEL_DEFAULT_WIDTH + 50
+export const DRAWER_DEFAULT_WIDTH = PANEL_DEFAULT_WIDTH + 130
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 

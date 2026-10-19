@@ -50,7 +50,7 @@ export function displayPath(path: string): string {
 }
 
 // Tamanho que dá para trabalhar sem ocupar o canvas inteiro.
-export const TERMINAL_SIZE = { width: 620, height: 380 }
+export const TERMINAL_SIZE = { width: 620, height: 480 }
 
 // folders e name: aberto num workspace, as pastas dele e o nome (a pasta dele é só um id).
 export function createTerminal(

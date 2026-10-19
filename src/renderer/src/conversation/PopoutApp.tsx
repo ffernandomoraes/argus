@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSessions } from '../canvas/sessionsStore'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
+import { useInterfaceZoom } from '../theme/useInterfaceZoom'
 import { useTheme } from '../theme/useTheme'
 import { ConversationWindow } from './ConversationWindow'
 
@@ -17,6 +18,7 @@ const closeWindow = () => window.close()
 export function PopoutApp({ id }: { id: string }) {
   const [payload, setPayload] = useState<PopoutPayload | null>(null)
   useTheme()
+  useInterfaceZoom()
 
   useEffect(() => {
     let alive = true

@@ -1,3 +1,4 @@
+import { isInterfaceZoom } from '../../../shared/interfaceZoom'
 import type { OrchestratorConfig } from '../../../shared/orchestrator'
 import { defaultOrchestrator } from '../conversation/orchestrator'
 import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings'
@@ -10,6 +11,8 @@ export type Preferences = {
   openIn: 'panel' | 'window' | 'node'
   // Escala do conteúdo do drawer, ajustada com ⌘+ / ⌘- (ver useDrawerZoom).
   drawerZoom: number
+  // Tamanho da interface inteira, para monitores maiores ou menores (Configurações > Aparência).
+  interfaceZoom: number
   // Modelo, esforço, modo etc. de cada conversa, até ser trocado no próprio chat (conversationSettings).
   conversation: SessionSettings
   // Boas-vindas vistas até o fim neste computador. Falso abre o passo a passo de novo.
@@ -45,6 +48,7 @@ const CONVERSATION_DEFAULTS = 2
 const DEFAULTS: Preferences = {
   openIn: 'panel',
   drawerZoom: 1,
+  interfaceZoom: 1,
   conversation: DEFAULT_SETTINGS,
   welcomeSeen: false,
   conversationDefaults: CONVERSATION_DEFAULTS,
@@ -76,7 +80,8 @@ function read(): Preferences {
         saved.conversationDefaults === CONVERSATION_DEFAULTS
           ? { ...DEFAULT_SETTINGS, ...saved.conversation }
           : { ...DEFAULT_SETTINGS, ...saved.conversation, thinking: false, ultracode: false },
-      conversationDefaults: CONVERSATION_DEFAULTS
+      conversationDefaults: CONVERSATION_DEFAULTS,
+      interfaceZoom: isInterfaceZoom(saved.interfaceZoom) ? saved.interfaceZoom : 1
     }
   } catch {
     return DEFAULTS

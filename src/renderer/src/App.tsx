@@ -5,6 +5,7 @@ import { Canvas } from './canvas/Canvas'
 import { isMod } from './platform'
 import { SettingsModal } from './settings/SettingsModal'
 import { setPreferences, usePreference } from './settings/preferences'
+import { useInterfaceZoom } from './theme/useInterfaceZoom'
 import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
 import { ErrorBoundary } from './ui/ErrorBoundary'
@@ -15,6 +16,7 @@ import { useProviders } from './providers/useProviders'
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const theme = useTheme()
+  useInterfaceZoom()
   const openSettings = useCallback(() => setSettingsOpen(true), [])
   const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const auth = useAuth()

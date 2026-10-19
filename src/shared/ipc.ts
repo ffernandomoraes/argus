@@ -149,6 +149,7 @@ export type InvokeChannels = {
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
 export type SendChannels = {
   'theme:set': (theme: ThemeSource) => void
+  'interface:zoom': (factor: number) => void
   'popout:open': (id: string, payload: unknown) => void
   'updates:install': () => void
   'cli:ready': () => void

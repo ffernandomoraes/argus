@@ -26,6 +26,7 @@ const api: Api = {
   homeDir,
   windowsBuild: windowsBuild(),
   setTheme: (theme) => send('theme:set', theme),
+  setInterfaceZoom: (factor) => send('interface:zoom', factor),
   accent: {
     get: () => sendSync('accent:get'),
     onChange: (cb) => listen('accent:changed', cb)

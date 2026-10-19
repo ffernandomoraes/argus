@@ -15,11 +15,17 @@ import { agentInfo } from '../agentChats/models'
 import { handle, on, onSync } from './register'
 import { syncWorkspace } from '../workspaces'
 import { IS_MAC } from '../platform'
+import { isInterfaceZoom } from '../../shared/interfaceZoom'
+import { setInterfaceZoom } from '../app/windowChrome'
 import { fetchReleaseNotes } from '../updater/notes'
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
 export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('theme:set', (_e, theme) => setTheme(theme))
+  on('interface:zoom', (e, factor) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    if (win && isInterfaceZoom(factor)) setInterfaceZoom(win, factor)
+  })
   onSync('accent:get', () => accentColor())
   onSync('language:get', () => lang())
   handle('dialog:pickFolder', async (e, distro) => (await pickFolders(e.sender, distro, false))[0] ?? null)

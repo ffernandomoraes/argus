@@ -37,6 +37,8 @@ export type Api = {
   // ConPTY redesenha; nulo no Mac ou se o sistema não informar.
   windowsBuild: number | null
   setTheme: (theme: ThemeSource) => void
+  // Tamanho da interface desta janela (ver shared/interfaceZoom.ts).
+  setInterfaceZoom: (factor: number) => void
   // Cor de destaque do sistema, "#rrggbb"; nula quando o sistema não informa.
   accent: {
     get: () => string | null

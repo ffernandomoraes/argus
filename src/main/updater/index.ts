@@ -30,7 +30,7 @@ const EVERY_MS = 5 * 60 * 60_000
 
 // app: o .app novo (Mac), o instalador baixado (Windows) ou o AppImage novo (Linux); dir: a pasta do
 // download.
-type Ready = { app: string; dir: string }
+type Ready = { app: string; dir: string; version: string; notesUrl: string }
 
 export class Updater {
   private current: UpdateState
@@ -109,26 +109,31 @@ export class Updater {
   }
 
   async check(): Promise<UpdateState> {
-    if (this.state.status === 'unsupported' || this.busy || this.ready || this.rollingBack) return this.state
+    if (this.state.status === 'unsupported' || this.busy || this.rollingBack) return this.state
     this.busy = true
-    this.set({ status: 'checking' })
+    // Já há uma versão baixada (ex.: 0.0.2) e saiu outra mais nova (0.0.10): baixa a mais nova sem
+    // mexer na barra de título, e ela substitui a baixada; quem reiniciar no meio leva a que já estava.
+    // Se der errado, também fica a que já estava.
+    const quiet = this.ready !== null
+    if (!quiet) this.set({ status: 'checking' })
     try {
       await this.cleaning
+      const floor = this.floor()
       const latest = await fetchLatestRelease()
       const version = latest ? releaseVersion(latest) : ''
-      if (!latest || !version || !isNewer(version, updateFloor(app.getVersion()))) {
-        this.set({ status: 'latest' })
+      if (!latest || !version || !isNewer(version, floor)) {
+        if (!quiet) this.set({ status: 'latest' })
       } else if (IS_WIN) {
-        await this.updateFrom(latest, version, isWindowsAsset, () => tr('o instalador do Windows', 'the Windows installer'))
+        await this.updateFrom(latest, version, floor, quiet, isWindowsAsset, () => tr('o instalador do Windows', 'the Windows installer'))
       } else if (IS_LINUX) {
-        await this.updateFrom(latest, version, isLinuxAsset, () => tr('o AppImage do Linux', 'the Linux AppImage'))
+        await this.updateFrom(latest, version, floor, quiet, isLinuxAsset, () => tr('o AppImage do Linux', 'the Linux AppImage'))
       } else {
         const asset = latest.assets.find(isMacAsset)
         if (!asset) throw new Error(tr('A versão nova não tem o arquivo do app para Mac.', "The new version doesn't include the Mac app file."))
-        await this.downloadMac(version, asset, latest.html_url)
+        await this.downloadMac(version, asset, latest.html_url, !quiet)
       }
     } catch (err) {
-      this.set({ status: 'error', message: errorMessage(err) })
+      if (!quiet) this.set({ status: 'error', message: errorMessage(err) })
     } finally {
       this.busy = false
     }
@@ -139,10 +144,17 @@ export class Updater {
   // do Mac, e faltam de vez se a montagem deles falhar. Sem o arquivo no mais novo, vale o release
   // mais recente que tem. Nenhum mais novo que a versão em uso: avisa, em vez de dizer que já está
   // na mais recente.
-  private async updateFrom(latest: Release, version: string, match: (a: ReleaseAsset) => boolean, what: () => string): Promise<void> {
-    const current = updateFloor(app.getVersion())
-    const pick = newestWith([latest], current, match) ?? newestWith(await fetchRecentReleases(), current, match)
-    if (pick) return this.downloadFile(pick.version, pick.asset, pick.release.html_url)
+  private async updateFrom(
+    latest: Release,
+    version: string,
+    floor: string,
+    quiet: boolean,
+    match: (a: ReleaseAsset) => boolean,
+    what: () => string
+  ): Promise<void> {
+    const pick = newestWith([latest], floor, match) ?? newestWith(await fetchRecentReleases(), floor, match)
+    if (pick) return this.downloadFile(pick.version, pick.asset, pick.release.html_url, !quiet)
+    if (quiet) return
     this.set({
       status: 'waiting',
       version,
@@ -151,6 +163,22 @@ export class Updater {
         `Version ${version} doesn't have ${what()} yet (it comes out a few minutes later). Check again shortly.`
       )
     })
+  }
+
+  // Só baixa o que for mais novo que a versão em uso (ou a pulada, ver skipped.ts) e que a já baixada.
+  private floor(): string {
+    const floor = updateFloor(app.getVersion())
+    return this.ready && isNewer(this.ready.version, floor) ? this.ready.version : floor
+  }
+
+  // A versão recém-baixada passa a ser a que entra, e a baixada antes dela sai. Se a troca já começou
+  // com a anterior, quem sai é a recém-baixada.
+  private async accept(next: Ready): Promise<void> {
+    if (this.installing) return removePath(next.dir)
+    const previous = this.ready
+    this.ready = next
+    this.set({ status: 'ready', version: next.version, notesUrl: next.notesUrl })
+    if (previous) await removePath(previous.dir)
   }
 
   // Espera a conferência em andamento terminar (ela pode estar baixando uma versão).
@@ -191,13 +219,14 @@ export class Updater {
     }
   }
 
-  // Baixa mostrando o progresso na barra de título.
-  private fetchTo(version: string, url: string, file: string): Promise<void> {
+  // Baixa mostrando o progresso na barra de título (show) ou em silêncio.
+  private fetchTo(version: string, url: string, file: string, show: boolean): Promise<void> {
+    if (!show) return downloadTo(url, file, version, () => {})
     this.set({ status: 'downloading', version, progress: 0 })
     return downloadTo(url, file, version, (progress) => this.set({ status: 'downloading', version, progress }))
   }
 
-  private async downloadMac(version: string, asset: ReleaseAsset, notesUrl: string): Promise<void> {
+  private async downloadMac(version: string, asset: ReleaseAsset, notesUrl: string, show = true): Promise<void> {
     const target = currentBundle()
     if (!target) throw new Error(tr('O app em uso não está num .app.', "The running app isn't inside a .app."))
     try {
@@ -211,12 +240,11 @@ export class Updater {
     const dir = await newDownloadDir()
     try {
       const zip = join(dir, 'update.zip')
-      await this.fetchTo(version, asset.browser_download_url, zip)
+      await this.fetchTo(version, asset.browser_download_url, zip, show)
       const next = await extractApp(zip, dir)
       await removePath(zip)
       await verifyApp(next, target)
-      this.ready = { app: next, dir }
-      this.set({ status: 'ready', version, notesUrl })
+      await this.accept({ app: next, dir, version, notesUrl })
     } catch (err) {
       await removePath(dir)
       throw err
@@ -225,17 +253,16 @@ export class Updater {
 
   // Windows e Linux: sem assinatura para conferir (o app não tem certificado), confere ao menos que
   // o instalador (ou o AppImage) chegou inteiro, pelo tamanho que o GitHub informa.
-  private async downloadFile(version: string, asset: ReleaseAsset, notesUrl: string): Promise<void> {
+  private async downloadFile(version: string, asset: ReleaseAsset, notesUrl: string, show = true): Promise<void> {
     const dir = await newDownloadDir()
     try {
       const file = join(dir, asset.name)
-      await this.fetchTo(version, asset.browser_download_url, file)
+      await this.fetchTo(version, asset.browser_download_url, file, show)
       if (asset.size && (await stat(file)).size !== asset.size) {
         throw new Error(tr(`O download da versão ${version} chegou incompleto.`, `The download of version ${version} is incomplete.`))
       }
       if (IS_LINUX) await chmod(file, 0o755)
-      this.ready = { app: file, dir }
-      this.set({ status: 'ready', version, notesUrl })
+      await this.accept({ app: file, dir, version, notesUrl })
     } catch (err) {
       await removePath(dir)
       throw err

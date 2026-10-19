@@ -3,11 +3,15 @@ import type { FileContent } from '../../../../shared/files'
 import { refreshNow } from '../../canvas/sessionsStore'
 import type { LineRange } from '../../conversation/fileLinks'
 import { getDraft, setDraft } from '../drafts'
-import { createEditor } from './createEditor'
-import { highlightLines } from './editorSetup'
-import { diskChange, fromDoc, lineEnds, toDoc } from './fileText'
-import { replaceWithDisk, setBase, type OpenedFile } from './openedFile'
+import type { OpenedFile } from './openedFile'
 import { tr } from '../../i18n'
+
+// O CodeMirror fica num pedaço à parte, fora do que roda na abertura do app. O main.tsx o
+// pré-carrega com a janela ociosa. Só a primeira leitura espera por ele: o resto só roda com um
+// arquivo já aberto, e aí ele já carregou.
+let engine: typeof import('./engine') | null = null
+export const loadEditor = () => import('./engine').then((m) => (engine = m))
+const loaded = () => engine!
 
 // Só o que importa para a interface: o texto fica no editor.
 export type ContentState = Exclude<FileContent, { ok: true }> | { ok: true; truncated: boolean }
@@ -34,6 +38,7 @@ export function useCodeEditor(
     if (!file || file.truncated || file.view.state.readOnly) return
     const doc = file.view.state.doc
     if (doc.eq(file.base)) return
+    const { fromDoc, setBase } = loaded()
     const text = fromDoc(doc, file.base, file.ends)
     const res = await window.api.files.write(root, path, text, conflict ? undefined : file.baseText)
     if (!res.ok && res.conflict) {
@@ -58,8 +63,8 @@ export function useCodeEditor(
   useEffect(() => {
     let cancelled = false
     let destroy: (() => void) | null = null
-    window.api.files.read(root, path).then(
-      (res) => {
+    Promise.all([window.api.files.read(root, path), loadEditor()]).then(
+      ([res, { createEditor, highlightLines, lineEnds, toDoc }]) => {
         const parent = hostRef.current
         if (cancelled || !parent) return
         if (!res.ok) return setContent(res)
@@ -100,7 +105,7 @@ export function useCodeEditor(
   // Link do chat para outras linhas do mesmo arquivo: destaca e rola até elas.
   useEffect(() => {
     const file = opened.current
-    if (file && lines) highlightLines(file.view, lines)
+    if (file && lines) loaded().highlightLines(file.view, lines)
   }, [lines])
 
   // Mudou no disco (o Claude editou, por exemplo). Sem edição pendente, troca só o trecho que
@@ -112,6 +117,7 @@ export function useCodeEditor(
       (res) => {
         const file = opened.current
         if (cancelled || !file || !res.ok || res.truncated) return
+        const { diskChange, replaceWithDisk, setBase } = loaded()
         const change = diskChange(file.view.state.doc, file.base, res.text)
         if (change === 'conflict') return setConflict(true)
         if (change === 'replace') return replaceWithDisk(file, res.text, () => opened.current === file)
@@ -139,7 +145,7 @@ export function useCodeEditor(
       setContent({ ok: true, truncated: true })
     }
     setConflict(false)
-    replaceWithDisk(file, res.text, () => opened.current === file)
+    loaded().replaceWithDisk(file, res.text, () => opened.current === file)
     setDirty(false)
     setDraft(root, path, null)
   }

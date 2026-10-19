@@ -4,8 +4,13 @@ import { orchestratorPrompt } from '../../../../shared/orchestrator'
 import { getPreferences } from '../../settings/preferences'
 import { launchSettings } from '../SessionSettings'
 import { connectPty } from './connectPty'
-import { createXterm, type Xterm } from './createXterm'
+import type { Xterm } from './createXterm'
 import { fontSizeFor } from './theme'
+
+// O xterm (~500 KB) fica num pedaço à parte, fora do que roda na abertura do app. O main.tsx o
+// pré-carrega com a janela ociosa; carregado, o terminal abre na hora, como antes.
+let xtermModule: typeof import('./createXterm') | null = null
+export const loadXterm = () => import('./createXterm').then((m) => (xtermModule = m))
 
 export type XtermOptions = {
   sessionKey: string
@@ -43,7 +48,7 @@ export function useXterm(
 
   // Conta, sessão, modelo, esforço e modo valem ao abrir, como no terminal comum (os da conversa
   // que ele retoma): lidos aqui, mudar depois não recria o terminal.
-  const open = useEffectEvent((el: HTMLElement, generation: string) => {
+  const open = useEffectEvent((el: HTMLElement, generation: string, { createXterm }: NonNullable<typeof xtermModule>) => {
     const xterm = createXterm(el, fontSizeFor(fontScale), autoFocus, gpu)
     const settings = getConversationSettings(sessionId)
     const disconnect = connectPty(
@@ -77,7 +82,19 @@ export function useXterm(
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    return open(el, generation)
+    if (xtermModule) return open(el, generation, xtermModule)
+    let close: (() => void) | undefined
+    let cancelled = false
+    loadXterm().then(
+      (m) => {
+        if (!cancelled) close = open(el, generation, m)
+      },
+      (err: unknown) => !cancelled && setEnded({ generation, error: String(err), exitCode: null })
+    )
+    return () => {
+      cancelled = true
+      close?.()
+    }
   }, [ref, generation])
 
   // A montagem já abriu com a escala atual: só uma troca de verdade mexe na fonte.

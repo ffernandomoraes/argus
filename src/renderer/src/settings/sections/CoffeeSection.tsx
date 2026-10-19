@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
-import QRCode from 'qrcode'
 import { useCopied } from '../../lib/useCopied'
 import { Button } from '../../ui/Button'
 import { PIX_KEY, PIX_PAYLOAD } from './pix'
@@ -23,10 +22,13 @@ export function CoffeeSection() {
 
   useEffect(() => {
     let alive = true
-    QRCode.toString(PIX_PAYLOAD, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }).then(
-      (svg) => alive && setQr(svg),
-      (err: unknown) => console.error('[café] QR Code:', err)
-    )
+    // O qrcode só carrega aqui: é a única tela que usa.
+    import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toString(PIX_PAYLOAD, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }))
+      .then(
+        (svg) => alive && setQr(svg),
+        (err: unknown) => console.error('[café] QR Code:', err)
+      )
     return () => {
       alive = false
     }

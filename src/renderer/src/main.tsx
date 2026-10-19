@@ -5,6 +5,8 @@ import '@xyflow/react/dist/style.css'
 import './index.css'
 import { App } from './App'
 import { hasDrafts } from './code/drafts'
+import { loadEditor } from './code/editor/useCodeEditor'
+import { loadXterm } from './conversation/terminal/useXterm'
 import { tr } from './i18n'
 import { PopoutApp } from './conversation/PopoutApp'
 import { ErrorBoundary } from './ui/ErrorBoundary'
@@ -27,6 +29,17 @@ window.api.language.onChange(() => {
   )
   if (!hasDrafts() || window.confirm(question)) location.reload()
 })
+
+// Editor e terminal ficam fora do que roda na abertura; carregam logo depois, com a janela ociosa,
+// para o primeiro arquivo ou terminal aberto não esperar. Terminal já aberto na abertura carrega
+// por conta própria (useXterm).
+requestIdleCallback(
+  () => {
+    loadXterm().catch((err: unknown) => console.error('[abertura] pré-carregar o terminal:', err))
+    loadEditor().catch((err: unknown) => console.error('[abertura] pré-carregar o editor:', err))
+  },
+  { timeout: 3000 }
+)
 
 // A mesma página serve a janela principal e as janelas de conversa (#popout/<id>).
 const popout = location.hash.match(/^#popout\/(.+)$/)

@@ -3,22 +3,25 @@ import { tr } from '../../i18n'
 
 type Effort = (typeof EFFORTS)[number]
 
-// Régua do esforço no menu do modelo: uma marca por nível que o modelo aceita. Clicar na marca
-// atual volta para Auto.
+// Régua do esforço no menu do modelo (e nas Configurações): uma marca por nível que o modelo
+// aceita. Clicar na marca atual volta para Auto. `untitled`: sem o "Esforço" em cima, onde a linha
+// já tem o rótulo.
 export function EffortSlider({
   allowed,
   value,
-  onChange
+  onChange,
+  untitled
 }: {
   allowed: Effort[]
   value: string
   onChange: (effort: string) => void
+  untitled?: boolean
 }) {
   const index = allowed.findIndex((e) => e.value === value)
   return (
     <div className="px-2 pb-2 pt-1.5">
       <div className="flex items-center justify-between text-[12px]">
-        <span className="text-faint">{tr('Esforço', 'Effort')}</span>
+        <span className="text-faint">{untitled ? '' : tr('Esforço', 'Effort')}</span>
         <span className="text-text">{effortLabel(value)}</span>
       </div>
       <div className="relative mt-2.5 flex h-4 items-center justify-between">

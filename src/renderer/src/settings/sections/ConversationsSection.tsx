@@ -1,8 +1,9 @@
 import { EFFORTS, groupByFamily } from '../../conversation/ModelEffortPicker'
-import { MODES } from '../../conversation/PermissionModePicker'
+import { EffortSlider } from '../../conversation/composer/EffortSlider'
+import { PermissionModePicker } from '../../conversation/PermissionModePicker'
 import type { SessionSettings } from '../../conversation/SessionSettings'
 import { useClaudeInfo } from '../../conversation/useModels'
-import { Group, Row, Segmented, Select, Switch } from '../controls'
+import { Group, Row, Select, Switch } from '../controls'
 import { setPreferences, usePreference } from '../preferences'
 import { tr } from '../../i18n'
 
@@ -46,26 +47,16 @@ export function ConversationsSection() {
           }
         >
           {efforts.length > 0 && (
-            <Segmented
-              value={s.effort}
-              onChange={(effort) => set({ effort })}
-              options={[{ value: '', label: 'Auto' }, ...efforts.map((e) => ({ value: e.value, label: e.label }))]}
-            />
+            // A mesma régua do menu do modelo na conversa.
+            <div className="w-56">
+              <EffortSlider untitled allowed={efforts} value={s.effort} onChange={(effort) => set({ effort })} />
+            </div>
           )}
         </Row>
 
         <Row label={tr('Modo', 'Mode')} description={tr('Quanto o Claude pode fazer sem pedir sua aprovação.', 'How much Claude can do without asking for your approval.')}>
-          <Select value={s.permissionMode} onChange={(permissionMode) => set({ permissionMode })}>
-            <option value="">
-              {tr('Padrão da conta', 'Account default')}
-              {info ? ` - ${MODES.find((m) => m.value === info.defaultPermissionMode)?.label ?? ''}` : ''}
-            </option>
-            {MODES.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </Select>
+          {/* O mesmo menu do modo na conversa, com os ícones e o que cada um faz. */}
+          <PermissionModePicker field value={s.permissionMode} onChange={(permissionMode) => set({ permissionMode })} />
         </Row>
       </Group>
 

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState, type RefObject, type Keyboard
 import { scrollWithin } from '../scrollWithin'
 
 const UP_KEYS = new Set(['ArrowUp', 'PageUp', 'Home'])
+// Por quanto tempo depois de roda, tecla ou toque uma rolagem ainda conta como sua.
+const INTENT_MS = 1000
 
 // Rolagem da conversa: segue o fim quando chega coisa nova (a menos que a pessoa tenha subido para
 // ler) e acha o prompt do trecho na tela, que fica preso no topo enquanto ela rola para cima.
@@ -25,6 +27,14 @@ export function useStickyScroll(
   const [scrollingUp, setScrollingUp] = useState(false)
   const travel = useRef({ distance: 0, at: 0 })
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  // Quando você mexeu na rolagem por último (roda, tecla, toque, clique) e se o botão segue apertado
+  // (arrastando a barra de rolagem).
+  const intentAt = useRef(-Infinity)
+  const pressing = useRef(false)
+  const markIntent = () => {
+    intentAt.current = performance.now()
+  }
+  const yours = () => pressing.current || performance.now() - intentAt.current < INTENT_MS
 
   const toEnd = useCallback(() => {
     const el = scrollerRef.current
@@ -109,6 +119,12 @@ export function useStickyScroll(
       travel.current.distance = 0
       clearTimeout(hideTimer.current)
       setScrollingUp(false)
+    } else if (following.current && !yours()) {
+      // Seguindo o fim e a rolagem saiu dele sem você mexer: é a lista virtualizada corrigindo a
+      // posição ao medir um item (às vezes um quadro depois de o conteúdo mudar, sem nova mudança de
+      // tamanho para o observer). Antes isso soltava o fim e o "Pensando…" ficava abaixo da tela.
+      toEnd()
+      return
     } else {
       if (delta < 0) following.current = false
       else if (distance < 40) following.current = true
@@ -121,26 +137,42 @@ export function useStickyScroll(
   // Roda do mouse ou trackpad para cima solta antes mesmo de a rolagem acontecer (sem rolagem
   // possível, não solta: a conversa curta continua seguindo o fim quando crescer).
   const onWheel = (e: WheelEvent<HTMLDivElement>) => {
+    markIntent()
     if (e.deltaY < 0 && e.currentTarget.scrollTop > 0) following.current = false
   }
 
   // Subir pelo teclado ou arrastando a barra de rolagem também solta na hora: o evento de rolagem
   // chega um quadro depois, e nesse meio a resposta crescendo puxava de volta para o fim.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    markIntent()
     if (UP_KEYS.has(e.key)) following.current = false
   }
+  // Clique também conta: um link para outro ponto da resposta rola a conversa (scrollWithin).
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    markIntent()
+    pressing.current = true
+    const release = () => {
+      pressing.current = false
+      markIntent()
+    }
+    window.addEventListener('pointerup', release, { once: true })
+    window.addEventListener('pointercancel', release, { once: true })
     const el = e.currentTarget
     if (e.nativeEvent.offsetX >= el.clientWidth && el.scrollTop > 0) following.current = false
   }
 
+  // Toque na tela (Windows com tela sensível ao toque) não gera evento de roda.
+  const onTouchMove = markIntent
+
   // Balão montado: rola suave até ele. Fora da tela (não montado): a linha do tempo leva até lá.
   const scrollToPrompt = () => {
     if (!pinnedKey) return
+    following.current = false
+    markIntent()
     const el = scrollerRef.current?.querySelector(`[data-prompt="${CSS.escape(pinnedKey)}"]`)
     if (el) scrollWithin(el, 'start')
     else timeline.scrollToKey(pinnedKey)
   }
 
-  return { onScroll, onWheel, onKeyDown, onPointerDown, toEnd, follow, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
+  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
 }

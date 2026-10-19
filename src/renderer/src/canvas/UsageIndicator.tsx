@@ -43,9 +43,10 @@ export const UsageIndicator = memo(function UsageIndicator({
   useEscape(() => onOpenChange(false), open)
 
   // Na ordem das configurações: o Claude primeiro (a principal antes), depois as do Codex.
+  // Conta desconectada sai da barra mesmo com uso na mão; sem status (não deu para conferir), fica.
   const candidates: Omit<ShownUsage, 'usage'>[] = [
-    ...(auth?.accounts ?? []).map((a) => ({ key: a.id, name: a.name })),
-    ...(multiAgents ? (providers?.providers.codex.accounts ?? []) : []).map((a) => ({
+    ...(auth?.accounts ?? []).filter((a) => a.status?.loggedIn !== false).map((a) => ({ key: a.id, name: a.name })),
+    ...(multiAgents ? (providers?.providers.codex.accounts ?? []) : []).filter((a) => a.status?.signedIn !== false).map((a) => ({
       key: agentRef('codex', a.id),
       provider: 'codex' as const,
       name: a.name

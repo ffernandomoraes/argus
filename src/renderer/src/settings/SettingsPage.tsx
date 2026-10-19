@@ -67,9 +67,10 @@ export function SettingsPage({
         </button>
       </nav>
 
-      <section className="relative min-w-0 flex-1 overflow-y-auto bg-surface">
+      {/* O X fica fora da área que rola, para continuar à vista com a seção rolada. */}
+      <div className="relative min-w-0 flex-1 bg-surface">
         <ModalCloseButton variant="subtle" className="absolute right-3 top-3 z-10" />
-        <div className="px-8 py-7">
+        <section className="h-full overflow-y-auto px-8 py-7">
           {/* Cabeçalho da seção, como o do Ajustes do Sistema: ícone grande, nome e o que tem nela. */}
           <header className="mb-4 flex flex-col items-center rounded-xl bg-fill px-6 py-5 text-center">
             <CurrentIcon size={28} className="text-muted" />
@@ -86,8 +87,8 @@ export function SettingsPage({
           {section === 'accounts' && <AccountsSection />}
           {section === 'experiments' && <ExperimentsSection />}
           {section === 'coffee' && <CoffeeSection />}
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   )
 }

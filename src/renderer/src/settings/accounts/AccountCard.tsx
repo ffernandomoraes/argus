@@ -59,7 +59,7 @@ export function AccountCard({
             }`}
           >
             <span className={`size-1.5 rounded-full ${loggedIn ? 'bg-done' : 'bg-needs-you'}`} />
-            {loggedIn ? tr('Conectada', 'Connected') : tr('Sem login', 'Signed out')}
+            {loggedIn ? tr('Conectada', 'Connected') : main ? tr('Sem login', 'Signed out') : tr('Desconectada', 'Disconnected')}
           </span>
         )}
       </div>
@@ -76,11 +76,12 @@ export function AccountCard({
         ) : (
           <div className="flex flex-wrap items-center justify-end gap-2">
             <span className="mr-auto min-w-0 truncate text-xs text-faint">{footer}</span>
-            {account.dir && <CopyTerminalCommand dir={account.dir} />}
-            {multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
+            {/* Desconectada, só cabe reconectar ou remover: o terminal e o padrão esperam o login. */}
+            {loggedIn && account.dir && <CopyTerminalCommand dir={account.dir} />}
+            {loggedIn && multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
             {/* Conectada, o login serve para pôr outra conta no lugar desta (ou renovar o acesso). */}
             <Button onClick={onLogin} title={loggedIn ? tr('Entra com outra conta no lugar desta, ou renova o acesso', 'Sign in with another account in place of this one, or renew access') : undefined}>
-              {loggedIn ? tr('Trocar conta', 'Switch account') : tr('Entrar', 'Sign in')}
+              {loggedIn ? tr('Trocar conta', 'Switch account') : main ? tr('Entrar', 'Sign in') : tr('Reconectar', 'Reconnect')}
             </Button>
             {main
               ? loggedIn && (

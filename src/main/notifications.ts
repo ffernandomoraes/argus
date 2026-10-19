@@ -1,10 +1,11 @@
 import { homedir } from 'node:os'
 import { basename } from 'node:path'
-import { BrowserWindow, Notification } from 'electron'
+import { app, BrowserWindow, Notification } from 'electron'
 import type { ChatState } from '../shared/chat'
 import { statusSignature, StatusChanges, titleOf, type ChatEntry } from './chats/entries'
 import { sessionTitles } from './chats/titles'
 import { tr } from './i18n'
+import { IS_MAC } from './platform'
 
 // Notificação do sistema quando uma conversa aberta no app precisa de você, termina ou para com
 // erro. Só com o app fora de foco: olhando o app, o canvas já mostra o status.
@@ -27,6 +28,21 @@ function kindOf(state: ChatState): Kind | null {
   return null
 }
 
+// Ícone pulando no Dock (Mac) ou piscando na barra de tarefas (Windows/Linux). "Precisa de você"
+// insiste até você voltar ao app; concluído e erro pulam uma vez só, para não incomodar com várias
+// conversas rodando.
+function attention(kind: Kind): void {
+  if (IS_MAC) {
+    app.dock?.bounce(kind === 'needs-you' ? 'critical' : 'informational')
+    return
+  }
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue
+    win.flashFrame(true)
+    win.once('focus', () => win.flashFrame(false))
+  }
+}
+
 export class ChatNotifier {
   private changes = new StatusChanges()
   private signature: string | null = null
@@ -46,7 +62,9 @@ export class ChatNotifier {
     this.signature = signature
     for (const { entry, before } of this.changes.next(entries)) {
       const kind = before && kindOf(entry.state)
-      if (kind && !BrowserWindow.getFocusedWindow()) void this.show(kind, entry.cwd, entry.state.sessionId)
+      if (!kind || BrowserWindow.getFocusedWindow()) continue
+      attention(kind)
+      void this.show(kind, entry.cwd, entry.state.sessionId)
     }
   }
 

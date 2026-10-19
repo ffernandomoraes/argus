@@ -50,14 +50,21 @@ export function claudeCodeOptions(
   // Rodando no WSL, o `claude` do Linux só entende os caminhos de lá (C:\ vira /mnt/c).
   const inWsl = !!distroFor(full)
   const dirs = folders.map((f) => (inWsl ? toLinux(expandHome(f)) : expandHome(f)))
+  const env: Record<string, string | undefined> = { ...proc.env, [ARTIFACT]: proc.env?.[ARTIFACT] ?? '1' }
+  if (dirs.length > 0) env[FOLDERS_CLAUDE_MD] = '1'
   return {
     cwd: full,
     ...proc,
-    ...(dirs.length > 0 && { env: { ...proc.env, [FOLDERS_CLAUDE_MD]: '1' } }),
+    env,
     systemPrompt: { type: 'preset', preset: 'claude_code' },
     ...(dirs.length > 0 && { additionalDirectories: dirs })
   }
 }
+
+// A ferramenta de artefatos (publicar uma página no claude.ai) vem desligada quando o Claude Code roda
+// pelo SDK, e não no terminal; esta variável liga como no terminal. Quem desligou por conta própria
+// (a variável no ambiente ou enableArtifact: false nas configurações) continua com ela desligada.
+const ARTIFACT = 'CLAUDE_CODE_ARTIFACT'
 
 // Opção do Claude Code que liga a leitura do CLAUDE.md das pastas adicionais (o nome existe no
 // binário da 2.1; sem ela, só o CLAUDE.md da pasta onde ele abre).

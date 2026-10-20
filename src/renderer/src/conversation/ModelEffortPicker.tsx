@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ChevronUp, Network, Workflow } from 'lucide-react'
+import { Brain, ChevronUp, Network, Workflow } from 'lucide-react'
 import type { SessionSettings } from './SessionSettings'
 import { EFFORTS, effortLabel } from './modelOptions'
 import { parseAgentRef } from '../../../shared/providers'
@@ -92,20 +92,13 @@ export function ModelEffortPicker({
             {!agent && <div className="my-1 h-px bg-line" />}
             {!agent && <Toggle
               label="Thinking"
-              description={tr(
-                'Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas.',
-                'Thinks before responding. Better answers on hard tasks, a bit slower.'
-              )}
+              icon={<Brain size={12} />}
               checked={settings.thinking}
               onChange={(thinking) => onChange({ thinking })}
             />}
             {!agent && <Toggle
               label="Ultracode"
               icon={<Workflow size={12} />}
-              description={tr(
-                'Usa vários subagentes em paralelo em toda tarefa, só nesta sessão. Gasta bem mais tokens.',
-                'Uses multiple subagents in parallel on every task, for this session only. Uses many more tokens.'
-              )}
               checked={settings.ultracode}
               onChange={(ultracode) => onChange({ ultracode })}
             />}
@@ -114,10 +107,6 @@ export function ModelEffortPicker({
                 label={tr('Orquestrador', 'Orchestrator')}
                 tag={<ExperimentTag />}
                 icon={<Network size={12} />}
-                description={tr(
-                  'Não executa: divide o pedido em etapas e manda cada uma ao modelo e esforço que ela pede. Regras em Configurações > Orquestrador.',
-                  'Doesn’t do the work: splits the request into steps and sends each to the model and effort it needs. Rules in Settings > Orchestrator.'
-                )}
                 checked={settings.orchestrator}
                 onChange={(on) => {
                   // Ligar põe a sessão no modelo e esforço do orquestrador; desligar mantém os atuais.

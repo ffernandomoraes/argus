@@ -19,6 +19,7 @@ import { Updater } from '../updater'
 import { UsageMonitors } from '../usageMonitor'
 import { canvasWindowList, readyCanvas } from './canvasRegistry'
 import { DockBadge } from './dockBadge'
+import { KeepAwake } from './keepAwake'
 import { openFolder } from './folderOpener'
 import { MenuBarIcon } from './menuBarIcon'
 import { TerminalViewers } from './terminalViewers'
@@ -73,7 +74,11 @@ export function createServices() {
     badge.refresh()
     notifier.refresh()
     publishActive()
+    keepAwake.refresh()
   })
+
+  // Com agente trabalhando, o computador não dorme por inatividade.
+  const keepAwake = new KeepAwake({ chats: () => chats.list(), terminalsWorking: () => terminals.claudeWorking() })
 
   const chatHolders = new ChatHolders(
     (key) => chats.retain(key),

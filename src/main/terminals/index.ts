@@ -182,6 +182,15 @@ export class Terminals {
       .map((s) => s.cwd)
   }
 
+  // Algum `claude` de terminal trabalhando agora (app/keepAwake.ts); nulo sem terminal do `claude`
+  // para conferir. Os do WSL ficam de fora: ler o status deles acorda a máquina virtual do WSL.
+  claudeWorking(): boolean | null {
+    const local = [...this.sessions.values()].filter((s) => !s.shell && !s.wsl)
+    if (!local.length) return null
+    const status = liveStatusByPid()
+    return local.some((s) => status.get(s.pty.pid) === 'running')
+  }
+
   // Windows: shell com algum programa aberto por ele (um `pnpm dev`, um build) está ocupado. Leva
   // um instante, porque lê a tabela de processos do sistema.
   hasShells(): boolean {

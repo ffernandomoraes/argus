@@ -85,7 +85,7 @@ function CanvasFlowView(props: Props) {
       panOnDrag={PAN_ON_DRAG}
       proOptions={PRO_OPTIONS}
     >
-      <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--color-dots)" />
+      <Background variant={BackgroundVariant.Dots} gap={24} size={2.5} color="var(--color-dots)" />
       <AlignmentGuides guides={guides} />
       <EdgeFade />
       <ViewBar />

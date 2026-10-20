@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { Panel, useReactFlow } from '@xyflow/react'
 import { Bot, Brain, FolderPlus, Folders, Menu, MessageCirclePlus, Server, Settings, SquareDashed, StickyNote, type LucideIcon } from 'lucide-react'
-import { PANEL_TOP } from '../conversation/FloatingPanel'
+import { PANEL_MARGIN, PANEL_TOP } from '../conversation/FloatingPanel'
 import { Presence } from '../motion'
 import { IS_WIN, isMod, keys } from '../platform'
 import { MenuArrow } from '../ui/MenuArrow'
@@ -76,7 +76,7 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
   }, [])
 
   return (
-    <Panel position="top-left" className="!m-0" style={{ top: PANEL_TOP, left: 16 }}>
+    <Panel position="top-left" className="!m-0" style={{ top: PANEL_TOP, left: PANEL_MARGIN }}>
       <div ref={ref} className="relative">
         <button
           onClick={() => setOpen((o) => !o)}

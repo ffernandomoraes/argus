@@ -33,7 +33,7 @@ export function EdgeFade() {
             className="absolute"
             style={{
               ...PLACE[side],
-              background: `linear-gradient(${TOWARD[side]}, color-mix(in srgb, var(--color-bg) 65%, transparent), transparent)`,
+              background: `linear-gradient(${TOWARD[side]}, color-mix(in srgb, var(--color-canvas) 65%, transparent), transparent)`,
               backdropFilter: 'blur(3px)',
               maskImage: mask,
               WebkitMaskImage: mask

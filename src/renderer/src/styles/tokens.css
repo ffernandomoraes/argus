@@ -11,7 +11,10 @@
   --color-text: #f4f4f4;
   --color-muted: #a5a5a5;
   --color-faint: #7a7a7a;
-  --color-dots: #383838;
+  --color-dots: #303030;
+  /* Fundo do canvas: um tom abaixo de --color-bg, para as bordas coloridas dos blocos se
+     destacarem (o preto puro do nodeterm gritava demais). Painéis e campos continuam em --color-bg. */
+  --color-canvas: #121212;
 
   /* Fundo das listas agrupadas (cartões do Ajustes do Sistema): translúcido, para clarear um
      pouco qualquer superfície em que estiver. */
@@ -86,7 +89,8 @@
   --color-text: #1d1d1f;
   --color-muted: #6e6e73;
   --color-faint: #8e8e93;
-  --color-dots: #cbcbcb;
+  --color-dots: #d4d4d4;
+  --color-canvas: #ececec;
 
   --color-fill: rgb(0 0 0 / 0.035);
   --color-project: #ffffff;

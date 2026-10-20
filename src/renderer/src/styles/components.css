@@ -3,10 +3,10 @@
 
 /* React Flow no tema do app */
 .react-flow {
-  --xy-background-color: var(--color-bg);
+  --xy-background-color: var(--color-canvas);
   --xy-node-border-radius: 14px;
   --xy-minimap-background-color: var(--color-surface);
-  --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-canvas) 70%, transparent);
   --xy-minimap-node-background-color: var(--color-line-strong);
   --xy-edge-stroke: var(--color-line-strong);
   --xy-selection-background-color: rgb(59 130 246 / 0.08);

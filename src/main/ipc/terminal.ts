@@ -1,6 +1,8 @@
 import type { TerminalViewers } from '../app/terminalViewers'
 import type { Chats } from '../chats'
 import type { Terminals } from '../terminals'
+import { initDrawerShells, linkDrawerShell, unlinkDrawerShell } from '../terminals/drawerShells'
+import { broadcast } from './events'
 import { handle, on } from './register'
 
 // Terminais (o `claude` no terminal ou um shell). A saída vai só para as janelas que abriram cada um.
@@ -22,4 +24,12 @@ export function registerTerminalIpc(terminals: Terminals, chats: Chats, viewers:
   on('terminal:write', (_e, key, data) => terminals.write(key, data))
   on('terminal:resize', (_e, key, cols, rows) => terminals.resize(key, cols, rows))
   on('terminal:kill', (_e, key) => terminals.kill(key))
+  // Shell do drawer: a conversa de cima digita nele (ver terminals/drawerShells.ts).
+  initDrawerShells({
+    terminals,
+    typed: (key) => broadcast('terminal:typed', key),
+    open: (conversations) => broadcast('terminal:openFor', conversations)
+  })
+  on('terminal:link', (_e, key, conversations) => linkDrawerShell(key, conversations))
+  on('terminal:unlink', (_e, key) => unlinkDrawerShell(key))
 }

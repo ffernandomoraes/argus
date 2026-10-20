@@ -114,6 +114,14 @@ const api: Api = {
     onState: (cb) => listen('providers:state', cb)
   },
   filePath: (file) => webUtils.getPathForFile(file),
+  accountMcp: {
+    status: (account, wait) => invoke('mcp:account:status', account, wait),
+    reconnect: (account, name) => invoke('mcp:account:reconnect', account, name),
+    authenticate: (account, name) => invoke('mcp:account:authenticate', account, name),
+    clearAuth: (account, name) => invoke('mcp:account:clearAuth', account, name),
+    remove: (account, name, scope) => invoke('mcp:account:remove', account, name, scope),
+    release: (account) => send('mcp:account:release', account)
+  },
   chat: {
     state: (key) => invoke('chat:state', key),
     send: (req) => send('chat:send', req),
@@ -123,6 +131,9 @@ const api: Api = {
     retain: (key) => send('chat:retain', key),
     mcpStatus: (key, cwd, account) => invoke('mcp:status', key, cwd, account),
     mcpReconnect: (key, name) => invoke('mcp:reconnect', key, name),
+    mcpAuthenticate: (key, name) => invoke('mcp:authenticate', key, name),
+    mcpClearAuth: (key, name) => invoke('mcp:clearAuth', key, name),
+    mcpRemove: (key, cwd, account, name, scope) => invoke('mcp:remove', key, cwd, account, name, scope),
     release: (key) => send('chat:release', key),
     restartIn: (cwd) => send('chat:restartIn', cwd),
     configure: (key, patch) => send('chat:configure', key, patch),
@@ -236,7 +247,11 @@ const api: Api = {
     onData: (key, cb) => listenKey('terminal:data', key, cb),
     onExit: (cb) => listen('terminal:exit', cb),
     session: (key) => invoke('terminal:session', key),
-    onSession: (cb) => listen('terminal:session', cb)
+    onSession: (cb) => listen('terminal:session', cb),
+    link: (key, conversations) => send('terminal:link', key, conversations),
+    unlink: (key) => send('terminal:unlink', key),
+    onTyped: (key, cb) => listenKey('terminal:typed', key, cb),
+    onOpenFor: (cb) => listen('terminal:openFor', cb)
   },
   cli: {
     ready: () => send('cli:ready'),

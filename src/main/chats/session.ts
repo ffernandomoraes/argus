@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { query, type Query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../../shared/chat'
-import type { McpServer } from '../../shared/mcp'
+import type { McpAuthResult, McpServer } from '../../shared/mcp'
 import { resolveAccount } from '../accounts'
 import { learnContextWindow } from '../contextWindows'
 import { tr } from '../i18n'
+import { ARGUS_ALLOWED_TOOLS, ARGUS_MCP, argusMcp } from '../terminals/drawerShells'
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
-import { mcpServersOf } from './mcpStatus'
+import { authenticateMcp, clearMcpAuth, mcpServersOf } from './mcpStatus'
 import { friendlyError, userMessage } from './messages'
 import { PendingPermissions } from './permissions'
 import { QueuedSends } from './queuedSends'
@@ -107,7 +108,10 @@ export class ChatSession {
         settings: openingFlags(s) as never,
         // Cada subagente manda uma frase do que está fazendo agora; aparece no ramo dele no canvas.
         agentProgressSummaries: true,
-        canUseTool: this.permissions.canUseTool
+        canUseTool: this.permissions.canUseTool,
+        // Ferramentas do próprio Argus (digitar no terminal do drawer), junto dos MCPs da pessoa.
+        mcpServers: { [ARGUS_MCP]: argusMcp(() => this.keys) },
+        allowedTools: ARGUS_ALLOWED_TOOLS
       }
     })
     void this.run()
@@ -195,6 +199,15 @@ export class ChatSession {
   // Reconecta um servidor MCP desta sessão (o "Reconectar" do painel, como no VS Code).
   reconnectMcp(name: string): Promise<void> {
     return this.q.reconnectMcpServer(name)
+  }
+
+  // "Autorizar" e "Desconectar" do painel (ver mcpStatus.ts).
+  authenticateMcp(name: string): Promise<McpAuthResult> {
+    return authenticateMcp(this.q, name)
+  }
+
+  clearMcpAuth(name: string): Promise<void> {
+    return clearMcpAuth(this.q, name)
   }
 
   async interrupt(): Promise<void> {

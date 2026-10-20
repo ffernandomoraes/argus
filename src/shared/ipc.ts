@@ -11,7 +11,7 @@ import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
-import type { McpStatus } from './mcp'
+import type { McpAuthResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
@@ -83,6 +83,15 @@ export type InvokeChannels = {
   'chat:active': () => ActiveChat[]
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
   'mcp:reconnect': (key: string, name: string) => McpStatus
+  'mcp:authenticate': (key: string, name: string) => McpAuthResult
+  'mcp:clearAuth': (key: string, name: string) => McpStatus
+  'mcp:remove': (key: string, cwd: string, account: string | undefined, name: string, scope: string) => McpStatus
+  // Aba MCP das configurações: os servidores de uma conta, sem conversa ('' é a principal).
+  'mcp:account:status': (account: string, wait: boolean) => McpStatus
+  'mcp:account:reconnect': (account: string, name: string) => McpStatus
+  'mcp:account:authenticate': (account: string, name: string) => McpAuthResult
+  'mcp:account:clearAuth': (account: string, name: string) => McpStatus
+  'mcp:account:remove': (account: string, name: string, scope: string) => McpStatus
   'agents:list': (provider: AgentProvider, projectPath?: string) => AgentDef[]
   'agents:save': (provider: AgentProvider, req: AgentSaveRequest) => AgentSaveResult
   'agents:remove': (provider: AgentProvider, name: string) => boolean
@@ -188,6 +197,7 @@ export type SendChannels = {
   'chat:answer': (key: string, id: string, answer: PermissionAnswer) => void
   'chat:retain': (key: string) => void
   'chat:release': (key: string) => void
+  'mcp:account:release': (account: string) => void
   // Workspace mudou de pastas: as sessões abertas na pasta dele reabrem com a lista nova.
   'chat:restartIn': (cwd: string) => void
   // Conversas com resposta não vista nesta janela (para o ícone da barra de menus).
@@ -226,6 +236,9 @@ export type SendChannels = {
   'terminal:write': (key: string, data: string) => void
   'terminal:resize': (key: string, cols: number, rows: number) => void
   'terminal:kill': (key: string) => void
+  // Shell do drawer à vista embaixo das conversas `conversations` (o id no app e o da sessão).
+  'terminal:link': (key: string, conversations: string[]) => void
+  'terminal:unlink': (key: string) => void
 }
 
 // Síncronas, para o que a janela precisa antes do primeiro desenho: ipcRenderer.sendSync ↔
@@ -269,6 +282,10 @@ export type EventChannels = {
   'terminal:exit': (key: string, code: number) => void
   // O `claude` do terminal `key` está na conversa `sessionId` (ver terminals/sessionBinding.ts).
   'terminal:session': (key: string, sessionId: string) => void
+  // A conversa digitou um comando no shell do drawer `key`: ele pega o foco, para o Enter.
+  'terminal:typed': (key: string) => void
+  // A conversa quer digitar no terminal: o drawer que mostra uma destas conversas abre o dele.
+  'terminal:openFor': (conversations: string[]) => void
   'speech:event': (event: SpeechEvent) => void
   // Windows: o processo principal recebeu o start (ver preload/winMic/).
   'speech:started': () => void

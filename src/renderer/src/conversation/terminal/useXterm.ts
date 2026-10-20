@@ -72,7 +72,10 @@ export function useXterm(
       }
     )
     live.current = { xterm, scale: fontScale }
+    // A conversa digitou um comando aqui (shell do drawer): o foco vem para a pessoa só dar Enter.
+    const offTyped = window.api.terminal.onTyped(sessionKey, () => xterm.term.focus())
     return () => {
+      offTyped()
       live.current = null
       disconnect()
       xterm.dispose()

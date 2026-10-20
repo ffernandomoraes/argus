@@ -26,7 +26,7 @@ export function ConversationBranch({
   if (!branch && !start && !end) return null
 
   return (
-    <div className="no-drag nodrag mb-1 flex min-w-0 items-center justify-between gap-2">
+    <div className="no-drag nodrag -mt-1.5 mb-1 flex min-w-0 items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-1">
         {start}
         {branch && <BranchTag cwd={cwd} branch={branch} files={uncommitted} onOpenDiff={onOpenDiff} />}

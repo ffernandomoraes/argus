@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
-import { Code2, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
+import { Code2, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff, Terminal } from 'lucide-react'
 import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
@@ -8,8 +8,8 @@ import { useEscape } from '../useEscape'
 import { askColors } from './askColors'
 import { sameConversation } from './conversationIdentity'
 import { ConversationView } from './ConversationView'
+import { DrawerTerminal, useDrawerShell } from './DrawerTerminal'
 import type { LineRange } from './fileLinks'
-import { TAG } from './header/BranchTag'
 import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
 import { useFloatingRect } from './hooks/useFloatingRect'
 import { useFocusMode } from './hooks/useFocusMode'
@@ -106,7 +106,10 @@ export function ConversationDrawer(props: Props) {
     [zoom, tint, focus]
   )
   const actions = useDrawerActions(props, focus, setFocus)
-  const codeButton = useCodeButton(props, focus)
+  const shell = useDrawerShell(conversation)
+  const codeButton = useCodeButton(props, focus, shell.open, shell.toggle)
+  // Workspace: o shell abre na primeira pasta dele (a do workspace em si é só um id).
+  const shellCwd = project.folders?.[0] ?? project.path
 
   return (
     <aside
@@ -133,6 +136,7 @@ export function ConversationDrawer(props: Props) {
       {/* Mesmo elemento nos dois modos: trocar a árvore recriaria a conversa e soltaria a sessão.
           No foco vira a coluna de leitura: linhas curtas cansam menos que texto de ponta a ponta. */}
       <div ref={contentRef} className={`flex min-h-0 w-full flex-1 flex-col ${focus ? 'mx-auto max-w-[1100px]' : ''}`}>
+        <div className="flex min-h-0 flex-1 flex-col">
         <ConversationView
           cwd={project.path}
           folders={project.folders}
@@ -152,6 +156,18 @@ export function ConversationDrawer(props: Props) {
           // No foco, o fechar só sai do foco: a conversa volta para o drawer de antes.
           onClose={focus ? leaveFocus : onClose}
         />
+        </div>
+        {shell.open && (
+          <DrawerTerminal
+            sessionKey={shell.key}
+            cwd={shellCwd}
+            account={account}
+            fontScale={zoom}
+            ratio={shell.ratio}
+            onRatioChange={shell.setRatio}
+            areaRef={contentRef}
+          />
+        )}
       </div>
     </aside>
   )
@@ -191,22 +207,31 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
   }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, onPinToCanvas, onPopout])
 }
 
-// Botão do código, à direita da linha em cima da caixa de escrever, com o nome à vista. Some no foco.
-function useCodeButton(props: Props, focus: boolean) {
+// Quadrado, só com o ícone; o nome vai no title e no leitor de tela.
+const toggleClass = (on: boolean) => `flex size-7 shrink-0 items-center justify-center rounded-md text-faint ${on ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`
+
+// Botões do código e do terminal, à direita da linha em cima da caixa de escrever, só com o ícone.
+// O do código some no foco; o do terminal fica, porque o terminal continua embaixo.
+function useCodeButton(props: Props, focus: boolean, terminalOpen: boolean, onToggleTerminal: () => void) {
   const { loose = false, codeOpen = false, onToggleCode } = props
   // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
   const workspace = !!props.project.folders
   return useMemo(() => {
-    if (focus || loose || workspace) return null
+    const codeLabel = codeOpen ? tr('Fechar código', 'Close code') : tr('Código', 'Code')
+    const terminalLabel = terminalOpen ? tr('Fechar terminal', 'Close terminal') : tr('Terminal', 'Terminal')
     return (
-      <button
-        aria-pressed={codeOpen}
-        onClick={onToggleCode}
-        className={`${TAG} shrink-0 gap-1.5 ${codeOpen ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`}
-      >
-        <Code2 size={13} className="shrink-0" />
-        {codeOpen ? tr('Fechar código', 'Close code') : tr('Código', 'Code')}
-      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        {!(focus || loose || workspace) && (
+          <button aria-pressed={codeOpen} aria-label={codeLabel} title={codeLabel} onClick={onToggleCode} className={toggleClass(codeOpen)}>
+            <Code2 size={16} />
+          </button>
+        )}
+        <button aria-pressed={terminalOpen} aria-label={terminalLabel} title={terminalLabel} onClick={onToggleTerminal} className={toggleClass(terminalOpen)}>
+          <Terminal size={16} />
+        </button>
+      </div>
     )
-  }, [focus, loose, workspace, codeOpen, onToggleCode])
+  },
+    [focus, loose, workspace, codeOpen, onToggleCode, terminalOpen, onToggleTerminal]
+  )
 }

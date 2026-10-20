@@ -43,6 +43,11 @@ const host = (url: string) => {
 
 export function describeTool(name: string, input: Input | undefined): ToolDescription {
   const i = input ?? {}
+  // Terminal do drawer (terminals/drawerShells.ts): o comando à vista, como no Bash.
+  if (name === 'mcp__argus__rodar_no_terminal' || name === 'mcp__argus__digitar_no_terminal') {
+    const label = name.endsWith('rodar_no_terminal') ? tr('Rodar no terminal', 'Run in terminal') : tr('Digitar no terminal', 'Type in terminal')
+    return { label, summary: firstLine(i.comando), detail: i.comando }
+  }
   // MCP: "mcp__servidor__acao" vira "servidor - acao".
   if (name.startsWith('mcp__')) {
     const [, server = '', action = ''] = name.split('__')

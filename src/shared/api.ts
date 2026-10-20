@@ -12,7 +12,7 @@ import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
 import type { DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
-import type { McpStatus } from './mcp'
+import type { McpAuthResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
@@ -139,6 +139,16 @@ export type Api = {
   }
   // Caminho no disco de um arquivo escolhido ou arrastado (anexos do chat).
   filePath: (file: File) => string
+  // Aba MCP das configurações: os servidores de uma conta, sem conversa ('' é a principal). release:
+  // a aba saiu da tela, o `claude` dela fecha.
+  accountMcp: {
+    status: (account: string, wait: boolean) => Promise<McpStatus>
+    reconnect: (account: string, name: string) => Promise<McpStatus>
+    authenticate: (account: string, name: string) => Promise<McpAuthResult>
+    clearAuth: (account: string, name: string) => Promise<McpStatus>
+    remove: (account: string, name: string, scope: string) => Promise<McpStatus>
+    release: (account: string) => void
+  }
   chat: {
     state: (key: string) => Promise<ChatState | null>
     send: (req: ChatSendRequest) => void
@@ -148,6 +158,9 @@ export type Api = {
     retain: (key: string) => void
     mcpStatus: (key: string, cwd: string, account?: string) => Promise<McpStatus>
     mcpReconnect: (key: string, name: string) => Promise<McpStatus>
+    mcpAuthenticate: (key: string, name: string) => Promise<McpAuthResult>
+    mcpClearAuth: (key: string, name: string) => Promise<McpStatus>
+    mcpRemove: (key: string, cwd: string, account: string | undefined, name: string, scope: string) => Promise<McpStatus>
     release: (key: string) => void
     restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void
@@ -326,6 +339,13 @@ export type Api = {
     // Conversa do `claude` do terminal, amarrada pelo processo dele (sem adivinhar pela pasta).
     session: (key: string) => Promise<string | null>
     onSession: (cb: (key: string, sessionId: string) => void) => Off
+    // Shell do drawer: a conversa de cima pode digitar nele enquanto está à vista.
+    link: (key: string, conversations: string[]) => void
+    unlink: (key: string) => void
+    // A conversa digitou no terminal `key`.
+    onTyped: (key: string, cb: () => void) => Off
+    // A conversa quer digitar no terminal e ele está fechado: o drawer dela abre.
+    onOpenFor: (cb: (conversations: string[]) => void) => Off
   }
   // Comando `argus` do terminal.
   cli: {

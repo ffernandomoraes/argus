@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer, PermissionRequest, QueuedMessage } from '../../shared/chat'
 import type { Message } from '../../shared/history'
-import type { McpServer } from '../../shared/mcp'
+import type { McpAuthResult, McpServer } from '../../shared/mcp'
 import type { AgentRef } from '../../shared/providers'
 import { tr } from '../i18n'
 import { expandHome } from '../paths'
@@ -114,6 +114,12 @@ export class AgentChatSession {
 
   // Os MCPs dos outros agentes não aparecem no painel: não há o que reconectar.
   async reconnectMcp(): Promise<void> {}
+
+  async authenticateMcp(): Promise<McpAuthResult> {
+    return { ok: false, error: tr('Só o Claude autoriza servidores MCP por aqui.', 'Only Claude authorizes MCP servers here.') }
+  }
+
+  async clearMcpAuth(): Promise<void> {}
 
   // Remote control é do Claude Code.
   async remoteControl(): Promise<void> {

@@ -1,7 +1,8 @@
 import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../../shared/chat'
-import type { McpStatus } from '../../shared/mcp'
+import type { McpAuthResult, McpStatus } from '../../shared/mcp'
 import type { ChatEntry } from './entries'
-import { mcpStatusFor } from './mcpStatus'
+import { AccountMcp } from './accountMcp'
+import { mcpStatusFor, removeMcp } from './mcpStatus'
 import { parseAgentRef, type AgentRef } from '../../shared/providers'
 import { AgentChatSession } from '../agentChats/session'
 import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
@@ -56,6 +57,8 @@ const MEMORY_SETTLE_MS = 10_000
 // conversa nova ganha também o id da sessão como chave, assim que o Claude informa.
 export class Chats {
   private sessions = new Map<string, AnySession>()
+  // MCPs por conta, da aba MCP das configurações.
+  readonly accountMcp = new AccountMcp()
   // Conversas fechadas esperando encerrar.
   private releasing = new Map<AnySession, NodeJS.Timeout>()
   // Próxima conferência da memória (ver MEMORY_CHECK_MS); só existe com sessão esperando.
@@ -257,6 +260,37 @@ export class Chats {
     }
   }
 
+  // "Autorizar" e "Desconectar" de um servidor no painel; só com a sessão da conversa aberta (o
+  // `claude` dela espera a volta do navegador).
+  async authenticateMcp(key: string, name: string): Promise<McpAuthResult> {
+    const session = this.sessions.get(key)
+    if (!session) return { ok: false, error: tr('A conversa não está aberta.', 'The chat isn’t open.') }
+    return session.authenticateMcp(name)
+  }
+
+  async clearMcpAuth(key: string, name: string): Promise<McpStatus> {
+    const session = this.sessions.get(key)
+    if (!session) return { ok: false, error: tr('A conversa não está aberta.', 'The chat isn’t open.') }
+    try {
+      await session.clearMcpAuth(name)
+      return { ok: true, servers: await session.mcpServers(false), live: true }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  }
+
+  // "Remover" do painel: sai da configuração na hora; a sessão aberta ainda o vê até reabrir, então
+  // a lista devolvida já vem sem ele.
+  async removeMcp(key: string, cwd: string, account: string | undefined, name: string, scope: string): Promise<McpStatus> {
+    try {
+      await removeMcp(name, scope, parseAgentRef(account) ? undefined : account, cwd)
+      const status = await this.mcpStatus(key, cwd, account)
+      return status.ok ? { ...status, servers: status.servers.filter((s) => s.name !== name) } : status
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  }
+
   interrupt(key: string): void {
     void this.sessions.get(key)?.interrupt()
   }
@@ -271,6 +305,7 @@ export class Chats {
   }
 
   closeAll(): void {
+    this.accountMcp.closeAll()
     if (this.memoryTimer) clearTimeout(this.memoryTimer)
     this.memoryTimer = null
     this.releasing.forEach((timer) => clearTimeout(timer))

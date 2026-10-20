@@ -1,7 +1,7 @@
-import { Coffee, FlaskConical, MessagesSquare, Network, Palette, Settings2, Users } from 'lucide-react'
+import { Coffee, FlaskConical, MessagesSquare, Network, Palette, Plug, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'accounts' | 'experiments' | 'coffee'
+export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
 
 // Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
@@ -46,6 +46,15 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     label: tr('Contas', 'Accounts'),
     icon: Users,
     description: tr('As contas do Claude Code que o Argus usa.', 'The Claude Code accounts Argus uses.')
+  },
+  {
+    id: 'mcp',
+    label: 'MCP',
+    icon: Plug,
+    description: tr(
+      'Os servidores MCP de cada conta: autorize, reconecte ou desconecte sem abrir uma conversa.',
+      'Each account’s MCP servers: authorize, reconnect or sign out without opening a chat.'
+    )
   },
   {
     id: 'experiments',

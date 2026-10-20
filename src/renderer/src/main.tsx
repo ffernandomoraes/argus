@@ -10,6 +10,7 @@ import { loadXterm } from './conversation/terminal/useXterm'
 import { tr } from './i18n'
 import { PopoutApp } from './conversation/PopoutApp'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { installWindowActivity } from './lib/windowActivity'
 
 // Cor de destaque do sistema antes do primeiro desenho, para não piscar o azul padrão. Sem ela,
 // vale a do index.css.
@@ -19,6 +20,9 @@ const applyAccent = (color: string | null) =>
     : document.documentElement.style.removeProperty('--color-accent')
 applyAccent(window.api.accent.get())
 window.api.accent.onChange(applyAccent)
+
+// Animações infinitas param com a janela sem foco (lib/windowActivity.ts).
+installWindowActivity()
 
 // Idioma trocado nos ajustes: recarrega para redesenhar os textos. Rascunhos do painel de código só
 // existem na memória; com algum, pergunta antes (sem recarregar, fica no idioma antigo até a próxima).

@@ -1,6 +1,24 @@
 /* Animações e transições. Todas respeitam o "Reduzir movimento" do sistema: as contínuas são as
    que mais pesam (repintam a cada quadro). */
 
+/* Janela sem foco (lib/windowActivity.ts): toda animação infinita lê --anim-state e para onde está.
+   `paused`, não `none`: nada pula de lugar quando o foco sai, e volta de onde parou. Só as infinitas:
+   pausar uma entrada (node-in) deixaria invisível o bloco criado com a janela sem foco. Animação
+   infinita nova precisa da linha `animation-play-state: var(--anim-state)`; uma que fique de fora
+   já mantém a janela redesenhando a cada quadro e o resto não adianta. */
+:root {
+  --anim-state: running;
+}
+:root[data-window='idle'] {
+  --anim-state: paused;
+}
+/* As do Tailwind (spinner e bolinha pulsando). Pelo atributo porque a classe pode vir com
+   prefixo (motion-safe:animate-pulse, disabled:animate-pulse). */
+[class*='animate-spin'],
+[class*='animate-pulse'] {
+  animation-play-state: var(--anim-state);
+}
+
 /* "Organizar board": os blocos deslizam até o lugar novo e o grupo encolhe junto. */
 .react-flow.arranging .react-flow__node {
   transition:
@@ -27,6 +45,7 @@
 .conversation-flow {
   stroke-dasharray: 4 4;
   animation: conversation-flow 0.6s steps(8) infinite;
+  animation-play-state: var(--anim-state);
 }
 @media (prefers-reduced-motion: reduce) {
   .conversation-flow {
@@ -48,6 +67,7 @@
 }
 .react-flow__node > .worktree-removing {
   animation: worktree-removing 0.7s ease-in-out infinite alternate;
+  animation-play-state: var(--anim-state);
 }
 @media (prefers-reduced-motion: reduce) {
   .react-flow__node > .worktree-removing {
@@ -79,6 +99,7 @@
   transform-box: fill-box;
   transform-origin: left center;
   animation: code-typing 1.8s linear infinite both;
+  animation-play-state: var(--anim-state);
 }
 @media (prefers-reduced-motion: reduce) {
   .code-typing rect {

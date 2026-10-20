@@ -77,6 +77,7 @@
 }
 .mascot .m-blink {
   animation: mascot-blink 4.2s infinite;
+  animation-play-state: var(--anim-state);
 }
 
 /* ---------- parado: respira ---------- */
@@ -110,12 +111,15 @@
 }
 .mascot:is(.pose-idle, .pose-listen, .pose-thumbs, .pose-wave) .m-torso-move {
   animation: mascot-breathe 3.2s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-idle .m-head-move {
   animation: mascot-bob 3.2s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-idle :is(.m-arm-l-move, .m-arm-r-move) {
   animation: mascot-sway 3.2s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 
 /* ---------- andando: de perfil, pernas e braços em tesoura, inclinado para a frente ----------
@@ -169,18 +173,23 @@
 }
 .mascot.pose-walk .m-body-move {
   animation: mascot-walk-body 520ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-walk .m-leg-near-move {
   animation: mascot-stride 520ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-walk .m-leg-far-move {
   animation: mascot-stride 520ms ease-in-out -260ms infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-walk .m-arm-near-move {
   animation: mascot-swing 520ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-walk .m-arm-far-move {
   animation: mascot-swing 520ms ease-in-out -260ms infinite;
+  animation-play-state: var(--anim-state);
 }
 
 /* ---------- chicotada: prepara (12-38%), estala (38-68%), a tira cai (68-100%) ----------
@@ -377,27 +386,35 @@
 }
 .mascot.pose-dance .m-body-move {
   animation: mascot-dance-body 800ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-head-move {
   animation: mascot-dance-head 800ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-arm-l-move {
   animation: mascot-dance-arm 800ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-fore-l-move {
   animation: mascot-dance-forearm 800ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-arm-r-move {
   animation: mascot-dance-arm 800ms ease-in-out -400ms infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-fore-r-move {
   animation: mascot-dance-forearm 800ms ease-in-out -400ms infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-leg-l-move {
   animation: mascot-step 800ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-dance .m-leg-r-move {
   animation: mascot-step 800ms ease-in-out -400ms infinite;
+  animation-play-state: var(--anim-state);
 }
 
 /* ---------- escutando: balança a cabeça; ondas chegando na orelha, da mais longe para a mais perto ---------- */
@@ -427,9 +444,11 @@
 }
 .mascot.pose-listen .m-head-move {
   animation: mascot-nod 2.4s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot .m-sound {
   animation: mascot-sound 1.2s ease-out infinite both;
+  animation-play-state: var(--anim-state);
 }
 .mascot .m-sound-0 {
   animation-delay: 600ms;
@@ -470,6 +489,7 @@
 }
 .mascot .m-sparkle {
   animation: mascot-twinkle 900ms ease-in-out infinite both;
+  animation-play-state: var(--anim-state);
 }
 .mascot .m-sparkle-1 {
   animation-delay: 300ms;
@@ -500,12 +520,15 @@
 }
 .mascot.pose-wave .m-fore-r-move {
   animation: mascot-wave 500ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot.pose-wave .m-head-move {
   animation: mascot-nod 1s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 .mascot .m-badge {
   animation: mascot-pulse 1s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
 }
 
 /* Reduzir movimento: poses paradas, sem caminhada (ele aparece no lugar). A chicotada fica parada

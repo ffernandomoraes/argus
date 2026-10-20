@@ -16,7 +16,7 @@ import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
-import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
+import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { TranscriptionModel } from './transcription'
@@ -102,6 +102,7 @@ export type InvokeChannels = {
   // Sessões do Claude Code e git da pasta
   'sessions:list': (path: string) => SessionSummary[]
   'sessions:folders': () => KnownFolder[]
+  'sessions:search': (path: string, query: string) => SearchHit[]
   'sessions:trash': (path: string, id: string) => string | null
   'sessions:branch': (path: string) => string | null
   'sessions:branches': (path: string) => BranchList | null

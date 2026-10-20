@@ -4,7 +4,7 @@ import { designSessionIds } from '../designStore'
 import { checkoutBranch, currentBranch, fetchBranches, listBranches, repoUrl, uncommittedFiles } from '../gitBranch'
 import { readHistory, readHistoryPage, readImages } from '../history'
 import type { SessionWatch } from '../sessionWatch'
-import { listKnownFolders, listSessions, sessionContext, trashSession } from '../sessions'
+import { listKnownFolders, listSessions, searchSessions, sessionContext, trashSession } from '../sessions'
 import { conversationsIn, indexEntry, isAgentConversation, loadConversation, loadImages, trashConversation } from '../agentChats/store'
 import type { SessionSummary } from '../../shared/sessions'
 import { pageOf } from '../../shared/history'
@@ -21,6 +21,7 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
     return inDesigns.size ? sessions.filter((s) => !inDesigns.has(s.id)) : sessions
   })
   handle('sessions:folders', () => listKnownFolders())
+  handle('sessions:search', (_e, path, query) => searchSessions(path, typeof query === 'string' ? query : ''))
   handle('sessions:trash', (_e, path, id) => (isAgentConversation(id) ? trashConversation(id) : trashSession(path, id)))
   handle('sessions:branch', (_e, path) => currentBranch(path))
   handle('sessions:branches', (_e, path) => listBranches(path))

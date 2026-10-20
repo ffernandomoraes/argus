@@ -1,5 +1,5 @@
 import { memo, useCallback, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { ChevronDown, Folder, Plus, X } from 'lucide-react'
+import { ChevronDown, Folder, Loader2, Plus, Search, X } from 'lucide-react'
 import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
 import { useNow } from '../lib/clock'
 import { IconButton } from '../ui/IconButton'
@@ -8,6 +8,7 @@ import { useCanvasActions } from './CanvasContext'
 import { ConversationItem } from './ConversationItem'
 import { groupByDay } from './project/groupByDay'
 import { useSessions } from './sessionsStore'
+import { useConversationSearch } from './useConversationSearch'
 import type { ConversationSummary } from './types'
 import { useActiveConversationIn, usePoppedOutSet } from './useCanvasView'
 import { tr } from '../i18n'
@@ -39,6 +40,10 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
 }) {
   // Já vem da mais recente para a mais antiga (sessionsStore).
   const conversations = useSessions(project.path)
+  const all = conversations
+  // Busca pelo título e pelo conteúdo: com algo digitado, a lista vira os resultados.
+  const [query, setQuery] = useState('')
+  const search = useConversationSearch(project.path, conversations, query)
   // Trocou de pasta: volta à primeira leva.
   const [page, setPage] = useState({ path: project.path, count: PAGE })
   const count = page.path === project.path ? page.count : PAGE
@@ -74,8 +79,8 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">
             {tr(
-              `${conversations.length} conversa${conversations.length === 1 ? '' : 's'}`,
-              `${conversations.length} chat${conversations.length === 1 ? '' : 's'}`
+              `${all.length} conversa${all.length === 1 ? '' : 's'}`,
+              `${all.length} chat${all.length === 1 ? '' : 's'}`
             )}
           </div>
           <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
@@ -95,39 +100,83 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
         </IconButton>
       </header>
 
-      <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {groupByDay(shown, now).map((g, i) => (
-          <li key={g.key} className="flex flex-col gap-1">
-            {g.label && (
-              <div className={`px-2 pb-0.5 text-[11px] font-medium text-faint ${i > 0 ? 'pt-3' : ''}`}>{g.label}</div>
-            )}
-            <ul className="flex flex-col gap-1">
-              {g.items.map((c) => (
-                <ConversationItem
-                  key={c.id}
-                  conversation={c}
-                  poppedOut={poppedOut.has(c.id)}
-                  active={!!active && (active.conversationId === c.id || active.sessionId === c.id)}
-                  onOpen={open}
-                  onContextMenu={openMenu}
-                />
-              ))}
-            </ul>
-          </li>
-        ))}
-        {conversations.length > count && (
-          <li>
-            <button
-              onClick={() => setPage({ path: project.path, count: count + PAGE })}
-              className="flex h-7 w-full items-center gap-2.5 rounded-lg px-2 text-xs text-faint hover:bg-fill hover:text-text"
-            >
-              <ChevronDown size={12} className="shrink-0" />
-              {tr(`Ver mais (${conversations.length - count} restantes)`, `Show more (${conversations.length - count} left)`)}
-            </button>
-          </li>
+      <div className="mx-3 mt-3 flex items-center gap-2 rounded-md border border-line bg-surface px-2 focus-within:border-line-strong">
+        <Search size={13} className="shrink-0 text-faint" />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // Com algo digitado, o ESC limpa a busca; vazio, fecha o painel (useEscape).
+            if (e.key === 'Escape' && query) {
+              e.preventDefault()
+              setQuery('')
+            }
+          }}
+          placeholder={tr('Buscar no título ou no conteúdo', 'Search titles or content')}
+          className="min-w-0 flex-1 bg-transparent py-1.5 text-xs text-text outline-none placeholder:text-faint"
+        />
+        {search?.searching && <Loader2 size={12} className="shrink-0 animate-spin text-faint" />}
+        {query && (
+          <button aria-label={tr('Limpar busca', 'Clear search')} onClick={() => setQuery('')} className="text-faint hover:text-text">
+            <X size={13} />
+          </button>
         )}
-        {conversations.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</li>}
-      </ul>
+      </div>
+
+      {search ? (
+        <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+          {search.results.map(({ conversation: c, snippet }) => (
+            <ConversationItem
+              key={c.id}
+              conversation={c}
+              snippet={snippet}
+              query={query}
+              poppedOut={poppedOut.has(c.id)}
+              active={!!active && (active.conversationId === c.id || active.sessionId === c.id)}
+              onOpen={open}
+              onContextMenu={openMenu}
+            />
+          ))}
+          {!search.searching && search.results.length === 0 && (
+            <li className="px-2 py-1.5 text-xs text-faint">{tr(`Nenhuma conversa com "${query.trim()}"`, `No chats with "${query.trim()}"`)}</li>
+          )}
+        </ul>
+      ) : (
+        <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+          {groupByDay(shown, now).map((g, i) => (
+            <li key={g.key} className="flex flex-col gap-1">
+              {g.label && (
+                <div className={`px-2 pb-0.5 text-[11px] font-medium text-faint ${i > 0 ? 'pt-3' : ''}`}>{g.label}</div>
+              )}
+              <ul className="flex flex-col gap-1">
+                {g.items.map((c) => (
+                  <ConversationItem
+                    key={c.id}
+                    conversation={c}
+                    poppedOut={poppedOut.has(c.id)}
+                    active={!!active && (active.conversationId === c.id || active.sessionId === c.id)}
+                    onOpen={open}
+                    onContextMenu={openMenu}
+                  />
+                ))}
+              </ul>
+            </li>
+          ))}
+          {conversations.length > count && (
+            <li>
+              <button
+                onClick={() => setPage({ path: project.path, count: count + PAGE })}
+                className="flex h-7 w-full items-center gap-2.5 rounded-lg px-2 text-xs text-faint hover:bg-fill hover:text-text"
+              >
+                <ChevronDown size={12} className="shrink-0" />
+                {tr(`Ver mais (${conversations.length - count} restantes)`, `Show more (${conversations.length - count} left)`)}
+              </button>
+            </li>
+          )}
+          {all.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</li>}
+        </ul>
+      )}
     </aside>
   )
 })

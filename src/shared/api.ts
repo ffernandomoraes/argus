@@ -17,7 +17,7 @@ import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
 import type { ClaudeInfo } from './models'
-import type { BranchList, BranchOption, KnownFolder, SessionChange, SessionSummary, UncommittedFile } from './sessions'
+import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions'
 import type { SpeechEvent } from './speech'
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
 import type { TranscriptionModel } from './transcription'
@@ -226,6 +226,8 @@ export type Api = {
     list: (path: string) => Promise<SessionSummary[]>
     // Pastas onde o Claude Code já conversou, da mais recente para a mais antiga.
     folders: () => Promise<KnownFolder[]>
+    // Conversas da pasta que falam do termo (sem acento nem maiúscula), com um trecho em volta.
+    search: (path: string, query: string) => Promise<SearchHit[]>
     // Move a conversa para a Lixeira; devolve o erro ou nulo.
     trash: (path: string, id: string) => Promise<string | null>
     // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.

@@ -177,6 +177,7 @@ const api: Api = {
   sessions: {
     list: (path) => invoke('sessions:list', path),
     folders: () => invoke('sessions:folders'),
+    search: (path, query) => invoke('sessions:search', path, query),
     trash: (path, id) => invoke('sessions:trash', path, id),
     branch: (path) => invoke('sessions:branch', path),
     branches: (path) => invoke('sessions:branches', path),

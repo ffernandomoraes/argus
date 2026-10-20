@@ -1,6 +1,9 @@
 // Conversa gravada pelo Claude Code em ~/.claude/projects/<pasta>/<id>.jsonl.
 import type { LiveStatus } from './history'
 
+// Conversa achada pela busca no conteúdo: o id e um trecho em volta da primeira ocorrência.
+export type SearchHit = { id: string; snippet: string }
+
 export type SessionSummary = {
   // Id da sessão (nome do arquivo); serve para `claude --resume`.
   id: string

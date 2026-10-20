@@ -1,4 +1,4 @@
-import { useBackgroundTasksOf } from '../backgroundTasks'
+import { useBackgroundSinceOf, useBackgroundTasksOf } from '../backgroundTasks'
 import { useRunningAgentsOf } from '../runningAgents'
 import type { ConversationSummary } from '../types'
 import { agentsKeyOf, legsOf, visibleConversations, withAgents, type Row } from './projectRows'
@@ -15,10 +15,11 @@ export function useProjectRows(
   const keys = visible.map(agentsKeyOf)
   const lists = useRunningAgentsOf(keys)
   const tasks = useBackgroundTasksOf(keys)
+  const since = useBackgroundSinceOf(keys)
   const rows = withAgents(
     visible,
     (key) => lists[keys.indexOf(key)] ?? [],
-    (key) => tasks[keys.indexOf(key)] ?? 0
+    (key) => ({ count: tasks[keys.indexOf(key)] ?? 0, since: since[keys.indexOf(key)] })
   )
   return { rows, legs: legsOf(rows) }
 }

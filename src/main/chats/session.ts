@@ -310,6 +310,7 @@ export class ChatSession {
         permissions: [],
         agents: [],
         backgroundTasks: 0,
+        backgroundStarts: undefined,
         activity: undefined,
         revision: this.state.revision + 1
       })

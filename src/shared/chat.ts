@@ -53,6 +53,8 @@ export type ChatState = {
   // Comandos, monitores e workflows que o Claude deixou rodando em segundo plano (subagentes
   // ficam em agents). Enquanto houver algum, a sessão não fecha: fechar mataria os processos.
   backgroundTasks: number
+  // Quando cada uma delas apareceu (id da tarefa → ms), para mostrar há quanto tempo rodam.
+  backgroundStarts?: Record<string, number>
   // Mensagens suas na fila do Claude, ainda fora do histórico (ele só grava o texto ao entregar).
   queued?: QueuedMessage[]
   // Conversa com outro agente: agente e conta ("codex:main"). Sem ele: Claude.

@@ -85,6 +85,7 @@ export const ConversationStack = memo(function ConversationStack({
           <TasksRow
             key={`tasks-${row.conversation.id}`}
             count={row.count}
+            since={row.since}
             conversation={row.conversation}
             first={row.first}
             color={flowColor}

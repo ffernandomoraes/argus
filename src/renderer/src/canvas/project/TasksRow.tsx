@@ -1,18 +1,23 @@
 import { memo } from 'react'
+import { Elapsed } from '../../conversation/Elapsed'
 import type { ConversationSummary } from '../types'
 import { agentPath } from './geometry'
 import { tr } from '../../i18n'
 
 // Comandos que o Claude deixou rodando em segundo plano, numa linha só com a quantidade, pendurada
-// embaixo da conversa como os subagentes. Some quando todos terminam. Clicar abre a conversa.
+// embaixo da conversa como os subagentes, com há quanto tempo roda a mais antiga. Some quando todos
+// terminam. Clicar abre a conversa.
 export const TasksRow = memo(function TasksRow({
   count,
+  since,
   conversation,
   first,
   color,
   onOpen
 }: {
   count: number
+  // Início da tarefa mais antiga (ms).
+  since?: number
   conversation: ConversationSummary
   // Sem subagente antes: a linha sai do ícone da conversa.
   first: boolean
@@ -34,6 +39,11 @@ export const TasksRow = memo(function TasksRow({
           ? tr('1 tarefa em segundo plano', '1 background task')
           : tr(`${count} tarefas em segundo plano`, `${count} background tasks`)}
       </span>
+      {since !== undefined && (
+        <span className="ml-auto shrink-0 pl-2 text-[11px] tabular-nums text-faint">
+          <Elapsed since={since} />
+        </span>
+      )}
     </li>
   )
 })

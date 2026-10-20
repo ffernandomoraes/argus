@@ -90,8 +90,12 @@ function readSystem(m: Line, chat: ChatState, reader: Reader, now: number): Step
   }
   if (m.subtype === 'background_tasks_changed') {
     // Lista completa a cada mudança. Subagentes já vêm pelos task_*; ambientes não são trabalho.
-    const count = (m.tasks as Line[]).filter((t) => !t.ambient && t.task_type !== 'local_agent').length
-    return count === chat.backgroundTasks ? { reader } : { reader, patch: { backgroundTasks: count }, urgent: true }
+    const ids = (m.tasks as Line[]).filter((t) => !t.ambient && t.task_type !== 'local_agent').map((t) => t.task_id as string)
+    const before = chat.backgroundStarts ?? {}
+    if (ids.length === chat.backgroundTasks && ids.every((id) => id in before)) return { reader }
+    // A mensagem só traz os ids: o início de cada tarefa é a primeira vez que ela aparece.
+    const starts = Object.fromEntries(ids.map((id) => [id, before[id] ?? now]))
+    return { reader, patch: { backgroundTasks: ids.length, backgroundStarts: starts }, urgent: true }
   }
   // A compactação é gravada no arquivo da sessão: o chat relê e mostra o divisor.
   if (m.subtype === 'compact_boundary') return { reader, patch: { revision: chat.revision + 1 }, urgent: true }

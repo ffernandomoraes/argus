@@ -89,19 +89,22 @@ function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): M
   return [{ type: 'submenu', label: tr('Agente', 'Agent'), icon: ref ? AGENT_MENU_ICONS[ref.provider] : ClaudeIcon, items: agents }]
 }
 
-// "Conta do Claude ▸", só com mais de uma conta. O visto fica na que vale: a escolhida ou, sem
+// "Conta do Claude ▸", só com mais de uma conta para escolher. O visto fica na que vale: a escolhida ou, sem
 // escolha, a padrão.
 function accountSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): MenuItem[] {
   const { auth } = deps
   if (getPreferences().multiAgents) return agentSubmenu(deps, group)
-  if (!auth || auth.accounts.length < 2) return []
+  if (!auth) return []
   const current = resolveAccount(auth, group.data.account)
+  // Conta sem login não entra, a não ser a do grupo; sobrando uma só, não há o que escolher.
+  const listed = auth.accounts.filter((a) => a.status?.loggedIn !== false || a.id === current)
+  if (listed.length < 2) return []
   return [
     {
       type: 'submenu',
       label: tr('Conta do Claude', 'Claude account'),
       icon: ClaudeIcon,
-      items: auth.accounts.filter((a) => a.status?.loggedIn !== false || a.id === current).map((a) => ({
+      items: listed.map((a) => ({
         type: 'action',
         label: a.status?.loggedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
         checked: a.id === current,

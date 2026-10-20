@@ -30,7 +30,15 @@ function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, m
       options: (auth?.accounts ?? []).map((a) => ({ id: a.id, name: a.name, signedOut: a.status?.loggedIn === false }))
     }
   ]
-  if (!multiAgents) return sections
+  if (multiAgents) sections.push(...providerSections(providers))
+  return sections
+    .map((s) => ({ ...s, options: s.options.filter((o) => !o.signedOut || o.id === currentId) }))
+    .filter((s) => s.options.length)
+}
+
+// Uma seção por agente com alguma conta conectada.
+function providerSections(providers: ProvidersState | null): Section[] {
+  const sections: Section[] = []
   for (const provider of PROVIDERS) {
     const accounts = providers?.providers[provider]?.accounts ?? []
     if (!accounts.length) continue
@@ -41,8 +49,6 @@ function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, m
     })
   }
   return sections
-    .map((s) => ({ ...s, options: s.options.filter((o) => !o.signedOut || o.id === currentId) }))
-    .filter((s) => s.options.length)
 }
 
 type Current = { id: string; icon: ReactNode; name: string; label: string }

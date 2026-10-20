@@ -6,6 +6,8 @@ import { editorClaudes } from './editors'
 import { knownClaude, knownClaudes, loginShellClaude, lookupLoginShell } from './mac'
 import { windowsClaude, windowsClaudes } from './windows'
 
+export { claudeHeld, claudeReady, holdClaude } from './hold'
+
 // O mais novo dos `claude` achados, escolhido por claudeVersion depois de perguntar a versão de
 // cada um. Até lá (e se ele sumir), vale a ordem de sempre.
 let chosen: string | null = null

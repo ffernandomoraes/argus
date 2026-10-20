@@ -2,11 +2,12 @@ import { homedir } from 'node:os'
 import { dirname } from 'node:path'
 import type { Options } from '@anthropic-ai/claude-agent-sdk'
 import { applyAccount } from '../accounts'
-import { claudeCommand, claudePath } from '../claudePath'
+import { claudeCommand, claudeHeld, claudePath, claudeReady } from '../claudePath'
 import { expandHome } from '../paths'
 import { childEnv, prependPath } from '../platform'
 import { distroFor, distroInfo, toLinux } from '../wsl'
 import { wslLaunch, wslSdkProcess } from '../wsl/launch'
+import { heldProcess } from './heldProcess'
 
 // O app aberto pelo Finder não herda o PATH do terminal, e as variáveis do Electron
 // fariam o `claude` subir como Node puro. A conta escolhe a pasta de configuração; sem ela,
@@ -26,7 +27,8 @@ export function claudeProcess(account?: string, cwd?: string): ProcessOptions {
   const distro = distroFor(cwd)
   if (!distro) {
     const claude = claudePath()
-    return { pathToClaudeCodeExecutable: claude, env: claudeEnv(claude, account) }
+    // Com o claude.exe sendo trocado (Windows), o processo espera a troca (ver claudePath/hold.ts).
+    return { pathToClaudeCodeExecutable: claude, env: claudeEnv(claude, account), ...(claudeHeld() && { spawnClaudeCodeProcess: heldProcess }) }
   }
   // No WSL o processo abre pelo wsl.exe, com o `claude` do Linux; o caminho aqui só diz ao SDK
   // que é um executável (e não um .js para rodar pelo node).
@@ -79,6 +81,7 @@ export type ClaudeLaunch =
 export async function claudeLaunch(args: string[], account?: string, cwd?: string): Promise<ClaudeLaunch> {
   const distro = distroFor(cwd)
   if (distro) return wslLaunch(distro, { args, account, cwd })
+  await claudeReady()
   const claude = claudePath()
   const cmd = claudeCommand(args, claude)
   return { ok: true, ...cmd, env: claudeEnv(claude, account), cwd: cwd ? expandHome(cwd) : homedir() }

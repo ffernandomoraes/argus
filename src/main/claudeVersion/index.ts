@@ -4,20 +4,28 @@ import { app } from 'electron'
 import type { ClaudeBinary, ClaudeVersionState } from '../../shared/claudeVersion'
 import { claudeEnv } from '../chats/env'
 import { runClaudeInstaller } from '../claudeInstall'
-import { allClaudes, chooseClaude, claudeCommand, claudePath, lookupClaude } from '../claudePath'
+import { allClaudes, chooseClaude, claudeCommand, claudePath, claudeReady, holdClaude, lookupClaude } from '../claudePath'
 import { tr } from '../i18n'
+import { IS_WIN } from '../platform'
 import { isNewer } from '../updater/releases'
+import { claudeInUse, nativeUpdatesOff, updateWslClaudes } from './autoUpdate'
 
 // A lista de modelos vem do `claude` que o app usa: um Claude Code antigo não mostra os modelos
 // novos (o Opus 5.5, por exemplo). Aqui o app pergunta a versão de cada `claude` da máquina, usa o
-// mais novo (o da extensão do VS Code conta) e compara com a publicada no npm, para avisar e
-// atualizar com `claude update`.
+// mais novo (o da extensão do VS Code conta) e compara com a publicada no npm. Com versão nova, o
+// app atualiza sozinho com `claude update`, em segundo plano (ver autoUpdate.ts); o botão das
+// Configurações continua para quem quiser na hora.
 
 const run = promisify(execFile)
 const EVERY_MS = 5 * 60 * 60_000
 const LATEST_URL = 'https://registry.npmjs.org/@anthropic-ai/claude-code/latest'
 // Baixar a versão nova leva de segundos a alguns minutos, conforme a internet.
 const UPDATE_TIMEOUT_MS = 10 * 60_000
+// Windows com um `claude` aberto: tenta de novo depois disto, até todos fecharem.
+const RETRY_MS = 10 * 60_000
+// Windows: com a trava posta, espera isto antes de olhar os processos. Um `claude` que estava
+// abrindo bem na hora já aparece na lista, e a atualização fica para depois.
+const SETTLE_MS = 2_000
 
 // "2.1.296 (Claude Code)" → "2.1.296".
 // Só em desenvolvimento: finge que o `claude` em uso tem esta versão, para ver o aviso e o botão
@@ -27,6 +35,7 @@ const FAKE_VERSION = app.isPackaged ? null : (process.env.ARGUS_FAKE_CLAUDE_VERS
 const parseVersion = (text: string): string | null => /(\d+\.\d+\.\d+)/.exec(text)?.[1] ?? null
 
 async function versionOf(path: string): Promise<string | null> {
+  await claudeReady()
   try {
     const { file, args } = claudeCommand(['--version'], path)
     const { stdout } = await run(file, args, { env: claudeEnv(path), timeout: 15_000, windowsHide: true })
@@ -81,6 +90,7 @@ export class ClaudeVersion {
     error: null
   }
   private timer: NodeJS.Timeout | null = null
+  private retry: NodeJS.Timeout | null = null
   private running: Promise<ClaudeVersionState> | null = null
 
   constructor(
@@ -91,13 +101,18 @@ export class ClaudeVersion {
   ) {}
 
   start(): void {
-    void this.check()
-    this.timer = setInterval(() => void this.check(), EVERY_MS)
+    const round = () =>
+      void this.check()
+        .then(() => Promise.all([this.autoUpdate(), updateWslClaudes()]))
+        .catch((err) => console.warn('atualização do Claude Code', err))
+    round()
+    this.timer = setInterval(round, EVERY_MS)
   }
 
   stop(): void {
     if (this.timer) clearInterval(this.timer)
-    this.timer = null
+    if (this.retry) clearTimeout(this.retry)
+    this.timer = this.retry = null
   }
 
   private set(patch: Partial<ClaudeVersionState>): void {
@@ -140,26 +155,60 @@ export class ClaudeVersion {
     return this.state
   }
 
-  // Atualiza o `claude` instalado mais novo com `claude update` (o das extensões é do editor, que
-  // atualiza sozinho). Sem nenhum instalado, roda o instalador oficial.
-  async update(): Promise<ClaudeVersionState> {
-    if (this.state.updating) return this.state
-    this.set({ updating: true, error: null })
-    const installed = [this.state.current, ...this.state.others]
+  // O `claude` instalado mais novo (o das extensões é do editor, que atualiza sozinho).
+  private installed(): ClaudeBinary | null {
+    return [this.state.current, ...this.state.others]
       .filter((b): b is ClaudeBinary => !!b && b.source === 'system')
       .reduce<ClaudeBinary | null>((best, b) => (!best || newer(b, best) ? b : best), null)
+  }
+
+  // Sozinho, sem nada na tela: com versão nova e a atualização não desligada pela pessoa. Só o
+  // instalado (nunca instala um que não existe). No Windows, só com nenhum `claude` aberto; senão
+  // tenta de novo daqui a pouco. Falhando, fica para a próxima conferência.
+  private async autoUpdate(): Promise<void> {
+    if (this.retry) clearTimeout(this.retry)
+    this.retry = null
+    const installed = this.installed()
+    if (!this.state.outdated || !installed || this.state.updating || nativeUpdatesOff()) return
+    // Windows: a trava vem antes de olhar os processos, para nenhum abrir entre olhar e trocar.
+    const release = IS_WIN ? holdClaude() : null
+    if (release) await new Promise((r) => setTimeout(r, SETTLE_MS))
+    if (await claudeInUse(installed.path)) {
+      release?.()
+      this.retry = setTimeout(() => void this.autoUpdate(), RETRY_MS)
+      return
+    }
+    await this.update(true, release)
+  }
+
+  // Atualiza o `claude` instalado mais novo com `claude update`. Sem nenhum instalado, roda o
+  // instalador oficial. quiet: a automática, cuja falha não aparece nas Configurações. No Windows,
+  // nenhum `claude` do Argus abre durante a troca (ver claudePath/hold.ts); held: a trava que a
+  // automática já pôs.
+  async update(quiet = false, held: (() => void) | null = null): Promise<ClaudeVersionState> {
+    const release = held ?? (IS_WIN ? holdClaude() : null)
+    if (this.state.updating) {
+      release?.()
+      return this.state
+    }
+    const installed = this.installed()
     let error: string | null = null
-    if (installed) {
-      try {
+    // A trava sai em qualquer caso: presa, nenhuma conversa abriria mais.
+    try {
+      this.set({ updating: true, error: null })
+      if (installed) {
         const { file, args } = claudeCommand(['update'], installed.path)
         await run(file, args, { env: claudeEnv(installed.path), timeout: UPDATE_TIMEOUT_MS, windowsHide: true, maxBuffer: 16 * 1024 * 1024 })
-      } catch (err) {
-        error = failureTail(err)
+      } else {
+        error = await runClaudeInstaller()
       }
-    } else {
-      error = await runClaudeInstaller()
+    } catch (err) {
+      error = failureTail(err)
+    } finally {
+      release?.()
     }
-    this.set({ updating: false, error })
+    if (error && quiet) console.warn('claude update', error)
+    this.set({ updating: false, error: quiet ? null : error })
     return this.check()
   }
 }

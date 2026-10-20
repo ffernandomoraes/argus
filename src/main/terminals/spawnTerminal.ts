@@ -6,7 +6,7 @@ import { spawn, type IPty } from 'node-pty'
 import type { TerminalOpenRequest } from '../../shared/terminal'
 import { applyAccount } from '../accounts'
 import { CLI_BIN } from '../cli'
-import { claudeCommand, claudePath } from '../claudePath'
+import { claudeCommand, claudePath, claudeReady } from '../claudePath'
 import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
 import { childEnv, defaultShell, prependPath } from '../platform'
@@ -58,7 +58,10 @@ export async function spawnTerminal(open: TerminalOpenRequest, cwd: string): Pro
       )
     }
   if (agent) return agentTerminal(req, cwd, agent)
-  return distro ? wslTerminal(req, cwd, distro) : nativeTerminal(req, cwd)
+  if (distro) return wslTerminal(req, cwd, distro)
+  // Windows trocando o claude.exe: o terminal do Claude abre quando a troca terminar.
+  if (!req.shell) await claudeReady()
+  return nativeTerminal(req, cwd)
 }
 
 // Outro agente (Codex, Gemini, Cursor): a tela interativa do CLI dele, com a conta do grupo. O shell

@@ -10,7 +10,7 @@ import { parseWslPath } from './path'
 // Windows instalado, mas com o do WSL, tudo roda no WSL (as pastas do Windows pelo /mnt/c).
 // No Mac nada daqui roda: toda função devolve nulo.
 
-export { claudeDistro, distroInfo, ensureDistro, homeUnc, knownDistros, listDistros, loadDistro, warmUp } from './distros'
+export { claudeDistro, distroInfo, ensureDistro, homeUnc, knownDistros, listDistros, loadDistro, runningDistros, warmUp } from './distros'
 export type { DistroInfo } from './distros'
 export { trashPath } from './trash'
 export { fromLinux, isWslPath, parseWslPath, sameDistro, toLinux, toUnc } from './path'

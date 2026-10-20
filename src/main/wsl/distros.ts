@@ -91,6 +91,28 @@ export function listDistros(): Promise<string[]> {
   return listing
 }
 
+// Só as distros ligadas agora (`wsl -l --running -q`): perguntar não liga nenhuma. Nenhuma ligada,
+// o wsl.exe sai com erro e a lista fica vazia.
+export function runningDistros(): Promise<string[]> {
+  if (!IS_WIN) return Promise.resolve([])
+  return new Promise((resolve) => {
+    execFile(
+      WSL_EXE,
+      ['-l', '--running', '-q'],
+      { encoding: 'buffer', timeout: 15_000, windowsHide: true, env: { ...process.env, WSL_UTF8: '1' } },
+      (err, stdout) =>
+        resolve(
+          err
+            ? []
+            : decode(stdout)
+                .split(/\r?\n/)
+                .map((l) => l.trim())
+                .filter((l) => l && !/^docker-desktop/i.test(l))
+        )
+    )
+  })
+}
+
 // As distros da última vez que o app perguntou, sem esperar.
 export function knownDistros(): string[] {
   if (!IS_WIN) return []

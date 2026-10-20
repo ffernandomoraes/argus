@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Loader2, Smartphone, X } from 'lucide-react'
 import { ConfirmDialog } from '../canvas/ConfirmDialog'
 import type { RemoteControl } from '../../../shared/chat'
@@ -38,7 +39,9 @@ export function RemoteControlTag({ remote, onTurnOff }: { remote: RemoteControl;
       >
         <X size={12} />
       </button>
-      {
+      {/* No body: dentro da etiqueta, o modal herdava o nowrap (o texto passava da caixa) e a cor
+          apagada dela, e ficava preso ao painel da conversa em vez de centrar na janela. */}
+      {createPortal(
         <Presence kind="modal">
           {confirming && (
             <ConfirmDialog
@@ -56,8 +59,9 @@ export function RemoteControlTag({ remote, onTurnOff }: { remote: RemoteControl;
               onClose={() => setConfirming(false)}
             />
           )}
-        </Presence>
-      }
+        </Presence>,
+        document.body
+      )}
     </span>
   )
 }

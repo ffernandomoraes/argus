@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { memo, useCallback, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { ChevronDown, Folder, Loader2, Plus, Search, X } from 'lucide-react'
 import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
 import { useNow } from '../lib/clock'
@@ -6,6 +6,7 @@ import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
 import { useCanvasActions } from './CanvasContext'
 import { ConversationItem } from './ConversationItem'
+import { favoriteKey, useFavorites } from './favorites'
 import { groupByDay } from './project/groupByDay'
 import { useSessions } from './sessionsStore'
 import { useConversationSearch } from './useConversationSearch'
@@ -39,11 +40,18 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
   onClose: () => void
 }) {
   // Já vem da mais recente para a mais antiga (sessionsStore).
-  const conversations = useSessions(project.path)
-  const all = conversations
-  // Busca pelo título e pelo conteúdo: com algo digitado, a lista vira os resultados.
+  const all = useSessions(project.path)
+  // As favoritas ficam numa seção no topo, sempre à vista; as outras seguem por dia, em levas.
+  const favoriteIds = useFavorites()
+  const [favorites, conversations] = useMemo(() => {
+    if (!favoriteIds.size) return [[], all]
+    const isFav = (c: ConversationSummary) => favoriteIds.has(favoriteKey(c) ?? '')
+    return [all.filter(isFav), all.filter((c) => !isFav(c))]
+  }, [all, favoriteIds])
+  // Busca pelo título e pelo conteúdo: com algo digitado, a lista vira os resultados (favoritas primeiro).
   const [query, setQuery] = useState('')
-  const search = useConversationSearch(project.path, conversations, query)
+  const ordered = useMemo(() => [...favorites, ...conversations], [favorites, conversations])
+  const search = useConversationSearch(project.path, ordered, query)
   // Trocou de pasta: volta à primeira leva.
   const [page, setPage] = useState({ path: project.path, count: PAGE })
   const count = page.path === project.path ? page.count : PAGE
@@ -144,7 +152,11 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
         </ul>
       ) : (
         <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-          {groupByDay(shown, now).map((g, i) => (
+          {[
+            ...(favorites.length ? [{ key: 'favorites', label: tr('Favoritas', 'Favorites'), items: favorites }] : []),
+            // Com as favoritas em cima, as de hoje também precisam de título, senão parecem favoritas.
+            ...groupByDay(shown, now).map((g) => (g.label || !favorites.length ? g : { ...g, label: tr('Hoje', 'Today') }))
+          ].map((g, i) => (
             <li key={g.key} className="flex flex-col gap-1">
               {g.label && (
                 <div className={`px-2 pb-0.5 text-[11px] font-medium text-faint ${i > 0 ? 'pt-3' : ''}`}>{g.label}</div>

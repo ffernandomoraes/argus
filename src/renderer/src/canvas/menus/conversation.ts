@@ -1,6 +1,7 @@
-import { MessageCircle, PenTool, Trash2 } from 'lucide-react'
+import { MessageCircle, PenTool, Star, StarOff, Trash2 } from 'lucide-react'
 import { isWslFolder, SYSTEM_NAME } from '../../platform'
 import type { MenuItem } from '../ContextMenu'
+import { isFavorite, setFavorite } from '../favorites'
 import type { ConversationSummary, ProjectNode } from '../types'
 import { isBusy, TRASH_EN } from './shared'
 import type { Deps } from './types'
@@ -46,6 +47,7 @@ export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conv
       icon: MessageCircle,
       onSelect: () => deps.openConversation(node.id, conversation.id)
     },
+    favoriteItem(conversation),
     { type: 'separator' },
     {
       type: 'action',
@@ -83,9 +85,22 @@ export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conv
                 `The chat file goes to the ${SYSTEM_NAME} ${TRASH_EN}. It disappears from Argus and from \`claude --resume\`; to recover it, restore it from the ${TRASH_EN}. The project is not affected.`
               ),
           confirmLabel: tr('Mover para a Lixeira', `Move to ${TRASH_EN}`),
-          onConfirm: () => deps.trashConversation(node.data.path, conversation.id)
+          onConfirm: () => {
+            setFavorite(conversation, false)
+            deps.trashConversation(node.data.path, conversation.id)
+          }
         })
       }
     }
   ]
+}
+
+function favoriteItem(conversation: ConversationSummary): MenuItem {
+  const on = isFavorite(conversation)
+  return {
+    type: 'action',
+    label: on ? tr('Remover dos favoritos', 'Remove from favorites') : tr('Favoritar', 'Add to favorites'),
+    icon: on ? StarOff : Star,
+    onSelect: () => setFavorite(conversation, !on)
+  }
 }

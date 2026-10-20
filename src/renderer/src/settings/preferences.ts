@@ -41,6 +41,8 @@ export type Preferences = {
   audioTranscription: boolean
   // Modelo e esforço do orquestrador e as regras de delegação dele (Configurações > Orquestrador).
   orchestrator: OrchestratorConfig
+  // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
+  favoriteChats: string[]
 }
 
 const KEY = 'preferences'
@@ -60,7 +62,8 @@ const DEFAULTS: Preferences = {
   designMode: false,
   worktrees: false,
   audioTranscription: false,
-  orchestrator: defaultOrchestrator()
+  orchestrator: defaultOrchestrator(),
+  favoriteChats: []
 }
 
 function read(): Preferences {

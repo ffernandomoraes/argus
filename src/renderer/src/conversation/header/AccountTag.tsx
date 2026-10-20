@@ -20,8 +20,9 @@ type Option = { id: string; name: string; signedOut: boolean }
 type Section = { label: string; icon: ReactNode; options: Option[] }
 
 // Contas que dá para escolher, por agente: as do Claude e, com o experimento dos outros agentes
-// ligado, as de cada agente com conta conectada (como o menu "Agente" do grupo).
-function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, multiAgents: boolean): Section[] {
+// ligado, as de cada agente com conta conectada (como o menu "Agente" do grupo). Conta sem login
+// não entra, a não ser que seja a desta conversa (para ela continuar marcada).
+function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, multiAgents: boolean, currentId: string): Section[] {
   const sections: Section[] = [
     {
       label: 'Claude',
@@ -39,7 +40,9 @@ function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, m
       options: accounts.map((a) => ({ id: agentRef(provider, a.id), name: a.name, signedOut: a.status?.signedIn === false }))
     })
   }
-  return sections.filter((s) => s.options.length)
+  return sections
+    .map((s) => ({ ...s, options: s.options.filter((o) => !o.signedOut || o.id === currentId) }))
+    .filter((s) => s.options.length)
 }
 
 type Current = { id: string; icon: ReactNode; name: string; label: string }
@@ -93,9 +96,9 @@ export function AccountTag({
   useEscape(() => setOpen(false), open)
 
   if (!current) return null
-  const sections = sectionsFor(auth, providers, multiAgents && !claudeOnly)
-  const total = sections.reduce((n, s) => n + s.options.length, 0)
   const currentId = current.id
+  const sections = sectionsFor(auth, providers, multiAgents && !claudeOnly, currentId)
+  const total = sections.reduce((n, s) => n + s.options.length, 0)
   const content = (
     <>
       <span className="flex shrink-0">{current.icon}</span>

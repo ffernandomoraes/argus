@@ -59,7 +59,7 @@ function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): M
       type: 'submenu',
       label: 'Claude',
       icon: ClaudeIcon,
-      items: (auth?.accounts ?? []).map((a) => ({
+      items: (auth?.accounts ?? []).filter((a) => a.status?.loggedIn !== false || a.id === claudeCurrent).map((a) => ({
         type: 'action',
         label: a.status?.loggedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
         checked: a.id === claudeCurrent,
@@ -71,11 +71,14 @@ function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): M
     const { accounts, defaultId } = state?.providers[provider] ?? { accounts: [], defaultId: null }
     if (!accounts.length) continue
     const chosen = ref?.provider === provider ? (accounts.some((a) => a.id === ref.account) ? ref.account : defaultId) : null
+    // Conta sem login não entra, a não ser a desta conversa; agente sem nenhuma, sem submenu.
+    const listed = accounts.filter((a) => a.status?.signedIn !== false || a.id === chosen)
+    if (!listed.length) continue
     agents.push({
       type: 'submenu',
       label: PROVIDER_NAMES[provider],
       icon: AGENT_MENU_ICONS[provider],
-      items: accounts.map((a) => ({
+      items: listed.map((a) => ({
         type: 'action',
         label: a.status?.signedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
         checked: a.id === chosen,
@@ -98,7 +101,7 @@ function accountSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode):
       type: 'submenu',
       label: tr('Conta do Claude', 'Claude account'),
       icon: ClaudeIcon,
-      items: auth.accounts.map((a) => ({
+      items: auth.accounts.filter((a) => a.status?.loggedIn !== false || a.id === current).map((a) => ({
         type: 'action',
         label: a.status?.loggedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
         checked: a.id === current,

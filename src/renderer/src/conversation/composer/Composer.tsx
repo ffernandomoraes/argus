@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   type Ref
@@ -122,10 +123,11 @@ export const Composer = memo(function Composer(props: Props) {
     setSendError(null)
   }
 
-  const send = () => {
+  // command: comando escolhido no menu, enviado no lugar do que está no campo.
+  const send = (command?: string) => {
     if (dictation.state !== 'idle') dictation.stop()
-    if (!canSend) return
-    const typed = draft.trim()
+    if (!command && !canSend) return
+    const typed = command ?? draft.trim()
     const text = extraSend && !typed.startsWith('/') ? extraSend.compose(typed) : typed
     if (text === '/mcp') {
       setDraft('')
@@ -148,15 +150,15 @@ export const Composer = memo(function Composer(props: Props) {
     onSubmit({ text, typed, files }).catch((err: unknown) => restore(typed, files, sendFailure(err)))
   }
 
-  // Escolher um agente completa o nome dele no campo; escolher um comando escreve ele (Enter envia).
+  // Escolher um agente completa o nome dele no campo; escolher um comando já executa ele.
   const selectAgent = (a: AgentDef) => {
     setDraft(`${draft.slice(0, menus.mention?.start ?? draft.length)}@${a.name} `)
     menus.close()
     focusField(field.current)
   }
   const selectCommand = (c: SlashCommand) => {
-    setDraft(`/${c.name} `)
     menus.close()
+    send(`/${c.name}`)
     focusField(field.current)
   }
 
@@ -220,10 +222,37 @@ export const Composer = memo(function Composer(props: Props) {
     attachments.add(files)
   }
 
+  // Arquivo arrastado para a caixa (do Finder, do Explorer, de outro app) vira anexo, como no ⌘V.
+  // Sem isto o Chromium tentava abrir o arquivo na janela (bloqueado em lockNavigation) e nada
+  // acontecia. Texto arrastado segue o padrão do campo.
+  const [dragging, setDragging] = useState(false)
+  const hasFiles = (e: DragEvent) => e.dataTransfer.types.includes('Files')
+  const onDragOver = (e: DragEvent<HTMLDivElement>) => {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    setDragging(true)
+  }
+  const onDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false)
+  }
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    setDragging(false)
+    if (!hasFiles(e) || !e.dataTransfer.files.length) return
+    e.preventDefault()
+    attachments.add(e.dataTransfer.files)
+    focusField(field.current)
+  }
+
   return (
     <>
       {props.above}
-      <div className="relative rounded-lg border border-line bg-surface focus-within:border-line-strong">
+      <div
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`relative rounded-lg border bg-surface focus-within:border-line-strong ${dragging ? 'border-accent' : 'border-line'}`}
+      >
         <Presence kind="menu">
           {menus.commands && (
             <SlashMenu items={menus.commands} active={menus.active} onHover={menus.setActive} onSelect={selectCommand} />
@@ -256,7 +285,7 @@ export const Composer = memo(function Composer(props: Props) {
           onToggleDictation={toggleDictation}
           stopping={running && !canSend}
           onStop={onInterrupt}
-          onSend={send}
+          onSend={() => send()}
           sendDisabled={!canSend && dictation.state === 'idle'}
         />
       </div>

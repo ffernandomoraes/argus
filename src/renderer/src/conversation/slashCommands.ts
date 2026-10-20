@@ -3,11 +3,7 @@ import { tr } from '../i18n'
 export const SLASH_COMMANDS = [
   { name: 'clear', description: tr('Começa do zero. A conversa anterior fica salva e pode ser retomada.', 'Starts fresh. The previous chat is saved and can be resumed.') },
   { name: 'compact', description: tr('Resume a conversa até aqui para liberar contexto.', 'Summarizes the chat so far to free up context.') },
-  { name: 'context', description: tr('Mostra quanto do contexto está em uso.', 'Shows how much of the context is in use.') },
-  { name: 'usage', description: tr('Mostra o custo da sessão e o uso do plano.', 'Shows the session cost and plan usage.') },
   { name: 'mcp', description: tr('Mostra os servidores MCP: conectados, com erro e os que precisam de autorização.', 'Shows MCP servers: connected, failed, and those that need authorization.') },
-  { name: 'init', description: tr('Cria o CLAUDE.md com a documentação do projeto.', 'Creates CLAUDE.md with the project documentation.') },
-  { name: 'rename', description: tr('Renomeia a conversa.', 'Renames the chat.') },
   { name: 'remote-control', description: tr('Continua esta conversa pelo claude.ai ou pelo celular. De novo, desliga.', 'Continues this chat on claude.ai or your phone. Run again to turn off.') }
 ]
 

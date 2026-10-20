@@ -80,8 +80,8 @@ export function ModelEffortPicker({
 
       <Presence kind="menu">
         {open && (
-          <div className={`absolute bottom-full left-0 z-10 mb-2.5 w-72 whitespace-normal ${POPOVER}`}>
-            <MenuArrow side="bottom" />
+          <div className={`absolute bottom-full right-0 z-10 mb-2.5 w-72 whitespace-normal ${POPOVER}`}>
+            <MenuArrow side="bottom" align="end" />
             <ModelList models={models} value={settings.model} onChange={(model) => onChange({ model })} />
             {allowed.length > 0 && (
               <>

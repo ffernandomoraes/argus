@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
-import { Code2, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff } from 'lucide-react'
+import { Code2, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
+import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { MOTION, reduced } from '../motion'
@@ -8,7 +9,7 @@ import { askColors } from './askColors'
 import { sameConversation } from './conversationIdentity'
 import { ConversationView } from './ConversationView'
 import type { LineRange } from './fileLinks'
-import { HeaderButton } from './header/HeaderButton'
+import { TAG } from './header/BranchTag'
 import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
 import { useFloatingRect } from './hooks/useFloatingRect'
 import { useFocusMode } from './hooks/useFocusMode'
@@ -105,6 +106,7 @@ export function ConversationDrawer(props: Props) {
     [zoom, tint, focus]
   )
   const actions = useDrawerActions(props, focus, setFocus)
+  const codeButton = useCodeButton(props, focus)
 
   return (
     <aside
@@ -146,6 +148,7 @@ export function ConversationDrawer(props: Props) {
           headerStyle={headerStyle}
           onHeaderPointerDown={focus ? undefined : floating.onMoveStart}
           actions={actions}
+          composerAboveEnd={codeButton}
           // No foco, o fechar só sai do foco: a conversa volta para o drawer de antes.
           onClose={focus ? leaveFocus : onClose}
         />
@@ -154,13 +157,16 @@ export function ConversationDrawer(props: Props) {
   )
 }
 
-// Botões do cabeçalho do drawer: o menu de mais opções e o código. Somem no foco. Memorizados,
+// Botões do cabeçalho do drawer: o menu de mais opções. Some no foco. Memorizados,
 // para o cabeçalho e a conversa não redesenharem enquanto o painel é arrastado.
 function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>) {
-  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, loose = false, codeOpen, onToggleCode } = props
+  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout } = props
   const draft = !!conversation.draft
-  // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
-  const workspace = !!props.project.folders
+  // Favoritar precisa do id da sessão: a conversa ainda não enviada não tem.
+  const key = favoriteKey(conversation)
+  const favorite = useFavorites().has(key ?? '')
+  // Estável: a conversa muda a cada passo do Claude e redesenharia o cabeçalho à toa.
+  const toggleFavorite = useStableCallback(() => setFavorite(conversation, !favorite))
   return useMemo(() => {
     if (focus) return null
     const items: MoreMenuItem[] = [
@@ -170,19 +176,37 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
       ...(draft
         ? []
         : [
+            ...(key
+              ? [
+                  favorite
+                    ? { label: tr('Remover dos favoritos', 'Remove from favorites'), icon: StarOff, onClick: toggleFavorite }
+                    : { label: tr('Favoritar', 'Add to favorites'), icon: Star, onClick: toggleFavorite }
+                ]
+              : []),
             { label: tr('Colocar no canvas', 'Place on canvas'), icon: PictureInPicture2, onClick: onPinToCanvas },
             { label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }
           ])
     ]
+    return <MoreMenu items={items} />
+  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, onPinToCanvas, onPopout])
+}
+
+// Botão do código, à direita da linha em cima da caixa de escrever, com o nome à vista. Some no foco.
+function useCodeButton(props: Props, focus: boolean) {
+  const { loose = false, codeOpen = false, onToggleCode } = props
+  // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
+  const workspace = !!props.project.folders
+  return useMemo(() => {
+    if (focus || loose || workspace) return null
     return (
-      <>
-        <MoreMenu items={items} />
-        {!loose && !workspace && (
-          <HeaderButton label={codeOpen ? tr('Fechar código', 'Close code') : tr('Abrir código', 'Open code')} onClick={onToggleCode} active={codeOpen}>
-            <Code2 size={14} />
-          </HeaderButton>
-        )}
-      </>
+      <button
+        aria-pressed={codeOpen}
+        onClick={onToggleCode}
+        className={`${TAG} shrink-0 gap-1.5 ${codeOpen ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`}
+      >
+        <Code2 size={13} className="shrink-0" />
+        {codeOpen ? tr('Fechar código', 'Close code') : tr('Código', 'Code')}
+      </button>
     )
-  }, [focus, setFocus, onTogglePin, pinned, draft, onPinToCanvas, onPopout, loose, workspace, codeOpen, onToggleCode])
+  }, [focus, loose, workspace, codeOpen, onToggleCode])
 }

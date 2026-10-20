@@ -3,10 +3,9 @@ import { createPortal } from 'react-dom'
 import { Folder, FolderOpen, Folders } from 'lucide-react'
 import { ContextMenu, type MenuState } from '../../canvas/ContextMenu'
 import { baseName, FILE_MANAGER } from '../../platform'
-import { TAG } from './BranchTag'
 import { tr } from '../../i18n'
 
-// Selo da pasta da conversa. Botão direito: abrir a pasta no Finder (no Windows, no Explorador de
+// Pasta da conversa, no começo do título (pasta > conversa), em cinza e sem selo. Botão direito: abrir a pasta no Finder (no Windows, no Explorador de
 // Arquivos). Workspace (folders): ícone de várias pastas, e o menu abre cada uma.
 export function FolderTag({ cwd, folders, children }: { cwd: string; folders?: string[]; children: ReactNode }) {
   const [menu, setMenu] = useState<MenuState | null>(null)
@@ -31,14 +30,13 @@ export function FolderTag({ cwd, folders, children }: { cwd: string; folders?: s
 
   return (
     <>
-      <span onContextMenu={showMenu} title={folders?.join('\n')} className={`${TAG} no-drag nodrag min-w-0 gap-1`}>
-        {folders ? <Folders size={12} className="shrink-0" /> : <Folder size={12} className="shrink-0" />}
+      <span
+        onContextMenu={showMenu}
+        title={folders ? folders.join('\n') : cwd}
+        className="no-drag nodrag flex min-w-0 max-w-[45%] shrink items-center gap-1.5 text-faint"
+      >
+        {folders ? <Folders size={13} className="shrink-0" /> : <Folder size={13} className="shrink-0" />}
         <span className="truncate">{children}</span>
-        {folders && (
-          <span className="shrink-0 text-faint">
-            - {folders.length === 1 ? tr('1 pasta', '1 folder') : tr(`${folders.length} pastas`, `${folders.length} folders`)}
-          </span>
-        )}
       </span>
       {/* No body: dentro do canvas o `fixed` seguiria o zoom e o deslocamento dele. */}
       {menu && createPortal(<ContextMenu menu={menu} onClose={() => setMenu(null)} />, document.body)}

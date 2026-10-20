@@ -6,7 +6,7 @@ import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
 import { Composer, type ComposerHandle } from './composer/Composer'
 import { ImageViewer } from './ImageViewer'
-import { RemoteControlBar } from './RemoteControlBar'
+import { RemoteControlTag } from './RemoteControlTag'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
 import { olderRow } from './timeline/olderRow'
@@ -59,6 +59,8 @@ export type ChatViewProps = {
   autoFocus?: boolean
   // Em cima da caixa de escrever (o "Selecionar" do modo design).
   composerAbove?: ReactNode
+  // O remote control ligado já vai no composerAbove (na linha da branch); sem isto, ganha linha própria.
+  remoteAbove?: boolean
   // Dentro da caixa, antes do texto (a parte escolhida na página, com o X para soltar).
   composerChips?: ReactNode
   // Algo a enviar além do texto (os comentários na página do modo design): libera o Enviar mesmo
@@ -95,6 +97,7 @@ export const ChatView = memo(function ChatView({
   autoFocus = true,
   compact = false,
   composerAbove,
+  remoteAbove = false,
   composerChips,
   extraSend,
   cleanText
@@ -223,7 +226,11 @@ export const ChatView = memo(function ChatView({
       </div>
 
       <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
-        {live?.remote && <RemoteControlBar remote={live.remote} onTurnOff={turnOffRemote} />}
+        {live?.remote && !remoteAbove && (
+          <div className="mb-1 flex">
+            <RemoteControlTag remote={live.remote} onTurnOff={turnOffRemote} />
+          </div>
+        )}
         <Composer
           ref={composer}
           draftKey={draftKey}

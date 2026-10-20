@@ -5,9 +5,10 @@ import type { DictationState } from '../useDictation'
 import { VoiceWave } from '../VoiceWave'
 import { tr } from '../../i18n'
 
-// Linha de baixo da caixa de escrever: anexar imagem ou arquivo, ditado e enviar (ou parar, com o
+// Linha de baixo da caixa de escrever: comandos, anexar imagem ou arquivo, ditado e enviar (ou parar, com o
 // Claude trabalhando e nada para enviar).
 export function ComposerActions({
+  onOpenCommands,
   onFiles,
   dictation,
   onToggleDictation,
@@ -16,6 +17,7 @@ export function ComposerActions({
   onSend,
   sendDisabled
 }: {
+  onOpenCommands: () => void
   onFiles: (files: FileList) => void
   dictation: DictationState
   onToggleDictation: () => void
@@ -37,6 +39,9 @@ export function ComposerActions({
     <div className="flex items-center gap-1 px-2 pb-2">
       <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={onPick} />
       <input ref={fileInput} type="file" multiple hidden onChange={onPick} />
+      <IconButton label={tr('Comandos', 'Commands')} title={tr('Comandos ( / )', 'Commands ( / )')} onClick={onOpenCommands} className="font-mono text-sm">
+        /
+      </IconButton>
       <IconButton label={tr('Anexar imagem', 'Attach image')} onClick={() => imageInput.current?.click()}>
         <ImagePlus size={15} />
       </IconButton>

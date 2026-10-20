@@ -70,7 +70,7 @@ export function useCurrentAccount(account?: string): Current | null {
   return { id, icon: <ClaudeIcon size={12} />, name: chosen.name, label: chosen.name }
 }
 
-// Selo da conta que roda a conversa (logo do agente e nome), antes do da pasta. Com `onChange`
+// Conta que roda a conversa (logo do agente e nome), no cabeçalho, antes dos botões. Com `onChange`
 // vira botão que abre o seletor; sem ele só mostra.
 // claudeOnly: só as contas do Claude (conversa já começada e o terminal do `claude` trocam de
 // conta, não de agente).
@@ -108,7 +108,7 @@ export function AccountTag({
     return (
       <span
         title={`${title}. ${tr('Dá para trocar com a conversa parada.', 'It can be changed while the chat is idle.')}`}
-        className={`${TAG} min-w-0 max-w-[40%] shrink-0 gap-1`}
+        className={`${TAG} min-w-0 max-w-40 shrink-0 gap-1`}
       >
         {content}
       </span>
@@ -117,7 +117,7 @@ export function AccountTag({
   return (
     // Clicar no logo não arrasta a janela (no-drag), o bloco no canvas (nodrag) nem o painel
     // (o pointerdown não sobe para o cabeçalho).
-    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex min-w-0 max-w-[40%] shrink-0">
+    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex min-w-0 max-w-40 shrink-0">
       <button
         aria-expanded={open}
         aria-label={title}
@@ -132,8 +132,8 @@ export function AccountTag({
 
       <Presence kind="menu">
         {open && (
-          <div className={`absolute left-0 top-full z-50 mt-2.5 max-h-96 w-64 cursor-default overflow-y-auto ${POPOVER}`}>
-            <MenuArrow side="top" />
+          <div className={`absolute right-0 top-full z-50 mt-2.5 max-h-96 w-64 cursor-default overflow-y-auto ${POPOVER}`}>
+            <MenuArrow side="top" align="end" />
             {sections.map((s) => (
               <div key={s.label}>
                 <div className="flex items-center gap-1.5 px-2 pb-1 pt-1.5 text-[12px] text-faint">

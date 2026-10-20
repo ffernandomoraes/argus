@@ -12,7 +12,10 @@ import { moveConversationSettings, useConversationSettings } from './conversatio
 import { fileInFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
 import { isAbsolutePath } from '../platform'
+import { useIsFavorite } from '../canvas/favorites'
 import { ConversationHeader } from './header/ConversationHeader'
+import { ConversationBranch } from './header/ConversationBranch'
+import { RemoteControlTag } from './RemoteControlTag'
 import { useAgentList } from './hooks/useAgentList'
 import { useConversationActions } from './hooks/useConversationActions'
 import { useLiveChat } from './hooks/useLiveChat'
@@ -48,6 +51,8 @@ type Props = {
   zoom?: number
   // Botões extras do cabeçalho, antes do fechar.
   actions?: ReactNode
+  // À direita da linha em cima da caixa de escrever (o botão do código, no drawer).
+  composerAboveEnd?: ReactNode
   headerClassName?: string
   headerStyle?: CSSProperties
   onHeaderPointerDown?: (e: PointerEvent) => void
@@ -75,6 +80,7 @@ export const ConversationView = memo(function ConversationView({
   onSessionStarted,
   zoom = 1,
   actions,
+  composerAboveEnd,
   headerClassName = '',
   headerStyle,
   onHeaderPointerDown,
@@ -97,6 +103,7 @@ export const ConversationView = memo(function ConversationView({
   const settingsId = conversation.sessionId ?? conversation.id
   const chosen = useConversationAccountChoice(settingsId)
   const account = conversationAccount(conversation, chosen ?? groupAccount, live?.agent)
+  const favorite = useIsFavorite(conversation)
   const agents = useAgentList(cwd, viewKey, agentProviderOf(account))
   // Conversa vazia (nada enviado e nenhuma sessão aberta) troca para qualquer conta. Depois, só entre
   // as do Claude e com ela parada: a próxima mensagem reabre a sessão com a nova, na mesma conversa
@@ -107,6 +114,8 @@ export const ConversationView = memo(function ConversationView({
   const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
   const settings = useConversationSettings(settingsId)
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
+  const { remoteControl } = actionsFor
+  const turnOffRemote = useCallback(() => remoteControl(false), [remoteControl])
 
   // Conversa nova recebeu o id da sessão: as trocas feitas antes vão junto, e quem mostra fica sabendo.
   const sessionId = live?.sessionId
@@ -148,9 +157,9 @@ export const ConversationView = memo(function ConversationView({
         account={account}
         onAccountChange={canChangeAccount ? chooseAccount : undefined}
         claudeOnly={!empty}
+        favorite={favorite}
         minimal={minimalHeader}
         actions={actions}
-        onOpenDiff={onOpenDiff}
         onClose={onClose}
         className={headerClassName}
         style={headerStyle}
@@ -180,6 +189,16 @@ export const ConversationView = memo(function ConversationView({
             contextPercent={conversation.contextPercent}
             agents={agents}
             composerBorder={!minimalHeader}
+            composerAbove={
+              <ConversationBranch
+                cwd={cwd}
+                folders={folders}
+                onOpenDiff={onOpenDiff}
+                start={live?.remote && <RemoteControlTag remote={live.remote} onTurnOff={turnOffRemote} />}
+                end={composerAboveEnd}
+              />
+            }
+            remoteAbove
             autoFocus={autoFocus}
           />
         </div>

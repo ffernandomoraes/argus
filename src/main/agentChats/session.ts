@@ -117,7 +117,7 @@ export class AgentChatSession {
 
   // Remote control é do Claude Code.
   async remoteControl(): Promise<void> {
-    this.update({ remote: { status: 'failed', detail: tr('Só o Claude tem remote control.', 'Only Claude has remote control.') } })
+    this.update({ remote: { status: 'failed', detail: tr('Só o Claude tem controle remoto.', 'Only Claude has remote control.') } })
   }
 
   send(req: ChatSendRequest): void {

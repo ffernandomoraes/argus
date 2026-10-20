@@ -96,8 +96,9 @@ function VersionsSubmenu({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    // O pl-1 mantém o mouse "dentro" ao atravessar o vão
-    <div ref={panel} className="absolute left-full z-10 pl-1" style={{ top: -up }}>
+    // Abre para a esquerda: o menu do modelo fica no canto direito do rodapé. O pr-1 mantém o mouse
+    // "dentro" ao atravessar o vão.
+    <div ref={panel} className="absolute right-full z-10 pr-1" style={{ top: -up }}>
       {/* Agentes com muitas versões de uma família (o Cursor): rola dentro do submenu. */}
       <div className={`max-h-80 w-52 overflow-y-auto ${POPOVER}`}>{children}</div>
     </div>

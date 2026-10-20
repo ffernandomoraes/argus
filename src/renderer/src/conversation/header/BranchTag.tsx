@@ -9,12 +9,11 @@ import { useOutsideClick } from '../../useOutsideClick'
 import { KIND_COLOR, KIND_LABEL } from './changeKinds'
 import { tr } from '../../i18n'
 
-// Pasta e branch no cabeçalho: o mesmo selo de cima do card da pasta no canvas.
-export const TAG = 'flex h-6 items-center rounded-md border border-line bg-surface px-2 text-muted shadow-sm'
+// Conta e branch em cima da caixa de escrever: texto cinza sem selo, discreto.
+export const TAG = 'flex h-6 items-center rounded-md px-1.5 text-xs text-faint'
 
-// Selo da branch. Com arquivos não comitados, traz o número deles (o mesmo selo de cima do
-// card da pasta no canvas) e vira botão: clicar abre a lista; clicar num arquivo abre o diff
-// dele no código da pasta.
+// Branch. Com arquivos não comitados, traz o número deles e vira botão: clicar abre a lista; clicar
+// num arquivo abre o diff dele no código da pasta.
 export function BranchTag({
   cwd,
   branch,
@@ -33,7 +32,7 @@ export function BranchTag({
 
   if (!files?.length)
     return (
-      <span className={`${TAG} max-w-[40%] shrink-0`}>
+      <span className={`${TAG} max-w-40 shrink-0`}>
         <BranchLabel branch={branch} />
       </span>
     )
@@ -47,7 +46,7 @@ export function BranchTag({
   return (
     // Clicar no selo não arrasta a janela (no-drag), o bloco no canvas (nodrag) nem o painel
     // (o pointerdown não sobe para o cabeçalho).
-    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex max-w-[40%] shrink-0">
+    <div ref={ref} onPointerDown={(e) => e.stopPropagation()} className="no-drag nodrag relative flex max-w-40 shrink-0">
       <button
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
@@ -61,9 +60,9 @@ export function BranchTag({
           // pointerdown não sobe: o cabeçalho arrasta o painel.
           <div
             onPointerDown={(e) => e.stopPropagation()}
-            className="absolute left-0 top-full z-50 mt-2.5 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
+            className="absolute bottom-full left-0 z-50 mb-2.5 flex max-h-96 w-80 cursor-default flex-col rounded-lg border border-line bg-surface shadow-2xl shadow-black/30"
           >
-            <MenuArrow side="top" />
+            <MenuArrow side="bottom" />
             <div className="shrink-0 border-b border-line px-3 py-2 text-[12px] text-faint">{label}</div>
             <ul className="min-h-0 overflow-y-auto p-1">
               {files.map((f) => {

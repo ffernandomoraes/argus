@@ -250,6 +250,7 @@ export const Composer = memo(function Composer(props: Props) {
           className="mb-1.5 block max-h-[calc(3lh+1rem)] min-h-[calc(1lh+1rem)] w-full resize-none bg-transparent px-3 py-2 text-sm outline-none [field-sizing:content] placeholder:overflow-hidden placeholder:whitespace-nowrap placeholder:text-faint"
         />
         <ComposerActions
+          onOpenCommands={openCommands}
           onFiles={attachments.add}
           dictation={dictation.state}
           onToggleDictation={toggleDictation}
@@ -261,7 +262,6 @@ export const Composer = memo(function Composer(props: Props) {
       </div>
       <ComposerNotices sendError={sendError} error={dictation.error} />
       <ComposerFooter
-        onOpenCommands={openCommands}
         settings={props.settings}
         onSettingChange={props.onSettingChange}
         contextPercent={props.contextPercent}

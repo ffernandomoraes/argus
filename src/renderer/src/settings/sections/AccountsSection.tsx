@@ -42,7 +42,7 @@ export function AccountsSection() {
     if ((prevStatus === 'starting' || prevStatus === 'waiting') && status === 'idle') setTarget(null)
   }
 
-  if (!auth || !login) return <p className="text-xs text-faint">{tr('Conferindo as contas…', 'Checking accounts…')}</p>
+  if (!auth || !login) return <p className="text-[15px] text-faint">{tr('Conferindo as contas…', 'Checking accounts…')}</p>
 
   // Login em andamento, mesmo que tenha começado na tela de boas-vindas.
   const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId } : target
@@ -50,7 +50,7 @@ export function AccountsSection() {
     const account = active.accountId ? auth.accounts.find((a) => a.id === active.accountId) : undefined
     return (
       <div className="mx-auto max-w-sm">
-        <p className="mb-4 text-center text-xs leading-relaxed text-faint">
+        <p className="mb-4 text-center text-[15px] leading-relaxed text-faint">
           {!account
             ? tr(
                 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.',
@@ -78,7 +78,7 @@ export function AccountsSection() {
   const multiple = auth.accounts.length > 1
   return (
     <>
-      <p className="mb-4 text-xs leading-relaxed text-faint">
+      <p className="mb-4 text-[15px] leading-relaxed text-faint">
         {multiple
           ? tr(
               'Cada grupo do canvas usa uma conta: botão direito no grupo > Conta do Claude. Fora de grupo vale a padrão. Histórico, CLAUDE.md, agentes, skills, plugins e configurações são os mesmos em todas; o login e os MCPs são de cada conta.',
@@ -102,7 +102,7 @@ export function AccountsSection() {
       </div>
       <button
         onClick={() => setTarget({})}
-        className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text"
+        className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-[15px] text-muted hover:bg-surface-2 hover:text-text"
       >
         <Plus size={13} />
         {tr('Adicionar conta', 'Add account')}

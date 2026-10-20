@@ -44,8 +44,8 @@ export function CoffeeSection() {
           <div className="size-44" />
         )}
       </div>
-      <p className="mt-3 text-xs font-medium text-text">Fernando Moraes Lima - Nubank</p>
-      <p className="mt-1 font-mono text-[11px] break-all text-faint select-text">{PIX_KEY}</p>
+      <p className="mt-3 text-[15px] font-medium text-text">Fernando Moraes Lima - Nubank</p>
+      <p className="mt-1 font-mono text-[15px] break-all text-faint select-text">{PIX_KEY}</p>
       <div className="mt-4 flex w-full max-w-64 flex-col gap-2">
         <CopyButton text={PIX_KEY} label={tr('Copiar chave', 'Copy key')} />
         <CopyButton text={PIX_PAYLOAD} label={tr('Pix copia e cola', 'Copy Pix code')} />

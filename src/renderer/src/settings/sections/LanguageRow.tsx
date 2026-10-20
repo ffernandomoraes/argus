@@ -19,7 +19,7 @@ export function LanguageRow() {
   }, [])
 
   return (
-    <Row label={tr('Idioma', 'Language')} description={tr('Sistema usa o idioma do computador.', 'System follows the computer language.')}>
+    <Row below label={tr('Idioma', 'Language')} description={tr('Sistema usa o idioma do computador.', 'System follows the computer language.')}>
       {pref !== null && (
         <Segmented
           value={pref}

@@ -14,7 +14,7 @@ export function GeneralSection() {
   return (
     <Group>
       <LanguageRow />
-      <Row label={tr('Abrir conversas em', 'Open chats in')} description={tr('O que acontece ao clicar numa conversa no canvas.', 'What happens when you click a chat on the canvas.')}>
+      <Row below label={tr('Abrir conversas em', 'Open chats in')} description={tr('O que acontece ao clicar numa conversa no canvas.', 'What happens when you click a chat on the canvas.')}>
         <Segmented
           value={openIn}
           onChange={(next) => setPreferences({ openIn: next })}

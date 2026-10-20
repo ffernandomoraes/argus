@@ -39,15 +39,19 @@ export function Group({ children }: { children: ReactNode }) {
   return <div className="mb-4 rounded-xl bg-fill px-4 last:mb-0">{children}</div>
 }
 
-// Linha de configuração: rótulo e explicação à esquerda, controle à direita.
-export function Row({ label, description, children }: { label: string; description?: string; children: ReactNode }) {
+// Linha de configuração: rótulo e explicação à esquerda, controle à direita. below: o controle vai
+// na linha de baixo. Use com todo Segmented (opções lado a lado): ao lado, com o texto a 15px, ele
+// espremia o rótulo. Os outros controles também descem se não couberem.
+export function Row({ label, description, below, children }: { label: string; description?: string; below?: boolean; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-6 border-b border-line py-3 last:border-0">
-      <div className="min-w-0">
-        <div className="text-[13px] text-text">{label}</div>
-        {description && <div className="mt-0.5 text-[12px] leading-relaxed text-muted">{description}</div>}
+    <div
+      className={`flex border-b border-line py-3 last:border-0 ${below ? 'flex-col gap-2' : 'flex-wrap items-center justify-between gap-x-6 gap-y-2'}`}
+    >
+      <div className="min-w-56 flex-1">
+        <div className="text-[16px] text-text">{label}</div>
+        {description && <div className="mt-0.5 text-[15px] leading-relaxed text-muted">{description}</div>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className={below ? 'flex' : 'shrink-0'}>{children}</div>
     </div>
   )
 }
@@ -70,7 +74,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           disabled={o.disabled}
           title={o.title}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-[12px] disabled:opacity-40 ${
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-[15px] disabled:opacity-40 ${
             value === o.value ? 'bg-control text-text shadow-sm shadow-black/20' : 'text-muted enabled:hover:text-text'
           }`}
         >
@@ -106,7 +110,7 @@ export function Select({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         aria-label={label}
-        className={`${compact ? 'min-w-24' : 'min-w-44'} cursor-pointer appearance-none disabled:cursor-default rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[12px] text-text outline-none enabled:hover:border-line-strong`}
+        className={`${compact ? 'min-w-24' : 'min-w-44'} cursor-pointer appearance-none disabled:cursor-default rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[15px] text-text outline-none enabled:hover:border-line-strong`}
       >
         {children}
       </select>

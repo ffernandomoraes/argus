@@ -20,7 +20,7 @@ export function AccountName({ account, onRename }: { account: { id: string; name
         title={tr('Trocar o apelido', 'Rename')}
         className="group/name flex min-w-0 items-center gap-1.5 text-left"
       >
-        <span className="truncate text-sm text-text">{account.name}</span>
+        <span className="truncate text-[16px] text-text">{account.name}</span>
         <Pencil size={11} className="shrink-0 text-faint opacity-0 group-hover/name:opacity-100" />
       </button>
     )
@@ -49,7 +49,7 @@ export function AccountName({ account, onRename }: { account: { id: string; name
           done(false)
         }
       }}
-      className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-0.5 text-sm text-text outline-none focus:border-accent"
+      className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-0.5 text-[16px] text-text outline-none focus:border-accent"
     />
   )
 }

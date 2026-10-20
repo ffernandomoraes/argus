@@ -29,6 +29,7 @@ export function ToolsStep({
           </Select>
         </Row>
         <Row
+          below
           label={tr('Ferramentas', 'Tools')}
           description={
             draft.allTools

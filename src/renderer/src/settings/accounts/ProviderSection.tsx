@@ -48,10 +48,10 @@ export function ProviderSection({
     <section className="mt-8">
       <div className="mb-1 flex items-center gap-2">
         <AgentIcon provider={provider} size={15} />
-        <h3 className="text-sm font-medium text-text">{name}</h3>
+        <h3 className="text-[16px] font-medium text-text">{name}</h3>
         <ExperimentTag />
       </div>
-      <p className="mb-3 text-xs leading-relaxed text-faint">{HOW[provider]}</p>
+      <p className="mb-3 text-[15px] leading-relaxed text-faint">{HOW[provider]}</p>
 
       {install.status !== 'found' ? (
         <InstallCard provider={provider} state={install} />
@@ -74,7 +74,7 @@ export function ProviderSection({
             <button
               disabled={busyElsewhere}
               onClick={() => window.api.providers.add(provider)}
-              className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:bg-surface-2 hover:text-text disabled:opacity-50"
+              className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-[15px] text-muted hover:bg-surface-2 hover:text-text disabled:opacity-50"
             >
               <Plus size={13} />
               {accounts.length ? tr('Adicionar conta', 'Add account') : tr(`Conectar o ${name}`, `Connect ${name}`)}
@@ -91,13 +91,13 @@ function InstallCard({ provider, state }: { provider: ProviderId; state: Provide
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-fill p-4">
       {state.status === 'installing' ? (
-        <div className="flex items-center gap-2 text-sm text-text">
+        <div className="flex items-center gap-2 text-[16px] text-text">
           <Loader2 size={14} className="animate-spin text-muted" />
           {tr(`Instalando o ${name}…`, `Installing ${name}…`)}
         </div>
       ) : (
         <div className="flex items-center gap-3">
-          <p className="min-w-0 flex-1 text-sm text-muted">
+          <p className="min-w-0 flex-1 text-[16px] text-muted">
             {state.status === 'failed'
               ? tr(`A instalação do ${name} não deu certo.`, `${name} installation failed.`)
               : tr(`O ${name} não está instalado neste computador.`, `${name} isn’t installed on this computer.`)}
@@ -109,8 +109,8 @@ function InstallCard({ provider, state }: { provider: ProviderId; state: Provide
       )}
       {state.status === 'failed' && (
         <>
-          {state.message && <pre className="whitespace-pre-wrap text-[11px] text-red-400">{state.message}</pre>}
-          <p className="text-xs text-faint">
+          {state.message && <pre className="whitespace-pre-wrap text-[15px] text-red-400">{state.message}</pre>}
+          <p className="text-[15px] text-faint">
             {tr(`Ou rode no ${IS_WIN ? 'PowerShell' : 'Terminal'}:`, `Or run in ${IS_WIN ? 'PowerShell' : 'Terminal'}:`)}{' '}
             <code className="select-text text-muted">{state.command}</code>
           </p>
@@ -154,7 +154,7 @@ function ProviderAccountCard({
             {multiple && isDefault && <Badge>{tr('Padrão', 'Default')}</Badge>}
             {main && <Badge>{tr('Terminal', 'Terminal')}</Badge>}
           </div>
-          <div className="mt-0.5 truncate text-xs text-muted">
+          <div className="mt-0.5 truncate text-[15px] text-muted">
             {s === null
               ? tr(`O ${name} não respondeu.`, `${name} did not respond.`)
               : signedIn
@@ -164,7 +164,7 @@ function ProviderAccountCard({
         </div>
         {s && (
           <span
-            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[11px] ${
+            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[15px] ${
               signedIn ? 'bg-done/15 text-done' : 'bg-needs-you/15 text-needs-you'
             }`}
           >
@@ -214,5 +214,5 @@ function ProviderAccountCard({
 }
 
 function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[11px] text-faint">{children}</span>
+  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[15px] text-faint">{children}</span>
 }

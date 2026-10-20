@@ -11,6 +11,7 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
   return (
     <Group>
       <Row
+        below
         label={tr('Tema', 'Theme')}
         description={tr(`Sistema acompanha o modo claro ou escuro do ${SYSTEM_NAME}.`, `System follows the light or dark mode of ${SYSTEM_NAME}.`)}
       >

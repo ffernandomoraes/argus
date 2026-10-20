@@ -41,7 +41,7 @@ export function OrchestratorSection() {
           </Select>
         </Row>
         {efforts.length > 0 && (
-          <Row label={tr('Esforço', 'Effort')}>
+          <Row below label={tr('Esforço', 'Effort')}>
             <Segmented
               value={o.effort}
               onChange={(effort) => set({ effort })}
@@ -51,8 +51,8 @@ export function OrchestratorSection() {
         )}
       </Group>
 
-      <h2 className="mb-1 mt-6 text-[13px] font-semibold text-text">{tr('Regras', 'Rules')}</h2>
-      <p className="mb-3 text-[12px] leading-relaxed text-muted">
+      <h2 className="mb-1 mt-6 text-[16px] font-semibold text-text">{tr('Regras', 'Rules')}</h2>
+      <p className="mb-3 text-[15px] leading-relaxed text-muted">
         {tr(
           'Que modelo e esforço cada tipo de etapa recebe. Descreva a tarefa como falaria para alguém: "atualizar FAQ" funciona melhor que "coisas simples". O que nenhuma regra cobrir, o orquestrador decide sozinho.',
           'Which model and effort each kind of step gets. Describe the task as you would to a person: "update the FAQ" works better than "simple stuff". Anything no rule covers, the orchestrator decides on its own.'
@@ -66,7 +66,7 @@ export function OrchestratorSection() {
               onChange={(e) => setRule(r.id, { task: e.target.value })}
               placeholder={tr('Tipo de tarefa', 'Kind of task')}
               aria-label={tr('Tipo de tarefa', 'Kind of task')}
-              className={`${INPUT} min-w-0 flex-1 py-1 text-[12px]`}
+              className={`${INPUT} min-w-0 flex-1 py-1 text-[15px]`}
             />
             <Select compact label={tr('Modelo', 'Model')} value={r.model} onChange={(model) => setRule(r.id, { model })}>
               {AGENT_MODELS.map((m) => (
@@ -94,7 +94,7 @@ export function OrchestratorSection() {
             </IconButton>
           </div>
         ))}
-        {o.rules.length === 0 && <div className="py-3 text-[12px] text-muted">{tr('Nenhuma regra. O orquestrador decide tudo sozinho.', 'No rules. The orchestrator decides everything on its own.')}</div>}
+        {o.rules.length === 0 && <div className="py-3 text-[15px] text-muted">{tr('Nenhuma regra. O orquestrador decide tudo sozinho.', 'No rules. The orchestrator decides everything on its own.')}</div>}
       </Group>
       <div className="mt-2 flex gap-2">
         <Button
@@ -111,8 +111,8 @@ export function OrchestratorSection() {
         </Button>
       </div>
 
-      <h2 className="mb-1 mt-6 text-[13px] font-semibold text-text">{tr('Instruções extras', 'Extra instructions')}</h2>
-      <p className="mb-3 text-[12px] leading-relaxed text-muted">
+      <h2 className="mb-1 mt-6 text-[16px] font-semibold text-text">{tr('Instruções extras', 'Extra instructions')}</h2>
+      <p className="mb-3 text-[15px] leading-relaxed text-muted">
         {tr('O que não cabe numa regra. Vai junto para o orquestrador.', 'Anything that doesn’t fit a rule. Sent to the orchestrator too.')}
       </p>
       <textarea
@@ -120,7 +120,7 @@ export function OrchestratorSection() {
         onChange={(e) => set({ extra: e.target.value })}
         rows={3}
         placeholder={tr('Ex.: sempre valide com Opus quando mexer em pagamento.', 'E.g.: always validate with Opus when touching payments.')}
-        className={`${INPUT} w-full resize-y text-[12px]`}
+        className={`${INPUT} w-full resize-y text-[15px]`}
       />
     </>
   )

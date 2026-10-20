@@ -9,7 +9,7 @@ import { CopyTerminalCommand } from './CopyTerminalCommand'
 import { tr } from '../../i18n'
 
 function Badge({ children }: { children: ReactNode }) {
-  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[11px] text-faint">{children}</span>
+  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[15px] text-faint">{children}</span>
 }
 
 export function AccountCard({
@@ -43,7 +43,7 @@ export function AccountCard({
             {multiple && main && <Badge>{tr('Principal', 'Main')}</Badge>}
             {multiple && isDefault && <Badge>{tr('Padrão', 'Default')}</Badge>}
           </div>
-          <div className="mt-0.5 truncate text-xs text-muted">
+          <div className="mt-0.5 truncate text-[15px] text-muted">
             {s === null
               ? tr('O Claude Code não respondeu.', 'Claude Code did not respond.')
               : loggedIn
@@ -54,7 +54,7 @@ export function AccountCard({
         {/* À direita, no meio da altura do cartão. */}
         {s && (
           <span
-            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[11px] ${
+            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-[15px] ${
               loggedIn ? 'bg-done/15 text-done' : 'bg-needs-you/15 text-needs-you'
             }`}
           >
@@ -67,7 +67,7 @@ export function AccountCard({
       {/* Rodapé: organização e plano à esquerda, as ações alinhadas no fim; sair ou remover por último. */}
       <div className="border-t border-line px-4 py-2.5">
         {external ? (
-          <p className="text-xs leading-relaxed text-faint">
+          <p className="text-[15px] leading-relaxed text-faint">
             {tr(
               'O acesso vem das variáveis de ambiente ou das configurações do Claude Code, não de um login. Para trocar, mude por lá.',
               'Access comes from environment variables or Claude Code settings, not from a login. To switch, change it there.'
@@ -75,7 +75,7 @@ export function AccountCard({
           </p>
         ) : (
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto min-w-0 truncate text-xs text-faint">{footer}</span>
+            <span className="mr-auto min-w-0 truncate text-[15px] text-faint">{footer}</span>
             {/* Desconectada, só cabe reconectar ou remover: o terminal e o padrão esperam o login. */}
             {loggedIn && account.dir && <CopyTerminalCommand dir={account.dir} />}
             {loggedIn && multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
@@ -123,7 +123,7 @@ export function AccountCard({
           </div>
         )}
         {logoutFailed && (
-          <p role="alert" className="mt-2 text-right text-xs text-red-400">
+          <p role="alert" className="mt-2 text-right text-[15px] text-red-400">
             {tr(
               `Não deu para sair. Tente de novo ou rode "claude auth logout" no ${IS_WIN ? 'PowerShell' : 'Terminal'}.`,
               `Could not sign out. Try again or run "claude auth logout" in ${IS_WIN ? 'PowerShell' : 'Terminal'}.`

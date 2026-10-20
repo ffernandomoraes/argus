@@ -20,11 +20,11 @@ export function ProviderLoginPanel({ login }: { login: Active }) {
   if (login.status === 'waiting') {
     return (
       <Panel>
-        <div className="flex items-center gap-2 text-sm text-text">
+        <div className="flex items-center gap-2 text-[16px] text-text">
           <Loader2 size={14} className="animate-spin text-muted" />
           {tr(`Termine o login do ${name} no navegador.`, `Finish signing in to ${name} in your browser.`)}
         </div>
-        <p className="text-xs leading-relaxed text-faint">
+        <p className="text-[15px] leading-relaxed text-faint">
           {login.url ? (
             <>
               {tr('Não abriu?', 'Didn’t open?')}{' '}
@@ -87,7 +87,7 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
   if (checking) {
     return (
       <Panel>
-        <div className="flex items-center gap-2 text-sm text-text">
+        <div className="flex items-center gap-2 text-[16px] text-text">
           <Loader2 size={14} className="animate-spin text-muted" />
           {tr('Testando a chave…', 'Testing the key…')}
         </div>
@@ -97,8 +97,8 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
 
   return (
     <Panel>
-      <p className="text-sm text-text">{tr(`Conectar com uma chave do ${name}`, `Connect with a ${name} key`)}</p>
-      <ol className="flex list-decimal flex-col gap-1 pl-4 text-xs leading-relaxed text-muted">
+      <p className="text-[16px] text-text">{tr(`Conectar com uma chave do ${name}`, `Connect with a ${name} key`)}</p>
+      <ol className="flex list-decimal flex-col gap-1 pl-4 text-[15px] leading-relaxed text-muted">
         <li>
           {tr(`Abrimos o ${KEY_PLACE[provider]} no navegador. `, `We opened ${KEY_PLACE[provider]} in your browser. `)}
           <button onClick={() => window.api.auth.open(KEY_PAGES[provider])} className="underline hover:text-text">
@@ -110,7 +110,7 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
       </ol>
 
       {login.status === 'error' && (
-        <p role="alert" className="text-xs text-red-400">
+        <p role="alert" className="text-[15px] text-red-400">
           {login.message}
         </p>
       )}
@@ -118,7 +118,7 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
       {found ? (
         <div className="flex items-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2">
           <ClipboardCheck size={15} className="shrink-0 text-accent" />
-          <span className="min-w-0 flex-1 text-xs text-text">
+          <span className="min-w-0 flex-1 text-[15px] text-text">
             {tr(`Encontrei uma chave do ${name} copiada (${found.hint}).`, `Found a copied ${name} key (${found.hint}).`)}
           </span>
           <Button variant="primary" onClick={() => window.api.providers.submitKey()}>
@@ -126,7 +126,7 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
           </Button>
         </div>
       ) : (
-        <p className="flex items-center gap-2 text-xs text-faint">
+        <p className="flex items-center gap-2 text-[15px] text-faint">
           <Loader2 size={12} className="animate-spin" />
           {tr('Esperando você copiar a chave…', 'Waiting for you to copy the key…')}
         </p>
@@ -147,19 +147,19 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
             onChange={(e) => setTyped(e.target.value)}
             placeholder={tr('Cole a chave aqui', 'Paste the key here')}
             aria-label={tr('Chave de API', 'API key')}
-            className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-1 text-sm text-text outline-none focus:border-accent"
+            className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-1 text-[16px] text-text outline-none focus:border-accent"
           />
           <Button type="submit" disabled={!typed.trim()}>
             {tr('Usar', 'Use')}
           </Button>
         </form>
       ) : (
-        <button onClick={() => setTyping(true)} className="self-start text-xs text-faint underline hover:text-text">
+        <button onClick={() => setTyping(true)} className="self-start text-[15px] text-faint underline hover:text-text">
           {tr('Prefiro colar a chave', 'I’d rather paste the key')}
         </button>
       )}
 
-      <p className="text-[11px] leading-relaxed text-faint">
+      <p className="text-[15px] leading-relaxed text-faint">
         {tr(
           'A chave fica guardada no cofre do sistema e não aparece de novo na tela.',
           'The key is stored in the system keychain and never shown again.'

@@ -65,6 +65,8 @@ export function useStickyScroll(
   // Grudado no fim, acompanha esse crescimento para não parar no meio da última resposta.
   // Seguindo o fim, o prompt preso não aparece (só rolando para cima, e aí o onScroll o acha): a
   // busca, que mede cada item, fica de fora enquanto a resposta cresce, ~20 vezes por segundo.
+  // A área da conversa encolhendo também conta (a sugestão abrindo embaixo dela, a caixa de
+  // escrever crescendo): a rolagem não muda sozinha e o fim da resposta ficava escondido.
   useEffect(() => {
     const inner = contentRef.current
     if (!inner) return
@@ -73,8 +75,9 @@ export function useStickyScroll(
       if (!following.current) findPinned()
     })
     observer.observe(inner)
+    if (scrollerRef.current) observer.observe(scrollerRef.current)
     return () => observer.disconnect()
-  }, [contentRef, toEnd, findPinned])
+  }, [contentRef, scrollerRef, toEnd, findPinned])
 
   // O prompt preso só aparece rolando para cima. Rolando para baixo some; parado, some depois
   // de um instante (dá tempo de clicar nele; com o mouse em cima, fica). Só conta como

@@ -59,6 +59,9 @@ export type ChatState = {
   queued?: QueuedMessage[]
   // Conversa com outro agente: agente e conta ("codex:main"). Sem ele: Claude.
   agent?: string
+  // Próxima mensagem que o Claude Code prevê que você mandaria, ao fim do pedido: vira um balão
+  // clicável em cima da caixa de escrever. Sai quando começa outro pedido.
+  suggestion?: string
 }
 
 // Mensagem enviada com o Claude no meio de um pedido. at: hora do envio (ms).

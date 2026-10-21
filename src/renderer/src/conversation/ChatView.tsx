@@ -7,6 +7,7 @@ import { Presence } from '../motion'
 import { Composer, type ComposerHandle } from './composer/Composer'
 import { ImageViewer } from './ImageViewer'
 import { RemoteControlTag } from './RemoteControlTag'
+import { SuggestionChip } from './composer/SuggestionChip'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
 import { olderRow } from './timeline/olderRow'
@@ -192,6 +193,9 @@ export const ChatView = memo(function ChatView({
   const openMcp = useStableCallback(onOpenMcp)
   const openOutputStyle = useStableCallback(onOpenOutputStyle)
   const interrupt = useStableCallback(onInterrupt)
+  // Texto no campo esconde a sugestão; clicar nela envia pelo mesmo caminho da caixa de escrever.
+  const [typing, setTyping] = useState(false)
+  const sendSuggestion = useStableCallback((text: string) => composer.current?.send(text))
   const changeSetting = useStableCallback(onSettingChange)
 
   return (
@@ -229,6 +233,7 @@ export const ChatView = memo(function ChatView({
         </div>
       </div>
 
+      <SuggestionChip text={live?.suggestion} visible={!running && !typing} onSend={sendSuggestion} />
       <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
         {live?.remote && !remoteAbove && (
           <div className="mb-1 flex">
@@ -254,6 +259,7 @@ export const ChatView = memo(function ChatView({
           chips={composerChips}
           extraSend={extraSend}
           pastPrompts={pastPrompts}
+          onTypingChange={setTyping}
         />
       </div>
       <Presence kind="modal">

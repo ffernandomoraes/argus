@@ -61,6 +61,8 @@ export function readMessage(m: SDKMessage, chat: ChatState, reader: Reader, ctx:
   if (m.type === 'stream_event') return m.parent_tool_use_id ? { reader } : readStream(m.event, chat, reader, ctx)
   if (m.type === 'assistant' || m.type === 'user') return readTranscript(m, chat, reader, ctx.now)
   if (m.type === 'result') return readResult(m, chat, reader, ctx)
+  // Chega depois do result. Pedido novo já começado nesse meio-tempo: a sugestão era do anterior.
+  if (m.type === 'prompt_suggestion') return chat.turnStartedAt ? { reader } : { reader, patch: { suggestion: m.suggestion }, urgent: true }
   return { reader }
 }
 
@@ -131,6 +133,7 @@ function startMessage(chat: ChatState, reader: Reader, ctx: ReadContext): Step {
     ? { status: ctx.waiting ? 'needs-you' : 'running', turnStartedAt: ctx.now, turnTokens: 0 }
     : {}
   patch.partial = ''
+  patch.suggestion = undefined
   patch.activity = activity(chat.activity, 'thinking', ctx.now)
   const closedTokens = fresh ? 0 : reader.closedTokens + reader.currentTokens
   return { reader: { ...reader, closedTokens, currentTokens: 0 }, patch, turnStarted: fresh }

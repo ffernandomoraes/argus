@@ -35,6 +35,8 @@ import { tr } from '../../i18n'
 export type ComposerHandle = {
   // Envio que não chegou: o texto volta (se o campo estiver vazio), os anexos voltam e o aviso aparece.
   restore: (typed: string, files: File[], error: string) => void
+  // Envia este texto como se tivesse sido digitado (a sugestão clicada).
+  send: (text: string) => void
 }
 
 type Props = {
@@ -56,6 +58,8 @@ type Props = {
   contextPercent: number
   compact: boolean
   above?: ReactNode
+  // Começou ou parou de haver texto no campo (a sugestão de cima some enquanto você escreve).
+  onTypingChange?: (typing: boolean) => void
   chips?: ReactNode
   extraSend?: { compose: (text: string) => string }
   // Pedidos gravados na conversa, do mais velho ao mais novo: as setas percorrem eles.
@@ -114,9 +118,12 @@ export const Composer = memo(function Composer(props: Props) {
     },
     [setDraft, addFiles]
   )
-  useImperativeHandle(ref, () => ({ restore }), [restore])
 
-  const canSend = draft.trim().length > 0 || attachments.items.length > 0 || !!extraSend
+  const typing = draft.trim().length > 0
+  const onTypingChange = props.onTypingChange
+  useEffect(() => onTypingChange?.(typing), [typing, onTypingChange])
+
+  const canSend = typing || attachments.items.length > 0 || !!extraSend
 
   const updateDraft = (value: string) => {
     setDraft(value)
@@ -154,6 +161,9 @@ export const Composer = memo(function Composer(props: Props) {
     attachments.clear()
     onSubmit({ text, typed, files }).catch((err: unknown) => restore(typed, files, sendFailure(err)))
   }
+
+  // Sem lista de dependências: o send muda a cada desenho (lê o rascunho e os anexos atuais).
+  useImperativeHandle(ref, () => ({ restore, send }))
 
   // Escolher um agente completa o nome dele no campo; escolher um comando já executa ele.
   const selectAgent = (a: AgentDef) => {

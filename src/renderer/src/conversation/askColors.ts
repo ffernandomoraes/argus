@@ -9,5 +9,5 @@ export function askColors(tint: string): CSSProperties {
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
   })
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  return { '--color-ask': tint, '--color-ask-text': luminance > 0.3 ? '#1c1c1c' : '#ffffff' } as CSSProperties
+  return { '--color-ask': tint, '--color-ask-text': luminance > 0.3 ? '#1c1c1c' : '#ffffff', '--color-suggest': tint } as CSSProperties
 }

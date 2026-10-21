@@ -47,6 +47,8 @@
      trocam no style. Fora de grupo, o amarelo do "precisa de você". */
   --color-ask: var(--color-needs-you);
   --color-ask-text: #1c1c1c;
+  /* Sugestão do Claude no pé da conversa: a cor do grupo (askColors) ou, sem grupo, cinza. */
+  --color-suggest: var(--color-muted);
 
   /* Contador por cima de ícone, no azul do VS Code; o mesmo nos dois temas, sempre com texto branco. */
   --color-badge: #0078d4;

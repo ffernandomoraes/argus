@@ -108,6 +108,9 @@ export class ChatSession {
         settings: openingFlags(s) as never,
         // Cada subagente manda uma frase do que está fazendo agora; aparece no ramo dele no canvas.
         agentProgressSummaries: true,
+        // Ao fim de cada pedido, a próxima mensagem provável vira um balão clicável no chat. Usa o
+        // cache da conversa (quase de graça); quem desligou no settings.json do Claude Code não recebe.
+        promptSuggestions: true,
         canUseTool: this.permissions.canUseTool,
         // Ferramentas do próprio Argus (digitar no terminal do drawer), junto dos MCPs da pessoa.
         mcpServers: { [ARGUS_MCP]: argusMcp(() => this.keys) },
@@ -153,6 +156,7 @@ export class ChatSession {
       // Permissão esperando resposta continua precisando de você.
       status: this.permissions.size ? 'needs-you' : 'running',
       error: undefined,
+      suggestion: undefined,
       ...(fresh && { turnStartedAt: Date.now(), turnTokens: 0 })
     })
   }

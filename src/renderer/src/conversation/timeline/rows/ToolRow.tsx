@@ -5,10 +5,20 @@ import { diffStats } from '../../diffLines'
 import type { ImageView } from '../imageViews'
 import { LazyDetails } from './LazyDetails'
 
-// Ação do Claude (ler, editar, buscar...): o nome e para que serve numa linha; o clique mostra o
-// detalhe, a edição ou o resultado. Edição já vem aberta. No chat reduzido (protótipo do modo
-// design), a edição fica só na linha, com o +/-: o clique abre o detalhe. Imagem lida (image): o
-// clique abre o preview dela, e o caminho fica na dica.
+// Ferramentas cujo detalhe é o caminho de um arquivo ou pasta (ver toolLabels no main).
+const PATH_TOOLS = new Set(['Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Grep', 'Glob'])
+
+// Caminho em uma linha, cortado no começo: o "…" fica na frente e o fim (pasta e arquivo) sempre à
+// vista. A direção da direita para a esquerda é o que põe o corte no começo; as marcas invisíveis
+// (\u200E) mantêm a barra inicial no lugar. Inteiro na dica.
+function PathLine({ path }: { path: string }) {
+  return (
+    <div title={path} className="mt-1 truncate rounded-md bg-bg px-2 py-1 text-left font-mono text-xs text-muted [direction:rtl]">
+      {`\u200E${path}\u200E`}
+    </div>
+  )
+}
+
 export const ToolRow = memo(function ToolRow({
   message,
   compact,
@@ -19,6 +29,8 @@ export const ToolRow = memo(function ToolRow({
   image?: ImageView
 }) {
   const stats = message.diff && diffStats(message.diff)
+  const detail = message.detail && message.detail !== message.input ? message.detail : undefined
+  const pathDetail = !!detail && PATH_TOOLS.has(message.name) && !detail.includes('\n')
   // Sem caixa, como a resposta: a ação não chama mais atenção que o texto. Passar o mouse só clareia a linha.
   return (
     <LazyDetails
@@ -51,9 +63,10 @@ export const ToolRow = memo(function ToolRow({
         </summary>
       }
     >
-      {message.detail && message.detail !== message.input && (
+      {pathDetail && <PathLine path={detail} />}
+      {detail && !pathDetail && (
         <div className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-bg px-2 py-1.5 font-mono text-[13px] text-muted">
-          {message.detail}
+          {detail}
         </div>
       )}
       {message.diff ? (

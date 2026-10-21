@@ -111,7 +111,7 @@ export function QuestionCard({
         )
       })}
       <div className="flex justify-end gap-1.5">
-        <button onClick={onDismiss} className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg">
+        <button onClick={onDismiss} className="mr-auto rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg">
           {tr('Não responder', 'Skip')}
         </button>
         {step > 0 && (

@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
-import { Code2, ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff, Terminal } from 'lucide-react'
+import { ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
 import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
@@ -7,6 +7,7 @@ import { MOTION, reduced } from '../motion'
 import { useEscape } from '../useEscape'
 import { askColors } from './askColors'
 import { sameConversation } from './conversationIdentity'
+import { CodeTerminalButtons } from './composer/CodeTerminalButtons'
 import { ConversationView } from './ConversationView'
 import { DrawerTerminal, useDrawerShell } from './DrawerTerminal'
 import type { LineRange } from './fileLinks'
@@ -207,31 +208,22 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
   }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, onPinToCanvas, onPopout])
 }
 
-// Quadrado, só com o ícone; o nome vai no title e no leitor de tela.
-const toggleClass = (on: boolean) => `flex size-7 shrink-0 items-center justify-center rounded-md text-faint ${on ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`
-
-// Botões do código e do terminal, à direita da linha em cima da caixa de escrever, só com o ícone.
-// O do código some no foco; o do terminal fica, porque o terminal continua embaixo.
+// Botões do código e do terminal em cima da caixa de escrever. O do código some no foco; o do
+// terminal fica, porque o terminal continua embaixo.
 function useCodeButton(props: Props, focus: boolean, terminalOpen: boolean, onToggleTerminal: () => void) {
   const { loose = false, codeOpen = false, onToggleCode } = props
   // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
   const workspace = !!props.project.folders
-  return useMemo(() => {
-    const codeLabel = codeOpen ? tr('Fechar código', 'Close code') : tr('Código', 'Code')
-    const terminalLabel = terminalOpen ? tr('Fechar terminal', 'Close terminal') : tr('Terminal', 'Terminal')
-    return (
-      <div className="flex shrink-0 items-center gap-1">
-        {!(focus || loose || workspace) && (
-          <button aria-pressed={codeOpen} aria-label={codeLabel} title={codeLabel} onClick={onToggleCode} className={toggleClass(codeOpen)}>
-            <Code2 size={16} />
-          </button>
-        )}
-        <button aria-pressed={terminalOpen} aria-label={terminalLabel} title={terminalLabel} onClick={onToggleTerminal} className={toggleClass(terminalOpen)}>
-          <Terminal size={16} />
-        </button>
-      </div>
-    )
-  },
-    [focus, loose, workspace, codeOpen, onToggleCode, terminalOpen, onToggleTerminal]
+  const showCode = !(focus || loose || workspace)
+  return useMemo(
+    () => (
+      <CodeTerminalButtons
+        codeOpen={codeOpen}
+        onToggleCode={showCode ? onToggleCode : undefined}
+        terminalOpen={terminalOpen}
+        onToggleTerminal={onToggleTerminal}
+      />
+    ),
+    [showCode, codeOpen, onToggleCode, terminalOpen, onToggleTerminal]
   )
 }

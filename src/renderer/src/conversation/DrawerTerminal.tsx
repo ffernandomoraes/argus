@@ -61,10 +61,11 @@ type Props = {
   onRatioChange: (ratio: number) => void
   // Área dividida entre a conversa e o terminal: a divisória mede a altura por ela.
   areaRef: RefObject<HTMLElement | null>
+  className?: string
 }
 
 // O terminal com a divisória em cima, que arrasta para mudar a altura dele.
-export function DrawerTerminal({ sessionKey, cwd, account, fontScale, ratio, onRatioChange, areaRef }: Props) {
+export function DrawerTerminal({ sessionKey, cwd, account, fontScale, ratio, onRatioChange, areaRef, className = '' }: Props) {
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     const area = areaRef.current?.getBoundingClientRect()
     if (!area || e.button !== 0) return
@@ -86,7 +87,7 @@ export function DrawerTerminal({ sessionKey, cwd, account, fontScale, ratio, onR
   }
 
   return (
-    <div className="relative flex min-h-0 flex-none flex-col border-t border-line" style={{ height: `${ratio * 100}%` }}>
+    <div className={`relative flex min-h-0 flex-none flex-col border-t border-line ${className}`} style={{ height: `${ratio * 100}%` }}>
       <div
         role="separator"
         aria-orientation="horizontal"

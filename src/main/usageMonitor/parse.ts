@@ -9,14 +9,21 @@ type RawWindow = { utilization?: number | null; resets_at?: string | null } | nu
 
 type RawModel = { value: string; displayName: string; description?: string; supportedEffortLevels?: string[] }
 
+// Nome do modelo atual na descrição do padrão. Antes: "Opus 5.5 · Best for..."; desde a 2.1.30x:
+// "Use the default model (currently Opus 5.5)".
+export function defaultModelName(description?: string): string | undefined {
+  if (!description) return undefined
+  const current = description.match(/\(currently ([^)]+)\)/)
+  return current ? current[1].trim() : description.split(' · ')[0]
+}
+
 function toModels(raw: RawModel[]): ClaudeModel[] {
   return raw.map((m) => {
     const isDefault = m.value === 'default'
     return {
       value: isDefault ? '' : m.value,
       displayName: isDefault ? tr('Padrão', 'Default') : m.displayName,
-      // A descrição do padrão começa com o nome do modelo atual: "Opus 5.5 · Best for...".
-      resolvedName: isDefault ? m.description?.split(' · ')[0] : undefined,
+      resolvedName: isDefault ? defaultModelName(m.description) : undefined,
       efforts: m.supportedEffortLevels ?? []
     }
   })

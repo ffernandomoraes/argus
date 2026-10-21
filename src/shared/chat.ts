@@ -126,3 +126,6 @@ export type ChatSendRequest = {
 
 // /remote-control: liga ou desliga. Sem sessão aberta, abre uma (por isso os dados da conversa).
 export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'hint'> & { enabled: boolean }
+
+// /output-style: o estilo de resposta em vigor na pasta (nome do Claude Code: "default", "Explanatory"...).
+export type OutputStyleStatus = { ok: true; style: string } | { ok: false; error: string }

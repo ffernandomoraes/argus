@@ -3,6 +3,7 @@ import { MessageSquarePlus, X } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
 import { ChatView } from '../conversation/ChatView'
 import { McpPanel } from '../conversation/McpPanel'
+import { OutputStylePanel } from '../conversation/OutputStylePanel'
 import { Presence } from '../motion'
 import { Button } from '../ui/Button'
 import { commentsText } from './comments/commentsText'
@@ -52,6 +53,7 @@ export function PrototypeChat({
   const sideWidth = useWidth(sideWidthStore)
   // /mcp abre a lista de servidores aqui no app, como na conversa.
   const [mcpOpen, setMcpOpen] = useState(false)
+  const [styleOpen, setStyleOpen] = useState(false)
   const { key, live, settings, history } = session
   const { ready } = comments
 
@@ -69,6 +71,7 @@ export function PrototypeChat({
             onSend={onSend}
             loadImages={(id) => (sessionId ? window.api.sessions.images(projectPath, sessionId, id) : Promise.resolve([]))}
             onOpenMcp={() => setMcpOpen(true)}
+            onOpenOutputStyle={() => setStyleOpen(true)}
             onRemoteControl={(enabled) => window.api.chat.remoteControl({ key, cwd: projectPath, account, sessionId, settings, enabled })}
             onInterrupt={() => window.api.chat.interrupt(key)}
             onAnswer={(id, answer) => window.api.chat.answer(key, id, answer)}
@@ -125,6 +128,7 @@ export function PrototypeChat({
       </section>
       <Presence kind="modal">
         {mcpOpen && <McpPanel conversationKey={key} cwd={projectPath} account={account} onClose={() => setMcpOpen(false)} />}
+        {styleOpen && <OutputStylePanel conversationKey={key} cwd={projectPath} account={account} onClose={() => setStyleOpen(false)} />}
       </Presence>
     </>
   )

@@ -5,7 +5,7 @@ import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
+import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -82,6 +82,8 @@ export type InvokeChannels = {
   'chat:state': (key: string) => ChatState | null
   'chat:active': () => ActiveChat[]
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
+  'chat:outputStyle': (key: string, cwd: string, account?: string) => OutputStyleStatus
+  'chat:setOutputStyle': (key: string, cwd: string, style: string) => OutputStyleStatus
   'mcp:reconnect': (key: string, name: string) => McpStatus
   'mcp:authenticate': (key: string, name: string) => McpAuthResult
   'mcp:clearAuth': (key: string, name: string) => McpStatus

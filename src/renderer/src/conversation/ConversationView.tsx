@@ -22,6 +22,7 @@ import { useLiveChat } from './hooks/useLiveChat'
 import { useViewKey } from './hooks/useViewKey'
 import { useLocalEvents } from './localEvents'
 import { McpPanel } from './McpPanel'
+import { OutputStylePanel } from './OutputStylePanel'
 import { mergeEvents } from './mergeEvents'
 import { useConversationHistory } from './useConversationHistory'
 
@@ -146,6 +147,9 @@ export const ConversationView = memo(function ConversationView({
   const [mcpOpen, setMcpOpen] = useState(false)
   const openMcp = useCallback(() => setMcpOpen(true), [])
   const closeMcp = useCallback(() => setMcpOpen(false), [])
+  const [styleOpen, setStyleOpen] = useState(false)
+  const openStyle = useCallback(() => setStyleOpen(true), [])
+  const closeStyle = useCallback(() => setStyleOpen(false), [])
 
   return (
     <AccountContext.Provider value={account}>
@@ -181,6 +185,7 @@ export const ConversationView = memo(function ConversationView({
             onSend={actionsFor.send}
             loadImages={actionsFor.loadImages}
             onOpenMcp={openMcp}
+            onOpenOutputStyle={openStyle}
             onRemoteControl={actionsFor.remoteControl}
             onInterrupt={actionsFor.interrupt}
             onAnswer={actionsFor.answer}
@@ -206,6 +211,7 @@ export const ConversationView = memo(function ConversationView({
       </FileLinkContext.Provider>
       <Presence kind="modal">
         {mcpOpen && <McpPanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeMcp} />}
+        {styleOpen && <OutputStylePanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeStyle} />}
       </Presence>
     </AccountContext.Provider>
   )

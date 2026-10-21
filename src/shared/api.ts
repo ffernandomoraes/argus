@@ -5,7 +5,7 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { Lang, LangPreference } from './i18n'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from './chat'
+import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -161,6 +161,8 @@ export type Api = {
     mcpAuthenticate: (key: string, name: string) => Promise<McpAuthResult>
     mcpClearAuth: (key: string, name: string) => Promise<McpStatus>
     mcpRemove: (key: string, cwd: string, account: string | undefined, name: string, scope: string) => Promise<McpStatus>
+    outputStyle: (key: string, cwd: string, account?: string) => Promise<OutputStyleStatus>
+    setOutputStyle: (key: string, cwd: string, style: string) => Promise<OutputStyleStatus>
     release: (key: string) => void
     restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void

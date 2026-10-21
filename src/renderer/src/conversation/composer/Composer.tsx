@@ -48,6 +48,7 @@ type Props = {
   // Envia; a promessa falha se o envio não saiu (o texto e os anexos voltam para o campo).
   onSubmit: (message: OutgoingMessage) => Promise<void>
   onOpenMcp: () => void
+  onOpenOutputStyle: () => void
   onToggleRemote: () => void
   onInterrupt: () => void
   settings: SessionSettings
@@ -67,7 +68,7 @@ const NO_PROMPTS: string[] = []
 // menus de comandos e de agentes, anexos (botão ou ⌘V), ditado, enviar ou parar, e os seletores
 // de modelo e modo embaixo.
 export const Composer = memo(function Composer(props: Props) {
-  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onToggleRemote, onInterrupt, extraSend } = props
+  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onToggleRemote, onInterrupt, extraSend } = props
   const attachments = useAttachments(draftKey)
   const field = useRef<HTMLTextAreaElement>(null)
   const [draft, setDraft] = useDraft(draftKey)
@@ -132,6 +133,10 @@ export const Composer = memo(function Composer(props: Props) {
     if (text === '/mcp') {
       setDraft('')
       return onOpenMcp()
+    }
+    if (text === '/output-style') {
+      setDraft('')
+      return onOpenOutputStyle()
     }
     if (text === '/remote-control') {
       setDraft('')

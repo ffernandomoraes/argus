@@ -43,6 +43,8 @@ export type ChatViewProps = {
   loadImages?: (messageId: string) => Promise<string[]>
   // /mcp abre a lista de servidores aqui no app, em vez de ir para o Claude.
   onOpenMcp: () => void
+  // /output-style abre a escolha do estilo de resposta aqui no app.
+  onOpenOutputStyle: () => void
   // /remote-control liga; de novo (ou o X da faixa), desliga.
   onRemoteControl: (enabled: boolean) => void
   onInterrupt: () => void
@@ -86,6 +88,7 @@ export const ChatView = memo(function ChatView({
   onSend,
   loadImages,
   onOpenMcp,
+  onOpenOutputStyle,
   onRemoteControl,
   onInterrupt,
   onAnswer,
@@ -187,6 +190,7 @@ export const ChatView = memo(function ChatView({
   const toggleRemote = useStableCallback(() => onRemoteControl(!live?.remote || live.remote.status === 'failed'))
   const turnOffRemote = useStableCallback(() => onRemoteControl(false))
   const openMcp = useStableCallback(onOpenMcp)
+  const openOutputStyle = useStableCallback(onOpenOutputStyle)
   const interrupt = useStableCallback(onInterrupt)
   const changeSetting = useStableCallback(onSettingChange)
 
@@ -239,6 +243,7 @@ export const ChatView = memo(function ChatView({
           running={running}
           onSubmit={submit}
           onOpenMcp={openMcp}
+          onOpenOutputStyle={openOutputStyle}
           onToggleRemote={toggleRemote}
           onInterrupt={interrupt}
           settings={settings}

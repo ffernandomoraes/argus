@@ -210,6 +210,15 @@ export class ChatSession {
     return clearMcpAuth(this.q, name)
   }
 
+  // /output-style: o Claude Code grava no settings.local.json da pasta e já aplica aqui.
+  async outputStyle(): Promise<string> {
+    return (await this.q.initializationResult()).output_style
+  }
+
+  setOutputStyle(style: string): Promise<void> {
+    return this.q.updateSettings('localSettings', { outputStyle: style })
+  }
+
   async interrupt(): Promise<void> {
     if (this.state.status !== 'idle') this.interrupted = true
     // Mensagem sua na fila pode sobreviver à parada e rodar em seguida, e quem diz é o recibo do

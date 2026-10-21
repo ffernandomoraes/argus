@@ -1,8 +1,9 @@
-import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../../shared/chat'
+import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from '../../shared/chat'
 import type { McpAuthResult, McpStatus } from '../../shared/mcp'
 import type { ChatEntry } from './entries'
 import { AccountMcp } from './accountMcp'
 import { mcpStatusFor, removeMcp } from './mcpStatus'
+import { readOutputStyle, writeOutputStyle } from './outputStyle'
 import { parseAgentRef, type AgentRef } from '../../shared/providers'
 import { AgentChatSession } from '../agentChats/session'
 import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
@@ -286,6 +287,29 @@ export class Chats {
       await removeMcp(name, scope, parseAgentRef(account) ? undefined : account, cwd)
       const status = await this.mcpStatus(key, cwd, account)
       return status.ok ? { ...status, servers: status.servers.filter((s) => s.name !== name) } : status
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  }
+
+  // /output-style. Conversa do Claude aberta responde e grava pela própria sessão; sem ela, pelo
+  // arquivo da pasta. Outro agente (Codex, Gemini, Cursor) não tem estilo de resposta.
+  async outputStyle(key: string, cwd: string, account?: string): Promise<OutputStyleStatus> {
+    if (parseAgentRef(account)) return { ok: false, error: tr('Só as conversas do Claude têm estilo de resposta.', 'Only Claude chats have an output style.') }
+    try {
+      const session = this.sessions.get(key)
+      return { ok: true, style: session instanceof ChatSession ? await session.outputStyle() : readOutputStyle(cwd) }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  }
+
+  async setOutputStyle(key: string, cwd: string, style: string): Promise<OutputStyleStatus> {
+    try {
+      const session = this.sessions.get(key)
+      if (session instanceof ChatSession) await session.setOutputStyle(style)
+      else writeOutputStyle(cwd, style)
+      return { ok: true, style }
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }

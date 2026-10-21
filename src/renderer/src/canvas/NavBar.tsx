@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { Panel, useReactFlow } from '@xyflow/react'
-import { Bot, Brain, FolderPlus, Folders, Menu, MessageCirclePlus, Server, Settings, SquareDashed, StickyNote, type LucideIcon } from 'lucide-react'
+import { Bot, Brain, FolderPlus, Menu, MessageCirclePlus, Server, Settings, SquareDashed, StickyNote, type LucideIcon } from 'lucide-react'
 import { PANEL_MARGIN, PANEL_TOP } from '../conversation/FloatingPanel'
 import { Presence } from '../motion'
 import { IS_WIN, isMod, keys } from '../platform'
@@ -26,7 +26,7 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
   // Botão e menu num elemento só: o clique no botão não conta como fora.
   const ref = useRef<HTMLDivElement>(null)
   const { screenToFlowPosition } = useReactFlow()
-  const { addGroup, addFolder, addWorkspace, addNote, newLooseConversation, openSettings, openMemory, openAgents, openDevServers } =
+  const { addGroup, addFolder, addNote, newLooseConversation, openSettings, openMemory, openAgents, openDevServers } =
     useCanvasActions()
   useCanvasShortcuts(zoomShortcuts)
   useOutsideClick(ref, () => setOpen(false), open)
@@ -42,7 +42,6 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
     [
       { label: tr('Grupo', 'Group'), icon: SquareDashed, shortcut: '⌘G', key: 'g', onClick: () => addGroup(center()) },
       { label: tr('Nova pasta', 'New folder'), icon: FolderPlus, shortcut: '⌘P', key: 'p', onClick: () => addFolder(center()) },
-      { label: tr('Novo espaço de trabalho', 'New workspace'), icon: Folders, onClick: () => addWorkspace(center()) },
       { label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, shortcut: '⌘N', key: 'n', onClick: () => newLooseConversation() },
       { label: tr('Nota', 'Note'), icon: StickyNote, shortcut: 'C', onClick: () => addNote(center()) }
     ],

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, FolderPlus, Folders, Fullscreen, LayoutGrid, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react'
+import { ChevronDown, ChevronUp, FolderPlus, Fullscreen, LayoutGrid, MessagesSquare, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react'
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
 import { resolveAccount } from '../../auth/useAuth'
 import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
@@ -6,7 +6,7 @@ import { getProviders } from '../../providers/useProviders'
 import { getPreferences } from '../../settings/preferences'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import type { MenuItem } from '../ContextMenu'
-import { childrenOf, fitGroupToContent, removeGroup, setGroupAccount, setGroupColor, terminalsIn, ungroup } from '../operations'
+import { childrenOf, fitGroupToContent, groupWideOf, removeGroup, setGroupAccount, setGroupColor, terminalsIn, ungroup } from '../operations'
 import type { AreaNode, CanvasNode, ProjectNode } from '../types'
 import { terminalSubmenu } from './shared'
 import type { Deps } from './types'
@@ -20,7 +20,7 @@ type GroupDeps = Pick<
   | 'confirm'
   | 'startRename'
   | 'addFolder'
-  | 'addWorkspace'
+  | 'openGroupWide'
   | 'addTerminal'
   | 'addNote'
   | 'toggleGroup'
@@ -39,7 +39,8 @@ const terminalsPhrase = (n: number) =>
       : tr(`, e os ${n} terminais serão encerrados`, `, and the ${n} terminals will be closed`)
 
 // Pasta de um grupo, para o terminal já abrir no lugar certo.
-// Workspace não conta: a pasta dele é só o ponto de partida das conversas, sem projeto.
+// Espaço de trabalho e conversas do grupo não contam: a pasta deles é só o ponto de partida das
+// conversas, sem projeto.
 function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
   return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project' && !n.data.folders)?.data.path
 }
@@ -133,11 +134,12 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
       icon: FolderPlus,
       onSelect: () => deps.addFolder(group.position, group.id)
     },
+    // O grupo já junta as pastas: este card dá a elas uma conversa em comum. Um por grupo.
     {
       type: 'action',
-      label: tr('Novo espaço de trabalho', 'New workspace'),
-      icon: Folders,
-      onSelect: () => deps.addWorkspace(group.position, group.id)
+      label: groupWideOf(deps.nodes, group.id) ? tr('Ir para as conversas do grupo', 'Go to group chats') : tr('Conversar com o grupo todo', 'Chat with the whole group'),
+      icon: MessagesSquare,
+      onSelect: () => deps.openGroupWide(group.id)
     },
     // Dentro de um grupo com pastas, abre na primeira delas; senão na pasta do usuário.
     terminalSubmenu(

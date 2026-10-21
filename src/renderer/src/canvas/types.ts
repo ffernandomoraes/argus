@@ -50,6 +50,9 @@ export type ProjectData = {
   // dados do Argus (src/main/workspaces.ts): as conversas abrem nela e enxergam estas como pastas
   // adicionais. Sem ela, pasta comum.
   folders?: string[]
+  // Conversas do grupo: workspace cujas pastas são as dos cards do grupo dele (pastas e tarefas
+  // isoladas), mantidas em `folders` por useGroupWideFolders. Um por grupo.
+  groupWide?: boolean
   // Recolhida: embaixo da pasta ficam só as conversas rodando ou esperando você; as tarefas em
   // paralelo dela e, no espaço de trabalho, a lista das pastas somem.
   collapsed?: boolean

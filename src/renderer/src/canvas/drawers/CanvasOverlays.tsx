@@ -9,12 +9,11 @@ import { AllConversationsPanel } from '../AllConversationsPanel'
 import { CommandBar } from '../CommandBar'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { ContextMenu } from '../ContextMenu'
-import { createFolderInstance, createWorkspace, displayPath } from '../factory'
+import { createFolderInstance } from '../factory'
 import { FolderPicker } from '../FolderPicker'
 import { addNode } from '../operations'
 import type { ProjectNode } from '../types'
 import type { OverlayCommands, OverlayState } from './useOverlays'
-import { tr } from '../../i18n'
 
 type Props = {
   state: OverlayState
@@ -60,20 +59,6 @@ function CanvasOverlaysView(props: Props) {
     },
     [folderPicker, change, commands]
   )
-  const pickWorkspace = useCallback(
-    async (folders: string[]) => {
-      if (!folderPicker) return
-      const dir = await window.api.syncWorkspace(folders.map(displayPath)).catch((err: Error) => {
-        commands.confirm({ title: tr('Não deu para criar o espaço de trabalho', 'Couldn’t create the workspace'), description: err.message })
-        return null
-      })
-      if (!dir) return
-      const node = createWorkspace(folderPicker.position, folders, dir)
-      change((ns) => addNode(ns, node, folderPicker.groupId))
-      commands.closeFolderPicker()
-    },
-    [folderPicker, change, commands]
-  )
 
   return (
     <>
@@ -110,7 +95,6 @@ function CanvasOverlaysView(props: Props) {
           <FolderPicker
             onCanvas={onCanvas}
             onPick={pickFolder}
-            onPickMany={folderPicker.workspace ? pickWorkspace : undefined}
             onClose={commands.closeFolderPicker}
           />
         )}

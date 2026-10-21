@@ -40,8 +40,16 @@ function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
 }
 
 // Workspace: pôr e tirar pastas e abrir cada uma no Finder. Sem repositório nem design: cada
-// pasta pode ser um repositório diferente.
+// pasta pode ser um repositório diferente. Nas conversas do grupo, as pastas são as do grupo: só
+// abrir no Finder.
 function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[]): MenuItem[] {
+  const open: MenuItem = {
+    type: 'submenu',
+    label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
+    icon: FolderOpen,
+    items: folders.map((f) => ({ type: 'action' as const, label: baseName(f), onSelect: () => window.api.files.openFolder(f) }))
+  }
+  if (node.data.groupWide) return folders.length ? [open] : []
   return [
     { type: 'action', label: tr('Adicionar pasta', 'Add folder'), icon: FolderPlus, onSelect: () => deps.addWorkspaceFolder(node.id) },
     {
@@ -56,12 +64,7 @@ function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[])
         onSelect: () => deps.removeWorkspaceFolder(node.id, f)
       }))
     },
-    {
-      type: 'submenu',
-      label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
-      icon: FolderOpen,
-      items: folders.map((f) => ({ type: 'action' as const, label: baseName(f), onSelect: () => window.api.files.openFolder(f) }))
-    }
+    open
   ]
 }
 
@@ -71,6 +74,7 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
   const repo = repoItem(node, repoUrl)
   const workspace = node.data.folders
   const worktree = node.data.worktree
+  const groupWide = !!node.data.groupWide
   return [
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, onSelect: () => deps.addNote(at) },
     { type: 'separator' },
@@ -91,7 +95,8 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
       ? workspaceItems(deps, node, workspace)
       : [{ type: 'action', label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`), icon: FolderOpen, onSelect: () => window.api.files.openFolder(node.data.path) } as const, ...repo]),
     { type: 'separator' },
-    moveSubmenu(deps, node),
+    // Conversas do grupo são daquele grupo: não mudam de grupo.
+    ...(groupWide ? [] : [moveSubmenu(deps, node)]),
     { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
     // Tarefa isolada: remover apaga a pasta da cópia (a branch fica), depois de confirmar.
@@ -100,7 +105,11 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
       : []),
     // Só sai do canvas: pasta e conversas ficam no disco. Com conversa em andamento, bloqueia
     // e diz qual é, para a pessoa interromper antes.
-    ...(worktree ? [] : [{
+    // Conversas do grupo: o card sai (o ⌘Z traz de volta); as conversas ficam na pasta dele.
+    ...(groupWide
+      ? [{ type: 'action', label: tr('Tirar do canvas', 'Remove from canvas'), icon: Trash2, danger: true, onSelect: () => removeGroupWide(deps, node) } as const]
+      : []),
+    ...(worktree || groupWide ? [] : [{
       type: 'action',
       label: workspace ? tr('Tirar espaço de trabalho do canvas', 'Remove workspace from canvas') : tr('Tirar projeto do canvas', 'Remove project from canvas'),
       icon: Trash2,
@@ -146,4 +155,22 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
       }
     } as const])
   ]
+}
+
+// Com conversa em andamento, bloqueia, como a pasta. Sem confirmação: o ⌘Z traz o card de volta, com
+// as conversas.
+function removeGroupWide(deps: ProjectDeps, node: ProjectNode): void {
+  const busy = getSessions(node.data.path).filter(isBusy)
+  if (busy.length === 0) return deps.setNodes((ns) => removeNode(ns, node.id))
+  deps.confirm({
+    title: tr('As conversas do grupo têm conversa em andamento', 'The group chats have a chat in progress'),
+    description: tr(
+      `${busy.length === 1 ? 'A conversa' : 'As conversas'} ${titles(busy)} ${
+        busy.length === 1 ? 'ainda está rodando ou esperando sua resposta' : 'ainda estão rodando ou esperando sua resposta'
+      }. Interrompa ou termine antes de tirar o card do canvas.`,
+      `${busy.length === 1 ? 'The chat' : 'The chats'} ${titles(busy)} ${
+        busy.length === 1 ? 'is still running or waiting for your reply' : 'are still running or waiting for your reply'
+      }. Stop or finish ${busy.length === 1 ? 'it' : 'them'} before removing the card from the canvas.`
+    )
+  })
 }

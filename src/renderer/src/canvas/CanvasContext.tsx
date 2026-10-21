@@ -28,8 +28,7 @@ export type CanvasActions = {
   finishRename: (id: string, value: string | null) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
-  // Várias pastas num card só (ver ProjectData.folders).
-  addWorkspace: (position: XYPosition, groupId?: string) => void
+  // Espaço de trabalho antigo (ver ProjectData.folders): não se cria mais, mas os salvos continuam.
   addWorkspaceFolder: (id: string) => void
   removeWorkspaceFolder: (id: string, folder: string) => void
   // Nota nova já abre para escrever.
@@ -45,6 +44,8 @@ export type CanvasActions = {
   leaveGroup: (id: string) => void
   openConversation: (nodeId: string, conversationId: string) => void
   newConversation: (nodeId: string) => void
+  // "+" na borda do grupo: conversa nova do grupo todo (cria o card das conversas do grupo se faltar).
+  newGroupConversation: (groupId: string) => void
   // Conversa sem projeto: abre o painel em branco e só entra no canvas no primeiro envio.
   // Sem posição, o card procura sozinho um lugar livre.
   newLooseConversation: (position?: XYPosition) => void

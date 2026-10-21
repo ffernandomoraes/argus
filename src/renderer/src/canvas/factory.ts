@@ -41,8 +41,8 @@ export const WORKTREE_WIDTH = 340
 // os botões. As linhas até as conversas ficam dentro da caixa, no recuo da pilha.
 export const PROJECT_OUTSET = { left: 0, top: 30 }
 
-// O grupo desenha o nome e os botões em cima da borda: metade (12px) fica acima dela.
-export const AREA_OUTSET = { left: 0, top: 12 }
+// O grupo desenha o nome e os botões fora da caixa, logo acima da borda (24px + 6px de respiro).
+export const AREA_OUTSET = { left: 0, top: 30 }
 
 // "~/Desktop/proj" (no Windows, "~\Desktop\proj"): é assim que o canvas guarda as pastas.
 export function displayPath(path: string): string {
@@ -95,14 +95,15 @@ export function createWorktreeNode(folder: string, name: string, link: WorktreeL
   }
 }
 
-// Workspace: várias pastas num card só, todas iguais. `dir`: a pasta dele (nos dados do Argus, ou no
-// Linux do WSL quando as pastas são todas de lá), onde as conversas abrem (ver ProjectData.folders e src/main/workspaces.ts).
-export function createWorkspace(position: XYPosition, folders: string[], dir: string): ProjectNode {
+// Conversas do grupo: um workspace com as pastas do grupo (ver ProjectData.groupWide). `dir`: a pasta
+// dele (nos dados do Argus, ou no Linux do WSL quando as pastas são todas de lá), onde as conversas
+// abrem (src/main/workspaces.ts).
+export function createGroupWide(position: XYPosition, folders: string[], dir: string): ProjectNode {
   return {
     id: `p-${crypto.randomUUID()}`,
     type: 'project',
     position,
-    data: { name: tr('Espaço de trabalho', 'Workspace'), path: displayPath(dir), color: '#71717a', folders: folders.map(displayPath) }
+    data: { name: tr('Conversas do grupo', 'Group chats'), path: displayPath(dir), color: '#71717a', folders, groupWide: true }
   }
 }
 

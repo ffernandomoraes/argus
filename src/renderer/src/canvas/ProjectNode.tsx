@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position, useStore as useFlowStore, type NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronUp, Folder, Folders, GitBranch } from 'lucide-react'
+import { ChevronDown, ChevronUp, Folder, Folders, GitBranch, MessagesSquare } from 'lucide-react'
 import { IconTile } from '../settings/controls'
 import { IconButton } from '../ui/IconButton'
 import { sameNodeProps } from './blocks/sameNodeProps'
@@ -34,6 +34,9 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
   const { toggleProject } = useCanvasActions()
   // Workspace: várias pastas num card só. Ícone, selo e a lista das pastas deixam isso à vista.
   const folders = data.folders
+  // Conversas do grupo: as pastas vêm do grupo (useGroupWide) e já estão à vista nele; o card diz
+  // quais enxerga, sem lista própria.
+  const groupWide = !!data.groupWide
   // Tarefa isolada (git worktree): ícone de branch, sem caminho embaixo do nome (a branch fica no
   // selo acima do card) e a faixa com o que está acontecendo (WorktreeStrip).
   const worktree = data.worktree
@@ -67,6 +70,8 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
           <IconTile color={groupColor ?? '#3d9df5'} size={28} soft>
             {running ? (
               <CodeTyping size={16} label={tr('Conversa em andamento', 'Chat in progress')} />
+            ) : groupWide ? (
+              <MessagesSquare size={15} />
             ) : worktree ? (
               <GitBranch size={15} />
             ) : folders ? (
@@ -78,9 +83,14 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex min-w-0 items-center gap-1.5">
               <EditableName id={id} value={data.name} className="min-w-0 text-[15px] font-semibold leading-tight" />
-              {folders && (
+              {folders && !groupWide && (
                 <Tag icon={Folders} tone="info">
                   {tr('Espaço de trabalho', 'Workspace')}
+                </Tag>
+              )}
+              {groupWide && (
+                <Tag tone="info">
+                  {tr('Grupo', 'Group')}
                 </Tag>
               )}
               {worktree && (
@@ -89,7 +99,16 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
                 </Tag>
               )}
             </div>
-            {worktree ? null : folders ? (
+            {groupWide ? (
+              // Quantas pastas as conversas enxergam; quais, ao passar o mouse.
+              <span title={folders?.join('\n')} className="text-[12px] text-faint">
+                {!folders?.length
+                  ? tr('Nenhuma pasta no grupo', 'No folders in the group')
+                  : folders.length === 1
+                    ? tr('1 pasta', '1 folder')
+                    : tr(`${folders.length} pastas`, `${folders.length} folders`)}
+              </span>
+            ) : worktree ? null : folders ? (
               <span className="text-[12px] text-faint">
                 {folders.length === 1 ? tr('1 pasta', '1 folder') : tr(`${folders.length} pastas`, `${folders.length} folders`)}
               </span>
@@ -98,7 +117,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
             )}
           </div>
           {/* Espaço de trabalho sempre recolhe: a lista das pastas some junto. */}
-          {(conversations.length > 0 || hasTasks || folders) && (
+          {(conversations.length > 0 || hasTasks || (folders && !groupWide)) && (
             <IconButton
               label={collapsed ? tr('Expandir', 'Expand') : tr('Recolher', 'Collapse')}
               variant="subtle"
@@ -122,7 +141,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
 
         {/* Embaixo das conversas: no meio, cortaria as linhas que descem do ícone até elas.
             Recolhido, some (o "N pastas" do cabeçalho continua dizendo quantas são). */}
-        {folders && !collapsed && <WorkspaceFolders nodeId={id} folders={folders} />}
+        {folders && !groupWide && !collapsed && <WorkspaceFolders nodeId={id} folders={folders} />}
 
         {/* Tarefa em paralelo: o erro (criar, instalar, remover) fica no pé do card. */}
         {worktree && <WorktreeStrip nodeId={id} name={data.name} path={data.path} />}

@@ -4,6 +4,7 @@ import type { NodesApi } from './actions/types'
 import { useArrange } from './actions/useArrange'
 import { useCanvasCommands } from './actions/useCanvasCommands'
 import { useConversationActions } from './actions/useConversationActions'
+import { useGroupWide } from './actions/useGroupWide'
 import { useLooseCards } from './actions/useLooseCards'
 import { useNodeActions } from './actions/useNodeActions'
 import { useNotificationOpen } from './actions/useNotificationOpen'
@@ -85,6 +86,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     watchLoose,
     confirm: overlays.commands.confirm
   })
+  const { openGroupWide, newGroupConversation } = useGroupWide(nodes, api, focusNode, overlays.commands.confirm, conversations.newConversation)
   const drop = useGroupDrop(api, view)
   const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm)
   const menus = useMenuHandlers({
@@ -96,7 +98,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
       setNodes: change,
       confirm: overlays.commands.confirm,
       addFolder: overlays.commands.addFolder,
-      addWorkspace: overlays.commands.addWorkspace,
+      openGroupWide,
       newWorktree: worktrees.newWorktree,
       removeWorktree: worktrees.removeWorktree,
       isPoppedOut,
@@ -110,7 +112,8 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
     worktrees,
     overlays: overlays.commands,
     openConversationMenu: menus.openConversationMenu,
-    openSettings: onOpenSettings
+    openSettings: onOpenSettings,
+    newGroupConversation
   })
 
   const spaceHeld = useSpaceHeld()

@@ -15,6 +15,7 @@ export {
 } from './edits'
 export { findChatSpot } from './freeSpace'
 export { boundsOf, COLLAPSED_SIZE, FIT_PADDING, isPlaced, sizeOf, type Box } from './geometry'
+export { groupFolders, groupWideOf, isGroupWide, setGroupWideFolders } from './groupWide'
 export { dropIntoGroup, groupUnder, leaveGroup, moveToGroup, removeGroup, terminalsIn, ungroup } from './groups'
 export { fitAfterResize, fitGroupToContent, growGroupsToFit, withoutAutoGrow } from './groupSize'
 export { pushAway } from './push'

@@ -14,7 +14,8 @@ export type Deps = {
   startRename: (id: string) => void
   addGroup: (position: XYPosition) => void
   addFolder: (position: XYPosition, groupId?: string) => void
-  addWorkspace: (position: XYPosition, groupId?: string) => void
+  // Conversas do grupo todo (ProjectData.groupWide): cria o card do grupo ou vai até ele.
+  openGroupWide: (groupId: string) => void
   addWorkspaceFolder: (id: string) => void
   removeWorkspaceFolder: (id: string, folder: string) => void
   addNote: (position: XYPosition, groupId?: string) => void

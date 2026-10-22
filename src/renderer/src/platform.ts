@@ -91,16 +91,19 @@ function fromLinux(path: string, dir: string): string {
 }
 
 // Caminho relativo à pasta, com "/" (o formato da árvore de arquivos), ou null se estiver fora.
-// No Windows, sem diferenciar maiúsculas, como o disco de lá.
+// No Windows, sem diferenciar maiúsculas, como o disco de lá. O acento vale igual num caractere
+// só ("ã", como o Claude escreve) ou em dois ("a" + "~", como o macOS grava o nome da pasta
+// escolhida na janela do sistema): a comparação é parte por parte, e o que sobra segue como veio.
 export function relativeTo(path: string, dir: string): string | null {
-  const full = normalize(fromLinux(path, dir))
-  const base = normalize(dir).replace(/[\\/]+$/, '')
-  const head = full.slice(0, base.length)
-  if (IS_WIN ? head.toLowerCase() !== base.toLowerCase() : head !== base) return null
-  if (full.length === base.length) return ''
-  if (!SEPARATORS.test(full[base.length])) return null
-  const rel = full.slice(base.length + 1)
-  return IS_WIN ? rel.replace(/\\/g, '/') : rel
+  const full = normalize(fromLinux(path, dir)).split(SEPARATORS)
+  const base = normalize(dir).replace(/[\\/]+$/, '').split(SEPARATORS)
+  if (full.length < base.length || base.some((part, i) => !sameName(part, full[i]))) return null
+  return full.slice(base.length).join('/')
+}
+
+function sameName(a: string, b: string): boolean {
+  const [x, y] = [a.normalize('NFC'), b.normalize('NFC')]
+  return IS_WIN ? x.toLowerCase() === y.toLowerCase() : x === y
 }
 
 // "~/proj" no lugar de "/Users/ana/proj" (no Windows, "~\proj").

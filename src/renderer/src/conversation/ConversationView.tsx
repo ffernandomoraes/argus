@@ -9,7 +9,7 @@ import { Presence } from '../motion'
 import { ChatView } from './ChatView'
 import { AccountChoiceContext, moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
-import { fileInFolder } from '../canvas/drawers/fileInFolder'
+import { fileInFolder, ownFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
 import { isAbsolutePath } from '../platform'
 import { useIsFavorite } from '../canvas/favorites'
@@ -155,7 +155,9 @@ export const ConversationView = memo(function ConversationView({
     void locate(roots, path).then((found) => {
       const root = roots.find((r) => fileInFolder(r, found) !== null && isAbsolutePath(found))
       const rel = root ? fileInFolder(root, found) : fileInFolder(cwd, found)
-      if (rel) window.api.files.reveal(root ?? cwd, rel)
+      // Fora das pastas da conversa (a temporária do Claude, a da memória): pela pasta do arquivo.
+      const at = rel ? { root: root ?? cwd, rel } : ownFolder(found)
+      if (at) window.api.files.reveal(at.root, at.rel)
     })
   })
   const [mcpOpen, setMcpOpen] = useState(false)

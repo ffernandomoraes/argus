@@ -84,6 +84,40 @@ export function createConversationWindow(hash: string): BrowserWindow {
   return win
 }
 
+// Mascote solto na tela: janela transparente, sem moldura nem sombra, por cima de todos os apps e
+// em todas as mesas (inclusive as de app em tela cheia, no Mac), fora da barra de tarefas e sem
+// nunca pegar o foco. O clique atravessa (vai para o app de baixo) até o ponteiro entrar no boneco
+// (ver MascotOverlay). No Mac é um painel: é o tipo de janela que fica por cima das telas cheias.
+export function createMascotWindow(bounds: Electron.Rectangle): BrowserWindow {
+  const win = new BrowserWindow({
+    ...bounds,
+    transparent: true,
+    backgroundColor: '#00000000',
+    frame: false,
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    // Windows e Linux: nunca pega o foco (o clique não ativa o Argus). No Mac fica com as opções
+    // padrão: o painel já não ativa o app, e com focusable: false e acceptFirstMouse o clique no
+    // boneco ativava o Argus e trazia as janelas dele para a frente (experimento de 2026-10-22).
+    ...(IS_MAC ? {} : { focusable: false }),
+    show: false,
+    ...(IS_MAC ? { type: 'panel' } : {}),
+    webPreferences
+  })
+  win.setAlwaysOnTop(true, 'screen-saver')
+  // skipTransformProcessType: sem ele, no Mac, o ícone do Dock some e volta a cada chamada.
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
+  lockNavigation(win.webContents)
+  openLinksOutside(win.webContents)
+  loadRenderer(win, 'mascot')
+  win.once('ready-to-show', () => win.showInactive())
+  return win
+}
+
 // Ao abrir o app: as janelas do canvas como estavam ao fechar; sem nada guardado, uma só.
 export function restoreCanvasWindows(): void {
   const saved = loadCanvasWindows()

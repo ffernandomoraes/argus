@@ -22,11 +22,9 @@ export type Preferences = {
   conversationDefaults: number
   // Player da música que toca no sistema, na barra de título (MediaControls).
   mediaPlayer: boolean
-  // Mascote no canto esquerdo do canvas (canvas/mascot).
+  // Mascote solto na tela, por cima de qualquer app (canvas/mascot). O lugar dele fica no
+  // processo principal (AppSettings.mascotSpot), que é quem move a janela.
   mascot: boolean
-  // Onde o mascote fica parado, se a pessoa arrastou: canto de cima do quadro dele, em fração da
-  // largura e da altura da janela. Nulo = canto esquerdo, no meio da altura.
-  mascotSpot: { x: number; y: number } | null
   // Visual do mascote e o golpe no envio (Configurações > Mascote).
   mascotLook: MascotLook
   // Modo orquestrador disponível (Configurações > Experimentos): mostra a aba e o item no seletor.
@@ -59,7 +57,6 @@ const DEFAULTS: Preferences = {
   conversationDefaults: CONVERSATION_DEFAULTS,
   mediaPlayer: true,
   mascot: false,
-  mascotSpot: null,
   mascotLook: DEFAULT_LOOK,
   orchestratorEnabled: false,
   multiAgents: false,

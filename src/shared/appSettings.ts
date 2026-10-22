@@ -7,4 +7,7 @@ export type AppSettings = {
   menuBarIcon: boolean
   // Idioma da interface; "system" segue o do sistema operacional.
   language: LangPreference
+  // Onde o mascote solto na tela ficou (canto de cima da janela dele, em coordenadas da tela).
+  // Nulo: o canto de baixo à esquerda da tela principal.
+  mascotSpot: { x: number; y: number } | null
 }

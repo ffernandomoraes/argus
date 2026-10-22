@@ -5,7 +5,7 @@ import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { ActiveChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -60,6 +60,8 @@ export type InvokeChannels = {
   'updates:check': () => UpdateState
   'updates:notes': () => ReleaseNote[]
   'popout:payload': (id: string) => unknown
+  // Respostas não vistas e conversas que pararam com erro (o check verde e o aviso do mascote).
+  'mascot:alerts': () => MascotAlerts
   'usage:get': () => Record<string, Usage>
   'media:get': () => NowPlaying | null
   'media:command': (command: MediaCommand) => void
@@ -163,6 +165,16 @@ export type SendChannels = {
   'theme:set': (theme: ThemeSource) => void
   'interface:zoom': (factor: number) => void
   'popout:open': (id: string, payload: unknown) => void
+  // Mascote solto na tela (src/main/app/mascotOverlay.ts). Das janelas do app: ligado nas
+  // Configurações e alguém escrevendo um pedido. Da janela do mascote: o ponteiro em cima do boneco
+  // (pega o clique), arrastar (o canto de cima da janela em coordenadas da tela), soltar e voltar
+  // ao canto (dois cliques).
+  'mascot:enabled': (on: boolean) => void
+  'mascot:typing': (typing: boolean) => void
+  'mascot:interactive': (on: boolean) => void
+  'mascot:drag': (x: number, y: number) => void
+  'mascot:dragEnd': () => void
+  'mascot:home': () => void
   'updates:install': () => void
   'cli:ready': () => void
   // Ditado
@@ -256,6 +268,11 @@ export type SendSyncChannels = {
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.
 export type EventChannels = {
   edit: (action: EditAction) => void
+  // Para a janela do mascote: alguém escrevendo um pedido no app; respostas não vistas e erros.
+  'mascot:typing': (typing: boolean) => void
+  'mascot:alerts': (alerts: MascotAlerts) => void
+  // O ponteiro saiu do boneco e o clique voltou a atravessar a janela dele.
+  'mascot:released': () => void
   'reload-request': () => void
   'accent:changed': (color: string | null) => void
   // Idioma trocado nos ajustes: a janela recarrega para redesenhar os textos.

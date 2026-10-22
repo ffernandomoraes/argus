@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { WandSparkles } from 'lucide-react'
+import { CornerDownLeft, WandSparkles } from 'lucide-react'
 import { MascotFigure } from '../../canvas/mascot/MascotFigure'
 import { tr } from '../../i18n'
 import { Presence } from '../../motion'
@@ -24,10 +24,18 @@ export function MascotSection() {
           'Body, skin, face, eyes, mouth, hair, beard and the strike it gives on send, in a full-screen editor.'
         )}
       </p>
-      <Button size="xl" variant="primary" onClick={() => setEditing(true)}>
-        <WandSparkles size={15} />
-        {tr('Personalizar mascote', 'Customize mascot')}
-      </Button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button size="xl" variant="primary" onClick={() => setEditing(true)}>
+          <WandSparkles size={15} />
+          {tr('Personalizar mascote', 'Customize mascot')}
+        </Button>
+        {/* O boneco solto na tela volta ao canto de baixo da tela principal (perdeu de vista, ou no
+            Mac, onde arrastar é com o sistema e os dois cliques não chegam a ele). */}
+        <Button size="xl" onClick={() => window.api.mascot.home()}>
+          <CornerDownLeft size={15} />
+          {tr('Trazer para o canto', 'Bring back to the corner')}
+        </Button>
+      </div>
       {createPortal(<Presence kind="modal">{editing && <MascotEditor onClose={() => setEditing(false)} />}</Presence>, document.body)}
     </div>
   )

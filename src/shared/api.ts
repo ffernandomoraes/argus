@@ -5,7 +5,7 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { Lang, LangPreference } from './i18n'
 import type { CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { ActiveChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -83,6 +83,20 @@ export type Api = {
     open: (id: string, payload: unknown) => void
     payload: (id: string) => Promise<unknown>
     onClosed: (cb: (id: string) => void) => Off
+  }
+  // Mascote solto na tela. As janelas do app avisam se está ligado e se alguém escreve; a janela
+  // do mascote pega o clique só em cima do boneco e muda de lugar arrastando.
+  mascot: {
+    setEnabled: (on: boolean) => void
+    setTyping: (typing: boolean) => void
+    setInteractive: (on: boolean) => void
+    dragTo: (x: number, y: number) => void
+    dragEnd: () => void
+    home: () => void
+    alerts: () => Promise<MascotAlerts>
+    onAlerts: (cb: (alerts: MascotAlerts) => void) => Off
+    onTyping: (cb: (typing: boolean) => void) => Off
+    onReleased: (cb: () => void) => Off
   }
   // Modelos e modo padrão que o `claude` de cada conta informa; sem conta, a padrão.
   claude: {

@@ -86,6 +86,12 @@ export type ActiveChat = {
 // Conversa com resposta que você ainda não viu (bolinha verde na lista), como a janela conta.
 export type UnreadChat = { id: string; cwd: string; title: string }
 
+// O que o mascote solto na tela mostra além do que as conversas ativas dizem. done: respostas não
+// vistas que terminaram bem (check verde). failed: chaves das conversas que pararam com erro e
+// você ainda não viu (aviso vermelho); a que acabou de parar conta por alguns segundos mesmo
+// aberta na tela.
+export type MascotAlerts = { done: number; failed: string[] }
+
 // thinking: pensando ou esperando o modelo. writing: escrevendo a resposta. preparing: montando o
 // pedido de uma ferramenta (o resumo chega aos poucos). running: ferramenta rodando.
 export type ChatActivity = {

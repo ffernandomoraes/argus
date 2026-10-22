@@ -27,7 +27,9 @@ import {
 // Cada parte que mexe fica num Pivot (ombro, cotovelo, pescoço, quadril, pés); as poses e as
 // animações estão em styles/mascot.css, pela classe pose-* do <svg>.
 
-export type Pose = 'idle' | 'walk' | 'dance' | 'listen' | 'thumbs' | 'wave' | Strike
+// ask: pergunta esperando você. wave: acenando com o aviso de erro. thumbs: pronto, com o check
+// verde. think, type e search: trabalhando (pensando, digitando no notebook, procurando com a lupa).
+export type Pose = 'idle' | 'walk' | 'dance' | 'listen' | 'thumbs' | 'wave' | 'ask' | 'think' | 'type' | 'search' | Strike
 
 export const isStrike = (pose: Pose): pose is Strike => pose in STRIKES
 
@@ -94,7 +96,8 @@ function FigureProvider({ look, children }: { look: MascotLook; children: (id: s
 export type View = { x: number; y: number; w: number; h: number }
 const viewBox = (v: View) => `${v.x} ${v.y} ${v.w} ${v.h}`
 
-// view: o pedaço do desenho que aparece (padrão: o quadro do canvas, com o espaço do chicote).
+// view: o pedaço do desenho que aparece (padrão: o quadro da janela do mascote, com o espaço do
+// chicote).
 // still: parado, sem animação nenhuma (miniaturas do editor); num golpe, fica no impacto.
 export const MascotFigure = memo(function MascotFigure({
   pose,
@@ -156,8 +159,9 @@ function FrontView({ pose }: { pose: Pose }) {
   const { female, url, build } = useFigure()
   const strike = isStrike(pose) ? pose : null
   const melee = strike === 'slap' || strike === 'punch' || strike === 'kick' ? strike : null
-  const mouth: Mouth = strike || pose === 'dance' || pose === 'thumbs' ? 'grin' : pose === 'wave' ? 'smile' : 'calm'
-  const rightHand: Hand = pose === 'whip' || pose === 'punch' ? 'fist' : pose === 'thumbs' ? 'thumb' : 'open'
+  const mouth: Mouth = strike || pose === 'dance' || pose === 'thumbs' ? 'grin' : pose === 'search' || pose === 'type' ? 'smile' : 'calm'
+  const rightHand: Hand =
+    pose === 'whip' || pose === 'punch' || pose === 'think' || pose === 'search' ? 'fist' : pose === 'thumbs' ? 'thumb' : 'open'
   const Leg = female ? LegFemale : LegMale
   // Os efeitos do golpe acompanham a mão (ou o pé, no chute) quando o corpo é mais largo.
   const fx = shift(strike === 'kick' ? build.hip : build.shoulder)
@@ -198,13 +202,22 @@ function FrontView({ pose }: { pose: Pose }) {
           <Head mouth={mouth} />
         </g>
       </Pivot>
+      {pose === 'type' && <Laptop />}
       <Arm side="l" hand={pose === 'punch' ? 'fist' : 'open'} item={pose === 'punch' ? 'glove' : undefined} />
       <g transform={MIRROR}>
-        <Arm side="r" hand={rightHand} item={pose === 'whip' ? 'whip' : pose === 'punch' ? 'glove' : undefined} />
+        <Arm side="r" hand={rightHand} item={pose === 'whip' ? 'whip' : pose === 'punch' ? 'glove' : pose === 'search' ? 'lens' : undefined} />
       </g>
       {(pose === 'whip' || melee) && <g transform={fx}>{melee ? <Impact strike={melee} /> : <WhipCrack />}</g>}
-      {pose === 'wave' && <Badge />}
-      {pose === 'thumbs' && <Sparkles />}
+      {pose === 'wave' && <WarningBadge />}
+      {pose === 'ask' && <QuestionBadge />}
+      {pose === 'thumbs' && (
+        <>
+          <Sparkles />
+          <CheckBadge />
+        </>
+      )}
+      {pose === 'think' && <ThoughtBubble />}
+      {pose === 'type' && <CodeBits />}
       {pose === 'listen' && <SoundWaves />}
     </>
   )
@@ -1499,9 +1512,9 @@ function LegFemale() {
 
 // Braço esquerdo pendurado do ombro (45, 95): manga, antebraço a partir do cotovelo (45, 107) e a
 // mão em (45, 121). O direito é este espelhado; nos dois, ângulo positivo levanta para fora.
-// item: o cabo do chicote ou a luva de boxe, na mão. Corpo mais largo: o ombro sai para fora e o
-// braço engrossa em volta do próprio eixo.
-function Arm({ side, hand, item }: { side: 'l' | 'r'; hand: Hand; item?: 'whip' | 'glove' }) {
+// item: o cabo do chicote, a luva de boxe ou a lupa, na mão. Corpo mais largo: o ombro sai para
+// fora e o braço engrossa em volta do próprio eixo.
+function Arm({ side, hand, item }: { side: 'l' | 'r'; hand: Hand; item?: 'whip' | 'glove' | 'lens' }) {
   const { url, skin, build } = useFigure()
   const thick = widen(45, build.arm)
   return (
@@ -1514,6 +1527,7 @@ function Arm({ side, hand, item }: { side: 'l' | 'r'; hand: Hand; item?: 'whip' 
               <path d="M44.4 123 L44.4 131" stroke="#7a4b2a" strokeWidth={0.6} strokeLinecap="round" />
             </>
           )}
+          {item === 'lens' && <Lens />}
           <g transform={thick}>
             <path d="M42.4 105 L47.6 105 L47.2 118.2 C46.6 119.4 43.4 119.4 42.8 118.2 Z" fill={url('limb')} />
             <path d="M43.2 107.5 L43.5 117.5" stroke={skin.line} strokeWidth={0.8} strokeLinecap="round" opacity={0.45} />
@@ -1555,6 +1569,28 @@ function HandShape({ kind }: { kind: Hand }) {
       <path d="M42.8 121.2 C43.8 121.7 46.2 121.7 47.2 121.2" fill="none" stroke={skin.line} strokeWidth={0.6} strokeLinecap="round" />
       {kind === 'fist' && <ellipse cx={47.2} cy={119.6} rx={1.2} ry={2} fill={skin.soft} transform="rotate(-30 47.2 119.6)" />}
     </>
+  )
+}
+
+// Lupa saindo da mão fechada, na direção do antebraço: cabo e a lente depois dele.
+function Lens() {
+  return (
+    <>
+      <rect x={44} y={122.5} width={2} height={8} rx={1} fill="#4a2c17" />
+      <circle cx={45} cy={136} r={5.6} fill="#cdeeff" fillOpacity={0.35} stroke="#3a3d45" strokeWidth={1.6} />
+      <path d="M42 133.4 C42.8 132.2 44 131.6 45.4 131.6" fill="none" stroke="#fff" strokeWidth={0.9} strokeLinecap="round" opacity={0.8} />
+    </>
+  )
+}
+
+// Notebook na frente da barriga, visto por trás da tampa: as mãos ficam no teclado, na beirada.
+function Laptop() {
+  return (
+    <g>
+      <rect x={46} y={99} width={28} height={17.5} rx={1.6} fill="#c9ccd3" stroke="#9a9ea8" strokeWidth={0.8} />
+      <circle cx={60} cy={107.6} r={2.2} fill="#eef0f4" />
+      <rect x={43} y={116} width={34} height={3.2} rx={1} fill="#aeb2bb" />
+    </g>
   )
 }
 
@@ -2184,15 +2220,103 @@ function Swoosh({ strike }: { strike: MeleeStrike }) {
   )
 }
 
-// Aviso de pendência, acima do ombro do braço que acena.
-function Badge() {
+// Os avisos ficam no mesmo lugar, acima do ombro direito: erro (triângulo vermelho), pergunta
+// (bolinha azul com interrogação) e pronto (bolinha verde com check).
+const BADGE = { x: 106, y: 24 }
+
+function WarningBadge() {
+  const { x, y } = BADGE
   return (
-    <Pivot x={106} y={24} move="m-badge">
-      <circle cx={106} cy={24} r={7} fill="#ff453a" stroke="#fff" strokeWidth={1.4} />
-      <rect x={105} y={19.4} width={2} height={5.6} rx={1} fill="#fff" />
-      <circle cx={106} cy={27.9} r={1.1} fill="#fff" />
+    <Pivot x={x} y={y} move="m-alarm">
+      <path
+        d={`M${x} ${y - 8.4} L${x + 8.4} ${y + 6.4} L${x - 8.4} ${y + 6.4} Z`}
+        fill="#ff453a"
+        stroke="#fff"
+        strokeWidth={1.4}
+        strokeLinejoin="round"
+      />
+      <rect x={x - 1} y={y - 3.6} width={2} height={5.6} rx={1} fill="#fff" />
+      <circle cx={x} cy={y + 3.8} r={1.1} fill="#fff" />
     </Pivot>
   )
+}
+
+// Interrogação na bolinha e outras menores subindo do lado.
+const QUESTIONS = [
+  { x: 95, y: 12, size: 8 },
+  { x: 117, y: 14, size: 6.5 }
+]
+
+function QuestionBadge() {
+  const { x, y } = BADGE
+  return (
+    <>
+      {QUESTIONS.map((q, i) => (
+        <Pivot key={i} x={q.x} y={q.y} move={`m-float m-float-${i}`}>
+          <text x={q.x} y={q.y} textAnchor="middle" fontSize={q.size} fontWeight={800} fontFamily="system-ui, sans-serif" fill="#0a84ff">
+            ?
+          </text>
+        </Pivot>
+      ))}
+      <Pivot x={x} y={y} move="m-wobble">
+        <circle cx={x} cy={y} r={7} fill="#0a84ff" stroke="#fff" strokeWidth={1.4} />
+        <text x={x} y={y + 3.4} textAnchor="middle" fontSize={10} fontWeight={800} fontFamily="system-ui, sans-serif" fill="#fff">
+          ?
+        </text>
+      </Pivot>
+    </>
+  )
+}
+
+function CheckBadge() {
+  const { x, y } = BADGE
+  return (
+    <Pivot x={x} y={y} move="m-pop">
+      <circle cx={x} cy={y} r={7} fill="#30d158" stroke="#fff" strokeWidth={1.4} />
+      <path d={`M${x - 3.2} ${y + 0.2} L${x - 0.8} ${y + 2.6} L${x + 3.4} ${y - 2.4}`} fill="none" stroke="#fff" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+    </Pivot>
+  )
+}
+
+// Pensando: bolinhas subindo da cabeça até a nuvem, com três pontinhos que acendem em sequência.
+const THOUGHT = { x: 114, y: 0 }
+
+function ThoughtBubble() {
+  const { x, y } = THOUGHT
+  return (
+    <g className="m-thought">
+      <circle cx={97} cy={22} r={1.6} fill="#fff" />
+      <circle cx={102.5} cy={13.5} r={2.6} fill="#fff" />
+      <path
+        d={`M${x - 10} ${y + 4} C${x - 14} ${y + 4} ${x - 14} ${y - 3} ${x - 9} ${y - 3} C${x - 8} ${y - 8} ${x - 1} ${y - 9} ${x + 1} ${y - 5} C${x + 5} ${y - 9} ${x + 12} ${y - 6} ${x + 10} ${y - 1} C${x + 15} ${y} ${x + 14} ${y + 7} ${x + 9} ${y + 6} C${x + 6} ${y + 10} ${x - 6} ${y + 10} ${x - 10} ${y + 4} Z`}
+        fill="#fff"
+        stroke="#d6dbe3"
+        strokeWidth={0.8}
+      />
+      {[-5, 0, 5].map((dx, i) => (
+        <Pivot key={dx} x={x + dx} y={y + 1} move={`m-dot m-dot-${i}`}>
+          <circle cx={x + dx} cy={y + 1} r={1.5} fill="#5b6270" />
+        </Pivot>
+      ))}
+    </g>
+  )
+}
+
+// Digitando: pedacinhos de código subindo do notebook.
+const CODE_BITS = [
+  { x: 80, y: 100, text: '</>' },
+  { x: 86, y: 108, text: '{ }' },
+  { x: 78, y: 112, text: '01' }
+]
+
+function CodeBits() {
+  return CODE_BITS.map((b, i) => (
+    <Pivot key={i} x={b.x} y={b.y} move={`m-code m-code-${i}`}>
+      <text x={b.x} y={b.y} fontSize={6} fontWeight={700} fontFamily="ui-monospace, Menlo, monospace" fill="#7cc4ff">
+        {b.text}
+      </text>
+    </Pivot>
+  ))
 }
 
 const SPARKLES = [

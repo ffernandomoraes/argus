@@ -41,9 +41,25 @@ export function setupLifecycle(s: Services): Lifecycle {
   // Ctrl+C no terminal que subiu o app também encerra tudo que ele abriu.
   process.on('SIGINT', () => flow.exitNow())
 
+  // Sem nenhuma janela do app aberta. A do mascote solto na tela não conta: com ela na tela, o
+  // window-all-closed do Electron não viria.
+  const allClosed = (): void => {
+    if (!IS_MAC) return app.quit()
+    // No macOS o app segue no Dock; sem janela, nada precisa de sessão de chat aberta, e o
+    // microfone de um ditado em andamento desliga.
+    s.chats.releaseAll()
+    s.speech.stop()
+  }
+
   app.on('browser-window-created', (_e, win) => {
     // Windows desligando ou saindo da conta: o before-quit não vem (ver QuitFlow.sessionEnd).
     if (IS_WIN) win.on('session-end', () => flow.sessionEnd())
+    // Fechou a última janela do app e só o mascote ficou aberto.
+    win.on('closed', () => {
+      if (s.mascot.isMascotWindow(win)) return
+      const rest = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
+      if (rest.length && rest.every((w) => s.mascot.isMascotWindow(w))) allClosed()
+    })
     // No Windows não há Dock para reabrir o canvas: fechar a última janela dele fecha o app,
     // passando pela mesma pergunta de quando há algo rodando. As outras fecham normalmente.
     if (!IS_MAC) {
@@ -56,13 +72,7 @@ export function setupLifecycle(s: Services): Lifecycle {
     }
   })
 
-  app.on('window-all-closed', () => {
-    if (!IS_MAC) return app.quit()
-    // No macOS o app segue no Dock; sem janela, nada precisa de sessão de chat aberta, e o
-    // microfone de um ditado em andamento desliga.
-    s.chats.releaseAll()
-    s.speech.stop()
-  })
+  app.on('window-all-closed', allClosed)
 
   return { restartToUpdate: () => flow.restartToUpdate(), confirmAndQuit: () => flow.confirmAndQuit() }
 }

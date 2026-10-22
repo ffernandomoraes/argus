@@ -47,8 +47,8 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     icon: PersonStanding,
     experimental: true,
     description: tr(
-      'Monte o bonequinho do canto do canvas: corpo, pele, rosto, olhos, boca, cabelo, barba e o golpe que ele dá no envio.',
-      'Build the little character at the edge of the canvas: body, skin, face, eyes, mouth, hair, beard and the strike it gives on send.'
+      'Monte o bonequinho solto na tela: corpo, pele, rosto, olhos, boca, cabelo, barba e o golpe que ele dá no envio.',
+      'Build the little character loose on your screen: body, skin, face, eyes, mouth, hair, beard and the strike it gives on send.'
     )
   },
   {

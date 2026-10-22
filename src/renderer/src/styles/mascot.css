@@ -13,6 +13,13 @@
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.22));
 }
 
+/* Janela do mascote solto na tela (#mascot): só o boneco, sem fundo. */
+html.mascot-overlay,
+html.mascot-overlay body,
+html.mascot-overlay #root {
+  background: transparent;
+}
+
 /* ---------- posição fixa de cada pose ---------- */
 
 .mascot :is(.m-arm-l, .m-arm-r, .m-fore-l, .m-fore-r, .m-head, .m-iris) {
@@ -56,6 +63,46 @@
 }
 .mascot.pose-wave .m-head {
   transform: rotate(-4deg);
+}
+/* Pergunta: ombros para cima, braços abertos com as mãos para fora, cabeça inclinada. */
+.mascot.pose-ask :is(.m-arm-l, .m-arm-r) {
+  transform: rotate(35deg);
+}
+.mascot.pose-ask :is(.m-fore-l, .m-fore-r) {
+  transform: rotate(75deg);
+}
+.mascot.pose-ask .m-head {
+  transform: rotate(6deg);
+}
+/* Pensando: cotovelo para fora na altura do ombro e a mão fechada no queixo; olhar para cima. */
+.mascot.pose-think .m-arm-r {
+  transform: rotate(90deg);
+}
+.mascot.pose-think .m-fore-r {
+  transform: rotate(160deg);
+}
+.mascot.pose-think .m-head {
+  transform: rotate(-5deg);
+}
+.mascot.pose-think .m-iris {
+  transform: translate(-1px, -1.3px);
+}
+/* Digitando: antebraços para dentro, mãos na beirada do notebook; olhar para baixo. */
+.mascot.pose-type :is(.m-arm-l, .m-arm-r) {
+  transform: rotate(4deg);
+}
+.mascot.pose-type :is(.m-fore-l, .m-fore-r) {
+  transform: rotate(-54deg);
+}
+.mascot.pose-type .m-iris {
+  transform: translate(0, 1.2px);
+}
+/* Procurando: braço para cima e a lupa do lado do rosto (a animação varre de um lado ao outro). */
+.mascot.pose-search .m-arm-r {
+  transform: rotate(120deg);
+}
+.mascot.pose-search .m-fore-r {
+  transform: rotate(40deg);
 }
 /* Golpes e dança: o ângulo inteiro vem da animação. */
 .mascot:is(.pose-whip, .pose-slap) :is(.m-arm-r, .m-fore-r),
@@ -110,7 +157,7 @@
     transform: rotate(2.5deg);
   }
 }
-.mascot:is(.pose-idle, .pose-listen, .pose-thumbs, .pose-wave) .m-torso-move {
+.mascot:is(.pose-idle, .pose-listen, .pose-thumbs, .pose-wave, .pose-ask, .pose-think, .pose-type, .pose-search) .m-torso-move {
   animation: mascot-breathe 3.2s ease-in-out infinite;
   animation-play-state: var(--anim-state);
 }
@@ -118,7 +165,11 @@
   animation: mascot-bob 3.2s ease-in-out infinite;
   animation-play-state: var(--anim-state);
 }
-.mascot.pose-idle :is(.m-arm-l-move, .m-arm-r-move) {
+.mascot:is(.pose-idle, .pose-think) .m-arm-l-move {
+  animation: mascot-sway 3.2s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-idle .m-arm-r-move {
   animation: mascot-sway 3.2s ease-in-out infinite;
   animation-play-state: var(--anim-state);
 }
@@ -938,6 +989,264 @@
   animation-delay: 600ms;
 }
 
+/* ---------- pronto: o check verde aparece com um pulo e fica pulsando ---------- */
+
+@keyframes mascot-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.mascot .m-pop {
+  animation:
+    mascot-pop 450ms cubic-bezier(0.3, 0.7, 0.4, 1) both,
+    mascot-pulse 1.6s ease-in-out 450ms infinite;
+  animation-play-state: var(--anim-state);
+}
+
+/* ---------- pergunta: sobe e desce os ombros, interrogações subindo ---------- */
+
+@keyframes mascot-shrug-arm {
+  0%,
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20%,
+  35% {
+    transform: rotate(10deg);
+  }
+}
+@keyframes mascot-shrug-body {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0);
+  }
+  20%,
+  35% {
+    transform: translateY(-1.6px);
+  }
+}
+@keyframes mascot-tilt {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes mascot-wobble {
+  0%,
+  100% {
+    transform: rotate(-12deg) scale(1);
+  }
+  50% {
+    transform: rotate(12deg) scale(1.1);
+  }
+}
+@keyframes mascot-float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px) scale(1.05);
+  }
+}
+.mascot.pose-ask :is(.m-arm-l-move, .m-arm-r-move) {
+  animation: mascot-shrug-arm 1.8s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-ask .m-body-move {
+  animation: mascot-shrug-body 1.8s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-ask .m-head-move {
+  animation: mascot-tilt 3.6s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-wobble {
+  animation: mascot-wobble 1.2s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-float {
+  animation: mascot-float-up 1.8s ease-out infinite both;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-float-1 {
+  animation-delay: 900ms;
+}
+
+/* ---------- pensando: bate o dedo no queixo, nuvem com pontinhos acendendo ---------- */
+
+@keyframes mascot-tap {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes mascot-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-1.5px);
+  }
+}
+@keyframes mascot-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.mascot.pose-think .m-fore-r-move {
+  animation: mascot-tap 700ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-think .m-head-move {
+  animation: mascot-tilt 4s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-thought {
+  animation: mascot-fade-in 400ms ease-out both;
+}
+.mascot .m-dot {
+  animation: mascot-dot 1.2s ease-in-out infinite both;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-dot-1 {
+  animation-delay: 200ms;
+}
+.mascot .m-dot-2 {
+  animation-delay: 400ms;
+}
+
+/* ---------- digitando: antebraços alternando no teclado, código subindo ---------- */
+
+@keyframes mascot-type {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-9deg);
+  }
+}
+@keyframes mascot-code-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(5px, -20px);
+  }
+}
+.mascot.pose-type .m-fore-l-move {
+  animation: mascot-type 260ms ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-type .m-fore-r-move {
+  animation: mascot-type 260ms ease-in-out -130ms infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-type .m-head-move {
+  animation: mascot-nod 1.6s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-code {
+  animation: mascot-code-rise 2.1s ease-out infinite both;
+  animation-play-state: var(--anim-state);
+}
+.mascot .m-code-1 {
+  animation-delay: 700ms;
+}
+.mascot .m-code-2 {
+  animation-delay: 1400ms;
+}
+
+/* ---------- procurando: a lupa varre de um lado ao outro, a cabeça e o olhar vão junto ---------- */
+
+@keyframes mascot-scan-arm {
+  0%,
+  100% {
+    transform: rotate(-12deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+@keyframes mascot-scan-eyes {
+  0%,
+  100% {
+    transform: translate(-1.4px, -0.3px);
+  }
+  50% {
+    transform: translate(1.4px, -0.3px);
+  }
+}
+.mascot.pose-search .m-arm-r-move {
+  animation: mascot-scan-arm 2.4s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-search .m-head-move {
+  animation: mascot-tilt 2.4s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+.mascot.pose-search .m-iris {
+  animation: mascot-scan-eyes 2.4s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+
+/* ---------- erro: acena, o aviso vermelho chacoalha ---------- */
+
+@keyframes mascot-alarm {
+  0%,
+  50%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  8% {
+    transform: rotate(-14deg) scale(1.15);
+  }
+  16% {
+    transform: rotate(12deg) scale(1.15);
+  }
+  24% {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  32% {
+    transform: rotate(5deg) scale(1.05);
+  }
+}
+.mascot .m-alarm {
+  animation: mascot-alarm 1.4s ease-in-out infinite;
+  animation-play-state: var(--anim-state);
+}
+
 /* ---------- acenando: mão balança, aviso pulsa ---------- */
 
 @keyframes mascot-wave {
@@ -964,10 +1273,6 @@
 }
 .mascot.pose-wave .m-head-move {
   animation: mascot-nod 1s ease-in-out infinite;
-  animation-play-state: var(--anim-state);
-}
-.mascot .m-badge {
-  animation: mascot-pulse 1s ease-in-out infinite;
   animation-play-state: var(--anim-state);
 }
 

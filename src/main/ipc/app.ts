@@ -76,6 +76,16 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('updates:notes', () => fetchReleaseNotes())
   on('updates:install', () => life.restartToUpdate())
   on('popout:open', (_e, id, payload) => s.popouts.show(id, payload))
+  // Mascote solto na tela. Ligar, "escrevendo" e voltar ao canto vêm das janelas do app; o resto,
+  // só da janela dele.
+  on('mascot:enabled', (_e, enabled) => s.mascot.setEnabled(enabled))
+  on('mascot:typing', (_e, typing) => s.mascot.setTyping(typing))
+  on('mascot:interactive', (e, interactive) => s.mascot.owns(e.sender) && s.mascot.setInteractive(interactive))
+  on('mascot:drag', (e, x, y) => s.mascot.owns(e.sender) && s.mascot.dragTo(x, y))
+  on('mascot:dragEnd', (e) => s.mascot.owns(e.sender) && s.mascot.dragEnd())
+  // Voltar ao canto: dois cliques no boneco ou o botão das configurações.
+  on('mascot:home', () => s.mascot.home())
+  handle('mascot:alerts', () => s.mascot.alerts())
   handle('popout:payload', (_e, id) => s.popouts.payload(id))
   handle('usage:get', () => s.usage.all())
   handle('media:get', () => nowPlaying())

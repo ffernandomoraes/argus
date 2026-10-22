@@ -74,6 +74,18 @@ const api: Api = {
     payload: (id) => invoke('popout:payload', id),
     onClosed: (cb) => listen('popout:closed', cb)
   },
+  mascot: {
+    setEnabled: (on) => send('mascot:enabled', on),
+    setTyping: (typing) => send('mascot:typing', typing),
+    setInteractive: (on) => send('mascot:interactive', on),
+    dragTo: (x, y) => send('mascot:drag', x, y),
+    dragEnd: () => send('mascot:dragEnd'),
+    home: () => send('mascot:home'),
+    alerts: () => invoke('mascot:alerts'),
+    onAlerts: (cb) => listen('mascot:alerts', cb),
+    onTyping: (cb) => listen('mascot:typing', cb),
+    onReleased: (cb) => listen('mascot:released', cb)
+  },
   claude: {
     info: (account) => invoke('claude:info', account),
     onInfo: (cb) => listen('claude:info', cb)

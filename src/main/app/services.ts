@@ -21,6 +21,7 @@ import { canvasWindowList, readyCanvas } from './canvasRegistry'
 import { DockBadge } from './dockBadge'
 import { KeepAwake } from './keepAwake'
 import { openFolder } from './folderOpener'
+import { MascotOverlay } from './mascotOverlay'
 import { MenuBarIcon } from './menuBarIcon'
 import { TerminalViewers } from './terminalViewers'
 import { UnreadChats } from './unreadChats'
@@ -54,9 +55,12 @@ export function createServices() {
   const unread = new UnreadChats(() => {
     tray.refresh()
     badge.refresh()
+    mascot.refresh()
   })
   const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), showApp, openChat })
   const badge = new DockBadge(() => chats.list(), () => unread.list())
+  // Mascote solto na tela: check verde com resposta não vista, aviso vermelho com erro.
+  const mascot = new MascotOverlay(() => unread.list(), () => chats.list())
 
   // O indicador do canto do canvas só recebe a lista quando ela muda de verdade.
   let activeShown = ''
@@ -73,6 +77,8 @@ export function createServices() {
     tray.refresh()
     badge.refresh()
     notifier.refresh()
+    // Antes da lista de ativas: a janela do mascote precisa saber do erro quando vê o pedido acabar.
+    mascot.refresh()
     publishActive()
     keepAwake.refresh()
   })
@@ -190,6 +196,7 @@ export function createServices() {
     claudeVersion,
     cli,
     popouts,
-    unsavedFiles
+    unsavedFiles,
+    mascot
   }
 }

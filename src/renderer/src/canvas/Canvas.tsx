@@ -37,7 +37,7 @@ import type { CanvasNode } from './types'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
-import { Mascot } from './mascot/Mascot'
+import { MascotBridge } from './mascot/MascotBridge'
 import { usePreference } from '../settings/preferences'
 import { useWorktreeActions } from './worktrees/useWorktreeActions'
 
@@ -175,7 +175,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           arranging={arranging}
           zoomShortcuts={!shown && !design}
         />
-        <Mascot nodesRef={nodesRef} hidden={uiHidden} />
+        <MascotBridge />
         {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
         <div
           aria-hidden="true"

@@ -2,10 +2,13 @@ import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 
 import {
   Check,
   Dices,
+  CircleCheck,
+  CircleQuestionMark,
   Ear,
   Eye,
   Footprints,
-  Hand,
+  Laptop,
+  Lightbulb,
   Link,
   Laugh,
   Music,
@@ -14,7 +17,8 @@ import {
   RotateCcw,
   ScanFace,
   Scissors,
-  ThumbsUp,
+  Search,
+  TriangleAlert,
   WandSparkles,
   Zap
 } from 'lucide-react'
@@ -105,10 +109,14 @@ const TABS: { id: Tab; label: string; icon: IconType }[] = [
 const LOOPS: { pose: Pose; label: string; icon: IconType }[] = [
   { pose: 'idle', label: tr('Parado', 'Idle'), icon: PersonStanding },
   { pose: 'walk', label: tr('Andando', 'Walking'), icon: Footprints },
-  { pose: 'dance', label: tr('Dançando', 'Dancing'), icon: Music },
   { pose: 'listen', label: tr('Escutando', 'Listening'), icon: Ear },
-  { pose: 'wave', label: tr('Acenando', 'Waving'), icon: Hand },
-  { pose: 'thumbs', label: tr('Joia', 'Thumbs up'), icon: ThumbsUp }
+  { pose: 'think', label: tr('Pensando', 'Thinking'), icon: Lightbulb },
+  { pose: 'type', label: tr('Digitando', 'Typing'), icon: Laptop },
+  { pose: 'search', label: tr('Procurando', 'Searching'), icon: Search },
+  { pose: 'dance', label: tr('Dançando', 'Dancing'), icon: Music },
+  { pose: 'ask', label: tr('Pergunta', 'Question'), icon: CircleQuestionMark },
+  { pose: 'thumbs', label: tr('Pronto', 'Done'), icon: CircleCheck },
+  { pose: 'wave', label: tr('Erro', 'Error'), icon: TriangleAlert }
 ]
 
 export function MascotEditor({ onClose }: { onClose: () => void }) {

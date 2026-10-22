@@ -1,7 +1,7 @@
-import { Coffee, FlaskConical, MessagesSquare, Network, Palette, Plug, Settings2, Users } from 'lucide-react'
+import { Coffee, FlaskConical, MessagesSquare, Network, Palette, PersonStanding, Plug, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
+export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'mascot' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
 
 // Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
@@ -40,6 +40,16 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     label: tr('Aparência', 'Appearance'),
     icon: Palette,
     description: tr('Tema claro, escuro ou o mesmo do sistema.', 'Light, dark or the same as the system.')
+  },
+  {
+    id: 'mascot',
+    label: tr('Mascote', 'Mascot'),
+    icon: PersonStanding,
+    experimental: true,
+    description: tr(
+      'Monte o bonequinho do canto do canvas: corpo, pele, rosto, olhos, boca, cabelo, barba e o golpe que ele dá no envio.',
+      'Build the little character at the edge of the canvas: body, skin, face, eyes, mouth, hair, beard and the strike it gives on send.'
+    )
   },
   {
     id: 'accounts',

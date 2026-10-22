@@ -1,5 +1,5 @@
 /* Mascote (canvas/mascot/MascotFigure.tsx). A pose vem na classe do <svg> (.pose-idle,
-   .pose-whip...). Cada parte que mexe tem dois grupos: o da pose (.m-arm-r, .m-head...), com a
+   .pose-whip...; o golpe do envio é a própria pose: whip, slap, punch ou kick). Cada parte que mexe tem dois grupos: o da pose (.m-arm-r, .m-head...), com a
    posição fixa e transição entre poses, e o do movimento (.m-arm-r-move...), com a animação somada
    por cima. Nos braços, ângulo positivo levanta para fora dos dois lados (o direito é o esquerdo
    espelhado). Unidades em px valem unidades do desenho. */
@@ -57,9 +57,10 @@
 .mascot.pose-wave .m-head {
   transform: rotate(-4deg);
 }
-/* Chicotada e dança: o ângulo inteiro vem da animação. */
-.mascot.pose-whip :is(.m-arm-r, .m-fore-r),
-.mascot.pose-dance :is(.m-arm-l, .m-arm-r, .m-fore-l, .m-fore-r) {
+/* Golpes e dança: o ângulo inteiro vem da animação. */
+.mascot:is(.pose-whip, .pose-slap) :is(.m-arm-r, .m-fore-r),
+.mascot:is(.pose-dance, .pose-punch) :is(.m-arm-l, .m-arm-r, .m-fore-l, .m-fore-r),
+.mascot.pose-kick :is(.m-arm-l, .m-arm-r) {
   transform: none;
 }
 
@@ -310,25 +311,464 @@
   }
 }
 .mascot.pose-whip .m-arm-r-move {
-  animation: mascot-whip-arm var(--whip-ms) linear both;
+  animation: mascot-whip-arm var(--strike-ms) linear both;
 }
 .mascot.pose-whip .m-fore-r-move {
-  animation: mascot-whip-forearm var(--whip-ms) linear both;
+  animation: mascot-whip-forearm var(--strike-ms) linear both;
 }
 .mascot.pose-whip .m-body-move {
-  animation: mascot-whip-body var(--whip-ms) ease-out both;
+  animation: mascot-whip-body var(--strike-ms) ease-out both;
 }
 .mascot .m-lash-windup {
-  animation: mascot-lash-windup var(--whip-ms) linear both;
+  animation: mascot-lash-windup var(--strike-ms) linear both;
 }
 .mascot .m-lash-crack {
-  animation: mascot-lash-crack var(--whip-ms) linear both;
+  animation: mascot-lash-crack var(--strike-ms) linear both;
 }
 .mascot .m-lash-follow {
-  animation: mascot-lash-follow var(--whip-ms) linear both;
+  animation: mascot-lash-follow var(--strike-ms) linear both;
 }
 .mascot .m-spark {
-  animation: mascot-spark var(--whip-ms) linear both;
+  animation: mascot-spark var(--strike-ms) linear both;
+}
+
+/* ---------- tapa, soco e chute: prepara (16-34%), golpeia (42%, o impacto), segura até 68% e volta ----------
+   O rastro (.m-swoosh) aparece no movimento; a estrela (.m-impact), no impacto. */
+
+@keyframes mascot-lean {
+  0% {
+    transform: rotate(0deg);
+  }
+  16%,
+  34% {
+    transform: rotate(-3deg);
+  }
+  42% {
+    transform: rotate(3deg);
+  }
+  68% {
+    transform: rotate(2deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mascot-swoosh {
+  0%,
+  33.9% {
+    opacity: 0;
+  }
+  34%,
+  48% {
+    opacity: 0.85;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mascot-impact {
+  0%,
+  41.9% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  42% {
+    opacity: 1;
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  58%,
+  66% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+.mascot .m-swoosh {
+  animation: mascot-swoosh var(--strike-ms) linear both;
+}
+.mascot .m-impact {
+  animation: mascot-impact var(--strike-ms) linear both;
+}
+.mascot:is(.pose-slap, .pose-punch) .m-body-move {
+  animation: mascot-lean var(--strike-ms) ease-out both;
+}
+
+/* Tapa: mão aberta lá no alto e desce de lado até a pasta. */
+@keyframes mascot-slap-arm {
+  0% {
+    transform: rotate(8deg);
+  }
+  16%,
+  34% {
+    transform: rotate(155deg);
+  }
+  42%,
+  68% {
+    transform: rotate(92deg);
+  }
+  86%,
+  100% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes mascot-slap-forearm {
+  0% {
+    transform: rotate(-6deg);
+  }
+  16%,
+  34% {
+    transform: rotate(25deg);
+  }
+  42%,
+  68% {
+    transform: rotate(-2deg);
+  }
+  86%,
+  100% {
+    transform: rotate(-6deg);
+  }
+}
+.mascot.pose-slap .m-arm-r-move {
+  animation: mascot-slap-arm var(--strike-ms) linear both;
+}
+.mascot.pose-slap .m-fore-r-move {
+  animation: mascot-slap-forearm var(--strike-ms) linear both;
+}
+
+/* Soco: luvas na guarda, perto do rosto, e o braço direito estica reto. */
+@keyframes mascot-punch-arm {
+  0% {
+    transform: rotate(8deg);
+  }
+  16%,
+  34% {
+    transform: rotate(50deg);
+  }
+  42%,
+  68% {
+    transform: rotate(90deg);
+  }
+  86%,
+  100% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes mascot-punch-forearm {
+  0% {
+    transform: rotate(-6deg);
+  }
+  16%,
+  34% {
+    transform: rotate(125deg);
+  }
+  42%,
+  68% {
+    transform: rotate(0deg);
+  }
+  86%,
+  100% {
+    transform: rotate(-6deg);
+  }
+}
+@keyframes mascot-guard-arm {
+  0% {
+    transform: rotate(8deg);
+  }
+  16%,
+  68% {
+    transform: rotate(40deg);
+  }
+  86%,
+  100% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes mascot-guard-forearm {
+  0% {
+    transform: rotate(-6deg);
+  }
+  16%,
+  68% {
+    transform: rotate(115deg);
+  }
+  86%,
+  100% {
+    transform: rotate(-6deg);
+  }
+}
+.mascot.pose-punch .m-arm-r-move {
+  animation: mascot-punch-arm var(--strike-ms) linear both;
+}
+.mascot.pose-punch .m-fore-r-move {
+  animation: mascot-punch-forearm var(--strike-ms) linear both;
+}
+.mascot.pose-punch .m-arm-l-move {
+  animation: mascot-guard-arm var(--strike-ms) linear both;
+}
+.mascot.pose-punch .m-fore-l-move {
+  animation: mascot-guard-forearm var(--strike-ms) linear both;
+}
+
+/* Chute: a perna direita sobe de lado até a pasta, o corpo inclina para o outro lado e os braços
+   abrem para equilibrar. */
+@keyframes mascot-kick-leg {
+  0% {
+    transform: rotate(0deg);
+  }
+  16%,
+  34% {
+    transform: rotate(25deg);
+  }
+  42%,
+  68% {
+    transform: rotate(82deg);
+  }
+  86%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mascot-kick-body {
+  0% {
+    transform: rotate(0deg);
+  }
+  16%,
+  34% {
+    transform: rotate(-3deg);
+  }
+  42%,
+  68% {
+    transform: rotate(-6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mascot-balance-l {
+  0% {
+    transform: rotate(8deg);
+  }
+  16%,
+  68% {
+    transform: rotate(60deg);
+  }
+  86%,
+  100% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes mascot-balance-r {
+  0% {
+    transform: rotate(8deg);
+  }
+  16%,
+  68% {
+    transform: rotate(35deg);
+  }
+  86%,
+  100% {
+    transform: rotate(8deg);
+  }
+}
+.mascot.pose-kick .m-leg-r-move {
+  animation: mascot-kick-leg var(--strike-ms) linear both;
+}
+.mascot.pose-kick .m-body-move {
+  animation: mascot-kick-body var(--strike-ms) ease-out both;
+}
+.mascot.pose-kick .m-arm-l-move {
+  animation: mascot-balance-l var(--strike-ms) linear both;
+}
+.mascot.pose-kick .m-arm-r-move {
+  animation: mascot-balance-r var(--strike-ms) linear both;
+}
+
+/* ---------- hadouken: de perfil, puxa as mãos para trás carregando a energia (14-34%), empurra
+   para a frente (40%) e a bola voa até a pasta (40-62%), onde explode ---------- */
+
+@keyframes mascot-hadouken-arm {
+  0% {
+    transform: rotate(0deg);
+  }
+  14%,
+  34% {
+    transform: rotate(40deg);
+  }
+  40%,
+  72% {
+    transform: rotate(-86deg);
+  }
+  90%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mascot-hadouken-arm-far {
+  0% {
+    transform: rotate(0deg);
+  }
+  14%,
+  34% {
+    transform: rotate(36deg);
+  }
+  40%,
+  72% {
+    transform: rotate(-80deg);
+  }
+  90%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mascot-hadouken-body {
+  0% {
+    transform: rotate(0deg);
+  }
+  14%,
+  34% {
+    transform: rotate(-4deg);
+  }
+  40% {
+    transform: rotate(6deg);
+  }
+  72% {
+    transform: rotate(4deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+/* Base: a perna da frente avança, a de trás recua. */
+@keyframes mascot-stance-front {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  12%,
+  82% {
+    transform: rotate(-16deg);
+  }
+}
+@keyframes mascot-stance-back {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  12%,
+  82% {
+    transform: rotate(18deg);
+  }
+}
+@keyframes mascot-charge {
+  0%,
+  9.9% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  10% {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  22% {
+    transform: scale(1);
+  }
+  28% {
+    transform: scale(0.8);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  37.9% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mascot-fireball {
+  0%,
+  37.9% {
+    opacity: 0;
+    transform: translateX(-92px) scale(0.5);
+  }
+  38% {
+    opacity: 1;
+    transform: translateX(-92px) scale(0.6);
+  }
+  44% {
+    transform: translateX(-70px) scale(1);
+  }
+  61.9% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  62%,
+  100% {
+    opacity: 0;
+    transform: translateX(0) scale(1);
+  }
+}
+@keyframes mascot-blast {
+  0%,
+  61.9% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  62% {
+    opacity: 1;
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.35);
+  }
+  78%,
+  84% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  90%,
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+.mascot.pose-hadouken .m-arm-near-move {
+  animation: mascot-hadouken-arm var(--strike-ms) linear both;
+}
+.mascot.pose-hadouken .m-arm-far-move {
+  animation: mascot-hadouken-arm-far var(--strike-ms) linear both;
+}
+/* Os braços esticam no empurrão (andando, o antebraço fica dobrado). */
+.mascot.pose-hadouken :is(.m-fore-near, .m-fore-far) {
+  transform: rotate(-6deg);
+}
+.mascot.pose-hadouken .m-body-move {
+  animation: mascot-hadouken-body var(--strike-ms) ease-out both;
+}
+.mascot.pose-hadouken .m-leg-near-move {
+  animation: mascot-stance-front var(--strike-ms) ease-out both;
+}
+.mascot.pose-hadouken .m-leg-far-move {
+  animation: mascot-stance-back var(--strike-ms) ease-out both;
+}
+.mascot .m-charge {
+  animation: mascot-charge var(--strike-ms) linear both;
+}
+.mascot .m-fireball {
+  animation: mascot-fireball var(--strike-ms) ease-in both;
+}
+.mascot .m-blast {
+  animation: mascot-blast var(--strike-ms) linear both;
 }
 
 @keyframes mascot-step {
@@ -531,8 +971,47 @@
   animation-play-state: var(--anim-state);
 }
 
-/* Reduzir movimento: poses paradas, sem caminhada (ele aparece no lugar). A chicotada fica parada
-   no estalo. */
+/* Parado (.mascot-still, as miniaturas do editor): sem animação nenhuma e, num golpe, no impacto.
+   Os mesmos quadros do "Reduzir movimento", logo abaixo. */
+.mascot-still *,
+.mascot-still {
+  animation: none !important;
+  transition: none !important;
+}
+.mascot-still.pose-whip .m-arm-r {
+  transform: rotate(90deg);
+}
+.mascot-still.pose-slap .m-arm-r {
+  transform: rotate(92deg);
+}
+.mascot-still.pose-punch .m-arm-r {
+  transform: rotate(90deg);
+}
+.mascot-still.pose-kick .m-leg-r-move {
+  transform: rotate(82deg);
+}
+.mascot-still.pose-hadouken .m-arm-near-move {
+  transform: rotate(-86deg);
+}
+.mascot-still.pose-hadouken .m-arm-far-move {
+  transform: rotate(-80deg);
+}
+.mascot-still.pose-hadouken .m-leg-near-move {
+  transform: rotate(-16deg);
+}
+.mascot-still.pose-hadouken .m-leg-far-move {
+  transform: rotate(18deg);
+}
+/* Na miniatura, a bola no meio do caminho, sem a explosão. */
+.mascot-still .m-fireball {
+  transform: translateX(-46px);
+}
+.mascot-still :is(.m-lash-windup, .m-lash-follow, .m-swoosh, .m-charge, .m-blast) {
+  display: none;
+}
+
+/* Reduzir movimento: poses paradas, sem caminhada (ele aparece no lugar). O golpe fica parado no
+   impacto. */
 @media (prefers-reduced-motion: reduce) {
   .mascot *,
   .mascot-walker {
@@ -542,7 +1021,22 @@
   .mascot.pose-whip .m-arm-r {
     transform: rotate(90deg);
   }
-  .mascot :is(.m-lash-windup, .m-lash-follow) {
+  .mascot.pose-slap .m-arm-r {
+    transform: rotate(92deg);
+  }
+  .mascot.pose-punch .m-arm-r {
+    transform: rotate(90deg);
+  }
+  .mascot.pose-kick .m-leg-r-move {
+    transform: rotate(82deg);
+  }
+  .mascot.pose-hadouken .m-arm-near-move {
+    transform: rotate(-86deg);
+  }
+  .mascot.pose-hadouken .m-arm-far-move {
+    transform: rotate(-80deg);
+  }
+  .mascot :is(.m-lash-windup, .m-lash-follow, .m-swoosh, .m-charge) {
     display: none;
   }
 }

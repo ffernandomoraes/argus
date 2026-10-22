@@ -6,11 +6,13 @@ import { getPreferences, setPreferences, usePreference } from '../../settings/pr
 import { useActiveChatsInCanvas } from '../canvasScope'
 import { useFinishedChats } from '../sessionsStore'
 import type { CanvasNode } from '../types'
-import { BODY_X, LASH_TIP, LEFT_EDGE, MascotFigure, VIEW, WHIP_MS, type Pose } from './MascotFigure'
+import { STRIKES, strikeTip } from './look'
+import { BODY_X, LEFT_EDGE, MascotFigure, VIEW, type Pose } from './MascotFigure'
 
 // Mascote no canto esquerdo da janela, no meio da altura. Brincadeira, liga em
-// Configurações > Geral. O que ele faz:
-// - pedido enviado: anda até a pasta da conversa, dá uma chicotada e volta;
+// Configurações > Experimentos. O que ele faz:
+// - pedido enviado: anda até a pasta da conversa, dá o golpe escolhido (chicotada, tapa, soco ou
+//   chute, em Configurações > Mascote) e volta;
 // - conversa terminou: joia;
 // - você escrevendo um pedido: mão na orelha, escutando;
 // - conversa esperando você ou resposta não vista: acena;
@@ -32,7 +34,7 @@ const THUMBS_MS = 2200
 const TYPING_MS = 1500
 
 type Point = { x: number; y: number }
-type Action = 'go' | 'whip' | 'back' | 'thumbs' | null
+type Action = 'go' | 'strike' | 'back' | 'thumbs' | null
 
 export function Mascot({ nodesRef, hidden }: { nodesRef: RefObject<CanvasNode[]>; hidden: boolean }) {
   const on = usePreference('mascot')
@@ -66,6 +68,7 @@ function MascotView({ nodesRef }: { nodesRef: RefObject<CanvasNode[]> }) {
   const chats = useActiveChatsInCanvas()
   const unreadCount = useFinishedChats().length
   const typing = useTyping()
+  const look = usePreference('mascotLook')
 
   const [action, setAction] = useState<Action>(null)
   const [pos, setPos] = useState<Point>(home)
@@ -109,18 +112,20 @@ function MascotView({ nodesRef }: { nodesRef: RefObject<CanvasNode[]> }) {
     return ms
   }
 
-  const playWhip = (cwd: string) => {
+  const playStrike = (cwd: string) => {
     if (busy.current) return
     busy.current = true
+    const look = getPreferences().mascotLook
+    const strike = STRIKES[look.strike]
     const start = home()
-    const target = targetFor(cwd, nodesRef.current ?? [])
-    // Pasta fora da tela (ou conversa sem pasta no canvas): chicotada ali mesmo.
+    const target = targetFor(cwd, nodesRef.current ?? [], strikeTip(look))
+    // Pasta fora da tela (ou conversa sem pasta no canvas): golpe ali mesmo.
     const goMs = target ? walk(start, target) : 0
-    setAction(target ? 'go' : 'whip')
+    setAction(target ? 'go' : 'strike')
     later(goMs, () => {
       setFaceLeft(false)
-      setAction('whip')
-      later(WHIP_MS, () => {
+      setAction('strike')
+      later(strike.ms, () => {
         const backMs = target ? walk(target, start) : 0
         setAction(target ? 'back' : null)
         later(backMs, () => {
@@ -134,7 +139,7 @@ function MascotView({ nodesRef }: { nodesRef: RefObject<CanvasNode[]> }) {
   }
 
   // Arrastar: o boneco segue o ponteiro e, ao soltar, o lugar vira a casa dele. Andando ou
-  // chicoteando, não dá para pegar. Enquanto está na mão, envio de pedido não chicoteia.
+  // golpeando, não dá para pegar. Enquanto está na mão, envio de pedido não dá golpe.
   const grab = useRef<{ dx: number; dy: number; x0: number; y0: number } | null>(null)
   const pointAt = (e: ReactPointerEvent) => clampToWindow({ x: e.clientX - grab.current!.dx, y: e.clientY - grab.current!.dy })
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -186,20 +191,20 @@ function MascotView({ nodesRef }: { nodesRef: RefObject<CanvasNode[]> }) {
     if (!before) return
     const started = chats.find((c) => c.turnStartedAt && c.turnStartedAt !== before.get(c.key))
     const finished = [...before].some(([key, turn]) => turn && !chats.find((c) => c.key === key)?.turnStartedAt)
-    if (started) playWhip(started.cwd)
+    if (started) playStrike(started.cwd)
     if (finished) {
       if (busy.current) thumbsPending.current = true
       else playThumbs()
     }
-    // playWhip/playThumbs só mexem em refs e setters estáveis.
+    // playStrike/playThumbs só mexem em refs e setters estáveis.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chats])
 
   const pose: Pose =
     action === 'go' || action === 'back'
       ? 'walk'
-      : action === 'whip'
-        ? 'whip'
+      : action === 'strike'
+        ? look.strike
         : action === 'thumbs'
           ? 'thumbs'
           : typing
@@ -230,7 +235,7 @@ function MascotView({ nodesRef }: { nodesRef: RefObject<CanvasNode[]> }) {
           transformOrigin: `${toPx(BODY_X)}px ${toPy(10)}px`
         }}
       >
-        <MascotFigure pose={pose} />
+        <MascotFigure pose={pose} look={look} />
       </div>
       <div
         title={tr('Arraste para mudar o lugar - dois cliques voltam ao canto', 'Drag to move - double-click to send it back to the corner')}
@@ -277,19 +282,19 @@ function samePath(a: string, b: string): boolean {
   return norm(a) === norm(b)
 }
 
-// Onde parar: com a ponta do chicote (no estalo) encostando no cabeçalho da pasta (nome e caminho),
-// e não na lista de conversas logo abaixo. Nulo se a pasta não está na tela.
-function targetFor(cwd: string, nodes: CanvasNode[]): Point | null {
+// Onde parar: com a ponta do golpe (do chicote no estalo, da mão, do pé) encostando no cabeçalho da
+// pasta (nome e caminho), e não na lista de conversas logo abaixo. Nulo se a pasta não está na tela.
+function targetFor(cwd: string, nodes: CanvasNode[], tip: Point): Point | null {
   const node = nodes.find((n) => n.type === 'project' && samePath(n.data.path, cwd))
   if (!node) return null
   const el = document.querySelector(`.react-flow__node[data-id="${CSS.escape(node.id)}"]`)
   const card = el?.getBoundingClientRect()
   if (!el || !card || card.right < 0 || card.left > window.innerWidth || card.bottom < 0 || card.top > window.innerHeight) return null
   const header = el.querySelector('header')?.getBoundingClientRect() ?? card
-  const x = header.left + 4 - toPx(LASH_TIP.x)
+  const x = header.left + 4 - toPx(tip.x)
   const minX = MARGIN - toPx(LEFT_EDGE)
-  // No estalo o corpo inclina para a frente e a ponta desce uns 3 px.
-  const y = header.top + header.height / 2 - 3 - toPy(LASH_TIP.y)
+  // No golpe o corpo inclina e a ponta desce uns 3 px.
+  const y = header.top + header.height / 2 - 3 - toPy(tip.y)
   return {
     x: Math.max(minX, Math.min(window.innerWidth - WIDTH, x)),
     y: Math.max(MARGIN, Math.min(window.innerHeight - HEIGHT - MARGIN, y))

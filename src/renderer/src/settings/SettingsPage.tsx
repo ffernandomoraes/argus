@@ -10,6 +10,7 @@ import { CoffeeSection } from './sections/CoffeeSection'
 import { ConversationsSection } from './sections/ConversationsSection'
 import { ExperimentsSection } from './sections/ExperimentsSection'
 import { GeneralSection } from './sections/GeneralSection'
+import { MascotSection } from './sections/MascotSection'
 import { McpSection } from './sections/McpSection'
 import { OrchestratorSection } from './sections/OrchestratorSection'
 import { SECTIONS, type Section } from './sections/sectionList'
@@ -28,7 +29,8 @@ export function SettingsPage({
   const [section, setSection] = useState<Section>('general')
   // Seção de experimento só aparece com ele ligado em Experimentos.
   const orchestrator = usePreference('orchestratorEnabled')
-  const sections = SECTIONS.filter((s) => s.id !== 'orchestrator' || orchestrator)
+  const mascot = usePreference('mascot')
+  const sections = SECTIONS.filter((s) => (s.id !== 'orchestrator' || orchestrator) && (s.id !== 'mascot' || mascot))
   const current = SECTIONS.find((s) => s.id === section)!
   const CurrentIcon = current.icon
 
@@ -86,6 +88,7 @@ export function SettingsPage({
           {section === 'conversations' && <ConversationsSection />}
           {section === 'orchestrator' && <OrchestratorSection />}
           {section === 'appearance' && <AppearanceSection theme={theme} onThemeChange={onThemeChange} />}
+          {section === 'mascot' && <MascotSection />}
           {section === 'accounts' && <AccountsSection />}
           {section === 'mcp' && <McpSection />}
           {section === 'experiments' && <ExperimentsSection />}

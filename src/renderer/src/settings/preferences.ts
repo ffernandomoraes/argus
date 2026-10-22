@@ -1,5 +1,6 @@
 import { isInterfaceZoom } from '../../../shared/interfaceZoom'
 import type { OrchestratorConfig } from '../../../shared/orchestrator'
+import { DEFAULT_LOOK, normalizeLook, type MascotLook } from '../canvas/mascot/look'
 import { defaultOrchestrator } from '../conversation/orchestrator'
 import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings'
 import { createStore } from '../lib/createStore'
@@ -26,6 +27,8 @@ export type Preferences = {
   // Onde o mascote fica parado, se a pessoa arrastou: canto de cima do quadro dele, em fração da
   // largura e da altura da janela. Nulo = canto esquerdo, no meio da altura.
   mascotSpot: { x: number; y: number } | null
+  // Visual do mascote e o golpe no envio (Configurações > Mascote).
+  mascotLook: MascotLook
   // Modo orquestrador disponível (Configurações > Experimentos): mostra a aba e o item no seletor.
   orchestratorEnabled: boolean
   // Codex, Gemini e Cursor além do Claude (Configurações > Experimentos): contas e conversas.
@@ -57,6 +60,7 @@ const DEFAULTS: Preferences = {
   mediaPlayer: true,
   mascot: false,
   mascotSpot: null,
+  mascotLook: DEFAULT_LOOK,
   orchestratorEnabled: false,
   multiAgents: false,
   designMode: false,
@@ -84,7 +88,8 @@ function read(): Preferences {
           ? { ...DEFAULT_SETTINGS, ...saved.conversation }
           : { ...DEFAULT_SETTINGS, ...saved.conversation, thinking: false, ultracode: false },
       conversationDefaults: CONVERSATION_DEFAULTS,
-      interfaceZoom: isInterfaceZoom(saved.interfaceZoom) ? saved.interfaceZoom : 1
+      interfaceZoom: isInterfaceZoom(saved.interfaceZoom) ? saved.interfaceZoom : 1,
+      mascotLook: normalizeLook(saved.mascotLook)
     }
   } catch {
     return DEFAULTS

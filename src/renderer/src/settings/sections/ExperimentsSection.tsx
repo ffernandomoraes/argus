@@ -15,8 +15,8 @@ export function ExperimentsSection() {
       <Row
         label={tr('Mascote', 'Mascot')}
         description={tr(
-          'Um bonequinho no canto do canvas que reage às conversas: chicoteia no envio, dança enquanto trabalham, faz joia no fim. Arraste para mudar o lugar dele; dois cliques voltam ao canto.',
-          'A little character at the edge of the canvas that reacts to chats: cracks the whip on send, dances while they work, thumbs up at the end. Drag to move it; double-click sends it back to the corner.'
+          'Um bonequinho no canto do canvas que reage às conversas: dá um golpe na pasta no envio, dança enquanto trabalham, faz joia no fim. Arraste para mudar o lugar dele; dois cliques voltam ao canto. Liga a aba Mascote, onde você monta o visual e escolhe o golpe.',
+          'A little character at the edge of the canvas that reacts to chats: strikes the folder on send, dances while they work, thumbs up at the end. Drag to move it; double-click sends it back to the corner. Enables the Mascot tab, where you build its look and pick the strike.'
         )}
       >
         <Switch label={tr('Mascote', 'Mascot')} checked={mascot} onChange={(next) => setPreferences({ mascot: next })} />

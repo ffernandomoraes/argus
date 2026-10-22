@@ -1,5 +1,6 @@
 import { execFile, spawn } from 'node:child_process'
 import { tr } from './i18n'
+import { writeStdin } from './lib/childProcess'
 import { childEnv, IS_LINUX, IS_WIN, prependPath, WINDOWS_POWERSHELL } from './platform'
 
 // Instalador oficial da Anthropic, o mesmo da documentação do Claude Code. Põe o `claude` em
@@ -98,6 +99,6 @@ async function runLinuxInstaller(): Promise<string | null> {
           : tailOf(out) || tr(`O instalador saiu com o código ${code}.`, `The installer exited with code ${code}.`)
       )
     })
-    child.stdin.end(script)
+    writeStdin(child, script)
   })
 }

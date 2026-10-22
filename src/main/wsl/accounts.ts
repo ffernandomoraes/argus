@@ -4,6 +4,7 @@ import { app } from 'electron'
 import { MAIN_ACCOUNT } from '../../shared/auth'
 import { SHARED } from '../accounts/links'
 import { seed } from '../accounts/seed'
+import { writeStdin } from '../lib/childProcess'
 import { WSL_EXE, type DistroInfo } from './distros'
 import { log } from './log'
 import { toUnc } from './path'
@@ -59,7 +60,7 @@ export async function prepareWslAccount(distro: string, info: DistroInfo, id: st
     const child = spawn(WSL_EXE, ['-d', distro, '--exec', 'sh', '-s'], { windowsHide: true })
     child.on('error', () => resolve())
     child.on('close', () => resolve())
-    child.stdin.end(linkScript(dir, `${info.home}/.claude`))
+    writeStdin(child, linkScript(dir, `${info.home}/.claude`))
   })
   ready.add(key)
 }

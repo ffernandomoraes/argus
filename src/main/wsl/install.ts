@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { writeStdin } from '../lib/childProcess'
 import { WSL_EXE, distroInfo, loadDistro, type DistroInfo } from './distros'
 import { log } from './log'
 
@@ -32,7 +33,7 @@ export function installInWsl(distro: string): Promise<DistroInfo | null> {
         resolve()
       })
       // pipefail: sem internet o curl falha e a instalação falha junto, em vez de rodar um script vazio.
-      child.stdin.end(`set -o pipefail\n${WSL_INSTALL}\n`)
+      writeStdin(child, `set -o pipefail\n${WSL_INSTALL}\n`)
     }).then(() => loadDistro(distro))
     installing.set(key, p)
     void p.finally(() => installing.delete(key))

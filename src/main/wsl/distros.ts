@@ -2,6 +2,7 @@ import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { app } from 'electron'
+import { writeStdin } from '../lib/childProcess'
 import { readJsonFile, writeJsonAtomicSync } from '../lib/jsonFile'
 import { IS_WIN, SYSTEM32 } from '../platform'
 import { log } from './log'
@@ -178,7 +179,7 @@ function probe(distro: string): Promise<DistroInfo | null> {
       }
       resolve({ home, path: field(out, '__ARGUS_PATH__'), claude: field(out, '__ARGUS_CLAUDE__') || null })
     })
-    child.stdin.end(PROBE)
+    writeStdin(child, PROBE)
   })
 }
 

@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import type { MediaCommand, NowPlaying } from '../../shared/media'
+import { guardStdin } from '../lib/childProcess'
 import { POWERSHELL } from '../winProcesses/system'
 import type { MediaSource } from '.'
 
@@ -78,6 +79,9 @@ function start(): ChildProcessWithoutNullStreams | null {
   if (failures >= 3) return null
   const encoded = Buffer.from(SCRIPT, 'utf16le').toString('base64')
   const child = spawn(POWERSHELL, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { windowsHide: true })
+  // O pedido pode cair num PowerShell que acabou de sair: sem ouvinte, o EPIPE abriria a caixa de
+  // erro do processo principal.
+  guardStdin(child)
   child.stdout.setEncoding('utf8')
   createInterface({ input: child.stdout }).on('line', (line) => waiting.shift()?.(line.trim()))
   const end = () => {

@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 import type { SpawnedProcess, SpawnOptions } from '@anthropic-ai/claude-agent-sdk'
 import { claudeReady } from '../claudePath'
+import { guardStdin } from '../lib/childProcess'
 
 type Listener = Parameters<EventEmitter['on']>[1]
 
@@ -34,6 +35,8 @@ export function heldProcess(o: SpawnOptions): SpawnedProcess {
       return finish(1, null)
     }
     child = c
+    // O pipe não segura erro do destino: `claude` saindo no meio de uma escrita daria EPIPE solto.
+    guardStdin(c)
     stdin.pipe(c.stdin!)
     c.stdout!.pipe(stdout, { end: false })
     c.on('error', (e) => {

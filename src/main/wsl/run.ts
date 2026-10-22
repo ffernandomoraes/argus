@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import { app } from 'electron'
 import { tr } from '../i18n'
+import { guardStdin } from '../lib/childProcess'
 import { log } from './log'
 import { WSL_EXE, ensureDistro, type DistroInfo } from './distros'
 import { installInWsl } from './install'
@@ -126,6 +127,8 @@ export function deferredWslProcess(
       }
       const c = spawn(cmd.file, cmd.args, { stdio: 'pipe', windowsHide: true })
       child = c
+      // O pipe não segura erro do destino: `claude` saindo no meio de uma escrita daria EPIPE solto.
+      guardStdin(c)
       stdin.pipe(c.stdin)
       c.stdout.pipe(stdout, { end: false })
       let err = ''

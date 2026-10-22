@@ -48,6 +48,8 @@ export async function readTail(file: string, size: number, wantPrompt: boolean):
   const tail: Tail = {}
   let custom = false
   let ai = false
+  // Compactação depois da última resposta: a conversa ocupa o tamanho resumido, não o de antes.
+  let compacted: number | undefined
   // De trás para frente, montando só as linhas que podem ter o que falta (o texto é conferido
   // antes): parsear os 512 KB inteiros de cada conversa pesava com centenas delas.
   for (let i = lines.length - 1; i >= 0 && !(custom && ai && tail.usage && tail.repliedAt); i--) {
@@ -55,8 +57,9 @@ export async function readTail(file: string, size: number, wantPrompt: boolean):
     const wantCustom = !custom && raw.includes('"custom-title"')
     const wantAi = !ai && raw.includes('"ai-title"')
     const wantUsage = !tail.usage && raw.includes('"usage"')
+    const wantCompact = !tail.usage && compacted === undefined && raw.includes('"compact_boundary"')
     const wantReply = !tail.repliedAt && raw.includes('"assistant"') && raw.includes('"text"')
-    if (!wantCustom && !wantAi && !wantUsage && !wantReply) continue
+    if (!wantCustom && !wantAi && !wantUsage && !wantCompact && !wantReply) continue
     const l = parseLine(raw)
     if (!l) continue
     if (wantCustom && l.type === 'custom-title') {
@@ -67,7 +70,12 @@ export async function readTail(file: string, size: number, wantPrompt: boolean):
       ai = true
       tail.aiTitle = title(l.aiTitle)
     }
-    if (wantUsage) tail.usage = usageOf(l)
+    if (wantCompact && l.type === 'system' && l.subtype === 'compact_boundary') compacted = num(obj(l.compactMetadata)?.postTokens) ?? 0
+    // A resposta de antes da compactação só serve para saber o modelo.
+    if (wantUsage) {
+      const usage = usageOf(l)
+      tail.usage = usage && compacted !== undefined ? { ...usage, tokens: compacted } : usage
+    }
     if (wantReply) tail.repliedAt = replyAt(l)
   }
   if (wantPrompt) {

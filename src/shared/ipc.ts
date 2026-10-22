@@ -36,6 +36,10 @@ import type { WorktreeReserved, WorktreeStatus } from './worktrees'
 export type ThemeSource = 'dark' | 'light' | 'system'
 // Desfazer e refazer que chegam do menu Editar (Mac) ou do Ctrl+Z (Windows, ver preload/keys.ts).
 export type EditAction = 'undo' | 'redo'
+// Recortar, copiar e colar do menu de botão direito num campo de texto: o colar nativo, porque a
+// página não lê a área de transferência (main/app/permissions.ts).
+export type ClipboardCommand = 'cut' | 'copy' | 'paste'
+export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste']
 // Comentários na página do protótipo: liga ou desliga o clique que marca o ponto, tira um ou todos.
 export type DesignCommentAction = 'on' | 'off' | 'remove' | 'clear'
 // Rota do projeto lida do código, para a lista do endereço do modo design.
@@ -62,6 +66,11 @@ export type InvokeChannels = {
   'popout:payload': (id: string) => unknown
   // Respostas não vistas e conversas que pararam com erro (o check verde e o aviso do mascote).
   'mascot:alerts': () => MascotAlerts
+  // Golpe do envio: onde está, na tela, o cabeçalho da pasta da conversa que começou (a janela do
+  // canvas avisa; espera um pouco por ele), andar até um ponto da tela e o lugar de casa.
+  'mascot:findTarget': (key: string, turn: number) => { x: number; y: number } | null
+  'mascot:walk': (x: number, y: number) => void
+  'mascot:homeSpot': () => { x: number; y: number }
   'usage:get': () => Record<string, Usage>
   'media:get': () => NowPlaying | null
   'media:command': (command: MediaCommand) => void
@@ -164,6 +173,7 @@ export type InvokeChannels = {
 export type SendChannels = {
   'theme:set': (theme: ThemeSource) => void
   'interface:zoom': (factor: number) => void
+  'clipboard:command': (command: ClipboardCommand) => void
   'popout:open': (id: string, payload: unknown) => void
   // Mascote solto na tela (src/main/app/mascotOverlay.ts). Das janelas do app: ligado nas
   // Configurações e alguém escrevendo um pedido. Da janela do mascote: o ponteiro em cima do boneco
@@ -175,6 +185,10 @@ export type SendChannels = {
   'mascot:drag': (x: number, y: number) => void
   'mascot:dragEnd': () => void
   'mascot:home': () => void
+  // Janela do canvas: pedido começou numa conversa cuja pasta está à vista; rect em px da página.
+  'mascot:target': (key: string, turn: number, rect: { x: number; y: number; width: number; height: number }) => void
+  // Experimento do orquestrador (src/main/orchestration/): vale para as conversas abertas depois.
+  'orchestrator:enabled': (on: boolean) => void
   'updates:install': () => void
   'cli:ready': () => void
   // Ditado

@@ -64,7 +64,7 @@ export function useXterm(
         effort: settings.effort || undefined,
         settingsJson: launchSettings(settings),
         permissionMode: settings.permissionMode || undefined,
-        systemPrompt: settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined
+        systemPrompt: settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator, 'native') : undefined
       },
       {
         onError: (error) => setEnded({ generation, error, exitCode: null }),

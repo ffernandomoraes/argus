@@ -24,8 +24,8 @@ export function ExperimentsSection() {
       <Row
         label={tr('Orquestrador', 'Orchestrator')}
         description={tr(
-          'Na conversa em que for ligado, não executa: divide o pedido em etapas e manda cada uma ao modelo e esforço que ela pede. Liga o item no seletor de modelo e a aba Orquestrador, onde ficam as regras.',
-          'In the chat where it’s on, it doesn’t do the work: splits the request into steps and sends each to the model and effort it needs. Enables the item in the model picker and the Orchestrator tab, where the rules live.'
+          'Na conversa em que for ligado, não executa: divide o pedido em etapas e manda cada uma ao agente, modelo e esforço que ela pede, de qualquer empresa (Claude, Codex, Gemini, Cursor). Liga o item no seletor de modelo e a aba Orquestrador, onde ficam as regras. Vale para as conversas abertas depois de ligar.',
+          'In the chat where it’s on, it doesn’t do the work: splits the request into steps and sends each to the agent, model and effort it needs, from any company (Claude, Codex, Gemini, Cursor). Enables the item in the model picker and the Orchestrator tab, where the rules live. Applies to chats opened after turning it on.'
         )}
       >
         <Switch label={tr('Orquestrador', 'Orchestrator')} checked={orchestrator} onChange={(next) => setPreferences({ orchestratorEnabled: next })} />

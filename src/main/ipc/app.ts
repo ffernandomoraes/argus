@@ -12,10 +12,12 @@ import { ensureDistro, homeUnc, listDistros } from '../wsl'
 import { wslDiagnostics } from '../wsl/diagnostics'
 import { parseAgentRef } from '../../shared/providers'
 import { agentInfo } from '../agentChats/models'
+import { setOrchestrationEnabled } from '../orchestration'
 import { handle, on, onSync } from './register'
 import { syncWorkspace } from '../workspaces'
 import { IS_MAC } from '../platform'
 import { isInterfaceZoom } from '../../shared/interfaceZoom'
+import { CLIPBOARD_COMMANDS } from '../../shared/ipc'
 import { setInterfaceZoom } from '../app/windowChrome'
 import { fetchReleaseNotes } from '../updater/notes'
 
@@ -25,6 +27,10 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('interface:zoom', (e, factor) => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (win && isInterfaceZoom(factor)) setInterfaceZoom(win, factor)
+  })
+  // Vem da tela: só os três comandos conhecidos.
+  on('clipboard:command', (e, command) => {
+    if (CLIPBOARD_COMMANDS.includes(command)) e.sender[command]()
   })
   onSync('accent:get', () => accentColor())
   onSync('language:get', () => lang())
@@ -86,6 +92,11 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   // Voltar ao canto: dois cliques no boneco ou o botão das configurações.
   on('mascot:home', () => s.mascot.home())
   handle('mascot:alerts', () => s.mascot.alerts())
+  on('mascot:target', (e, key, turn, rect) => s.mascot.reportTarget(e.sender, key, turn, rect))
+  handle('mascot:findTarget', (_e, key, turn) => s.mascot.findTarget(key, turn))
+  handle('mascot:walk', (e, x, y) => (s.mascot.owns(e.sender) ? s.mascot.walk(x, y) : undefined))
+  handle('mascot:homeSpot', () => s.mascot.homeSpot())
+  on('orchestrator:enabled', (_e, enabled) => setOrchestrationEnabled(enabled))
   handle('popout:payload', (_e, id) => s.popouts.payload(id))
   handle('usage:get', () => s.usage.all())
   handle('media:get', () => nowPlaying())

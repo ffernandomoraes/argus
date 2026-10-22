@@ -17,6 +17,10 @@ export type ToolEvent = {
   error?: boolean
   diff?: DiffHunk[]
   done: boolean
+  // Chamada da ferramenta delegate do Argus (modo orquestrador): quem executa ("Codex - gpt-5.5") e o
+  // pedido. A linha vira a de subagente no chat.
+  agent?: string
+  delegateTask?: string
 }
 
 export type PermissionAsk = {
@@ -43,6 +47,9 @@ export type DriverEvents = {
   usage: (u: { contextPercent?: number; turnTokens?: number }) => void
   // O processo do agente terminou (caiu ou foi fechado).
   exited: (reason?: string) => void
+  // Qualquer mensagem do agente, mesmo as que o chat não mostra (saída de comando chegando, uso de
+  // tokens): sinal de vida para o vigia das etapas delegadas (orchestration/runStep.ts).
+  activity?: () => void
 }
 
 export type PromptInput = { text: string; images: ChatImage[] }

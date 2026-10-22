@@ -48,6 +48,8 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
     const label = name.endsWith('rodar_no_terminal') ? tr('Rodar no terminal', 'Run in terminal') : tr('Digitar no terminal', 'Type in terminal')
     return { label, summary: firstLine(i.comando), detail: i.comando }
   }
+  // Etapa delegada pelo orquestrador (orchestration/): o título dela e, ao abrir, o pedido inteiro.
+  if (name === 'mcp__argus__delegate') return { label: tr('Delegar', 'Delegate'), summary: firstLine(i.title) || firstLine(i.task), detail: i.task }
   // MCP: "mcp__servidor__acao" vira "servidor - acao".
   if (name.startsWith('mcp__')) {
     const [, server = '', action = ''] = name.split('__')

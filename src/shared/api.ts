@@ -11,7 +11,7 @@ import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
-import type { DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
+import type { ClipboardCommand, DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
 import type { McpAuthResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
@@ -39,6 +39,8 @@ export type Api = {
   setTheme: (theme: ThemeSource) => void
   // Tamanho da interface desta janela (ver shared/interfaceZoom.ts).
   setInterfaceZoom: (factor: number) => void
+  // Recortar, copiar ou colar no campo com o foco, como o ⌘X/⌘C/⌘V.
+  clipboardCommand: (command: ClipboardCommand) => void
   // Cor de destaque do sistema, "#rrggbb"; nula quando o sistema não informa.
   accent: {
     get: () => string | null
@@ -93,10 +95,18 @@ export type Api = {
     dragTo: (x: number, y: number) => void
     dragEnd: () => void
     home: () => void
+    reportTarget: (key: string, turn: number, rect: { x: number; y: number; width: number; height: number }) => void
+    findTarget: (key: string, turn: number) => Promise<{ x: number; y: number } | null>
+    walk: (x: number, y: number) => Promise<void>
+    homeSpot: () => Promise<{ x: number; y: number }>
     alerts: () => Promise<MascotAlerts>
     onAlerts: (cb: (alerts: MascotAlerts) => void) => Off
     onTyping: (cb: (typing: boolean) => void) => Off
     onReleased: (cb: () => void) => Off
+  }
+  // Experimento do orquestrador ligado: as conversas abertas depois recebem a ferramenta delegate.
+  orchestrator: {
+    setEnabled: (on: boolean) => void
   }
   // Modelos e modo padrão que o `claude` de cada conta informa; sem conta, a padrão.
   claude: {

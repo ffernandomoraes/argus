@@ -4,6 +4,7 @@ import type { Message } from '../../shared/history'
 import type { McpAuthResult, McpServer } from '../../shared/mcp'
 import type { AgentRef } from '../../shared/providers'
 import { tr } from '../i18n'
+import { DelegateCalls, orchestrationEnabled, registerHost, type StepHost } from '../orchestration'
 import { expandHome } from '../paths'
 import { AcpDriver } from './acp'
 import { CodexDriver } from './codex'
@@ -58,6 +59,11 @@ export class AgentChatSession {
   private saveTimer: NodeJS.Timeout | null = null
   private identified = false
   private silenceTimer: NodeJS.Timeout | undefined
+  // Modo orquestrador: o endereço desta conversa no servidor do Argus (ver orchestration/), as
+  // chamadas da delegate esperando a etapa e o sinal que para as etapas quando você para o pedido.
+  private argus: { url: string; dispose: () => void } | null = null
+  private delegateCalls = new DelegateCalls()
+  private stopSteps = new AbortController()
 
   constructor(
     key: string,
@@ -159,6 +165,7 @@ export class AgentChatSession {
   }
 
   async interrupt(): Promise<void> {
+    this.stopDelegatedSteps()
     if (!this.running) return
     // Mensagem sua na fila continua: roda logo depois do pedido parado, como no Claude.
     this.interrupted = true
@@ -178,6 +185,9 @@ export class AgentChatSession {
 
   close(): void {
     this.heard()
+    this.stopDelegatedSteps()
+    this.argus?.dispose()
+    this.argus = null
     this.denyAll()
     this.queue = []
     this.save(true)
@@ -189,10 +199,13 @@ export class AgentChatSession {
     if (this.driver) return
     this.starting ??= (async () => {
       this.settings = await sanitizeSettings(this.ref, this.settings)
+      // Com o experimento do orquestrador ligado, o agente recebe as ferramentas do Argus.
+      if (orchestrationEnabled()) this.argus ??= await registerHost(this.stepHost())
+      const url = this.argus?.url
       const driver: Driver =
         this.ref.provider === 'codex'
-          ? new CodexDriver(this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents(), this.folders)
-          : new AcpDriver(this.ref.provider, this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents(), this.folders)
+          ? new CodexDriver(this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents(), this.folders, url)
+          : new AcpDriver(this.ref.provider, this.ref.account, expandHome(this.cwd), this.settings, this.driverEvents(), this.folders, url)
       try {
         this.conversation.nativeId = await driver.start(this.conversation.nativeId)
         this.driver = driver
@@ -323,8 +336,10 @@ export class AgentChatSession {
 
   private upsertTool(t: ToolEvent): void {
     this.commitText()
+    if (t.delegateTask) this.delegateCalls.seen(t.id, t.delegateTask)
     const messages = this.conversation.messages
     const i = messages.findIndex((m) => m.role === 'tool' && m.toolUseId === t.id)
+    const before = i >= 0 ? messages[i] : undefined
     const message: Message = {
       id: i >= 0 ? messages[i].id : randomUUID(),
       role: 'tool',
@@ -333,15 +348,52 @@ export class AgentChatSession {
       label: t.label,
       input: t.input,
       detail: t.detail,
-      result: t.result ?? '',
+      // Etapa delegada: o resultado vem da própria etapa (finishStep), e o agente pode não repetir.
+      result: t.result || (t.agent && before?.role === 'tool' ? before.result : '') || '',
       error: t.error || undefined,
       diff: t.diff,
-      toolUseId: t.id
+      toolUseId: t.id,
+      agent: t.agent
     }
     if (i >= 0) messages[i] = message
     else messages.push(message)
     this.update({ activity: t.done ? { kind: 'thinking', since: Date.now() } : { kind: 'running', tool: t.label, summary: t.input, since: Date.now() } }, false)
     this.save()
+  }
+
+  // A conversa como as etapas delegadas a enxergam: herdam a pasta e o modo de permissão, perguntam
+  // aqui e aparecem como subagentes na linha da chamada.
+  private stepHost(): StepHost {
+    return {
+      cwd: this.cwd,
+      folders: this.folders,
+      orchestrator: this.account,
+      permissionMode: () => this.settings.permissionMode,
+      stopSignal: () => this.stopSteps.signal,
+      permission: (ask) => this.handlers().permission(ask),
+      started: (agent) => this.update({ agents: [...this.state.agents, agent] }),
+      progressed: (id, patch) => this.update({ agents: this.state.agents.map((a) => (a.id === id ? { ...a, ...patch } : a)) }, false),
+      finished: (id, result, error) => this.finishStep(id, result, error),
+      callIdFor: (args, metaCallId) => this.delegateCalls.claim(args, metaCallId)
+    }
+  }
+
+  // Etapa terminou: sai da lista e o que ela entregou fica na linha da chamada (o Cursor não repete o
+  // resultado da ferramenta na conversa).
+  private finishStep(id: string, result: string, error: boolean): void {
+    const step = this.state.agents.find((a) => a.id === id)
+    const message = this.conversation.messages.find((m) => m.role === 'tool' && !!step?.toolUseId && m.toolUseId === step.toolUseId)
+    if (message?.role === 'tool' && !message.result) {
+      message.result = result
+      message.error = error || undefined
+      this.save()
+    }
+    this.update({ agents: this.state.agents.filter((a) => a.id !== id) })
+  }
+
+  private stopDelegatedSteps(): void {
+    this.stopSteps.abort()
+    this.stopSteps = new AbortController()
   }
 
   private pushMessage(m: Message): void {

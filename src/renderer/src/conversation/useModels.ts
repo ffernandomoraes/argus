@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { ClaudeInfo, ClaudeModel } from '../../../shared/models'
+import { parseAgentRef } from '../../../shared/providers'
 import { resolveAccount, useAuth, useConversationAccount } from '../auth/useAuth'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
@@ -23,10 +24,15 @@ function ask(account: string): void {
   window.api.claude.info(account).then(
     (i) => {
       if (i && !infos.get().has(account)) store(account, i)
+      // Outro agente sem resposta: o CLI não listou (não instalado, sem login). Não vem aviso depois.
+      else if (!i && parseAgentRef(account)) unavailable.set((s) => new Set(s).add(account))
     },
     () => asked.delete(account)
   )
 }
+
+// Contas de outros agentes cujos modelos não vieram: param de "carregando".
+const unavailable = createStore<ReadonlySet<string>>(new Set())
 
 const NO_MODELS: ClaudeModel[] = []
 
@@ -38,6 +44,15 @@ export function useClaudeInfo(account?: string): ClaudeInfo | null {
   const id = resolveAccount(auth, account ?? conversation)
   useEffect(() => ask(id), [id])
   return useStore(infos, (m) => m.get(id) ?? null)
+}
+
+// Os modelos da conta ainda estão chegando (o CLI do agente leva alguns segundos para listar).
+export function useModelsLoading(account?: string): boolean {
+  const auth = useAuth()
+  const conversation = useConversationAccount()
+  const id = resolveAccount(auth, account ?? conversation)
+  const info = useClaudeInfo(account)
+  return useStore(unavailable, (s) => !info && !s.has(id))
 }
 
 export function useModels(): ClaudeModel[] {

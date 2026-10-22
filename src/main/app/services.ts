@@ -1,3 +1,4 @@
+import { resolveAccount } from '../accounts'
 import { Auth } from '../auth'
 import { Providers } from '../providers'
 import { onConversationSaved } from '../agentChats/store'
@@ -11,6 +12,7 @@ import { activeChats, activeSignature } from '../chats/entries'
 import { Cli } from '../cli'
 import { broadcast, sendTo } from '../ipc/events'
 import { ChatNotifier } from '../notifications'
+import { setClaudeInfo } from '../orchestration'
 import { Popouts } from '../popouts'
 import { SessionWatch } from '../sessionWatch'
 import { Speech } from '../speech'
@@ -99,6 +101,8 @@ export function createServices() {
     (account, data) => broadcast('usage:update', account, data),
     (account, info) => broadcast('claude:info', account, info)
   )
+  // Modelos de cada conta do Claude, para o orquestrador listar (ver orchestration/).
+  setClaudeInfo((account) => usage.info(resolveAccount(account)))
 
   // Contas do Claude Code. O login de uma conta trocou: o monitor de uso e as conversas paradas
   // dela abrem de novo com o login novo; as que estão trabalhando terminam o pedido e fecham em

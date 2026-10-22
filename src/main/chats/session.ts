@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { query, type Query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import { query, type HookCallbackMatcher, type PreToolUseHookInput, type Query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import type { RunningAgent } from '../../shared/agents'
 import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../../shared/chat'
+import { DELEGATE_TOOL } from '../../shared/orchestrator'
 import type { McpAuthResult, McpServer } from '../../shared/mcp'
 import { resolveAccount } from '../accounts'
 import { learnContextWindow } from '../contextWindows'
 import { tr } from '../i18n'
+import { DelegateCalls, ORCHESTRATION_TOOLS, orchestrationEnabled, sdkOrchestrationTools, type StepHost } from '../orchestration'
 import { ARGUS_ALLOWED_TOOLS, ARGUS_MCP, argusMcp } from '../terminals/drawerShells'
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
@@ -80,6 +83,10 @@ export class ChatSession {
     (id) => this.dropPermission(id)
   )
   private queued = new QueuedSends(() => this.queueDrained())
+  // Modo orquestrador: etapas delegadas a outros agentes (ver orchestration/). O sinal dispara quando
+  // você para o pedido; um novo vale para o seguinte.
+  private stopSteps = new AbortController()
+  private delegateCalls = new DelegateCalls()
 
   constructor(
     key: string,
@@ -92,6 +99,7 @@ export class ChatSession {
     this.settings = req.settings
     const s = req.settings
     const options = claudeCodeOptions(req.cwd, this.account, req.folders)
+    const orchestration = orchestrationEnabled()
     this.q = query({
       prompt: this.inbox,
       options: {
@@ -112,9 +120,11 @@ export class ChatSession {
         // cache da conversa (quase de graça); quem desligou no settings.json do Claude Code não recebe.
         promptSuggestions: true,
         canUseTool: this.permissions.canUseTool,
-        // Ferramentas do próprio Argus (digitar no terminal do drawer), junto dos MCPs da pessoa.
-        mcpServers: { [ARGUS_MCP]: argusMcp(() => this.keys) },
-        allowedTools: ARGUS_ALLOWED_TOOLS
+        // Ferramentas do próprio Argus (digitar no terminal do drawer e, com o experimento do
+        // orquestrador ligado, delegar etapas), junto dos MCPs da pessoa.
+        mcpServers: { [ARGUS_MCP]: argusMcp(() => this.keys, orchestration ? sdkOrchestrationTools(this.stepHost(req)) : []) },
+        allowedTools: [...ARGUS_ALLOWED_TOOLS, ...(orchestration ? ORCHESTRATION_TOOLS.map((t) => `mcp__${ARGUS_MCP}__${t}`) : [])],
+        ...(orchestration && { hooks: { PreToolUse: [this.delegateHook()] } })
       }
     })
     void this.run()
@@ -224,6 +234,7 @@ export class ChatSession {
   }
 
   async interrupt(): Promise<void> {
+    this.stopDelegatedSteps()
     if (this.state.status !== 'idle') this.interrupted = true
     // Mensagem sua na fila pode sobreviver à parada e rodar em seguida, e quem diz é o recibo do
     // Claude (still_queued). Sem nenhuma, a tela reage na hora, sem esperar o Claude confirmar.
@@ -265,11 +276,54 @@ export class ChatSession {
 
   close(): void {
     clearTimeout(this.partialTimer)
+    this.stopDelegatedSteps()
     this.stopWaitingWake()
     this.permissions.denyAll('Conversa fechada.')
     this.queued.clear()
     this.inbox.close()
     this.q.close()
+  }
+
+  // A conversa como as etapas delegadas a enxergam: herdam a pasta e o modo de permissão, perguntam
+  // aqui e aparecem como subagentes na linha da chamada.
+  private stepHost(req: OpenRequest): StepHost {
+    const patchAgents = (agents: RunningAgent[], now = true) => this.update({ agents }, now)
+    return {
+      cwd: req.cwd,
+      folders: req.folders ?? [],
+      orchestrator: this.account,
+      permissionMode: () => this.settings.permissionMode,
+      stopSignal: () => this.stopSteps.signal,
+      permission: async (ask) => {
+        const answer = await this.permissions.ask({ id: randomUUID(), ...ask })
+        return answer === 'always' ? 'always' : answer === 'deny' ? 'deny' : 'allow'
+      },
+      started: (agent) => patchAgents([...this.state.agents, agent]),
+      progressed: (id, patch) => patchAgents(this.state.agents.map((a) => (a.id === id ? { ...a, ...patch } : a)), false),
+      finished: (id) => patchAgents(this.state.agents.filter((a) => a.id !== id)),
+      callIdFor: (args) => this.delegateCalls.claim(args)
+    }
+  }
+
+  // Guarda o id de cada chamada da delegate (o hook recebe; a ferramenta não), para a etapa achar a
+  // linha dela.
+  private delegateHook(): HookCallbackMatcher {
+    return {
+      matcher: `mcp__${ARGUS_MCP}__${DELEGATE_TOOL}`,
+      hooks: [
+        async (input) => {
+          const i = input as PreToolUseHookInput
+          this.delegateCalls.seen(i.tool_use_id, String((i.tool_input as { task?: unknown } | undefined)?.task ?? ''))
+          return {}
+        }
+      ]
+    }
+  }
+
+  private stopDelegatedSteps(): void {
+    this.stopSteps.abort()
+    this.stopSteps = new AbortController()
+    this.permissions.denyExternal()
   }
 
   // Ninguém mais na fila do Claude. Parada com mensagem que acabou não rodando: não há mais o que

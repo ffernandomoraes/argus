@@ -7,7 +7,7 @@ import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
 import { ChatView } from './ChatView'
-import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
+import { AccountChoiceContext, moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
 import { fileInFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
@@ -24,6 +24,7 @@ import { useLocalEvents } from './localEvents'
 import { McpPanel } from './McpPanel'
 import { OutputStylePanel } from './OutputStylePanel'
 import { mergeEvents } from './mergeEvents'
+import { onRevealEnd } from './revealEnd'
 import { useConversationHistory } from './useConversationHistory'
 
 // O botão do cabeçalho e as cores das mudanças moram em header/; saem daqui também, como antes,
@@ -113,6 +114,7 @@ export const ConversationView = memo(function ConversationView({
   const canSwitchClaude = !empty && !parseAgentRef(account) && status !== 'running' && status !== 'needs-you'
   const canChangeAccount = empty || canSwitchClaude
   const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
+  const accountChoice = useMemo(() => ({ empty, choose: chooseAccount }), [empty, chooseAccount])
   const settings = useConversationSettings(settingsId)
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
   const { remoteControl } = actionsFor
@@ -129,6 +131,18 @@ export const ConversationView = memo(function ConversationView({
   useEffect(() => {
     if (sessionId) started(sessionId)
   }, [sessionId])
+
+  // Aberta de novo já estando à vista: a conversa vai para o fim (revealEnd).
+  const [endSignal, setEndSignal] = useState(0)
+  const ids = [conversation.id, conversation.sessionId, sessionId]
+  const isThis = useEffectEvent((id: string) => ids.includes(id))
+  useEffect(
+    () =>
+      onRevealEnd((id) => {
+        if (isThis(id)) setEndSignal((n) => n + 1)
+      }),
+    []
+  )
 
   // O valor do contexto é fixo: com uma função nova a cada desenho, todo link de toda mensagem
   // redesenhava (o drawer mandava uma nova a cada arraste no canvas).
@@ -174,9 +188,11 @@ export const ConversationView = memo(function ConversationView({
       <FileLinkContext.Provider value={onOpenFile ? openFile : null}>
       <FileRevealContext.Provider value={onOpenFile ? revealFile : null}>
         <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
+          <AccountChoiceContext.Provider value={accountChoice}>
           <ChatView
             key={viewKey}
             draftKey={conversation.id}
+            endSignal={endSignal}
             messages={messages}
             loading={history.loading}
             older={history.older}
@@ -206,6 +222,7 @@ export const ConversationView = memo(function ConversationView({
             remoteAbove
             autoFocus={autoFocus}
           />
+          </AccountChoiceContext.Provider>
         </div>
       </FileRevealContext.Provider>
       </FileLinkContext.Provider>

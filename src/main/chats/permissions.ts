@@ -37,6 +37,8 @@ function toResult(answer: PermissionAnswer, w: Waiting): PermissionResult {
 // Pedidos de permissão (e perguntas) da conversa esperando sua resposta.
 export class PendingPermissions {
   private waiting = new Map<string, Waiting>()
+  // Perguntas de fora do Claude Code (etapa delegada a outro agente, ver orchestration/).
+  private external = new Map<string, (answer: PermissionAnswer) => void>()
 
   constructor(
     private onAsk: (request: PermissionRequest) => void,
@@ -45,7 +47,16 @@ export class PendingPermissions {
   ) {}
 
   get size(): number {
-    return this.waiting.size
+    return this.waiting.size + this.external.size
+  }
+
+  // Pergunta de uma etapa delegada, no mesmo lugar das do Claude. Conversa fechada ou pedido parado:
+  // negada.
+  ask(request: PermissionRequest): Promise<PermissionAnswer> {
+    return new Promise((resolve) => {
+      this.external.set(request.id, resolve)
+      this.onAsk(request)
+    })
   }
 
   canUseTool: CanUseTool = (toolName, input, options) =>
@@ -58,6 +69,12 @@ export class PendingPermissions {
     })
 
   answer(id: string, answer: PermissionAnswer): void {
+    const external = this.external.get(id)
+    if (external) {
+      this.external.delete(id)
+      external(answer)
+      return this.onSettle(id)
+    }
     const w = this.waiting.get(id)
     if (!w) return
     w.resolve(toResult(answer, w))
@@ -68,6 +85,16 @@ export class PendingPermissions {
   denyAll(message: string): void {
     for (const w of this.waiting.values()) w.resolve({ behavior: 'deny', message })
     this.waiting.clear()
+    this.denyExternal()
+  }
+
+  // Pedido parado: as perguntas das etapas delegadas saem negadas (a etapa para junto).
+  denyExternal(): void {
+    for (const [id, resolve] of this.external) {
+      resolve('deny')
+      this.onSettle(id)
+    }
+    this.external.clear()
   }
 
   private settle(id: string): void {

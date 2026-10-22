@@ -1,6 +1,7 @@
 import { basename } from 'node:path'
 import { app } from 'electron'
 import type { ChatSettings } from '../../shared/chat'
+import { DELEGATE_TOOL, stepLabel } from '../../shared/orchestrator'
 import type { ProviderId } from '../../shared/providers'
 import { tr } from '../i18n'
 import { providerLaunch } from '../providers/env'
@@ -92,20 +93,27 @@ export class AcpDriver implements Driver {
     private cwd: string,
     private settings: ChatSettings,
     private events: DriverEvents,
-    private folders: string[] = []
+    private folders: string[] = [],
+    // Endereço do servidor MCP do Argus (modo orquestrador, ver orchestration/mcpServer.ts). Os dois
+    // declaram MCP por HTTP (mcpCapabilities.http).
+    private argusUrl?: string
   ) {}
 
   async start(nativeId?: string): Promise<string> {
     const rpc = await openAcp(this.provider, this.account, this.cwd, this.folders)
+    const mcpServers = this.argusUrl ? [{ type: 'http', name: ARGUS_SERVER, url: this.argusUrl, headers: [] }] : []
     this.rpc = rpc
-    rpc.onNotification = (method, params) => method === 'session/update' && this.update((params as { update: Record<string, unknown> }).update)
+    rpc.onNotification = (method, params) => {
+      this.events.activity?.()
+      if (method === 'session/update') this.update((params as { update: Record<string, unknown> }).update)
+    }
     rpc.onRequest = (method, params) => this.request(method, params as Record<string, unknown>)
     rpc.onExit = () => this.events.exited(rpc.lastError() || undefined)
     try {
       if (nativeId) {
         this.loading = true
-        this.info = { sessionId: nativeId, ...(await rpc.request<Omit<SessionInfo, 'sessionId'>>('session/load', { sessionId: nativeId, cwd: this.cwd, mcpServers: [] }, 120_000)) }
-      } else this.info = await rpc.request<SessionInfo>('session/new', { cwd: this.cwd, mcpServers: [] }, 120_000)
+        this.info = { sessionId: nativeId, ...(await rpc.request<Omit<SessionInfo, 'sessionId'>>('session/load', { sessionId: nativeId, cwd: this.cwd, mcpServers }, 120_000)) }
+      } else this.info = await rpc.request<SessionInfo>('session/new', { cwd: this.cwd, mcpServers }, 120_000)
     } catch (err) {
       throw new Error(friendly(this.provider, err as RpcError))
     } finally {
@@ -249,6 +257,7 @@ export class AcpDriver implements Driver {
     const done = t.status === 'completed' || t.status === 'failed'
     const out = t.rawOutput
     const output = out ? [out.stdout ?? out.output, out.stderr].filter(Boolean).join('\n') : ''
+    const delegated = delegateArgs(t)
     const next: ToolEvent = {
       id: t.toolCallId,
       name: KIND_NAME[kind] ?? prev?.name ?? kind,
@@ -258,7 +267,19 @@ export class AcpDriver implements Driver {
       result: (output || text) ? (output || text)!.slice(-8000) : (prev?.result ?? (done ? '' : undefined)),
       error: t.status === 'failed' || (out?.exitCode !== undefined && out.exitCode !== 0),
       diff: diffItem?.newText !== undefined ? fromTexts(diffItem.oldText, diffItem.newText) : prev?.diff,
-      done
+      done,
+      // Chamada da delegate do Argus: os argumentos só vêm numa das atualizações.
+      ...(delegated
+        ? {
+            label: tr('Delegar', 'Delegate'),
+            input: delegated.title || delegated.task.split('\n')[0],
+            detail: delegated.task,
+            agent: stepLabel(delegated.agent, delegated.model),
+            delegateTask: delegated.task
+          }
+        : prev?.agent
+          ? { label: prev.label, input: prev.input, detail: prev.detail, agent: prev.agent, delegateTask: prev.delegateTask }
+          : {})
     }
     this.tools.set(t.toolCallId, next)
     this.events.tool(next)
@@ -273,7 +294,8 @@ export class AcpDriver implements Driver {
     const shown = this.tools.get(call.toolCallId)
     let reply: PermissionReply
     // Modo "Ignorar permissões" ou "Aceitar edições": o app responde sozinho, como o Claude Code faz.
-    if (this.settings.permissionMode === 'bypassPermissions') reply = 'allow'
+    // Ferramentas do próprio Argus também: quem pergunta é a etapa delegada.
+    if (this.settings.permissionMode === 'bypassPermissions' || isArgusTool(call)) reply = 'allow'
     else if (this.settings.permissionMode === 'acceptEdits' && shown?.name === 'edit') reply = 'allow'
     else
       reply = await this.events.permission({
@@ -292,6 +314,28 @@ export class AcpDriver implements Driver {
 }
 
 export const GEMINI_DEFAULT = ['gemini-3-flash-preview', 'gemini-3.5-flash']
+
+const ARGUS_SERVER = 'argus'
+
+// Ferramenta do servidor do Argus. O Cursor manda o servidor em rawInput.providerIdentifier e, no
+// pedido de permissão, só o título, que começa pelo servidor ("argus-delegate: delegate"). Só o
+// começo do título conta, e nunca numa ação de arquivo ou comando: um arquivo numa pasta "argus" não
+// pode passar sem perguntar. O Gemini não foi conferido; se não bater, ele só pergunta.
+function isArgusTool(t: AcpTool): boolean {
+  if (t.kind && t.kind !== 'other') return false
+  const raw = t.rawInput as { providerIdentifier?: string } | undefined
+  return raw?.providerIdentifier === ARGUS_SERVER || new RegExp(`^${ARGUS_SERVER}[-:]`).test(t.title ?? '')
+}
+
+type DelegateInput = { agent?: string; model?: string; task: string; title?: string }
+
+// Argumentos de uma chamada da delegate, quando esta atualização traz (Cursor: rawInput.args).
+function delegateArgs(t: AcpTool): DelegateInput | null {
+  const raw = (t.rawInput ?? {}) as Record<string, unknown>
+  if (!isArgusTool(t) || (raw.toolName !== DELEGATE_TOOL && !(t.title ?? '').includes(DELEGATE_TOOL))) return null
+  const args = ((raw.args as Record<string, unknown> | undefined) ?? raw) as Partial<DelegateInput>
+  return typeof args.task === 'string' && args.task ? (args as DelegateInput) : null
+}
 
 // Modo do app → modo do agente, pelo que ele oferece.
 function modeFor(mode: string, available: string[]): string | undefined {

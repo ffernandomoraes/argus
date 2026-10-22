@@ -1,5 +1,6 @@
 import { basename } from 'node:path'
 import type { ChatSettings } from '../../shared/chat'
+import { DELEGATE_TOOL, stepLabel } from '../../shared/orchestrator'
 import { tr } from '../i18n'
 import { expandHome } from '../paths'
 import { providerLaunch } from '../providers/env'
@@ -31,6 +32,15 @@ function policies(mode: string, writableRoots: string[] = []): { approvalPolicy:
 
 const clip = (s: string, n = 120) => (s.length > n ? s.slice(0, n) + '…' : s)
 
+const ARGUS_SERVER = 'argus'
+
+// O servidor do Argus como MCP do Codex, só nesta abertura (-c não grava no config.toml). Sem prazo
+// curto para a ferramenta: uma etapa delegada leva minutos.
+function argusMcpArgs(url?: string): string[] {
+  if (!url) return []
+  return ['-c', `mcp_servers.${ARGUS_SERVER}.url="${url}"`, '-c', `mcp_servers.${ARGUS_SERVER}.tool_timeout_sec=86400`]
+}
+
 export class CodexDriver implements Driver {
   private rpc: JsonRpcProcess | null = null
   private threadId = ''
@@ -47,11 +57,13 @@ export class CodexDriver implements Driver {
     private cwd: string,
     private settings: ChatSettings,
     private events: DriverEvents,
-    private folders: string[] = []
+    private folders: string[] = [],
+    // Endereço do servidor MCP do Argus (modo orquestrador, ver orchestration/mcpServer.ts).
+    private argusUrl?: string
   ) {}
 
   async start(nativeId?: string): Promise<string> {
-    const launch = providerLaunch('codex', ['app-server'], this.account)
+    const launch = providerLaunch('codex', ['app-server', ...argusMcpArgs(this.argusUrl)], this.account)
     if (!launch) throw new Error(tr('O Codex não está instalado ou a conta não existe mais.', 'Codex isn’t installed or the account no longer exists.'))
     this.accountId = launch.account
     const rpc = await openCodex(launch, this.cwd)
@@ -112,6 +124,7 @@ export class CodexDriver implements Driver {
   }
 
   private notify(method: string, p: Record<string, unknown>): void {
+    this.events.activity?.()
     switch (method) {
       case 'item/agentMessage/delta':
         return this.events.text(String(p.delta ?? ''))
@@ -169,6 +182,8 @@ export class CodexDriver implements Driver {
   // Pedidos do Codex para o app: aprovações. O resto volta como erro (o app ainda não pergunta outras
   // coisas), e o Codex segue sem.
   private async request(method: string, p: Record<string, unknown>): Promise<unknown> {
+    // Ferramentas do próprio Argus: liberadas sem perguntar (quem pergunta é a etapa delegada).
+    if (method === 'mcpServer/elicitation/request' && p.serverName === ARGUS_SERVER) return { action: 'accept', content: {} }
     if (method === 'item/commandExecution/requestApproval') {
       const command = String(p.command ?? '')
       const reply = await this.events.permission({
@@ -224,6 +239,24 @@ function toolOf(item: Item, done: boolean): ToolEvent | null {
       diff: first ? fromUnified(first.diff) : undefined,
       result: done ? '' : undefined,
       error: done && (item.status === 'failed' || item.status === 'declined'),
+      done
+    }
+  }
+  if (item.type === 'mcpToolCall' && item.server === ARGUS_SERVER && item.tool === DELEGATE_TOOL) {
+    const args = (item.arguments ?? {}) as { agent?: string; model?: string; task?: string; title?: string }
+    const task = String(args.task ?? '')
+    const result = item.result as { content?: { type: string; text?: string }[] } | null
+    const error = item.error as { message?: string } | null
+    return {
+      id: item.id,
+      name: 'mcp',
+      label: tr('Delegar', 'Delegate'),
+      input: args.title || task.split('\n')[0],
+      detail: task,
+      result: done ? (result?.content?.map((c) => c.text ?? '').join('\n') || error?.message || '') : undefined,
+      error: done && item.status === 'failed',
+      agent: stepLabel(args.agent, args.model),
+      delegateTask: task,
       done
     }
   }

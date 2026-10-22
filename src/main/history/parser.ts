@@ -1,4 +1,5 @@
 import { pageOf, type HistoryPage, type HistoryRequest, type Message } from '../../shared/history'
+import { DELEGATE_TOOL, stepLabel } from '../../shared/orchestrator'
 import { diffFromResult } from '../diffs'
 import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
@@ -15,6 +16,8 @@ export const MESSAGES_MAX = 400
 // Folga acima do que a tela pede: as que chegam entre um pedido e outro não empurram o começo do
 // trecho dela para fora da memória.
 const HOLD_SLACK = 100
+
+const DELEGATE_NAME = `mcp__argus__${DELEGATE_TOOL}`
 
 type ToolMessage = Extract<Message, { role: 'tool' }>
 type DiffSource = Parameters<typeof diffFromResult>[0]
@@ -178,7 +181,13 @@ export class HistoryParser {
     } else if (c?.type === 'tool_use' && typeof c.name === 'string') {
       const input = obj(c.input)
       const d = describeTool(c.name, input)
-      const agent = c.name === 'Agent' || c.name === 'Task' ? String(input?.subagent_type || 'general-purpose') : undefined
+      // Subagente: os do Claude (Agent) e as etapas delegadas pelo orquestrador ("Codex - gpt-5.5").
+      const agent =
+        c.name === 'Agent' || c.name === 'Task'
+          ? String(input?.subagent_type || 'general-purpose')
+          : c.name === DELEGATE_NAME
+            ? stepLabel(str(input?.agent), str(input?.model))
+            : undefined
       const tool: ToolMessage = {
         id,
         role: 'tool',

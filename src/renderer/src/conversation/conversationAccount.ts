@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { createContext, useContext, useSyncExternalStore } from 'react'
 
 // Conta do Claude escolhida para uma conversa, guardada neste computador. Só se escolhe com a
 // conversa vazia; no primeiro envio ela fica fixa (a escolhida ou, sem escolha, a do grupo), e a
@@ -54,3 +54,11 @@ function subscribe(onChange: () => void): () => void {
 export function useConversationAccountChoice(id: string): string | undefined {
   return useSyncExternalStore(subscribe, () => read(id))
 }
+
+// A conversa na tela: se ainda está vazia (pode trocar para qualquer agente) e como trocar. O
+// orquestrador usa para levar a conversa nova ao agente dele (ver orchestratorFit).
+export type AccountChoice = { empty: boolean; choose: (account: string) => void }
+
+export const AccountChoiceContext = createContext<AccountChoice | null>(null)
+
+export const useAccountChoice = (): AccountChoice | null => useContext(AccountChoiceContext)

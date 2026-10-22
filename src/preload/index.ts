@@ -27,6 +27,7 @@ const api: Api = {
   windowsBuild: windowsBuild(),
   setTheme: (theme) => send('theme:set', theme),
   setInterfaceZoom: (factor) => send('interface:zoom', factor),
+  clipboardCommand: (command) => send('clipboard:command', command),
   accent: {
     get: () => sendSync('accent:get'),
     onChange: (cb) => listen('accent:changed', cb)
@@ -81,10 +82,17 @@ const api: Api = {
     dragTo: (x, y) => send('mascot:drag', x, y),
     dragEnd: () => send('mascot:dragEnd'),
     home: () => send('mascot:home'),
+    reportTarget: (key, turn, rect) => send('mascot:target', key, turn, rect),
+    findTarget: (key, turn) => invoke('mascot:findTarget', key, turn),
+    walk: (x, y) => invoke('mascot:walk', x, y),
+    homeSpot: () => invoke('mascot:homeSpot'),
     alerts: () => invoke('mascot:alerts'),
     onAlerts: (cb) => listen('mascot:alerts', cb),
     onTyping: (cb) => listen('mascot:typing', cb),
     onReleased: (cb) => listen('mascot:released', cb)
+  },
+  orchestrator: {
+    setEnabled: (on) => send('orchestrator:enabled', on)
   },
   claude: {
     info: (account) => invoke('claude:info', account),

@@ -1,4 +1,4 @@
-import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
+import { createSdkMcpServer, tool, type SdkMcpToolDefinition } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import type { Terminals } from '.'
 
@@ -80,7 +80,8 @@ async function typeCommand(conversations: string[], command: string, run: boolea
 }
 
 // conversations: as chaves da conversa que chama, lidas na hora (a nova ganha o id da sessão depois).
-export function argusMcp(conversations: () => Iterable<string>) {
+// extra: outras ferramentas do Argus na mesma conversa (as do orquestrador, ver orchestration/).
+export function argusMcp(conversations: () => Iterable<string>, extra: SdkMcpToolDefinition<any>[] = []) {
   return createSdkMcpServer({
     name: ARGUS_MCP,
     alwaysLoad: true,
@@ -96,7 +97,8 @@ export function argusMcp(conversations: () => Iterable<string>) {
         'Digita e roda (aperta Enter) um comando no terminal (shell do sistema) embaixo desta conversa no Argus. Se o terminal estiver fechado, ele abre sozinho. Use quando a pessoa pedir para rodar ou executar algo no terminal dela, como conectar por ssh numa VPS ou um comando que depende do .env ou de credenciais dela. Se ela pedir só para digitar, ou se o comando for destrutivo, use digitar_no_terminal. O terminal pode estar dentro de um ssh. Você não vê a saída; se precisar, peça para ela contar. Uma linha só; para vários passos, junte com &&.',
         { comando: z.string().min(1).describe('o comando, em uma linha') },
         async ({ comando }) => typeCommand([...conversations()], comando, true)
-      )
+      ),
+      ...extra
     ]
   })
 }

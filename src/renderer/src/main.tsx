@@ -11,6 +11,7 @@ import { tr } from './i18n'
 import { MascotOverlay } from './canvas/mascot/MascotOverlay'
 import { PopoutApp } from './conversation/PopoutApp'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { SelectionMenu } from './ui/selectionMenu'
 import { installWindowActivity } from './lib/windowActivity'
 
 // Cor de destaque do sistema antes do primeiro desenho, para não piscar o azul padrão. Sem ela,
@@ -62,6 +63,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LucideProvider strokeWidth={1.5}>
       <ErrorBoundary>{mascot ? <MascotOverlay /> : popout ? <PopoutApp id={decodeURIComponent(popout[1])} /> : <App />}</ErrorBoundary>
+      {!mascot && <SelectionMenu />}
     </LucideProvider>
   </StrictMode>
 )

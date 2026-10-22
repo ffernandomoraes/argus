@@ -2,6 +2,7 @@ import { useCallback, type Dispatch, type MouseEvent as ReactMouseEvent, type Se
 import { useReactFlow, type NodeMouseHandler } from '@xyflow/react'
 import { useAuth } from '../../auth/useAuth'
 import { useStableCallback } from '../../lib/useStableCallback'
+import { fieldAt, textMenuItems } from '../../ui/selectionMenu'
 import type { NodesApi } from '../actions/types'
 import type { MenuState } from '../ContextMenu'
 import type { CanvasNode, ConversationSummary, ProjectNode } from '../types'
@@ -65,6 +66,9 @@ export function useMenuHandlers({ nodesRef, setMenu, deps }: Options) {
   const onNodeContextMenu = useCallback<NodeMouseHandler<CanvasNode>>(
     (e, node) => {
       e.preventDefault()
+      // Num campo de texto do bloco (o composer do chat), só recortar/copiar/colar.
+      const text = textMenuItems(e.target)
+      if (fieldAt(e.target)) return setMenu({ x: e.clientX, y: e.clientY, items: text })
       if (node.type === 'project') return openProjectMenu(e, node)
       const d = currentDeps()
       const items =
@@ -77,7 +81,8 @@ export function useMenuHandlers({ nodesRef, setMenu, deps }: Options) {
               : node.type === 'note'
                 ? noteMenu(d, node)
                 : chatPanelMenu(d, node)
-      setMenu({ x: e.clientX, y: e.clientY, items })
+      // Texto selecionado ou link sob o clique (uma resposta no card do chat): os itens dele no topo.
+      setMenu({ x: e.clientX, y: e.clientY, items: text.length ? [...text, { type: 'separator' }, ...items] : items })
     },
     [openProjectMenu, setMenu, currentDeps]
   )

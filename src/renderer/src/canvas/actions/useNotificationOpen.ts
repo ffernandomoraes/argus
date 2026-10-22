@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { revealEnd } from '../../conversation/revealEnd'
 import { useStableCallback } from '../../lib/useStableCallback'
 import type { ActiveConversation } from '../CanvasContext'
 import { displayPath } from '../factory'
@@ -13,11 +14,12 @@ type Options = {
 }
 
 // Clique na notificação do sistema (ou numa linha do indicador de conversas ativas): abre a conversa
-// pelo bloco dela (conversa solta) ou pelo projeto da pasta. Já aberta num drawer, fica como está.
+// pelo bloco dela (conversa solta) ou pelo projeto da pasta. Já aberta num drawer, fica nele e vai
+// para o fim, onde está a resposta que avisou.
 // Devolve a mesma função, para quem mais abre conversas por pasta e sessão.
 export function useNotificationOpen({ nodesRef, shown, openConversation }: Options): (cwd: string, sessionId: string) => void {
   const open = useStableCallback((cwd: string, sessionId: string) => {
-    if (shown.some((a) => a && (a.conversationId === sessionId || a.sessionId === sessionId))) return
+    if (shown.some((a) => a && (a.conversationId === sessionId || a.sessionId === sessionId))) return revealEnd(sessionId)
     const target = ownerOf(nodesRef.current, displayPath(cwd), sessionId)
     if (target) openConversation(target.id, sessionId)
   })

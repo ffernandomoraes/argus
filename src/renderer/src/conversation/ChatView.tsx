@@ -75,6 +75,8 @@ export type ChatViewProps = {
   // Chat reduzido (o modo design): comandos e edições só na linha, sem o último pedido preso no
   // topo, e a linha de baixo mais curta (esforço sem as bolinhas, contexto sem a palavra).
   compact?: boolean
+  // Sobe quando a conversa é aberta de novo já estando à vista: volta a seguir o fim.
+  endSignal?: number
 }
 
 // A conversa: a linha do tempo (o histórico gravado e o que acontece agora), o prompt preso no
@@ -104,7 +106,8 @@ export const ChatView = memo(function ChatView({
   remoteAbove = false,
   composerChips,
   extraSend,
-  cleanText
+  cleanText,
+  endSignal = 0
 }: ChatViewProps) {
   const scroller = useRef<HTMLDivElement>(null)
   // A mesma área, para a linha do tempo virtualizada: ela precisa saber quando a área montou.
@@ -153,7 +156,7 @@ export const ChatView = memo(function ChatView({
   const scrollToKey = useStableCallback((key: string) => timeline.current?.scrollToKey(key))
   const stickyTimeline = useMemo(() => ({ promptBefore, scrollToKey }), [promptBefore, scrollToKey])
   const sticky = useStickyScroll(scroller, content, stickyTimeline)
-  const { toEnd, follow } = sticky
+  const { toEnd, follow, settle } = sticky
   const olderMessages = useOlderMessages(scroller, older)
   const onScroll = (e: UIEvent<HTMLDivElement>) => {
     sticky.onScroll(e)
@@ -161,6 +164,11 @@ export const ChatView = memo(function ChatView({
   }
   // Mudou algo na conversa: vai para o fim, se estiver seguindo.
   useLayoutEffect(() => toEnd(), [items, toEnd])
+  // Abriu: assim que o histórico chega (ou de cara, sem histórico a esperar), acerta no fim. Aberta
+  // de novo já estando à vista (endSignal), também.
+  useLayoutEffect(() => {
+    if (!loading) return settle()
+  }, [loading, endSignal, settle])
 
   // No chat reduzido (protótipo do modo design), o último pedido não fica preso no topo.
   const pinned = useMemo(

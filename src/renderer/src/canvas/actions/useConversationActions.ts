@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import type { XYPosition } from '@xyflow/react'
 import type { LineRange } from '../../conversation/fileLinks'
+import { revealEnd } from '../../conversation/revealEnd'
 import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { patchView, type CanvasViewStore } from '../canvasView'
@@ -91,6 +92,8 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
       if (!getPreferences().designMode) return
       return drawers.openDesign({ nodeId, designId: conversationId.slice(DESIGN_PREFIX.length) })
     }
+    // Já à vista (no drawer ou no canvas), vai para o fim; senão, já abre lá.
+    revealEnd(conversationId)
     const openIn = getPreferences().openIn
     // Já no canvas: a câmera vai até o bloco dela.
     const panel = chatPanelOf(nodesRef.current, conversationId)

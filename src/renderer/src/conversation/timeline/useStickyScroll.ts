@@ -4,6 +4,8 @@ import { scrollWithin } from '../scrollWithin'
 const UP_KEYS = new Set(['ArrowUp', 'PageUp', 'Home'])
 // Por quanto tempo depois de roda, tecla ou toque uma rolagem ainda conta como sua.
 const INTENT_MS = 1000
+// Quanto dura o acerto ao abrir a conversa (ver settle).
+const SETTLE_MS = 1500
 
 // Rolagem da conversa: segue o fim quando chega coisa nova (a menos que a pessoa tenha subido para
 // ler) e acha o prompt do trecho na tela, que fica preso no topo enquanto ela rola para cima.
@@ -45,6 +47,25 @@ export function useStickyScroll(
   const follow = useCallback(() => {
     following.current = true
     toEnd()
+  }, [toEnd])
+
+  // Ao abrir a conversa (o histórico chegou, ou ela foi aberta de novo já estando à vista): segue o
+  // fim e, por um instante, volta para ele a cada quadro. Nesse começo o histórico entra de uma vez
+  // e a lista virtualizada mede os itens e corrige a rolagem várias vezes; só pelos avisos de
+  // rolagem e de tamanho, às vezes a conversa abria no meio, longe da última resposta (mais no
+  // Windows). Subir para ler solta o fim (following) e o acerto para na hora.
+  // Devolve a função que cancela.
+  const settle = useCallback(() => {
+    following.current = true
+    const until = performance.now() + SETTLE_MS
+    let frame = 0
+    const step = () => {
+      if (!following.current || performance.now() > until) return
+      toEnd()
+      frame = requestAnimationFrame(step)
+    }
+    step()
+    return () => cancelAnimationFrame(frame)
   }, [toEnd])
 
   // Prompt do trecho que está na tela fica preso no topo: o último cujo balão já subiu para
@@ -177,5 +198,5 @@ export function useStickyScroll(
     else timeline.scrollToKey(pinnedKey)
   }
 
-  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
+  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, settle, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
 }

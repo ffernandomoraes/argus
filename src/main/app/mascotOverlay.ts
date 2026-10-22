@@ -41,6 +41,11 @@ const WALK_SPEED = 520
 const WALK_MS = { min: 250, max: 2200 }
 const WALK_FRAME_MS = 16
 
+// Posição da janela em px inteiros. Math.round dá -0 entre -0,5 e 0 (passando pela borda esquerda
+// da tela), e o setPosition do Electron recusa -0 com "conversion failure": o erro estourava no
+// processo principal a cada caminhada até uma pasta encostada na borda.
+const toPx = (v: number): number => Math.round(v) || 0
+
 export class MascotOverlay {
   private win: BrowserWindow | null = null
   private typing = false
@@ -241,7 +246,7 @@ export class MascotOverlay {
     return new Promise((resolve) => {
       this.walkTimer = setInterval(() => {
         const t = win.isDestroyed() ? 1 : Math.min(1, (Date.now() - start) / ms)
-        if (!win.isDestroyed()) win.setPosition(Math.round(x0 + (to.x - x0) * t), Math.round(y0 + (to.y - y0) * t))
+        if (!win.isDestroyed()) win.setPosition(toPx(x0 + (to.x - x0) * t), toPx(y0 + (to.y - y0) * t))
         if (t < 1) return
         this.stopWalk()
         resolve()
@@ -263,7 +268,7 @@ export class MascotOverlay {
   }
 
   dragTo(x: number, y: number): void {
-    if (this.win && !this.win.isDestroyed()) this.win.setPosition(Math.round(x), Math.round(y))
+    if (this.win && !this.win.isDestroyed()) this.win.setPosition(toPx(x), toPx(y))
   }
 
   dragEnd(): void {

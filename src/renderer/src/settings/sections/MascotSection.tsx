@@ -20,8 +20,8 @@ export function MascotSection() {
       </button>
       <p className="max-w-md text-[15px] leading-relaxed text-muted">
         {tr(
-          'Corpo, pele, rosto, olhos, boca, cabelo, barba e o golpe que ele dá no envio, num editor em tela cheia.',
-          'Body, skin, face, eyes, mouth, hair, beard and the strike it gives on send, in a full-screen editor.'
+          'Corpo, roupa, acessórios, pele, rosto, olhos, boca, cabelo, barba e o golpe que ele dá no envio, num editor em tela cheia.',
+          'Body, clothes, accessories, skin, face, eyes, mouth, hair, beard and the strike it gives on send, in a full-screen editor.'
         )}
       </p>
       <div className="flex flex-wrap justify-center gap-2">

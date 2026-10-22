@@ -1,15 +1,19 @@
 import { createContext, memo, useContext, useId, type CSSProperties, type ReactNode } from 'react'
 import {
   beardPalette,
-  BUILDS,
+  bodyShape,
+  clothPalette,
   COVERS_EARS,
   eyePalette,
   hairPalette,
   mix,
   skinPalette,
+  sleevePalette,
   STRIKES,
   type BeardStyle,
   type BuildShape,
+  type Accessory,
+  type ClothPalette,
   type EyeShape,
   type FaceShape,
   type HairPalette,
@@ -39,6 +43,15 @@ export const VIEW = { x: 0, y: -12, w: 200, h: 172 }
 // Eixo do corpo (para virar de lado) e canto esquerdo do boneco.
 export const BODY_X = 60
 export const LEFT_EDGE = 20
+
+// A cabeça no corpo, em volta do pescoço (60, 90): 80% do desenho dela, para ficar mais
+// proporcional ao corpo. As miniaturas de rosto, cabelo e olhos mostram a cabeça no tamanho todo.
+const HEAD_SCALE = 0.8
+const NECK = { x: 60, y: 90 }
+const headTransform = (narrow: number) =>
+  `matrix(${narrow * HEAD_SCALE} 0 0 ${HEAD_SCALE} ${NECK.x * (1 - narrow * HEAD_SCALE)} ${NECK.y * (1 - HEAD_SCALE)})`
+// Um ponto da cabeça (no desenho dela) onde fica no corpo.
+const onHead = (x: number, y: number) => ({ x: NECK.x + (x - NECK.x) * HEAD_SCALE, y: NECK.y + (y - NECK.y) * HEAD_SCALE })
 
 // O lado direito é o esquerdo espelhado no eixo do corpo.
 const MIRROR = `matrix(-1 0 0 1 ${BODY_X * 2} 0)`
@@ -74,6 +87,11 @@ type Figure = {
   skin: SkinPalette
   build: BuildShape
   female: boolean
+  // Roupa: a parte de cima (e a manga), a de baixo e a camiseta branca por baixo da jaqueta.
+  top: ClothPalette
+  sleeve: { mid: string; edge: string; cuff: string }
+  bottom: ClothPalette
+  inner: ClothPalette
   url: (name: string) => string
 }
 const FigureContext = createContext<Figure | null>(null)
@@ -86,8 +104,12 @@ function FigureProvider({ look, children }: { look: MascotLook; children: (id: s
     hair: hairPalette(look.hairColor),
     beard: beardPalette(look),
     skin: skinPalette(look.skin),
-    build: BUILDS[look.build],
+    build: bodyShape(look),
     female: look.sex === 'female',
+    top: clothPalette(look.topColor),
+    sleeve: sleevePalette(look.topColor),
+    bottom: clothPalette(look.bottomColor),
+    inner: clothPalette('white'),
     url: (name) => `url(#${id}-${name})`
   }
   return <FigureContext.Provider value={figure}>{children(id)}</FigureContext.Provider>
@@ -156,13 +178,13 @@ export const MascotHead = memo(function MascotHead({ look, view, mouth = 'smile'
 
 // De frente: todas as poses menos andar.
 function FrontView({ pose }: { pose: Pose }) {
-  const { female, url, build } = useFigure()
+  const { url, build, look } = useFigure()
   const strike = isStrike(pose) ? pose : null
   const melee = strike === 'slap' || strike === 'punch' || strike === 'kick' ? strike : null
   const mouth: Mouth = strike || pose === 'dance' || pose === 'thumbs' ? 'grin' : pose === 'search' || pose === 'type' ? 'smile' : 'calm'
   const rightHand: Hand =
     pose === 'whip' || pose === 'punch' || pose === 'think' || pose === 'search' ? 'fist' : pose === 'thumbs' ? 'thumb' : 'open'
-  const Leg = female ? LegFemale : LegMale
+  const skirt = look.bottom === 'skirt'
   // Os efeitos do golpe acompanham a mão (ou o pé, no chute) quando o corpo é mais largo.
   const fx = shift(strike === 'kick' ? build.hip : build.shoulder)
   const leg = (side: 'l' | 'r') => (
@@ -186,19 +208,27 @@ function FrontView({ pose }: { pose: Pose }) {
           <Swoosh strike={melee} />
         </g>
       )}
-      <path
-        d="M47 118 L73 118 L73.4 127.5 C68.5 129 64.5 130 60 131 C55.5 130 51.5 129 46.6 127.5 Z"
-        transform={widen(60, build.torso)}
-        fill={url('jeans')}
-      />
+      {!skirt && (
+        <g transform={widen(60, build.torso)}>
+          <Hips />
+        </g>
+      )}
       {leg('l')}
       <g transform={MIRROR}>{leg('r')}</g>
+      {skirt && (
+        <g transform={widen(60, build.torso)}>
+          <Skirt />
+        </g>
+      )}
       <Pivot x={60} y={124} move="m-torso-move">
-        <g transform={widen(60, build.torso)}>{female ? <TorsoFemale /> : <TorsoMale />}</g>
+        <g transform={widen(60, build.torso)}>
+          <Torso />
+        </g>
+        {look.accessories.includes('necklace') && <Necklace />}
       </Pivot>
       <Pivot x={60} y={90} pose="m-head" move="m-head-move">
-        {/* Cabeça 3% mais estreita que o desenho, em volta do eixo do corpo; a altura fica igual. */}
-        <g transform={`matrix(0.97 0 0 1 ${BODY_X * 0.03} 0)`}>
+        {/* Cabeça menor que o desenho (HEAD_SCALE) e 3% mais estreita, em volta do pescoço. */}
+        <g transform={headTransform(0.97)}>
           <Head mouth={mouth} />
         </g>
       </Pivot>
@@ -224,7 +254,7 @@ function FrontView({ pose }: { pose: Pose }) {
 }
 
 function Defs({ id }: { id: string }) {
-  const { look, hair, beard, skin } = useFigure()
+  const { look, hair, beard, skin, top, sleeve, bottom, inner, female, build } = useFigure()
   const eye = EYES[look.eyes]
   return (
     <defs>
@@ -271,21 +301,31 @@ function Defs({ id }: { id: string }) {
         <stop offset={0} stopColor={skin.lip[0]} />
         <stop offset={1} stopColor={skin.lip[1]} />
       </linearGradient>
-      <linearGradient id={`${id}-shirt`} x1={0} x2={1} y1={0} y2={0}>
-        <stop offset={0} stopColor="#dca61c" />
-        <stop offset={0.5} stopColor="#fbd347" />
-        <stop offset={1} stopColor="#dca61c" />
-      </linearGradient>
-      <linearGradient id={`${id}-sleeve`} x1={0} x2={1} y1={0} y2={0}>
-        <stop offset={0} stopColor="#e0aa22" />
-        <stop offset={0.55} stopColor="#f8cf42" />
-        <stop offset={1} stopColor="#e0aa22" />
-      </linearGradient>
-      <linearGradient id={`${id}-jeans`} x1={0} x2={1} y1={0} y2={0}>
-        <stop offset={0} stopColor="#16161a" />
-        <stop offset={0.5} stopColor="#2c2d33" />
-        <stop offset={1} stopColor="#16161a" />
-      </linearGradient>
+      {/* Roupa: a parte de cima (shirt, sleeve), a de baixo (jeans, o nome de quando era sempre
+          calça) e a camiseta por baixo da jaqueta (inner). */}
+      {(
+        [
+          ['shirt', top, 0.5],
+          ['sleeve', sleeve, 0.55],
+          ['jeans', bottom, 0.5],
+          ['inner', inner, 0.5]
+        ] as const
+      ).map(([name, c, middle]) => (
+        <linearGradient key={name} id={`${id}-${name}`} x1={0} x2={1} y1={0} y2={0}>
+          <stop offset={0} stopColor={c.edge} />
+          <stop offset={middle} stopColor={c.mid} />
+          <stop offset={1} stopColor={c.edge} />
+        </linearGradient>
+      ))}
+      {/* O tronco (mais a barriga): a regata e a jaqueta ficam recortadas nele. */}
+      <clipPath id={`${id}-torso`}>
+        <path d={female ? TORSO_FEMALE : TORSO_MALE} />
+        {build.belly && <ellipse {...BELLY} />}
+      </clipPath>
+      <clipPath id={`${id}-side-torso`}>
+        <path d={female ? SIDE_SHIRT_FEMALE : SIDE_SHIRT_MALE} />
+        {build.belly && <ellipse {...SIDE_BELLY} />}
+      </clipPath>
       <linearGradient id={`${id}-glove`} x1={0} x2={1} y1={0} y2={0}>
         <stop offset={0} stopColor="#b3261e" />
         <stop offset={0.5} stopColor="#ef4f43" />
@@ -364,11 +404,35 @@ const FACES: Record<FaceShape, string> = {
   // Mais largo e mais curto.
   wide:
     'M28 40 C28 22 41.6 13 60 13 C78.4 13 92 22 92 40 C92 50 91.6 59 90 66 C87.6 77 76 88 60 88 C44 88 32.4 77 30 66 ' +
-    'C28.4 59 28 50 28 40 Z'
+    'C28.4 59 28 50 28 40 Z',
+  // Afinando até um queixo pequeno e pontudo.
+  vshape:
+    'M30.4 37 C30.4 20.6 42.6 12.4 60 12.4 C77.4 12.4 89.6 20.6 89.6 37 C89.6 46 89 54 87.4 61 C84.6 72 74 86 64 90.6 ' +
+    'C62.6 91.3 61.3 91.6 60 91.6 C58.7 91.6 57.4 91.3 56 90.6 C46 86 35.4 72 32.6 61 C31 54 30.4 46 30.4 37 Z',
+  // Testa estreita, o mais largo embaixo, nas bochechas, e o queixo redondo.
+  pear:
+    'M33.4 38 C33.4 21 44.6 12.5 60 12.5 C75.4 12.5 86.6 21 86.6 38 C88 46 91.4 54 92 63 C92.6 74 85 84.6 74 88.6 ' +
+    'C69.6 90.2 64.8 90.8 60 90.8 C55.2 90.8 50.4 90.2 46 88.6 C35 84.6 27.4 74 28 63 C28.6 54 32 46 33.4 38 Z',
+  // Comprido, com a mandíbula reta.
+  rectangle:
+    'M31 36 C31 20 43 11.6 60 11.6 C77 11.6 89 20 89 36 C89 48 89.2 60 88.4 69 C87.6 77 84.4 84 78.4 88 C73.4 91.2 67 92.4 60 92.4 ' +
+    'C53 92.4 46.6 91.2 41.6 88 C35.6 84 32.4 77 31.6 69 C30.8 60 31 48 31 36 Z',
+  // Bem redondo e baixo, com o queixo pequeno.
+  baby:
+    'M28.6 40 C28.6 22 41.6 13.4 60 13.4 C78.4 13.4 91.4 22 91.4 40 C91.4 52 92 62 89.6 70.6 C86.4 81.8 74.6 88.6 60 88.6 ' +
+    'C45.4 88.6 33.6 81.8 30.4 70.6 C28 62 28.6 52 28.6 40 Z',
+  // Maçãs do rosto altas e a mandíbula marcada, em ângulo (os traços das maçãs em FACE_DETAIL).
+  angular:
+    'M30.4 37 C30.4 20.6 42.6 12.4 60 12.4 C77.4 12.4 89.6 20.6 89.6 37 C90.4 46 91 52 90 58 C89 66 86.4 72 82.4 78 ' +
+    'C78.6 83.6 73 87.6 66.6 90.2 C64.4 91 62.2 91.4 60 91.4 C57.8 91.4 55.6 91 53.4 90.2 C47 87.6 41.4 83.6 37.6 78 ' +
+    'C33.6 72 31 66 30 58 C29 52 29.6 46 30.4 37 Z'
 }
 
-// Traço a mais de alguns rostos (a covinha do queixo marcado).
-const FACE_DETAIL: Partial<Record<FaceShape, string>> = { chin: 'M60 86.2 C59.6 87.6 59.7 88.8 60.2 89.8' }
+// Traço a mais de alguns rostos (a covinha do queixo marcado, as maçãs do anguloso).
+const FACE_DETAIL: Partial<Record<FaceShape, string>> = {
+  chin: 'M60 86.2 C59.6 87.6 59.7 88.8 60.2 89.8',
+  angular: 'M34.6 61 C36.4 65 38.6 67.6 41.6 69.6 M85.4 61 C83.6 65 81.4 67.6 78.4 69.6'
+}
 
 // Cabelo. back: atrás do rosto (o que desce ao lado dele, o rabo, o coque); backBumps: círculos do
 // contorno que ficam atrás (black power); under: camada raspada, bem fina (laterais do moicano e do
@@ -453,6 +517,74 @@ const SHINE = 'M44 9.6 Q56 4.6 70 6.4 Q58 7.6 48 12.6 Z'
 const SHINE_LOW = 'M46 11 Q58 7.6 72 10 Q59 10.4 49 13.6 Z'
 const SHINE_LONG = 'M42 11 Q56 6.4 72 8.6 Q58 9.4 46 14 Z'
 
+// Caminho ondulado de (x0, y0) até (x1, y1), sem o M (continua de onde o caminho está): `count`
+// meias-ondas que saem `amp` para os lados, alternando (a primeira para +x).
+const n2 = (v: number) => +v.toFixed(2)
+function waves(x0: number, y0: number, x1: number, y1: number, amp: number, count: number): string {
+  const at = (t: number) => [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t]
+  let d = ''
+  for (let i = 0; i < count; i++) {
+    const side = i % 2 ? -amp : amp
+    const [xa, ya] = at((i + 1 / 3) / count)
+    const [xb, yb] = at((i + 2 / 3) / count)
+    const [xe, ye] = at((i + 1) / count)
+    d += ` C${n2(xa + side)} ${n2(ya)} ${n2(xb + side)} ${n2(yb)} ${n2(xe)} ${n2(ye)}`
+  }
+  return d
+}
+// O lado esquerdo, de baixo para cima, espelhando as ondas do direito (que vai de cima para baixo).
+const wavesUp = (x0: number, y0: number, x1: number, y1: number, amp: number, count: number) =>
+  waves(x0, y0, x1, y1, count % 2 ? -amp : amp, count)
+// Mecha ondulada solta.
+const wavyStrand = (x0: number, y0: number, x1: number, y1: number, amp: number, count: number) => `M${x0} ${y0}${waves(x0, y0, x1, y1, amp, count)}`
+// Alto da cabeça dos cabelos compridos, de orelha a orelha.
+const LONG_TOP = 'M24.6 44 C23.4 24 38 5.6 60 5.6 C82 5.6 96.6 24 95.4 44'
+// Repartido no meio (o longo liso e as ondas longas).
+const MIDDLE_PART =
+  'M27.6 46 C26.6 24 40 6.4 60 6.4 C80 6.4 93.4 24 92.4 46 L89.4 45.4 C89 37 87 30.4 82.6 26.4 C76.6 21.6 68 19.6 61.4 21 ' +
+  'L60 24 L58.6 21 C52 19.6 43.4 21.6 37.4 26.4 C33 30.4 31 37 30.6 45.4 Z'
+const MIDDLE_PART_STRANDS = ['M58.6 21.6 C50 22.4 41 26.6 35 34', 'M61.4 21.6 C70 22.4 79 26.6 85 34', 'M55 9 C46 11 38 16 33 24', 'M65 9 C74 11 82 16 87 24']
+
+const CURLY: HairArt = {
+  front:
+    'M27 42 C23 32 24 18 33 10 C40 3.6 50 0.6 60 0.6 C70 0.6 80 3.6 87 10 C96 18 97 32 93 42 L89.8 41 ' +
+    'C89.4 34 88.4 29.6 86.6 27 C78.4 24.8 69.2 23.8 60 24 C50.8 24.2 41.6 25 33.4 27 C31.6 29.6 30.6 34 30.2 41 Z',
+  strands: [],
+  bumps: [
+    [28, 37, 5],
+    [26.4, 27, 5.6],
+    [30.6, 16.8, 6.2],
+    [39.6, 8.6, 6.6],
+    [51, 3.6, 6.8],
+    [63.6, 2.8, 6.8],
+    [75.6, 5.8, 6.6],
+    [85.4, 12.6, 6.2],
+    [91.8, 22.4, 5.6],
+    [93.4, 33.4, 5],
+    [35.6, 26.4, 3.4],
+    [43.4, 25, 3.6],
+    [51.6, 24.2, 3.6],
+    [60, 24, 3.6],
+    [68.4, 24.2, 3.6],
+    [76.6, 25, 3.6],
+    [84.4, 26.4, 3.4]
+  ],
+  curls: [
+    [38, 17],
+    [48, 11],
+    [58, 8],
+    [68, 9],
+    [78, 13],
+    [86, 20],
+    [31, 30],
+    [89, 31],
+    [46, 19],
+    [62, 16],
+    [74, 19]
+  ],
+  fade: true
+}
+
 const HAIR_FRONT: Record<HairStyle, HairArt> = {
   // Curto e liso, penteado para cima e um pouco para o lado (topete leve à esquerda da testa);
   // contorno sem ondas. A linha da testa é limpa, com as entradas nas têmporas.
@@ -515,45 +647,7 @@ const HAIR_FRONT: Record<HairStyle, HairArt> = {
     fade: true
   },
   // Volume redondo de cachos, com uma fileira de cachinhos na testa.
-  curly: {
-    front:
-      'M27 42 C23 32 24 18 33 10 C40 3.6 50 0.6 60 0.6 C70 0.6 80 3.6 87 10 C96 18 97 32 93 42 L89.8 41 ' +
-      'C89.4 34 88.4 29.6 86.6 27 C78.4 24.8 69.2 23.8 60 24 C50.8 24.2 41.6 25 33.4 27 C31.6 29.6 30.6 34 30.2 41 Z',
-    strands: [],
-    bumps: [
-      [28, 37, 5],
-      [26.4, 27, 5.6],
-      [30.6, 16.8, 6.2],
-      [39.6, 8.6, 6.6],
-      [51, 3.6, 6.8],
-      [63.6, 2.8, 6.8],
-      [75.6, 5.8, 6.6],
-      [85.4, 12.6, 6.2],
-      [91.8, 22.4, 5.6],
-      [93.4, 33.4, 5],
-      [35.6, 26.4, 3.4],
-      [43.4, 25, 3.6],
-      [51.6, 24.2, 3.6],
-      [60, 24, 3.6],
-      [68.4, 24.2, 3.6],
-      [76.6, 25, 3.6],
-      [84.4, 26.4, 3.4]
-    ],
-    curls: [
-      [38, 17],
-      [48, 11],
-      [58, 8],
-      [68, 9],
-      [78, 13],
-      [86, 20],
-      [31, 30],
-      [89, 31],
-      [46, 19],
-      [62, 16],
-      [74, 19]
-    ],
-    fade: true
-  },
+  curly: CURLY,
   // Black power: uma bola grande de cachos em volta da cabeça.
   afro: {
     back: 'M23 28 A37 37 0 1 0 97 28 A37 37 0 1 0 23 28 Z',
@@ -607,6 +701,59 @@ const HAIR_FRONT: Record<HairStyle, HairArt> = {
       'M89 84 C90 88 87 92 89 96'
     ],
     shine: SHINE_LONG
+  },
+  // Chanel ondulado: na altura do queixo, as pontas em ondas, franja de lado.
+  wavyBob: {
+    back:
+      `${LONG_TOP}${waves(95.4, 44, 97.4, 84, 2.6, 4)} C97.8 87 95.6 88.8 92.4 88.2 C88.8 87.6 85.8 87 82.8 86.2 L37.2 86.2 ` +
+      `C34.2 87 31.2 87.6 27.6 88.2 C24.4 88.8 22.2 87 22.6 84${wavesUp(22.6, 84, 24.6, 44, 2.6, 4)} Z`,
+    front: SWEPT_FRINGE,
+    strands: [...FRINGE_STRANDS, wavyStrand(27, 50, 26.2, 84, 2, 4), wavyStrand(93, 50, 93.8, 84, -2, 4)],
+    shine: SHINE_LONG
+  },
+  // Ondulado até os ombros, com franja cortininha abrindo para os lados.
+  curtainWaves: {
+    back:
+      `${LONG_TOP}${waves(95.4, 44, 98, 95, 3, 5)} C98.4 98 96.4 99.6 93.6 99 L84 96.6 C84 90 83 86 83 82 L37 82 C37 86 36 90 36 96.6 ` +
+      `L26.4 99 C23.6 99.6 21.6 98 22 95${wavesUp(22, 95, 24.6, 44, 3, 5)} Z`,
+    front:
+      'M27.6 46 C26.6 24 40 6.4 60 6.4 C80 6.4 93.4 24 92.4 46 L89.4 45.4 C89 37 86 31 80 28.4 C73.4 25.6 65.6 25.6 61.4 29.4 ' +
+      'L60 26.6 L58.6 29.4 C54.4 25.6 46.6 25.6 40 28.4 C34 31 31 37 30.6 45.4 Z',
+    strands: [
+      'M58.6 28 C52.4 25.4 44.4 27.6 37.6 34',
+      'M61.4 28 C67.6 25.4 75.6 27.6 82.4 34',
+      'M55 9 C46 11 38 16 33 24',
+      'M65 9 C74 11 82 16 87 24',
+      wavyStrand(27, 50, 25.4, 94, 2.4, 5),
+      wavyStrand(93, 50, 94.6, 94, -2.4, 5)
+    ],
+    shine: SHINE_LONG
+  },
+  // Ondas longas, repartidas no meio, descendo pelos ombros.
+  beachWaves: {
+    back:
+      `${LONG_TOP}${waves(95.4, 44, 100, 106, 3.2, 6)} C100.4 109 98 111 95 110.6 L84.6 108.6${waves(84.6, 108.6, 83, 82, 2, 4)} ` +
+      `L37 82${waves(37, 82, 35.4, 108.6, 2, 4)} L25 110.6 C22 111 19.6 109 20 106${wavesUp(20, 106, 24.6, 44, 3.2, 6)} Z`,
+    front: MIDDLE_PART,
+    strands: [
+      ...MIDDLE_PART_STRANDS,
+      wavyStrand(27, 50, 25.6, 104, 2.6, 6),
+      wavyStrand(93, 50, 94.4, 104, -2.6, 6),
+      wavyStrand(31.6, 86, 31, 107, 1.6, 3),
+      wavyStrand(88.4, 86, 89, 107, -1.6, 3)
+    ],
+    shine: SHINE_LONG
+  },
+  // Cacheado longo e volumoso: os cachos do alto continuam pelos lados até abaixo dos ombros.
+  longCurly: {
+    ...CURLY,
+    back:
+      `M22 40 C20 18 38 2 60 2 C82 2 100 18 98 40${waves(98, 40, 102, 104, 4, 8)} C102 108 99 110 96 109.6 L85 107` +
+      `${waves(85, 107, 83.4, 82, 2.4, 4)} L36.6 82${waves(36.6, 82, 35, 107, 2.4, 4)} L24 109.6 C21 110 18 108 18 104` +
+      `${wavesUp(18, 104, 22, 40, 4, 8)} Z`,
+    backBumps: [...braid(99, 46, 102, 102, 7, 5), ...braid(21, 46, 18, 102, 7, 5)],
+    curls: [...(CURLY.curls ?? []), [24, 60], [96, 60], [22, 78], [98, 78], [24, 96], [96, 96], [30, 104], [90, 104]],
+    fade: false
   },
   // Liso e longo, repartido no meio, descendo pelos ombros.
   long: {
@@ -868,6 +1015,135 @@ function Head({ mouth }: { mouth: Mouth }) {
       )}
       {beard === 'pencil' && <path d={PENCIL_MUSTACHE} fill={f.beard.beard} opacity={0.95} />}
       {beard === 'handlebar' && <path d={HANDLEBAR} fill={f.beard.beard} opacity={0.95} />}
+      <HeadAccessories />
+    </>
+  )
+}
+
+// ---------- acessórios ----------
+// Os da cabeça ficam dentro do desenho dela (crescem e mexem junto); colar, pulseira e relógio, no
+// corpo. Cores fixas: dourado, armação escura, boné vermelho, gorro azul, laço rosa.
+
+const GOLD = '#e0b04a'
+const GOLD_DARK = '#a87a22'
+const FRAME = '#2a2a2e'
+const CAP = { mid: '#e0483e', dark: '#a9302a', light: '#f06a5f' }
+const BEANIE = { mid: '#3d5a99', dark: '#2a4070', light: '#5f7cbd' }
+
+const useAccessory = () => {
+  const list = useFigure().look.accessories
+  return (a: Accessory) => list.includes(a)
+}
+
+// Lentes centradas nos olhos (x 46 e 74, y 49.6); o lado direito é o esquerdo espelhado.
+const AVIATOR_LENS = 'M38 45 C38 43.4 40 43 46 43 C52 43 54.4 43.6 54 46 C53.4 52 50.6 56.4 46.4 56.4 C41.6 56.4 38.4 51.6 38 45 Z'
+const SUNGLASS_LENS = 'M37 44 L55 44 L54.2 50.6 C53.6 54.2 51 56 47.6 56 L44 56 C40.4 56 38 54 37.6 50.6 Z'
+
+function Eyewear({ kind }: { kind: 'glasses' | 'aviators' | 'sunglasses' }) {
+  const lens = (mirror?: boolean) => {
+    const t = mirror ? MIRROR : undefined
+    if (kind === 'glasses') return <rect x={38} y={43.8} width={16} height={11.6} rx={4} transform={t} fill="#fff" fillOpacity={0.12} stroke={FRAME} strokeWidth={1.5} />
+    if (kind === 'aviators') return <path d={AVIATOR_LENS} transform={t} fill="#2c3e52" fillOpacity={0.82} stroke={GOLD} strokeWidth={1.1} />
+    return <path d={SUNGLASS_LENS} transform={t} fill="#16171b" stroke={FRAME} strokeWidth={1.2} strokeLinejoin="round" />
+  }
+  const frame = kind === 'aviators' ? GOLD : FRAME
+  return (
+    <>
+      <path d="M38 47.4 L30.6 46.2 M82 47.4 L89.4 46.2" stroke={frame} strokeWidth={1.2} strokeLinecap="round" />
+      {lens()}
+      {lens(true)}
+      {kind === 'aviators' ? (
+        <path d="M54 44.6 Q60 42.8 66 44.6 M53.6 47 Q60 45.8 66.4 47" fill="none" stroke={GOLD} strokeWidth={1} />
+      ) : (
+        <path d={kind === 'sunglasses' ? 'M55 45.4 Q60 43.8 65 45.4' : 'M54 48 Q60 45.6 66 48'} fill="none" stroke={FRAME} strokeWidth={kind === 'sunglasses' ? 2 : 1.4} />
+      )}
+      {kind === 'sunglasses' && <path d="M37 44 L55 44 M65 44 L83 44" stroke={FRAME} strokeWidth={2.2} strokeLinecap="round" />}
+      {/* Brilho na lente. */}
+      {kind !== 'glasses' && <path d="M41 46.4 L44 45.6 M69 46.4 L72 45.6" stroke="#fff" strokeWidth={1.1} strokeLinecap="round" opacity={0.35} />}
+    </>
+  )
+}
+
+function HeadAccessories() {
+  const has = useAccessory()
+  const eyewear = (['glasses', 'aviators', 'sunglasses'] as const).find(has)
+  return (
+    <>
+      {has('earrings') && (
+        <g fill="none" stroke={GOLD} strokeWidth={1.1}>
+          <circle cx={29.4} cy={65.4} r={2.4} />
+          <circle cx={90.6} cy={65.4} r={2.4} />
+        </g>
+      )}
+      {eyewear && <Eyewear kind={eyewear} />}
+      {has('cap') && (
+        <>
+          <path d="M27 36 C26 16 41 4 60 4 C79 4 94 16 93 36 C82 31.6 71 30 60 30 C49 30 38 31.6 27 36 Z" fill={CAP.mid} />
+          <path d="M60 4.6 L60 30 M46 7 C42 14 40 22 40 31.4 M74 7 C78 14 80 22 80 31.4" fill="none" stroke={CAP.dark} strokeWidth={0.8} opacity={0.6} />
+          <path d="M40 9 Q50 5.6 62 6.4 Q50 8 43 12 Z" fill="#fff" opacity={0.18} />
+          <circle cx={60} cy={5} r={1.8} fill={CAP.dark} />
+          {/* Aba para a frente. */}
+          <path d="M27.4 35.4 C38 30.6 82 30.6 92.6 35.4 C90.4 39.4 78 41.4 60 41.4 C42 41.4 29.6 39.4 27.4 35.4 Z" fill={CAP.dark} />
+          <path d="M30 35.6 C42 32.6 78 32.6 90 35.6" fill="none" stroke={CAP.light} strokeWidth={0.7} opacity={0.6} />
+        </>
+      )}
+      {has('beanie') && (
+        <>
+          <path d="M27.6 38 C26 16 41 3 60 3 C79 3 94 16 92.4 38 Z" fill={BEANIE.mid} />
+          <path d="M42 8 Q52 4.4 64 5.2 Q52 7 45 11 Z" fill="#fff" opacity={0.15} />
+          {/* Barra dobrada, canelada. */}
+          <path d="M26.4 30.6 C40 27.6 80 27.6 93.6 30.6 L93 39.6 C80 36.8 40 36.8 27 39.6 Z" fill={BEANIE.dark} />
+          <g stroke={BEANIE.mid} strokeWidth={0.8} opacity={0.7}>
+            {Array.from({ length: 15 }, (_, i) => 31 + i * 4).map((x) => (
+              <path key={x} d={`M${x} 31.2 L${x} 37.2`} />
+            ))}
+          </g>
+          <circle cx={60} cy={1.4} r={5.4} fill={BEANIE.light} />
+          <circle cx={58.4} cy={-0.2} r={2} fill="#fff" opacity={0.25} />
+        </>
+      )}
+      {has('bow') && (
+        <g stroke="#b8344f" strokeWidth={0.6} strokeLinejoin="round">
+          <path d="M80 13 C74 6 67 8 69 13.4 C67 19 74 20 80 13 Z" fill={TIE_COLOR} />
+          <path d="M80 13 C86 6 93 8 91 13.4 C93 19 86 20 80 13 Z" fill={TIE_COLOR} />
+          <circle cx={80} cy={13} r={2.4} fill="#d9476a" />
+        </g>
+      )}
+    </>
+  )
+}
+
+// Colar: a corrente na gola e o pingente (de frente; de perfil, só a parte da frente).
+function Necklace({ side }: { side?: boolean }) {
+  return side ? (
+    <>
+      <path d="M61.6 91.4 C64.4 95.6 67.4 96.8 70 95.2" fill="none" stroke={GOLD} strokeWidth={0.8} />
+      <circle cx={69.2} cy={96.6} r={1.3} fill={GOLD} stroke={GOLD_DARK} strokeWidth={0.4} />
+    </>
+  ) : (
+    <>
+      <path d="M51.2 91 C53.6 98.6 66.4 98.6 68.8 91" fill="none" stroke={GOLD} strokeWidth={0.9} />
+      <circle cx={60} cy={98.6} r={1.5} fill={GOLD} stroke={GOLD_DARK} strokeWidth={0.4} />
+      <circle cx={59.5} cy={98.1} r={0.5} fill="#fff" opacity={0.6} />
+    </>
+  )
+}
+
+// No pulso (antebraço em volta de x 45): a pulseira num braço, o relógio no outro.
+function WristItem({ kind }: { kind: 'bracelet' | 'watch' }) {
+  if (kind === 'bracelet') {
+    return (
+      <>
+        <path d="M42.4 115.4 C44 116.6 46 116.6 47.6 115.4" fill="none" stroke={GOLD} strokeWidth={1.5} strokeLinecap="round" />
+        <circle cx={45} cy={116.4} r={0.7} fill="#fff" opacity={0.5} />
+      </>
+    )
+  }
+  return (
+    <>
+      <rect x={42.2} y={114.4} width={5.6} height={2.6} rx={0.8} fill="#2b2d34" />
+      <circle cx={45} cy={115.7} r={2} fill="#e9ecef" stroke="#8a8f99" strokeWidth={0.6} />
+      <path d="M45 114.6 L45 115.7 L45.8 116.2" fill="none" stroke="#2b2d34" strokeWidth={0.4} strokeLinecap="round" />
     </>
   )
 }
@@ -943,7 +1219,8 @@ function Brow() {
     <path
       d={
         female
-          ? 'M38 41.4 C41 38.2 47 37.2 53.4 39.4 C53.9 39.7 53.8 40.7 53.2 40.8 C47.4 39.6 42.4 40.2 38.8 42.4 C38.2 42.7 37.6 41.9 38 41.4 Z'
+          ? // Feminina: mais fina e arqueada.
+            'M38.4 41.8 C41.4 37.6 47.4 36.8 53.4 39 C53.8 39.3 53.7 40 53.2 40.1 C47.6 38.6 42.6 39.4 39.2 42.6 C38.6 43 38 42.3 38.4 41.8 Z'
           : 'M37.4 40.8 C40.6 38.2 46.6 37.4 53.6 39.4 C54.4 39.7 54.4 41.2 53.5 41.6 C47.4 41.2 42.2 41.4 38.6 43 C37.6 43.4 36.8 41.6 37.4 40.8 Z'
       }
       fill={hair.brow}
@@ -968,7 +1245,7 @@ type EyeArt = {
   shade?: string
   lash: [number, number]
   sparkle?: boolean
-  kind?: 'dot' | 'closed'
+  kind?: 'dot' | 'closed' | 'heart'
   wink?: boolean
 }
 
@@ -1049,6 +1326,51 @@ const EYES: Record<EyeShape, EyeArt> = {
     sparkle: true,
     lash: [0.6, -2]
   },
+  // Bem abertos, com a íris pequena no meio do branco.
+  wide: {
+    white: 'M-6 0 C-6 -5.4 6 -5.4 6 0 C6 5.4 -6 5.4 -6 0 Z',
+    lid: 'M-6.6 0 C-6.4 -6.2 6.4 -6.2 6.6 0',
+    flick: 'M-6.4 -1 L-7.6 -2.2',
+    lower: 'M-5 3.4 C-2.4 5.8 2.6 5.8 5 3.4',
+    crease: 'M-5.6 -6.6 C-2.6 -8.2 3 -8.2 5.8 -6.6',
+    under: 'M-4.6 6 C-2 7.2 2.4 7.2 4.8 6',
+    iris: 2.4,
+    lash: [0.4, -1.6]
+  },
+  // Sem a dobra da pálpebra, um pouco mais estreitos.
+  monolid: {
+    white: 'M-6.6 0.6 C-4.4 -2.2 4.4 -2.4 6.6 -0.2 C4.2 2 -4.2 2.4 -6.6 0.6 Z',
+    lid: 'M-7.2 0.6 C-4.6 -2.8 4.6 -3 7.2 -0.3',
+    flick: 'M-7 0.4 L-8.4 -0.2',
+    lower: 'M-5.4 1.4 C-3 2.6 3.4 2.6 5.8 0.8',
+    crease: '',
+    under: 'M-5 3 C-2 4.2 3 4.2 5.6 2.8',
+    iris: 2.7,
+    lash: [0, 0.6]
+  },
+  // A pálpebra de cima descendo para o lado do nariz: cara de quem vai resolver.
+  determined: {
+    white: 'M-6.6 -1.4 C-4 -2.4 3 -1.6 6.4 0.8 C4 3 -4 2.8 -6.6 -1.4 Z',
+    lid: 'M-7.2 -1.6 C-4 -2.8 3 -2 6.8 0.6',
+    flick: 'M-7 -1.6 L-8.6 -2.2',
+    lower: 'M-5.6 0.6 C-3 2.8 3.4 2.8 5.8 1.4',
+    crease: 'M-6 -4.2 C-3 -5 3 -4.2 6.4 -2',
+    under: 'M-5 3 C-2 4.6 3 4.6 5.6 3',
+    iris: 2.8,
+    lash: [-0.2, -1.4]
+  },
+  // Grandes, com a íris enorme e dois brilhos.
+  starry: {
+    white: 'M-6.6 0 C-6.6 -5.6 6.6 -5.6 6.6 0 C6.6 5.2 -6.6 5.2 -6.6 0 Z',
+    lid: 'M-7.2 0.2 C-7 -6.4 7 -6.4 7.2 -0.2',
+    flick: 'M-7 -0.6 L-8.6 -2',
+    lower: 'M-5.4 3.2 C-2.6 5.4 2.8 5.4 5.6 3.1',
+    crease: 'M-6 -6 C-3 -8 3 -8 6.2 -6.2',
+    under: 'M-5.2 5.6 C-2.2 7 2.6 7 5.4 5.4',
+    iris: 4.6,
+    sparkle: true,
+    lash: [0.6, -2]
+  },
   dot: {
     white: 'M-6.4 0.2 C-4.2 -3.2 4.2 -3.2 6.4 0 C4 3 -4 3.2 -6.4 0.2 Z',
     lid: '',
@@ -1081,8 +1403,22 @@ const EYES: Record<EyeShape, EyeArt> = {
     iris: 2.9,
     lash: [0, 0],
     wink: true
+  },
+  // Corações no lugar dos olhos.
+  hearts: {
+    white: 'M-6.4 0.2 C-4.2 -3.2 4.2 -3.2 6.4 0 C4 3 -4 3.2 -6.4 0.2 Z',
+    lid: '',
+    flick: '',
+    lower: '',
+    crease: '',
+    under: '',
+    iris: 2.9,
+    lash: [0, 0],
+    kind: 'heart'
   }
 }
+
+const HEART = 'M0 4.2 C-5.4 0.6 -6.2 -3 -3.6 -4.2 C-1.8 -5 -0.4 -4 0 -2.6 C0.4 -4 1.8 -5 3.6 -4.2 C6.2 -3 5.4 0.6 0 4.2 Z'
 
 // O olho direito é espelhado. A íris não espelha: os dois olham para o mesmo lado quando a pose
 // mexe nela (.m-iris).
@@ -1094,10 +1430,11 @@ function Eye({ cx, flip }: { cx: number; flip: 1 | -1 }) {
   // Cílios no feminino, saindo do canto de fora, deslocados até ele.
   const lashes = ([dx, dy]: [number, number]) =>
     female && (
-      <g stroke="#2e2018" strokeWidth={0.9} transform={`translate(${dx} ${dy})`}>
-        <path d="M-6.4 -0.8 L-8.8 -2.8" />
-        <path d="M-4.8 -2.4 L-6.6 -4.8" />
-        <path d="M-2.8 -3.1 L-3.8 -5.6" />
+      <g stroke="#2e2018" strokeWidth={1.1} strokeLinecap="round" transform={`translate(${dx} ${dy})`}>
+        <path d="M-6.4 -0.8 L-9.2 -2.8" />
+        <path d="M-5 -2.3 L-7.2 -4.9" />
+        <path d="M-3.2 -3.1 L-4.4 -5.9" />
+        <path d="M-1.2 -3.4 L-1.6 -5.6" />
       </g>
     )
   // Fechado em arco: sorrindo, ou o direito da piscadinha.
@@ -1106,6 +1443,16 @@ function Eye({ cx, flip }: { cx: number; flip: 1 | -1 }) {
       <g transform={`translate(${cx} 49.6) ${mirror}`} fill="none" strokeLinecap="round">
         <path d={CLOSED_EYE} stroke="#2e2018" strokeWidth={1.6} />
         {lashes([0.6, 1.6])}
+      </g>
+    )
+  }
+  if (eye.kind === 'heart') {
+    return (
+      <g transform={`translate(${cx} 49.6)`}>
+        <g className="m-blink">
+          <path d={HEART} fill="#e23d5a" stroke="#a8243c" strokeWidth={0.6} />
+          <ellipse cx={-1.9} cy={-2.2} rx={1.1} ry={0.7} fill="#fff" opacity={0.7} transform="rotate(-30 -1.9 -2.2)" />
+        </g>
       </g>
     )
   }
@@ -1135,7 +1482,8 @@ function Eye({ cx, flip }: { cx: number; flip: 1 | -1 }) {
         </g>
         <g transform={mirror} fill="none" strokeLinecap="round">
           {eye.shade && <path d={eye.shade} fill={skin.skin[2]} stroke="none" />}
-          <path d={eye.lid} stroke="#2e2018" strokeWidth={1.5} />
+          {/* No feminino, o traço de cima mais marcado, como um delineado. */}
+          <path d={eye.lid} stroke="#2e2018" strokeWidth={female ? 1.9 : 1.5} />
           <path d={eye.flick} stroke="#2e2018" strokeWidth={1} />
           {lashes(eye.lash)}
           <path d={eye.lower} stroke={skin.line} strokeWidth={0.7} opacity={0.6} />
@@ -1238,6 +1586,7 @@ const CALM_LINE = 'M51.8 73.2 C55.5 74.6 64.5 74.6 68.2 73.2'
 const SMILE_LINE = 'M51.2 72.6 C55 75.2 65 75.2 68.8 72.6'
 const SMIRK_LINE = 'M52.2 73.8 C56 74.8 63.4 74.6 68.8 71.8'
 const SERIOUS_LINE = 'M52 74.2 C55.6 73.2 64.4 73.2 68 74.2'
+const FROWN_LINE = 'M52.4 75 C55.6 72.6 64.4 72.6 67.6 75'
 const LIPS = {
   normal: {
     lower: 'M52.4 73.4 C55 72.9 65 72.9 67.6 73.4 C66.2 76.9 53.8 76.9 52.4 73.4 Z',
@@ -1255,7 +1604,7 @@ const TOOTH_FILL = '#fbfaf7'
 // sorrisão no golpe, na dança e na joia). No sorrisão os estilos usam o mesmo, com a língua ou os
 // dentões por cima quando é o caso.
 function MouthShape({ kind }: { kind: Mouth }) {
-  const { look } = useFigure()
+  const { look, skin } = useFigure()
   const style = look.mouth
   if (kind === 'grin') {
     return (
@@ -1263,6 +1612,7 @@ function MouthShape({ kind }: { kind: Mouth }) {
         <Grin />
         {style === 'tongue' && <Tongue grin />}
         {style === 'buck' && <BuckTeeth grin />}
+        {style === 'fangs' && <Fangs />}
       </>
     )
   }
@@ -1270,6 +1620,23 @@ function MouthShape({ kind }: { kind: Mouth }) {
   switch (style) {
     case 'smile':
       return <Lips line={SMILE_LINE} dimples="both" />
+    case 'smallSmile':
+      return <path d="M54.4 72.8 Q60 76.6 65.6 72.8" fill="none" stroke={skin.lipLine} strokeWidth={1.3} strokeLinecap="round" />
+    case 'pout':
+      return <Pout />
+    case 'laugh':
+      return <Laugh />
+    case 'open':
+      return <OpenMouth />
+    case 'fangs':
+      return (
+        <>
+          <Lips line={smile ? SMILE_LINE : CALM_LINE} />
+          <Fangs />
+        </>
+      )
+    case 'frown':
+      return <Lips line={smile ? CALM_LINE : FROWN_LINE} />
     case 'smirk':
       return <Lips line={SMIRK_LINE} dimples="right" />
     case 'full':
@@ -1384,6 +1751,54 @@ function Tongue({ grin }: { grin?: boolean }) {
   )
 }
 
+// Biquinho: os lábios pequenos e cheios, juntos no meio.
+function Pout() {
+  const { url, skin, female } = useFigure()
+  const lips = 'M55.4 73.6 C56.4 70.8 63.6 70.8 64.6 73.6 C63.6 77.2 56.4 77.2 55.4 73.6 Z'
+  return (
+    <>
+      <path d={lips} fill={url('lip')} />
+      {female && <path d={lips} fill="#e0607a" opacity={0.28} />}
+      <path d="M56.4 73.6 C58.4 74.4 61.6 74.4 63.6 73.6" fill="none" stroke={skin.lipLine} strokeWidth={0.9} strokeLinecap="round" />
+      <ellipse cx={60} cy={75.4} rx={2} ry={0.7} fill="#fff" opacity={0.25} />
+    </>
+  )
+}
+
+// Gargalhada: boca bem aberta, os dentes de cima e a língua.
+function Laugh() {
+  const { skin } = useFigure()
+  return (
+    <>
+      <path d="M50.4 71.6 C55 72.8 65 72.8 69.6 71.6 C68.4 79.8 63.8 83 60 83 C56.2 83 51.6 79.8 50.4 71.6 Z" fill="#4a1f1c" />
+      <path d="M51.4 72.2 C55.6 73.2 64.4 73.2 68.6 72.2 L68.1 74.6 C64 75.4 56 75.4 51.9 74.6 Z" fill={TOOTH_FILL} />
+      <ellipse cx={60} cy={80} rx={4.6} ry={2.2} fill={TONGUE_FILL} />
+      <path d="M51 74 C52.6 80.6 56.6 83.8 60 83.8 C63.4 83.8 67.4 80.6 69 74" fill="none" stroke={skin.lip[0]} strokeWidth={1.4} strokeLinecap="round" />
+    </>
+  )
+}
+
+// Surpresa: um "O" pequeno.
+function OpenMouth() {
+  const { skin } = useFigure()
+  return (
+    <>
+      <ellipse cx={60} cy={74.4} rx={3.2} ry={3.8} fill="#4a1f1c" stroke={skin.lip[0]} strokeWidth={1.2} />
+      <ellipse cx={60} cy={76.6} rx={1.8} ry={1} fill={TONGUE_FILL} />
+    </>
+  )
+}
+
+// Dois caninos pontudos saindo do lábio de cima.
+function Fangs() {
+  return (
+    <g fill={TOOTH_FILL} stroke="#d6cfc4" strokeWidth={0.3}>
+      <path d="M55.4 73.4 L57.6 73.4 L56.6 76.4 Z" />
+      <path d="M62.4 73.4 L64.6 73.4 L63.4 76.4 Z" />
+    </g>
+  )
+}
+
 // Os dois dentes da frente aparecendo abaixo do lábio de cima (maiores no sorrisão).
 function BuckTeeth({ grin }: { grin?: boolean }) {
   const bottom = grin ? 79 : 77.1
@@ -1399,39 +1814,157 @@ function BuckTeeth({ grin }: { grin?: boolean }) {
 // O formato do corpo (magro, médio, forte, gordinho) alarga a camiseta e a calça, afasta os ombros e
 // os quadris e engrossa braços e pernas; o gordinho ganha barriga e o forte, o peitoral marcado.
 
-// Ombros em x 43.5-76.5, afinando até a cintura em x 46-74.
-const SHIRT_MALE =
+// Contorno do tronco, que a roupa de cima veste. Masculino: ombros em x 43.5-76.5, afinando até a
+// cintura em x 46-74.
+const TORSO_MALE =
   'M46.5 92.4 C50.5 89.6 55 88.6 60 88.6 C65 88.6 69.5 89.6 73.5 92.4 C76 94 76.9 97 76.6 100.5 C76.2 105.5 75 111.5 74 118 ' +
   'L73.6 123.4 C73.5 125 72.7 126 71.4 126 L48.6 126 C47.3 126 46.5 125 46.4 123.4 L46 118 C45 111.5 43.8 105.5 43.4 100.5 ' +
   'C43.1 97 44 94 46.5 92.4 Z'
-// Feminina: ombros um pouco mais estreitos, cintura marcada em y 111 e o quadril abrindo até a barra.
-const SHIRT_FEMALE =
-  'M47.5 92.6 C51 89.8 55.4 88.8 60 88.8 C64.6 88.8 69 89.8 72.5 92.6 C75 94.2 75.9 97 75.6 100.5 C75.3 104.6 74 108.4 72.2 111 ' +
-  'C72.2 113.6 73 116 73.5 118.4 L73.8 123.4 C73.9 125 73.1 126 71.8 126 L48.2 126 C46.9 126 46.1 125 46.2 123.4 ' +
-  'L46.5 118.4 C47 116 47.8 113.6 47.8 111 C46 108.4 44.7 104.6 44.4 100.5 C44.1 97 45 94.2 47.5 92.6 Z'
+// Feminino: ombros mais estreitos, cintura bem marcada em y 110.4 e o quadril abrindo até a barra
+// (ampulheta).
+const TORSO_FEMALE =
+  'M48.6 92.4 C51.8 89.8 55.7 88.9 60 88.9 C64.3 88.9 68.2 89.8 71.4 92.4 C73.6 93.8 74.4 95.8 74.2 98.6 C74 102.4 72.4 106.6 70.6 110.4 ' +
+  'C71.4 113.4 73.6 116.4 74.4 119.4 L74.8 123.6 C74.9 125.1 74.1 126 72.8 126 L47.2 126 C45.9 126 45.1 125.1 45.2 123.6 ' +
+  'L45.6 119.4 C46.4 116.4 48.6 113.4 49.4 110.4 C47.6 106.6 46 102.4 45.8 98.6 C45.6 95.8 46.4 93.8 48.6 92.4 Z'
+// Barriga do gordinho, que sai um pouco do contorno.
+const BELLY = { cx: 60, cy: 112.6, rx: 17, ry: 11.4 }
 
-// Barriga (gordinho), por cima da camiseta, com a dobra embaixo.
-function Belly() {
-  return (
+// Regata: alças e o decote fundo; o resto vem do contorno (recortado por ele).
+const TANK =
+  'M48.8 89 L53.6 89 C55 97.8 65 97.8 66.4 89 L71.2 89 L72 95.4 C76 97 79 100 80 104 L80 132 L40 132 L40 104 C41 100 44 97 48 95.4 Z'
+const TANK_NECK = 'M53.6 89.6 C55 97.8 65 97.8 66.4 89.6'
+// Jaqueta aberta: cada lado vai da borda até a abertura no meio, recortado pelo contorno.
+const JACKET_LEFT = 'M30 80 L52.8 89.2 C54.6 96 55.8 104 56.4 112 L56.8 132 L30 132 Z'
+const JACKET_LAPEL = 'M52.8 89.2 L48.6 92.4 L55.2 104 C54.6 98.6 53.8 93.6 52.8 89.2 Z'
+// Camisa: as duas pontas da gola.
+const SHIRT_COLLAR = 'M51 89.4 L59.6 94.8 L55.4 98.6 L49.2 91.2 Z'
+
+// Tronco com a roupa de cima escolhida. Tudo dentro do contorno (mais a barriga), pelo recorte
+// #torso: assim a regata e a jaqueta acompanham qualquer corpo.
+function Torso() {
+  const { look, female, build, top, url } = useFigure()
+  const outline = female ? TORSO_FEMALE : TORSO_MALE
+  const base = (fill: string) => (
     <>
-      <ellipse cx={60} cy={112.6} rx={17} ry={11.4} fill={useFigure().url('shirt')} />
-      <path d="M47.6 120.4 Q60 126.6 72.4 120.4" fill="none" stroke="#a87a0c" strokeWidth={0.9} strokeLinecap="round" opacity={0.4} />
-      <path d="M52 108 Q60 104.6 68 108" fill="none" stroke="#fff" strokeWidth={1.2} strokeLinecap="round" opacity={0.18} />
+      <path d={outline} fill={fill} />
+      {build.belly && <ellipse {...BELLY} fill={fill} />}
     </>
   )
+  const hem = <path d={female ? 'M45.6 123.4 L74.4 123.4' : 'M46.6 123.4 L73.4 123.4'} stroke={top.hem} strokeWidth={1} opacity={0.5} />
+  switch (look.top) {
+    case 'tank':
+      return (
+        <>
+          {base(url('limb'))}
+          <g clipPath={url('torso')}>
+            <path d={TANK} fill={url('shirt')} />
+          </g>
+          <path d={TANK_NECK} fill="none" stroke={top.collar} strokeWidth={1.3} strokeLinecap="round" />
+          <Folds />
+          {hem}
+        </>
+      )
+    case 'blouse':
+      return (
+        <>
+          {base(url('shirt'))}
+          <Folds />
+          {/* Decote em V com babado e um lacinho; faixa na cintura, a barra abrindo embaixo. */}
+          <path d="M50.4 90.4 C53.6 93.6 57.4 97.6 60 100 C62.6 97.6 66.4 93.6 69.6 90.4 C66.4 89.2 63.2 88.9 60 88.9 C56.8 88.9 53.6 89.2 50.4 90.4 Z" fill={url('limb')} />
+          <path d="M50.4 90.4 C53.6 93.6 57.4 97.6 60 100 C62.6 97.6 66.4 93.6 69.6 90.4" fill="none" stroke={top.collar} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M50.4 90.4 C53.6 93.6 57.4 97.6 60 100 C62.6 97.6 66.4 93.6 69.6 90.4" fill="none" stroke="#fff" strokeWidth={1.1} strokeLinecap="round" strokeDasharray="0.1 1.8" opacity={0.7} />
+          <path d="M60 100.6 L56.6 98.6 L56.8 102.6 Z M60 100.6 L63.4 98.6 L63.2 102.6 Z" fill={top.collar} />
+          <circle cx={60} cy={100.6} r={1.1} fill={top.fold} />
+          <g clipPath={url('torso')}>
+            <path d="M40 109.4 Q60 111.4 80 109.4 L80 112 Q60 114 40 112 Z" fill={top.collar} opacity={0.85} />
+          </g>
+          {hem}
+        </>
+      )
+    case 'shirt':
+      return (
+        <>
+          {base(url('shirt'))}
+          <Folds />
+          <ellipse cx={60} cy={99.5} rx={9} ry={3.6} fill="#000" opacity={0.1} />
+          {/* Gola com as duas pontas, a carreira de botões e, no masculino, o bolso. */}
+          <path d="M59.4 95 L60.6 95 L60.4 126 L59.6 126 Z" fill={top.fold} opacity={0.45} />
+          {[101, 107, 113, 119].map((y) => (
+            <circle key={y} cx={60} cy={y} r={0.8} fill={top.collar} />
+          ))}
+          {!female && <path d="M64.6 100.4 L70.4 100.4 L70.2 105.2 Q67.5 106.4 64.8 105.2 Z" fill="none" stroke={top.fold} strokeWidth={0.7} opacity={0.6} />}
+          <path d={SHIRT_COLLAR} fill={url('shirt')} stroke={top.collar} strokeWidth={0.7} strokeLinejoin="round" />
+          <path d={SHIRT_COLLAR} transform={MIRROR} fill={url('shirt')} stroke={top.collar} strokeWidth={0.7} strokeLinejoin="round" />
+          {hem}
+        </>
+      )
+    case 'jacket':
+      return (
+        <>
+          {/* Camiseta branca por baixo, e a jaqueta aberta por cima. */}
+          {base(url('inner'))}
+          <path d="M50.6 90.6 C53.8 96 66.2 96 69.4 90.6" fill="none" stroke="#d6d6d0" strokeWidth={2.2} strokeLinecap="round" />
+          <g clipPath={url('torso')}>
+            <path d={JACKET_LEFT} fill={url('shirt')} />
+            <path d={JACKET_LEFT} transform={MIRROR} fill={url('shirt')} />
+            <path d="M44 124 L56.6 124 M63.4 124 L76 124" stroke={top.collar} strokeWidth={3.2} />
+          </g>
+          <path d={JACKET_LAPEL} fill={top.collar} />
+          <path d={JACKET_LAPEL} transform={MIRROR} fill={top.collar} />
+          <path d="M48.4 114.4 L52 118.4 M71.6 114.4 L68 118.4" stroke={top.fold} strokeWidth={0.9} strokeLinecap="round" opacity={0.7} />
+        </>
+      )
+    default:
+      return (
+        <>
+          {base(url('shirt'))}
+          <Folds />
+          {female ? (
+            <>
+              {/* Gola mais aberta: aparece um pouco do colo. */}
+              <path d="M50.8 90.6 C53.2 97.4 66.8 97.4 69.2 90.6 C66 89.4 63 89 60 89 C57 89 54 89.4 50.8 90.6 Z" fill={url('limb')} />
+              <ellipse cx={60} cy={100.5} rx={9} ry={3.2} fill="#000" opacity={0.08} />
+              <path d="M50.8 90.6 C53.2 97.4 66.8 97.4 69.2 90.6" fill="none" stroke={top.collar} strokeWidth={2} strokeLinecap="round" />
+            </>
+          ) : (
+            <>
+              {/* Sombra do queixo no peito e a gola careca. */}
+              <ellipse cx={60} cy={99.5} rx={11} ry={4.4} fill="#000" opacity={0.13} />
+              <path d="M50 90.4 C53.5 96.4 66.5 96.4 70 90.4" fill="none" stroke={top.collar} strokeWidth={2.6} strokeLinecap="round" />
+            </>
+          )}
+          {hem}
+        </>
+      )
+  }
 }
 
-function TorsoMale() {
-  const { url, build } = useFigure()
+// Dobras da roupa: peitoral no forte, barriga no gordinho, busto no feminino, e as laterais da
+// cintura no resto.
+function Folds() {
+  const { female, build, top } = useFigure()
   return (
     <>
-      <path d={SHIRT_MALE} fill={url('shirt')} />
-      {build.belly && <Belly />}
-      {/* Sombra do queixo no peito e a gola careca. */}
-      <ellipse cx={60} cy={99.5} rx={11} ry={4.4} fill="#000" opacity={0.13} />
-      <path d="M50 90.4 C53.5 96.4 66.5 96.4 70 90.4" fill="none" stroke="#c9930f" strokeWidth={2.6} strokeLinecap="round" />
-      <g fill="none" stroke="#a87a0c" strokeWidth={0.9} strokeLinecap="round" opacity={0.35}>
-        {build.chest ? (
+      {build.belly && (
+        <>
+          <path d="M47.6 120.4 Q60 126.6 72.4 120.4" fill="none" stroke={top.fold} strokeWidth={0.9} strokeLinecap="round" opacity={0.4} />
+          <path d="M52 108 Q60 104.6 68 108" fill="none" stroke="#fff" strokeWidth={1.2} strokeLinecap="round" opacity={0.18} />
+        </>
+      )}
+      {female && (
+        <>
+          {/* Busto: o volume clareando em cima e a curva embaixo. */}
+          <ellipse cx={54.2} cy={101.2} rx={4.4} ry={3.2} fill="#fff" opacity={0.12} />
+          <ellipse cx={65.8} cy={101.2} rx={4.4} ry={3.2} fill="#fff" opacity={0.12} />
+        </>
+      )}
+      <g fill="none" stroke={top.fold} strokeWidth={0.9} strokeLinecap="round" opacity={0.35}>
+        {female ? (
+          <>
+            <path d="M49.4 102.4 Q54.2 107.2 59 104" />
+            <path d="M70.6 102.4 Q65.8 107.2 61 104" />
+          </>
+        ) : build.chest ? (
           <>
             <path d="M48.6 101.4 Q54 106 59.2 103.4" />
             <path d="M71.4 101.4 Q66 106 60.8 103.4" />
@@ -1446,32 +1979,40 @@ function TorsoMale() {
           )
         )}
       </g>
-      <path d="M46.6 123.4 L73.4 123.4" stroke="#b8860d" strokeWidth={1} opacity={0.5} />
     </>
   )
 }
 
-// Gola mais aberta (aparece um pouco do colo) e o contorno do busto só sugerido.
-function TorsoFemale() {
-  const { url, build } = useFigure()
+// Parte de cima da calça (o quadril, entre as pernas), atrás da barra da blusa. Na saia, não tem.
+function Hips() {
+  const { female, url } = useFigure()
+  return (
+    <path
+      d={
+        female
+          ? 'M45.6 118 L74.4 118 L74.8 127.5 C69.2 129.4 64.6 130.4 60 131 C55.4 130.4 50.8 129.4 45.2 127.5 Z'
+          : 'M47 118 L73 118 L73.4 127.5 C68.5 129 64.5 130 60 131 C55.5 130 51.5 129 46.6 127.5 Z'
+      }
+      fill={url('jeans')}
+    />
+  )
+}
+
+// Saia rodada, por cima das pernas; as pregas marcadas e o cós.
+const SKIRT =
+  'M46.2 117.5 L73.8 117.5 C75.8 122.6 78 128.4 79.2 133.6 C72.6 135.6 66.4 136.3 60 136.3 C53.6 136.3 47.4 135.6 40.8 133.6 C42 128.4 44.2 122.6 46.2 117.5 Z'
+
+function Skirt() {
+  const { url, bottom } = useFigure()
   return (
     <>
-      <path d={SHIRT_FEMALE} fill={url('shirt')} />
-      {build.belly && <Belly />}
-      <path d="M50.6 90.6 C53 97.6 67 97.6 69.4 90.6 C66 89.4 63 89 60 89 C57 89 54 89.4 50.6 90.6 Z" fill={url('limb')} />
-      <ellipse cx={60} cy={100.5} rx={10} ry={3.6} fill="#000" opacity={0.1} />
-      <path d="M50.6 90.6 C53 97.6 67 97.6 69.4 90.6" fill="none" stroke="#c9930f" strokeWidth={2.2} strokeLinecap="round" />
-      <g fill="none" stroke="#a87a0c" strokeWidth={0.9} strokeLinecap="round" opacity={0.35}>
-        <path d="M49.6 101.6 Q54 105.4 58.4 103.2" />
-        <path d="M70.4 101.6 Q66 105.4 61.6 103.2" />
-        {!build.belly && (
-          <>
-            <path d="M49.4 112 Q51.4 116 51 121" />
-            <path d="M70.6 112 Q68.6 116 69 121" />
-          </>
-        )}
+      <path d={SKIRT} fill={url('jeans')} />
+      <g stroke={bottom.fold} strokeWidth={0.8} strokeLinecap="round" opacity={0.55}>
+        <path d="M53.2 121 L50.6 135.4" />
+        <path d="M60 121 L60 136" />
+        <path d="M66.8 121 L69.4 135.4" />
       </g>
-      <path d="M46.4 123.4 L73.6 123.4" stroke="#b8860d" strokeWidth={1} opacity={0.5} />
+      <path d="M41.4 133.2 C53.6 136.6 66.4 136.6 78.6 133.2" fill="none" stroke={bottom.collar} strokeWidth={1.1} strokeLinecap="round" opacity={0.7} />
     </>
   )
 }
@@ -1489,23 +2030,126 @@ function Sneaker() {
   )
 }
 
-function LegMale() {
+// Perna esquerda de frente, do quadril (y 120) ao tênis. A calça vai até o tênis; bermuda e shorts
+// param no joelho e no meio da coxa, com a perna aparecendo embaixo; na saia, a perna toda aparece.
+// No feminino, a coxa mais cheia afinando até o tornozelo.
+const LEG = {
+  male: {
+    pants: 'M49.8 120 L57.2 120 L56.8 140.6 C56.7 142 56 142.8 54.8 142.8 L52.2 142.8 C51 142.8 50.3 142 50.2 140.6 Z',
+    skin: 'M50.4 120 L56.6 120 C56.6 126 56.4 133 56.2 140 L50.8 140 C50.6 133 50.4 126 50.4 120 Z',
+    bermuda: 'M49.2 119 L57.8 119 L57.6 135 C54.8 135.7 52.2 135.7 49.4 135 Z',
+    shorts: 'M49.2 119 L57.8 119 L58.2 128 C55.2 128.8 51.8 128.8 48.8 128 Z',
+    seam: 'M55.6 124 L55.4 139'
+  },
+  female: {
+    pants: 'M49 120 L58 120 C58 126 57 133 56.4 139 L56.2 141 C56.1 142.2 55.5 142.8 54.6 142.8 L52.6 142.8 C51.7 142.8 51.2 142.2 51.1 141 L50.9 139 C50.2 133 49 126 49 120 Z',
+    skin: 'M49.6 120 L57.4 120 C57.4 126 56.5 132.6 55.8 140 L51.4 140 C50.8 132.6 49.6 126 49.6 120 Z',
+    bermuda: 'M48.6 119 L58.4 119 C58.4 124 57.8 129 57.4 134 C54.8 134.7 52 134.7 49.6 134 C49.2 129 48.6 124 48.6 119 Z',
+    shorts: 'M48.4 119 L58.6 119 L58.4 127 C55.2 127.8 51.8 127.8 48.4 127 Z',
+    seam: 'M55.8 124 C55.6 129 55.2 134 54.8 139'
+  }
+}
+
+function Leg() {
+  const { url, skin, bottom, female, look } = useFigure()
+  const leg = female ? LEG.female : LEG.male
+  const kind = look.bottom
   return (
     <>
-      <path d="M49.8 120 L57.2 120 L56.8 140.6 C56.7 142 56 142.8 54.8 142.8 L52.2 142.8 C51 142.8 50.3 142 50.2 140.6 Z" fill={useFigure().url('jeans')} />
-      <path d="M55.6 124 L55.4 139" stroke="#45464e" strokeWidth={0.7} opacity={0.6} />
+      {kind === 'pants' ? (
+        <>
+          <path d={leg.pants} fill={url('jeans')} />
+          <path d={leg.seam} fill="none" stroke={bottom.fold} strokeWidth={0.7} opacity={0.6} />
+        </>
+      ) : (
+        <>
+          <path d={leg.skin} fill={url('limb')} />
+          {/* Joelho. */}
+          <path d={female ? 'M51.6 131.4 Q53.6 132.4 55.6 131.4' : 'M51.6 131.6 Q53.5 132.6 55.4 131.6'} fill="none" stroke={skin.line} strokeWidth={0.6} strokeLinecap="round" opacity={0.45} />
+          {kind !== 'skirt' && (
+            <>
+              <path d={leg[kind]} fill={url('jeans')} />
+              <path d={leg[kind]} fill="none" stroke={bottom.collar} strokeWidth={0.6} opacity={0.5} />
+            </>
+          )}
+        </>
+      )}
       <Sneaker />
     </>
   )
 }
 
-// Calça mais justa.
-function LegFemale() {
+// Braço de cima (do ombro ao cotovelo) e antebraço, com a manga da roupa escolhida. Desenhados em
+// volta de x 45 (o braço esquerdo de frente); o de perfil usa os mesmos, deslocados.
+const UPPER_SKIN = 'M41.4 93.8 C42.8 91.6 47.2 91.6 48.6 93.8 L48.2 105.8 C46.2 106.8 43.8 106.8 41.8 105.8 Z'
+const SLEEVE = 'M40.8 93.6 C42.2 91.2 47.8 91.2 49.2 93.6 L49.6 105.8 C47 107.2 43 107.2 40.4 105.8 Z'
+const SLEEVE_CUFF = 'M40.6 105.2 C43.2 106.6 46.8 106.6 49.4 105.2'
+// Manga curtinha da camiseta feminina.
+const CAP_SLEEVE = 'M41 93.6 C42.4 91.2 47.6 91.2 49 93.6 L49.4 101.6 C46.8 103 43.2 103 40.6 101.6 Z'
+const CAP_CUFF = 'M40.8 101 C43.2 102.4 46.8 102.4 49.2 101'
+// Manga bufante da blusinha, franzida na barra.
+const PUFF_SLEEVE = 'M39.6 94.2 C39.6 89.2 50.4 89.2 50.4 94.2 L50.6 100.8 C47.4 103 42.6 103 39.4 100.8 Z'
+const PUFF_CUFF = 'M39.8 100.4 C43 102.4 47 102.4 50.2 100.4'
+
+function UpperArm() {
+  const { url, look, female, top, sleeve } = useFigure()
+  const cuff = (d: string, width = 1.1) => <path d={d} fill="none" stroke={sleeve.cuff} strokeWidth={width} strokeLinecap="round" />
+  switch (look.top) {
+    case 'tank':
+      return <path d={UPPER_SKIN} fill={url('limb')} />
+    case 'blouse':
+      return (
+        <>
+          <path d={UPPER_SKIN} fill={url('limb')} />
+          <path d={PUFF_SLEEVE} fill={url('sleeve')} />
+          {cuff(PUFF_CUFF, 1.3)}
+          <path d="M42.4 92.4 L43 96 M45 91.6 L45 95.4 M47.6 92.4 L47 96" stroke={top.fold} strokeWidth={0.6} strokeLinecap="round" opacity={0.4} />
+        </>
+      )
+    case 'jacket':
+      // Manga comprida: continua no antebraço.
+      return <path d={SLEEVE} fill={url('sleeve')} />
+    case 'shirt':
+      return (
+        <>
+          <path d={SLEEVE} fill={url('sleeve')} />
+          {cuff(SLEEVE_CUFF, 1.8)}
+        </>
+      )
+    default:
+      return female ? (
+        <>
+          <path d={UPPER_SKIN} fill={url('limb')} />
+          <path d={CAP_SLEEVE} fill={url('sleeve')} />
+          {cuff(CAP_CUFF)}
+        </>
+      ) : (
+        <>
+          <path d={SLEEVE} fill={url('sleeve')} />
+          {cuff(SLEEVE_CUFF)}
+        </>
+      )
+  }
+}
+
+// Antebraço: a pele, ou a manga da jaqueta até o punho. wrist: a pulseira ou o relógio, se escolhido.
+function Forearm({ wrist }: { wrist?: 'bracelet' | 'watch' }) {
+  const { url, skin, look, sleeve } = useFigure()
+  const item = wrist && look.accessories.includes(wrist) && <WristItem kind={wrist} />
+  if (look.top === 'jacket') {
+    return (
+      <>
+        <path d="M41.8 104.4 L48.2 104.4 L47.8 118.6 C47 119.6 43 119.6 42.2 118.6 Z" fill={url('sleeve')} />
+        <path d="M42.2 117.4 C44 118.4 46 118.4 47.8 117.4" fill="none" stroke={sleeve.cuff} strokeWidth={1.4} strokeLinecap="round" />
+        {item}
+      </>
+    )
+  }
   return (
     <>
-      <path d="M50.4 120 L57 120 L56.4 140.6 C56.3 142 55.7 142.8 54.6 142.8 L52.4 142.8 C51.3 142.8 50.8 142 50.7 140.6 Z" fill={useFigure().url('jeans')} />
-      <path d="M55.4 124 L55.1 139" stroke="#45464e" strokeWidth={0.7} opacity={0.6} />
-      <Sneaker />
+      <path d="M42.4 105 L47.6 105 L47.2 118.2 C46.6 119.4 43.4 119.4 42.8 118.2 Z" fill={url('limb')} />
+      <path d="M43.2 107.5 L43.5 117.5" stroke={skin.line} strokeWidth={0.8} strokeLinecap="round" opacity={0.45} />
+      {item}
     </>
   )
 }
@@ -1515,7 +2159,7 @@ function LegFemale() {
 // item: o cabo do chicote, a luva de boxe ou a lupa, na mão. Corpo mais largo: o ombro sai para
 // fora e o braço engrossa em volta do próprio eixo.
 function Arm({ side, hand, item }: { side: 'l' | 'r'; hand: Hand; item?: 'whip' | 'glove' | 'lens' }) {
-  const { url, skin, build } = useFigure()
+  const { build } = useFigure()
   const thick = widen(45, build.arm)
   return (
     <g transform={shift(-build.shoulder)}>
@@ -1529,15 +2173,13 @@ function Arm({ side, hand, item }: { side: 'l' | 'r'; hand: Hand; item?: 'whip' 
           )}
           {item === 'lens' && <Lens />}
           <g transform={thick}>
-            <path d="M42.4 105 L47.6 105 L47.2 118.2 C46.6 119.4 43.4 119.4 42.8 118.2 Z" fill={url('limb')} />
-            <path d="M43.2 107.5 L43.5 117.5" stroke={skin.line} strokeWidth={0.8} strokeLinecap="round" opacity={0.45} />
+            <Forearm wrist={side === 'l' ? 'bracelet' : 'watch'} />
             <HandShape kind={hand} />
           </g>
           {item === 'glove' && <Glove />}
         </Pivot>
         <g transform={thick}>
-          <path d="M40.8 93.6 C42.2 91.2 47.8 91.2 49.2 93.6 L49.6 105.8 C47 107.2 43 107.2 40.4 105.8 Z" fill={url('sleeve')} />
-          <path d="M40.6 105.2 C43.2 106.6 46.8 106.6 49.4 105.2" fill="none" stroke="#c08c10" strokeWidth={1.1} strokeLinecap="round" />
+          <UpperArm />
         </g>
       </Pivot>
     </g>
@@ -1639,11 +2281,13 @@ const SIDE_SHIRT_MALE =
   'M52.4 92 C55.6 89.4 63.4 89 67.8 91.6 C70.8 93.4 71.8 97.4 71.6 101.4 C71.4 107 70.8 112.6 70.2 118 L69.9 123.6 ' +
   'C69.8 125.2 68.9 126 67.7 126 L52.6 126 C51.4 126 50.6 125.2 50.5 123.8 L50 118 C49.4 112 48.9 106 48.8 100.4 ' +
   'C48.7 96.2 49.8 93.4 52.4 92 Z'
-// De lado, o busto na frente e a cintura entrando um pouco.
+// De lado, o busto na frente, a cintura entrando e o quadril saindo para trás.
 const SIDE_SHIRT_FEMALE =
-  'M52.4 92 C55.6 89.4 63.4 89 67.8 91.6 C70.8 93.4 72.6 97 72.8 100.8 C72.9 103.6 71.6 106 70.4 108.6 C69.8 111.4 69.9 114.6 70.2 118 ' +
-  'L69.9 123.6 C69.8 125.2 68.9 126 67.7 126 L52.6 126 C51.4 126 50.6 125.2 50.5 123.8 L50.2 118 C50 114.6 50.2 111.4 50 108.6 ' +
-  'C49.2 106 48.8 103 48.8 100.4 C48.7 96.2 49.8 93.4 52.4 92 Z'
+  'M52.4 92 C55.6 89.4 63.4 89 67.8 91.6 C71.2 93.4 73.8 97 74 100.8 C74.1 103.8 72.2 106.4 70.4 109 C69.8 112 70.2 115 70.6 118.4 ' +
+  'L70.3 123.6 C70.2 125.2 69.3 126 68.1 126 L51.6 126 C50.2 126 49.2 125.2 49 123.6 L48.6 119.6 C48.4 116 49.6 112.4 50.6 109 ' +
+  'C49.6 106 48.8 103 48.8 100.4 C48.7 96.2 49.8 93.4 52.4 92 Z'
+// Barriga de lado: para a frente.
+const SIDE_BELLY = { cx: 66, cy: 112.6, rx: 8.4, ry: 11 }
 // Laterais curtas de perfil: clareando da nuca até a orelha.
 const SIDE_FADE =
   'M36.4 76.4 C38.4 72 38.8 64.6 39.6 58 C41.2 47.6 48.4 39.8 60 36.6 L61.6 41.6 C52.4 44.2 46.2 50.4 44.4 58.6 C43.4 64.6 42.6 71.8 41.2 78.4 Z'
@@ -1669,7 +2313,9 @@ const SIDE_SHINE_LOW = 'M52 10 Q65 6.6 78 9.6 Q66 10 55 13 Z'
 const SIDE_SHINE_LONG = 'M50 6.6 Q66 3 82 8 Q66 7.6 54 10.6 Z'
 
 // Cabelo de perfil, nos mesmos campos do de frente.
-const HAIR_SIDE: Record<HairStyle, HairArt> = {
+// Os ondulados novos usam o perfil do cabelo mais parecido, com as mechas em ondas.
+type SideOnly = 'wavyBob' | 'curtainWaves' | 'beachWaves' | 'longCurly'
+const HAIR_SIDE: Record<Exclude<HairStyle, SideOnly>, HairArt> = {
   quiff: {
     front:
       'M87.6 27 C90.6 21 90 13.4 84 9 C77 4.2 68 4.4 60 5.2 C41 6 23.6 18 23 42 C22.7 55.5 26 68 36.4 76.4 ' +
@@ -1893,14 +2539,14 @@ const HAIR_SIDE: Record<HairStyle, HairArt> = {
 }
 
 function SideView({ pose }: { pose: Pose }) {
-  const { url, female, build } = useFigure()
+  const { url, female, build, look } = useFigure()
   const hadouken = pose === 'hadouken'
-  const Leg = female ? SideLegFemale : SideLegMale
+  const skirt = look.bottom === 'skirt'
   const body = widen(60, build.torso)
   const leg = (move: string) => (
     <Pivot x={60} y={121} move={move}>
       <g transform={widen(60, build.leg)}>
-        <Leg />
+        <SideLeg />
       </g>
     </Pivot>
   )
@@ -1910,32 +2556,66 @@ function SideView({ pose }: { pose: Pose }) {
         <SideArm side="far" charge={hadouken} />
         {leg('m-leg-far-move')}
       </g>
-      <path
-        d="M50.6 118 L69.6 118 L69.8 126.8 C66 128.4 62.6 129 59.4 129 C56 129 53 128.4 50.4 127.6 Z"
-        transform={body}
-        fill={url('jeans')}
-      />
+      {!skirt && (
+        <path
+          d={
+            female
+              ? 'M49.4 118 L70 118 L70.2 126.8 C66.2 128.4 62.6 129 59.4 129 C55.6 129 52.2 128.4 49 127.4 Z'
+              : 'M50.6 118 L69.6 118 L69.8 126.8 C66 128.4 62.6 129 59.4 129 C56 129 53 128.4 50.4 127.6 Z'
+          }
+          transform={body}
+          fill={url('jeans')}
+        />
+      )}
       {leg('m-leg-near-move')}
       <g transform={body}>
-        <path d={female ? SIDE_SHIRT_FEMALE : SIDE_SHIRT_MALE} fill={url('shirt')} />
-        {/* Barriga de lado: para a frente. */}
-        {build.belly && <ellipse cx={66} cy={112.6} rx={8.4} ry={11} fill={url('shirt')} />}
-        <ellipse cx={66} cy={97} rx={5} ry={3} fill="#000" opacity={0.12} />
-        <path d="M60.5 90.4 C63 92.4 65.6 92.8 68 91.8" fill="none" stroke="#c9930f" strokeWidth={2.4} strokeLinecap="round" />
-        <path d="M50.8 123.4 L69.8 123.4" stroke="#b8860d" strokeWidth={1} opacity={0.5} />
+        {skirt && <SideSkirt />}
+        <SideTorso />
       </g>
+      {look.accessories.includes('necklace') && <Necklace side />}
       <Pivot x={60} y={90} move="m-head-move">
-        <SideHead />
+        <g transform={headTransform(1)}>
+          <SideHead />
+        </g>
       </Pivot>
       <SideArm side="near" charge={hadouken} />
     </>
   )
 }
 
+function sideHair(style: HairStyle): HairArt {
+  const wavy = (base: HairArt, strands: string[], extra?: Partial<HairArt>): HairArt => ({ ...base, strands: [...base.strands.slice(0, 2), ...strands], ...extra })
+  switch (style) {
+    case 'wavyBob':
+      return wavy(HAIR_SIDE.bob, [wavyStrand(40, 22, 28, 80, 2, 4), wavyStrand(50, 32, 42, 82, 2, 4)])
+    case 'curtainWaves':
+      return HAIR_SIDE.wavy
+    case 'beachWaves':
+      return wavy(HAIR_SIDE.long, [wavyStrand(36, 20, 34, 90, 2.4, 6), wavyStrand(46, 30, 44, 100, 2.4, 6)])
+    case 'longCurly':
+      return wavy(HAIR_SIDE.long, [], {
+        curls: [
+          [44, 12],
+          [60, 9],
+          [74, 12],
+          [34, 30],
+          [30, 50],
+          [32, 70],
+          [38, 88],
+          [44, 100],
+          [46, 40],
+          [44, 62]
+        ]
+      })
+    default:
+      return HAIR_SIDE[style]
+  }
+}
+
 function SideHead() {
   const f = useFigure()
   const { url, skin, hair, beard } = f
-  const art = HAIR_SIDE[f.look.hair]
+  const art = sideHair(f.look.hair)
   const style = f.look.beard
   return (
     <>
@@ -2006,6 +2686,52 @@ function SideHead() {
       {THICK_MUSTACHE.includes(style) && <path d={SIDE_MUSTACHE} fill={beard.beard} opacity={0.92} />}
       {style === 'pencil' && <path d={SIDE_PENCIL} fill={beard.beard} opacity={0.95} />}
       {style === 'handlebar' && <path d={SIDE_HANDLEBAR} fill={beard.beard} opacity={0.95} />}
+      <SideHeadAccessories />
+    </>
+  )
+}
+
+// Acessórios da cabeça de perfil: a lente na frente do olho (80, 49.6) com a haste até a orelha, o
+// boné com a aba para a frente, o gorro, o laço atrás e o brinco na orelha.
+function SideHeadAccessories() {
+  const has = useAccessory()
+  const eyewear = (['glasses', 'aviators', 'sunglasses'] as const).find(has)
+  return (
+    <>
+      {has('earrings') && <circle cx={55.8} cy={64.8} r={2.4} fill="none" stroke={GOLD} strokeWidth={1.1} />}
+      {eyewear && (
+        <>
+          <path d="M79 47.4 L57 49" stroke={eyewear === 'aviators' ? GOLD : FRAME} strokeWidth={1.2} strokeLinecap="round" />
+          {eyewear === 'glasses' && <rect x={78.6} y={44} width={8.4} height={11.2} rx={3} fill="#fff" fillOpacity={0.12} stroke={FRAME} strokeWidth={1.4} />}
+          {eyewear === 'aviators' && (
+            <path d="M78.6 44.6 C78.6 43.4 80 43 83 43 C86 43 87.4 43.6 87.2 45.6 C86.8 51 85.2 55.6 82.8 55.6 C80.2 55.6 78.8 51 78.6 44.6 Z" fill="#2c3e52" fillOpacity={0.82} stroke={GOLD} strokeWidth={1.1} />
+          )}
+          {eyewear === 'sunglasses' && (
+            <path d="M78.2 44 L87.6 44 L87.2 50.6 C86.8 54 85.4 55.8 83.4 55.8 L82 55.8 C80 55.8 78.6 54 78.4 50.6 Z" fill="#16171b" stroke={FRAME} strokeWidth={1.2} strokeLinejoin="round" />
+          )}
+        </>
+      )}
+      {has('cap') && (
+        <>
+          <path d="M24 36 C22 16 38 4 58 4 C76 4 90 14 92 32 C74 30 44 31 24 36 Z" fill={CAP.mid} />
+          <path d="M58 4.6 C66 12 72 22 74 31 M42 8 C38 16 36 26 37 33.4" fill="none" stroke={CAP.dark} strokeWidth={0.8} opacity={0.6} />
+          <path d="M86 30.6 C94 29.8 104 31.2 108.4 34.4 C100.4 36.2 92 36.2 85.6 35.2 Z" fill={CAP.dark} />
+        </>
+      )}
+      {has('beanie') && (
+        <>
+          <path d="M24 38 C22 16 38 3 58 3 C76 3 90 14 92 36 Z" fill={BEANIE.mid} />
+          <path d="M23 30.4 C44 26.4 74 25.6 92.6 28.6 L92.8 37.6 C74 35 44 35.6 23.6 39.6 Z" fill={BEANIE.dark} />
+          <circle cx={56} cy={1.6} r={5.2} fill={BEANIE.light} />
+        </>
+      )}
+      {has('bow') && (
+        <g stroke="#b8344f" strokeWidth={0.6} strokeLinejoin="round">
+          <path d="M38 12 C32 5 25 7 27 12.4 C25 18 32 19 38 12 Z" fill={TIE_COLOR} />
+          <path d="M38 12 C44 5 51 7 49 12.4 C51 18 44 19 38 12 Z" fill={TIE_COLOR} />
+          <circle cx={38} cy={12} r={2.4} fill="#d9476a" />
+        </g>
+      )}
     </>
   )
 }
@@ -2058,7 +2784,10 @@ function SideArm({ side, charge }: { side: 'near' | 'far'; charge?: boolean }) {
     <Pivot x={60} y={95} move={`m-arm-${side}-move`}>
       <Pivot x={60} y={107} pose={`m-fore-${side}`}>
         <g transform={thick}>
-          <path d="M57.4 105 L62.6 105 L62.2 118.2 C61.6 119.4 58.4 119.4 57.8 118.2 Z" fill={url('limb')} />
+          {/* Antebraço e manga: os de frente, deslocados para o eixo do perfil. */}
+          <g transform="translate(15 0)">
+            <Forearm wrist={side === 'near' ? 'watch' : 'bracelet'} />
+          </g>
           <path d="M57 117.8 C56.2 121 57 124.8 60 125.2 C63 124.8 63.8 121 63 117.8 Z" fill={url('limb')} />
           <ellipse cx={62.6} cy={119.6} rx={1.1} ry={2.2} fill={skin.soft} transform="rotate(-20 62.6 119.6)" />
         </g>
@@ -2069,9 +2798,8 @@ function SideArm({ side, charge }: { side: 'near' | 'far'; charge?: boolean }) {
           </Pivot>
         )}
       </Pivot>
-      <g transform={thick}>
-        <path d="M55.8 93.6 C57.2 91.2 62.8 91.2 64.2 93.6 L64.6 105.8 C62 107.2 58 107.2 55.4 105.8 Z" fill={url('sleeve')} />
-        <path d="M55.6 105.2 C58.2 106.6 61.8 106.6 64.4 105.2" fill="none" stroke="#c08c10" strokeWidth={1.1} strokeLinecap="round" />
+      <g transform={`${thick ?? ''} translate(15 0)`}>
+        <UpperArm />
       </g>
     </Pivot>
   )
@@ -2090,25 +2818,146 @@ function SideSneaker() {
   )
 }
 
-// Perna de perfil, com o bico do tênis para a frente.
-function SideLegMale() {
+// Perna de perfil, com o bico do tênis para a frente: como a de frente (calça, bermuda, shorts ou a
+// perna aparecendo na saia), com a coxa feminina mais cheia.
+const SIDE_LEG = {
+  male: {
+    pants: 'M56.3 120 L63.7 120 L63.3 140.6 C63.2 142 62.5 142.8 61.3 142.8 L58.7 142.8 C57.5 142.8 56.8 142 56.7 140.6 Z',
+    skin: 'M56.8 120 L63.2 120 C63.2 126 63 133 62.8 140 L57.2 140 C57 133 56.8 126 56.8 120 Z',
+    bermuda: 'M55.8 119 L64.2 119 L64 135 C61.4 135.7 58.6 135.7 56 135 Z',
+    shorts: 'M55.8 119 L64.2 119 L64.6 128 C61.6 128.8 58.4 128.8 55.4 128 Z',
+    seam: 'M58.2 124 L58.4 139'
+  },
+  female: {
+    pants: 'M55.6 120 L64.2 120 C64.2 126 63.2 133 62.8 139 L62.6 141 C62.5 142.2 62 142.8 61 142.8 L59 142.8 C58 142.8 57.5 142.2 57.4 141 L57.2 139 C56.8 133 55.6 126 55.6 120 Z',
+    skin: 'M56.2 120 L63.6 120 C63.6 126 62.9 132.6 62.4 140 L57.8 140 C57.3 132.6 56.2 126 56.2 120 Z',
+    bermuda: 'M55.2 119 L64.6 119 C64.6 124 64.2 129 63.8 134 C61.2 134.7 58.6 134.7 56.2 134 C55.8 129 55.2 124 55.2 119 Z',
+    shorts: 'M55 119 L64.8 119 L64.6 127 C61.4 127.8 58.4 127.8 55 127 Z',
+    seam: 'M58.4 124 C58.6 129 58.8 134 59 139'
+  }
+}
+
+function SideLeg() {
+  const { url, skin, bottom, female, look } = useFigure()
+  const leg = female ? SIDE_LEG.female : SIDE_LEG.male
+  const kind = look.bottom
   return (
     <>
-      <path d="M56.3 120 L63.7 120 L63.3 140.6 C63.2 142 62.5 142.8 61.3 142.8 L58.7 142.8 C57.5 142.8 56.8 142 56.7 140.6 Z" fill={useFigure().url('jeans')} />
-      <path d="M58.2 124 L58.4 139" stroke="#45464e" strokeWidth={0.7} opacity={0.6} />
+      {kind === 'pants' ? (
+        <>
+          <path d={leg.pants} fill={url('jeans')} />
+          <path d={leg.seam} fill="none" stroke={bottom.fold} strokeWidth={0.7} opacity={0.6} />
+        </>
+      ) : (
+        <>
+          <path d={leg.skin} fill={url('limb')} />
+          <path d="M62.4 130.4 Q63.4 131.8 62.6 133.2" fill="none" stroke={skin.line} strokeWidth={0.6} strokeLinecap="round" opacity={0.45} />
+          {kind !== 'skirt' && (
+            <>
+              <path d={leg[kind]} fill={url('jeans')} />
+              <path d={leg[kind]} fill="none" stroke={bottom.collar} strokeWidth={0.6} opacity={0.5} />
+            </>
+          )}
+        </>
+      )}
       <SideSneaker />
     </>
   )
 }
 
-function SideLegFemale() {
+const SIDE_SKIRT =
+  'M50.2 117.6 L70 117.6 C72.2 123 74.2 128.6 75.2 133.6 C68.2 135.4 62.2 135.8 57.2 135.6 C52.2 135.4 47.6 134.6 45 133.6 C46.4 128.6 48.2 123 50.2 117.6 Z'
+
+function SideSkirt() {
+  const { url, bottom } = useFigure()
   return (
     <>
-      <path d="M56.9 120 L63.1 120 L62.7 140.6 C62.6 142 62 142.8 61 142.8 L59 142.8 C58 142.8 57.4 142 57.3 140.6 Z" fill={useFigure().url('jeans')} />
-      <path d="M58.6 124 L58.8 139" stroke="#45464e" strokeWidth={0.7} opacity={0.6} />
-      <SideSneaker />
+      <path d={SIDE_SKIRT} fill={url('jeans')} />
+      <g stroke={bottom.fold} strokeWidth={0.8} strokeLinecap="round" opacity={0.55}>
+        <path d="M55.4 121 L53.2 135.2" />
+        <path d="M62.6 121 L64.2 135.4" />
+        <path d="M68.6 121 L71.4 134.6" />
+      </g>
+      <path d="M45.6 133.2 C55 136 66 136 74.6 133.2" fill="none" stroke={bottom.collar} strokeWidth={1.1} strokeLinecap="round" opacity={0.7} />
     </>
   )
+}
+
+// Tronco de perfil com a roupa de cima, recortada pelo contorno como a de frente.
+function SideTorso() {
+  const { url, look, female, build, top, inner } = useFigure()
+  const outline = female ? SIDE_SHIRT_FEMALE : SIDE_SHIRT_MALE
+  const base = (fill: string) => (
+    <>
+      <path d={outline} fill={fill} />
+      {build.belly && <ellipse {...SIDE_BELLY} fill={fill} />}
+    </>
+  )
+  const hem = <path d={female ? 'M49.4 123.4 L70.2 123.4' : 'M50.8 123.4 L69.8 123.4'} stroke={top.hem} strokeWidth={1} opacity={0.5} />
+  const bust = female && <ellipse cx={70.4} cy={100.4} rx={3.2} ry={3} fill="#fff" opacity={0.12} />
+  const shade = <ellipse cx={66} cy={97} rx={5} ry={3} fill="#000" opacity={0.12} />
+  switch (look.top) {
+    case 'tank':
+      return (
+        <>
+          {base(url('limb'))}
+          <g clipPath={url('side-torso')}>
+            <path d="M40 97.6 C50 95.6 58 96.4 63 97.6 C66 98.4 69.4 98 74 96 L82 96 L82 132 L40 132 Z" fill={url('shirt')} />
+          </g>
+          <path d="M63 97.6 C66 98.4 69.4 98 72.6 96.6" fill="none" stroke={top.collar} strokeWidth={1.2} strokeLinecap="round" />
+          {bust}
+          {hem}
+        </>
+      )
+    case 'blouse':
+      return (
+        <>
+          {base(url('shirt'))}
+          {bust}
+          <path d="M61.6 90.4 C64.4 92.8 67 95.4 69.8 96.6 L70.8 93 C68.6 91.6 65.8 90.8 61.6 90.4 Z" fill={url('limb')} />
+          <path d="M61.6 90.4 C64.4 92.8 67 95.4 69.8 96.6" fill="none" stroke={top.collar} strokeWidth={1.8} strokeLinecap="round" />
+          <g clipPath={url('side-torso')}>
+            <path d="M40 108.8 L82 108.8 L82 111.6 L40 111.6 Z" fill={top.collar} opacity={0.85} />
+          </g>
+          {hem}
+        </>
+      )
+    case 'shirt':
+      return (
+        <>
+          {base(url('shirt'))}
+          {bust}
+          {shade}
+          {[100, 107, 114, 121].map((y) => (
+            <circle key={y} cx={female ? 71.2 - (y - 100) * 0.02 : 70.4 - (y - 100) * 0.04} cy={y} r={0.8} fill={top.collar} />
+          ))}
+          <path d="M60.2 89.8 L68.6 90.8 L66.2 95.6 Z" fill={url('shirt')} stroke={top.collar} strokeWidth={0.7} strokeLinejoin="round" />
+          {hem}
+        </>
+      )
+    case 'jacket':
+      return (
+        <>
+          {base(url('shirt'))}
+          {/* A camiseta branca aparece na frente, pela jaqueta aberta. */}
+          <g clipPath={url('side-torso')}>
+            <path d="M66.6 91.4 C69.8 100 69.6 112 69 126 L82 126 L82 86 Z" fill={inner.mid} />
+          </g>
+          <path d="M66.6 91.4 C69.8 100 69.6 112 69 126" fill="none" stroke={top.collar} strokeWidth={1.4} strokeLinecap="round" />
+          {hem}
+        </>
+      )
+    default:
+      return (
+        <>
+          {base(url('shirt'))}
+          {bust}
+          {shade}
+          <path d="M60.5 90.4 C63 92.4 65.6 92.8 68 91.8" fill="none" stroke={top.collar} strokeWidth={2.4} strokeLinecap="round" />
+          {hem}
+        </>
+      )
+  }
 }
 
 // ---------- golpes e extras ----------
@@ -2334,7 +3183,7 @@ function Sparkles() {
 }
 
 // Ondas entrando na orelha (a mão em concha está logo abaixo).
-const EAR = { x: 101, y: 66 }
+const EAR = onHead(101, 66)
 
 function arc(r: number): string {
   const a = Math.PI / 4

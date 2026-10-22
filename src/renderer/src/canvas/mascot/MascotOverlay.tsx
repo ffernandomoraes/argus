@@ -4,13 +4,14 @@ import { tr } from '../../i18n'
 import { IS_MAC } from '../../platform'
 import { getPreferences, usePreference } from '../../settings/preferences'
 import { useActiveChats } from '../activeChats'
-import { STRIKES } from './look'
-import { MascotFigure, VIEW, type Pose } from './MascotFigure'
+import { STRIKES, strikeTip } from './look'
+import { BODY_X, MascotFigure, VIEW, type Pose } from './MascotFigure'
 
 // A página da janela do mascote solto na tela (#mascot; a janela é criada por
 // src/main/app/mascotOverlay.ts). Ela é do tamanho do quadro dele, transparente, e o clique
 // atravessa até o ponteiro entrar no boneco. O que ele faz, com todas as conversas do app:
-// - pedido enviado: dá o golpe escolhido ali mesmo;
+// - pedido enviado: anda pela tela até a pasta da conversa no canvas, dá o golpe escolhido nela e
+//   volta para o lugar dele (com a pasta fora da vista, o golpe é ali mesmo);
 // - conversa terminou bem: joia com check verde (e fica assim enquanto houver resposta não vista);
 // - alguém escrevendo um pedido no app: mão na orelha, escutando;
 // - conversa perguntando algo (ou pedindo permissão): ombros para cima, com interrogações;
@@ -30,11 +31,12 @@ const WORK_POSES: Pose[] = ['think', 'type', 'search', 'dance']
 const WORK_SWITCH_MS = 7000
 // Parte do quadro onde está o boneco (o resto é o espaço do chicote), em unidades do desenho: é
 // nela que o ponteiro pega o clique.
-const BODY = { x0: 22, x1: 98, y0: 2, y1: 152 }
+const BODY = { x0: 22, x1: 98, y0: 12, y1: 152 }
 // Arrastar menos que isso é clique, não muda o lugar.
 const DRAG_MIN = 3
 
-type Action = 'strike' | 'thumbs' | null
+type Action = 'walk' | 'strike' | 'thumbs' | null
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export function MascotOverlay() {
   const look = usePreference('mascotLook')
@@ -46,6 +48,8 @@ export function MascotOverlay() {
   failed.current = alerts.failed
 
   const [action, setAction] = useState<Action>(null)
+  // Andando para a esquerda: o desenho espelha.
+  const [faceLeft, setFaceLeft] = useState(false)
   // Fila: um envio com outra ação em andamento é ignorado; a joia espera o golpe acabar.
   const busy = useRef(false)
   const thumbsPending = useRef(false)
@@ -63,15 +67,36 @@ export function MascotOverlay() {
     })
   }
 
-  const playStrike = () => {
+  // Anda (a janela, pelo processo principal) até o canto de cima (x, y), virado para onde vai.
+  const walkTo = async (x: number, y: number) => {
+    setFaceLeft(x < window.screenX)
+    setAction('walk')
+    await window.api.mascot.walk(x, y)
+    setFaceLeft(false)
+  }
+
+  // Pedido enviado: a janela do canvas diz onde está a pasta; ele para com a ponta do golpe (o
+  // estalo do chicote, a mão, o pé, a bola do hadouken) no começo do cabeçalho, golpeia e volta.
+  const playStrike = async (chat: ActiveChat) => {
     if (busy.current) return
     busy.current = true
+    const look = getPreferences().mascotLook
+    const header = await window.api.mascot.findTarget(chat.key, chat.turnStartedAt!)
+    if (header) {
+      const tip = strikeTip(look)
+      const scale = window.innerWidth / VIEW.w
+      // No golpe o corpo inclina e a ponta desce um pouco.
+      await walkTo(header.x + 4 - (tip.x - VIEW.x) * scale, header.y - 2 - (tip.y - VIEW.y) * scale)
+    }
     setAction('strike')
-    later(STRIKES[getPreferences().mascotLook.strike].ms, () => {
-      busy.current = false
-      setAction(null)
-      if (thumbsPending.current) playThumbs()
-    })
+    await wait(STRIKES[look.strike].ms)
+    if (header) {
+      const home = await window.api.mascot.homeSpot()
+      await walkTo(home.x, home.y)
+    }
+    busy.current = false
+    setAction(null)
+    if (thumbsPending.current) playThumbs()
   }
 
   // Envio e fim de pedido saem da lista de conversas ativas: pedido novo = turnStartedAt novo;
@@ -81,10 +106,10 @@ export function MascotOverlay() {
     const before = seen.current
     seen.current = new Map(chats.map((c) => [c.key, c.turnStartedAt]))
     if (!before) return
-    const started = chats.some((c) => c.turnStartedAt && c.turnStartedAt !== before.get(c.key))
+    const started = chats.find((c) => c.turnStartedAt && c.turnStartedAt !== before.get(c.key))
     // Parou com erro não é joia: o aviso vermelho já aparece.
     const finished = [...before].some(([key, turn]) => turn && !chats.find((c) => c.key === key)?.turnStartedAt && !failed.current.includes(key))
-    if (started) playStrike()
+    if (started) void playStrike(started)
     if (finished) {
       if (busy.current) thumbsPending.current = true
       else playThumbs()
@@ -98,7 +123,9 @@ export function MascotOverlay() {
   const workPose = useWorkPose(working)
 
   const pose: Pose =
-    action === 'strike'
+    action === 'walk'
+      ? 'walk'
+      : action === 'strike'
       ? look.strike
       : action === 'thumbs'
         ? 'thumbs'
@@ -116,7 +143,15 @@ export function MascotOverlay() {
 
   return (
     <div className="relative h-full w-full">
-      <div className="pointer-events-none h-full w-full" style={{ rotate: drag.dragging ? '-8deg' : '0deg', transition: 'rotate 150ms' }}>
+      <div
+        className="pointer-events-none h-full w-full"
+        style={{
+          rotate: drag.dragging ? '-8deg' : '0deg',
+          transition: 'rotate 150ms',
+          transform: faceLeft ? 'scaleX(-1)' : undefined,
+          transformOrigin: `${((BODY_X - VIEW.x) / VIEW.w) * 100}% 50%`
+        }}
+      >
         <MascotFigure pose={pose} look={look} />
       </div>
       {IS_MAC ? (

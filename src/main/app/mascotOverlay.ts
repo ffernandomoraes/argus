@@ -1,4 +1,4 @@
-import { screen, type BrowserWindow, type WebContents } from 'electron'
+import { BrowserWindow, screen, type WebContents } from 'electron'
 import type { MascotAlerts, UnreadChat } from '../../shared/chat'
 import { loadAppSettings, saveAppSettings } from '../appSettings'
 import type { ChatEntry } from '../chats/entries'
@@ -26,7 +26,7 @@ const SIZE = { width: 120, height: 103 }
 // Ponto do boneco (mais ou menos o meio dele) que precisa estar dentro de alguma tela.
 const BODY_CENTER = { x: 36, y: 50 }
 // Parte do quadro onde está o boneco, em px a partir do canto da janela (BODY de MascotOverlay.tsx).
-const BODY_BOX = { x: 13, y: 8, width: 46, height: 91 }
+const BODY_BOX = { x: 13, y: 14, width: 46, height: 84 }
 const EDGE = 12
 // De quanto em quanto tempo confere onde o ponteiro está: no Mac, sempre (entrar e sair do boneco);
 // nos outros, só para ver quando ele sai.
@@ -34,6 +34,12 @@ const POINTER_POLL_MS = 100
 // Conversa que acabou de parar com erro: o aviso aparece por esse tempo mesmo com ela aberta na
 // tela (aí ela nem chega a ficar não vista). Depois, só enquanto você não a vê.
 const FRESH_ERROR_MS = 6000
+// Golpe do envio: quanto a janela do mascote espera a do canvas dizer onde está a pasta, a
+// velocidade da caminhada (px/s) e os limites dela.
+const TARGET_WAIT_MS = 600
+const WALK_SPEED = 520
+const WALK_MS = { min: 250, max: 2200 }
+const WALK_FRAME_MS = 16
 
 export class MascotOverlay {
   private win: BrowserWindow | null = null
@@ -45,6 +51,12 @@ export class MascotOverlay {
   // Quando cada conversa parada com erro foi vista assim pela primeira vez.
   private failedAt = new Map<string, number>()
   private alertsSent = ''
+  // Onde está o cabeçalho da pasta de cada pedido que começou (chave:turno), e quem espera por ele.
+  private targets = new Map<string, { x: number; y: number }>()
+  private waiting = new Map<string, (point: { x: number; y: number } | null) => void>()
+  private walkTimer: NodeJS.Timeout | null = null
+  // Fim da última caminhada: o 'moved' que o Mac manda depois dela não é a pessoa arrastando.
+  private walkEndedAt = 0
 
   constructor(
     private unreadList: () => UnreadChat[],
@@ -175,6 +187,81 @@ export class MascotOverlay {
     this.leaveTimer = null
   }
 
+  // ---------- golpe do envio: andar até a pasta ----------
+
+  // A janela do canvas viu o pedido começar e achou a pasta à vista: o retângulo vem em px da página;
+  // vira ponto da tela (o meio da borda esquerda do cabeçalho), contando o zoom da janela.
+  reportTarget(sender: WebContents, key: string, turn: number, rect: { x: number; y: number; width: number; height: number }): void {
+    const win = BrowserWindow.fromWebContents(sender)
+    if (!win || win.isDestroyed() || win.isMinimized() || !win.isVisible()) return
+    const content = win.getContentBounds()
+    const zoom = sender.getZoomFactor()
+    const point = { x: content.x + rect.x * zoom, y: content.y + (rect.y + rect.height / 2) * zoom }
+    const id = `${key}:${turn}`
+    if (this.targets.has(id)) return
+    this.targets.set(id, point)
+    // Só os últimos: um pedido por vez interessa.
+    if (this.targets.size > 20) this.targets.delete(this.targets.keys().next().value!)
+    const resolve = this.waiting.get(id)
+    if (resolve) {
+      this.waiting.delete(id)
+      resolve(point)
+    }
+  }
+
+  // A janela do mascote viu o pedido começar: o ponto, se a do canvas já mandou ou mandar logo.
+  findTarget(key: string, turn: number): Promise<{ x: number; y: number } | null> {
+    const id = `${key}:${turn}`
+    const known = this.targets.get(id)
+    if (known) return Promise.resolve(known)
+    return new Promise((resolve) => {
+      this.waiting.set(id, resolve)
+      setTimeout(() => {
+        if (this.waiting.get(id) !== resolve) return
+        this.waiting.delete(id)
+        resolve(null)
+      }, TARGET_WAIT_MS)
+    })
+  }
+
+  // Leva a janela até (x, y) andando, numa linha reta; resolve ao chegar. Fica inteira dentro da
+  // tela onde o ponto cai.
+  walk(x: number, y: number): Promise<void> {
+    const win = this.win
+    if (!win || win.isDestroyed()) return Promise.resolve()
+    this.stopWalk()
+    const area = screen.getDisplayNearestPoint({ x: Math.round(x + BODY_CENTER.x), y: Math.round(y + BODY_CENTER.y) }).workArea
+    const to = {
+      x: Math.max(area.x - BODY_BOX.x, Math.min(area.x + area.width - SIZE.width, x)),
+      y: Math.max(area.y, Math.min(area.y + area.height - SIZE.height, y))
+    }
+    const [x0, y0] = win.getPosition()
+    const ms = Math.min(WALK_MS.max, Math.max(WALK_MS.min, (Math.hypot(to.x - x0, to.y - y0) / WALK_SPEED) * 1000))
+    const start = Date.now()
+    return new Promise((resolve) => {
+      this.walkTimer = setInterval(() => {
+        const t = win.isDestroyed() ? 1 : Math.min(1, (Date.now() - start) / ms)
+        if (!win.isDestroyed()) win.setPosition(Math.round(x0 + (to.x - x0) * t), Math.round(y0 + (to.y - y0) * t))
+        if (t < 1) return
+        this.stopWalk()
+        resolve()
+      }, WALK_FRAME_MS)
+    })
+  }
+
+  private stopWalk(): void {
+    if (!this.walkTimer) return
+    clearInterval(this.walkTimer)
+    this.walkTimer = null
+    this.walkEndedAt = Date.now()
+  }
+
+  // Onde ele fica parado (o canto de cima da janela).
+  homeSpot(): { x: number; y: number } {
+    const { x, y } = this.bounds()
+    return { x, y }
+  }
+
   dragTo(x: number, y: number): void {
     if (this.win && !this.win.isDestroyed()) this.win.setPosition(Math.round(x), Math.round(y))
   }
@@ -198,7 +285,11 @@ export class MascotOverlay {
     if (!IS_LINUX) win.setIgnoreMouseEvents(true, { forward: true })
     // Mac: o sistema arrasta a janela (e avisa onde ficou); daqui se vê o ponteiro no boneco.
     if (IS_MAC) {
-      win.on('moved', () => this.dragEnd())
+      win.on('moved', () => {
+        // Andando até a pasta (ou logo depois), não é a pessoa mudando o lugar dele.
+        if (this.walkTimer || Date.now() - this.walkEndedAt < 600) return
+        this.dragEnd()
+      })
       this.watchHover()
     }
     win.on('closed', () => {
@@ -214,6 +305,7 @@ export class MascotOverlay {
   private close(): void {
     this.stopLeave()
     this.stopHover()
+    this.stopWalk()
     const win = this.win
     this.win = null
     if (win && !win.isDestroyed()) win.destroy()

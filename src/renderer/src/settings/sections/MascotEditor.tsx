@@ -7,6 +7,7 @@ import {
   Ear,
   Eye,
   Footprints,
+  Glasses,
   Laptop,
   Lightbulb,
   Link,
@@ -18,14 +19,19 @@ import {
   ScanFace,
   Scissors,
   Search,
+  Shirt,
   TriangleAlert,
   WandSparkles,
   Zap
 } from 'lucide-react'
 import {
+  ACCESSORIES,
   BEARD_STYLES,
   beardPalette,
+  BOTTOM_STYLES,
   BUILDS,
+  CLOTH_COLORS,
+  clothPalette,
   DEFAULT_LOOK,
   EYE_COLORS,
   EYE_SHAPES,
@@ -41,6 +47,10 @@ import {
   SKIN_TONES,
   skinPalette,
   STRIKES,
+  toggleAccessory,
+  TOP_STYLES,
+  type Accessory,
+  type ClothColor,
   type CustomColor,
   type EyeColor,
   type HairColor,
@@ -70,10 +80,13 @@ const EYES_VIEW: View = { x: 32, y: 34, w: 56, h: 26 }
 const BEARD_VIEW: View = { x: 28, y: 42, w: 64, h: 54 }
 const MOUTH_VIEW: View = { x: 40, y: 60, w: 40, h: 28 }
 const STRIKE_VIEW: View = { x: 10, y: -14, w: 192, h: 166 }
+// Roupa: do queixo à barra, com as mangas; e do quadril ao tênis.
+const TOP_VIEW: View = { x: 28, y: 85, w: 64, h: 46 }
+const BOTTOM_VIEW: View = { x: 30, y: 112, w: 60, h: 38 }
 
 const setLook = (patch: Partial<MascotLook>) => setPreferences({ mascotLook: { ...getPreferences().mascotLook, ...patch } })
 
-type Tab = 'body' | 'face' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'strike'
+type Tab = 'body' | 'clothes' | 'accessories' | 'face' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'strike'
 type IconType = ComponentType<{ size?: number; className?: string }>
 
 // Bigode, no traço dos ícones do lucide (lá não tem um).
@@ -97,6 +110,8 @@ function MustacheIcon({ size = 24, className }: { size?: number; className?: str
 
 const TABS: { id: Tab; label: string; icon: IconType }[] = [
   { id: 'body', label: tr('Corpo', 'Body'), icon: PersonStanding },
+  { id: 'clothes', label: tr('Roupa', 'Clothes'), icon: Shirt },
+  { id: 'accessories', label: tr('Acessórios', 'Accessories'), icon: Glasses },
   { id: 'face', label: tr('Rosto', 'Face'), icon: ScanFace },
   { id: 'eyes', label: tr('Olhos', 'Eyes'), icon: Eye },
   { id: 'mouth', label: tr('Boca', 'Mouth'), icon: Laugh },
@@ -216,6 +231,8 @@ function EditorBody() {
           </nav>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {tab === 'body' && <BodyTab look={look} />}
+            {tab === 'clothes' && <ClothesTab look={look} />}
+            {tab === 'accessories' && <AccessoriesTab look={look} />}
             {tab === 'face' && <FaceTab look={look} />}
             {tab === 'eyes' && <EyesTab look={look} />}
             {tab === 'mouth' && <MouthTab look={look} />}
@@ -273,6 +290,86 @@ function BodyTab({ look }: { look: MascotLook }) {
             </Tile>
           ))}
         </Grid>
+      </Block>
+    </>
+  )
+}
+
+// Parte de cima e de baixo, cada uma com a cor antes do modelo.
+function ClothesTab({ look }: { look: MascotLook }) {
+  const top = clothPalette(look.topColor)
+  const bottom = clothPalette(look.bottomColor)
+  const colors = (Object.keys(CLOTH_COLORS) as ClothColor[]).map((k) => ({ value: k, label: CLOTH_COLORS[k].label, color: CLOTH_COLORS[k].color }))
+  return (
+    <>
+      <Block title={tr('Cor da parte de cima', 'Top color')} value={top.label}>
+        <Swatches value={look.topColor} options={colors} pickerBase={top.mid} onChange={(value) => setLook({ topColor: value })} />
+      </Block>
+      <Block title={tr('Parte de cima', 'Top')} value={TOP_STYLES.find((t) => t.value === look.top)?.label}>
+        <Grid min={120}>
+          {TOP_STYLES.map((t) => (
+            <Tile key={t.value} label={t.label} view={TOP_VIEW} selected={look.top === t.value} onClick={() => setLook({ top: t.value })}>
+              <MascotFigure pose="idle" look={{ ...look, top: t.value }} view={TOP_VIEW} still />
+            </Tile>
+          ))}
+        </Grid>
+      </Block>
+      <Block title={tr('Cor da parte de baixo', 'Bottom color')} value={bottom.label}>
+        <Swatches value={look.bottomColor} options={colors} pickerBase={bottom.mid} onChange={(value) => setLook({ bottomColor: value })} />
+      </Block>
+      <Block title={tr('Parte de baixo', 'Bottom')} value={BOTTOM_STYLES.find((b) => b.value === look.bottom)?.label}>
+        <Grid min={120}>
+          {BOTTOM_STYLES.map((b) => (
+            <Tile key={b.value} label={b.label} view={BOTTOM_VIEW} selected={look.bottom === b.value} onClick={() => setLook({ bottom: b.value })}>
+              <MascotFigure pose="idle" look={{ ...look, bottom: b.value }} view={BOTTOM_VIEW} still />
+            </Tile>
+          ))}
+        </Grid>
+      </Block>
+    </>
+  )
+}
+
+// Acessórios: vários ao mesmo tempo; clicar de novo tira. Cada miniatura mostra só aquele.
+const BODY_ACCESSORIES: Accessory[] = ['necklace', 'bracelet', 'watch']
+
+function AccessoriesTab({ look }: { look: MascotLook }) {
+  const head = ACCESSORIES.filter((a) => !BODY_ACCESSORIES.includes(a.value))
+  const body = ACCESSORIES.filter((a) => BODY_ACCESSORIES.includes(a.value))
+  const chosen = (group: typeof ACCESSORIES) => {
+    const names = group.filter((a) => look.accessories.includes(a.value)).map((a) => a.label)
+    return names.length ? names.join(', ') : tr('Nenhum', 'None')
+  }
+  const tile = (a: (typeof ACCESSORIES)[number]) => {
+    const onBody = BODY_ACCESSORIES.includes(a.value)
+    const view = onBody ? TOP_VIEW : HEAD_VIEW
+    const preview = { ...look, accessories: [a.value] }
+    return (
+      <Tile
+        key={a.value}
+        label={a.label}
+        view={view}
+        selected={look.accessories.includes(a.value)}
+        onClick={() => setLook({ accessories: toggleAccessory(look.accessories, a.value) })}
+      >
+        {onBody ? <MascotFigure pose="idle" look={preview} view={view} still /> : <MascotHead look={preview} view={view} />}
+      </Tile>
+    )
+  }
+  return (
+    <>
+      <Block
+        title={tr('Na cabeça', 'On the head')}
+        value={chosen(head)}
+        description={tr(
+          'Escolha quantos quiser; clicar de novo tira. Um óculos e um chapéu (ou laço) por vez.',
+          'Pick as many as you like; click again to remove. One pair of glasses and one hat (or bow) at a time.'
+        )}
+      >
+        <Grid min={112}>{head.map(tile)}</Grid>
+      </Block>
+      <Block title={tr('No corpo', 'On the body')} value={chosen(body)}>
+        <Grid min={120}>{body.map(tile)}</Grid>
       </Block>
     </>
   )

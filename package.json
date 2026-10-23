@@ -13,7 +13,8 @@
     "postinstall": "node scripts/postinstall.mjs",
     "dist": "electron-vite build && electron-builder --mac --arm64",
     "dist:win": "electron-vite build && electron-builder --win --x64",
-    "dist:linux": "electron-vite build && electron-builder --linux --x64"
+    "dist:linux": "electron-vite build && electron-builder --linux --x64",
+    "test": "vitest run"
   },
   "dependencies": {
     "@sentry/electron": "8.3.0",
@@ -58,6 +59,7 @@
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "7.3.7",
+    "vitest": "5.0.5",
     "zod": "^4.6.7"
   },
   "allowScripts": {

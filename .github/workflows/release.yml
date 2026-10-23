@@ -1,4 +1,5 @@
-# Gera uma versão nova: sobe o número no package.json, confere os tipos, monta o .dmg e o .zip
+# Gera uma versão nova: roda os testes (pnpm test) no Mac, no Windows e no Linux e só segue se
+# todos passarem; sobe o número no package.json, confere os tipos, monta o .dmg e o .zip
 # (Apple Silicon), confere se o app abre, cria a tag e publica tudo num release do GitHub. Ao mesmo
 # tempo, numa máquina Windows, monta o instalador .exe, e numa Linux, o AppImage; cada um confere se
 # o app abre e, quando o do Mac termina, é anexado ao mesmo release.
@@ -72,8 +73,44 @@ jobs:
           echo "version=$next" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  release:
+  # Testes do núcleo (conversas, sessões, histórico, projetos, caminhos) nos três sistemas, no
+  # commit escolhido. Um vermelho em qualquer um segura a versão inteira: os jobs que montam e
+  # publicam esperam este. Separado de cada um porque o do Mac publica sozinho: um teste que só
+  # quebra no Windows ainda deixaria sair a versão do Mac.
+  testes:
     needs: versao
+    strategy:
+      # Um sistema falhando não cancela os outros: o relatório mostra todos que quebraram.
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Sem os scripts de instalação: os testes não abrem o Electron nem usam as partes nativas
+      # (terminal, ditado), e pular o download e a compilação deixa o job em ~1 min.
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Testes
+        run: pnpm test
+
+  release:
+    needs: [versao, testes]
     runs-on: macos-15
     env:
       # No push não há as opções do disparo manual: publica sempre.
@@ -234,7 +271,7 @@ jobs:
   # Antes de guardar, abre o app em modo de teste (--smoke-test, ver src/main/smokeTest.ts): se ele
   # nem abrir, o instalador não vai, e quem usa no Windows continua na versão anterior.
   windows:
-    needs: versao
+    needs: [versao, testes]
     runs-on: windows-latest
     # Ocupa a mesma fila dos releases (concurrency): travado, não pode segurar o próximo do Mac.
     timeout-minutes: 30
@@ -320,7 +357,7 @@ jobs:
   # AppImage do Linux, numa máquina Ubuntu do GitHub, ao mesmo tempo que os outros. Mesmo teste de
   # abertura (--smoke-test), numa tela virtual (xvfb): sem passar, o AppImage não vai.
   linux:
-    needs: versao
+    needs: [versao, testes]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

@@ -1,4 +1,4 @@
-import { memo, useEffect, useImperativeHandle, useRef, type Ref } from 'react'
+import { memo, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { Step } from './rows/Step'
 import type { TimelineItem } from './timelineItem'
 import { useTimelineVirtualizer } from './useTimelineVirtualizer'
@@ -12,7 +12,7 @@ export type TimelineHandle = {
 // desce até o próximo passo (mensagem sua interrompe a linha do tempo). Virtualizada: só os itens
 // perto da tela ficam montados, com o espaço dos outros em cima e embaixo (useTimelineVirtualizer).
 // data-index marca cada item na lista (para medir e para o prompt preso no topo, useStickyScroll);
-// data-prompt, os balões.
+// data-prompt, os balões. A mensagem que você acabou de enviar também entra animada (Loose).
 // Passo novo entra com um fade subindo de leve; os que já estavam quando a conversa abriu (ou o
 // histórico chegou de uma vez) aparecem parados, para não animar a conversa inteira. As anteriores
 // carregadas ao rolar para cima também: só anima o que vem depois do último que já estava, e uma
@@ -44,7 +44,8 @@ export const Timeline = memo(function Timeline({
   )
 
   const initial = useRef<Set<string> | null>(null)
-  if (!initial.current && rows.length) initial.current = new Set(rows.map((row) => row.key))
+  // A mensagem recém-enviada nunca conta como já estando: na conversa nova ela é a primeira linha.
+  if (!initial.current && rows.length) initial.current = new Set(rows.filter((row) => !(row.kind === 'user' && row.fresh)).map((row) => row.key))
   let lastInitial = rows.length - 1
   while (lastInitial >= 0 && !initial.current?.has(rows[lastInitial].key)) lastInitial--
   // Os que já chegaram, na tela ou fora dela (você tinha subido para ler).
@@ -71,9 +72,9 @@ export const Timeline = memo(function Timeline({
                 {item.node}
               </Step>
             ) : (
-              <div data-prompt={item.kind === 'user' ? item.key : undefined} className="timeline-item">
+              <Loose prompt={item.kind === 'user' ? item.key : undefined} enter={item.kind === 'user' && !!item.fresh && i > lastInitial && !entered.current.has(item.key)}>
                 {item.node}
-              </div>
+              </Loose>
             )}
           </div>
         )
@@ -81,3 +82,15 @@ export const Timeline = memo(function Timeline({
     </div>
   )
 })
+
+// Balão ou divisor (fora da linha dos passos). data-prompt: o balão, para o prompt preso no topo e
+// para a piscada ao pular até ele (jump-flash). `enter`: a mensagem que você acabou de enviar entra
+// crescendo de leve (bubble-in); como no Step, vale o da montagem.
+function Loose({ prompt, enter, children }: { prompt?: string; enter: boolean; children: ReactNode }) {
+  const [entering] = useState(enter)
+  return (
+    <div data-prompt={prompt} className={`timeline-item relative ${entering ? 'bubble-in' : ''}`}>
+      {children}
+    </div>
+  )
+}

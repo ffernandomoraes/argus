@@ -6,9 +6,18 @@ const UP_KEYS = new Set(['ArrowUp', 'PageUp', 'Home'])
 const INTENT_MS = 1000
 // Quanto dura o acerto ao abrir a conversa (ver settle).
 const SETTLE_MS = 1500
+// Longe do fim mais que isso, sem estar seguindo: aparece o botão de ir ao fim.
+const AWAY_PX = 120
+// Por quanto tempo a mensagem de destino pisca depois do clique no prompt preso (jump-flash).
+const FLASH_MS = 1600
+// Quadros esperando a mensagem de destino montar (fora da tela, a linha do tempo rola até ela antes).
+const FLASH_TRIES = 30
+
+const reduceMotion = (): boolean => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
 // Rolagem da conversa: segue o fim quando chega coisa nova (a menos que a pessoa tenha subido para
-// ler) e acha o prompt do trecho na tela, que fica preso no topo enquanto ela rola para cima.
+// ler ou clicado dentro da conversa), diz quando mostrar o botão de ir ao fim e acha o prompt do
+// trecho na tela, que fica preso no topo enquanto ela rola para cima.
 // Os refs são de quem chama (o nome com Ref: o React Compiler reconhece que são refs). A conversa é
 // virtualizada (Timeline): só os itens perto da tela estão montados, então quem diz qual balão vem
 // antes de um item e como rolar até um que não está montado é a linha do tempo (`timeline`).
@@ -27,6 +36,10 @@ export function useStickyScroll(
   const lastTop = useRef(0)
   const [pinnedKey, setPinnedKey] = useState<string | null>(null)
   const [scrollingUp, setScrollingUp] = useState(false)
+  // Longe do fim sem estar seguindo: o botão de ir ao fim aparece. O ref evita pedir um desenho a
+  // cada evento de rolagem quando nada mudou.
+  const [away, setAway] = useState(false)
+  const awayNow = useRef(false)
   const travel = useRef({ distance: 0, at: 0 })
   // Quando você mexeu na rolagem por último (roda, tecla, toque, clique) e se o botão segue apertado
   // (arrastando a barra de rolagem).
@@ -37,16 +50,47 @@ export function useStickyScroll(
   }
   const yours = () => pressing.current || performance.now() - intentAt.current < INTENT_MS
 
+  // Seguindo o fim, vai direto até ele. Já foi deslizando a cada quadro (como no Claude Desktop), mas
+  // com a resposta chegando a descida quase nunca terminava: rolagem e lista virtualizada refeitas a
+  // cada quadro, e as animações da janela inteira travavam (2026-10-23).
   const toEnd = useCallback(() => {
     const el = scrollerRef.current
     if (el && following.current) el.scrollTop = el.scrollHeight
   }, [scrollerRef])
 
+  const showAway = useCallback((next: boolean) => {
+    if (next === awayNow.current) return
+    awayNow.current = next
+    setAway(next)
+  }, [])
+
+  const updateAway = useCallback(() => {
+    const el = scrollerRef.current
+    showAway(!!el && !following.current && el.scrollHeight - el.scrollTop - el.clientHeight > AWAY_PX)
+  }, [scrollerRef, showAway])
+
   // Ao enviar: volta a seguir o fim.
   const follow = useCallback(() => {
     following.current = true
+    showAway(false)
     toEnd()
-  }, [toEnd])
+  }, [toEnd, showAway])
+
+  // Botão de ir ao fim: volta a seguir e desce com a rolagem suave do próprio navegador, uma vez só.
+  // Longe (mais de duas telas), pula para perto antes: deslizar por tudo montaria a conversa inteira
+  // no caminho. Conta como rolagem sua (markIntent): sem isso, o primeiro evento da descida pulava
+  // direto para o fim (ver onScroll).
+  const jumpToEnd = useCallback(() => {
+    const el = scrollerRef.current
+    following.current = true
+    showAway(false)
+    if (!el) return
+    if (reduceMotion()) return toEnd()
+    intentAt.current = performance.now()
+    const end = el.scrollHeight - el.clientHeight
+    if (end - el.scrollTop > el.clientHeight * 2) el.scrollTop = end - el.clientHeight
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [scrollerRef, showAway, toEnd])
 
   // Ao abrir a conversa (o histórico chegou, ou ela foi aberta de novo já estando à vista): segue o
   // fim e, por um instante, volta para ele a cada quadro. Nesse começo o histórico entra de uma vez
@@ -92,12 +136,16 @@ export function useStickyScroll(
     if (!inner) return
     const observer = new ResizeObserver(() => {
       toEnd()
-      if (!following.current) findPinned()
+      if (!following.current) {
+        findPinned()
+        // O fim se afastou sem rolagem (a resposta crescendo embaixo de quem subiu para ler).
+        updateAway()
+      }
     })
     observer.observe(inner)
     if (scrollerRef.current) observer.observe(scrollerRef.current)
     return () => observer.disconnect()
-  }, [contentRef, scrollerRef, toEnd, findPinned])
+  }, [contentRef, scrollerRef, toEnd, findPinned, updateAway])
 
   // O prompt preso aparece rolando para cima e fica, mesmo parado, até você rolar para baixo ou
   // chegar ao fim. Só conta como rolagem num sentido depois de ~60px seguidos nele: um tremido do
@@ -142,6 +190,7 @@ export function useStickyScroll(
     }
     // Rolagem feita pelo toEnd, no fim e seguindo: o prompt preso não está à vista (ver o observer).
     if (!(following.current && distance <= 1)) findPinned()
+    updateAway()
   }
 
   // Roda do mouse ou trackpad para cima solta antes mesmo de a rolagem acontecer (sem rolagem
@@ -169,6 +218,19 @@ export function useStickyScroll(
     window.addEventListener('pointercancel', release, { once: true })
     const el = e.currentTarget
     if (e.nativeEvent.offsetX >= el.clientWidth && el.scrollTop > 0) following.current = false
+    // Clique dentro da conversa (abrir um bloco de ferramenta, selecionar um trecho) também solta,
+    // como no Claude Desktop: seguindo, o bloco aberto perto do fim crescia e a tela descia junto,
+    // levando embora o que você abriu. Fora: o que deixa o pedido seguir (permissão, pergunta,
+    // marcados com data-continues-turn) e a conversa curta, sem rolagem possível.
+    else if (
+      e.button === 0 &&
+      el.scrollHeight > el.clientHeight &&
+      e.target instanceof Element &&
+      contentRef.current?.contains(e.target) &&
+      !e.target.closest('[data-continues-turn]')
+    ) {
+      following.current = false
+    }
   }
 
   // Toque na tela (Windows com tela sensível ao toque) não gera evento de roda.
@@ -182,7 +244,22 @@ export function useStickyScroll(
     const el = scrollerRef.current?.querySelector(`[data-prompt="${CSS.escape(pinnedKey)}"]`)
     if (el) scrollWithin(el, 'start')
     else timeline.scrollToKey(pinnedKey)
+    flash(pinnedKey)
   }
 
-  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, settle, pinnedKey, scrollingUp, scrollToPrompt }
+  // A mensagem de destino pisca de leve (jump-flash). Fora da tela, espera ela montar.
+  const flash = (key: string, tries = 0) => {
+    const el = scrollerRef.current?.querySelector(`[data-prompt="${CSS.escape(key)}"]`)
+    if (!el) {
+      if (tries < FLASH_TRIES) requestAnimationFrame(() => flash(key, tries + 1))
+      return
+    }
+    el.classList.remove('jump-flash')
+    // Lê o tamanho para o navegador reiniciar a animação num segundo clique seguido.
+    void (el as HTMLElement).offsetWidth
+    el.classList.add('jump-flash')
+    setTimeout(() => el.classList.remove('jump-flash'), FLASH_MS)
+  }
+
+  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, jumpToEnd, settle, pinnedKey, scrollingUp, scrollToPrompt, away }
 }

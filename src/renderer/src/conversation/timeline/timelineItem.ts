@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 // Um item da linha do tempo da conversa: mensagem sua (balão), divisor ou passo do Claude (com a
 // bolinha à esquerda e a linha até o próximo passo).
 export type TimelineItem =
-  | { kind: 'user'; key: string; node: ReactNode }
+  // fresh: mensagem que você acabou de enviar (a provisória, antes do histórico); entra animada.
+  | { kind: 'user'; key: string; node: ReactNode; fresh?: boolean }
   | { kind: 'divider'; key: string; node: ReactNode }
   | { kind: 'step'; key: string; dot: string; dotTop?: number; node: ReactNode }
 

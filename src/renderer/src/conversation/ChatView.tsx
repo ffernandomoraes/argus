@@ -1,4 +1,5 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react'
+import { ArrowDown } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
 import type { ChatState, PermissionAnswer } from '../../../shared/chat'
 import type { SessionStatus } from '../canvas/types'
@@ -243,6 +244,21 @@ export const ChatView = memo(function ChatView({
             <Timeline key={loading ? 'loading' : 'ready'} rows={rows} scroller={scrollerEl} placeholder={placeholder} handle={timeline} />
           </div>
         </div>
+        {/* Longe do fim: volta para ele com uma rolagem suave. Com o Claude trabalhando, a borda
+            destaca que tem coisa nova chegando lá embaixo (como no Claude Desktop). */}
+        <button
+          type="button"
+          onClick={sticky.jumpToEnd}
+          title={tr('Ir para o fim', 'Go to the end')}
+          aria-label={tr('Ir para o fim', 'Go to the end')}
+          tabIndex={sticky.away ? 0 : -1}
+          aria-hidden={!sticky.away}
+          className={`absolute bottom-3 left-1/2 z-10 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border bg-surface-2/90 shadow-md shadow-black/20 backdrop-blur transition-[opacity,border-color,translate] duration-200 hover:text-text ${
+            running ? 'border-running/60 text-running' : 'border-line text-muted hover:border-line-strong'
+          } ${sticky.away && !placeholder ? 'opacity-100' : 'pointer-events-none translate-y-1 opacity-0'}`}
+        >
+          <ArrowDown size={16} />
+        </button>
       </div>
 
       <SuggestionChip text={live?.suggestion} visible={suggestions && !running && !typing} onSend={sendSuggestion} />

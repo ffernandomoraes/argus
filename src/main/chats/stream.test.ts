@@ -183,3 +183,42 @@ describe('readMessage: avisos do sistema', () => {
     expect(play([suggestion], idle({ status: 'running', turnStartedAt: 5 })).chat.suggestion).toBeUndefined()
   })
 })
+
+describe('readMessage: nova tentativa da API e compactação', () => {
+  const retry = (m: Record<string, unknown>) =>
+    sdk({ type: 'system', subtype: 'api_retry', attempt: 2, max_retries: 10, retry_delay_ms: 8000, error_status: null, error: 'unknown', ...m })
+
+  it('a nova tentativa traz o motivo, a tentativa e quando sai', () => {
+    const { chat } = play([retry({ error: 'overloaded', error_status: 529 })])
+    expect(chat.retry).toEqual({ cause: 'overloaded', attempt: 2, maxRetries: 10, at: 9000 })
+  })
+
+  it('o motivo vem do código HTTP quando o erro não diz', () => {
+    expect(play([retry({ error_status: 429 })]).chat.retry?.cause).toBe('rate_limit')
+    expect(play([retry({ error_status: 503 })]).chat.retry?.cause).toBe('server_error')
+    expect(play([retry({ no_response: { waited_ms: 1, retry_wait_ms: 2 } })]).chat.retry?.cause).toBe('no_response')
+    expect(play([retry({ error_status: 400 })]).chat.retry?.cause).toBe('other')
+  })
+
+  it('a resposta começando tira o aviso da nova tentativa', () => {
+    const { chat } = play([retry({}), event({ type: 'message_start' })])
+    expect(chat.retry).toBeUndefined()
+  })
+
+  it('compactação: marca o começo e sai com o divisor gravado ou com o status de volta', () => {
+    const status = (s: string | null) => sdk({ type: 'system', subtype: 'status', status: s })
+    expect(play([status('compacting')]).chat.compactingSince).toBe(1000)
+    expect(play([status('compacting'), status(null)]).chat.compactingSince).toBeUndefined()
+    expect(play([status('compacting'), sdk({ type: 'system', subtype: 'compact_boundary' })]).chat.compactingSince).toBeUndefined()
+  })
+
+  it('o fim do pedido limpa os dois', () => {
+    const { chat } = play([
+      retry({}),
+      sdk({ type: 'system', subtype: 'status', status: 'compacting' }),
+      sdk({ type: 'result', subtype: 'success', is_error: false, modelUsage: {} })
+    ])
+    expect(chat.retry).toBeUndefined()
+    expect(chat.compactingSince).toBeUndefined()
+  })
+})

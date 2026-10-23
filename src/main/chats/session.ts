@@ -239,7 +239,7 @@ export class ChatSession {
     // Mensagem sua na fila pode sobreviver à parada e rodar em seguida, e quem diz é o recibo do
     // Claude (still_queued). Sem nenhuma, a tela reage na hora, sem esperar o Claude confirmar.
     const askReceipt = this.interrupted && this.queued.size > 0
-    this.update({ partial: '', error: undefined, activity: undefined, ...(!askReceipt && STOPPED) })
+    this.update({ partial: '', error: undefined, activity: undefined, retry: undefined, compactingSince: undefined, ...(!askReceipt && STOPPED) })
     let receipt: Awaited<ReturnType<Query['interrupt']>>
     try {
       receipt = await this.q.interrupt()
@@ -384,6 +384,8 @@ export class ChatSession {
         backgroundTasks: 0,
         backgroundStarts: undefined,
         activity: undefined,
+        retry: undefined,
+        compactingSince: undefined,
         revision: this.state.revision + 1
       })
       this.events.ended(this)

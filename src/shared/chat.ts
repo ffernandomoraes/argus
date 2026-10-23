@@ -47,6 +47,10 @@ export type ChatState = {
   turnTokens: number
   // Etapa do pedido em andamento, para o rótulo "Pensando…", "Executando…" etc.
   activity?: ChatActivity
+  // A API falhou e o Claude Code vai tentar de novo; sai quando a resposta começa.
+  retry?: ChatRetry
+  // Compactando a conversa desde (ms).
+  compactingSince?: number
   // Remote control ligado: a conversa também pode ser continuada pelo claude.ai ou pelo celular.
   remote?: RemoteControl
   // Subagentes trabalhando agora, lançados por esta conversa.
@@ -102,6 +106,15 @@ export type ChatActivity = {
   summary?: string
   // Quando a etapa começou (ms).
   since: number
+}
+
+// Nova tentativa da API: o motivo, a tentativa (1 = a primeira nova tentativa), quantas no máximo e
+// quando ela sai (ms).
+export type ChatRetry = {
+  cause: 'overloaded' | 'rate_limit' | 'server_error' | 'no_response' | 'other'
+  attempt: number
+  maxRetries: number
+  at: number
 }
 
 // connecting: ligando ou reconectando. failed: não conectou (detail diz o motivo).

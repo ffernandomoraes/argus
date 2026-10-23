@@ -1,5 +1,5 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
-import type { ChatActivity, ChatState, RemoteControl } from '../../shared/chat'
+import type { ChatActivity, ChatRetry, ChatState, RemoteControl } from '../../shared/chat'
 import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
 import { finishedAgents, subagentSteps, taskChange, type AgentsChange, type TaskMessage } from './subagents'
@@ -99,9 +99,31 @@ function readSystem(m: Line, chat: ChatState, reader: Reader, now: number): Step
     const starts = Object.fromEntries(ids.map((id) => [id, before[id] ?? now]))
     return { reader, patch: { backgroundTasks: ids.length, backgroundStarts: starts }, urgent: true }
   }
+  // A API falhou e o Claude Code vai tentar de novo: sem isso a tela parecia travada até a nova
+  // tentativa responder (API sobrecarregada, limite de requisições).
+  if (m.subtype === 'api_retry') {
+    const retry: ChatRetry = { cause: retryCause(m), attempt: m.attempt, maxRetries: m.max_retries, at: now + (m.retry_delay_ms ?? 0) }
+    return { reader, patch: { retry }, urgent: true }
+  }
+  // Compactando a conversa (pelo /compact ou sozinha, perto do limite do contexto).
+  if (m.subtype === 'status') {
+    const compacting = m.status === 'compacting'
+    if (compacting === !!chat.compactingSince) return { reader }
+    return { reader, patch: { compactingSince: compacting ? now : undefined }, urgent: true }
+  }
   // A compactação é gravada no arquivo da sessão: o chat relê e mostra o divisor.
-  if (m.subtype === 'compact_boundary') return { reader, patch: { revision: chat.revision + 1 }, urgent: true }
+  if (m.subtype === 'compact_boundary') return { reader, patch: { revision: chat.revision + 1, compactingSince: undefined }, urgent: true }
   return { reader }
+}
+
+// O motivo da nova tentativa: pelo erro que o Claude Code informa e, sem ele, pelo código HTTP.
+function retryCause(m: Line): ChatRetry['cause'] {
+  if (m.no_response) return 'no_response'
+  const status = typeof m.error_status === 'number' ? m.error_status : 0
+  if (m.error === 'overloaded' || status === 529) return 'overloaded'
+  if (m.error === 'rate_limit' || status === 429) return 'rate_limit'
+  if (m.error === 'server_error' || status >= 500) return 'server_error'
+  return 'other'
 }
 
 function readStream(e: StreamEvent, chat: ChatState, reader: Reader, ctx: ReadContext): Step {
@@ -134,6 +156,8 @@ function startMessage(chat: ChatState, reader: Reader, ctx: ReadContext): Step {
     : {}
   patch.partial = ''
   patch.suggestion = undefined
+  // A API respondeu: a nova tentativa deu certo.
+  patch.retry = undefined
   patch.activity = activity(chat.activity, 'thinking', ctx.now)
   const closedTokens = fresh ? 0 : reader.closedTokens + reader.currentTokens
   return { reader: { ...reader, closedTokens, currentTokens: 0 }, patch, turnStarted: fresh }
@@ -199,6 +223,8 @@ function readResult(m: Result, chat: ChatState, reader: Reader, ctx: ReadContext
       status: ctx.waiting ? 'needs-you' : ctx.resumes ? 'running' : 'idle',
       turnStartedAt: undefined,
       activity: undefined,
+      retry: undefined,
+      compactingSince: undefined,
       // A prévia fica: a tela tira quando o histórico relido trouxer o mesmo texto (ver ChatSession).
       revision: chat.revision + 1,
       error: failed ? ('result' in m && m.result ? m.result : tr('O Claude parou com erro.', 'Claude stopped with an error.')) : undefined

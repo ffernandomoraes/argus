@@ -4,7 +4,6 @@ import { isSendableImage } from '../chatImages'
 import type { SessionStatus } from '../../canvas/types'
 import { currentTurn } from '../turnInfo'
 import type { Message } from '../types'
-import { activityLabel } from './activityLabel'
 import type { ImageView } from './imageViews'
 import type { PendingSend } from './optimisticSends'
 import { PermissionRow } from './rows/PermissionRow'
@@ -33,7 +32,8 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
   for (const w of o.waiting) {
     const view = w.images ? o.viewFor(w.id, w.read) : undefined
     const files = attachedFiles(w.files)
-    items.push({ kind: 'user', key: w.id, node: <UserBubble text={w.text} images={w.images} imageView={view} files={files} /> })
+    // fresh: acabou de ser enviada, entra com animação (ver Timeline).
+    items.push({ kind: 'user', key: w.id, fresh: true, node: <UserBubble text={w.text} images={w.images} imageView={view} files={files} /> })
   }
   const partial = partialText(o.live, o.messages)
   if (partial) {
@@ -44,14 +44,35 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
     )
     items.push(stepItem('partial', 'bg-running animate-pulse', node))
   }
-  o.live?.permissions.forEach((p) => items.push(stepItem(`perm-${p.id}`, 'bg-ask', <PermissionRow request={p} onAnswer={o.onAnswer} />)))
+  // data-continues-turn: responder deixa o pedido seguir, então o clique não solta o fim da conversa
+  // (ver useStickyScroll).
+  o.live?.permissions.forEach((p) =>
+    items.push(
+      stepItem(
+        `perm-${p.id}`,
+        'bg-ask',
+        <div data-continues-turn>
+          <PermissionRow request={p} onAnswer={o.onAnswer} />
+        </div>
+      )
+    )
+  )
   if (o.status === 'running' || o.waiting.length > 0) {
     // Pedido em andamento: o chat do app sabe na hora; sessão aberta em outro lugar, pelo histórico.
     const fromHistory = currentTurn(o.messages)
     const startedAt = o.live?.turnStartedAt ?? fromHistory.startedAt
     const tokens = Math.max(o.live?.turnStartedAt ? o.live.turnTokens : 0, fromHistory.tokens)
-    const label = activityLabel(o.live?.activity, (o.live?.agents ?? []).filter((a) => !a.background).length)
-    items.push(stepItem('working', 'bg-running animate-pulse', <WorkingRow label={label} startedAt={startedAt} tokens={tokens} />))
+    const row = (
+      <WorkingRow
+        activity={o.live?.activity}
+        foreground={(o.live?.agents ?? []).filter((a) => !a.background).length}
+        retry={o.live?.retry}
+        compactingSince={o.live?.compactingSince}
+        startedAt={startedAt}
+        tokens={tokens}
+      />
+    )
+    items.push(stepItem('working', 'bg-running animate-pulse', row))
   }
   if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <p className="py-0.5 text-[13px] text-red-400">{o.live.error}</p>))
   if (o.status === 'needs-you' && !o.live?.permissions.length) {

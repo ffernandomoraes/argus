@@ -21,8 +21,10 @@ function contentSecurityPolicy(): Plugin {
     transformIndexHtml: {
       order: 'post',
       handler(html) {
+        // O hash vale para o texto com as quebras de linha em "\n", como o navegador lê o HTML: no
+        // Windows o checkout vem com "\r\n", e o hash daquele texto barrava o script de tema.
         const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
-          (m) => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`
+          (m) => `'sha256-${createHash('sha256').update(m[1].replace(/\r\n?/g, '\n')).digest('base64')}'`
         )
         const policy = [
           "default-src 'self'",

@@ -6,7 +6,6 @@ import { AgentIcon } from '../icons/AgentIcon'
 import { useNow } from '../lib/clock'
 import { Presence } from '../motion'
 import { useProviders } from '../providers/useProviders'
-import { usePreference } from '../settings/preferences'
 import { useEscape } from '../useEscape'
 import { useOutsideClick } from '../useOutsideClick'
 import { UsageBar } from './bars/UsageBar'
@@ -36,7 +35,6 @@ export const UsageIndicator = memo(function UsageIndicator({
   const now = useNow(30_000)
   const auth = useAuth()
   const providers = useProviders()
-  const multiAgents = usePreference('multiAgents')
   // Botão e painel num elemento só: o clique no botão não conta como fora.
   const ref = useRef<HTMLDivElement>(null)
   useOutsideClick(ref, () => onOpenChange(false), open)
@@ -46,7 +44,7 @@ export const UsageIndicator = memo(function UsageIndicator({
   // Conta desconectada sai da barra mesmo com uso na mão; sem status (não deu para conferir), fica.
   const candidates: Omit<ShownUsage, 'usage'>[] = [
     ...(auth?.accounts ?? []).filter((a) => a.status?.loggedIn !== false).map((a) => ({ key: a.id, name: a.name })),
-    ...(multiAgents ? (providers?.providers.codex.accounts ?? []) : []).filter((a) => a.status?.signedIn !== false).map((a) => ({
+    ...(providers?.providers.codex.accounts ?? []).filter((a) => a.status?.signedIn !== false).map((a) => ({
       key: agentRef('codex', a.id),
       provider: 'codex' as const,
       name: a.name
@@ -56,7 +54,7 @@ export const UsageIndicator = memo(function UsageIndicator({
     const usage = usages[c.key] && usableUsage(usages[c.key], now)
     return usage?.session ? [{ ...c, usage }] : []
   })
-  const silent = multiAgents ? SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn)) : []
+  const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn))
   if (!shown.length) return null
   const mixed = shown.some((x) => x.provider)
   // Contas por agente: o nome só aparece quando o mesmo agente tem mais de uma (o logo já diz qual é).

@@ -6,7 +6,6 @@ import { useSaveShortcut } from '../lib/useSaveShortcut'
 import { Presence } from '../motion'
 import { IS_WIN, tildify } from '../platform'
 import { useProviders } from '../providers/useProviders'
-import { usePreference } from '../settings/preferences'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
@@ -28,11 +27,10 @@ function libraryPath(provider: AgentProvider): string {
 // terminal e no VS Code). O app só lê e grava esses arquivos. Com os outros agentes ligados, uma
 // aba por provedor com conta conectada.
 export function AgentsModal({ onClose }: { onClose: () => void }) {
-  const multiAgents = usePreference('multiAgents')
   const providersState = useProviders()
   const available = useMemo(
-    () => AGENT_PROVIDERS.filter((p) => p === 'claude' || (multiAgents && !!providersState?.providers[p]?.accounts.length)),
-    [multiAgents, providersState]
+    () => AGENT_PROVIDERS.filter((p) => p === 'claude' || !!providersState?.providers[p]?.accounts.length),
+    [providersState]
   )
   const [chosen, setProvider] = useState<AgentProvider>('claude')
   // A aba escolhida some se a conta dela for desconectada: volta para o Claude.

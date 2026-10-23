@@ -5,7 +5,6 @@ import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { Modal } from '../ui/Modal'
 import { useProviders } from '../providers/useProviders'
-import { usePreference } from '../settings/preferences'
 import { setupReady } from './SetupStep'
 import { welcomeSteps } from './steps'
 import { tr } from '../i18n'
@@ -20,8 +19,7 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
   const last = list.length - 1
   const [index, setIndex] = useState(startAtSetup ? last : 0)
   const providers = useProviders()
-  const multiAgents = usePreference('multiAgents')
-  const ready = setupReady(auth, providers, multiAgents)
+  const ready = setupReady(auth, providers)
   const step = list[index]
   const closeBlocked = !ready && index === last
 

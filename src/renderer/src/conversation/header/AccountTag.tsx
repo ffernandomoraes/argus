@@ -7,7 +7,6 @@ import { AgentIcon } from '../../icons/AgentIcon'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import { Presence } from '../../motion'
 import { useProviders } from '../../providers/useProviders'
-import { usePreference } from '../../settings/preferences'
 import { MenuArrow } from '../../ui/MenuArrow'
 import { MENU_HOVER } from '../../ui/menuStyles'
 import { useEscape } from '../../useEscape'
@@ -22,7 +21,7 @@ type Section = { label: string; icon: ReactNode; options: Option[] }
 // Contas que dá para escolher, por agente: as do Claude e, com o experimento dos outros agentes
 // ligado, as de cada agente com conta conectada (como o menu "Agente" do grupo). Conta sem login
 // não entra, a não ser que seja a desta conversa (para ela continuar marcada).
-function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, multiAgents: boolean, currentId: string): Section[] {
+function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, withAgents: boolean, currentId: string): Section[] {
   const sections: Section[] = [
     {
       label: 'Claude',
@@ -30,7 +29,7 @@ function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, m
       options: (auth?.accounts ?? []).map((a) => ({ id: a.id, name: a.name, signedOut: a.status?.loggedIn === false }))
     }
   ]
-  if (multiAgents) sections.push(...providerSections(providers))
+  if (withAgents) sections.push(...providerSections(providers))
   return sections
     .map((s) => ({ ...s, options: s.options.filter((o) => !o.signedOut || o.id === currentId) }))
     .filter((s) => s.options.length)
@@ -53,13 +52,12 @@ function providerSections(providers: ProvidersState | null): Section[] {
 
 type Current = { id: string; icon: ReactNode; name: string; label: string }
 
-// A conta que vale agora: a pedida ou, sem ela (ou removida), a padrão do agente. Null quando não
-// há o que mostrar: com uma conta só do Claude e sem outros agentes, como a etiqueta do grupo.
+// A conta que vale agora: a pedida ou, sem ela (ou removida), a padrão do agente. Null enquanto as
+// contas não carregaram ou sem conta achada.
 // Exportado para o cabeçalho saber se a linha de baixo tem o selo.
 export function useCurrentAccount(account?: string): Current | null {
   const auth = useAuth()
   const providers = useProviders()
-  const multiAgents = usePreference('multiAgents')
   const agent = parseAgentRef(account)
   if (agent) {
     const { accounts, defaultId } = providers?.providers[agent.provider] ?? { accounts: [], defaultId: null }
@@ -72,7 +70,7 @@ export function useCurrentAccount(account?: string): Current | null {
       label: chosen?.name ?? PROVIDER_NAMES[agent.provider]
     }
   }
-  if (!auth || (auth.accounts.length < 2 && !multiAgents)) return null
+  if (!auth) return null
   const id = resolveAccount(auth, account)
   const chosen = auth.accounts.find((a) => a.id === id)
   if (!chosen) return null
@@ -94,7 +92,6 @@ export function AccountTag({
 }) {
   const auth = useAuth()
   const providers = useProviders()
-  const multiAgents = usePreference('multiAgents')
   const current = useCurrentAccount(account)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -103,7 +100,7 @@ export function AccountTag({
 
   if (!current) return null
   const currentId = current.id
-  const sections = sectionsFor(auth, providers, multiAgents && !claudeOnly, currentId)
+  const sections = sectionsFor(auth, providers, !claudeOnly, currentId)
   const total = sections.reduce((n, s) => n + s.options.length, 0)
   const content = (
     <>

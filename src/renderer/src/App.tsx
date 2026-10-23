@@ -23,10 +23,9 @@ export function App() {
   // Só a preferência que o App usa: mudar outra (tema, zoom do drawer...) não redesenha aqui.
   const welcomeSeen = usePreference('welcomeSeen')
   const providers = useProviders()
-  const multiAgents = usePreference('multiAgents')
   // Falta configurar: sem o Claude Code pronto (instalado e com uma conta logada) e sem outro agente
   // conectado. Com outra conta logada, a principal sem login aparece só em Configurações.
-  const needsSetup = !!auth && !setupReady(auth, providers, multiAgents)
+  const needsSetup = !!auth && !setupReady(auth, providers)
   // Boas-vindas: na primeira vez, o passo a passo inteiro; depois, só se faltar configurar.
   const welcome = !!auth && (!welcomeSeen || needsSetup)
 

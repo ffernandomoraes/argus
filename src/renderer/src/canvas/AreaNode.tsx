@@ -6,7 +6,6 @@ import { parseAgentRef, PROVIDER_NAMES } from '../../../shared/providers'
 import { AgentIcon } from '../icons/AgentIcon'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
 import { useProviders } from '../providers/useProviders'
-import { usePreference } from '../settings/preferences'
 import { shallowEqual } from '../lib/shallowEqual'
 import { Tooltip } from '../ui/Tooltip'
 import { sameNodeProps } from './blocks/sameNodeProps'
@@ -70,13 +69,11 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
   )
 }
 
-// Conta do Claude que vale no grupo (a escolhida ou a padrão), ao lado do nome. Com uma conta
-// só, não há o que mostrar.
+// Agente e conta que valem no grupo (a escolhida ou a padrão), ao lado do nome.
 function AccountTag({ account, color }: { account?: string; color: string }) {
   const auth = useAuth()
   const providers = useProviders()
-  const multiAgents = usePreference('multiAgents')
-  const ref = multiAgents ? parseAgentRef(account) : null
+  const ref = parseAgentRef(account)
   if (ref) {
     const { accounts, defaultId } = providers?.providers[ref.provider] ?? { accounts: [], defaultId: null }
     const chosen = accounts.find((a) => a.id === ref.account) ?? accounts.find((a) => a.id === defaultId)
@@ -88,8 +85,8 @@ function AccountTag({ account, color }: { account?: string; color: string }) {
       </Tag>
     )
   }
-  // Com o experimento ligado, o Claude aparece mesmo com uma conta só: deixa claro qual agente roda.
-  const current = auth && (auth.accounts.length > 1 || multiAgents) ? findAccount(auth, ref ? undefined : account) : undefined
+  // O Claude aparece mesmo com uma conta só: deixa claro qual agente roda.
+  const current = auth ? findAccount(auth, account) : undefined
   if (!current) return null
   return (
     <Tag color={color} title={tr(`Conta do Claude deste grupo: ${current.name}`, `Claude account for this group: ${current.name}`)}>

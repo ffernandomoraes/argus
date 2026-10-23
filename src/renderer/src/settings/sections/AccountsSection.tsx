@@ -8,7 +8,6 @@ import { Presence } from '../../motion'
 import { THIS_COMPUTER } from '../../platform'
 import { AccountCard } from '../accounts/AccountCard'
 import { ProviderSection } from '../accounts/ProviderSection'
-import { usePreference } from '../preferences'
 import { useProviders } from '../../providers/useProviders'
 import { PROVIDERS } from '../../../../shared/providers'
 import { tr } from '../../i18n'
@@ -18,7 +17,6 @@ import { tr } from '../../i18n'
 // canvas escolhe a sua.
 export function AccountsSection() {
   const auth = useAuth()
-  const multiAgents = usePreference('multiAgents')
   const providers = useProviders()
   // Login aberto aqui: numa conta da lista ou numa nova (adding).
   const [target, setTarget] = useState<{ accountId?: string } | null>(null)
@@ -31,8 +29,8 @@ export function AccountsSection() {
   }, [])
 
   useEffect(() => {
-    if (multiAgents) window.api.providers.refresh()
-  }, [multiAgents])
+    window.api.providers.refresh()
+  }, [])
 
   // Login terminou ou foi cancelado: volta para a lista.
   const status = login?.status
@@ -107,7 +105,7 @@ export function AccountsSection() {
         <Plus size={13} />
         {tr('Adicionar conta', 'Add account')}
       </button>
-      {multiAgents && providers && PROVIDERS.map((p) => <ProviderSection key={p} provider={p} state={providers} onConfirm={setConfirm} />)}
+      {providers && PROVIDERS.map((p) => <ProviderSection key={p} provider={p} state={providers} onConfirm={setConfirm} />)}
       <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>
     </>
   )

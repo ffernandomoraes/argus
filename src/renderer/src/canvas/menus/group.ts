@@ -3,7 +3,6 @@ import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../
 import { resolveAccount } from '../../auth/useAuth'
 import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
 import { getProviders } from '../../providers/useProviders'
-import { getPreferences } from '../../settings/preferences'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import type { MenuItem } from '../ContextMenu'
 import { childrenOf, fitGroupToContent, groupWideOf, removeGroup, setGroupAccount, setGroupColor, terminalsIn, ungroup } from '../operations'
@@ -45,8 +44,7 @@ function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
   return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project' && !n.data.folders)?.data.path
 }
 
-// "Agente ▸ Claude/Codex/Gemini/Cursor ▸ conta", com o experimento dos outros agentes ligado. O
-// visto fica na que vale: a escolhida ou, sem ela, a padrão do agente. Só entram os agentes com
+// "Agente ▸ Claude/Codex/Gemini/Cursor ▸ conta". O visto fica na que vale: a escolhida ou, sem ela, a padrão do agente. Só entram os agentes com
 // conta conectada. As conversas novas do grupo usam o escolhido; as que já existem continuam com o
 // agente delas.
 function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): MenuItem[] {
@@ -90,31 +88,6 @@ function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): M
   return [{ type: 'submenu', label: tr('Agente', 'Agent'), icon: ref ? AGENT_MENU_ICONS[ref.provider] : ClaudeIcon, items: agents }]
 }
 
-// "Conta do Claude ▸", só com mais de uma conta para escolher. O visto fica na que vale: a escolhida ou, sem
-// escolha, a padrão.
-function accountSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): MenuItem[] {
-  const { auth } = deps
-  if (getPreferences().multiAgents) return agentSubmenu(deps, group)
-  if (!auth) return []
-  const current = resolveAccount(auth, group.data.account)
-  // Conta sem login não entra, a não ser a do grupo; sobrando uma só, não há o que escolher.
-  const listed = auth.accounts.filter((a) => a.status?.loggedIn !== false || a.id === current)
-  if (listed.length < 2) return []
-  return [
-    {
-      type: 'submenu',
-      label: tr('Conta do Claude', 'Claude account'),
-      icon: ClaudeIcon,
-      items: listed.map((a) => ({
-        type: 'action',
-        label: a.status?.loggedIn === false ? tr(`${a.name} - sem login`, `${a.name} - not signed in`) : a.name,
-        checked: a.id === current,
-        onSelect: () => deps.setNodes((ns) => setGroupAccount(ns, group.id, a.id))
-      }))
-    }
-  ]
-}
-
 export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
   const { setNodes } = deps
   const count = childrenOf(deps.nodes, group.id).length
@@ -126,7 +99,7 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
       value: group.data.color,
       onSelect: (color) => setNodes((ns) => setGroupColor(ns, group.id, color))
     },
-    ...accountSubmenu(deps, group),
+    ...agentSubmenu(deps, group),
     { type: 'separator' },
     {
       type: 'action',

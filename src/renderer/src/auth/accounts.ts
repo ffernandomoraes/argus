@@ -23,9 +23,9 @@ export function claudeReady(auth: AuthState): boolean {
 }
 
 // Sem o Claude pronto, o agente que roda fora de grupo (e nos grupos sem agente escolhido): o
-// primeiro outro agente com a conta padrão conectada ("codex:main"). Só com o experimento ligado.
-export function fallbackAgent(auth: AuthState | null, providers: ProvidersState | null, multiAgents: boolean): string | undefined {
-  if (!auth || !providers || !multiAgents || claudeReady(auth)) return undefined
+// primeiro outro agente com a conta padrão conectada ("codex:main").
+export function fallbackAgent(auth: AuthState | null, providers: ProvidersState | null): string | undefined {
+  if (!auth || !providers || claudeReady(auth)) return undefined
   for (const p of PROVIDERS) {
     const { accounts, defaultId } = providers.providers[p]
     const chosen = accounts.find((a) => a.id === defaultId && a.status?.signedIn) ?? accounts.find((a) => a.status?.signedIn)

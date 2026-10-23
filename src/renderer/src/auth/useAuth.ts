@@ -2,7 +2,6 @@ import type { AuthState } from '../../../shared/auth'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
 import { getProviders } from '../providers/useProviders'
-import { getPreferences } from '../settings/preferences'
 import { fallbackAgent } from './accounts'
 
 // Os de fora importam daqui (canvas, conversa): as peças moram em arquivos próprios.
@@ -24,7 +23,7 @@ window.api.auth.state().then(
 export const getAuth = (): AuthState | null => auth.get()
 
 // Fora de componente: o agente de quem não tem o Claude pronto (ver fallbackAgent).
-export const getFallbackAgent = (): string | undefined => fallbackAgent(auth.get(), getProviders(), getPreferences().multiAgents)
+export const getFallbackAgent = (): string | undefined => fallbackAgent(auth.get(), getProviders())
 
 // Nulo até o processo principal responder.
 export function useAuth(): AuthState | null {

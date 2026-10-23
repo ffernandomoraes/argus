@@ -10,7 +10,6 @@ import {
 import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
 import { IS_WIN } from '../../platform'
 import { Button } from '../../ui/Button'
-import { ExperimentTag } from '../../ui/ExperimentTag'
 import { AgentIcon } from '../../icons/AgentIcon'
 import { AccountName } from './AccountName'
 import { ProviderLoginPanel } from './ProviderLoginPanel'
@@ -49,7 +48,6 @@ export function ProviderSection({
       <div className="mb-1 flex items-center gap-2">
         <AgentIcon provider={provider} size={15} />
         <h3 className="text-[16px] font-medium text-text">{name}</h3>
-        <ExperimentTag />
       </div>
       <p className="mb-3 text-[15px] leading-relaxed text-faint">{HOW[provider]}</p>
 

@@ -17,8 +17,8 @@ const LINUX_GIT = 'sudo apt install git   # Fedora: sudo dnf install git'
 
 // Pronto para começar: o Claude pronto (ver claudeReady) ou outro agente conectado. O Git falta
 // só avisa.
-export function setupReady(auth: AuthState, providers: ProvidersState | null, multiAgents: boolean): boolean {
-  return claudeReady(auth) || !!fallbackAgent(auth, providers, multiAgents)
+export function setupReady(auth: AuthState, providers: ProvidersState | null): boolean {
+  return claudeReady(auth) || !!fallbackAgent(auth, providers)
 }
 
 // Uma linha da lista: feito (verde), em andamento ou pendente, com a ação embaixo quando falta.

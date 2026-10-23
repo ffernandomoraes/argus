@@ -2,7 +2,6 @@ import { FolderInput, FolderOpen, SquareTerminal, Terminal } from 'lucide-react'
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
 import { getAuth, resolveAccount } from '../../auth/useAuth'
 import { getProviders } from '../../providers/useProviders'
-import { getPreferences } from '../../settings/preferences'
 import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import type { MenuItem } from '../ContextMenu'
@@ -20,27 +19,9 @@ export const TRASH_EN = IS_WIN ? 'Recycle Bin' : 'Trash'
 // Rodando ou esperando resposta: tirar do canvas ou apagar agora atropelaria a sessão.
 export const isBusy = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'
 
-// "Novo terminal ▸ Claude Code / Shell": os dois abrem na mesma pasta e no mesmo lugar.
-// Num grupo com outro agente, o primeiro abre o CLI dele (Codex, Gemini, Cursor) com a conta do grupo.
-// Com o experimento dos outros agentes ligado, lista todos os conectados (e as contas de cada um),
-// em qualquer lugar: o terminal guarda o escolhido.
-export function terminalSubmenu(label: string, open: (kind: TerminalKind, account?: string) => void, account?: string): MenuItem {
-  if (getPreferences().multiAgents) return agentTerminalSubmenu(label, open, account)
-  const agent = parseAgentRef(account)
-  return {
-    type: 'submenu',
-    label,
-    icon: SquareTerminal,
-    items: [
-      agent
-        ? { type: 'action', label: PROVIDER_NAMES[agent.provider], icon: AGENT_MENU_ICONS[agent.provider], onSelect: () => open('claude') }
-        : { type: 'action', label: 'Claude Code', icon: ClaudeIcon, onSelect: () => open('claude') },
-      { type: 'action', label: 'Shell', icon: Terminal, onSelect: () => open('shell') }
-    ]
-  }
-}
-
-function agentTerminalSubmenu(label: string, open: (kind: TerminalKind, account?: string) => void, group?: string): MenuItem {
+// "Novo terminal ▸ Claude Code / Codex / … / Shell": todos os agentes conectados (e as contas de
+// cada um), em qualquer lugar; o terminal guarda o escolhido. Abrem na mesma pasta e no mesmo lugar.
+export function terminalSubmenu(label: string, open: (kind: TerminalKind, account?: string) => void, group?: string): MenuItem {
   const auth = getAuth()
   // Claude num grupo de outro agente: a conta padrão do Claude, não a do grupo.
   const claude = parseAgentRef(group) ? resolveAccount(auth, undefined) : group

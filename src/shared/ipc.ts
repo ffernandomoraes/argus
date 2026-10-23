@@ -138,6 +138,7 @@ export type InvokeChannels = {
   'sessions:context': (path: string, id: string) => number
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)
   'worktrees:reserve': (folder: string) => WorktreeReserved
+  'worktrees:adopt': (path: string, from: string) => WorktreeReserved
   'worktrees:status': (path: string) => WorktreeStatus | null
   'worktrees:remove': (path: string) => string | null
   // Servidores

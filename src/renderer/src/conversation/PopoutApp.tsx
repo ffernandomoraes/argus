@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MascotBridge } from '../canvas/mascot/MascotBridge'
 import { useSessions } from '../canvas/sessionsStore'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
+import { tildify } from '../platform'
 import { useInterfaceZoom } from '../theme/useInterfaceZoom'
 import { useTheme } from '../theme/useTheme'
+import { RequiredUpdateModal } from '../updates/RequiredUpdateModal'
 import { ConversationWindow } from './ConversationWindow'
 
 export type PopoutPayload = {
@@ -42,7 +44,8 @@ export function PopoutApp({ id }: { id: string }) {
 // pasta, que segue atualizando aqui (antes, a conversa rodando no terminal ficava "Trabalhando…"
 // para sempre). Fora da lista ainda (acabou de abrir), vale a foto.
 function PopoutConversation({ payload }: { payload: PopoutPayload }) {
-  const sessions = useSessions(payload.project.path)
+  const project = useWorktreeProject(payload)
+  const sessions = useSessions(project.path)
   const conversation = sessions.find((c) => c.id === payload.conversation.id) ?? payload.conversation
 
   useEffect(() => {
@@ -51,9 +54,25 @@ function PopoutConversation({ payload }: { payload: PopoutPayload }) {
 
   return (
     <div className="relative h-full">
-      <ConversationWindow project={payload.project} account={payload.account} conversation={conversation} onClose={closeWindow} />
+      <ConversationWindow project={project} account={payload.account} conversation={conversation} onClose={closeWindow} />
       {/* Escrevendo um pedido aqui, o mascote solto na tela escuta. */}
       <MascotBridge />
+      <RequiredUpdateModal />
     </div>
   )
+}
+
+// O Claude levou a conversa para um git worktree, ou de volta (ver canvas/worktrees/useWorktreeMoves):
+// o arquivo dela mudou de pasta, e a janela passa a ler da pasta nova.
+function useWorktreeProject({ project, conversation }: PopoutPayload): ProjectData {
+  const [path, setPath] = useState(project.path)
+  useEffect(
+    () =>
+      window.api.chat.onState((key, state) => {
+        const wt = state.worktree
+        if (wt && (key === conversation.id || state.sessionId === conversation.id)) setPath(tildify(wt.left ? wt.from : wt.path))
+      }),
+    [conversation.id]
+  )
+  return useMemo(() => (path === project.path ? project : { ...project, path }), [project, path])
 }

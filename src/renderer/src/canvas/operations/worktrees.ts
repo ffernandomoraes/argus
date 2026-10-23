@@ -1,4 +1,5 @@
 import type { CanvasNode, ProjectNode } from '../types'
+import { placeBelow } from './add'
 
 // Tarefas isoladas (git worktree): cards filhos de uma pasta (ProjectData.worktree.of). Não usam o
 // parentId do React Flow, que é do grupo (e uma pasta dentro de um grupo já usa o dela): andar
@@ -7,6 +8,12 @@ import type { CanvasNode, ProjectNode } from '../types'
 const childOf = (n: CanvasNode, id: string): n is ProjectNode => n.type === 'project' && n.data.worktree?.of === id
 
 export const worktreesOf = (nodes: CanvasNode[], id: string): ProjectNode[] => nodes.filter((n) => childOf(n, id))
+
+// Card de tarefa novo embaixo da pasta. Pasta recolhida esconderia a tarefa recém-criada: abre.
+export function addWorktreeCard(nodes: CanvasNode[], parentId: string, node: ProjectNode): CanvasNode[] {
+  const opened = nodes.map((n) => (n.id === parentId && n.type === 'project' && n.data.collapsed ? { ...n, data: { ...n.data, collapsed: false } } : n))
+  return placeBelow(opened, parentId, node)
+}
 
 // Depois de um arraste: a pasta que andou leva os filhos (e os filhos deles) o mesmo tanto. Filho
 // que também foi arrastado (seleção com os dois) já andou sozinho.

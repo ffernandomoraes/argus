@@ -18,6 +18,8 @@ export type DrawerCommands = {
   // Conversa nova (pelo id provisório) ganhou o id da sessão e, se era solta, o card no canvas.
   sessionStarted: (conversationId: string, sessionId: string, nodeId?: string) => void
   forget: (conversationId: string) => void
+  // A conversa passou a ser do card `nodeId` (worktree em que o Claude entrou, ou a pasta de volta).
+  moved: (conversationId: string, sessionId: string | undefined, nodeId: string) => void
   // Fecha os drawers de conversa e abre o do design (nulo: só fecha).
   openDesign: (design: ActiveDesign | null) => void
   closeDesign: () => void
@@ -51,6 +53,7 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
       sessionStarted: (conversationId, sessionId, nodeId) =>
         dispatch({ type: 'sessionStarted', conversationId, sessionId, nodeId }),
       forget: (conversationId) => dispatch({ type: 'forget', conversationId }),
+      moved: (conversationId, sessionId, nodeId) => dispatch({ type: 'moved', conversationId, sessionId, nodeId }),
       openDesign: (design) => dispatch({ type: 'openDesign', design }),
       closeDesign: () => dispatch({ type: 'closeDesign' }),
       toggleCode: (slot) => dispatch({ type: 'toggleCode', slot }),

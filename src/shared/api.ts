@@ -303,6 +303,9 @@ export type Api = {
     // Reserva a pasta da tarefa a partir da pasta do card (sai da branch atual dela); o worktree
     // nasce no primeiro envio da conversa. Devolve a pasta do card filho.
     reserve: (folder: string) => Promise<WorktreeReserved>
+    // Worktree em que o próprio Claude levou a conversa (EnterWorktree): passa a ser acompanhado
+    // como os do Argus. `from`: a pasta de onde a conversa saiu.
+    adopt: (path: string, from: string) => Promise<WorktreeReserved>
     // Situação (preparando, erro), apps tocados, arquivos alterados e commits não enviados; nulo se
     // não é um worktree do Argus.
     status: (path: string) => Promise<WorktreeStatus | null>

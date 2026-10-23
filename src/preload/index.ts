@@ -228,6 +228,7 @@ const api: Api = {
   },
   worktrees: {
     reserve: (folder) => invoke('worktrees:reserve', folder),
+    adopt: (path, from) => invoke('worktrees:adopt', path, from),
     status: (path) => invoke('worktrees:status', path),
     remove: (path) => invoke('worktrees:remove', path)
   },

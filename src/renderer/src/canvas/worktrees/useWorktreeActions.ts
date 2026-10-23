@@ -4,7 +4,7 @@ import type { ConfirmRequest } from '../ConfirmDialog'
 import type { DrawerCommands } from '../drawers/useDrawers'
 import { createWorktreeNode } from '../factory'
 import { isBusy } from '../menus/shared'
-import { placeBelow, removeNode } from '../operations'
+import { addWorktreeCard, removeNode } from '../operations'
 import { getSessions } from '../sessionsStore'
 import type { CanvasNode, ProjectNode } from '../types'
 import { setJob } from './jobs'
@@ -75,14 +75,7 @@ export function useWorktreeActions(
         const result = await window.api.worktrees.reserve(parent.data.path).catch((err: Error) => ({ ok: false as const, error: err.message }))
         if (!result.ok) return confirm({ title: tr('Não deu para criar a tarefa', 'Couldn’t create the task'), description: result.error })
         const node = createWorktreeNode(result.path, tr('Nova tarefa', 'New task'), { of: parentId, base: result.base })
-        // Pasta recolhida esconderia a tarefa recém-criada: abre.
-        change((ns) =>
-          placeBelow(
-            ns.map((n) => (n.id === parentId && n.type === 'project' && n.data.collapsed ? { ...n, data: { ...n.data, collapsed: false } } : n)),
-            parentId,
-            node
-          )
-        )
+        change((ns) => addWorktreeCard(ns, parentId, node))
         drawers.show({ nodeId: node.id, conversationId: `new-${crypto.randomUUID()}`, draft: true })
       },
       // Conversa rodando na pasta impede: apagar a pasta debaixo dela quebraria o agente.

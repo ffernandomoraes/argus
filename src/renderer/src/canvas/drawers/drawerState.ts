@@ -61,6 +61,7 @@ export type DrawerAction =
   | { type: 'rect'; slot: SlotId; rect: PanelRect }
   | { type: 'sessionStarted'; conversationId: string; sessionId: string; nodeId?: string }
   | { type: 'forget'; conversationId: string }
+  | { type: 'moved'; conversationId: string; sessionId?: string; nodeId: string }
   | { type: 'openDesign'; design: ActiveDesign | null }
   | { type: 'closeDesign' }
   | { type: 'toggleCode'; slot: SlotId }
@@ -134,6 +135,19 @@ function sessionStarted(state: DrawerState, conversationId: string, sessionId: s
   return update(state, drawer.id, (d) => ({ ...d, conversation: { ...active, sessionId, ...(nodeId && { nodeId }) } }))
 }
 
+// A conversa passou a ser de outro card (o Claude a levou para um worktree, ou de volta): os drawers
+// que a mostram abrem dele, com a lista de conversas da pasta nova.
+function moved(state: DrawerState, conversationId: string, sessionId: string | undefined, nodeId: string): DrawerState {
+  const showing = (c: ActiveConversation) => isSameConversation(c, conversationId) || (!!sessionId && isSameConversation(c, sessionId))
+  return state.drawers.reduce(
+    (next, d) =>
+      d.conversation.nodeId !== nodeId && showing(d.conversation)
+        ? update(next, d.id, (x) => ({ ...x, conversation: { ...x.conversation, nodeId, ...(sessionId && { sessionId }) } }))
+        : next,
+    state
+  )
+}
+
 // Conversa que foi para a Lixeira some dos drawers.
 function forget(state: DrawerState, conversationId: string): DrawerState {
   const drawers = state.drawers.filter((d) => !isSameConversation(d.conversation, conversationId))
@@ -180,6 +194,8 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
       return sessionStarted(state, action.conversationId, action.sessionId, action.nodeId)
     case 'forget':
       return forget(state, action.conversationId)
+    case 'moved':
+      return moved(state, action.conversationId, action.sessionId, action.nodeId)
     // O drawer do design fica no lugar do da conversa (e do código dela).
     case 'openDesign': {
       const closed = closeAll(state)

@@ -114,6 +114,9 @@ export function tildify(path: string): string {
   return rel ? `~${SEP}${IS_WIN ? rel.replace(/\//g, '\\') : rel}` : '~'
 }
 
+// A mesma pasta, escrita de qualquer jeito: com "~", do Linux do WSL, com o acento composto ou não.
+export const sameFolder = (a: string, b: string): boolean => relativeTo(untildify(a), untildify(b)) === ''
+
 // O contrário: "~/proj" (ou "~\proj") de volta ao caminho completo, com as barras do sistema.
 export function untildify(path: string): string {
   const home = window.api.homeDir

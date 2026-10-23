@@ -42,6 +42,7 @@ import { MascotBridge } from './mascot/MascotBridge'
 import { OrchestratorBridge } from '../conversation/OrchestratorBridge'
 import { usePreference } from '../settings/preferences'
 import { useWorktreeActions } from './worktrees/useWorktreeActions'
+import { useWorktreeMoves } from './worktrees/useWorktreeMoves'
 
 type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
 
@@ -91,6 +92,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   const { openGroupWide, newGroupConversation } = useGroupWide(nodes, api, focusNode, overlays.commands.confirm, conversations.newConversation)
   const drop = useGroupDrop(api, view)
   const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm)
+  useWorktreeMoves(api, drawers.commands)
   const menus = useMenuHandlers({
     nodesRef,
     setMenu: overlays.commands.setMenu,

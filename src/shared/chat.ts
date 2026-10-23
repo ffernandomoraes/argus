@@ -67,7 +67,15 @@ export type ChatState = {
   // Próxima mensagem que o Claude Code prevê que você mandaria, ao fim do pedido: vira um balão
   // clicável em cima da caixa de escrever. Sai quando começa outro pedido.
   suggestion?: string
+  // O Claude entrou num git worktree ou saiu dele (ferramentas EnterWorktree e ExitWorktree).
+  worktree?: ChatWorktree
 }
+
+// O Claude Code leva o arquivo da conversa para a pasta de conversas do worktree ao entrar, e de
+// volta ao sair: a tela acompanha, com a conversa no card filho do worktree, embaixo da pasta.
+// path: o worktree; from: a pasta de onde a conversa saiu; left: o Claude saiu dele, mantendo
+// ('keep') ou apagando ('remove') a pasta. Caminhos como o Argus enxerga (no WSL, \\wsl.localhost\...).
+export type ChatWorktree = { path: string; from: string; branch?: string; left?: 'keep' | 'remove' }
 
 // Mensagem enviada com o Claude no meio de um pedido. at: hora do envio (ms).
 export type QueuedMessage = { id: string; text: string; at: number }

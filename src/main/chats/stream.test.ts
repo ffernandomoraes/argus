@@ -18,7 +18,7 @@ const idle = (patch: Partial<ChatState> = {}): ChatState => ({
   ...patch
 })
 
-const ctx = (patch: Partial<ReadContext> = {}): ReadContext => ({ now: 1000, waiting: 0, interrupted: false, resumes: false, ...patch })
+const ctx = (patch: Partial<ReadContext> = {}): ReadContext => ({ now: 1000, waiting: 0, interrupted: false, resumes: false, cwd: '/repo', ...patch })
 
 // Aplica uma sequência de mensagens como a ChatSession faz: o patch vai para o estado e o leitor segue.
 function play(messages: SDKMessage[], start: ChatState = idle(), context: Partial<ReadContext> = {}) {
@@ -220,5 +220,19 @@ describe('readMessage: nova tentativa da API e compactação', () => {
     ])
     expect(chat.retry).toBeUndefined()
     expect(chat.compactingSince).toBeUndefined()
+  })
+})
+
+describe('readMessage: worktree', () => {
+  const entered = { worktreePath: '/repo-ui', worktreeBranch: 'feat/ui', message: 'Entered worktree at “/repo-ui”.' }
+  const result = (parent: string | null) =>
+    sdk({ type: 'user', parent_tool_use_id: parent, message: { content: [{ type: 'tool_result', tool_use_id: 't1' }] }, tool_use_result: entered })
+
+  it('o Claude entrou num worktree: a conversa vai junto, saindo da pasta da sessão', () => {
+    expect(play([result(null)]).chat.worktree).toEqual({ path: '/repo-ui', from: '/repo', branch: 'feat/ui' })
+  })
+
+  it('o subagente que entra num worktree não leva a conversa', () => {
+    expect(play([result('task-1')]).chat.worktree).toBeUndefined()
   })
 })

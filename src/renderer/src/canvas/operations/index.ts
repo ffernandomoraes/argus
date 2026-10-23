@@ -21,4 +21,4 @@ export { fitAfterResize, fitGroupToContent, growGroupsToFit, withoutAutoGrow } f
 export { pushAway } from './push'
 export { absolutePosition, childrenOf } from './tree'
 export { toggleCollapse, toggleObscure, toggleProjectCollapse } from './visibility'
-export { followParents, hiddenWorktrees, worktreesOf } from './worktrees'
+export { addWorktreeCard, followParents, hiddenWorktrees, worktreesOf } from './worktrees'

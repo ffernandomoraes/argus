@@ -4,6 +4,7 @@ import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
 import { finishedAgents, subagentSteps, taskChange, type AgentsChange, type TaskMessage } from './subagents'
 import { closedFields, TOOL_INPUT_SCAN } from './toolPreview'
+import { worktreeMove } from './worktreeMove'
 
 // Lê uma mensagem do SDK e diz o que muda na conversa, sem tocar em nada: a ChatSession aplica.
 
@@ -34,6 +35,8 @@ export type ReadContext = {
   interrupted: boolean
   // Parado com mensagem sua ainda na fila do Claude: o fim do pedido emenda no seguinte.
   resumes: boolean
+  // Pasta da sessão, como o Argus enxerga (no WSL, \\wsl.localhost\...).
+  cwd: string
 }
 
 export type Step = {
@@ -59,7 +62,7 @@ export function readMessage(m: SDKMessage, chat: ChatState, reader: Reader, ctx:
   if (m.type === 'system') return readSystem(m as Line, chat, reader, ctx.now)
   // Por dentro de um subagente o texto não é desta conversa.
   if (m.type === 'stream_event') return m.parent_tool_use_id ? { reader } : readStream(m.event, chat, reader, ctx)
-  if (m.type === 'assistant' || m.type === 'user') return readTranscript(m, chat, reader, ctx.now)
+  if (m.type === 'assistant' || m.type === 'user') return readTranscript(m, chat, reader, ctx)
   if (m.type === 'result') return readResult(m, chat, reader, ctx)
   // Chega depois do result. Pedido novo já começado nesse meio-tempo: a sugestão era do anterior.
   if (m.type === 'prompt_suggestion') return chat.turnStartedAt ? { reader } : { reader, patch: { suggestion: m.suggestion }, urgent: true }
@@ -187,7 +190,7 @@ function toolInput(chunk: string, chat: ChatState, reader: Reader): Step {
   return { reader: next, patch: { activity: { ...chat.activity!, summary } } }
 }
 
-function readTranscript(m: Transcript, chat: ChatState, reader: Reader, now: number): Step {
+function readTranscript(m: Transcript, chat: ChatState, reader: Reader, { now, cwd }: ReadContext): Step {
   if (m.parent_tool_use_id) {
     // Por dentro de um subagente: não mexe no histórico da conversa.
     if (m.type !== 'assistant') return { reader }
@@ -203,6 +206,8 @@ function readTranscript(m: Transcript, chat: ChatState, reader: Reader, now: num
     if (change) patch.agents = change.agents
     // Resultado entregue: o Claude volta a pensar no próximo passo.
     if (done.size) patch.activity = activity(chat.activity, 'thinking', now)
+    const worktree = m.type === 'user' ? worktreeMove(m.tool_use_result, cwd) : null
+    if (worktree) patch.worktree = worktree
   }
   // Já gravado no arquivo: o chat relê o histórico.
   patch.revision = chat.revision + 1

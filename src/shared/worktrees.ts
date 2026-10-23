@@ -5,12 +5,15 @@
 
 // O que o Argus guarda de cada worktree. `main`: a pasta principal do repositório, onde o ambiente
 // (Docker, banco) costuma rodar. `base`: a branch em que a pasta principal estava ao pedir a tarefa.
-// `pending`: reservado, ainda sem pasta (a conversa não mandou a primeira mensagem).
+// `pending`: reservado, ainda sem pasta (a conversa não mandou a primeira mensagem). `adopted`: o
+// próprio Claude entrou nele (ferramenta EnterWorktree), criado por ele ou já existente: sem branch
+// provisória nem .env copiados pelo Argus.
 export type WorktreeInfo = {
   path: string
   main: string
   base: string
   pending?: boolean
+  adopted?: boolean
 }
 
 export type WorktreeReserved = { ok: true; path: string; base: string } | { ok: false; error: string }
@@ -45,17 +48,21 @@ export function slugify(text: string, max = 48): string {
 export function worktreePrompt(w: WorktreeInfo, branch: string | null): string {
   return [
     '<worktree>',
-    `Você está num git worktree criado pelo Argus: ${w.path}`,
+    w.adopted ? `Você está num git worktree: ${w.path}` : `Você está num git worktree criado pelo Argus: ${w.path}`,
     `Branch desta tarefa: ${branch ?? '(desconhecida)'}, criada a partir de ${w.base}.`,
     `Repositório principal: ${w.main}. Outras tarefas rodam em paralelo em outros worktrees do mesmo repositório; as mudanças desta ficam só nesta pasta.`,
     '',
     'Como se comportar:',
     '- Trabalhe só nesta pasta. Não edite arquivos do repositório principal nem de outros worktrees.',
-    '- O nome da branch começa provisório (wip/...). Quando entender a tarefa, renomeie com `git branch -m` seguindo a convenção do repositório (feat/, fix/, chore/...). Não troque de branch (git checkout/switch): o worktree é preso a esta.',
+    w.adopted
+      ? '- Não troque de branch (git checkout/switch): o worktree é preso a esta.'
+      : '- O nome da branch começa provisório (wip/...). Quando entender a tarefa, renomeie com `git branch -m` seguindo a convenção do repositório (feat/, fix/, chore/...). Não troque de branch (git checkout/switch): o worktree é preso a esta.',
     `- PR só se a pessoa pedir. Antes de abrir, confirme com ela para qual branch vai (a tarefa saiu de ${w.base}).`,
     '- Infraestrutura (Docker, banco, Redis, filas) costuma já estar rodando a partir do repositório principal: reaproveite em vez de subir outra cópia. Só suba uma separada se a de lá não estiver rodando.',
     '- Porta ocupada ao subir um app: é outra tarefa usando. Use outra porta livre, e não comite essa troca de porta.',
-    '- Os .env foram copiados do repositório principal. As dependências são instaladas pelo Argus logo após a criação; se faltar alguma ao rodar, instale.',
+    w.adopted
+      ? '- Se faltar .env ou dependência ao rodar, copie o .env do repositório principal ou instale.'
+      : '- Os .env foram copiados do repositório principal. As dependências são instaladas pelo Argus logo após a criação; se faltar alguma ao rodar, instale.',
     '</worktree>'
   ].join('\n')
 }

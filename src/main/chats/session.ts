@@ -399,7 +399,8 @@ export class ChatSession {
       waiting: this.permissions.size,
       interrupted: this.interrupted,
       // Só emenda se ainda houver mensagem sua na fila (parar de novo no intervalo já a consumiu).
-      resumes: this.resumes && this.queued.size > 0
+      resumes: this.resumes && this.queued.size > 0,
+      cwd: this.cwd
     })
     this.reader = step.reader
     if (step.sessionId) this.events.identified(this, step.sessionId)

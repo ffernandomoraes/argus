@@ -1,7 +1,9 @@
 import { appendFileSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { app, type BrowserWindow } from 'electron'
+import { errorMessage } from './lib/errors'
 import type { Terminals } from './terminals'
 
 // Teste de fumaça do instalador: `Argus --smoke-test` abre o app, espera o canvas montar, abre um
@@ -27,8 +29,43 @@ function log(line: string): void {
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+// Relatórios de erro (ver errorReports): como ficou o envio e o endereço local para onde o teste
+// manda os relatórios.
+export type SmokeReports = { status: () => string; port: number }
+
+// Travamento vira relatório: com o processo principal parado mais que o limite, a linha de execução
+// à parte do Sentry manda onde ele estava. No teste o endereço é este servidor local, e nada sai da
+// máquina. Só relata: sem o binário do detector, o app funciona, só sem esse aviso.
+async function blockReported(port: number): Promise<string> {
+  let got = false
+  const server = createServer((req, res) => {
+    if (req.method === 'POST') got = true
+    res.writeHead(200, { 'Content-Type': 'application/json' }).end('{}')
+  })
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(port, '127.0.0.1', resolve)
+    })
+  } catch (err) {
+    return `não conferido (porta ${port}: ${errorMessage(err)})`
+  }
+  try {
+    // O detector sobe logo depois do app ficar pronto; um respiro antes de travar.
+    await wait(1000)
+    const until = Date.now() + 7000
+    while (Date.now() < until) {
+      // Parado de propósito.
+    }
+    for (let i = 0; i < 20 && !got; i++) await wait(500)
+    return got ? 'virou relatório' : 'não virou relatório'
+  } finally {
+    server.close()
+  }
+}
+
 // quit: fecha o app como quem fecha a janela, sem a pergunta de confirmação.
-export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasReady: () => boolean, quit: () => void): void {
+export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasReady: () => boolean, quit: () => void, reports: SmokeReports): void {
   try {
     writeFileSync(LOG, '')
   } catch {
@@ -71,6 +108,8 @@ export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasRea
       const again = await terminals.open({ key: KEY, cwd: homedir(), shell: true, cols: 80, rows: 24 })
       if (again.ok && again.buffer.trim()) {
         log(`terminal respondeu: ${JSON.stringify(again.buffer.slice(-200))}`)
+        log(reports.status())
+        log(`travamento: ${await blockReported(reports.port)}`)
         return finish(true, 'app, canvas e terminal subiram')
       }
     }

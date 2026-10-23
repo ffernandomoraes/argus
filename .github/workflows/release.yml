@@ -119,6 +119,11 @@ jobs:
       - name: Conferir o programa do ditado
         run: test -x native/speech/build/speech-helper
 
+      # Detector de travamento do Sentry: o binário dele é compilado para o Electron deste projeto
+      # (o pacote só traz o do Node). Ver scripts/sentryNative.mjs.
+      - name: Compilar o detector de travamento
+        run: node scripts/sentryNative.mjs
+
       # Com os secrets do certificado, o app sai assinado sempre com a mesma identidade e o macOS
       # não pede de novo microfone e ditado a cada versão. Sem eles, a montagem para (ver
       # scripts/sign.mjs): um release ad-hoc seria recusado pelo atualizador de todos os Macs.
@@ -257,6 +262,11 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
+      # Detector de travamento do Sentry: o binário dele é compilado para o Electron deste projeto
+      # (o pacote só traz o do Node). Ver scripts/sentryNative.mjs.
+      - name: Compilar o detector de travamento
+        run: node scripts/sentryNative.mjs
+
       # Sem certificado de assinatura: o Windows avisa na primeira instalação (ver electron-builder.yml).
       - name: Montar o instalador
         run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish never
@@ -331,6 +341,11 @@ jobs:
 
       - name: Conferir o terminal
         run: test -f node_modules/node-pty/build/Release/pty.node
+
+      # Detector de travamento do Sentry: o binário dele é compilado para o Electron deste projeto
+      # (o pacote só traz o do Node). Ver scripts/sentryNative.mjs.
+      - name: Compilar o detector de travamento
+        run: node scripts/sentryNative.mjs
 
       - name: Montar o AppImage
         run: pnpm exec electron-vite build && pnpm exec electron-builder --linux --x64 --publish never

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { captureException } from '@sentry/electron/renderer'
 import { Button } from './Button'
 import { tr } from '../i18n'
 
@@ -10,7 +11,8 @@ type Props = { children: ReactNode; fallback?: Fallback }
 type State = { error: Error | null }
 
 // Erro ao desenhar uma parte da tela não deixa a janela em branco: no lugar dela aparece o aviso,
-// e o erro vai para o console (com a pilha dos componentes, para achar onde foi).
+// e o erro vai para o console e para os relatórios de erro (com a pilha dos componentes, para achar
+// onde foi; sem o envio ligado, o captureException não faz nada).
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null }
 
@@ -20,6 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
     console.error('[ErrorBoundary] erro ao desenhar a tela:', error, info.componentStack)
+    captureException(error, { contexts: { react: { componentStack: info.componentStack ?? '' } } })
   }
 
   reset = (): void => this.setState({ error: null })

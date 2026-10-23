@@ -1,3 +1,5 @@
+// Primeiro: um erro ao carregar os outros módulos já vira relatório (ver errorReports.ts).
+import './errorReports'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { LucideProvider } from 'lucide-react'

@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import { cleanupAccounts } from '../accounts'
+import { errorReportsStatus, SMOKE_REPORTS_PORT } from '../errorReports'
 import { registerIpc } from '../ipc'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { warmUp } from '../wsl'
@@ -48,7 +49,10 @@ export function startApp(s: Services, life: Lifecycle): void {
   watchOpening(firstCanvas)
   if (SMOKE_TEST && firstCanvas) {
     // Sai pelo mesmo caminho de quem fecha a janela, já confirmado.
-    runSmokeTest(firstCanvas, s.terminals, () => isCanvasReady(firstCanvas.webContents), life.confirmAndQuit)
+    runSmokeTest(firstCanvas, s.terminals, () => isCanvasReady(firstCanvas.webContents), life.confirmAndQuit, {
+      status: errorReportsStatus,
+      port: SMOKE_REPORTS_PORT
+    })
   }
   // Mac: o Dock traz o canvas de volta quando nenhuma janela dele está aberta, mesmo com uma
   // conversa aberta em janela separada.

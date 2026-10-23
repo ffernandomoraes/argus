@@ -1,6 +1,7 @@
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog } from 'electron'
+import { reportOpeningProblem } from '../errorReports'
 import { tr } from '../i18n'
 import { writeJsonAtomicSync, readJsonFile } from '../lib/jsonFile'
 import { errorMessage } from '../lib/errors'
@@ -58,7 +59,9 @@ export function attachRecovery(updater: Updater, restart: () => Promise<void>): 
 
 // A abertura anterior quebrou: pergunta antes de abrir as janelas. true: seguir abrindo.
 export async function askAfterCrash(): Promise<boolean> {
-  return offerRecovery('lastOpening', tr('O Argus fechou sozinho enquanto abria.', 'Argus closed unexpectedly while opening.'))
+  return offerRecovery('lastOpening', tr('O Argus fechou sozinho enquanto abria.', 'Argus closed unexpectedly while opening.'), {
+    message: 'A abertura anterior não terminou (o app fechou ou travou enquanto abria)'
+  })
 }
 
 // O canvas tem OPENING_MS para montar. Montou: a abertura deu certo.
@@ -76,7 +79,11 @@ export function watchOpening(win: BrowserWindow | null): void {
       finishOpening()
     } else if (Date.now() - started > OPENING_MS) {
       clearInterval(timer)
-      void offerRecovery('crash', tr('A janela do canvas não terminou de carregar.', "The canvas window didn't finish loading."))
+      const wc = win.webContents
+      void offerRecovery('crash', tr('A janela do canvas não terminou de carregar.', "The canvas window didn't finish loading."), {
+        message: 'A janela do canvas não terminou de carregar',
+        extra: { loading: wc.isLoading(), crashed: wc.isCrashed(), url: wc.getURL() }
+      })
     }
   }, 500)
 }
@@ -105,14 +112,19 @@ function getRecovery(): Recovery {
 
 type Kind = 'crash' | 'lastOpening'
 
+// O que vira relatório de erro (ver errorReports). Erros e quedas o SDK pega sozinho; aqui vai o que
+// ele não vê: a janela que não terminou de carregar e a abertura anterior que não terminou.
+type OpeningReport = { message: string; extra?: Record<string, unknown> }
+
 // Mostra as opções até uma dar certo ou o usuário desistir. true: seguir com o app aberto.
-async function offerRecovery(kind: Kind, reason: string): Promise<boolean> {
+async function offerRecovery(kind: Kind, reason: string, report?: OpeningReport): Promise<boolean> {
   if (asking) return true
   asking = true
   try {
     await app.whenReady()
     const { updater, restart } = getRecovery()
     const current = app.getVersion()
+    if (report) reportOpeningProblem(report.message, report.extra)
     for (;;) {
       const { response } = await dialog.showMessageBox({
         type: 'warning',

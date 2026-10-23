@@ -1,4 +1,6 @@
 allowBuilds:
+  # Compilado para o Electron por scripts/sentryNative.mjs; o script do pacote compilaria para o Node.
+  '@sentry/node-native-stacktrace': false
   electron-winstaller: false
   esbuild: true
   node-pty: false

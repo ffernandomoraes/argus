@@ -10,4 +10,7 @@ export type AppSettings = {
   // Onde o mascote solto na tela ficou (canto de cima da janela dele, em coordenadas da tela).
   // Nulo: o canto de baixo à esquerda da tela principal.
   mascotSpot: { x: number; y: number } | null
+  // Número aleatório desta instalação: conta quantas máquinas tiveram cada erro, sem dizer de quem.
+  installId?: string
 }
+

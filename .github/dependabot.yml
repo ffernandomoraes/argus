@@ -1,0 +1,29 @@
+# O Dependabot só abre PRs; nada é aceito sozinho. O release roda no push na main, então só vira
+# versão quando um PR destes é aceito.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Mesma cautela do minimumReleaseAge do pnpm: não sugere versão publicada há poucos dias.
+    cooldown:
+      default-days: 3
+    groups:
+      # Patches e minors num PR só; majors vêm um a um, porque costumam pedir ajuste no código.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # O Electron 44 roda Node 24: os tipos do Node seguem a major do Node do Electron.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']

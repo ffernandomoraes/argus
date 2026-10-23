@@ -8,3 +8,6 @@ allowBuilds:
   protobufjs: false
 minimumReleaseAgeExclude:
   - vite@7.3.7
+overrides:
+  # GHSA-rxp7-6hxx-x8q5; vem do claude-agent-sdk. Remover quando o SDK já trouxer >=10.7.4.
+  ip-address: ^10.7.4

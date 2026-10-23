@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks'
 import { app, BrowserWindow } from 'electron'
 import * as Sentry from '@sentry/electron/main'
+import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '../../shared/windowBlock'
 
 // O retrato do app na hora de um erro: tudo lido só quando um relatório sai, nada medido sem parar.
 // A exceção é o relógio de 1 s do processo principal (ver watchMainLag), que só confere a hora.
@@ -15,7 +16,7 @@ export const setAppState = (read: () => Record<string, unknown>): void => {
 
 // Atraso do processo principal: um relógio de 1 s confere se rodou na hora. Parado (um trabalho
 // longo no processo principal), o "estou viva" das janelas também chega atrasado, e o aviso de
-// travamento da janela é alarme falso: o atraso no relatório separa um caso do outro.
+// travamento da janela é alarme falso (ver echoOfMainLag).
 const TICK_MS = 1000
 const LAG_KEEP_MS = 60_000
 let lastTick = performance.now()
@@ -92,6 +93,20 @@ async function waitLongFrame(event: Sentry.ErrorEvent): Promise<Sentry.Breadcrum
     if (frame || quitting || Date.now() >= until) return frame
     await new Promise((r) => setTimeout(r, 250))
   }
+}
+
+// Eco do processo principal parado: o vigia da janela roda nele e conta o tempo desde o último
+// "estou viva" dela, que só chega com o processo principal rodando. Se ele ficou parado logo antes
+// do aviso o bastante para estourar o limite sozinho (o limite menos o intervalo do sinal), quem
+// travou foi ele, e o travamento dele já vai em relatório próprio quando passa de 5 s. Sem tique do
+// relógio desde a parada, vale o atraso de agora.
+const JUST_BEFORE_MS = 3000
+
+export function echoOfMainLag(event: Sentry.ErrorEvent): boolean {
+  if (!isWindowBlock(event)) return false
+  const now = performance.now()
+  const recent = lags.filter((l) => now - l.at <= JUST_BEFORE_MS).reduce((worst, l) => Math.max(worst, l.ms), 0)
+  return Math.max(recent, now - lastTick - TICK_MS) >= WINDOW_BLOCK_MS - WINDOW_POLL_MS
 }
 
 export async function withSnapshot(event: Sentry.ErrorEvent): Promise<Sentry.ErrorEvent> {

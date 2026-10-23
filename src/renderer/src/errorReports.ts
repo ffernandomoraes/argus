@@ -1,4 +1,5 @@
 import { addBreadcrumb, breadcrumbsIntegration, eventLoopBlockIntegration, init } from '@sentry/electron/renderer'
+import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '../../shared/windowBlock'
 
 // Erros desta janela vão para o processo principal, que limpa o que identifica a pessoa e envia (ver
 // src/main/errorReports). Importado antes de tudo em
@@ -26,7 +27,7 @@ if (window.__SENTRY_IPC__) {
       // Janela parada por 5 s (um laço sem fim, por exemplo): o processo principal pega onde ela
       // estava. O "estou viva" a cada 1 s, e não a cada 2,5 s (o padrão): com o intervalo longo, uma
       // parada de 2,6 s já disparava o aviso de 5 s.
-      eventLoopBlockIntegration({ threshold: 5000, pollInterval: 1000 })
+      eventLoopBlockIntegration({ threshold: WINDOW_BLOCK_MS, pollInterval: WINDOW_POLL_MS })
     ]
   })
   watchLongFrames()

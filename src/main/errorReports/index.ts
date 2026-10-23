@@ -8,7 +8,7 @@ import { IS_LINUX, IS_MAC, IS_WIN } from '../platform'
 import { SMOKE_TEST } from '../smokeTest'
 import { claudeDistro, knownDistros } from '../wsl'
 import { scrubBreadcrumb, scrubEvent } from './scrub'
-import { watchMainLag, withSnapshot } from './snapshot'
+import { echoOfMainLag, watchMainLag, withSnapshot } from './snapshot'
 
 export { setAppState } from './snapshot'
 
@@ -92,8 +92,9 @@ export function startErrorReports(): void {
         Sentry.normalizePathsIntegration()
       ],
       transport: smokeSafeTransport,
-      // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato.
-      beforeSend: async (event) => scrubEvent(tagged(await withSnapshot(event))),
+      // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato. O
+      // aviso de janela travada que é só eco do processo principal parado não vai (ver echoOfMainLag).
+      beforeSend: async (event) => (echoOfMainLag(event) ? null : scrubEvent(tagged(await withSnapshot(event)))),
       beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
       initialScope: { user: { id: installId } },
       maxBreadcrumbs: 60,

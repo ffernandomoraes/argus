@@ -25,12 +25,14 @@ export type Preferences = {
   // Mascote solto na tela, por cima de qualquer app (canvas/mascot). O lugar dele fica no
   // processo principal (AppSettings.mascotSpot), que é quem move a janela.
   mascot: boolean
+  // Fixo por cima de todas as janelas (aba Mascote). Desligado: ele vive dentro do canvas, no lugar
+  // mascotCanvasSpot (fração da janela; null = canto esquerdo, no meio da altura).
+  mascotFloating: boolean
+  mascotCanvasSpot: { x: number; y: number } | null
   // Visual do mascote e o golpe no envio (Configurações > Mascote).
   mascotLook: MascotLook
   // Modo orquestrador disponível (Configurações > Experimentos): mostra a aba e o item no seletor.
   orchestratorEnabled: boolean
-  // Codex, Gemini e Cursor além do Claude (Configurações > Experimentos): contas e conversas.
-  multiAgents: boolean
   // Modo design (Configurações > Experimentos): "Novo design" na pasta, os designs na lista dela e o
   // drawer do design. Desligado, nada disso aparece (os designs continuam guardados).
   designMode: boolean
@@ -44,6 +46,8 @@ export type Preferences = {
   orchestrator: OrchestratorConfig
   // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
   favoriteChats: string[]
+  // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
+  promptSuggestions: boolean
 }
 
 const KEY = 'preferences'
@@ -57,14 +61,16 @@ const DEFAULTS: Preferences = {
   conversationDefaults: CONVERSATION_DEFAULTS,
   mediaPlayer: true,
   mascot: false,
+  mascotFloating: false,
+  mascotCanvasSpot: null,
   mascotLook: DEFAULT_LOOK,
   orchestratorEnabled: false,
-  multiAgents: false,
   designMode: false,
   worktrees: false,
   audioTranscription: false,
   orchestrator: defaultOrchestrator(),
-  favoriteChats: []
+  favoriteChats: [],
+  promptSuggestions: true
 }
 
 function read(): Preferences {

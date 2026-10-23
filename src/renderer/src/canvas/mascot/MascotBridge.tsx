@@ -15,7 +15,11 @@ const TYPING_MS = 1500
 
 // nodesRef: os cards do canvas desta janela (sem ele, numa janela solta, não há pasta para mostrar).
 export function MascotBridge({ nodesRef }: { nodesRef?: RefObject<CanvasNode[]> }) {
-  const on = usePreference('mascot')
+  // Com "Fixo por cima de todas as janelas" desligado, a janela solta não abre: quem aparece é o
+  // mascote de dentro do canvas (Mascot.tsx).
+  const mascot = usePreference('mascot')
+  const floating = usePreference('mascotFloating')
+  const on = mascot && floating
   const typing = useTyping()
   useEffect(() => window.api.mascot.setEnabled(on), [on])
   useEffect(() => {
@@ -43,7 +47,7 @@ function useStrikeTargets(on: boolean, nodesRef?: RefObject<CanvasNode[]>) {
 }
 
 // Mesma pasta com barra de qualquer tipo no fim; no Windows, sem diferenciar maiúsculas.
-function samePath(a: string, b: string): boolean {
+export function samePath(a: string, b: string): boolean {
   const norm = (p: string) => {
     const path = p.replace(/\\/g, '/').replace(/\/+$/, '')
     return IS_WIN ? path.toLowerCase() : path
@@ -52,7 +56,7 @@ function samePath(a: string, b: string): boolean {
 }
 
 // O cabeçalho do card da pasta, se ele está dentro da janela.
-function folderHeader(cwd: string, nodes: CanvasNode[]): { x: number; y: number; width: number; height: number } | null {
+export function folderHeader(cwd: string, nodes: CanvasNode[]): { x: number; y: number; width: number; height: number } | null {
   const node = nodes.find((n) => n.type === 'project' && samePath(n.data.path, cwd))
   if (!node) return null
   const el = document.querySelector(`.react-flow__node[data-id="${CSS.escape(node.id)}"]`)
@@ -63,7 +67,7 @@ function folderHeader(cwd: string, nodes: CanvasNode[]): { x: number; y: number;
 }
 
 // Alguém digitando num campo de texto longo (caixa do chat, terminal) nesta janela.
-function useTyping(): boolean {
+export function useTyping(): boolean {
   const [typing, setTyping] = useState(false)
   useEffect(() => {
     let timer = 0

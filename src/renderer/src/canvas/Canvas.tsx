@@ -37,6 +37,7 @@ import type { CanvasNode } from './types'
 import { useCanvasAgentTools } from './useCanvasAgentTools'
 import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
+import { Mascot } from './mascot/Mascot'
 import { MascotBridge } from './mascot/MascotBridge'
 import { OrchestratorBridge } from '../conversation/OrchestratorBridge'
 import { usePreference } from '../settings/preferences'
@@ -177,6 +178,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           zoomShortcuts={!shown && !design}
         />
         <MascotBridge nodesRef={nodesRef} />
+        <Mascot nodesRef={nodesRef} hidden={uiHidden} />
         <OrchestratorBridge />
         {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
         <div

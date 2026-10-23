@@ -1,34 +1,27 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import type { ActiveChat, MascotAlerts } from '../../../../shared/chat'
+import type { ActiveChat } from '../../../../shared/chat'
 import { tr } from '../../i18n'
 import { IS_MAC } from '../../platform'
 import { getPreferences, usePreference } from '../../settings/preferences'
 import { useActiveChats } from '../activeChats'
 import { STRIKES, strikeTip } from './look'
 import { BODY_X, MascotFigure, VIEW, type Pose } from './MascotFigure'
+import { isWorking, restingPose, THUMBS_MS, useAlerts, useWorkPose } from './mascotState'
 
 // A página da janela do mascote solto na tela (#mascot; a janela é criada por
 // src/main/app/mascotOverlay.ts). Ela é do tamanho do quadro dele, transparente, e o clique
 // atravessa até o ponteiro entrar no boneco. O que ele faz, com todas as conversas do app:
 // - pedido enviado: anda pela tela até a pasta da conversa no canvas, dá o golpe escolhido nela e
 //   volta para o lugar dele (com a pasta fora da vista, o golpe é ali mesmo);
-// - conversa terminou bem: joia com check verde (e fica assim enquanto houver resposta não vista);
-// - alguém escrevendo um pedido no app: mão na orelha, escutando;
-// - conversa perguntando algo (ou pedindo permissão): ombros para cima, com interrogações;
-// - conversa parou com erro e você não viu: acena, com o aviso vermelho;
-// - conversa trabalhando: pensando, digitando no notebook, procurando com a lupa ou dançando,
-//   trocando de tempos em tempos;
-// - nada acontecendo: parado, piscando.
-// Com várias conversas, vale a de cima na lista; trabalhando fica acima da resposta não vista, para
-// as respostas esquecidas no canvas não esconderem o trabalho.
+// - conversa terminou bem: joia com check verde;
+// - no resto do tempo, o que restingPose (mascotState.ts) diz: escutando, perguntando, erro,
+//   trabalhando, resposta não vista ou parado.
+// Com "Fixo por cima de todas as janelas" desligado (aba Mascote), quem aparece é o do canvas
+// (Mascot.tsx) e esta janela não abre.
 // Arrastar muda o lugar (fica guardado); dois cliques voltam ao canto de baixo da tela principal.
 // No Mac quem arrasta é o sistema (o boneco é área de arrastar, como uma barra de título): pela
 // página, o clique ativava o Argus. Lá, voltar ao canto é pelo botão da aba Mascote.
 
-const THUMBS_MS = 2200
-// Trabalhando: troca de animação a cada tanto.
-const WORK_POSES: Pose[] = ['think', 'type', 'search', 'dance']
-const WORK_SWITCH_MS = 7000
 // Parte do quadro onde está o boneco (o resto é o espaço do chicote), em unidades do desenho: é
 // nela que o ponteiro pega o clique.
 const BODY = { x0: 22, x1: 98, y0: 12, y1: 152 }
@@ -123,23 +116,7 @@ export function MascotOverlay() {
   const workPose = useWorkPose(working)
 
   const pose: Pose =
-    action === 'walk'
-      ? 'walk'
-      : action === 'strike'
-      ? look.strike
-      : action === 'thumbs'
-        ? 'thumbs'
-        : typing
-          ? 'listen'
-          : chats.some((c) => c.status === 'needs-you')
-            ? 'ask'
-            : alerts.failed.length > 0
-              ? 'wave'
-              : working
-                ? workPose
-                : alerts.done > 0
-                  ? 'thumbs'
-                  : 'idle'
+    action === 'walk' ? 'walk' : action === 'strike' ? look.strike : action === 'thumbs' ? 'thumbs' : restingPose({ chats, alerts, typing, workPose })
 
   return (
     <div className="relative h-full w-full">
@@ -171,8 +148,6 @@ export function MascotOverlay() {
     </div>
   )
 }
-
-const isWorking = (c: ActiveChat) => c.status === 'running'
 
 // Arrastar a janela pelo boneco, e pegar o clique só enquanto o ponteiro está em cima dele (fora,
 // o clique vai para o app de baixo).
@@ -242,41 +217,6 @@ function useDrag() {
     window.api.mascot.dragEnd()
   }
   return { dragging, box, onPointerDown, onPointerMove, onPointerUp }
-}
-
-// Animação do trabalho: começa por uma qualquer e troca por outra diferente a cada tanto.
-function useWorkPose(working: boolean): Pose {
-  const pick = (not?: Pose) => {
-    const options = WORK_POSES.filter((p) => p !== not)
-    return options[Math.floor(Math.random() * options.length)]
-  }
-  const [pose, setPose] = useState(() => pick())
-  useEffect(() => {
-    if (!working) return
-    const timer = window.setInterval(() => setPose((p) => pick(p)), WORK_SWITCH_MS)
-    return () => clearInterval(timer)
-  }, [working])
-  return pose
-}
-
-const NO_ALERTS: MascotAlerts = { done: 0, failed: [] }
-
-// Respostas não vistas e conversas com erro, como o processo principal conta.
-function useAlerts(): MascotAlerts {
-  const [alerts, setAlerts] = useState(NO_ALERTS)
-  useEffect(() => {
-    let received = false
-    const off = window.api.mascot.onAlerts((a) => {
-      received = true
-      setAlerts(a)
-    })
-    void window.api.mascot.alerts().then((a) => {
-      // O aviso chegou antes da resposta: ele é mais novo.
-      if (!received) setAlerts(a)
-    })
-    return off
-  }, [])
-  return alerts
 }
 
 // Alguém escrevendo um pedido numa janela do app.

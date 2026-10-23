@@ -2,7 +2,7 @@ import { BrowserWindow, screen, type WebContents } from 'electron'
 import type { MascotAlerts, UnreadChat } from '../../shared/chat'
 import { loadAppSettings, saveAppSettings } from '../appSettings'
 import type { ChatEntry } from '../chats/entries'
-import { sendTo } from '../ipc/events'
+import { broadcast, sendTo } from '../ipc/events'
 import { IS_LINUX, IS_MAC } from '../platform'
 import { createMascotWindow } from './windows'
 
@@ -102,13 +102,13 @@ export class MascotOverlay {
 
   // Respostas não vistas ou conversas mudaram: avisa a janela se o resumo mudou. Roda a cada
   // pedaço de resposta chegando, então só faz conta e compara.
+  // Vai a todas as janelas: o mascote de dentro do canvas também mostra.
   refresh(): void {
-    if (!this.win || this.win.isDestroyed()) return
     const alerts = this.alerts()
     const key = JSON.stringify(alerts)
     if (key === this.alertsSent) return
     this.alertsSent = key
-    sendTo(this.win.webContents, 'mascot:alerts', alerts)
+    broadcast('mascot:alerts', alerts)
   }
 
   alerts(): MascotAlerts {
@@ -303,8 +303,6 @@ export class MascotOverlay {
       if (this.win === win) this.win = null
     })
     this.win = win
-    // A página pede o resumo ao abrir; daqui em diante, só o que mudar.
-    this.alertsSent = JSON.stringify(this.alerts())
   }
 
   private close(): void {

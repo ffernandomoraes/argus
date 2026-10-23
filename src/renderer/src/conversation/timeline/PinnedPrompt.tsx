@@ -2,28 +2,22 @@ import { Image as ImageIcon } from 'lucide-react'
 import { formatImageCount } from '../format'
 import { tr } from '../../i18n'
 
-// O seu pedido do trecho que está na tela, preso no topo enquanto se rola para cima. Clicar leva
-// até ele; com o mouse em cima, não some.
+// O seu pedido do trecho que está na tela, preso no topo depois de rolar para cima. Clicar leva
+// até ele.
 export function PinnedPrompt({
   text,
   images,
   visible,
-  onClick,
-  onMouseEnter,
-  onMouseLeave
+  onClick
 }: {
   text: string
   images: number
   visible: boolean
   onClick: () => void
-  onMouseEnter: () => void
-  onMouseLeave: () => void
 }) {
   return (
     <button
       onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       title={tr('Ir para a mensagem', 'Go to message')}
       tabIndex={visible ? 0 : -1}
       className={`absolute inset-x-4 top-2 z-10 rounded-lg border border-line bg-surface-2 px-3 py-2 text-left text-[15px] shadow-md transition-opacity duration-150 hover:border-line-strong ${

@@ -6,6 +6,7 @@ import { tr } from '../i18n'
 // Daqui saem também os dois, como antes, para o canvas, o código e o design.
 export {
   BOTTOM_BAR_HEIGHT,
+  CANVAS_BAR_INSET,
   DRAWER_DEFAULT_WIDTH,
   PANEL_DEFAULT_WIDTH,
   PANEL_BOTTOM,

@@ -16,6 +16,8 @@ export const PANEL_TOP = TITLE_BAR_HEIGHT + MARGIN
 // Barra de baixo (BottomBar), também fora do canvas: os painéis param acima dela.
 export const BOTTOM_BAR_HEIGHT = 30
 export const PANEL_BOTTOM = BOTTOM_BAR_HEIGHT + MARGIN
+// Barras soltas no canvas (navegação em cima, zoom embaixo): a mesma distância das bordas e das barras.
+export const CANVAS_BAR_INSET = 12
 export const PANEL_MIN = { width: 360, height: 320 }
 export const PANEL_DEFAULT_WIDTH = 550
 // O painel da conversa nasce um pouco mais largo que os outros: é onde se lê e escreve.

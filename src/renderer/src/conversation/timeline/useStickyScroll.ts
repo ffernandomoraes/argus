@@ -28,7 +28,6 @@ export function useStickyScroll(
   const [pinnedKey, setPinnedKey] = useState<string | null>(null)
   const [scrollingUp, setScrollingUp] = useState(false)
   const travel = useRef({ distance: 0, at: 0 })
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   // Quando você mexeu na rolagem por último (roda, tecla, toque, clique) e se o botão segue apertado
   // (arrastando a barra de rolagem).
   const intentAt = useRef(-Infinity)
@@ -100,29 +99,17 @@ export function useStickyScroll(
     return () => observer.disconnect()
   }, [contentRef, scrollerRef, toEnd, findPinned])
 
-  // O prompt preso só aparece rolando para cima. Rolando para baixo some; parado, some depois
-  // de um instante (dá tempo de clicar nele; com o mouse em cima, fica). Só conta como
-  // rolagem num sentido depois de ~60px seguidos nele: um tremido do trackpad não mexe.
-  const hideSoon = useCallback(() => {
-    clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => setScrollingUp(false), 1200)
-  }, [])
-  const keepShown = useCallback(() => clearTimeout(hideTimer.current), [])
-  useEffect(() => () => clearTimeout(hideTimer.current), [])
-
+  // O prompt preso aparece rolando para cima e fica, mesmo parado, até você rolar para baixo ou
+  // chegar ao fim. Só conta como rolagem num sentido depois de ~60px seguidos nele: um tremido do
+  // trackpad não mexe.
   const trackDirection = (delta: number) => {
     const now = performance.now()
     const t = travel.current
     // Mudou de sentido ou ficou parado um pouco: começa a contar de novo.
     t.distance = Math.sign(delta) !== Math.sign(t.distance) || now - t.at > 300 ? delta : t.distance + delta
     t.at = now
-    if (t.distance <= -60) {
-      setScrollingUp(true)
-      hideSoon()
-    } else if (t.distance >= 60) {
-      clearTimeout(hideTimer.current)
-      setScrollingUp(false)
-    }
+    if (t.distance <= -60) setScrollingUp(true)
+    else if (t.distance >= 60) setScrollingUp(false)
   }
 
   const onScroll = (e: UIEvent<HTMLDivElement>) => {
@@ -141,7 +128,6 @@ export function useStickyScroll(
     if (distance <= 1) {
       if (delta >= 0) following.current = true
       travel.current.distance = 0
-      clearTimeout(hideTimer.current)
       setScrollingUp(false)
     } else if (following.current && !yours()) {
       // Seguindo o fim e a rolagem saiu dele sem você mexer: é a lista virtualizada corrigindo a
@@ -198,5 +184,5 @@ export function useStickyScroll(
     else timeline.scrollToKey(pinnedKey)
   }
 
-  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, settle, pinnedKey, scrollingUp, keepShown, hideSoon, scrollToPrompt }
+  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, settle, pinnedKey, scrollingUp, scrollToPrompt }
 }

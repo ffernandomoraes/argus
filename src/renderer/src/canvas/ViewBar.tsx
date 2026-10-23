@@ -1,7 +1,7 @@
 import { memo, useState } from 'react'
 import { MiniMap, Panel, useReactFlow, useStore, type Node } from '@xyflow/react'
 import { Map as MapIcon, Maximize, Minus, Plus } from 'lucide-react'
-import { BOTTOM_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import { BOTTOM_BAR_HEIGHT, CANVAS_BAR_INSET } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { MENU_HOVER, MENU_ROW } from '../ui/menuStyles'
 import type { AreaNode } from './types'
@@ -36,7 +36,7 @@ export const ViewBar = memo(function ViewBar() {
   }
 
   return (
-    <Panel position="bottom-right" className="!m-4" style={{ bottom: BOTTOM_BAR_HEIGHT }}>
+    <Panel position="bottom-right" className="!m-0" style={{ bottom: BOTTOM_BAR_HEIGHT + CANVAS_BAR_INSET, right: CANVAS_BAR_INSET }}>
       <div className={`flex flex-col gap-1 border border-line bg-surface/90 p-1 shadow-md shadow-black/20 backdrop-blur-xl ${mapOpen ? 'rounded-2xl' : 'rounded-xl'}`}>
         {/* Âncoras: um clique leva ao grupo e recolhe o minimapa. */}
         {mapOpen && anchors.length > 0 && (

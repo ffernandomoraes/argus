@@ -11,7 +11,7 @@ import { downloadTo } from './download'
 import { cleanupDownloads, newDownloadDir, removePath } from './files'
 import { fetchLatestRelease, fetchRecentReleases } from './github'
 import { currentBundle, extractApp, hasExecutable, spawnSwap, verifyApp } from './mac'
-import { isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, previousWith, releaseVersion, type Release, type ReleaseAsset } from './releases'
+import { countNewer, isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, previousWith, releaseVersion, type Release, type ReleaseAsset } from './releases'
 import { skipVersion, updateFloor } from './skipped'
 import { installedByInstaller, spawnInstaller } from './windows'
 
@@ -28,6 +28,10 @@ const appImage = (): string | null => process.env.APPIMAGE || null
 const FIRST_CHECK_MS = 10_000
 const EVERY_MS = 5 * 60 * 60_000
 
+// Com esta quantidade de versões publicadas depois da em uso, a atualização vira obrigatória: a
+// tela fica coberta até atualizar (RequiredUpdateModal). Só onde a atualização automática funciona.
+const REQUIRED_BEHIND = 20
+
 // app: o .app novo (Mac), o instalador baixado (Windows) ou o AppImage novo (Linux); dir: a pasta do
 // download.
 type Ready = { app: string; dir: string; version: string; notesUrl: string }
@@ -42,6 +46,10 @@ export class Updater {
   private timer: NodeJS.Timeout | null = null
   // Limpeza das sobras da abertura: a conferência espera ela, para nunca apagar o próprio download.
   private cleaning: Promise<void> = Promise.resolve()
+  // Atualização obrigatória (ver REQUIRED_BEHIND). Decidida na primeira conferência que consegue
+  // falar com o GitHub e mantida até o app fechar; sem internet, nada é decidido nem bloqueado.
+  private required = false
+  private requiredDecided = false
 
   constructor(private onChange: (state: UpdateState) => void) {
     this.current = this.support()
@@ -121,6 +129,7 @@ export class Updater {
       const floor = this.floor()
       const latest = await fetchLatestRelease()
       const version = latest ? releaseVersion(latest) : ''
+      await this.decideRequired(!!latest && !!version && isNewer(version, app.getVersion()))
       if (!latest || !version || !isNewer(version, floor)) {
         if (!quiet) this.set({ status: 'latest' })
       } else if (IS_WIN) {
@@ -138,6 +147,20 @@ export class Updater {
       this.busy = false
     }
     return this.state
+  }
+
+  // Conta os releases mais novos que a versão em uso. Falhar aqui não impede a atualização: fica
+  // para decidir na próxima conferência.
+  private async decideRequired(hasNewer: boolean): Promise<void> {
+    if (this.requiredDecided) return
+    if (hasNewer) {
+      try {
+        this.required = countNewer(await fetchRecentReleases(REQUIRED_BEHIND), app.getVersion()) >= REQUIRED_BEHIND
+      } catch {
+        return
+      }
+    }
+    this.requiredDecided = true
   }
 
   // O instalador do Windows e o AppImage do Linux sobem para o release alguns minutos depois do app
@@ -177,7 +200,7 @@ export class Updater {
     if (this.installing) return removePath(next.dir)
     const previous = this.ready
     this.ready = next
-    this.set({ status: 'ready', version: next.version, notesUrl: next.notesUrl })
+    this.set({ status: 'ready', version: next.version, notesUrl: next.notesUrl, required: this.required })
     if (previous) await removePath(previous.dir)
   }
 
@@ -193,6 +216,9 @@ export class Updater {
     const support = this.state
     if (support.status === 'unsupported') throw new Error(support.reason)
     this.rollingBack = true
+    // Voltar para a anterior não é a atualização obrigatória, e ela não volta nesta sessão.
+    this.required = false
+    this.requiredDecided = true
     try {
       await this.settled()
       await this.cleaning
@@ -222,8 +248,9 @@ export class Updater {
   // Baixa mostrando o progresso na barra de título (show) ou em silêncio.
   private fetchTo(version: string, url: string, file: string, show: boolean): Promise<void> {
     if (!show) return downloadTo(url, file, version, () => {})
-    this.set({ status: 'downloading', version, progress: 0 })
-    return downloadTo(url, file, version, (progress) => this.set({ status: 'downloading', version, progress }))
+    const required = this.required
+    this.set({ status: 'downloading', version, progress: 0, required })
+    return downloadTo(url, file, version, (progress) => this.set({ status: 'downloading', version, progress, required }))
   }
 
   private async downloadMac(version: string, asset: ReleaseAsset, notesUrl: string, show = true): Promise<void> {

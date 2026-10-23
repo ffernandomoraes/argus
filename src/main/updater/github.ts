@@ -61,7 +61,7 @@ async function getJson<T>(path: string): Promise<T | null> {
 export const fetchLatestRelease = () => getJson<Release>('/releases/latest')
 
 // Os mais recentes (do mais novo para o mais velho), para achar um que tenha o instalador.
-export async function fetchRecentReleases(): Promise<Release[]> {
-  const list = await getJson<Release[]>('/releases?per_page=10')
+export async function fetchRecentReleases(count = 10): Promise<Release[]> {
+  const list = await getJson<Release[]>(`/releases?per_page=${count}`)
   return Array.isArray(list) ? list : []
 }

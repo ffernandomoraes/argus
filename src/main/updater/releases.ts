@@ -33,6 +33,12 @@ export function isNewer(candidate: string, current: string): boolean {
   return false
 }
 
+// Quantos releases publicados são mais novos que a versão em uso. Rascunhos e pré-lançamentos não
+// contam.
+export function countNewer(releases: Release[], current: string): number {
+  return releases.filter((r) => !r.draft && !r.prerelease && isNewer(releaseVersion(r), current)).length
+}
+
 export type Pick = { release: Release; asset: ReleaseAsset; version: string }
 
 // O release mais novo que a versão em uso e que tem o arquivo pedido, ou null. Rascunhos e

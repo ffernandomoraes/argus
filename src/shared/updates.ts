@@ -5,9 +5,11 @@ export type UpdateState =
   | { status: 'idle' }
   | { status: 'checking' }
   | { status: 'latest' }
-  | { status: 'downloading'; version: string; progress: number }
+  // required: a versão em uso está muito atrás da última (ver updater/index.ts), e a tela fica
+  // coberta até atualizar (RequiredUpdateModal).
+  | { status: 'downloading'; version: string; progress: number; required?: boolean }
   // Baixada e conferida: entra ao reiniciar, ou sozinha quando o app fechar.
-  | { status: 'ready'; version: string; notesUrl: string }
+  | { status: 'ready'; version: string; notesUrl: string; required?: boolean }
   // Windows: a versão nova saiu, mas o instalador dela ainda não subiu (sai alguns minutos depois
   // do app do Mac). Não é erro: procurar de novo daqui a pouco resolve.
   | { status: 'waiting'; version: string; message: string }

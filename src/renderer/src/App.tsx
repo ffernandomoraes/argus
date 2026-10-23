@@ -9,6 +9,7 @@ import { useInterfaceZoom } from './theme/useInterfaceZoom'
 import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { RequiredUpdateModal } from './updates/RequiredUpdateModal'
 import { WelcomeModal } from './welcome/WelcomeModal'
 import { setupReady } from './welcome/SetupStep'
 import { useProviders } from './providers/useProviders'
@@ -67,6 +68,8 @@ export function App() {
           <SettingsModal theme={theme.preference} onThemeChange={theme.setPreference} onClose={closeSettings} />
         )}
       </Presence>
+      {/* Por último: cobre também as boas-vindas e as configurações. */}
+      <RequiredUpdateModal />
     </main>
   )
 }

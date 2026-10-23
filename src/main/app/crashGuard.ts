@@ -1,6 +1,6 @@
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { reportOpeningProblem } from '../errorReports'
 import { tr } from '../i18n'
 import { writeJsonAtomicSync, readJsonFile } from '../lib/jsonFile'
@@ -8,6 +8,7 @@ import { errorMessage } from '../lib/errors'
 import { SMOKE_TEST } from '../smokeTest'
 import { Updater } from '../updater'
 import { isCanvasReady, isCanvasWindow } from './canvasRegistry'
+import { showMessageBox } from './messageBox'
 
 // Quando uma versão quebra o app, oferece voltar para a anterior (baixada do GitHub) ou procurar
 // uma mais nova, com a correção. Conta como quebra:
@@ -126,7 +127,7 @@ async function offerRecovery(kind: Kind, reason: string, report?: OpeningReport)
     const current = app.getVersion()
     if (report) reportOpeningProblem(report.message, report.extra)
     for (;;) {
-      const { response } = await dialog.showMessageBox({
+      const { response } = await showMessageBox({
         type: 'warning',
         message: kind === 'lastOpening' ? tr('O Argus não abriu direito da última vez', "Argus didn't open properly last time") : tr('O Argus parou de funcionar', 'Argus stopped working'),
         detail: tr(
@@ -176,7 +177,7 @@ async function checkNewer(updater: Updater, restart: () => Promise<void>): Promi
       : state.status === 'error' || state.status === 'waiting' ? state.message
       : state.status === 'unsupported' ? state.reason
       : tr('Não deu para baixar a versão nova agora.', "Couldn't download the new version right now.")
-    await dialog.showMessageBox({ type: 'info', message, buttons: ['OK'] })
+    await showMessageBox({ type: 'info', message, buttons: ['OK'] })
   } catch (err) {
     await failed(tr('Não deu para procurar uma versão nova.', "Couldn't check for a new version."), err)
   }
@@ -193,7 +194,7 @@ async function install(updater: Updater, restart: () => Promise<void>, version: 
     await failed(tr(`Não deu para instalar a versão ${version}.`, `Couldn't install version ${version}.`), state.message)
     return false
   }
-  await dialog.showMessageBox({
+  await showMessageBox({
     type: 'info',
     message: tr(`A versão ${version} está baixada.`, `Version ${version} is downloaded.`),
     detail: tr('Ela entra quando o Argus fechar.', 'It will be installed when Argus quits.'),
@@ -202,18 +203,18 @@ async function install(updater: Updater, restart: () => Promise<void>, version: 
   return true
 }
 
-// Aviso de espera enquanto baixa: fechá-lo não cancela, e ele some sozinho no fim.
+// Aviso de espera enquanto baixa: fechá-lo não cancela, e ele some sozinho no fim. No Mac, sem
+// janela do Argus em foco (a recuperação antes das janelas abrirem), ele fica solto e síncrono (ver
+// messageBox.ts): só fecha no OK, e o download só anda depois disso.
 async function whileWaiting<T>(message: string, work: Promise<T>): Promise<T> {
   const abort = new AbortController()
-  void dialog
-    .showMessageBox({
-      type: 'info',
-      message: `${message}…`,
-      detail: tr('O Argus reabre sozinho quando terminar.', 'Argus will reopen by itself when it finishes.'),
-      buttons: ['OK'],
-      signal: abort.signal
-    })
-    .catch(() => {})
+  void showMessageBox({
+    type: 'info',
+    message: `${message}…`,
+    detail: tr('O Argus reabre sozinho quando terminar.', 'Argus will reopen by itself when it finishes.'),
+    buttons: ['OK'],
+    signal: abort.signal
+  }).catch(() => {})
   try {
     return await work
   } finally {
@@ -222,5 +223,5 @@ async function whileWaiting<T>(message: string, work: Promise<T>): Promise<T> {
 }
 
 async function failed(message: string, err: unknown): Promise<void> {
-  await dialog.showMessageBox({ type: 'error', message, detail: errorMessage(err), buttons: ['OK'] })
+  await showMessageBox({ type: 'error', message, detail: errorMessage(err), buttons: ['OK'] })
 }

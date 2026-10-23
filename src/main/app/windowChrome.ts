@@ -56,6 +56,11 @@ export function setWindowKind(win: BrowserWindow, kind: WindowKind): void {
   windowKinds.set(win, kind)
 }
 
+// Janela do app (canvas ou conversa). A do mascote não é: não tem a moldura do app.
+export function isAppWindow(win: BrowserWindow): boolean {
+  return windowKinds.has(win)
+}
+
 // Tema trocado, no app ou no sistema: os botões do Windows acompanham.
 export function repaintOverlays(): void {
   if (IS_MAC) return

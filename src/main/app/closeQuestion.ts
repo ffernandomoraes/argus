@@ -1,8 +1,8 @@
 import { basename } from 'node:path'
-import { dialog } from 'electron'
 import type { Chats } from '../chats'
 import { tr } from '../i18n'
 import type { Terminals } from '../terminals'
+import { showMessageBox } from './messageBox'
 import type { UnsavedFiles } from './unsavedFiles'
 
 // Fechar o app derruba as conversas e os terminais no meio do que estão fazendo: com algo em
@@ -28,7 +28,7 @@ export async function busyShells(terminals: Terminals): Promise<string[]> {
 }
 
 export async function askToClose(update: boolean, items: string[]): Promise<boolean> {
-  const { response } = await dialog.showMessageBox({
+  const { response } = await showMessageBox({
     type: 'warning',
     message: update
       ? tr('Atualizar agora interrompe o que está rodando.', 'Updating now stops what is running.')

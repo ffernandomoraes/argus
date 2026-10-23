@@ -1,13 +1,22 @@
-import { app, dialog } from 'electron'
+import { app } from 'electron'
 import { tr } from '../i18n'
 import type { Updater } from '../updater'
+import { showMessageBox } from './messageBox'
+
+// A caixa presa à janela não segura o menu: clicar de novo com ela aberta não abre outra.
+let open: Promise<void> | null = null
 
 // "Procurar atualizações…" do menu: diferente da conferência automática, sempre responde.
-export async function checkForUpdates(updater: Updater, restartToUpdate: () => Promise<void>): Promise<void> {
+export function checkForUpdates(updater: Updater, restartToUpdate: () => Promise<void>): Promise<void> {
+  open ??= checkAndShow(updater, restartToUpdate).finally(() => (open = null))
+  return open
+}
+
+async function checkAndShow(updater: Updater, restartToUpdate: () => Promise<void>): Promise<void> {
   const state = await updater.check()
   const current = app.getVersion()
   if (state.status === 'ready') {
-    const { response } = await dialog.showMessageBox({
+    const { response } = await showMessageBox({
       message: tr(`A versão ${state.version} está pronta.`, `Version ${state.version} is ready.`),
       detail: tr(
         `Você está na ${current}. O Argus reinicia para atualizar.`,
@@ -30,7 +39,7 @@ export async function checkForUpdates(updater: Updater, restartToUpdate: () => P
           `Version ${state.version} isn't ready for Windows yet.`
         )
     : tr('Procurando atualizações.', 'Checking for updates.')
-  await dialog.showMessageBox({
+  await showMessageBox({
     message,
     detail: state.status === 'error' || state.status === 'waiting' ? state.message : tr(`Versão em uso: ${current}.`, `Current version: ${current}.`)
   })

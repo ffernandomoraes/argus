@@ -31,12 +31,11 @@ export function CliRow() {
   return (
     <Row
       label={tr('Comando argus no terminal', 'argus command in the terminal')}
-      description={
-        tr(
-          'Digite "argus ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.',
-          'Type "argus ." in any terminal to open the folder on the canvas. In the app\'s terminals it already works without installing.'
-        ) + (note ? ` ${note}` : '')
-      }
+      description={tr('"argus ." abre a pasta no canvas.', '"argus ." opens the folder on the canvas.') + (note ? ` ${note}` : '')}
+      info={tr(
+        'Digite "argus ." em qualquer terminal para abrir a pasta no canvas. Nos terminais do app ele já funciona sem instalar.',
+        'Type "argus ." in any terminal to open the folder on the canvas. In the app\'s terminals it already works without installing.'
+      )}
     >
       {status && (
         <Button

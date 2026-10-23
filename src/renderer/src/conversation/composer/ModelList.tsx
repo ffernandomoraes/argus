@@ -106,7 +106,7 @@ function VersionsSubmenu({ children }: { children: ReactNode }) {
 }
 
 // Claude Code bem atrás da versão publicada: os modelos novos faltam na lista. O botão atualiza ali
-// mesmo; o erro, se houver, fica por extenso em Configurações > Geral.
+// mesmo; o erro, se houver, fica por extenso em Configurações > Atualizações.
 function OutdatedNotice() {
   const version = useClaudeVersion()
   if (!version?.farBehind || !version.current) return null
@@ -115,7 +115,7 @@ function OutdatedNotice() {
       {version.updating
         ? tr('Atualizando o Claude Code…', 'Updating Claude Code…')
         : version.error
-          ? tr('A atualização do Claude Code falhou. Detalhes em Configurações > Geral.', 'The Claude Code update failed. Details in Settings > General.')
+          ? tr('A atualização do Claude Code falhou. Detalhes em Configurações > Atualizações.', 'The Claude Code update failed. Details in Settings > Updates.')
           : tr(
               `Claude Code ${version.current.version} desatualizado: a ${version.latest} traz os modelos novos.`,
               `Claude Code ${version.current.version} is outdated: ${version.latest} brings the new models.`

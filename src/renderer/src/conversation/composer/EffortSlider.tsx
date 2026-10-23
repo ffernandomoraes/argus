@@ -1,4 +1,4 @@
-import { EFFORTS, effortLabel, MAX_WARNING } from '../modelOptions'
+import { EFFORTS, effortLabel } from '../modelOptions'
 import { tr } from '../../i18n'
 
 type Effort = (typeof EFFORTS)[number]
@@ -42,7 +42,6 @@ export function EffortSlider({
           />
         ))}
       </div>
-      {value === 'max' && <p className="mt-2 text-[12px] leading-snug text-needs-you">{MAX_WARNING}</p>}
     </div>
   )
 }

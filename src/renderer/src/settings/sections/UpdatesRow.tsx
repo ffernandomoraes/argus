@@ -39,7 +39,7 @@ export function UpdatesRow() {
   const busy = state.status === 'checking' || state.status === 'downloading' || state.status === 'unsupported'
 
   return (
-    <Row label={tr('Atualizações', 'Updates')} description={tr(`Versão ${version}. ${statusText(state)}`, `Version ${version}. ${statusText(state)}`)}>
+    <Row label="Argus" description={tr(`Versão ${version}. ${statusText(state)}`, `Version ${version}. ${statusText(state)}`)}>
       {state.status === 'ready' ? (
         <Button onClick={() => window.api.updates.install()}>{tr('Reiniciar e atualizar', 'Restart and update')}</Button>
       ) : (

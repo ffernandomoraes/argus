@@ -11,6 +11,9 @@ body,
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   user-select: none;
+  /* Texto que quebra em várias linhas não deixa uma palavra sozinha na última. Herdado por tudo;
+     só o estilo, sem mexer em quem é whitespace-nowrap. */
+  text-wrap-style: pretty;
 }
 
 /* Tailwind 4 tira o cursor de mão dos botões; aqui ele volta para tudo que é clicável */

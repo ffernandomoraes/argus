@@ -27,7 +27,8 @@ export function OrchestratorSection() {
         <Row
           below
           label={tr('Orquestrador', 'Orchestrator')}
-          description={tr(
+          description={tr('Quem divide o pedido e delega as etapas.', 'Who splits the request and delegates the steps.')}
+          info={tr(
             'Quem divide o pedido e delega as etapas, de qualquer empresa. Ligar o orquestrador numa conversa nova faz ela usar este agente e este modelo. Uma conversa que já começou com outro agente continua com ele: para usar este, inicie uma conversa nova.',
             'Who splits the request and delegates the steps, from any company. Turning the orchestrator on in a new chat makes it use this agent and model. A chat that already started with another agent stays with it: to use this one, start a new chat.'
           )}

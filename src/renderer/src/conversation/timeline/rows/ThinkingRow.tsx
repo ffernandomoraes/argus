@@ -10,7 +10,7 @@ export const ThinkingRow = memo(function ThinkingRow({ message }: { message: Ext
     <LazyDetails
       className="group text-[13px]"
       summary={
-        <summary className="-ml-1 flex cursor-pointer list-none items-center gap-2 rounded-md px-1 py-1 leading-5 text-faint hover:bg-surface-2 hover:text-muted">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1 leading-5 text-faint hover:bg-surface-2 hover:text-muted">
           <Brain size={12} className="shrink-0" />
           <span className="italic">
             {message.seconds && message.seconds > 0

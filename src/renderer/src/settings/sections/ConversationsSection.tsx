@@ -9,6 +9,7 @@ import { tr } from '../../i18n'
 
 export function ConversationsSection() {
   const s = usePreference('conversation')
+  const suggestions = usePreference('promptSuggestions')
   const info = useClaudeInfo()
   const models = info?.models ?? []
   const set = (patch: Partial<SessionSettings>) => setPreferences({ conversation: { ...s, ...patch } })
@@ -70,6 +71,23 @@ export function ConversationsSection() {
 
         <Row label="Ultracode" description={tr('Usa vários subagentes em paralelo em toda tarefa. Gasta bem mais tokens.', 'Uses several subagents in parallel on every task. Uses many more tokens.')}>
           <Switch label="Ultracode" checked={s.ultracode} onChange={(ultracode) => set({ ultracode })} />
+        </Row>
+      </Group>
+
+      <Group>
+        <Row
+          label={tr('Sugestão de mensagem', 'Message suggestion')}
+          description={tr('Sugere a próxima mensagem; um clique envia.', 'Suggests the next message; one click sends it.')}
+          info={tr(
+            'Ao fim de cada resposta, mostra a próxima mensagem provável em cima da caixa de escrever. Um clique envia.',
+            'After each reply, shows the likely next message above the input box. One click sends it.'
+          )}
+        >
+          <Switch
+            label={tr('Sugestão de mensagem', 'Message suggestion')}
+            checked={suggestions}
+            onChange={(promptSuggestions) => setPreferences({ promptSuggestions })}
+          />
         </Row>
       </Group>
     </>

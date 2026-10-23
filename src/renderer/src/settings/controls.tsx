@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { InfoTip } from '../ui/InfoTip'
 
 // Controles das configurações (e de quem segue o mesmo desenho, como a biblioteca de agentes). O
 // botão com borda daqui virou o Button da base (ui/Button, variante secondary).
@@ -42,13 +43,30 @@ export function Group({ children }: { children: ReactNode }) {
 // Linha de configuração: rótulo e explicação à esquerda, controle à direita. below: o controle vai
 // na linha de baixo. Use com todo Segmented (opções lado a lado): ao lado, com o texto a 15px, ele
 // espremia o rótulo. Os outros controles também descem se não couberem.
-export function Row({ label, description, below, children }: { label: string; description?: string; below?: boolean; children: ReactNode }) {
+// info: explicação longa, num ícone ao lado do rótulo que abre ao passar o mouse. A description
+// fica com uma frase curta; texto de várias linhas embaixo do rótulo pesava a tela.
+export function Row({
+  label,
+  description,
+  info,
+  below,
+  children
+}: {
+  label: string
+  description?: string
+  info?: string
+  below?: boolean
+  children: ReactNode
+}) {
   return (
     <div
       className={`flex border-b border-line py-3 last:border-0 ${below ? 'flex-col gap-2' : 'flex-wrap items-center justify-between gap-x-6 gap-y-2'}`}
     >
       <div className="min-w-56 flex-1">
-        <div className="text-[16px] text-text">{label}</div>
+        <div className="flex items-center gap-1 text-[16px] text-text">
+          {label}
+          {info && <InfoTip text={info} />}
+        </div>
         {description && <div className="mt-0.5 text-[15px] leading-relaxed text-muted">{description}</div>}
       </div>
       <div className={below ? 'flex' : 'shrink-0'}>{children}</div>

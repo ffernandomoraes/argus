@@ -35,7 +35,8 @@ export function WslRow() {
   return (
     <Row
       label="Linux (WSL)"
-      description={tr(
+      description={tr('Pastas do WSL rodam com as ferramentas de lá.', 'WSL folders run with the tools from there.')}
+      info={tr(
         `Pastas do WSL (${distros.join(', ')}) rodam com o Claude Code, o login e o git de lá. Se algo não funcionar, copie o diagnóstico e mande para quem te ajuda.`,
         `WSL folders (${distros.join(', ')}) run with the Claude Code, login and git from there. If something does not work, copy the diagnostics and send them to whoever is helping you.`
       )}

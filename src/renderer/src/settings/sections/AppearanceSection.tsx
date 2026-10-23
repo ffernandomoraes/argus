@@ -27,7 +27,8 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
       </Row>
       <Row
         label={tr('Tamanho da interface', 'Interface size')}
-        description={tr(
+        description={tr('Aumenta ou diminui a janela inteira.', 'Scales the whole window up or down.')}
+        info={tr(
           'Aumenta ou diminui a janela inteira, para monitores maiores ou menores. O zoom do canvas e da conversa continua valendo por cima.',
           'Scales the whole window up or down for larger or smaller displays. Canvas and conversation zoom still apply on top.'
         )}

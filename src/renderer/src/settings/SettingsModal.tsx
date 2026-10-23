@@ -15,7 +15,7 @@ export function SettingsModal({
 }) {
   return (
     <Modal label={tr('Configurações', 'Settings')} onClose={onClose}>
-      <SettingsPage theme={theme} onThemeChange={onThemeChange} onClose={onClose} />
+      <SettingsPage theme={theme} onThemeChange={onThemeChange} />
     </Modal>
   )
 }

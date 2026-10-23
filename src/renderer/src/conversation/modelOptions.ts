@@ -10,13 +10,6 @@ export const EFFORTS = [
   { value: 'max', label: tr('Máximo', 'Max') }
 ]
 
-// Texto da extensão do VS Code para o nível máximo, traduzido.
-export const MAX_WARNING =
-  tr(
-    'Pode gastar tokens demais, com respostas lentas ou pensamento excessivo. Use só nas tarefas mais difíceis.',
-    'Can use excessive tokens, with slow responses or overthinking. Use only for the hardest tasks.'
-  )
-
 export const effortLabel = (value: string) => EFFORTS.find((e) => e.value === value)?.label ?? 'Auto'
 
 // "Opus 5.5" → família "Opus". A ordem das famílias segue a ordem da lista do claude.

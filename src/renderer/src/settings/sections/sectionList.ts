@@ -1,23 +1,42 @@
-import { Coffee, FlaskConical, MessagesSquare, Network, Palette, PersonStanding, Plug, Settings2, Users } from 'lucide-react'
+import { Coffee, FlaskConical, MessagesSquare, Network, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'mascot' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
+export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'updates' | 'mascot' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
+
+export type SectionGroup = 'app' | 'agents' | 'extras' | 'footer'
+
+// Grupos da lateral, na ordem em que aparecem, com o título em cima de cada um. O 'footer' não
+// tem título: vai para o pé da lateral.
+export const SECTION_GROUPS: { id: Exclude<SectionGroup, 'footer'>; label: string }[] = [
+  { id: 'app', label: tr('Preferências', 'Preferences') },
+  { id: 'agents', label: tr('Conexões', 'Connections') },
+  { id: 'extras', label: tr('Extras', 'Extras') }
+]
 
 // Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
 // experimental: ligada em Experimentos; leva o selo na frente do nome.
-export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; description: string; experimental?: boolean }[] = [
+export const SECTIONS: {
+  id: Section
+  group: SectionGroup
+  label: string
+  icon: typeof Settings2
+  description: string
+  experimental?: boolean
+}[] = [
   {
     id: 'general',
+    group: 'app',
     label: tr('Geral', 'General'),
     icon: Settings2,
     description: tr(
-      'Onde as conversas abrem, o ícone do sistema, o comando no terminal e as atualizações.',
-      'Where chats open, the system icon, the terminal command and updates.'
+      'Idioma, onde as conversas abrem, o player de música e o comando no terminal.',
+      'Language, where chats open, the music player and the terminal command.'
     )
   },
   {
     id: 'conversations',
+    group: 'app',
     label: tr('Conversas', 'Chats'),
     icon: MessagesSquare,
     description: tr(
@@ -26,7 +45,39 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     )
   },
   {
+    id: 'appearance',
+    group: 'app',
+    label: tr('Aparência', 'Appearance'),
+    icon: Palette,
+    description: tr('Tema claro, escuro ou o mesmo do sistema.', 'Light, dark or the same as the system.')
+  },
+  {
+    id: 'updates',
+    group: 'app',
+    label: tr('Atualizações', 'Updates'),
+    icon: RefreshCw,
+    description: tr('As versões do Argus e do Claude Code, e o que mudou em cada uma.', 'The Argus and Claude Code versions, and what changed in each.')
+  },
+  {
+    id: 'accounts',
+    group: 'agents',
+    label: tr('Contas', 'Accounts'),
+    icon: Users,
+    description: tr('As contas do Claude Code que o Argus usa.', 'The Claude Code accounts Argus uses.')
+  },
+  {
+    id: 'mcp',
+    group: 'agents',
+    label: 'MCP',
+    icon: Plug,
+    description: tr(
+      'Os servidores MCP de cada conta: autorize, reconecte ou desconecte sem abrir uma conversa.',
+      'Each account’s MCP servers: authorize, reconnect or sign out without opening a chat.'
+    )
+  },
+  {
     id: 'orchestrator',
+    group: 'agents',
     label: tr('Orquestrador', 'Orchestrator'),
     icon: Network,
     experimental: true,
@@ -36,13 +87,8 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     )
   },
   {
-    id: 'appearance',
-    label: tr('Aparência', 'Appearance'),
-    icon: Palette,
-    description: tr('Tema claro, escuro ou o mesmo do sistema.', 'Light, dark or the same as the system.')
-  },
-  {
     id: 'mascot',
+    group: 'extras',
     label: tr('Mascote', 'Mascot'),
     icon: PersonStanding,
     experimental: true,
@@ -52,22 +98,8 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
     )
   },
   {
-    id: 'accounts',
-    label: tr('Contas', 'Accounts'),
-    icon: Users,
-    description: tr('As contas do Claude Code que o Argus usa.', 'The Claude Code accounts Argus uses.')
-  },
-  {
-    id: 'mcp',
-    label: 'MCP',
-    icon: Plug,
-    description: tr(
-      'Os servidores MCP de cada conta: autorize, reconecte ou desconecte sem abrir uma conversa.',
-      'Each account’s MCP servers: authorize, reconnect or sign out without opening a chat.'
-    )
-  },
-  {
     id: 'experiments',
+    group: 'extras',
     label: tr('Experimentos', 'Experiments'),
     icon: FlaskConical,
     description: tr(
@@ -77,6 +109,7 @@ export const SECTIONS: { id: Section; label: string; icon: typeof Settings2; des
   },
   {
     id: 'coffee',
+    group: 'footer',
     label: tr('Me pague um café', 'Buy me a coffee'),
     icon: Coffee,
     description: tr(

@@ -46,7 +46,7 @@ export async function spawnTerminal(open: TerminalOpenRequest, cwd: string): Pro
   // Tarefa isolada reservada: o worktree nasce agora. Num worktree, o aviso dele vai junto das
   // regras do orquestrador.
   await materializeWorktree(cwd, '')
-  const req = { ...open, systemPrompt: withWorktreeHint(open.systemPrompt, cwd) }
+  const req = { ...open, systemPrompt: await withWorktreeHint(open.systemPrompt, cwd) }
   const distro = distroFor(cwd)
   const agent = parseAgentRef(req.account)
   if (agent && distro)

@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { LiveStatus } from '../shared/history'
 import { statusDirsWithPlace, type StatusDir } from './claudeHome'
+import { withTimeout } from './lib/timeout'
 import { wslPidAlive } from './wsl/pids'
 
 // Cada Claude Code aberto (VS Code, terminal, este app) mantém <pasta da conta>/sessions/<pid>.json
@@ -58,29 +59,50 @@ const namesSync = (dir: string) => {
   }
 }
 
+// Sem resposta de uma pasta de status nesse tempo (a do WSL parado ou travado), vale o que ela tinha
+// na última leitura: as conversas de lá não aparecem paradas, nem como resposta nova não vista, só
+// porque o Linux demorou. Sem isso a lista de conversas e a dos designs esperavam junto.
+const DIR_ANSWER_MS = 5000
+const lastRead = new Map<string, Map<string, LiveStatus>>()
+
 // sessionId → status, só de processos que ainda estão rodando, de todas as contas.
 export async function liveSessions(): Promise<Map<string, LiveStatus>> {
   const out = new Map<string, LiveStatus>()
-  await Promise.all(statusDirsWithPlace().map((place) => readStatusDir(place, out)))
+  const parts = await Promise.all(statusDirsWithPlace().map(statusIn))
+  for (const part of parts) for (const [id, status] of part) keepUrgent(out, id, status)
   return out
 }
 
-async function readStatusDir({ dir, distro }: StatusDir, out: Map<string, LiveStatus>): Promise<void> {
+// Erro ao ler a pasta (sem ser "não existe") conta como sem resposta.
+async function statusIn(place: StatusDir): Promise<Map<string, LiveStatus>> {
+  const read = await withTimeout(readStatusDir(place), DIR_ANSWER_MS, null)
+  if (!read) return lastRead.get(place.dir) ?? new Map()
+  lastRead.set(place.dir, read)
+  return read
+}
+
+// A mesma sessão aberta em dois lugares: vale o status mais urgente.
+function keepUrgent(out: Map<string, LiveStatus>, id: string, status: LiveStatus): void {
+  const prev = out.get(id)
+  if (!prev || prev === 'idle' || status === 'needs-you') out.set(id, status)
+}
+
+// Nulo se não deu para ler a pasta; sem ela (a conta nunca abriu o Claude), nenhum status.
+async function readStatusDir({ dir, distro }: StatusDir): Promise<Map<string, LiveStatus> | null> {
+  const out = new Map<string, LiveStatus>()
   let names: string[]
   try {
     names = (await readdir(dir)).filter((n) => STATUS_FILE.test(n))
-  } catch {
-    return
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'ENOENT' ? out : null
   }
   await Promise.all(
     names.map(async (name) => {
       const info = parseStatus(await readFile(join(dir, name), 'utf8').catch(() => ''), distro)
-      if (!info || info.sessionId === null) return
-      // A mesma sessão aberta em dois lugares: vale o status mais urgente.
-      const prev = out.get(info.sessionId)
-      if (!prev || prev === 'idle' || info.status === 'needs-you') out.set(info.sessionId, info.status)
+      if (info && info.sessionId !== null) keepUrgent(out, info.sessionId, info.status)
     })
   )
+  return out
 }
 
 // pid → status, lido na hora: o terminal do app roda o `claude` direto e sabe o pid dele. Síncrono

@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { PassThrough } from 'node:stream'
 import { app } from 'electron'
 import { tr } from '../i18n'
@@ -42,23 +42,30 @@ export function linuxEnv(env: Record<string, string | undefined>): Record<string
   return out
 }
 
-const written = new Set<string>()
+// A pasta com o script, uma vez por distro em cada abertura do app (de novo se falhar). A gravação
+// vai pela rede até o Linux: síncrona, ela travava o app inteiro enquanto o WSL não respondia.
+const prepared = new Map<string, Promise<void>>()
 
-function prepareRunDir(distro: string, home: string): string {
+async function prepareRunDir(distro: string, home: string): Promise<string> {
   const dir = toUnc(distro, `${home}/${RUN_DIR}`)
-  const script = `${dir}\\run.sh`
-  if (!written.has(distro)) {
-    mkdirSync(dir, { recursive: true })
-    let current = ''
-    try {
-      current = readFileSync(script, 'utf8')
-    } catch {
-      // ainda não existe
-    }
-    if (current !== SCRIPT) writeFileSync(script, SCRIPT, { mode: 0o700 })
-    written.add(distro)
+  let job = prepared.get(distro)
+  if (!job) {
+    job = writeScript(dir).catch((err: unknown) => {
+      prepared.delete(distro)
+      throw err
+    })
+    prepared.set(distro, job)
   }
+  await job
   return dir
+}
+
+async function writeScript(dir: string): Promise<void> {
+  const script = `${dir}\\run.sh`
+  await mkdir(dir, { recursive: true })
+  // Ainda não existe: vazio.
+  const current = await readFile(script, 'utf8').catch(() => '')
+  if (current !== SCRIPT) await writeFile(script, SCRIPT, { mode: 0o700 })
 }
 
 type Listener = Parameters<EventEmitter['on']>[1]
@@ -67,12 +74,12 @@ export type WslCommand = { file: string; args: string[] }
 
 // Programa e argumentos (para o spawn do Node ou do node-pty) que rodam `argv` na pasta `cwd` do
 // Linux, com as variáveis `env` somadas ao ambiente padrão de lá e o PATH do shell de login.
-export function wslCommand(distro: string, info: DistroInfo, cwd: string, argv: string[], env: Record<string, string>): WslCommand {
-  const dir = prepareRunDir(distro, info.home)
+export async function wslCommand(distro: string, info: DistroInfo, cwd: string, argv: string[], env: Record<string, string>): Promise<WslCommand> {
+  const dir = await prepareRunDir(distro, info.home)
   const id = randomUUID()
   const vars = Object.entries({ ...env, ...(info.path ? { PATH: info.path } : {}) }).map(([k, v]) => `${k}=${v}`)
   const all = ['/usr/bin/env', ...vars, ...argv]
-  writeFileSync(`${dir}\\${id}`, all.join('\0') + '\0', { mode: 0o600 })
+  await writeFile(`${dir}\\${id}`, all.join('\0') + '\0', { mode: 0o600 })
   const linuxDir = `${info.home}/${RUN_DIR}`
   return { file: WSL_EXE, args: ['-d', distro, '--cd', cwd, '--exec', '/bin/bash', `${linuxDir}/run.sh`, `${linuxDir}/${id}`] }
 }
@@ -121,10 +128,11 @@ export function deferredWslProcess(
       if (killed) return finish(null, 'SIGTERM')
       let cmd: WslCommand
       try {
-        cmd = wslCommand(distro, info, cwd, argv, env)
+        cmd = await wslCommand(distro, info, cwd, argv, env)
       } catch (err) {
         return fail(tr(`Não deu para preparar o WSL (${distro}): ${(err as Error).message}`, `Couldn’t prepare WSL (${distro}): ${(err as Error).message}`))
       }
+      if (killed) return finish(null, 'SIGTERM')
       const c = spawn(cmd.file, cmd.args, { stdio: 'pipe', windowsHide: true })
       child = c
       // O pipe não segura erro do destino: `claude` saindo no meio de uma escrita daria EPIPE solto.

@@ -12,7 +12,7 @@ const NO_PROMPT = { GIT_TERMINAL_PROMPT: '0' }
 // A remota com o mesmo nome de uma local fica de fora (escolher a local já serve), e o
 // origin/HEAD também. Pasta fora de repositório ou git com erro: nulo.
 export async function listBranches(folder: string): Promise<BranchList | null> {
-  const repo = findRepo(folder)
+  const repo = await findRepo(folder)
   if (!repo) return null
   try {
     const out = await git(repo.root, ['for-each-ref', '--sort=-committerdate', '--format=%(refname)', 'refs/heads', 'refs/remotes'], {
@@ -36,7 +36,7 @@ export async function listBranches(folder: string): Promise<BranchList | null> {
       seen.add(name)
       branches.push({ name, remote })
     }
-    return { current: currentBranch(folder), branches }
+    return { current: await currentBranch(folder), branches }
   } catch {
     return null
   }
@@ -45,7 +45,7 @@ export async function listBranches(folder: string): Promise<BranchList | null> {
 // Traz as branches novas do remoto (e esquece as apagadas lá). Devolve se deu certo; sem rede,
 // sem remoto ou pedindo senha, só não atualiza.
 export async function fetchBranches(folder: string): Promise<boolean> {
-  const repo = findRepo(folder)
+  const repo = await findRepo(folder)
   if (!repo) return false
   try {
     await git(repo.root, ['fetch', '--all', '--prune', '--quiet'], { timeout: 20_000, env: NO_PROMPT })
@@ -60,7 +60,7 @@ export async function fetchBranches(folder: string): Promise<boolean> {
 // iriam junto ou travariam a troca no meio. Criar leva as mudanças para a branch nova, sem risco.
 // Devolve o erro ou nulo.
 export async function checkoutBranch(folder: string, option: BranchOption, create = false): Promise<string | null> {
-  const repo = findRepo(folder)
+  const repo = await findRepo(folder)
   if (!repo) return tr('A pasta não é um repositório git.', 'This folder isn’t a git repository.')
   const { name, remote } = option
   // Nome começando com "-" viraria opção do git.

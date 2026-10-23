@@ -18,7 +18,7 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
     // Tarefa isolada reservada: o worktree nasce agora, com a branch provisória tirada do pedido.
     await materializeWorktree(req.cwd, req.text)
     // Conversa num worktree do Argus: o agente fica sabendo onde está (ver worktrees/hint.ts).
-    chats.send({ ...req, hint: withWorktreeHint(req.hint, req.cwd) })
+    chats.send({ ...req, hint: await withWorktreeHint(req.hint, req.cwd) })
   })
   on('chat:remote-control', (_e, req) => {
     terminals.kill(req.key)

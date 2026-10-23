@@ -1,7 +1,9 @@
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { SessionSummary } from '../../shared/sessions'
+import { userHome } from '../claudeHome'
 import { tr } from '../i18n'
+import { withTimeout } from '../lib/timeout'
 import { liveSessions } from '../liveSessions'
 import { mapLimit } from '../transcripts/mapLimit'
 import { projectDir } from '../transcripts/projectDir'
@@ -13,20 +15,30 @@ import { readTail } from './tail'
 // Arquivos lidos ao mesmo tempo: a primeira listagem pode ter centenas de conversas.
 const PARALLEL = 8
 
+// Sem resposta da pasta de conversas nesse tempo (a máquina virtual do WSL parada ou travada), a
+// leitura conta como não feita.
+const ANSWER_MS = 8000
+
 type Cached = { size: number; mtimeMs: number; ino: number; head: Head; data: SummaryData | null }
 
 // Reler só arquivos que mudaram desde a última vez. Por pasta, para os apagados saírem também.
 const cache = new Map<string, Map<string, Cached>>()
 
-export async function listSessions(projectPath: string): Promise<SessionSummary[]> {
+// Nulo quando a pasta não respondeu ou não deu para ler: a janela fica com a lista que já tinha.
+// Antes a falha virava lista vazia, e as conversas sumiam do card e voltavam quando o WSL
+// respondia (2026-10-23). Lista vazia só quando não há conversa nenhuma.
+export async function listSessions(projectPath: string): Promise<SessionSummary[] | null> {
   const dir = projectDir(projectPath)
-  let names: string[]
+  let found: string[] | null
   try {
-    names = (await readdir(dir)).filter((n) => n.endsWith('.jsonl'))
-  } catch {
+    found = await withTimeout(namesIn(dir), ANSWER_MS, null)
+  } catch (err) {
+    if (!(await noConversations(err, projectPath))) return null
     cache.delete(dir)
     return []
   }
+  if (!found) return null
+  const names = found.filter((n) => n.endsWith('.jsonl'))
   const live = await liveSessions()
   const files = cachedIn(dir, names)
   const results = await mapLimit(names, PARALLEL, (name) => summaryOf(dir, name, files))
@@ -41,6 +53,31 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
       live: live.get(s.id) ?? null,
       ...(s.design && { design: true })
     }))
+}
+
+// Leitura da pasta em andamento: quem pergunta enquanto ela não volta (o WSL travado) espera a
+// mesma, em vez de abrir outra que também ficaria presa.
+const reading = new Map<string, Promise<string[]>>()
+
+function namesIn(dir: string): Promise<string[]> {
+  let job = reading.get(dir)
+  if (!job) {
+    job = readdir(dir).finally(() => reading.delete(dir))
+    reading.set(dir, job)
+  }
+  return job
+}
+
+// A pasta de conversas não existe porque não há conversa ainda, e não porque o lugar onde o Claude
+// Code grava ficou sem resposta: a pasta do usuário de quem roda o Claude (no WSL, a do Linux)
+// responde.
+async function noConversations(err: unknown, projectPath: string): Promise<boolean> {
+  if ((err as NodeJS.ErrnoException).code !== 'ENOENT') return false
+  const home = stat(userHome(projectPath)).then(
+    (s) => s.isDirectory(),
+    () => false
+  )
+  return withTimeout(home, ANSWER_MS, false)
 }
 
 // Resumos guardados da pasta, já sem os de arquivos que não existem mais.

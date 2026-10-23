@@ -25,17 +25,22 @@ export function usePollWorktree(path: string): WorktreeStatus | null {
   const settling = !status || status.state === 'preparing' || busy
   useEffect(() => {
     let alive = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    // A próxima pergunta só depois da resposta da anterior: com o WSL lento, perguntar a cada 2 s sem
+    // esperar empilhava dezenas delas, cada uma com vários git rodando lá dentro (2026-10-23).
     const read = () =>
       void window.api.worktrees
         .status(path)
         // Igual ao que já estava (o caso comum, a cada 2 ou 15 s): nada muda e a faixa não redesenha.
         .then((s) => alive && store.set((prev) => (prev.has(path) && JSON.stringify(prev.get(path)) === JSON.stringify(s) ? prev : new Map(prev).set(path, s))))
         .catch(() => {})
+        .finally(() => {
+          if (alive) timer = setTimeout(read, settling ? FAST_MS : SLOW_MS)
+        })
     read()
-    const timer = setInterval(read, settling ? FAST_MS : SLOW_MS)
     return () => {
       alive = false
-      clearInterval(timer)
+      clearTimeout(timer)
     }
   }, [path, uncommitted, lastReply, settling])
   return status

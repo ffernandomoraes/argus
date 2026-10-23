@@ -1,5 +1,6 @@
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import type { UncommittedFile } from '../../shared/sessions'
+import { expandHome } from '../paths'
 import { git } from './git'
 import { findRepo } from './repo'
 
@@ -46,20 +47,25 @@ async function readStatus(root: string): Promise<UncommittedFile[] | null> {
 const TTL = 1000
 const recent = new Map<string, { at: number; files: UncommittedFile[] | null }>()
 const running = new Map<string, Promise<UncommittedFile[] | null>>()
+// Raiz do repositório de cada pasta já perguntada: esquecer a leitura não procura o .git de novo.
+const roots = new Map<string, string>()
+
+const keyOf = (folder: string) => resolve(expandHome(folder))
 
 // O .git da pasta mudou (commit, add, checkout): a próxima pergunta lê de novo, sem esperar a
-// guardada vencer.
+// guardada vencer. A pasta pode ser a própria raiz do repositório.
 export function forgetStatus(folder: string): void {
-  const repo = findRepo(folder)
-  if (repo) recent.delete(repo.root)
+  const key = keyOf(folder)
+  recent.delete(roots.get(key) ?? key)
 }
 
 // Arquivos não comitados do repositório inteiro, como o contador do VS Code: alterados,
 // preparados e novos (cada arquivo novo conta, mesmo dentro de pasta nova).
 // Pasta fora de repositório ou git com erro: nulo.
 export async function uncommittedFiles(folder: string): Promise<UncommittedFile[] | null> {
-  const repo = findRepo(folder)
+  const repo = await findRepo(folder)
   if (!repo) return null
+  roots.set(keyOf(folder), repo.root)
   const hit = recent.get(repo.root)
   if (hit && Date.now() - hit.at < TTL) return hit.files
   let job = running.get(repo.root)

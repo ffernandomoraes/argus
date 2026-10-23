@@ -8,6 +8,7 @@ import { useCanvasActions } from './CanvasContext'
 import { ConversationItem } from './ConversationItem'
 import { favoriteKey, useFavorites } from './favorites'
 import { groupByDay } from './project/groupByDay'
+import { useEmptyListText } from './project/useEmptyListText'
 import { useSessions } from './sessionsStore'
 import { useConversationSearch } from './useConversationSearch'
 import type { ConversationSummary } from './types'
@@ -41,6 +42,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
 }) {
   // Já vem da mais recente para a mais antiga (sessionsStore).
   const all = useSessions(project.path)
+  const emptyText = useEmptyListText(project.path)
   // As favoritas ficam numa seção no topo, sempre à vista; as outras seguem por dia, em levas.
   const favoriteIds = useFavorites()
   const [favorites, conversations] = useMemo(() => {
@@ -186,7 +188,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
               </button>
             </li>
           )}
-          {all.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</li>}
+          {all.length === 0 && <li className="px-2 py-1.5 text-xs text-faint">{emptyText}</li>}
         </ul>
       )}
     </aside>

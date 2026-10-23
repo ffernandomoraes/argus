@@ -15,8 +15,11 @@ import { handle, on } from './register'
 export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   const watched = new WatchedFolders((paths) => sessionWatch.setProjects(paths))
   handle('sessions:list', async (_e, path) => {
+    const listed = await listSessions(path)
+    // Sem resposta da pasta (o WSL parado ou travado): nulo, e a janela fica com a lista que já tinha.
+    if (!listed) return null
     // A conversa de um protótipo faz parte do design dele, que já está na lista: não aparece solta.
-    const sessions = [...(await listSessions(path)), ...agentSessions(path)]
+    const sessions = [...listed, ...agentSessions(path)]
     const inDesigns = designSessionIds(path)
     return inDesigns.size ? sessions.filter((s) => !inDesigns.has(s.id)) : sessions
   })

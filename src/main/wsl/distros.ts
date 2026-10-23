@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app } from 'electron'
 import { writeStdin } from '../lib/childProcess'
@@ -183,6 +183,12 @@ function probe(distro: string): Promise<DistroInfo | null> {
   })
 }
 
+const exists = (path: string) =>
+  access(path).then(
+    () => true,
+    () => false
+  )
+
 // Pergunta de novo ao Linux (e guarda). Duas chamadas ao mesmo tempo esperam a mesma resposta.
 export function loadDistro(distro: string): Promise<DistroInfo | null> {
   if (!IS_WIN) return Promise.resolve(null)
@@ -190,12 +196,12 @@ export function loadDistro(distro: string): Promise<DistroInfo | null> {
   const key = distro.toLowerCase()
   let p = loading.get(key)
   if (!p) {
-    p = probe(distro).then((info) => {
+    p = probe(distro).then(async (info) => {
       if (info) {
         for (const d of cache.keys()) if (sameDistro(d, distro)) cache.delete(d)
         cache.set(distro, info)
-        // Windows 10 antigo só conhece o \\wsl$.
-        if (!existsSync(`\\\\wsl.localhost\\${distro}\\`) && existsSync(`\\\\wsl$\\${distro}\\`)) setUncPrefix('\\\\wsl$')
+        // Windows 10 antigo só conhece o \\wsl$. Conferido sem segurar o app: é pela rede.
+        if (!(await exists(`\\\\wsl.localhost\\${distro}\\`)) && (await exists(`\\\\wsl$\\${distro}\\`))) setUncPrefix('\\\\wsl$')
         persist()
         log(`wsl -d ${distro}`, JSON.stringify({ home: info.home, claude: info.claude }))
       }

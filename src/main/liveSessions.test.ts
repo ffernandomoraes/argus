@@ -1,8 +1,27 @@
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { liveSessions, liveStatusByPid, sessionIdByPid } from './liveSessions'
+
+// Pastas que não respondem (a do WSL com a máquina virtual travada) ou que dão erro de leitura; o
+// resto lê o disco.
+const fs = vi.hoisted(() => ({ silent: new Set<string>(), failing: new Set<string>() }))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const real = await importOriginal<typeof import('node:fs/promises')>()
+  const readdir = (path: string, ...rest: unknown[]) => {
+    if (fs.silent.has(String(path))) return new Promise(() => {})
+    if (fs.failing.has(String(path))) return Promise.reject(Object.assign(new Error('EIO'), { code: 'EIO' }))
+    return (real.readdir as (...args: unknown[]) => Promise<unknown>)(path, ...rest)
+  }
+  return { ...real, readdir }
+})
+
+afterEach(() => {
+  fs.silent.clear()
+  fs.failing.clear()
+  vi.useRealTimers()
+})
 
 // Cada Claude Code aberto grava ~/.claude/sessions/<pid>.json. O pid deste processo de teste está
 // vivo; o de um processo que já terminou, não.
@@ -34,6 +53,28 @@ describe('liveSessions', () => {
   it('pid 0 ou negativo nunca vale (seria um grupo de processos)', async () => {
     write('0.json', { pid: 0, sessionId: 'zero', status: 'busy' })
     write('1.json', { pid: -1, sessionId: 'negativo', status: 'busy' })
+    expect((await liveSessions()).size).toBe(0)
+  })
+
+  // 2026-10-23: com o WSL travado, ler a pasta de status de lá segurava a lista de conversas e a
+  // dos designs; e sem status, as conversas pareceriam ter parado.
+  it('pasta de status que não responde: vale a última leitura dela', async () => {
+    write(`${process.pid}.json`, { pid: process.pid, sessionId: 'viva', status: 'busy' })
+    expect([...(await liveSessions())]).toEqual([['viva', 'running']])
+    fs.silent.add(dir())
+    vi.useFakeTimers()
+    const live = liveSessions()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect([...(await live)]).toEqual([['viva', 'running']])
+  })
+
+  it('erro ao ler a pasta de status também: a conversa não parece ter parado; sem a pasta, nenhum status', async () => {
+    write(`${process.pid}.json`, { pid: process.pid, sessionId: 'viva', status: 'busy' })
+    expect([...(await liveSessions())]).toEqual([['viva', 'running']])
+    fs.failing.add(dir())
+    expect([...(await liveSessions())]).toEqual([['viva', 'running']])
+    fs.failing.clear()
+    rmSync(dir(), { recursive: true, force: true })
     expect((await liveSessions()).size).toBe(0)
   })
 })

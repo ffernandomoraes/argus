@@ -1,4 +1,4 @@
-import { existsSync, statSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { git } from '../gitBranch/git'
 import { findRepo } from '../gitBranch/repo'
@@ -37,9 +37,10 @@ export async function removeWorktree(path: string): Promise<string | null> {
 // repositório principal, que o próprio git aponta (--git-common-dir).
 async function removeUnregistered(path: string): Promise<string | null> {
   const dir = resolve(expandHome(path))
-  if (!existsSync(dir)) return null
-  const repo = findRepo(dir)
-  if (!repo || !statSync(join(repo.root, '.git')).isFile())
+  if (!(await stat(dir).catch(() => null))) return null
+  const repo = await findRepo(dir)
+  const pointer = repo ? await stat(join(repo.root, '.git')).catch(() => null) : null
+  if (!repo || !pointer?.isFile())
     return tr('A pasta não é um worktree; tire o card do canvas pelo menu.', 'The folder isn’t a worktree; remove the card from the canvas through the menu.')
   try {
     const common = (await git(repo.root, ['rev-parse', '--path-format=absolute', '--git-common-dir'])).trim()

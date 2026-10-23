@@ -1,8 +1,19 @@
 import { mkdirSync, mkdtempSync, symlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, sep } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { expandHome, inside, insideRoot, isDirectory, realRoot } from './paths'
+
+// Quantas vezes a pasta real foi procurada no disco (o resto do fs é o de verdade).
+const disk = vi.hoisted(() => ({ realpaths: [] as string[] }))
+vi.mock('node:fs', async (importOriginal) => {
+  const real = await importOriginal<typeof import('node:fs')>()
+  const native = (path: string) => {
+    disk.realpaths.push(path)
+    return real.realpathSync.native(path)
+  }
+  return { ...real, realpathSync: Object.assign((path: string) => real.realpathSync(path), real.realpathSync, { native }) }
+})
 
 describe('expandHome', () => {
   it('troca "~" pela pasta do usuário, como o canvas guarda as pastas', () => {
@@ -58,6 +69,17 @@ describe('isDirectory e realRoot', () => {
     expect(isDirectory(dir)).toBe(true)
     expect(isDirectory(join(dir, 'nada'))).toBe(false)
     expect(realRoot(join(dir, 'nada'))).toBe(join(dir, 'nada'))
+  })
+
+  // 2026-10-23: a consulta dos servidores, a cada poucos segundos, resolvia a pasta do WSL pela
+  // rede sem soltar o app: com o WSL travado, tudo parava junto.
+  it('pasta do WSL não é procurada no disco', () => {
+    disk.realpaths.length = 0
+    realRoot('\\\\wsl.localhost\\Ubuntu\\home\\ana\\proj')
+    realRoot('//wsl$/Ubuntu/home/ana/proj')
+    expect(disk.realpaths).toEqual([])
+    realRoot(homedir())
+    expect(disk.realpaths).toHaveLength(1)
   })
 
   // O lsof (servidores rodando) devolve a pasta real: o atalho precisa dar a mesma.

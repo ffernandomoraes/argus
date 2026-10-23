@@ -122,7 +122,7 @@ export type InvokeChannels = {
   'design:snapshot': (origin: string) => string | null
   'design:routes': (projectPath: string) => DesignRoute[]
   // Sessões do Claude Code e git da pasta
-  'sessions:list': (path: string) => SessionSummary[]
+  'sessions:list': (path: string) => SessionSummary[] | null
   'sessions:folders': () => KnownFolder[]
   'sessions:search': (path: string, query: string) => SearchHit[]
   'sessions:trash': (path: string, id: string) => string | null

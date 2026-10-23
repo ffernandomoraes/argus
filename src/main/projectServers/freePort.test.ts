@@ -57,19 +57,34 @@ describe('freePort', () => {
 })
 
 describe('packageManager e projectScript', () => {
-  it('o gerenciador declarado no package.json vale primeiro', () => {
-    expect(packageManager(folder(), 'yarn@4.1.0')).toBe('yarn')
+  it('o gerenciador declarado no package.json vale primeiro', async () => {
+    expect(await packageManager(folder(), 'yarn@4.1.0')).toBe('yarn')
   })
 
-  it('em monorepo, acha a trava numa pasta acima', () => {
+  it('em monorepo, acha a trava numa pasta acima', async () => {
     const root = folder()
     writeFileSync(join(root, 'pnpm-lock.yaml'), '')
     mkdirSync(join(root, 'apps', 'web'), { recursive: true })
-    expect(packageManager(join(root, 'apps', 'web'), undefined)).toBe('pnpm')
+    expect(await packageManager(join(root, 'apps', 'web'), undefined)).toBe('pnpm')
   })
 
-  it('sem nada, npm', () => {
-    expect(packageManager(folder(), 'gerenciador-estranho')).toBe('npm')
+  it('com duas travas na mesma pasta, vale a da ordem de preferência', async () => {
+    const root = folder()
+    writeFileSync(join(root, 'package-lock.json'), '')
+    writeFileSync(join(root, 'yarn.lock'), '')
+    expect(await packageManager(root, undefined)).toBe('yarn')
+  })
+
+  it('sem nada, npm', async () => {
+    expect(await packageManager(folder(), 'gerenciador-estranho')).toBe('npm')
+  })
+
+  // A consulta dos servidores pergunta a cada poucos segundos: a procura não roda toda vez.
+  it('a trava achada vale por um tempo', async () => {
+    const root = folder()
+    expect(await packageManager(root, undefined)).toBe('npm')
+    writeFileSync(join(root, 'pnpm-lock.yaml'), '')
+    expect(await packageManager(root, undefined)).toBe('npm')
   })
 
   it('roda o dev; sem ele, o start; sem nenhum, nada', async () => {

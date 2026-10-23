@@ -5,7 +5,7 @@ import { findRepo } from './repo'
 // (git@github.com:dono/repo.git ou ssh://git@host/dono/repo) vira https. Pasta fora de
 // repositório, sem remoto ou com remoto local: nulo.
 export async function repoUrl(folder: string): Promise<string | null> {
-  const repo = findRepo(folder)
+  const repo = await findRepo(folder)
   if (!repo) return null
   try {
     const remotes = (await git(repo.root, ['remote'])).trim().split(/\r?\n/).filter(Boolean)

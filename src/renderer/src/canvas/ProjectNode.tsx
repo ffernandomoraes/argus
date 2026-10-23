@@ -12,6 +12,7 @@ import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH, WORKTREE_WIDTH } from './factory'
 import { PathLabel } from './PathLabel'
 import { ConversationStack } from './project/ConversationStack'
 import { ProjectActions } from './project/ProjectActions'
+import { useEmptyListText } from './project/useEmptyListText'
 import { WorkspaceFolders } from './project/WorkspaceFolders'
 import { useSessions } from './sessionsStore'
 import type { ProjectNode as ProjectNodeType } from './types'
@@ -25,6 +26,7 @@ import { tr } from '../i18n'
 // (project/ConversationStack). Branch e ações ficam fora da caixa, logo acima (project/ProjectActions).
 function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNodeType>) {
   const conversations = useSessions(data.path)
+  const emptyText = useEmptyListText(data.path)
   const collapsed = !!data.collapsed
   const { color: groupColor } = useGroupOf(parentId)
   // Linha até a conversa rodando e os subagentes na cor do grupo; grupo cinza (o padrão) conta como sem cor.
@@ -134,7 +136,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
         </header>
 
         {conversations.length === 0 ? (
-          <p className="border-t border-line px-3 py-2.5 text-xs text-faint">{tr('Nenhuma conversa ainda', 'No chats yet')}</p>
+          <p className="border-t border-line px-3 py-2.5 text-xs text-faint">{emptyText}</p>
         ) : (
           <ConversationStack nodeId={id} conversations={conversations} collapsed={collapsed} flowColor={flowColor} />
         )}

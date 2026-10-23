@@ -262,7 +262,9 @@ export type Api = {
     routes: (projectPath: string) => Promise<DesignRoute[]>
   }
   sessions: {
-    list: (path: string) => Promise<SessionSummary[]>
+    // Conversas da pasta; nulo se ela não respondeu ou não deu para ler (o WSL parado ou travado):
+    // não é o mesmo que não ter conversa nenhuma.
+    list: (path: string) => Promise<SessionSummary[] | null>
     // Pastas onde o Claude Code já conversou, da mais recente para a mais antiga.
     folders: () => Promise<KnownFolder[]>
     // Conversas da pasta que falam do termo (sem acento nem maiúscula), com um trecho em volta.

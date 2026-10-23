@@ -18,20 +18,35 @@ async function baseRef(info: WorktreeInfo): Promise<string | null> {
   return null
 }
 
-// Commits desta branch que o remoto não tem. Sem branch no remoto, todos desde a base.
-export async function unpushedCount(info: WorktreeInfo): Promise<number> {
+// Commits desta branch que o remoto não tem. Sem branch no remoto, todos desde a base (`base`: já
+// procurada por quem chama).
+export async function unpushedCount(info: WorktreeInfo, base?: string | null): Promise<number> {
   const count = (range: string) => git(info.path, ['rev-list', '--count', range]).then((out) => Number(out.trim()) || 0)
   try {
     return await count('@{u}..HEAD')
   } catch {
-    const base = await baseRef(info)
-    return base ? count(`${base}..HEAD`).catch(() => 0) : 0
+    const ref = base === undefined ? await baseRef(info) : base
+    return ref ? count(`${ref}..HEAD`).catch(() => 0) : 0
   }
 }
 
-export async function worktreeStatus(path: string): Promise<WorktreeStatus | null> {
+// Uma leitura por worktree de cada vez: quem pergunta no meio dela (a faixa do card de cada janela,
+// a cada poucos segundos) espera a mesma. Antes cada pergunta abria a sua, e com o WSL lento elas se
+// acumulavam, cada uma com quatro a seis git rodando lá dentro (2026-10-23).
+const reading = new Map<string, Promise<WorktreeStatus>>()
+
+export function worktreeStatus(path: string): Promise<WorktreeStatus | null> {
   const info = worktreeOf(path)
-  if (!info) return null
+  if (!info) return Promise.resolve(null)
+  let job = reading.get(info.path)
+  if (!job) {
+    job = readStatus(info).finally(() => reading.delete(info.path))
+    reading.set(info.path, job)
+  }
+  return job
+}
+
+async function readStatus(info: WorktreeInfo): Promise<WorktreeStatus> {
   const error = failures.get(info.path)
   if (info.pending)
     return { state: preparing.has(info.path) ? 'preparing' : 'pending', ...(error && { error }), branch: null, files: 0, uncommitted: 0, unpushed: 0 }
@@ -46,9 +61,9 @@ export async function worktreeStatus(path: string): Promise<WorktreeStatus | nul
   return {
     state: preparing.has(info.path) ? 'preparing' : 'ready',
     ...(error && { error }),
-    branch: currentBranch(info.path),
+    branch: await currentBranch(info.path),
     files: files.size,
     uncommitted: pending.length,
-    unpushed: await unpushedCount(info)
+    unpushed: await unpushedCount(info, base)
   }
 }

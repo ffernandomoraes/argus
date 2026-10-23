@@ -65,7 +65,7 @@ export async function wslLaunch(
           `Couldn’t install Claude Code in WSL (${distro}). See the diagnostics in Settings.`
         )
       }
-    const cmd = wslCommand(distro, info, cwd, argv, env)
+    const cmd = await wslCommand(distro, info, cwd, argv, env)
     return { ok: true, ...cmd, ...base }
   } catch (err) {
     log(`não deu para preparar o claude no WSL (${distro})`, (err as Error).message)

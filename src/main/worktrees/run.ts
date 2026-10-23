@@ -20,7 +20,7 @@ export async function runInFolder(cwd: string, command: string, timeout: number)
   if (wsl && IS_WIN) {
     const info = await ensureDistro(wsl.distro)
     if (!info) return `WSL (${wsl.distro})`
-    const cmd = wslCommand(wsl.distro, info, wsl.linux, ['bash', '-lic', command], {})
+    const cmd = await wslCommand(wsl.distro, info, wsl.linux, ['bash', '-lic', command], {})
     file = cmd.file
     args = cmd.args
     dir = process.env.USERPROFILE || cwd

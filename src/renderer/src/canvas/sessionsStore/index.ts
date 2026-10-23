@@ -8,12 +8,13 @@ import { usePreference } from '../../settings/preferences'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
-import { changesAt, store, watching, watchingChanges } from './state'
+import { changesAt, listStateOf, store, watching, watchingChanges, type ListState } from './state'
 import { unread } from './unread'
 // Efeito de importar: as não vistas vão para o ícone da barra de menus.
 import './unreadSync'
 
 export { DESIGN_PREFIX } from './convert'
+export type { ListState } from './state'
 export { setPoppedOut, useIsUnread, useViewing } from './unread'
 
 // Conversas de cada pasta, lidas dos arquivos do Claude Code, a branch atual dela e os arquivos
@@ -75,6 +76,13 @@ export function useSessions(path: string): ConversationSummary[] {
   const busy = useBackgroundBusy()
   const designs = usePreference('designMode')
   return useMemo(() => withBackground(withoutDesigns(list, designs), busy), [list, busy, designs])
+}
+
+// Como está a lista da pasta: ainda lendo, sem resposta dela (o WSL parado ou travado) ou lida.
+// Com a lista vazia, é o que diz se o card mostra "Nenhuma conversa ainda".
+export function useListState(path: string): ListState {
+  useEffect(() => watch(path), [path])
+  return useStore(store, (s) => listStateOf(s, path))
 }
 
 // Conversas de várias pastas (o resumo do grupo recolhido, cujas pastas não estão na tela):

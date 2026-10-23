@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { access, copyFile, mkdir, readFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { slugify, type WorktreeInfo, type WorktreeReserved } from '../../shared/worktrees'
 import { git } from '../gitBranch/git'
@@ -20,19 +20,25 @@ const ENV_FILE = /^\.env(\..+)?$/
 export const preparing = new Set<string>()
 export const failures = new Map<string, string>()
 
+const exists = (path: string) =>
+  access(path).then(
+    () => true,
+    () => false
+  )
+
 // "Nova tarefa em paralelo": reserva a pasta, sem criar nada ainda. A tarefa sai da branch em que a
 // pasta principal está agora. O card filho aparece na hora; o worktree nasce no primeiro envio da
 // conversa (materialize), quando já dá para tirar um nome provisório do pedido.
-export function reserveWorktree(folder: string): WorktreeReserved {
+export async function reserveWorktree(folder: string): Promise<WorktreeReserved> {
   const full = resolve(expandHome(folder))
-  const repo = findRepo(full)
+  const repo = await findRepo(full)
   if (!repo) return { ok: false, error: tr('A pasta não é um repositório git.', 'This folder isn’t a git repository.') }
   // Pedida a partir de outro worktree: a nova também é do repositório principal.
   const parent = worktreeOf(repo.root)
   const main = parent?.main ?? repo.root
-  const base = currentBranch(repo.root)
+  const base = await currentBranch(repo.root)
   if (!base) return { ok: false, error: tr('A pasta não está numa branch (HEAD solto).', 'The folder isn’t on a branch (detached HEAD).') }
-  const dir = worktreeFolder(main)
+  const dir = await worktreeFolder(main)
   rememberWorktree({ path: dir, main, base, pending: true })
   // Card aberto numa pasta dentro do repositório (apps/checkout): o filho abre na mesma pasta da cópia.
   const inner = relative(repo.root, full)
@@ -74,7 +80,7 @@ async function create(info: WorktreeInfo, text: string): Promise<void> {
   failures.delete(info.path)
   try {
     const branch = await freeBranch(info.main, text, info.path)
-    mkdirSync(dirname(info.path), { recursive: true })
+    await mkdir(dirname(info.path), { recursive: true })
     await git(info.main, ['worktree', 'add', '-b', branch, info.path, info.base], { timeout: 180_000, env: NO_PROMPT })
     await copyEnvFiles(info.main, info.path)
     updateWorktree(info.path, { pending: false })
@@ -86,6 +92,8 @@ async function create(info: WorktreeInfo, text: string): Promise<void> {
   }
   // A conversa já pode começar; as dependências chegam em seguida.
   void install(info.path)
+    // Sem conseguir nem começar (o WSL sem responder ao preparar o comando): o card mostra também.
+    .catch((err: unknown) => errorMessage(err))
     .then((err) => {
       if (err) failures.set(info.path, tr(`Dependências não instaladas: ${err}`, `Dependencies not installed: ${err}`))
     })
@@ -106,10 +114,10 @@ async function copyEnvFiles(from: string, to: string): Promise<void> {
   const files = await listEnvFiles(from).catch(() => [])
   for (const file of files) {
     const target = join(to, file)
-    if (existsSync(target)) continue
+    if (await exists(target)) continue
     try {
-      mkdirSync(dirname(target), { recursive: true })
-      copyFileSync(join(from, file), target)
+      await mkdir(dirname(target), { recursive: true })
+      await copyFile(join(from, file), target)
     } catch {
       // um .env que não deu para copiar não impede a tarefa
     }
@@ -120,12 +128,12 @@ async function copyEnvFiles(from: string, to: string): Promise<void> {
 // Devolve nulo se deu certo, ou o erro.
 async function install(root: string): Promise<string | null> {
   const pkgFile = join(root, 'package.json')
-  if (!existsSync(pkgFile)) return null
+  if (!(await exists(pkgFile))) return null
   let declared: unknown
   try {
-    declared = (JSON.parse(readFileSync(pkgFile, 'utf8')) as { packageManager?: unknown }).packageManager
+    declared = (JSON.parse(await readFile(pkgFile, 'utf8')) as { packageManager?: unknown }).packageManager
   } catch {
     declared = undefined
   }
-  return runInFolder(root, `${packageManager(root, declared)} install`, 15 * 60_000)
+  return runInFolder(root, `${await packageManager(root, declared)} install`, 15 * 60_000)
 }

@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { homedir } from 'node:os'
 import { promisify } from 'node:util'
+import { limiter } from '../lib/limiter'
 import { gitPath } from '../platform'
 import { parseWslPath, toLinux } from '../wsl'
 import { WSL_EXE } from '../wsl/distros'
@@ -29,18 +30,38 @@ export function gitCommand(cwd: string, args: string[]): { file: string; args: s
   return { file: WSL_EXE, args: ['-d', wsl.distro, '--cd', wsl.linux, '--exec', 'git', ...SAFE_GIT, ...linuxArgs], cwd: homedir(), wsl: true }
 }
 
+// Comandos do git ao mesmo tempo em cada distro do WSL. Cada um é um wsl.exe e um processo no Linux,
+// e com o WSL lento as consultas de fundo (branch, git status, tarefas isoladas) se acumulavam às
+// dezenas, pesando ainda mais nele (2026-10-23). Os de mais esperam a vez; o prazo de cada um só
+// conta depois que ele começa.
+const WSL_PARALLEL = 4
+const wslTurns = new Map<string, ReturnType<typeof limiter>>()
+
+function wslTurn(distro: string): ReturnType<typeof limiter> {
+  const key = distro.toLowerCase()
+  let turn = wslTurns.get(key)
+  if (!turn) {
+    turn = limiter(WSL_PARALLEL)
+    wslTurns.set(key, turn)
+  }
+  return turn
+}
+
 // No WSL o prazo é maior: o primeiro wsl.exe pode ligar a máquina virtual.
 export async function git(cwd: string, args: string[], { timeout = 5000, maxBuffer = 1024 * 1024, env }: GitOptions = {}): Promise<string> {
   const cmd = gitCommand(cwd, args)
-  return (
-    await run(cmd.file, cmd.args, {
-      cwd: cmd.cwd,
-      timeout: cmd.wsl ? Math.max(timeout, 20_000) : timeout,
-      maxBuffer,
-      windowsHide: true,
-      ...(env && { env: { ...process.env, ...env } })
-    })
-  ).stdout
+  const exec = async () =>
+    (
+      await run(cmd.file, cmd.args, {
+        cwd: cmd.cwd,
+        timeout: cmd.wsl ? Math.max(timeout, 20_000) : timeout,
+        maxBuffer,
+        windowsHide: true,
+        ...(env && { env: { ...process.env, ...env } })
+      })
+    ).stdout
+  const distro = cmd.wsl ? parseWslPath(cwd)?.distro : undefined
+  return distro ? wslTurn(distro)(exec) : exec()
 }
 
 // git diff sai com código 1 quando há diferença (--no-index); a saída ainda serve.

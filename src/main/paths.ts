@@ -2,6 +2,7 @@ import { realpathSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { IS_WIN } from './platform'
+import { parseWslPath } from './wsl/path'
 
 // "~/proj" (Mac) ou "~\proj" (Windows): o canvas guarda as pastas a partir da pasta do usuário.
 export function expandHome(path: string): string {
@@ -23,9 +24,12 @@ export function insideRoot(root: string, rel: string): string | null {
 
 // O lsof devolve a pasta real (sem atalhos); a do projeto precisa estar igual para comparar. No
 // Windows, uma unidade mapeada vira o caminho de rede (\\servidor\pasta): quem compara com o que
-// a pessoa abriu usa também o resolve simples (ver projectServers/matching.ts).
+// a pessoa abriu usa também o resolve simples (ver projectServers/matching.ts). A pasta do WSL fica
+// como está: o Windows não enxerga os processos de lá, e resolver pela rede, síncrono, a cada
+// consulta dos servidores travava o app inteiro enquanto o WSL não respondia (2026-10-23).
 export function realRoot(path: string): string {
   const full = resolve(expandHome(path))
+  if (parseWslPath(path)) return full
   try {
     return realpathSync.native(full)
   } catch {

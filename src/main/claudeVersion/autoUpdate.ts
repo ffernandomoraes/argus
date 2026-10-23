@@ -83,7 +83,7 @@ export async function updateWslClaudes(): Promise<void> {
     const home = homeUnc(distro)
     if (!info?.claude || !home) continue
     if (updatesOff(home, join(home, '.claude'), toUnc(distro, MANAGED_LINUX), {})) continue
-    const { file, args } = wslCommand(distro, info, info.home, [info.claude, 'update'], {})
+    const { file, args } = await wslCommand(distro, info, info.home, [info.claude, 'update'], {})
     await new Promise<void>((resolve) => {
       execFile(file, args, { timeout: UPDATE_TIMEOUT_MS, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
         const out = `${stdout}\n${stderr}`.trim().split(/\r?\n/).slice(-3).join(' | ')

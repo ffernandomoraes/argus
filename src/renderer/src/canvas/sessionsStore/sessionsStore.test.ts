@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DesignSummary } from '../../../../shared/design'
 import type { SessionSummary } from '../../../../shared/sessions'
 import type { ConversationSummary } from '../types'
@@ -10,8 +10,11 @@ type Api = Record<string, unknown>
 const globals = globalThis as unknown as { window: { api: Api; addEventListener?: unknown }; document: Record<string, unknown> }
 
 // O que o processo principal responde, por pasta; cada leitura espera `gate` antes de responder.
+// As de `silent` não respondem (nulo, como o WSL parado), e a branch espera `branchGate`.
 const disk = new Map<string, SessionSummary[]>()
+const silent = new Set<string>()
 let gate: Promise<void> = Promise.resolve()
+let branchGate: Promise<void> = Promise.resolve()
 const reads = vi.fn()
 
 let mod: {
@@ -29,9 +32,12 @@ beforeAll(async () => {
     list: async (path: string) => {
       reads(path)
       await gate
-      return disk.get(path) ?? []
+      return silent.has(path) ? null : (disk.get(path) ?? [])
     },
-    branch: async () => 'main',
+    branch: async () => {
+      await branchGate
+      return 'main'
+    },
     changes: async () => []
   }
   globals.window.api.design = { list: async () => [] }
@@ -45,8 +51,17 @@ beforeAll(async () => {
 
 beforeEach(() => {
   disk.clear()
+  silent.clear()
   reads.mockClear()
   gate = Promise.resolve()
+  branchGate = Promise.resolve()
+})
+
+// Nova tentativa de uma pasta sem resposta não fica marcada para o teste seguinte.
+afterEach(() => {
+  for (const path of mod.state.watching.keys()) mod.reads.forgetReads(path)
+  mod.state.watching.clear()
+  vi.useRealTimers()
 })
 
 const session = (id: string, repliedAt: string, extra: Partial<SessionSummary> = {}) =>
@@ -70,7 +85,7 @@ describe('folderList', () => {
 
 describe('merge', () => {
   const conv = (id: string, title = id) => ({ id, title, kind: 'conversa', status: 'idle', updatedAt: '', repliedAt: '', contextPercent: 0 }) as ConversationSummary
-  const empty = () => ({ sessions: new Map(), branch: new Map(), changes: new Map() })
+  const empty = () => ({ sessions: new Map(), branch: new Map(), changes: new Map(), unreadable: new Set<string>() })
 
   it('leitura igual à guardada devolve o mesmo estado (ninguém redesenha)', () => {
     const s = mod.state.merge(empty(), '/p', { list: [conv('a')], branch: 'main' })
@@ -135,6 +150,61 @@ describe('leituras das pastas', () => {
     mod.reads.request('/ninguem', mod.reads.EVERYTHING)
     await settle()
     expect(reads).not.toHaveBeenCalled()
+  })
+
+  // 2026-10-23: com o WSL travado, a leitura falhava, a lista virava vazia e as conversas sumiam do
+  // card até ele voltar ("Nenhuma conversa ainda"), como se tivessem sido apagadas.
+  it('pasta que não respondeu fica com a lista que tinha, marcada; a próxima leitura desmarca', async () => {
+    mod.state.watching.set('/d', 1)
+    disk.set('/d', [session('s1', '2026-10-20T00:00:00Z')])
+    mod.reads.request('/d', mod.reads.EVERYTHING)
+    await settle()
+    silent.add('/d')
+    mod.reads.request('/d', mod.reads.needFor('transcript'))
+    await settle()
+    const s = mod.state.store.get()
+    expect(s.sessions.get('/d')?.map((c) => c.id)).toEqual(['s1'])
+    expect(mod.state.listStateOf(s, '/d')).toBe('unreadable')
+    silent.delete('/d')
+    mod.reads.request('/d', mod.reads.needFor('transcript'))
+    await settle()
+    expect(mod.state.listStateOf(mod.state.store.get(), '/d')).toBe('ready')
+  })
+
+  it('sem lista ainda e sem resposta: o card sabe que não leu, em vez de dizer que não há conversa', async () => {
+    mod.state.watching.set('/e', 1)
+    silent.add('/e')
+    expect(mod.state.listStateOf(mod.state.store.get(), '/e')).toBe('loading')
+    mod.reads.request('/e', mod.reads.EVERYTHING)
+    await settle()
+    expect(mod.state.listStateOf(mod.state.store.get(), '/e')).toBe('unreadable')
+    expect(mod.state.store.get().sessions.has('/e')).toBe(false)
+  })
+
+  // O WSL ligando a frio pode passar do prazo da primeira leitura: a lista aparece assim que ele
+  // responde, sem esperar a conferência de 10 s.
+  it('pasta que não respondeu é perguntada de novo logo, sozinha', async () => {
+    vi.useFakeTimers()
+    mod.state.watching.set('/g', 1)
+    disk.set('/g', [session('s1', '2026-10-20T00:00:00Z')])
+    silent.add('/g')
+    mod.reads.request('/g', mod.reads.EVERYTHING)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mod.state.listStateOf(mod.state.store.get(), '/g')).toBe('unreadable')
+    silent.delete('/g')
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mod.state.store.get().sessions.get('/g')?.map((c) => c.id)).toEqual(['s1'])
+    expect(mod.state.listStateOf(mod.state.store.get(), '/g')).toBe('ready')
+  })
+
+  it('a branch presa (o git do WSL sem resposta) não segura a lista', async () => {
+    mod.state.watching.set('/f', 1)
+    disk.set('/f', [session('s1', '2026-10-20T00:00:00Z')])
+    branchGate = new Promise(() => {})
+    mod.reads.request('/f', mod.reads.EVERYTHING)
+    await settle()
+    expect(mod.state.store.get().sessions.get('/f')?.map((c) => c.id)).toEqual(['s1'])
+    expect(mod.state.store.get().branch.has('/f')).toBe(false)
   })
 
   it('pasta esquecida no meio da leitura não volta com o resultado dela', async () => {

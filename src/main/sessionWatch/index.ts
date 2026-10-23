@@ -26,6 +26,8 @@ type Watchers = { sessions: DirWatch | null; git: GitWatch | null }
 
 export class SessionWatch {
   private projects = new Map<string, Watchers>()
+  // Pastas com a procura do .git em andamento.
+  private findingGit = new Set<string>()
   private status = new Map<string, DirWatch | null>()
   // ~/.claude/projects, enquanto algum projeto ainda não tem pasta de sessões.
   private parents = new Map<string, DirWatch | null>()
@@ -79,11 +81,23 @@ export class SessionWatch {
       const w = this.projects.get(path) ?? { sessions: null, git: null }
       this.projects.set(path, w)
       w.sessions ??= this.watchSessions(path)
-      const git = w.git ? null : gitDir(path)
-      if (git) w.git = this.watchRepo(path, git)
+      if (!w.git) this.findGit(path)
     }
     this.syncParent()
     this.refreshStatusDirs()
+  }
+
+  // Procura o .git da pasta sem segurar o app (no WSL, cada passo atravessa a rede até o Linux) e
+  // vigia quando achar, se a pasta ainda estiver na tela.
+  private findGit(path: string): void {
+    if (this.findingGit.has(path)) return
+    this.findingGit.add(path)
+    void gitDir(path)
+      .then((dir) => {
+        const w = this.projects.get(path)
+        if (dir && w && !w.git && !this.closed) w.git = this.watchRepo(path, dir)
+      })
+      .finally(() => this.findingGit.delete(path))
   }
 
   private watchSessions(path: string): DirWatch | null {
@@ -139,7 +153,8 @@ export class SessionWatch {
     for (const [path, w] of this.projects) {
       if (w.sessions) continue
       w.sessions = this.watchSessions(path)
-      // A pasta apareceu: chegou a primeira conversa.
+      // A pasta apareceu: chegou a primeira conversa. Na pasta de rede (WSL) o vigia abre antes de
+      // saber; sem a pasta, ele sai pelo onError e a lista relida continua vazia.
       if (w.sessions) this.notify(path, 'transcript')
     }
     this.syncParent()
@@ -184,7 +199,7 @@ export class SessionWatch {
         this.live = now
         if (!before) continue
         const changed = changedSessions(before, now)
-        if (changed.length) for (const path of projectsWith(changed, this.projects.keys())) this.notify(path, 'status')
+        if (changed.length) for (const path of await projectsWith(changed, this.projects.keys())) this.notify(path, 'status')
       } while (this.recheck)
     } finally {
       this.checking = false

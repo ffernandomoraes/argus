@@ -1,4 +1,4 @@
-import { statSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import type { FileDiff } from '../../shared/files'
 import type { DiffHunk } from '../../shared/history'
 import { noPreview } from '../files/preview'
@@ -30,11 +30,12 @@ const DIFF_LIMIT = 1_000_000
 export async function fileDiff(root: string, rel: string): Promise<FileDiff> {
   const file = insideRoot(root, rel)
   if (!file) return { ok: false, error: tr('Caminho fora do projeto.', 'Path is outside the project.') }
-  const repo = findRepo(file)
+  const repo = await findRepo(file)
   if (!repo) return { ok: false, error: tr('A pasta não é um repositório git.', 'This folder isn’t a git repository.') }
   // A tela de diff desenha todas as linhas de uma vez: arquivo grande travaria o app. Arquivo
   // excluído não tem tamanho no disco e segue para o diff.
-  const blocked = noPreview(file, statSync(file, { throwIfNoEntry: false })?.size ?? 0, DIFF_LIMIT, 'diff')
+  const size = (await stat(file).catch(() => null))?.size ?? 0
+  const blocked = noPreview(file, size, DIFF_LIMIT, 'diff')
   if (blocked) return { ok: false, error: blocked }
   try {
     const flags = ['--no-optional-locks', 'diff', '--no-color', '--no-ext-diff', '--no-textconv']

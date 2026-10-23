@@ -1,5 +1,5 @@
 import { EVERYTHING, forgetReads, request } from './reads'
-import { changesAt, store, watching, watchingChanges, without } from './state'
+import { changesAt, store, toggled, watching, watchingChanges, without } from './state'
 
 // Quem observa cada pasta. O processo principal vigia as pastas que estão na tela e avisa quando
 // algo muda nelas (sessions:changed).
@@ -30,11 +30,12 @@ function release(path: string): void {
   idle.delete(oldest)
   forgetReads(oldest)
   store.set((s) =>
-    s.sessions.has(oldest) || s.branch.has(oldest) || s.changes.has(oldest)
+    s.sessions.has(oldest) || s.branch.has(oldest) || s.changes.has(oldest) || s.unreadable.has(oldest)
       ? {
           sessions: without(s.sessions, oldest),
           branch: without(s.branch, oldest),
-          changes: without(s.changes, oldest)
+          changes: without(s.changes, oldest),
+          unreadable: toggled(s.unreadable, oldest, false)
         }
       : s
   )

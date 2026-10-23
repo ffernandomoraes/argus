@@ -1,5 +1,5 @@
 import { readdir, stat } from 'node:fs/promises'
-import { statSync, watch } from 'node:fs'
+import { watch } from 'node:fs'
 import { join } from 'node:path'
 
 export type DirWatch = { close(): void }
@@ -10,9 +10,10 @@ export type DirWatch = { close(): void }
 const POLL_MS = 1500
 const isNetworkPath = (dir: string) => /^[\\/]{2}[^\\/]/.test(dir)
 
-// Vigia uma pasta. Pasta que ainda não existe: nulo. Erro depois (pasta apagada, sem permissão):
-// fecha e chama onError, para quem guarda o vigia pôr nulo e abrir de novo depois (antes ele ficava
-// fechado para sempre, mas no mapa como aberto).
+// Vigia uma pasta. Pasta que ainda não existe: nulo (na pasta de rede, o onError logo depois, ver
+// pollDir). Erro depois (pasta apagada, sem permissão): fecha e chama onError, para quem guarda o
+// vigia pôr nulo e abrir de novo depois (antes ele ficava fechado para sempre, mas no mapa como
+// aberto).
 export function watchDir(dir: string, onEvent: (file: string | null) => void, onError: () => void): DirWatch | null {
   if (isNetworkPath(dir)) return pollDir(dir, onEvent, onError)
   try {
@@ -27,12 +28,10 @@ export function watchDir(dir: string, onEvent: (file: string | null) => void, on
   }
 }
 
-function pollDir(dir: string, onEvent: (file: string | null) => void, onError: () => void): DirWatch | null {
-  try {
-    if (!statSync(dir).isDirectory()) return null
-  } catch {
-    return null
-  }
+// Sem conferir na hora se a pasta existe: conferir pela rede, síncrono, travava o app inteiro
+// enquanto o WSL não respondia (2026-10-23). A primeira leitura serve de conferência: sem a pasta,
+// ela falha e chama onError.
+function pollDir(dir: string, onEvent: (file: string | null) => void, onError: () => void): DirWatch {
   let seen: Map<string, string> | null = null
   let closed = false
   let busy = false

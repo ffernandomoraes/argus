@@ -352,7 +352,12 @@ export class ChatSession {
     if (!held) return
     // Resposta nova já escrevendo nesse meio-tempo: a prévia é outra e fica.
     clearTimeout(this.partialTimer)
-    this.partialTimer = setTimeout(() => this.state.partial === held && this.update({ partial: '' }), PARTIAL_HOLD_MS)
+    // Sai junto com mais uma releitura: se a gravação da resposta atrasou e as leituras do fim do
+    // pedido não a pegaram, a resposta sumia da tela até reabrir a conversa.
+    this.partialTimer = setTimeout(
+      () => this.state.partial === held && this.update({ partial: '', revision: this.state.revision + 1 }),
+      PARTIAL_HOLD_MS
+    )
   }
 
   private async run(): Promise<void> {

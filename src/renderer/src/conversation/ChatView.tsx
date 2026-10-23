@@ -7,6 +7,7 @@ import { Presence } from '../motion'
 import { Composer, type ComposerHandle } from './composer/Composer'
 import { ImageViewer } from './ImageViewer'
 import { RemoteControlTag } from './RemoteControlTag'
+import { usePreference } from '../settings/preferences'
 import { SuggestionChip } from './composer/SuggestionChip'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
@@ -204,6 +205,8 @@ export const ChatView = memo(function ChatView({
   // Texto no campo esconde a sugestão; clicar nela envia pelo mesmo caminho da caixa de escrever.
   const [typing, setTyping] = useState(false)
   const sendSuggestion = useStableCallback((text: string) => composer.current?.send(text))
+  // Desligada em Configurações > Conversas, o balão nunca aparece.
+  const suggestions = usePreference('promptSuggestions')
   const changeSetting = useStableCallback(onSettingChange)
 
   return (
@@ -215,8 +218,6 @@ export const ChatView = memo(function ChatView({
             images={pinned.images}
             visible={sticky.scrollingUp}
             onClick={sticky.scrollToPrompt}
-            onMouseEnter={sticky.keepShown}
-            onMouseLeave={sticky.hideSoon}
           />
         )}
         <div
@@ -236,12 +237,15 @@ export const ChatView = memo(function ChatView({
           {placeholder && <ChatPlaceholder loading={loading} />}
           {/* O app inteiro tem seleção de texto desligada (index.css); as mensagens, não: dá para copiar. */}
           <div ref={content} className="flex select-text flex-col gap-3">
-            <Timeline rows={rows} scroller={scrollerEl} placeholder={placeholder} handle={timeline} />
+            {/* key: a lista nasce de novo quando o histórico chega. Ela guarda a posição da rolagem
+                de quando nasceu: criada no "Carregando conversa", vazia, desenhava as primeiras
+                mensagens enquanto a rolagem já estava no fim, e a conversa abria em branco. */}
+            <Timeline key={loading ? 'loading' : 'ready'} rows={rows} scroller={scrollerEl} placeholder={placeholder} handle={timeline} />
           </div>
         </div>
       </div>
 
-      <SuggestionChip text={live?.suggestion} visible={!running && !typing} onSend={sendSuggestion} />
+      <SuggestionChip text={live?.suggestion} visible={suggestions && !running && !typing} onSend={sendSuggestion} />
       <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
         {live?.remote && !remoteAbove && (
           <div className="mb-1 flex">

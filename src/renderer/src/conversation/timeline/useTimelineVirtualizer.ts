@@ -67,8 +67,9 @@ export function useTimelineVirtualizer(
     getItemKey,
     overscan: OVERSCAN,
     scrollMargin: margin,
-    // Abre no fim: monta as últimas, e não as primeiras para depois pular.
-    initialOffset: () => rows.length * ESTIMATE,
+    // Abre no fim: monta as últimas, e não as primeiras para depois pular. Desconta a altura da área
+    // para as que enchem a tela estarem entre as montadas (no modo foco ela é alta).
+    initialOffset: () => Math.max(0, rows.length * ESTIMATE + margin - (scroller?.clientHeight ?? 0)),
     anchorTo: 'end',
     observeElementRect: observeLayoutRect,
     measureElement: measureLayout

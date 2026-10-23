@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, normalize } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { claudeCodeOptions, claudeEnv, FOLDERS_CLAUDE_MD } from './env'
 
@@ -49,8 +49,10 @@ describe('claudeCodeOptions', () => {
 
   it('pastas do workspace entram como adicionais, com o CLAUDE.md de cada uma', () => {
     const o = claudeCodeOptions('~/proj', undefined, ['~/a', '/srv/b'])
-    expect(o.cwd).toBe(join(homedir(), 'proj'))
-    expect(o.additionalDirectories).toEqual([join(homedir(), 'a'), '/srv/b'])
+    // Comparadas normalizadas: no Windows o "~/proj" expandido fica "C:\Users\ana/proj", com as duas
+    // barras, que o Windows aceita; o texto exato só batia no Mac e no Linux (2026-10-23, CI).
+    expect(normalize(o.cwd!)).toBe(join(homedir(), 'proj'))
+    expect(o.additionalDirectories?.map(normalize)).toEqual([join(homedir(), 'a'), normalize('/srv/b')])
     expect(o.env?.[FOLDERS_CLAUDE_MD]).toBe('1')
   })
 

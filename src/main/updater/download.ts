@@ -4,6 +4,7 @@ import { pipeline } from 'node:stream/promises'
 import type { ReadableStream } from 'node:stream/web'
 import { net } from 'electron'
 import { tr } from '../i18n'
+import { transientNetError } from './network'
 
 // Sem chegar nada por este tempo, o download é dado como travado (Wi-Fi que caiu no meio).
 const IDLE_MS = 60_000
@@ -42,6 +43,15 @@ export async function downloadTo(url: string, file: string, version: string, onP
     if (controller.signal.aborted) {
       const s = IDLE_MS / 1000
       throw new Error(tr(`O download da versão ${version} parou: nada chegou em ${s} s.`, `The download of version ${version} stalled: nothing arrived in ${s} s.`))
+    }
+    const code = transientNetError(err)
+    if (code) {
+      throw new Error(
+        tr(
+          `A conexão caiu no meio do download da versão ${version} (${code}). Procure de novo para baixar outra vez.`,
+          `The connection dropped while downloading version ${version} (${code}). Check again to download it again.`
+        )
+      )
     }
     throw err
   } finally {

@@ -1,12 +1,13 @@
 import { useRef, type ChangeEvent } from 'react'
-import { ImagePlus, Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
+import { Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
 import { IconButton } from '../../ui/IconButton'
 import type { DictationState } from '../useDictation'
 import { VoiceWave } from '../VoiceWave'
 import { tr } from '../../i18n'
 
 // Linha de baixo da caixa de escrever: comandos, anexar imagem ou arquivo, ditado e enviar (ou parar, com o
-// Claude trabalhando e nada para enviar).
+// Claude trabalhando e nada para enviar). Anexar é um botão só: com um ao lado só para imagem, quem o
+// usava para um PDF achava o arquivo apagado no seletor.
 export function ComposerActions({
   onOpenCommands,
   onFiles,
@@ -27,7 +28,6 @@ export function ComposerActions({
   onSend: () => void
   sendDisabled: boolean
 }) {
-  const imageInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) onFiles(e.target.files)
@@ -37,15 +37,11 @@ export function ComposerActions({
 
   return (
     <div className="flex items-center gap-1 px-2 pb-2">
-      <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={onPick} />
       <input ref={fileInput} type="file" multiple hidden onChange={onPick} />
       <IconButton label={tr('Comandos', 'Commands')} title={tr('Comandos ( / )', 'Commands ( / )')} onClick={onOpenCommands} className="font-mono text-sm">
         /
       </IconButton>
-      <IconButton label={tr('Anexar imagem', 'Attach image')} onClick={() => imageInput.current?.click()}>
-        <ImagePlus size={15} />
-      </IconButton>
-      <IconButton label={tr('Anexar arquivo', 'Attach file')} onClick={() => fileInput.current?.click()}>
+      <IconButton label={tr('Anexar imagem ou arquivo', 'Attach image or file')} onClick={() => fileInput.current?.click()}>
         <Paperclip size={15} />
       </IconButton>
       <span className="flex-1" />

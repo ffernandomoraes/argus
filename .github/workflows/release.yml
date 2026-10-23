@@ -52,7 +52,7 @@ jobs:
     steps:
       # A main como está agora, não a do push que disparou: um run que esperou na fila
       # pega o commit de versão do anterior e o que chegou depois.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
@@ -87,7 +87,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
@@ -96,7 +96,7 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -120,7 +120,7 @@ jobs:
       # O commit escolhido no job versao (fetch-depth: 0: as notas listam os commits desde a última tag).
       # persist-credentials: false: o token não fica no .git/config enquanto as dependências
       # instalam (um pacote com script poderia lê-lo); ele entra só no push da versão.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.versao.outputs.sha }}
           fetch-depth: 0
@@ -130,7 +130,7 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -140,7 +140,7 @@ jobs:
 
       # O binário do Electron (baixado no postinstall e usado pelo electron-builder). Mudou o
       # lockfile, começa do zero: assim versões antigas do Electron não se acumulam no cache.
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/Library/Caches/electron
           key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -230,7 +230,7 @@ jobs:
 
       - name: Guardar o app (teste)
         if: env.PUBLICAR != 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Argus-${{ env.VERSION }}
           path: dist/*.dmg
@@ -283,7 +283,7 @@ jobs:
     steps:
       # O mesmo commit do Mac; a versão é trocada aqui (a tag só existe depois que o Mac publica).
       # Sem token no .git/config (ver o job do Mac): este job não faz push.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
@@ -292,7 +292,7 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -330,7 +330,7 @@ jobs:
       # Publicando, o job anexar-windows pega daqui e a cópia some em 1 dia (o .exe fica no
       # release); testando, fica para baixar no run pelo prazo padrão do repositório (0).
       - name: Guardar o instalador
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Argus-Setup-${{ env.VERSION }}
           path: dist/Argus-Setup-*.exe
@@ -345,7 +345,7 @@ jobs:
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: Argus-Setup-${{ env.VERSION }}
 
@@ -363,7 +363,7 @@ jobs:
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
@@ -372,7 +372,7 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -410,7 +410,7 @@ jobs:
           fi
 
       - name: Guardar o AppImage
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Argus-Linux-${{ env.VERSION }}
           path: dist/Argus-*.AppImage
@@ -424,7 +424,7 @@ jobs:
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: Argus-Linux-${{ env.VERSION }}
 

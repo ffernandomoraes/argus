@@ -49,7 +49,7 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
   switch (m.role) {
     case 'user': {
       const view = m.images && o.viewFor ? o.viewFor(m.id) : undefined
-      const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} marks={m.marks} />
+      const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} marks={m.marks} files={m.files} />
       return { kind: 'user', key: m.id, node: bubble }
     }
     case 'event':

@@ -1,3 +1,5 @@
+import type { AttachedFile } from './attachedFiles'
+
 // Trecho de um arquivo alterado: linhas com " " (igual), "-" (removida) ou "+" (adicionada).
 export type DiffHunk = { oldStart: number; newStart: number; lines: string[] }
 
@@ -19,6 +21,8 @@ export type Message =
       // O que foi junto do pedido no modo design (a parte selecionada, os comentários na página),
       // lido das marcas <argus-marca> do contexto; aparece discreto no balão.
       marks?: MessageMark[]
+      // Anexos que não são imagem: cartões no balão, no lugar dos caminhos.
+      files?: AttachedFile[]
     }
   | { id: string; role: 'assistant'; text: string; at?: string; tokens?: number }
   // Raciocínio do Claude antes de responder ou agir; recolhido no chat.

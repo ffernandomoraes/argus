@@ -1,4 +1,6 @@
+import type { AttachedFile } from '../../../../shared/attachedFiles'
 import type { ChatState, PermissionAnswer } from '../../../../shared/chat'
+import { isSendableImage } from '../chatImages'
 import type { SessionStatus } from '../../canvas/types'
 import { currentTurn } from '../turnInfo'
 import type { Message } from '../types'
@@ -30,7 +32,8 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
   const items: TimelineItem[] = []
   for (const w of o.waiting) {
     const view = w.images ? o.viewFor(w.id, w.read) : undefined
-    items.push({ kind: 'user', key: w.id, node: <UserBubble text={w.text} images={w.images} imageView={view} /> })
+    const files = attachedFiles(w.files)
+    items.push({ kind: 'user', key: w.id, node: <UserBubble text={w.text} images={w.images} imageView={view} files={files} /> })
   }
   const partial = partialText(o.live, o.messages)
   if (partial) {
@@ -73,4 +76,10 @@ function partialText(live: ChatState | null, messages: Message[]): string {
     if (m.role === 'assistant') return m.text === live.partial.trim() ? '' : live.partial
   }
   return live.partial
+}
+
+// Os anexos que não são imagem, como o balão do histórico vai mostrar (o caminho vira o nome).
+function attachedFiles(files: File[]): AttachedFile[] | undefined {
+  const list = files.filter((f) => !isSendableImage(f)).map((f) => ({ path: window.api.filePath(f) || f.name, size: f.size }))
+  return list.length ? list : undefined
 }

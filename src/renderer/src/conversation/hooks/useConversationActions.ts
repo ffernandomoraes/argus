@@ -44,14 +44,17 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
   const info = useClaudeInfo(account)
 
   // Imagens vão junto da mensagem (reduzidas se passarem do limite); outros arquivos, pelo caminho
-  // no disco; e o texto dos áudios transcritos no fim, à vista no balão da mensagem. Falha ao
-  // preparar as imagens rejeita a promessa: o chat devolve o texto ao campo.
+  // no disco, num bloco fora do balão (ver attachedFiles); e o texto dos áudios transcritos no fim,
+  // à vista no balão da mensagem. Falha ao preparar as imagens rejeita a promessa: o chat devolve o
+  // texto ao campo.
   const send = useStableCallback(async (text: string, files: File[]) => {
     const images = await imagesForSend(files)
-    const paths = files.filter((f) => !isSendableImage(f)).map((f) => window.api.filePath(f)).filter(Boolean)
-    const withPaths = paths.length ? `${text}\n\nArquivos anexados:\n${paths.map((p) => `- ${p}`).join('\n')}`.trim() : text
+    const attached = files
+      .filter((f) => !isSendableImage(f))
+      .map((f) => ({ path: window.api.filePath(f), size: f.size }))
+      .filter((f) => f.path)
     const transcripts = transcriptsText(files)
-    const full = transcripts ? `${withPaths}\n\n${transcripts}`.trim() : withPaths
+    const full = transcripts ? `${text}\n\n${transcripts}`.trim() : text
     forgetTranscripts(files)
     freezeConversationSettings(settingsId, settings)
     // A conta fica fixa no primeiro envio; a de outro agente já fica guardada com a conversa.
@@ -65,6 +68,7 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
       settings,
       text: full,
       images,
+      files: attached,
       hint: hintFor(text, agents, settings, account)
     })
   })

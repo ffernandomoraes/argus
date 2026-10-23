@@ -4,7 +4,7 @@ import { diffFromResult } from '../diffs'
 import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
 import { arr, atOf, contentOf, idOf, obj, str, type Line } from '../transcripts/line'
-import { marksOf, promptText, resultText } from './content'
+import { marksOf, promptParts, resultText } from './content'
 import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEvent, modelName } from './events'
 
 const RESULT_MAX = 2000
@@ -95,11 +95,11 @@ export class HistoryParser {
   private queued(l: Line): boolean {
     const attachment = obj(l.attachment)
     if (l.type !== 'attachment' || attachment?.type !== 'queued_command' || l.isSidechain) return false
-    const text = promptText(attachment.prompt)
+    const { text, files } = promptParts(attachment.prompt)
     const images = arr(attachment.prompt)?.filter((c) => obj(c)?.type === 'image').length ?? 0
-    // Mensagem só com print, sem texto, também aparece.
-    if (text || images) {
-      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), queued: true, images: images || undefined, marks: marksOf(attachment.prompt) })
+    // Mensagem só com print ou arquivo, sem texto, também aparece.
+    if (text || images || files) {
+      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), queued: true, images: images || undefined, marks: marksOf(attachment.prompt), files })
       // A mesma mensagem pode vir depois como linha comum, com o id que o anexo guarda em
       // source_uuid: é por ele que o SDK junta as duas. Sessões sem esse id: pelo texto.
       const source = str(attachment.source_uuid)
@@ -122,13 +122,13 @@ export class HistoryParser {
       if (!tool.error) tool.diff = diffFromResult(l.toolUseResult as DiffSource)
     }
     const images = items ? items.filter((c) => obj(c)?.type === 'image').length : 0
-    const text = promptText(content)
+    const { text, files } = promptParts(content)
     // A mesma mensagem já entrou como "enviada durante a resposta": não repete.
     if (this.queuedIds.delete(l.uuid as string)) return
     if (text && this.queuedTexts.delete(text)) return
-    // Mensagem só com print, sem texto, também aparece.
-    if (text || images) {
-      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), images: images || undefined, marks: marksOf(content) })
+    // Mensagem só com print ou arquivo, sem texto, também aparece.
+    if (text || images || files) {
+      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), images: images || undefined, marks: marksOf(content), files })
     }
   }
 

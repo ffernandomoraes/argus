@@ -1,3 +1,4 @@
+import { filesInBlock, withoutLegacyFiles, type AttachedFile } from '../../shared/attachedFiles'
 import type { MessageMark } from '../../shared/history'
 import { arr, obj, type Line } from '../transcripts/line'
 
@@ -30,6 +31,15 @@ export function promptText(content: unknown): string | null {
       : textItems(content).flatMap((c) => (typeof c.text === 'string' ? [c.text] : []))
   const text = parts.map((t) => t.trim()).filter((t) => t && !t.startsWith('<')).join('\n\n')
   return text || null
+}
+
+// Texto da mensagem e os anexos que não são imagem: do bloco <argus-files> ou, em mensagem antiga,
+// da lista "Arquivos anexados:" que ficava no próprio texto.
+export function promptParts(content: unknown): { text: string | null; files?: AttachedFile[] } {
+  const parts = typeof content === 'string' ? [content] : textItems(content).map((c) => String(c.text))
+  const legacy = withoutLegacyFiles(promptText(content) ?? '')
+  const files = [...parts.flatMap((t) => filesInBlock(t.trim())), ...legacy.files]
+  return { text: legacy.text || null, ...(files.length && { files }) }
 }
 
 // Marcas que o modo design põe no contexto do pedido: <argus-marca tipo="selecao">Topo › Botão</argus-marca>.

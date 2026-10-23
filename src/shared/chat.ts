@@ -1,4 +1,5 @@
 import type { RunningAgent } from './agents'
+import type { AttachedFile } from './attachedFiles'
 import type { DiffHunk, LiveStatus } from './history'
 
 // Pedido de permissão do Claude (editar, rodar comando...) esperando resposta no chat.
@@ -129,12 +130,14 @@ export type ChatSendRequest = {
   settings: ChatSettings
   text: string
   images: ChatImage[]
+  // Anexos que não são imagem: o agente lê pelo caminho (ver attachedFiles).
+  files?: AttachedFile[]
   // Aviso para o Claude que não aparece no chat (ex.: agentes chamados com @nome).
   hint?: string
 }
 
 // /remote-control: liga ou desliga. Sem sessão aberta, abre uma (por isso os dados da conversa).
-export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'hint'> & { enabled: boolean }
+export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'files' | 'hint'> & { enabled: boolean }
 
 // /output-style: o estilo de resposta em vigor na pasta (nome do Claude Code: "default", "Explanatory"...).
 export type OutputStyleStatus = { ok: true; style: string } | { ok: false; error: string }

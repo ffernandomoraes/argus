@@ -1,7 +1,9 @@
 import { memo } from 'react'
 import { Crosshair, Image as ImageIcon, MessageSquarePlus } from 'lucide-react'
+import { fileName, type AttachedFile } from '../../../../../shared/attachedFiles'
 import type { MessageMark } from '../../types'
 import { CopyButton } from '../../CopyButton'
+import { FileCard } from '../../FileCard'
 import { formatClock, formatImageCount } from '../../format'
 import type { ImageView } from '../imageViews'
 import { ImageThumbs } from './ImageThumbs'
@@ -9,13 +11,15 @@ import { tr } from '../../../i18n'
 
 // Mensagem sua. queued: enviada enquanto o Claude trabalhava.
 // imageView: lê as imagens enviadas (miniaturas) e abre o preview grande numa delas.
+// files: os outros anexos, no mesmo cartão da caixa de escrever (o agente recebe o caminho).
 export const UserBubble = memo(function UserBubble({
   text,
   at,
   queued,
   images = 0,
   imageView,
-  marks
+  marks,
+  files
 }: {
   text: string
   at?: string
@@ -24,6 +28,7 @@ export const UserBubble = memo(function UserBubble({
   imageView?: ImageView
   // O que foi junto no modo design (parte selecionada, comentários): uma linha discreta embaixo.
   marks?: MessageMark[]
+  files?: AttachedFile[]
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -41,6 +46,13 @@ export const UserBubble = memo(function UserBubble({
                 <ImageIcon size={12} className="shrink-0" />
                 {formatImageCount(images)}
               </button>
+            </div>
+          )}
+          {files && files.length > 0 && (
+            <div className={`flex flex-wrap gap-2 ${text ? 'mb-1.5' : ''}`}>
+              {files.map((f, i) => (
+                <FileCard key={i} name={fileName(f.path)} size={f.size} title={f.path} className="bg-surface" />
+              ))}
             </div>
           )}
           {text && <span className="whitespace-pre-wrap break-words">{text}</span>}

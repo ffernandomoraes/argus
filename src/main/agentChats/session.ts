@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { filesBlock } from '../../shared/attachedFiles'
 import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer, PermissionRequest, QueuedMessage } from '../../shared/chat'
 import type { Message } from '../../shared/history'
 import type { McpAuthResult, McpServer } from '../../shared/mcp'
@@ -135,11 +136,12 @@ export class AgentChatSession {
   send(req: ChatSendRequest): void {
     const id = randomUUID()
     const at = new Date().toISOString()
-    const user: Message = { id, role: 'user', text: req.text, at, ...(req.images.length && { images: req.images.length }) }
+    const files = req.files ?? []
+    const user: Message = { id, role: 'user', text: req.text, at, ...(req.images.length && { images: req.images.length }), ...(files.length && { files }) }
     if (!this.conversation.title) this.conversation.title = titleOf(req.text)
-    // O aviso oculto (agentes chamados com @nome, regras do orquestrador) vai junto no pedido, sem
-    // aparecer no balão.
-    const prompt = req.hint ? `${req.text}\n\n${req.hint}` : req.text
+    // Os caminhos dos anexos e o aviso oculto (agentes chamados com @nome, regras do orquestrador)
+    // vão junto no pedido, sem aparecer no balão.
+    const prompt = [req.text, files.length ? filesBlock(files) : '', req.hint ?? ''].filter(Boolean).join('\n\n')
     if (!this.identified) {
       this.identified = true
       this.update({ sessionId: this.conversation.id })

@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChatState } from '../../../../shared/chat'
+import { isSendableImage } from '../chatImages'
 import type { Message } from '../types'
 import { inQueue, isDelivered, queuedSends, type PendingSend } from './optimisticSends'
 
@@ -102,7 +103,7 @@ export function useOptimisticSends(
 
   const add = (m: OutgoingMessage): string => {
     const id = crypto.randomUUID()
-    const urls = m.files.filter((f) => f.type.startsWith('image/')).map((f) => URL.createObjectURL(f))
+    const urls = m.files.filter(isSendableImage).map((f) => URL.createObjectURL(f))
     owned.current.set(id, urls)
     const read = () => Promise.resolve(urls)
     const entry: PendingSend = { ...m, id, images: urls.length, read, sentAt: Date.now(), after: messages.at(-1)?.id, live }

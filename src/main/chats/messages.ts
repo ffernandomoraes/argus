@@ -1,12 +1,13 @@
 import type { UUID } from 'node:crypto'
 import type { SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
+import { filesBlock } from '../../shared/attachedFiles'
 import type { ChatSendRequest } from '../../shared/chat'
 import { tr } from '../i18n'
 
 // O que vai e volta do Claude em texto: a mensagem que você manda e o erro que ele devolve.
 
-// Imagens, o texto e, por último, o aviso que não aparece no chat: o título da conversa continua
-// sendo o que você escreveu. O uuid deixa o Claude dizer, ao parar, se ela ainda vai rodar.
+// Imagens, o texto, os caminhos dos outros anexos e, por último, o aviso que não aparece no chat:
+// o título da conversa continua sendo o que você escreveu. O uuid deixa o Claude dizer, ao parar, se ela ainda vai rodar.
 export function userMessage(req: ChatSendRequest, uuid: UUID): SDKUserMessage {
   const content = [
     ...req.images.map((img) => ({
@@ -14,6 +15,7 @@ export function userMessage(req: ChatSendRequest, uuid: UUID): SDKUserMessage {
       source: { type: 'base64' as const, media_type: img.mediaType as 'image/png', data: img.data }
     })),
     ...(req.text ? [{ type: 'text' as const, text: req.text }] : []),
+    ...(req.files?.length ? [{ type: 'text' as const, text: filesBlock(req.files) }] : []),
     ...(req.hint ? [{ type: 'text' as const, text: req.hint }] : [])
   ]
   return { type: 'user', message: { role: 'user', content }, parent_tool_use_id: null, uuid }

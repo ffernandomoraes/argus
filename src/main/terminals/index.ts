@@ -182,6 +182,11 @@ export class Terminals {
       .map((s) => s.cwd)
   }
 
+  // Para o relatório de erro (ver errorReports).
+  count(): number {
+    return this.sessions.size
+  }
+
   // Algum `claude` de terminal trabalhando agora (app/keepAwake.ts); nulo sem terminal do `claude`
   // para conferir. Os do WSL ficam de fora: ler o status deles acorda a máquina virtual do WSL.
   claudeWorking(): boolean | null {

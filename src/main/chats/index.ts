@@ -193,6 +193,23 @@ export class Chats {
     return [...new Set(this.sessions.values())].map((s) => ({ id: [...s.keys][0], cwd: s.cwd, state: s.state }))
   }
 
+  // Só números, para o relatório de erro (ver errorReports): quantas abertas, quantas trabalhando e
+  // de qual agente.
+  summary(): { open: number; running: number; subagents: number; agents: Record<string, number> } {
+    const sessions = [...new Set(this.sessions.values())]
+    const agents: Record<string, number> = {}
+    for (const s of sessions) {
+      const agent = s instanceof AgentChatSession ? s.account.split(':')[0] : 'claude'
+      agents[agent] = (agents[agent] ?? 0) + 1
+    }
+    return {
+      open: sessions.length,
+      running: sessions.filter((s) => s.state.status === 'running').length,
+      subagents: sessions.reduce((sum, s) => sum + s.state.agents.length, 0),
+      agents
+    }
+  }
+
   has(key: string): boolean {
     return this.sessions.has(key)
   }

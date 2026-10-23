@@ -3,9 +3,30 @@ import { resolve } from 'node:path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { sentryVitePlugin } from '@sentry/bundler-plugins/vite'
 import type { Plugin } from 'vite'
 
 const BUNDLED = ['@anthropic-ai/claude-agent-sdk', 'zod']
+
+// Mapas de código para o Sentry: com eles, a pilha de um erro mostra o arquivo e a linha do
+// código-fonte (src/renderer/...) em vez do arquivo montado. Só no GitHub Actions, com o secret
+// SENTRY_AUTH_TOKEN: cada parte do build sobe os mapas dela e os apaga em seguida, então nenhum vai
+// no instalador. Sem o token (pnpm dev, build local), nada muda.
+const SENTRY_TOKEN = process.env.SENTRY_AUTH_TOKEN
+const sourcemap = SENTRY_TOKEN ? 'hidden' : false
+
+function sentryMaps(part: 'main' | 'preload' | 'renderer'): Plugin[] {
+  if (!SENTRY_TOKEN) return []
+  return sentryVitePlugin({
+    org: 'fernando-moraes',
+    project: 'argus',
+    authToken: SENTRY_TOKEN,
+    telemetry: false,
+    // A versão já vai em cada relatório (o SDK manda Argus@versão): aqui só os mapas.
+    release: { inject: false, create: false, finalize: false, setCommits: false, deploy: false },
+    sourcemaps: { filesToDeleteAfterUpload: [`out/${part}/**/*.map`] }
+  }) as unknown as Plugin[]
+}
 
 // Content-Security-Policy da janela, só no build (o app instalado): no pnpm dev o preâmbulo
 // inline do React e o recarregamento ao vivo do Vite seriam barrados. O único script inline é o
@@ -54,13 +75,14 @@ export default defineConfig({
     // ~12 MB (o zod sozinho vem com o código-fonte e as versões v3 e v4). Ficam de fora o
     // node-pty, que tem binário nativo, e o ws: embutido, o Vite troca o `bufferutil` opcional
     // por um objeto vazio e o envio de mensagens grandes do ditado quebra.
-    plugins: [externalizeDepsPlugin({ exclude: BUNDLED })],
+    plugins: [externalizeDepsPlugin({ exclude: BUNDLED }), ...sentryMaps('main')],
     // O transformers.js (devDependency) entra no código do processo da transcrição; o motor nativo
     // dele (onnxruntime-node) fica de fora, como o node-pty. O sharp vira um vazio (ver sharpStub.ts).
     resolve: {
       alias: { sharp: resolve('src/main/transcription/sharpStub.ts') }
     },
     build: {
+      sourcemap,
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts'),
@@ -70,7 +92,8 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin(), ...sentryMaps('preload')],
+    build: { sourcemap }
   },
   renderer: {
     // Porta fora das comuns (3000, 5173...) para não brigar com outros projetos em dev
@@ -78,6 +101,7 @@ export default defineConfig({
     resolve: {
       alias: { '@': resolve('src/renderer/src') }
     },
-    plugins: [react(), tailwindcss(), contentSecurityPolicy()]
+    plugins: [react(), tailwindcss(), contentSecurityPolicy(), ...sentryMaps('renderer')],
+    build: { sourcemap }
   }
 })

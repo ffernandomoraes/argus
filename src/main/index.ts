@@ -5,7 +5,7 @@ import { setupLifecycle } from './app/lifecycle'
 import { createServices } from './app/services'
 import { startApp } from './app/startup'
 import { openArg } from './cli'
-import { startErrorReports } from './errorReports'
+import { setAppState, startErrorReports } from './errorReports'
 import { cleanAppImageEnv, IS_MAC, IS_WIN } from './platform'
 
 // Partida do processo principal. As peças ficam em app/ (janelas, serviços, saída, segurança) e
@@ -37,6 +37,8 @@ function start(): void {
   // Antes dos serviços: um erro ao criá-los já oferece voltar de versão (ver app/crashGuard.ts).
   const crashedBefore = armCrashGuard()
   const services = createServices()
+  // O que o app estava fazendo, em números, para os relatórios de erro.
+  setAppState(() => ({ chats: services.chats.summary(), terminals: services.terminals.count() }))
   receiveFolders()
   const life = setupLifecycle(services)
   attachRecovery(services.updater, life.restartToUpdate)

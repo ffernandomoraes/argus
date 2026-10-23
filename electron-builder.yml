@@ -8,6 +8,8 @@ directories:
 
 files:
   - out/**
+  # Mapas de código do app: vão só para o Sentry, no build (ver electron.vite.config.ts).
+  - '!out/**/*.map'
   - package.json
   # O app usa o `claude` instalado na máquina; o binário que vem com o SDK (~200 MB) não entra.
   - '!node_modules/@anthropic-ai/claude-agent-sdk-*/**'

@@ -8,6 +8,9 @@ import { IS_LINUX, IS_MAC, IS_WIN } from '../platform'
 import { SMOKE_TEST } from '../smokeTest'
 import { claudeDistro, knownDistros } from '../wsl'
 import { scrubBreadcrumb, scrubEvent } from './scrub'
+import { watchMainLag, withSnapshot } from './snapshot'
+
+export { setAppState } from './snapshot'
 
 // Relatórios de erro, pelo Sentry: erros, quedas e travamentos de todas as instalações vão sozinhos.
 //
@@ -75,6 +78,8 @@ export function startErrorReports(): void {
         Sentry.additionalContextIntegration(),
         Sentry.gpuContextIntegration(),
         // Janela travada (o código dela parado): avisada pela própria janela (ver renderer/errorReports.ts).
+        // A pilha vem do depurador, que pausa a janela na hora: o caminho nativo, sem depurador,
+        // precisa de um cabeçalho na página que o file:// não tem.
         Sentry.rendererEventLoopBlockIntegration(),
         Sentry.eventFiltersIntegration(),
         Sentry.functionToStringIntegration(),
@@ -87,7 +92,8 @@ export function startErrorReports(): void {
         Sentry.normalizePathsIntegration()
       ],
       transport: smokeSafeTransport,
-      beforeSend: (event) => scrubEvent(tagged(event)),
+      // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato.
+      beforeSend: async (event) => scrubEvent(tagged(await withSnapshot(event))),
       beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
       initialScope: { user: { id: installId } },
       maxBreadcrumbs: 60,
@@ -99,6 +105,7 @@ export function startErrorReports(): void {
     return
   }
   watchRenderers()
+  watchMainLag()
   void app.whenReady().then(startBlockDetection)
 }
 

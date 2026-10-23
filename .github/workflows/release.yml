@@ -154,6 +154,10 @@ jobs:
           echo "MAC_SIGN_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
       - name: Montar o app
+        # Sobe os mapas de código para o Sentry e os apaga antes do instalador (ver
+        # electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm exec electron-vite build && pnpm exec electron-builder --mac --arm64 --publish never
 
       # Mesmo certificado em todas as versões = o macOS não pede as permissões de novo.
@@ -269,6 +273,10 @@ jobs:
 
       # Sem certificado de assinatura: o Windows avisa na primeira instalação (ver electron-builder.yml).
       - name: Montar o instalador
+        # Sobe os mapas de código para o Sentry e os apaga antes do instalador (ver
+        # electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish never
 
       - name: Testar se o app abre
@@ -348,6 +356,10 @@ jobs:
         run: node scripts/sentryNative.mjs
 
       - name: Montar o AppImage
+        # Sobe os mapas de código para o Sentry e os apaga antes do instalador (ver
+        # electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm exec electron-vite build && pnpm exec electron-builder --linux --x64 --publish never
 
       - name: Testar se o app abre

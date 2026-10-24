@@ -25,7 +25,8 @@ export const dayKey = (at: string) => {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
 }
 
-// Divisor de dia: a conversa continuou em outro dia. Mesmo desenho do EventDivider.
+// Divisor de dia: a conversa continuou em outro dia. Linha reta, para não se confundir com as trocas
+// de configuração (EventDivider, ondulado).
 export const DayDivider = memo(function DayDivider({ at }: { at: string }) {
   return (
     <div className="flex items-center gap-2 py-1 text-[13px] text-faint">

@@ -67,3 +67,31 @@
 .timeline-item {
   contain: layout style paint;
 }
+
+/* Linha ondulada dos divisores da conversa (EventDivider), como na extensão do VS Code. A onda vem
+   de uma máscara SVG; a cor continua sendo a do token, então segue o tema claro e escuro. */
+.wavy-line {
+  height: 6px;
+  background-color: var(--color-line-strong);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 3 Q3 0.5 6 3 T12 3' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E") repeat-x left center / 12px 6px;
+}
+
+/* Pé da conversa esmaecendo quando tem mais conteúdo abaixo (ChatView, junto com o botão de ir ao
+   fim). Máscara em vez de um degradê por cima: a conversa aparece no canvas, na gaveta, na janela e
+   no protótipo, cada um com um fundo. Só entra longe do fim; seguindo a resposta, nada a mais para
+   a GPU compor. A altura cresce ao entrar (@property deixa a variável ser animada). */
+@property --chat-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes chat-fade-in {
+  from {
+    --chat-fade: 0px;
+  }
+}
+.chat-fade-bottom {
+  --chat-fade: 56px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--chat-fade)), transparent);
+  animation: chat-fade-in 200ms ease-out;
+}

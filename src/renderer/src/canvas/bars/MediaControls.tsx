@@ -11,11 +11,10 @@ import { tr } from '../../i18n'
 // De quanto em quanto tempo confere o que toca no sistema. Só com a janela à vista.
 const POLL_MS = 2000
 
-// Player na barra de título, ao lado dos botões da janela: o nome da música, tocar/pausar e o
-// volume do sistema, de qualquer app (Spotify, uma aba do navegador; ver main/media). Sem nada
-// tocando, ou desligado nas configurações, não aparece. O botão de tocar/pausar só aparece se o
-// app aceita o comando. O volume é um ícone; o controle abre num
-// painel abaixo, ao clicar. Sem dicas ao passar o mouse: os controles se explicam pelo ícone.
+// Player no meio da barra de baixo: o nome da música, tocar/pausar e o volume do sistema, de
+// qualquer app (Spotify, uma aba do navegador; ver main/media). Sem nada tocando, ou desligado nas
+// configurações, não aparece. O botão de tocar/pausar só aparece se o app aceita o comando. O
+// volume é um ícone; o controle abre num painel acima, ao clicar. Sem dicas ao passar o mouse: os controles se explicam pelo ícone.
 
 const CONTROL = 'flex h-6 min-w-6 items-center justify-center rounded-md'
 const tone = (on: boolean) => (on ? 'bg-fill text-text ring-1 ring-line ring-inset' : 'text-muted hover:bg-fill hover:text-text')
@@ -75,8 +74,8 @@ export const MediaControls = memo(function MediaControls() {
         </button>
         <Presence kind="menu">
           {volumeOpen && (
-            <div className={`absolute left-0 top-full mt-2.5 flex items-center gap-2 px-3 py-2 ${MENU_PANEL}`}>
-              <MenuArrow side="top" at={12} />
+            <div className={`absolute bottom-full left-0 mb-2.5 flex origin-bottom-left items-center gap-2 px-3 py-2 ${MENU_PANEL}`}>
+              <MenuArrow side="bottom" at={12} />
               <input
                 type="range"
                 min={0}

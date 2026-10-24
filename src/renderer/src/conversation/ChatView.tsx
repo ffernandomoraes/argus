@@ -230,7 +230,8 @@ export const ChatView = memo(function ChatView({
           onTouchMove={sticky.onTouchMove}
           // relative: a lista mede onde começa a partir daqui (offsetTop). Sem a âncora do navegador:
           // quem segura a posição quando algo acima muda de tamanho é a linha do tempo virtualizada.
-          className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 [overflow-anchor:none]"
+          // Longe do fim, o pé esmaece: mostra que tem mais conteúdo abaixo (chat-fade-bottom).
+          className={`relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 [overflow-anchor:none] ${sticky.away && !placeholder ? 'chat-fade-bottom' : ''}`}
         >
           {/* Com mensagem a caminho, sem o "Nova conversa": centralizado, ele empurrava o balão para
               baixo, perto da caixa de escrever, e o balão pulava para o topo quando o histórico

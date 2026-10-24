@@ -3,10 +3,13 @@ import { useReactFlow, type XYPosition } from '@xyflow/react'
 import { patchView, type CanvasViewStore } from '../canvasView'
 import type { ConfirmRequest } from '../ConfirmDialog'
 import { createGroup, createNote, createTerminal, displayPath } from '../factory'
+import { forSync } from '../flow/syncNodes'
+import { nodesFromSaved } from '../flow/savedNodes'
 import { hidingGroup } from '../focus/reveal'
 import { selectOnly } from '../focus/selectOnly'
 import {
   addNode,
+  bringIn,
   dropIntoGroup,
   leaveGroup,
   removeNode,
@@ -15,6 +18,7 @@ import {
   setNoteWidth,
   setWorkspaceFolders,
   sizeOf,
+  takeOut,
   toggleCollapse,
   toggleNoteCollapse,
   toggleObscure,
@@ -28,7 +32,7 @@ import { tr } from '../../i18n'
 // blocos. Bloco novo nunca entra por cima de outro (addNode). O bloco em renomeação fica no
 // store do canvas (canvasView), lido só pelo bloco dele.
 export function useNodeActions(
-  { nodesRef, setNodes, change }: NodesApi,
+  { board, nodesRef, setNodes, change }: NodesApi,
   view: CanvasViewStore,
   confirm: (request: ConfirmRequest) => void
 ) {
@@ -111,7 +115,7 @@ export function useNodeActions(
       // espaço de trabalho removido). Some também de todo o histórico (main/canvasHub.ts).
       removeForever: (id: string) => {
         setNodes((ns) => removeNode(ns, id))
-        window.api.canvas.forget([id])
+        window.api.canvas.forget(board, [id])
       },
       closeTerminal: (nodeId: string, name: string) => {
         const node = nodesRef.current.find((n) => n.id === nodeId)
@@ -152,7 +156,21 @@ export function useNodeActions(
         change(next)
         const { width, height } = sizeOf(node)
         void setCenter(node.position.x + width / 2, node.position.y + height / 2, { zoom: getZoom(), duration: 300 })
+      },
+      // O outro workspace recebe a lista dele com o bloco num lugar livre e este perde o bloco. Sem
+      // desfazer nos dois lados: o ⌘Z de um traria de volta o bloco que já está no outro (o mesmo
+      // terminal em dois workspaces, e fechar num encerraria o do outro). Terminais e conversas
+      // seguem rodando: o processo é o mesmo, só a tela que mostra muda.
+      moveToBoard: (id: string, to: string) => {
+        const { rest, moved } = takeOut(nodesRef.current, id)
+        if (!moved.length || to === board) return
+        const target = nodesFromSaved(window.api.canvas.load(to)).nodes
+        const next = bringIn(target, moved, id)
+        if (next === target) return
+        window.api.boards.put(to, forSync(next))
+        setNodes(rest)
+        window.api.canvas.forget(board, moved.map((n) => n.id))
       }
     }
-  }, [nodesRef, setNodes, change, view, confirm, setCenter, getZoom])
+  }, [board, nodesRef, setNodes, change, view, confirm, setCenter, getZoom])
 }

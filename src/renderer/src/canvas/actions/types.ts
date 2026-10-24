@@ -6,6 +6,9 @@ export type Change = (update: SetStateAction<CanvasNode[]>) => void
 
 // O que as ações do canvas usam para ler e mudar a lista de nós. Tudo com identidade fixa.
 export type NodesApi = {
+  // Workspace desta lista: o que vai para o processo principal leva ele, mesmo que a resposta de uma
+  // ação demorada chegue depois de a janela trocar de workspace.
+  board: string
   // Lista atual, para ler fora do render (menus, atalhos, avisos do processo principal).
   nodesRef: RefObject<CanvasNode[]>
   // Sem passar pelo desfazer: seleção, arraste, sessão amarrada ao terminal.

@@ -25,7 +25,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerProvidersIpc(s.providers)
   registerSpeechIpc(s.speech)
   registerTranscriptionIpc()
-  registerCanvasIpc(s.canvasHub, s.canvasAgent)
+  registerCanvasIpc(s.boards, s.canvasAgent, s.terminals)
   registerDesignIpc()
   registerMemoryIpc()
   registerAgentsIpc()

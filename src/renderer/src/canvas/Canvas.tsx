@@ -29,6 +29,7 @@ import { useFocusNode } from './focus/useFocusNode'
 import { useCanvasKeys } from './keys/useCanvasKeys'
 import { useSpaceHeld } from './keys/useSpaceHeld'
 import { useUiHidden } from './keys/useUiHidden'
+import { useCurrentBoard } from './boards'
 import { loadNodes, useCanvasSync } from './persistence'
 import { BottomBar } from './BottomBar'
 import { setPoppedOut } from './sessionsStore'
@@ -46,19 +47,21 @@ import { useWorktreeMoves } from './worktrees/useWorktreeMoves'
 
 type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
 
-// O canvas: a lista de nós (salva, sincronizada entre as janelas e com desfazer) e o que se monta
-// em volta dela. Cada parte mora numa pasta: flow/ (o React Flow), actions/ (o que os blocos e os
-// menus pedem), drawers/ (drawers, painéis e modais por cima), keys/ (teclado) e focus/ (câmera).
-function CanvasView({ colorMode, onOpenSettings }: Props) {
-  const [nodes, setNodes] = useState<CanvasNode[]>(loadNodes)
-  const { nodesRef, change, trackGesture, undo, redo } = useHistory(nodes, setNodes)
-  useCanvasSync(nodes, setNodes)
+// O canvas: a lista de nós de um workspace (salva, sincronizada entre as janelas e com desfazer) e
+// o que se monta em volta dela. Cada parte mora numa pasta: flow/ (o React Flow), actions/ (o que
+// os blocos e os menus pedem), drawers/ (drawers, painéis e modais por cima), keys/ (teclado) e
+// focus/ (câmera).
+function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: string }) {
+  const [nodes, setNodes] = useState<CanvasNode[]>(() => loadNodes(board))
+  const { nodesRef, change, trackGesture, undo, redo } = useHistory(board, nodes, setNodes)
+  useCanvasSync(board, nodes, setNodes)
   // O que está no canvas: só essas pastas contam para o "concluído", a barra de menus e o mascote.
   useEffect(() => setCanvasScope(nodes), [nodes])
   useCanvasAgentTools(nodesRef, change)
-  const api = useMemo<NodesApi>(() => ({ nodesRef, setNodes, change }), [nodesRef, change])
-  // Câmera com que esta janela estava ao fechar o app; sem ela, enquadra tudo.
-  const [savedViewport] = useState(() => window.api.canvas.viewport())
+  const api = useMemo<NodesApi>(() => ({ board, nodesRef, setNodes, change }), [board, nodesRef, change])
+  // Câmera com que esta janela estava neste workspace (ao sair dele ou ao fechar o app); sem ela,
+  // enquadra tudo.
+  const [savedViewport] = useState(() => window.api.canvas.viewport(board))
 
   // O que os blocos mostram e muda com o uso (canvasView.ts): lido por bloco, fora do contexto.
   const [view] = useState(createCanvasView)
@@ -197,6 +200,7 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
           }
           uiHidden={uiHidden}
           onToggleUi={toggleUi}
+          confirm={overlays.commands.confirm}
         />
         <DrawerHost
           state={drawers.state}
@@ -223,4 +227,9 @@ function CanvasView({ colorMode, onOpenSettings }: Props) {
   )
 }
 
-export const Canvas = memo(CanvasView)
+// Trocar de workspace monta o canvas do zero (a chave): lista, desfazer, drawers e câmera são do
+// workspace. As conversas e os terminais do anterior seguem no processo principal.
+export const Canvas = memo(function Canvas(props: Props) {
+  const board = useCurrentBoard()
+  return <CanvasView key={board} board={board} {...props} />
+})

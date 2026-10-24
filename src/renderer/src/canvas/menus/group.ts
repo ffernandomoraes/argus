@@ -7,7 +7,7 @@ import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import type { MenuItem } from '../ContextMenu'
 import { childrenOf, fitGroupToContent, groupWideOf, removeGroup, setGroupAccount, setGroupColor, terminalsIn, ungroup } from '../operations'
 import type { AreaNode, CanvasNode, ProjectNode } from '../types'
-import { terminalSubmenu } from './shared'
+import { boardSubmenu, terminalSubmenu } from './shared'
 import type { Deps } from './types'
 import { tr } from '../../i18n'
 
@@ -24,6 +24,7 @@ type GroupDeps = Pick<
   | 'addNote'
   | 'toggleGroup'
   | 'organizeGroup'
+  | 'moveToBoard'
 >
 
 const plural = (n: number) =>
@@ -143,6 +144,7 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
       onSelect: () => deps.organizeGroup(group.id)
     },
     { type: 'action', label: tr('Renomear grupo', 'Rename group'), icon: Pencil, onSelect: () => deps.startRename(group.id) },
+    boardSubmenu(deps, group),
     { type: 'separator' },
     {
       type: 'action',

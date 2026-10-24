@@ -21,5 +21,6 @@ export { dropIntoGroup, groupUnder, leaveGroup, moveToGroup, removeGroup, termin
 export { fitAfterResize, fitGroupToContent, growGroupsToFit, withoutAutoGrow } from './groupSize'
 export { pushAway } from './push'
 export { absolutePosition, childrenOf } from './tree'
+export { bringIn, takeOut } from './transfer'
 export { toggleCollapse, toggleObscure, toggleProjectCollapse } from './visibility'
 export { addWorktreeCard, followParents, hiddenWorktrees, worktreesOf } from './worktrees'

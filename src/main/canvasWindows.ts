@@ -4,8 +4,8 @@ import type { CanvasViewport } from '../shared/canvas'
 import { readJsonFile, writeJsonAtomicSync } from './lib/jsonFile'
 
 // Janelas do canvas abertas ao fechar o app (uma por monitor, por exemplo): reabrem no mesmo
-// lugar e cada uma olhando o mesmo pedaço do canvas.
-export type SavedCanvasWindow = { bounds: Rectangle; maximized: boolean; viewport: CanvasViewport | null }
+// lugar, no mesmo workspace e cada uma olhando o mesmo pedaço do canvas.
+export type SavedCanvasWindow = { bounds: Rectangle; maximized: boolean; board?: string; viewport: CanvasViewport | null }
 
 const file = () => join(app.getPath('userData'), 'windows.json')
 
@@ -15,11 +15,12 @@ const numbers = (o: unknown, keys: string[]) =>
 // Arquivo de outra versão ou editado à mão: janela sem posição válida fica de fora (abriria
 // fora da tela ou derrubaria a abertura do app).
 function parse(w: unknown): SavedCanvasWindow | null {
-  const { bounds, maximized, viewport } = (w ?? {}) as Partial<SavedCanvasWindow>
+  const { bounds, maximized, board, viewport } = (w ?? {}) as Partial<SavedCanvasWindow>
   if (!bounds || !numbers(bounds, ['x', 'y', 'width', 'height'])) return null
   return {
     bounds,
     maximized: maximized === true,
+    ...(typeof board === 'string' && { board }),
     viewport: viewport && numbers(viewport, ['x', 'y', 'zoom']) ? viewport : null
   }
 }

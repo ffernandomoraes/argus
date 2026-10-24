@@ -3,17 +3,17 @@ import { nodesFromSaved } from './flow/savedNodes'
 import { forSync, mergeRemote } from './flow/syncNodes'
 import type { CanvasNode } from './types'
 
-// Canvas salvo (lido pelo processo principal) de volta à tela, sem os blocos estragados.
-export function loadNodes(): CanvasNode[] {
-  const { nodes, dropped } = nodesFromSaved(window.api.canvas.load())
+// Canvas salvo do workspace (lido pelo processo principal) de volta à tela, sem os blocos estragados.
+export function loadNodes(board: string): CanvasNode[] {
+  const { nodes, dropped } = nodesFromSaved(window.api.canvas.load(board))
   if (dropped) console.warn(`[canvas] ${dropped} bloco(s) estragado(s) no canvas salvo ficaram de fora`)
   return nodes
 }
 
-// O mesmo canvas aberto em várias janelas (uma por monitor). A mudança feita aqui sai para o
+// O mesmo workspace aberto em várias janelas (uma por monitor). A mudança feita aqui sai para o
 // processo principal, que grava e repassa às outras; a que chega de lá entra mantendo a seleção
 // e a medida desta janela, que são só dela.
-export function useCanvasSync(nodes: CanvasNode[], setNodes: Dispatch<SetStateAction<CanvasNode[]>>): void {
+export function useCanvasSync(board: string, nodes: CanvasNode[], setNodes: Dispatch<SetStateAction<CanvasNode[]>>): void {
   // Último estado trocado com o processo principal: o que chegou de lá não volta para lá. Começa
   // com o que foi carregado, então abrir o app não grava nada; se a leitura falhou e veio vazio,
   // gravar agora apagaria o arquivo.
@@ -25,18 +25,19 @@ export function useCanvasSync(nodes: CanvasNode[], setNodes: Dispatch<SetStateAc
     const json = JSON.stringify(data)
     if (json === last.current) return
     last.current = json
-    window.api.canvas.sync(data)
-  }, [nodes])
+    window.api.canvas.sync(board, data)
+  }, [board, nodes])
 
   useEffect(
     () =>
-      window.api.canvas.onRemote((remote) => {
-        if (!Array.isArray(remote)) return
+      window.api.canvas.onRemote((from, remote) => {
+        // De outro workspace: chegou enquanto esta janela trocava de um para outro.
+        if (from !== board || !Array.isArray(remote)) return
         // Passa pela mesma conferência do arquivo: o ⌘Z pode trazer o canvas como foi lido dele.
         const incoming = nodesFromSaved(remote).nodes
         last.current = JSON.stringify(forSync(incoming))
         setNodes((ns) => mergeRemote(ns, incoming))
       }),
-    [setNodes]
+    [board, setNodes]
   )
 }

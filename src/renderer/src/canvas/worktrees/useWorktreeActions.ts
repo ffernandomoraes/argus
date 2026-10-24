@@ -23,7 +23,7 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many.r
 // Tarefas isoladas (git worktree) a partir da pasta e do card delas: criar e remover. Nome da
 // branch e PR ficam com o agente, na conversa.
 export function useWorktreeActions(
-  { nodesRef, setNodes, change }: NodesApi,
+  { board, nodesRef, setNodes, change }: NodesApi,
   drawers: DrawerCommands,
   confirm: (request: ConfirmRequest) => void
 ) {
@@ -59,7 +59,7 @@ export function useWorktreeActions(
               // O card sai ainda piscando (a saída do canvas some com ele dali); o aviso é limpo depois.
               // Sem volta pelo ⌘Z: a pasta já foi apagada (sai também do histórico).
               setNodes((ns) => removeNode(ns, node.id))
-              window.api.canvas.forget([node.id])
+              window.api.canvas.forget(board, [node.id])
               setTimeout(() => setJob(node.id, null), 1000)
             })
         }
@@ -94,5 +94,5 @@ export function useWorktreeActions(
         void remove(node)
       }
     }
-  }, [nodesRef, setNodes, change, drawers, confirm])
+  }, [board, nodesRef, setNodes, change, drawers, confirm])
 }

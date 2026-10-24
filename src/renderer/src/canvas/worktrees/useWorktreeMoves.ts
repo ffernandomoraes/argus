@@ -25,7 +25,7 @@ function worktreeCardId(path: string): string {
 // worktree, embaixo da pasta, igual à "Nova tarefa em paralelo", e os drawers que a mostram abrem
 // dele. Ao sair (ExitWorktree), a conversa volta para a pasta; com a pasta do worktree apagada, o
 // card sai.
-export function useWorktreeMoves({ nodesRef, change, setNodes }: Pick<NodesApi, 'nodesRef' | 'change' | 'setNodes'>, drawers: DrawerCommands) {
+export function useWorktreeMoves({ board, nodesRef, change, setNodes }: Pick<NodesApi, 'board' | 'nodesRef' | 'change' | 'setNodes'>, drawers: DrawerCommands) {
   useEffect(() => {
     // Último aviso tratado por conversa: o estado chega uma vez por chave dela, e a cada mudança.
     const handled = new Map<string, string>()
@@ -57,7 +57,7 @@ export function useWorktreeMoves({ nodesRef, change, setNodes }: Pick<NodesApi, 
       // O Claude já apagou a pasta: aqui o Argus só esquece o worktree, e o card sai (sem ⌘Z).
       void window.api.worktrees.remove(card.data.path).finally(() => {
         setNodes((ns) => removeNode(ns, card.id))
-        window.api.canvas.forget([card.id])
+        window.api.canvas.forget(board, [card.id])
       })
     }
 
@@ -79,5 +79,5 @@ export function useWorktreeMoves({ nodesRef, change, setNodes }: Pick<NodesApi, 
       if (wt.left) leave(key, state.sessionId, wt)
       else void enter(key, state.sessionId, wt)
     })
-  }, [nodesRef, change, setNodes, drawers])
+  }, [board, nodesRef, change, setNodes, drawers])
 }

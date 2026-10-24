@@ -3,7 +3,7 @@ import { app, BrowserWindow, screen } from 'electron'
 import { loadCanvasWindows, saveCanvasWindows, type SavedCanvasWindow } from '../canvasWindows'
 import { IS_MAC } from '../platform'
 import { rendererEntry } from './appUrl'
-import { activeCanvas, addCanvasWindow, canvasWindowList, windowViewport } from './canvasRegistry'
+import { activeCanvas, addCanvasWindow, canvasWindowList, windowBoard, windowViewport } from './canvasRegistry'
 import { placeCanvas } from './canvasPlacement'
 import { lockNavigation, openLinksOutside } from './navigation'
 import { frame, setWindowKind, windowShortcuts, type WindowKind } from './windowChrome'
@@ -44,7 +44,8 @@ function placementOf(win: BrowserWindow): SavedCanvasWindow {
   const normal = win.getNormalBounds()
   const current = win.getBounds()
   const sameDisplay = screen.getDisplayMatching(normal).id === screen.getDisplayMatching(current).id
-  return { bounds: maximized && !sameDisplay ? current : normal, maximized, viewport: windowViewport(win.webContents) }
+  const board = windowBoard(win.webContents)
+  return { bounds: maximized && !sameDisplay ? current : normal, maximized, ...(board && { board }), viewport: windowViewport(win.webContents) }
 }
 
 export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
@@ -59,7 +60,7 @@ export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
     backgroundColor: '#1c1c1c',
     webPreferences
   })
-  addCanvasWindow(win, where?.viewport)
+  addCanvasWindow(win, where?.board, where?.viewport)
   lastClosed = null
   if (place.maximize) win.maximize()
   win.on('close', () => {

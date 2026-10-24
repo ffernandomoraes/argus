@@ -4,7 +4,7 @@ import { Providers } from '../providers'
 import { onConversationSaved } from '../agentChats/store'
 import { agentRef } from '../../shared/providers'
 import { CanvasAgent } from '../canvasAgent'
-import { CanvasHub } from '../canvasHub'
+import { Boards } from '../boards'
 import { ChatHolders } from '../chatHolders'
 import { ClaudeVersion } from '../claudeVersion'
 import { Chats } from '../chats'
@@ -19,7 +19,7 @@ import { Speech } from '../speech'
 import { Terminals } from '../terminals'
 import { Updater } from '../updater'
 import { UsageMonitors } from '../usageMonitor'
-import { canvasWindowList, readyCanvas } from './canvasRegistry'
+import { readyCanvas } from './canvasRegistry'
 import { DockBadge } from './dockBadge'
 import { KeepAwake } from './keepAwake'
 import { openFolder } from './folderOpener'
@@ -144,10 +144,11 @@ export function createServices() {
   )
   onConversationSaved((cwd) => sessionWatch.conversationChanged(cwd))
 
-  // O canvas é um só em todas as janelas: a mudança de uma vai para as outras.
-  const canvasHub = new CanvasHub((nodes, except) => {
-    for (const win of canvasWindowList()) if (win.webContents !== except) sendTo(win.webContents, 'canvas:remote', nodes)
-  })
+  // Os workspaces (um canvas cada): a mudança numa janela vai para as outras que mostram o mesmo.
+  const boards = new Boards(
+    (wc, board, nodes) => sendTo(wc, 'canvas:remote', board, nodes),
+    (list) => broadcast('boards:changed', list)
+  )
 
   // Assistente do canvas: as ações vão para a janela do canvas em uso, só com o canvas dela montado
   // (numa janela ainda carregando, a ação ficaria esperando resposta até o tempo esgotar).
@@ -193,7 +194,7 @@ export function createServices() {
     usage,
     auth,
     providers,
-    canvasHub,
+    boards,
     canvasAgent,
     speech,
     updater,

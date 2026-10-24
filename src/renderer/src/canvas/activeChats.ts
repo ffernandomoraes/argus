@@ -1,5 +1,5 @@
 import type { ActiveChat } from '../../../shared/chat'
-import { createStore } from '../lib/createStore'
+import { createStore, type ReadableStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
 
 // Conversas do app trabalhando ou esperando você, em todas as pastas. O processo principal manda a
@@ -15,6 +15,9 @@ void window.api.chat.active().then((chats) => {
   // O aviso chegou antes da resposta: ele é mais novo.
   if (!received) active.set(chats)
 })
+
+// Para quem acompanha fora da tela (bars/boardActivity.ts).
+export const activeChats: ReadableStore<ActiveChat[]> = active
 
 export function useActiveChats(): ActiveChat[] {
   return useStore(active)

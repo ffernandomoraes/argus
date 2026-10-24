@@ -9,7 +9,7 @@ import { saveCanvasWindowLayout } from './windows'
 // de fora no desligamento do Windows (ver lifecycle.ts).
 export function shutdown(s: Services, install: boolean): void {
   step('guardar as janelas', saveCanvasWindowLayout)
-  step('gravar o canvas', () => s.canvasHub.flush())
+  step('gravar o canvas', () => s.boards.flush())
   step('monitores de uso', () => s.usage.stop())
   step('login em andamento', () => s.auth.close())
   step('conferência dos agentes', () => s.providers.close())

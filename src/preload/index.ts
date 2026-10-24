@@ -176,16 +176,27 @@ const api: Api = {
     write: (path, text, projects, base) => invoke('memory:write', path, text, projects, base)
   },
   canvas: {
-    load: () => sendSync('canvas:load'),
-    sync: (nodes) => send('canvas:sync', nodes),
+    load: (board) => sendSync('canvas:load', board),
+    sync: (board, nodes) => send('canvas:sync', board, nodes),
     onRemote: (cb) => listen('canvas:remote', cb),
-    record: () => send('canvas:record'),
-    undo: () => send('canvas:undo'),
-    forget: (ids) => send('canvas:forget', ids),
-    redo: () => send('canvas:redo'),
-    viewport: () => sendSync('canvas:viewport'),
-    setViewport: (viewport) => send('canvas:setViewport', viewport),
+    record: (board) => send('canvas:record', board),
+    undo: (board) => send('canvas:undo', board),
+    forget: (board, ids) => send('canvas:forget', board, ids),
+    redo: (board) => send('canvas:redo', board),
+    viewport: (board) => sendSync('canvas:viewport', board),
+    setViewport: (board, viewport) => send('canvas:setViewport', board, viewport),
     newWindow: () => send('canvas:newWindow')
+  },
+  boards: {
+    state: () => sendSync('boards:state'),
+    onChange: (cb) => listen('boards:changed', cb),
+    show: (board) => send('boards:show', board),
+    create: (name) => sendSync('boards:create', name),
+    rename: (board, name) => send('boards:rename', board, name),
+    close: (board) => send('boards:close', board),
+    reopen: (board) => send('boards:reopen', board),
+    remove: (board) => send('boards:remove', board),
+    put: (board, nodes) => send('boards:put', board, nodes)
   },
   canvasAgent: {
     state: () => invoke('canvasAgent:state'),

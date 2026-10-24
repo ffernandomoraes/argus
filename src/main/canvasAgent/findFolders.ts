@@ -1,6 +1,8 @@
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, sep } from 'node:path'
+import { activeCanvas, windowBoard } from '../app/canvasRegistry'
+import { boardFile, MAIN_BOARD } from '../boardsStore'
 import { readSavedNodes } from '../canvasStore'
 import { expandHome } from '../paths'
 import { IS_WIN } from '../platform'
@@ -32,8 +34,11 @@ const display = (path: string) => {
 // Lugares onde costuma haver projeto.
 function roots(): string[] {
   const home = homedir()
-  // Pais das pastas que já estão no canvas: projetos novos costumam ficar ao lado.
-  const known = (readSavedNodes() as { type?: string; data?: { path?: string } }[])
+  // Pais das pastas que já estão no canvas (o workspace da janela em uso, a mesma onde o assistente
+  // age): projetos novos costumam ficar ao lado.
+  const win = activeCanvas()
+  const board = (win && windowBoard(win.webContents)) || MAIN_BOARD
+  const known = (readSavedNodes(boardFile(board)) as { type?: string; data?: { path?: string } }[])
     .filter((n) => n?.type === 'project' && n.data?.path)
     .map((n) => dirname(expandHome(n.data!.path!)))
   return [

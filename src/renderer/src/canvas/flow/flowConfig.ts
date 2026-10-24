@@ -1,5 +1,6 @@
 import type { FitViewOptions, OnMove, ProOptions } from '@xyflow/react'
 import { AreaNode } from '../AreaNode'
+import { currentBoard } from '../boards'
 import { ChatNode } from '../ChatNode'
 import { ChatPanelNode } from '../ChatPanelNode'
 import { NoteNode } from '../NoteNode'
@@ -30,5 +31,5 @@ export const PRO_OPTIONS: ProOptions = { hideAttribution: true }
 // arrastável nem selecionável), o botão direito nos blocos atravessa para o canvas.
 export const keepPointerEvents = () => {}
 
-// Câmera desta janela, para ela abrir no mesmo lugar da próxima vez.
-export const saveViewport: OnMove = (_, viewport) => window.api.canvas.setViewport(viewport)
+// Câmera desta janela no workspace, para ela voltar no mesmo lugar (ao trocar de volta ou ao abrir).
+export const saveViewport: OnMove = (_, viewport) => window.api.canvas.setViewport(currentBoard(), viewport)

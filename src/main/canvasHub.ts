@@ -7,10 +7,10 @@ const SAVE_DELAY_MS = 400
 // O que a tela mostra quando não havia nada para carregar.
 const isEmpty = (nodes: unknown) => nodes == null || (Array.isArray(nodes) && nodes.length === 0)
 
-// O canvas é um só, mesmo aberto em várias janelas (uma por monitor). Cada janela muda a própria
+// Um canvas (workspace), mesmo aberto em várias janelas (uma por monitor). Cada janela muda a própria
 // cópia na hora, para o arraste não esperar ninguém, e manda o resultado para cá; daqui ele vai
-// para as outras janelas e para o arquivo. O desfazer também mora aqui: ⌘Z desfaz a última ação,
-// feita em qualquer janela.
+// para as outras janelas que mostram este workspace e para o arquivo dele. O desfazer também mora
+// aqui: ⌘Z desfaz a última ação feita neste workspace, em qualquer janela.
 export class CanvasHub {
   private nodes: unknown
   // O canvas.json existia e não deu para usar: nada é gravado até chegar uma mudança de verdade
@@ -23,8 +23,11 @@ export class CanvasHub {
   private saveTimer: NodeJS.Timeout | null = null
 
   // except: a janela que mandou a mudança (ela já está com ela).
-  constructor(private send: (nodes: unknown, except: WebContents | null) => void) {
-    const loaded = loadCanvas()
+  constructor(
+    private file: string,
+    private send: (nodes: unknown, except: WebContents | null) => void
+  ) {
+    const loaded = loadCanvas(file)
     this.nodes = loaded.nodes
     this.hold = !loaded.usable
     this.startedEmpty = isEmpty(loaded.nodes)
@@ -34,7 +37,7 @@ export class CanvasHub {
     return this.nodes
   }
 
-  sync(nodes: unknown, from: WebContents): void {
+  sync(nodes: unknown, from: WebContents | null): void {
     this.nodes = nodes
     if (this.hold && this.startedEmpty && !isEmpty(nodes)) this.hold = false
     this.scheduleSave()
@@ -86,7 +89,14 @@ export class CanvasHub {
     if (!this.saveTimer) return
     clearTimeout(this.saveTimer)
     this.saveTimer = null
-    saveCanvasNow(this.nodes)
+    saveCanvasNow(this.nodes, this.file)
+  }
+
+  // Workspace excluído: nada pendente vai mais para o arquivo.
+  discard(): void {
+    if (this.saveTimer) clearTimeout(this.saveTimer)
+    this.saveTimer = null
+    this.hold = true
   }
 
   private step(from: unknown[], to: unknown[]): void {
@@ -105,7 +115,7 @@ export class CanvasHub {
     if (this.saveTimer) clearTimeout(this.saveTimer)
     this.saveTimer = setTimeout(() => {
       this.saveTimer = null
-      void saveCanvas(this.nodes)
+      void saveCanvas(this.nodes, this.file)
     }, SAVE_DELAY_MS)
   }
 }

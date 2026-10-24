@@ -3,7 +3,7 @@ import type { AppSettings } from './appSettings'
 import type { Lang, LangPreference } from './i18n'
 import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
-import type { CanvasViewport } from './canvas'
+import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
 import type { ActiveChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
@@ -233,14 +233,21 @@ export type SendChannels = {
   'chat:unread': (chats: UnreadChat[]) => void
   'chat:interrupt': (key: string) => void
   'chat:configure': (key: string, patch: Partial<ChatSettings>) => void
-  // Canvas
-  'canvas:sync': (nodes: unknown) => void
-  'canvas:record': () => void
-  'canvas:undo': () => void
-  'canvas:forget': (ids: string[]) => void
-  'canvas:redo': () => void
-  'canvas:setViewport': (viewport: CanvasViewport) => void
+  // Canvas (de um workspace: `board`)
+  'canvas:sync': (board: string, nodes: unknown) => void
+  'canvas:record': (board: string) => void
+  'canvas:undo': (board: string) => void
+  'canvas:forget': (board: string, ids: string[]) => void
+  'canvas:redo': (board: string) => void
+  'canvas:setViewport': (board: string, viewport: CanvasViewport) => void
   'canvas:newWindow': () => void
+  // Workspaces
+  'boards:show': (board: string) => void
+  'boards:rename': (board: string, name: string) => void
+  'boards:close': (board: string) => void
+  'boards:reopen': (board: string) => void
+  'boards:remove': (board: string) => void
+  'boards:put': (board: string, nodes: unknown) => void
   'canvasAgent:send': (text: string) => void
   'canvasAgent:interrupt': () => void
   'canvasAgent:result': (result: CanvasToolResult) => void
@@ -276,8 +283,10 @@ export type SendSyncChannels = {
   'accent:get': () => string | null
   // Idioma da interface já resolvido (o do sistema, quando o ajuste é "system").
   'language:get': () => Lang
-  'canvas:load': () => unknown
-  'canvas:viewport': () => CanvasViewport | null
+  'canvas:load': (board: string) => unknown
+  'canvas:viewport': (board: string) => CanvasViewport | null
+  'boards:state': () => BoardsState
+  'boards:create': (name: string) => string
 }
 
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.
@@ -305,7 +314,9 @@ export type EventChannels = {
   'chat:active': (chats: ActiveChat[]) => void
   // Clique na notificação do sistema.
   'chat:open': (cwd: string, sessionId: string) => void
-  'canvas:remote': (nodes: unknown) => void
+  'canvas:remote': (board: string, nodes: unknown) => void
+  // Workspaces criados, renomeados, excluídos, ou com pastas e conversas soltas diferentes.
+  'boards:changed': (boards: BoardSummary[]) => void
   'canvasAgent:state': (state: CanvasAgentState) => void
   'canvasAgent:call': (call: CanvasToolCall) => void
   // A ação `id` foi respondida no lugar da janela (parar, tempo esgotado): não executar mais.

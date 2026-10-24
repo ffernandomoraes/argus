@@ -5,8 +5,8 @@ import { useActiveChats } from './activeChats'
 import { displayPath } from './factory'
 import type { CanvasNode } from './types'
 
-// O que está no canvas desta janela: as pastas (blocos de pasta) e as conversas postas soltas
-// (card de conversa sem projeto, conversa aberta no canvas). Pasta fora do canvas não conta para o
+// O que está no canvas desta janela (o workspace dela): as pastas (blocos de pasta) e as conversas
+// postas soltas (card de conversa sem projeto, conversa aberta no canvas). Pasta fora do canvas não conta para o
 // "concluído", o ícone da barra de menus nem o mascote, mesmo que a lista dela ainda esteja guardada
 // (pasta removida, aberta pela notificação) ou que outra cópia do app (produção x desenvolvimento)
 // esteja trabalhando nela.
@@ -17,7 +17,9 @@ export const canvasScope = createStore<Scope>(null)
 
 const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((x) => b.has(x))
 
-// Chamado pelo canvas a cada mudança dos blocos; só avisa quando pastas ou conversas mudam.
+// Chamado pelo canvas a cada mudança dos blocos; só avisa quando pastas ou conversas mudam. Só o
+// workspace desta janela conta: a conversa de outro aparece aqui só se a pasta dela também estiver
+// neste. O que roda nos outros aparece na bolinha do menu de workspaces (bars/BoardSwitcher).
 export function setCanvasScope(nodes: readonly CanvasNode[]): void {
   const paths = new Set<string>()
   const sessions = new Set<string>()

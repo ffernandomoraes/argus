@@ -6,7 +6,7 @@ import { getSessions } from '../sessionsStore'
 import { getPreferences } from '../../settings/preferences'
 import type { ConversationSummary, ProjectNode } from '../types'
 import { baseName, FILE_MANAGER } from '../../platform'
-import { isBusy, moveSubmenu, terminalSubmenu } from './shared'
+import { boardSubmenu, isBusy, moveSubmenu, terminalSubmenu } from './shared'
 import type { Deps } from './types'
 import { tr } from '../../i18n'
 
@@ -15,6 +15,7 @@ type ProjectDeps = Pick<
   | 'nodes'
   | 'setNodes'
   | 'leaveGroup'
+  | 'moveToBoard'
   | 'confirm'
   | 'startRename'
   | 'addNote'
@@ -95,8 +96,10 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
       ? workspaceItems(deps, node, workspace)
       : [{ type: 'action', label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`), icon: FolderOpen, onSelect: () => window.api.files.openFolder(node.data.path) } as const, ...repo]),
     { type: 'separator' },
-    // Conversas do grupo são daquele grupo: não mudam de grupo.
+    // Conversas do grupo são daquele grupo: não mudam de grupo nem de workspace. A tarefa isolada
+    // muda de workspace junto com a pasta dela.
     ...(groupWide ? [] : [moveSubmenu(deps, node)]),
+    ...(groupWide || worktree ? [] : [boardSubmenu(deps, node)]),
     { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
     { type: 'separator' },
     // Tarefa isolada: remover apaga a pasta da cópia (a branch fica), depois de confirmar.

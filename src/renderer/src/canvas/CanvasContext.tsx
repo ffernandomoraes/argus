@@ -46,6 +46,8 @@ export type CanvasActions = {
   toggleProject: (id: string) => void
   // "Tirar do grupo": o grupo encolhe, o bloco vai para fora e a câmera vai até ele.
   leaveGroup: (id: string) => void
+  // "Mover para workspace": o bloco (com o que vai junto) sai daqui e entra no outro.
+  moveToBoard: (id: string, board: string) => void
   openConversation: (nodeId: string, conversationId: string) => void
   newConversation: (nodeId: string) => void
   // "+" na borda do grupo: conversa nova do grupo todo (cria o card das conversas do grupo se faltar).

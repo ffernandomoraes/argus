@@ -2,16 +2,17 @@ import { ExternalLink, MessageCircle, PanelRight, Pencil, Trash2, X } from 'luci
 import type { MenuItem } from '../ContextMenu'
 import { removeNode, setNoteColor } from '../operations'
 import type { ChatNode, ChatPanelNode, NoteNode, TerminalNode } from '../types'
-import { moveSubmenu, type MoveDeps } from './shared'
+import { boardSubmenu, moveSubmenu, type MoveDeps } from './shared'
 import type { Deps } from './types'
 import { tr } from '../../i18n'
 
 // Menus dos blocos soltos que não são pasta nem grupo: terminal, conversa sem projeto,
 // conversa aberta no canvas e nota.
 
-export function terminalMenu(deps: Pick<Deps, 'startRename' | 'closeTerminal'>, node: TerminalNode): MenuItem[] {
+export function terminalMenu(deps: Pick<Deps, 'startRename' | 'closeTerminal' | 'moveToBoard'>, node: TerminalNode): MenuItem[] {
   return [
     { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
+    boardSubmenu(deps, node),
     { type: 'separator' },
     {
       type: 'action',
@@ -35,6 +36,7 @@ export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confi
     },
     { type: 'separator' },
     moveSubmenu(deps, node),
+    boardSubmenu(deps, node),
     { type: 'separator' },
     {
       type: 'action',
@@ -65,6 +67,7 @@ export function chatPanelMenu(
     { type: 'action', label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onSelect: () => deps.chatPanelPopout(node.id) },
     { type: 'separator' },
     moveSubmenu(deps, node),
+    boardSubmenu(deps, node),
     { type: 'separator' },
     { type: 'action', label: tr('Fechar conversa', 'Close chat'), icon: X, onSelect: () => deps.closeChatPanel(node.id) }
   ]
@@ -83,6 +86,7 @@ export function noteMenu(deps: MoveDeps & Pick<Deps, 'startRename'>, node: NoteN
     { type: 'separator' },
     { type: 'action', label: tr('Editar nota', 'Edit note'), icon: Pencil, onSelect: () => deps.startRename(node.id) },
     moveSubmenu(deps, node),
+    boardSubmenu(deps, node),
     { type: 'separator' },
     {
       type: 'action',

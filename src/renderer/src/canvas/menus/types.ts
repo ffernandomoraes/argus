@@ -27,6 +27,8 @@ export type Deps = {
   removeForever: (id: string) => void
   toggleGroup: (id: string) => void
   leaveGroup: (id: string) => void
+  // "Mover para workspace": o bloco (com o que vai junto) sai daqui e entra no outro.
+  moveToBoard: (id: string, board: string) => void
   newConversation: (nodeId: string) => void
   newLooseConversation: (position?: XYPosition) => void
   openConversation: (nodeId: string, conversationId: string) => void

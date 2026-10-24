@@ -34,7 +34,8 @@ function menu(nodes: CanvasNode[], options: { auth?: AuthState | null; group?: A
     addTerminal: vi.fn(),
     addNote: vi.fn(),
     toggleGroup: vi.fn(),
-    organizeGroup: vi.fn()
+    organizeGroup: vi.fn(),
+    moveToBoard: vi.fn()
   }
   return { items: groupMenu(deps, options.group ?? group()), deps }
 }

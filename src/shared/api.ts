@@ -3,7 +3,7 @@ import type { AppSettings } from './appSettings'
 import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { Lang, LangPreference } from './i18n'
-import type { CanvasViewport } from './canvas'
+import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
 import type { ActiveChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
@@ -212,22 +212,42 @@ export type Api = {
     // então não é sobrescrito (responde 'conflict').
     write: (path: string, text: string, projects: MemoryProject[], base?: string) => Promise<MemoryWriteResult>
   }
+  // Tudo de um workspace (`board`): cada janela mostra um, e a mesma janela troca de workspace.
   canvas: {
     // Síncrono: o canvas já abre com o que estava salvo, sem piscar vazio.
-    load: () => unknown
-    // O canvas é um só em todas as janelas: a mudança feita aqui vai para as outras (e para o arquivo).
-    sync: (nodes: unknown) => void
-    onRemote: (cb: (nodes: unknown) => void) => Off
-    // Desfazer é um só para todas as janelas: o histórico fica no processo principal.
-    record: () => void
-    undo: () => void
-    redo: () => void
+    load: (board: string) => unknown
+    // O workspace é o mesmo em todas as janelas que mostram ele: a mudança feita aqui vai para as
+    // outras (e para o arquivo).
+    sync: (board: string, nodes: unknown) => void
+    onRemote: (cb: (board: string, nodes: unknown) => void) => Off
+    // Desfazer é um só por workspace, para todas as janelas: o histórico fica no processo principal.
+    record: (board: string) => void
+    undo: (board: string) => void
+    redo: (board: string) => void
     // Blocos que saíram de vez: somem também do histórico (nenhum desfazer os traz de volta).
-    forget: (ids: string[]) => void
-    // Câmera desta janela, para ela reabrir olhando o mesmo lugar.
-    viewport: () => CanvasViewport | null
-    setViewport: (viewport: CanvasViewport) => void
+    forget: (board: string, ids: string[]) => void
+    // Câmera desta janela no workspace, para ela voltar olhando o mesmo lugar.
+    viewport: (board: string) => CanvasViewport | null
+    setViewport: (board: string, viewport: CanvasViewport) => void
     newWindow: () => void
+  }
+  // Workspaces: canvas separados, trocados no menu da barra de título.
+  boards: {
+    // Síncrono: a janela já abre no workspace dela.
+    state: () => BoardsState
+    onChange: (cb: (boards: BoardSummary[]) => void) => Off
+    // Esta janela passou a mostrar o workspace.
+    show: (board: string) => void
+    // Síncrono: devolve o id, para a janela já trocar para ele.
+    create: (name: string) => string
+    rename: (board: string, name: string) => void
+    // Tira do menu, sem parar nada (o último aberto não fecha); reabrir traz de volta.
+    close: (board: string) => void
+    reopen: (board: string) => void
+    // Só fechado: fecha os terminais dele e põe o canvas na Lixeira.
+    remove: (board: string) => void
+    // Lista inteira de blocos do workspace (depois de "Mover para workspace"), com desfazer lá.
+    put: (board: string, nodes: unknown) => void
   }
   canvasAgent: {
     state: () => Promise<CanvasAgentState>

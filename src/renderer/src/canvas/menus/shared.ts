@@ -1,9 +1,10 @@
-import { FolderInput, FolderOpen, SquareTerminal, Terminal } from 'lucide-react'
+import { FolderInput, FolderOpen, Layers, SquareTerminal, Terminal } from 'lucide-react'
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
 import { getAuth, resolveAccount } from '../../auth/useAuth'
 import { getProviders } from '../../providers/useProviders'
 import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
+import { boardList, currentBoard } from '../boards'
 import type { MenuItem } from '../ContextMenu'
 import { moveToGroup } from '../operations'
 import type { AreaNode, CanvasNode, ConversationSummary, TerminalKind } from '../types'
@@ -47,7 +48,7 @@ export function terminalSubmenu(label: string, open: (kind: TerminalKind, accoun
   return { type: 'submenu', label, icon: SquareTerminal, items }
 }
 
-export type MoveDeps = Pick<Deps, 'nodes' | 'setNodes' | 'leaveGroup'>
+export type MoveDeps = Pick<Deps, 'nodes' | 'setNodes' | 'leaveGroup' | 'moveToBoard'>
 
 // "Mover para grupo": os outros grupos e, se já estiver num, a saída dele.
 export function moveSubmenu(deps: MoveDeps, node: CanvasNode): MenuItem {
@@ -75,4 +76,17 @@ export function moveSubmenu(deps: MoveDeps, node: CanvasNode): MenuItem {
     )
   }
   return { type: 'submenu', label: tr('Mover para grupo', 'Move to group'), icon: FolderInput, items: moveItems }
+}
+
+// "Mover para workspace": os outros workspaces abertos. O bloco leva junto o que está dentro dele (grupo) e
+// as tarefas isoladas (pasta).
+export function boardSubmenu(deps: Pick<Deps, 'moveToBoard'>, node: CanvasNode): MenuItem {
+  const here = currentBoard()
+  const items: MenuItem[] = boardList()
+    .filter((b) => b.id !== here && !b.closed)
+    .map((b) => ({ type: 'action', label: b.name, onSelect: () => deps.moveToBoard(node.id, b.id) }))
+  if (items.length === 0) {
+    items.push({ type: 'action', label: tr('Nenhum outro workspace', 'No other workspaces'), disabled: true, onSelect: () => {} })
+  }
+  return { type: 'submenu', label: tr('Mover para workspace', 'Move to workspace'), icon: Layers, items }
 }

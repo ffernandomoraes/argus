@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 import type { CanvasNode } from './types'
 
-// Desfazer/refazer do layout do canvas. O histórico fica no processo principal, um só para
-// todas as janelas: ⌘Z desfaz a última ação, feita em qualquer uma (ver main/canvasHub.ts).
+// Desfazer/refazer do layout do canvas. O histórico fica no processo principal, um por workspace
+// para todas as janelas: ⌘Z desfaz a última ação dele, feita em qualquer uma (ver main/canvasHub.ts).
 // Conteúdo de conversa não entra aqui, só posição, tamanho, nome, cor e estrutura.
-export function useHistory(nodes: CanvasNode[], setNodes: Dispatch<SetStateAction<CanvasNode[]>>) {
+export function useHistory(board: string, nodes: CanvasNode[], setNodes: Dispatch<SetStateAction<CanvasNode[]>>) {
   // Lista atual para quem age fora do render (menus, atalhos, assistente do canvas). Atualizada
   // logo depois do render: escrita durante ele, o React Compiler recusaria otimizar o Canvas.
   const nodesRef = useRef(nodes)
@@ -23,19 +23,19 @@ export function useHistory(nodes: CanvasNode[], setNodes: Dispatch<SetStateActio
       const next = typeof update === 'function' ? update(current) : update
       if (next === current) return
       nodesRef.current = next
-      window.api.canvas.record()
+      window.api.canvas.record(board)
       setNodes(update)
     },
-    [setNodes]
+    [board, setNodes]
   )
 
   // Arrastar e redimensionar geram várias mudanças por gesto: grava só no início.
   const trackGesture = useCallback((active: boolean) => {
     if (active && !inGesture.current) {
       inGesture.current = true
-      window.api.canvas.record()
+      window.api.canvas.record(board)
     }
-  }, [])
+  }, [board])
 
   useEffect(() => {
     const end = () => (inGesture.current = false)
@@ -44,8 +44,8 @@ export function useHistory(nodes: CanvasNode[], setNodes: Dispatch<SetStateActio
   }, [])
 
   // O estado desfeito volta pelo processo principal, para esta e para as outras janelas.
-  const undo = useCallback(() => window.api.canvas.undo(), [])
-  const redo = useCallback(() => window.api.canvas.redo(), [])
+  const undo = useCallback(() => window.api.canvas.undo(board), [board])
+  const redo = useCallback(() => window.api.canvas.redo(board), [board])
 
   return { nodesRef, change, trackGesture, undo, redo }
 }

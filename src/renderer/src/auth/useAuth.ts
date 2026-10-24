@@ -1,11 +1,11 @@
 import type { AuthState } from '../../../shared/auth'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
-import { getProviders } from '../providers/useProviders'
-import { fallbackAgent } from './accounts'
+import { getProviders, useProviders } from '../providers/useProviders'
+import { fallbackAgent, liveAccount } from './accounts'
 
 // Os de fora importam daqui (canvas, conversa): as peças moram em arquivos próprios.
-export { claudeReady, fallbackAgent, findAccount, resolveAccount } from './accounts'
+export { claudeReady, fallbackAgent, findAccount, liveAccount, resolveAccount } from './accounts'
 export { AccountContext, useConversationAccount } from './accountContext'
 
 // Contas do Claude Code e o login em andamento, acompanhando o processo principal. Um estado só
@@ -24,6 +24,14 @@ export const getAuth = (): AuthState | null => auth.get()
 
 // Fora de componente: o agente de quem não tem o Claude pronto (ver fallbackAgent).
 export const getFallbackAgent = (): string | undefined => fallbackAgent(auth.get(), getProviders())
+
+// Fora de componente: a conta do grupo, ou nada se ela foi removida (ver liveAccount).
+export const getLiveAccount = (id?: string): string | undefined => liveAccount(auth.get(), getProviders(), id)
+
+// A mesma coisa num componente, acompanhando as listas de contas.
+export function useLiveAccount(id?: string): string | undefined {
+  return liveAccount(useStore(auth), useProviders(), id)
+}
 
 // Nulo até o processo principal responder.
 export function useAuth(): AuthState | null {

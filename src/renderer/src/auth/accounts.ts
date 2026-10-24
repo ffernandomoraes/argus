@@ -10,6 +10,15 @@ export function resolveAccount(auth: AuthState | null, id?: string): string {
   return id && auth.accounts.some((a) => a.id === id) ? id : auth.defaultId
 }
 
+// Conta guardada no grupo, se ela ainda está no app (de qualquer agente). Removida, o grupo volta a
+// não ter escolha e vale a padrão. Enquanto a lista não chegou (null), passa como veio.
+export function liveAccount(auth: AuthState | null, providers: ProvidersState | null, id?: string): string | undefined {
+  if (!id) return undefined
+  const ref = parseAgentRef(id)
+  if (ref) return !providers || providers.providers[ref.provider].accounts.some((a) => a.id === ref.account) ? id : undefined
+  return !auth || auth.accounts.some((a) => a.id === id) ? id : undefined
+}
+
 export function findAccount(auth: AuthState | null, id?: string): ClaudeAccount | undefined {
   const resolved = resolveAccount(auth, id)
   return auth?.accounts.find((a) => a.id === resolved)

@@ -1,4 +1,5 @@
 import { useStore, type ReactFlowState } from '@xyflow/react'
+import { useLiveAccount } from '../../auth/useAuth'
 import type { AreaData } from '../types'
 
 function areaData(s: ReactFlowState, parentId: string | undefined): AreaData | undefined {
@@ -7,10 +8,10 @@ function areaData(s: ReactFlowState, parentId: string | undefined): AreaData | u
 }
 
 // Grupo onde o bloco está: a conta do Claude (vale ao abrir uma sessão ali dentro) e a cor.
-// Fora de grupo, os dois vazios. Cada um é lido à parte, como texto: arrastar o grupo ou mexer
-// em outro campo dele não redesenha o bloco.
+// Fora de grupo, os dois vazios; conta removida do app, vazia também (vale a padrão). Cada um é
+// lido à parte, como texto: arrastar o grupo ou mexer em outro campo dele não redesenha o bloco.
 export function useGroupOf(parentId: string | undefined): { account?: string; color?: string } {
-  const account = useStore((s) => areaData(s, parentId)?.account)
+  const account = useLiveAccount(useStore((s) => areaData(s, parentId)?.account))
   const color = useStore((s) => areaData(s, parentId)?.color)
   return { account, color }
 }

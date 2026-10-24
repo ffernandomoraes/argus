@@ -92,6 +92,14 @@ describe('Agente ▸ outros agentes', () => {
     expect(labels(sub(agents, 'Codex'))).toEqual(['main'])
   })
 
+  it('conta de outro agente removida: o grupo volta para a padrão do Claude', () => {
+    withCodex([codex('main', true)])
+    const { items } = menu([], { auth: auth([account('principal', true)]), group: group('codex:removida') })
+    const agents = sub(items, 'Agente')!
+    expect(sub(agents, 'Claude')![0]).toMatchObject({ label: 'principal', checked: true })
+    expect(sub(agents, 'Codex')![0]).toMatchObject({ label: 'main', checked: false })
+  })
+
   it('agente só com contas sem login fica de fora', () => {
     withCodex([codex('velha', false)])
     const { items } = menu([], { auth: auth([account('principal', true)]) })

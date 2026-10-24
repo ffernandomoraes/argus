@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { NodeResizer, useStore, type NodeProps, type ReactFlowState } from '@xyflow/react'
 import { ChevronDown, ChevronUp, Eye, EyeOff, Plus } from 'lucide-react'
-import { findAccount, useAuth } from '../auth/useAuth'
+import { findAccount, liveAccount, useAuth } from '../auth/useAuth'
 import { parseAgentRef, PROVIDER_NAMES } from '../../../shared/providers'
 import { AgentIcon } from '../icons/AgentIcon'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
@@ -70,9 +70,10 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
 }
 
 // Agente e conta que valem no grupo (a escolhida ou a padrão), ao lado do nome.
-function AccountTag({ account, color }: { account?: string; color: string }) {
+function AccountTag({ account: chosenId, color }: { account?: string; color: string }) {
   const auth = useAuth()
   const providers = useProviders()
+  const account = liveAccount(auth, providers, chosenId)
   const ref = parseAgentRef(account)
   if (ref) {
     const { accounts, defaultId } = providers?.providers[ref.provider] ?? { accounts: [], defaultId: null }

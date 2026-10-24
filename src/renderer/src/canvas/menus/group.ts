@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, FolderPlus, Fullscreen, LayoutGrid, MessagesSquare, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react'
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '../../../../shared/providers'
-import { resolveAccount } from '../../auth/useAuth'
+import { liveAccount, resolveAccount } from '../../auth/useAuth'
 import { AGENT_MENU_ICONS } from '../../icons/AgentIcon'
 import { getProviders } from '../../providers/useProviders'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
@@ -45,15 +45,16 @@ function folderOf(nodes: CanvasNode[], groupId: string): string | undefined {
   return nodes.find((n): n is ProjectNode => n.parentId === groupId && n.type === 'project' && !n.data.folders)?.data.path
 }
 
-// "Agente ▸ Claude/Codex/Gemini/Cursor ▸ conta". O visto fica na que vale: a escolhida ou, sem ela, a padrão do agente. Só entram os agentes com
-// conta conectada. As conversas novas do grupo usam o escolhido; as que já existem continuam com o
+// "Agente ▸ Claude/Codex/Gemini/Cursor ▸ conta". O visto fica na que vale: a escolhida ou, sem ela
+// (ou removida do app), a padrão do Claude. Só entram os agentes com conta conectada. As conversas novas do grupo usam o escolhido; as que já existem continuam com o
 // agente delas.
 function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): MenuItem[] {
   const { auth } = deps
   const state = getProviders()
-  const ref = parseAgentRef(group.data.account)
+  const current = liveAccount(auth, state, group.data.account)
+  const ref = parseAgentRef(current)
   const set = (account: string) => deps.setNodes((ns) => setGroupAccount(ns, group.id, account))
-  const claudeCurrent = ref ? null : resolveAccount(auth, group.data.account)
+  const claudeCurrent = ref ? null : resolveAccount(auth, current)
   const agents: MenuItem[] = [
     {
       type: 'submenu',
@@ -68,9 +69,9 @@ function agentSubmenu(deps: Pick<Deps, 'auth' | 'setNodes'>, group: AreaNode): M
     }
   ]
   for (const provider of PROVIDERS) {
-    const { accounts, defaultId } = state?.providers[provider] ?? { accounts: [], defaultId: null }
+    const accounts = state?.providers[provider].accounts ?? []
     if (!accounts.length) continue
-    const chosen = ref?.provider === provider ? (accounts.some((a) => a.id === ref.account) ? ref.account : defaultId) : null
+    const chosen = ref?.provider === provider ? ref.account : null
     // Conta sem login não entra, a não ser a desta conversa; agente sem nenhuma, sem submenu.
     const listed = accounts.filter((a) => a.status?.signedIn !== false || a.id === chosen)
     if (!listed.length) continue
@@ -119,7 +120,7 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
     terminalSubmenu(
       tr('Novo terminal', 'New terminal'),
       (kind, account) => deps.addTerminal(group.position, group.id, folderOf(deps.nodes, group.id), kind, account),
-      group.data.account
+      liveAccount(deps.auth, getProviders(), group.data.account)
     ),
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, onSelect: () => deps.addNote(group.position, group.id) },
     { type: 'separator' },

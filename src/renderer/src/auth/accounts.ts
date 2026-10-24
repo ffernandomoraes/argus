@@ -19,6 +19,11 @@ export function liveAccount(auth: AuthState | null, providers: ProvidersState | 
   return !auth || auth.accounts.some((a) => a.id === id) ? id : undefined
 }
 
+// Contas de todos os agentes. Com uma só, não há o que escolher: o grupo não mostra qual roda.
+export function accountCount(auth: AuthState | null, providers: ProvidersState | null): number {
+  return (auth?.accounts.length ?? 0) + PROVIDERS.reduce((n, p) => n + (providers?.providers[p].accounts.length ?? 0), 0)
+}
+
 export function findAccount(auth: AuthState | null, id?: string): ClaudeAccount | undefined {
   const resolved = resolveAccount(auth, id)
   return auth?.accounts.find((a) => a.id === resolved)

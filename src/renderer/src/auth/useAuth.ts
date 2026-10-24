@@ -5,7 +5,7 @@ import { getProviders, useProviders } from '../providers/useProviders'
 import { fallbackAgent, liveAccount } from './accounts'
 
 // Os de fora importam daqui (canvas, conversa): as peças moram em arquivos próprios.
-export { claudeReady, fallbackAgent, findAccount, liveAccount, resolveAccount } from './accounts'
+export { accountCount, claudeReady, fallbackAgent, findAccount, liveAccount, resolveAccount } from './accounts'
 export { AccountContext, useConversationAccount } from './accountContext'
 
 // Contas do Claude Code e o login em andamento, acompanhando o processo principal. Um estado só

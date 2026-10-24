@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { NodeResizer, useStore, type NodeProps, type ReactFlowState } from '@xyflow/react'
 import { ChevronDown, ChevronUp, Eye, EyeOff, Plus } from 'lucide-react'
-import { findAccount, liveAccount, useAuth } from '../auth/useAuth'
+import { accountCount, findAccount, liveAccount, useAuth } from '../auth/useAuth'
 import { parseAgentRef, PROVIDER_NAMES } from '../../../shared/providers'
 import { AgentIcon } from '../icons/AgentIcon'
 import { ClaudeIcon } from '../icons/ClaudeIcon'
@@ -69,10 +69,12 @@ function HiddenContent({ id, color }: { id: string; color: string }) {
   )
 }
 
-// Agente e conta que valem no grupo (a escolhida ou a padrão), ao lado do nome.
+// Agente e conta que valem no grupo (a escolhida ou a padrão), ao lado do nome. Com uma conta só
+// no app, nenhuma: não há outra que pudesse rodar.
 function AccountTag({ account: chosenId, color }: { account?: string; color: string }) {
   const auth = useAuth()
   const providers = useProviders()
+  if (accountCount(auth, providers) <= 1) return null
   const account = liveAccount(auth, providers, chosenId)
   const ref = parseAgentRef(account)
   if (ref) {
@@ -86,7 +88,6 @@ function AccountTag({ account: chosenId, color }: { account?: string; color: str
       </Tag>
     )
   }
-  // O Claude aparece mesmo com uma conta só: deixa claro qual agente roda.
   const current = auth ? findAccount(auth, account) : undefined
   if (!current) return null
   return (

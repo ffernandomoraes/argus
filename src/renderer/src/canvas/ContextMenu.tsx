@@ -23,6 +23,8 @@ export type MenuItem =
       shortcut?: string
       // Recurso de Configurações > Experimentos: o selo depois do nome.
       experiment?: boolean
+      // Bolinha de cor no lugar do ícone (ex.: a cor do grupo).
+      dot?: string
     }
   | { type: 'submenu'; label: string; icon?: Icon; items: MenuItem[] }
   | { type: 'colors'; label: string; value: string; onSelect: (color: string) => void }
@@ -125,6 +127,12 @@ function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () => void }
             } disabled:text-faint disabled:hover:bg-transparent`}
           >
             {Icon && <Icon size={14} />}
+            {item.dot && (
+              // Contorno branco sob o mouse: um grupo azul sumiria no fundo de destaque.
+              <span className="flex size-3.5 shrink-0 items-center justify-center">
+                <span className="size-2.5 rounded-full group-hover/item:ring-1 group-hover/item:ring-white" style={{ background: item.dot }} />
+              </span>
+            )}
             {item.label}
             {item.experiment && <ExperimentTag />}
             {item.checked && <Check size={14} className="ml-auto shrink-0 text-muted group-hover/item:text-white" />}

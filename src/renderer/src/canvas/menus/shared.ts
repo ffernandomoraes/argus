@@ -57,6 +57,7 @@ export function moveSubmenu(deps: MoveDeps, node: CanvasNode): MenuItem {
   const moveItems: MenuItem[] = groups.map((g) => ({
     type: 'action',
     label: g.data.label,
+    dot: g.data.color,
     onSelect: () => setNodes((ns) => moveToGroup(ns, node.id, g.id))
   }))
   if (moveItems.length === 0) {

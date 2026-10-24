@@ -31,6 +31,10 @@ export function setNoteWidth(nodes: CanvasNode[], id: string, width: number): Ca
   return nodes.map((n) => (n.id === id && n.type === 'note' ? { ...n, data: { ...n.data, width } } : n))
 }
 
+export function toggleNoteCollapse(nodes: CanvasNode[], id: string): CanvasNode[] {
+  return nodes.map((n) => (n.id === id && n.type === 'note' ? { ...n, data: { ...n.data, collapsed: !n.data.collapsed } } : n))
+}
+
 export function setNoteColor(nodes: CanvasNode[], id: string, color: string): CanvasNode[] {
   return nodes.map((n) => (n.id === id && n.type === 'note' ? { ...n, data: { ...n.data, color } } : n))
 }

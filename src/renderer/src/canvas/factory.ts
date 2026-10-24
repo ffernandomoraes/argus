@@ -148,11 +148,11 @@ export function createChatPanel(project: ProjectData, loose: boolean, conversati
 
 // Amarelo de post-it: se destaca das pastas e dos grupos, que nascem cinza.
 const DEFAULT_NOTE_COLOR = '#f59e0b'
-// Sem tamanho no nó: o React Flow mede o balão, que acompanha o texto.
+// Sem tamanho no nó: o React Flow mede a nota, que acompanha o texto.
 export const NOTE_MAX_WIDTH = 280
-export const NOTE_MIN_WIDTH = 120
-// Tamanho do balão vazio, antes de o React Flow medir (para achar um lugar livre).
-export const NOTE_SIZE = { width: 160, height: 38 }
+export const NOTE_MIN_WIDTH = 160
+// Tamanho da nota vazia (cabeçalho + uma linha), antes de o React Flow medir (para achar um lugar livre).
+export const NOTE_SIZE = { width: 160, height: 72 }
 
 export function createNote(position: XYPosition): NoteNode {
   return {

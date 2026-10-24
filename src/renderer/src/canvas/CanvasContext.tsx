@@ -37,6 +37,10 @@ export type CanvasActions = {
   finishNote: (id: string, text: string) => void
   // Fim do arraste do puxador da nota: guarda a largura escolhida.
   setNoteWidth: (id: string, width: number) => void
+  // Seta do cabeçalho da nota: só o cabeçalho, ou o texto também.
+  toggleNote: (id: string) => void
+  // X do cabeçalho da nota: apaga sem perguntar (⌘Z traz de volta, como no menu).
+  deleteNote: (id: string) => void
   toggleGroup: (id: string) => void
   toggleObscure: (id: string) => void
   toggleProject: (id: string) => void

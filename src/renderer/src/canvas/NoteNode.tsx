@@ -1,5 +1,7 @@
-import { memo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { memo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { useReactFlow, type NodeProps } from '@xyflow/react'
+import { ChevronDown, X } from 'lucide-react'
+import { IconButton } from '../ui/IconButton'
 import { trackPointerDrag } from './blocks/pointerDrag'
 import { sameNodeProps } from './blocks/sameNodeProps'
 import { useFocusWhenVisible } from './blocks/useFocusWhenVisible'
@@ -11,24 +13,32 @@ import { tr } from '../i18n'
 
 const TEXT = 'whitespace-pre-wrap break-words text-[13px] leading-snug'
 
-// Nota no canvas, como o comentário do Figma: um balão com a ponta embaixo à esquerda, que
-// nasce pequeno, alarga com o texto até NOTE_MAX_WIDTH e depois cresce para baixo. Puxando a
-// borda direita, a largura passa a ser a escolhida; a altura continua seguindo o texto.
-// Dois cliques editam; Enter, clicar fora ou Esc guarda.
+// Os botões do cabeçalho não arrastam a nota nem abrem a edição no duplo clique.
+const stopDoubleClick = (e: ReactMouseEvent) => e.stopPropagation()
+
+// Nota no canvas, como a do nodeterm: um cartão na cor da nota com cabeçalho (seta para
+// recolher, bolinha da cor, título e X para apagar). Nasce pequeno, alarga com o texto até
+// NOTE_MAX_WIDTH e depois cresce para baixo. Puxando a borda direita, a largura passa a ser a
+// escolhida; a altura continua seguindo o texto. Dois cliques editam; Enter, clicar fora ou Esc
+// guarda. Recolhida, fica só o cabeçalho, com a primeira linha do texto no lugar do título.
 function NoteNodeView({ id, data, selected }: NodeProps<NoteNodeType>) {
-  const { startRename, finishNote, setNoteWidth } = useCanvasActions()
+  const { startRename, finishNote, setNoteWidth, toggleNote, deleteNote } = useCanvasActions()
   const { getZoom } = useReactFlow()
   const editing = useIsRenaming(id)
-  const bubble = useRef<HTMLDivElement>(null)
+  const card = useRef<HTMLDivElement>(null)
   // Largura durante o arraste do puxador; só vai para o nó ao soltar (um passo no ⌘Z).
   const [dragWidth, setDragWidth] = useState<number | null>(null)
   const color = data.color
   const width = dragWidth ?? data.width
+  // Editando pelo menu com a nota recolhida, o texto aparece enquanto durar a edição.
+  const collapsed = !!data.collapsed && !editing
+  const firstLine = data.text.split('\n')[0]
+  const title = collapsed && firstLine ? firstLine : tr('Nota', 'Note')
 
   const startResize = (e: ReactPointerEvent<HTMLDivElement>) => {
     e.stopPropagation()
     // Largura de layout (sem o zoom), a mesma unidade do canvas.
-    const startWidth = bubble.current?.offsetWidth ?? NOTE_MIN_WIDTH
+    const startWidth = card.current?.offsetWidth ?? NOTE_MIN_WIDTH
     const zoom = getZoom()
     const widthAt = (dx: number) => Math.max(NOTE_MIN_WIDTH, Math.round(startWidth + dx / zoom))
     trackPointerDrag(e, {
@@ -42,34 +52,67 @@ function NoteNodeView({ id, data, selected }: NodeProps<NoteNodeType>) {
 
   return (
     <div
-      ref={bubble}
+      ref={card}
       onDoubleClick={(e) => {
         e.stopPropagation()
         startRename(id)
       }}
       // Selecionada, a borda fica tracejada (Delete apaga); escrevendo, contínua.
-      className={`relative rounded-2xl rounded-bl-sm border px-3 py-2 shadow-lg shadow-black/25 ${
-        selected && !editing ? 'border-dashed' : ''
-      } ${width ? '' : 'w-max'}`}
+      className={`relative rounded-xl border shadow-lg shadow-black/25 ${selected && !editing ? 'border-dashed' : ''} ${width ? '' : 'w-max'}`}
       style={{
         ...(width ? { width } : { minWidth: NOTE_MIN_WIDTH, maxWidth: NOTE_MAX_WIDTH }),
-        borderColor: selected || editing ? color : `color-mix(in srgb, ${color} 40%, transparent)`,
+        borderColor: selected || editing ? color : `color-mix(in srgb, ${color} 55%, transparent)`,
         background: `color-mix(in srgb, ${color} 16%, var(--color-surface))`
       }}
     >
-      {editing ? (
-        <NoteEditor text={data.text} onDone={(text) => finishNote(id, text)} />
-      ) : data.text ? (
-        <p className={`text-text ${TEXT}`}>{data.text}</p>
-      ) : (
-        <p className={`text-faint ${TEXT}`}>{tr('Nota vazia - dois cliques para escrever', 'Empty note - double-click to write')}</p>
+      <div
+        className={`flex h-8 items-center gap-1.5 rounded-t-xl px-1.5 ${collapsed ? 'rounded-b-xl' : 'border-b'}`}
+        style={{
+          borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+          background: `color-mix(in srgb, ${color} 10%, transparent)`
+        }}
+      >
+        <IconButton
+          label={collapsed ? tr('Expandir nota', 'Expand note') : tr('Recolher nota', 'Collapse note')}
+          variant="subtle"
+          size="xs"
+          className="nodrag"
+          onClick={() => toggleNote(id)}
+          onDoubleClick={stopDoubleClick}
+        >
+          <ChevronDown size={14} className={`transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+        </IconButton>
+        <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: color }} />
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-text">{title}</span>
+        <IconButton
+          label={tr('Excluir nota', 'Delete note')}
+          variant="subtle"
+          size="xs"
+          className="nodrag"
+          onClick={() => deleteNote(id)}
+          onDoubleClick={stopDoubleClick}
+        >
+          <X size={13} />
+        </IconButton>
+      </div>
+
+      {!collapsed && (
+        <div className="px-3 py-2">
+          {editing ? (
+            <NoteEditor text={data.text} onDone={(text) => finishNote(id, text)} />
+          ) : data.text ? (
+            <p className={`text-text ${TEXT}`}>{data.text}</p>
+          ) : (
+            <p className={`text-faint ${TEXT}`}>{tr('Nota vazia - dois cliques para escrever', 'Empty note - double-click to write')}</p>
+          )}
+        </div>
       )}
 
       {/* Puxador da largura: a borda direita, com a nota selecionada. */}
       {selected && !editing && (
         <div
           onPointerDown={startResize}
-          onDoubleClick={(e) => e.stopPropagation()}
+          onDoubleClick={stopDoubleClick}
           className="nodrag absolute -right-1 top-0 bottom-0 w-2 cursor-ew-resize"
         />
       )}

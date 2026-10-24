@@ -112,10 +112,12 @@ type ChatPanelData = {
 // Posta em cima de um grupo, entra nele e anda junto; em cima de uma pasta, só fica ali.
 // Como o comentário do Figma: nasce pequena, alarga com o texto até NOTE_MAX_WIDTH e depois
 // cresce para baixo. `width`: largura escolhida pela pessoa no puxador; a altura segue o texto.
+// `collapsed`: só o cabeçalho aparece (a seta dele recolhe e expande).
 type NoteData = {
   text: string
   color: string
   width?: number
+  collapsed?: boolean
 }
 
 export type AreaNode = Node<AreaData, 'area'>

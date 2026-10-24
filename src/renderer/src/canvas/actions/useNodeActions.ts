@@ -16,6 +16,7 @@ import {
   setWorkspaceFolders,
   sizeOf,
   toggleCollapse,
+  toggleNoteCollapse,
   toggleObscure,
   toggleProjectCollapse
 } from '../operations'
@@ -71,6 +72,8 @@ export function useNodeActions(
         if (node?.type === 'note' && value !== node.data.text) change((ns) => setNoteText(ns, id, value))
       },
       setNoteWidth: (id: string, width: number) => change((ns) => setNoteWidth(ns, id, width)),
+      toggleNote: (id: string) => change((ns) => toggleNoteCollapse(ns, id)),
+      deleteNote: (id: string) => change((ns) => removeNode(ns, id)),
       // Terminal solto no canvas. Sem pasta conhecida, abre na pasta do usuário, sem perguntar.
       // Novo: pega o foco ao aparecer (useIsNewBlock). Num grupo recolhido ou oculto ele nasce
       // escondido e não é marcado: senão roubaria o foco quando o grupo abrisse, bem depois.

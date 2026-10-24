@@ -11,7 +11,8 @@ export {
   setWorkspaceFolders,
   setNoteColor,
   setNoteText,
-  setNoteWidth
+  setNoteWidth,
+  toggleNoteCollapse
 } from './edits'
 export { findChatSpot } from './freeSpace'
 export { boundsOf, COLLAPSED_SIZE, FIT_PADDING, isPlaced, sizeOf, type Box } from './geometry'

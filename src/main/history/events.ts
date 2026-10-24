@@ -58,6 +58,10 @@ function localOutput(l: Line): string | null {
   return /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(raw)?.[1]?.trim() || null
 }
 
+// "Compacted", a resposta do /compact: o divisor da compactação (compact_boundary, gravado antes) já
+// conta o que houve, e a caixa repetiria.
+export const isCompactOutput = (l: Line) => /^Compacted\b/.test(localOutput(l) ?? '')
+
 // O que o comando respondeu.
 export function commandOutput(l: Line): Message | null {
   const out = localOutput(l)

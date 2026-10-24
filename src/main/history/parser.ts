@@ -5,7 +5,7 @@ import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
 import { arr, atOf, contentOf, idOf, obj, str, type Line } from '../transcripts/line'
 import { marksOf, promptParts, resultText } from './content'
-import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEvent, modelName } from './events'
+import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEvent, isCompactOutput, modelName } from './events'
 
 const RESULT_MAX = 2000
 // O relatório de um subagente é o que ele entregou: cabe bem mais.
@@ -81,6 +81,7 @@ export class HistoryParser {
       if (marker.kind === 'model') this.lastModelEvent = marker.text
       return this.push(marker)
     }
+    if (isCompactOutput(l)) return
     // Comando de barra e a resposta dele ficam visíveis, em vez de sumir da conversa.
     const command = commandMessage(l) ?? commandOutput(l)
     if (command) return this.push(command)

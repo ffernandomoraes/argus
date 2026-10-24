@@ -211,6 +211,15 @@ describe('HistoryParser: divisores', () => {
       { role: 'event', kind: 'compact', text: 'Conversa compactada automaticamente (tinha 80 mil tokens)' }
     ])
   })
+
+  it('o "Compacted" do /compact não vira caixa: o divisor da compactação já mostra', () => {
+    const list = messagesOf([
+      compactBoundary(80_000, 9_000),
+      user('<command-name>/compact</command-name>\n<command-args></command-args>'),
+      user('<local-command-stdout>Compacted </local-command-stdout>')
+    ])
+    expect(roles(list)).toEqual(['event', 'user'])
+  })
 })
 
 describe('HistoryParser: memória e páginas', () => {

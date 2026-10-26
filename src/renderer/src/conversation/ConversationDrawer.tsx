@@ -39,7 +39,7 @@ type Props = {
   // Arquivo da lista de não comitados: abre o diff dele.
   onOpenDiff: (path: string) => void
   // "Abrir ao lado" no cartão do plano: o plano inteiro ao lado do drawer.
-  onOpenPlan: (plan: string) => void
+  onOpenPlan: (text: string, path?: string) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted: (sessionId: string) => void
   // Posição e tamanho no canvas; nulo = ainda não definido (nasce à direita).
@@ -96,9 +96,9 @@ export function ConversationDrawer(props: Props) {
     props.onOpenDiff(path)
   })
   // O plano também: o drawer volta ao tamanho dele e encolhe se precisar de espaço (drawerState).
-  const openPlan = useStableCallback((plan: string) => {
+  const openPlan = useStableCallback((text: string, path?: string) => {
     leaveFocus()
-    props.onOpenPlan(plan)
+    props.onOpenPlan(text, path)
   })
 
   // No foco, o cabeçalho tem a cor do painel: o tom do grupo destacava demais.

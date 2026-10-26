@@ -158,7 +158,7 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
         const code = codeProject(project, path)
         drawers.openFile({ project: code }, code.path, path, lines, diff)
       },
-      openPlanFrom: (plan: string) => drawers.openPlan(null, plan),
+      openPlanFrom: (text: string, path?: string) => drawers.openPlan(null, text, path),
       toggleProjectCode: (project: ProjectData, open: boolean) =>
         open ? drawers.closeCode() : drawers.openProjectCode(project)
     }),

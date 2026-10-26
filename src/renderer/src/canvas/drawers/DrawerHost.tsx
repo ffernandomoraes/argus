@@ -37,14 +37,14 @@ export function DrawerHost({ state, targets, design, layout, commands, actions, 
   // quando ele fecha.
   const planDrawer = state.plan?.slot ? placed.find((d) => d.id === state.plan?.slot) : undefined
   const drawerX = state.plan?.slot ? planDrawer?.rect?.x : PLAN_WIDTH + PANEL_MARGIN * 2
-  const plan = state.plan && drawerX !== undefined ? { text: state.plan.text, drawerX } : null
+  const plan = state.plan && drawerX !== undefined ? { text: state.plan.text, path: state.plan.path, drawerX } : null
   // O cartão do plano aberto mostra "Fechar" no lugar de "Abrir ao lado".
   const planText = plan?.text ?? null
   useLayoutEffect(() => publishOpenPlan(planText, commands.closePlan), [planText, commands])
   return (
     <>
       <Presence>
-        {plan && <PlanPanel key={plan.text} text={plan.text} drawerX={plan.drawerX} onClose={commands.closePlan} />}
+        {plan && <PlanPanel key={plan.text} text={plan.text} path={plan.path} drawerX={plan.drawerX} onClose={commands.closePlan} />}
       </Presence>
       <Presence>
         {code && !plan && (

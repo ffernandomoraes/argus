@@ -21,7 +21,8 @@ type CodeState = {
 
 // Plano aberto ao lado de um drawer (o markdown inteiro, como estava ao clicar em "Abrir ao lado").
 // Sem drawer (pedido por uma conversa do canvas), fica encostado à esquerda, na largura padrão.
-export type OpenPlan = { slot: SlotId | null; text: string }
+// `path`: o .md criado pelo Claude, aberto do mesmo jeito (a janela mostra o caminho).
+export type OpenPlan = { slot: SlotId | null; text: string; path?: string }
 
 // Um drawer de conversa. Fixado: fica onde está, e a próxima conversa abre num drawer novo, no
 // espaço livre ao lado dos fixados (sem espaço, em cascata por cima). O solto troca de conversa.
@@ -80,7 +81,7 @@ export type DrawerAction =
   | { type: 'fileDiff'; diff: boolean }
   | { type: 'closeFile' }
   | { type: 'closeCode' }
-  | { type: 'openPlan'; slot: SlotId | null; text: string; area: AreaSize }
+  | { type: 'openPlan'; slot: SlotId | null; text: string; path?: string; area: AreaSize }
   | { type: 'closePlan' }
 
 const withCode = (state: DrawerState, code: CodeState): DrawerState => (code === state.code ? state : { ...state, code })
@@ -172,7 +173,7 @@ function forget(state: DrawerState, conversationId: string): DrawerState {
 // Plano aberto ao lado do drawer `slot`. Sem espaço à esquerda dele (inclusive no 100% da largura),
 // o drawer encolhe ou anda para a direita para caber (roomForPlan).
 function openPlan(state: DrawerState, action: Extract<DrawerAction, { type: 'openPlan' }>): DrawerState {
-  const plan = { slot: action.slot, text: action.text }
+  const plan = { slot: action.slot, text: action.text, ...(action.path && { path: action.path }) }
   const drawer = state.drawers.find((d) => d.id === action.slot)
   if (!drawer?.rect) return { ...state, plan }
   const next = roomForPlan(drawer.rect, action.area)

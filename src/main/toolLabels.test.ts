@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeTool } from './toolLabels'
+import { describeTool, markdownDocument } from './toolLabels'
 
 describe('describeTool', () => {
   it('Bash: a descrição do Claude na linha, o comando no detalhe', () => {
@@ -22,6 +22,12 @@ describe('describeTool', () => {
     const plan = '# Prévia do plano\n\n## Passos\n1. Fazer'
     expect(describeTool('ExitPlanMode', { plan })).toEqual({ label: 'Plano pronto', summary: 'Prévia do plano', detail: plan })
     expect(describeTool('ExitPlanMode', {})).toMatchObject({ summary: '', detail: undefined })
+  })
+
+  it('.md criado: o texto vai junto, para o chat formatar; outros arquivos e edições não', () => {
+    expect(markdownDocument('Write', { file_path: '/p/CLAUDE.md', content: '# Oi' })).toBe('# Oi')
+    expect(markdownDocument('Write', { file_path: '/p/a.ts', content: 'x' })).toBeUndefined()
+    expect(markdownDocument('Edit', { file_path: '/p/CLAUDE.md', new_string: 'x' })).toBeUndefined()
   })
 
   it('MCP: "servidor - ação", e os do próprio Argus com nome próprio', () => {

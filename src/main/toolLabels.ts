@@ -41,6 +41,17 @@ const host = (url: string) => {
   }
 }
 
+// Maior que isso, o .md criado fica só no diff: o texto inteiro iria junto em toda leitura do histórico.
+const DOCUMENT_MAX = 200_000
+
+// Texto do arquivo .md que o Claude criou (ou reescreveu inteiro), para o chat mostrar formatado.
+export function markdownDocument(name: string, input: Input | undefined): string | undefined {
+  const path = input?.file_path
+  const content = input?.content
+  if (name !== 'Write' || typeof path !== 'string' || !/\.(md|markdown)$/i.test(path)) return undefined
+  return typeof content === 'string' && content.length <= DOCUMENT_MAX ? content : undefined
+}
+
 export function describeTool(name: string, input: Input | undefined): ToolDescription {
   const i = input ?? {}
   // Terminal do drawer (terminals/drawerShells.ts): o comando à vista, como no Bash.

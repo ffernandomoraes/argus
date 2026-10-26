@@ -2,7 +2,7 @@ import { pageOf, type HistoryPage, type HistoryRequest, type Message } from '../
 import { DELEGATE_TOOL, stepLabel } from '../../shared/orchestrator'
 import { diffFromResult } from '../diffs'
 import { tr } from '../i18n'
-import { describeTool } from '../toolLabels'
+import { describeTool, markdownDocument } from '../toolLabels'
 import { arr, atOf, contentOf, idOf, obj, str, type Line } from '../transcripts/line'
 import { marksOf, promptParts, resultText } from './content'
 import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEvent, isCompactOutput, modelName } from './events'
@@ -196,6 +196,7 @@ export class HistoryParser {
         label: d.label,
         input: d.summary,
         detail: d.detail,
+        document: markdownDocument(c.name, input),
         result: '',
         at,
         tokens: take(),

@@ -82,6 +82,8 @@ export type CanvasActions = {
   chatPanelPopout: (nodeId: string) => void
   // Link de arquivo clicado numa conversa do canvas: abre o código daquela pasta.
   openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => void
+  // "Abrir ao lado" no plano de uma conversa do canvas: o plano à esquerda da tela.
+  openPlanFrom: (plan: string) => void
   // Botão de código do card da pasta: abre o código dela; `open` (já aberto com ela) fecha.
   toggleProjectCode: (project: ProjectData, open: boolean) => void
   // Tarefa isolada (git worktree): remover a pasta (a branch fica).

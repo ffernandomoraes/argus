@@ -23,6 +23,7 @@ import { useViewKey } from './hooks/useViewKey'
 import { useLocalEvents } from './localEvents'
 import { McpPanel } from './McpPanel'
 import { OutputStylePanel } from './OutputStylePanel'
+import { PlanOpenContext } from './PlanCard'
 import { mergeEvents } from './mergeEvents'
 import { onRevealEnd } from './revealEnd'
 import { useConversationHistory } from './useConversationHistory'
@@ -47,6 +48,8 @@ type Props = {
   onOpenFile?: (path: string, lines?: LineRange) => void
   // Arquivo da lista de não comitados; sem isso, a lista só mostra.
   onOpenDiff?: (path: string) => void
+  // "Abrir ao lado" no cartão do plano; sem isso, fica só o "Mostrar tudo".
+  onOpenPlan?: (plan: string) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted?: (sessionId: string) => void
   // Escala do conteúdo, ajustada com ⌘+ / ⌘- (useDrawerZoom).
@@ -78,6 +81,7 @@ export const ConversationView = memo(function ConversationView({
   project,
   conversation,
   onOpenFile,
+  onOpenPlan,
   onOpenDiff,
   onSessionStarted,
   zoom = 1,
@@ -189,6 +193,7 @@ export const ConversationView = memo(function ConversationView({
       {/* key: trocar de conversa recria o conteúdo (rolagem); o rascunho fica guardado por conversa */}
       <FileLinkContext.Provider value={onOpenFile ? openFile : null}>
       <FileRevealContext.Provider value={onOpenFile ? revealFile : null}>
+      <PlanOpenContext.Provider value={onOpenPlan ?? null}>
         <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
           <AccountChoiceContext.Provider value={accountChoice}>
           <ChatView
@@ -226,6 +231,7 @@ export const ConversationView = memo(function ConversationView({
           />
           </AccountChoiceContext.Provider>
         </div>
+      </PlanOpenContext.Provider>
       </FileRevealContext.Provider>
       </FileLinkContext.Provider>
       <Presence kind="modal">

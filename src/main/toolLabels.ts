@@ -87,6 +87,9 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
       return { label, summary: Array.isArray(i.todos) ? tr(`${i.todos.length} itens`, `${i.todos.length} items`) : '' }
     case 'AskUserQuestion':
       return { label, summary: firstLine(i.questions?.[0]?.question) }
+    // O plano inteiro (markdown) no detalhe: o chat mostra formatado. Na linha, o título dele.
+    case 'ExitPlanMode':
+      return { label, summary: firstLine(i.plan).replace(/^#+\s*/, ''), detail: typeof i.plan === 'string' ? i.plan : undefined }
     default: {
       const value = i.description ?? i.file_path ?? i.command ?? i.pattern ?? i.url ?? i.query ?? i.prompt
       const first = value ?? Object.values(i).find((v) => typeof v === 'string')

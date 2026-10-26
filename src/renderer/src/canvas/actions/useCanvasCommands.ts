@@ -31,6 +31,7 @@ export function useCanvasCommands({ nodeActions, conversations, worktrees, overl
     chatPanelToDrawer: conversations.chatPanelToDrawer,
     chatPanelPopout: conversations.chatPanelPopout,
     openFileFrom: conversations.openFileFrom,
+    openPlanFrom: conversations.openPlanFrom,
     toggleProjectCode: conversations.toggleProjectCode,
     openConversationMenu,
     newGroupConversation,

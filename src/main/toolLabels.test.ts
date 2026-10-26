@@ -18,6 +18,12 @@ describe('describeTool', () => {
     expect(describeTool('Agent', { description: 'Explorar', prompt: 'procura tudo' })).toMatchObject({ label: 'Subagente', summary: 'Explorar', detail: 'procura tudo' })
   })
 
+  it('plano: o título na linha, o markdown inteiro no detalhe', () => {
+    const plan = '# Prévia do plano\n\n## Passos\n1. Fazer'
+    expect(describeTool('ExitPlanMode', { plan })).toEqual({ label: 'Plano pronto', summary: 'Prévia do plano', detail: plan })
+    expect(describeTool('ExitPlanMode', {})).toMatchObject({ summary: '', detail: undefined })
+  })
+
   it('MCP: "servidor - ação", e os do próprio Argus com nome próprio', () => {
     expect(describeTool('mcp__sentry__search_issues', { query: 'erro' })).toEqual({ label: 'sentry - search issues', summary: 'erro' })
     expect(describeTool('mcp__argus__rodar_no_terminal', { comando: 'pnpm dev' })).toMatchObject({ label: 'Rodar no terminal', summary: 'pnpm dev' })

@@ -30,7 +30,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
   // Só o bloco que acabou de ser posto no canvas pega o foco: ao abrir o app, expandir o grupo ou
   // desfazer, a caixa de escrever não rouba as teclas do canvas.
   const isNew = useIsNewBlock(id)
-  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom, toggleProjectCode } = useCanvasActions()
+  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom, openPlanFrom, toggleProjectCode } = useCanvasActions()
 
   // Tudo fixo enquanto a pasta não muda: o ConversationView é memorizado, e arrastar o bloco não
   // pode redesenhar a conversa.
@@ -120,6 +120,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
             project={data.projectName}
             conversation={conversation}
             onOpenFile={onOpenFile}
+            onOpenPlan={openPlanFrom}
             onOpenDiff={onOpenDiff}
             // chat-panel-drag: o cabeçalho é a alça do bloco (dragHandle, em createChatPanel).
             headerClassName="chat-panel-drag cursor-grab bg-surface-2 active:cursor-grabbing"

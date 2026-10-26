@@ -8,10 +8,11 @@ import { BashRow } from './rows/BashRow'
 import { DayDivider, dayKey } from './rows/DayDivider'
 import { EventDivider } from './rows/EventDivider'
 import { OutputRow } from './rows/OutputRow'
+import { PlanRow } from './rows/PlanRow'
 import { ThinkingRow } from './rows/ThinkingRow'
 import { ToolRow } from './rows/ToolRow'
 import { UserBubble } from './rows/UserBubble'
-import { DOT_AGENT, DOT_ROW, stepItem, type TimelineItem } from './timelineItem'
+import { DOT_AGENT, DOT_PLAN, DOT_ROW, stepItem, type TimelineItem } from './timelineItem'
 
 export type HistoryOptions = {
   footers: Map<string, TurnFooter>
@@ -62,6 +63,11 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
       if (m.agent) {
         const dot = m.error ? 'bg-red-400' : !m.result && o.running ? 'bg-running animate-pulse' : 'bg-emerald-400'
         return stepItem(m.id, dot, <AgentToolRow message={m} />, DOT_AGENT)
+      }
+      // Plano respondido: o cartão do plano. Esperando a resposta, fica a linha comum, e o plano
+      // aparece no pedido de aprovação logo embaixo.
+      if (m.name === 'ExitPlanMode' && m.detail && m.result) {
+        return stepItem(m.id, m.error ? 'bg-red-400' : 'bg-emerald-400', <PlanRow message={m} />, DOT_PLAN)
       }
       // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
       const pending = !m.result && !m.diff && o.running && i === messages.length - 1

@@ -1,6 +1,7 @@
 import { ShieldQuestion } from 'lucide-react'
 import type { PermissionAnswer, PermissionRequest } from '../../../shared/chat'
 import { DiffView } from './DiffView'
+import { PlanCard } from './PlanCard'
 import { QuestionCard } from './QuestionCard'
 import { tr } from '../i18n'
 
@@ -19,6 +20,22 @@ export function PermissionCard({
         onSubmit={(answers) => onAnswer({ answers })}
         onDismiss={() => onAnswer('deny')}
       />
+    )
+  }
+
+  // Plano pronto esperando aprovação: o plano formatado, com os botões embaixo.
+  if (request.toolName === 'ExitPlanMode' && request.detail) {
+    return (
+      <PlanCard plan={request.detail}>
+        <div className="flex justify-end gap-1.5 text-xs">
+          <button onClick={() => onAnswer('deny')} className="rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg">
+            {tr('Negar', 'Deny')}
+          </button>
+          <button onClick={() => onAnswer('allow')} className="rounded-md bg-ask px-2.5 py-1 font-medium text-ask-text hover:brightness-110">
+            {tr('Aprovar plano', 'Approve plan')}
+          </button>
+        </div>
+      </PlanCard>
     )
   }
 

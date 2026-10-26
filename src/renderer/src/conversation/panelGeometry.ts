@@ -74,6 +74,22 @@ export function fitBeside(rect: PanelRect, aside: PanelRect): PanelRect {
   return { ...rect, x, width: right - x, area }
 }
 
+// Janela do plano, à esquerda do drawer da conversa: na largura que sobrar, de PLAN_MIN_WIDTH até
+// a borda do drawer; sem esse mínimo, o drawer abre espaço para PLAN_WIDTH.
+export const PLAN_WIDTH = 720
+export const PLAN_MIN_WIDTH = 480
+
+// Drawer depois de abrir o plano: igual se já sobra o mínimo à esquerda dele; senão a borda
+// esquerda vai para a direita até caber o plano, e o drawer encolhe (até o mínimo dele) ou, já no
+// mínimo, anda. Janela estreita demais para os dois: o plano fica com o que sobrar.
+export function roomForPlan(rect: PanelRect, area: AreaSize): PanelRect {
+  if (rect.x - MARGIN * 2 >= PLAN_MIN_WIDTH) return rect
+  const plan = clamp(area.width - MARGIN * 3 - PANEL_MIN.width, 0, PLAN_WIDTH)
+  const x = MARGIN * 2 + plan
+  const right = clamp(rect.x + rect.width, x + PANEL_MIN.width, area.width - MARGIN)
+  return { ...rect, x, width: right - x, area }
+}
+
 // Rect depois de arrastar (dx, dy) a partir de `rect`: todas as bordas juntas (mover) ou só
 // algumas (redimensionar), sem sair da área nem ficar menor que o mínimo. Com `obstacles` (os
 // outros drawers à vista), também não entra neles: para encostado, com a folga. Um que já começou

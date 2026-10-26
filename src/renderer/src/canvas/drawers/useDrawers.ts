@@ -36,6 +36,9 @@ export type DrawerCommands = {
   setFileDiff: (diff: boolean) => void
   closeFile: () => void
   closeCode: () => void
+  // Plano do cartão "Abrir ao lado", ao lado do drawer `slot` (nulo: pedido por uma conversa do canvas).
+  openPlan: (slot: SlotId | null, text: string) => void
+  closePlan: () => void
 }
 
 // Drawers de conversa (os fixados e o solto), o do design e o painel de código.
@@ -71,7 +74,10 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
       deletedFile: (root, path) => dispatch({ type: 'deletedFile', root, path }),
       setFileDiff: (diff) => dispatch({ type: 'fileDiff', diff }),
       closeFile: () => dispatch({ type: 'closeFile' }),
-      closeCode: () => dispatch({ type: 'closeCode' })
+      closeCode: () => dispatch({ type: 'closeCode' }),
+      openPlan: (slot, text) =>
+        dispatch({ type: 'openPlan', slot, text, area: { width: window.innerWidth, height: window.innerHeight } }),
+      closePlan: () => dispatch({ type: 'closePlan' })
     }),
     []
   )

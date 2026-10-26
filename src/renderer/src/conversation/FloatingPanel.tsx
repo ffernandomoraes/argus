@@ -12,10 +12,12 @@ export {
   PANEL_BOTTOM,
   PANEL_MARGIN,
   PANEL_TOP,
+  PLAN_WIDTH,
   TITLE_BAR_HEIGHT,
   cascadeSpot,
   fitBeside,
   freeSpot,
+  roomForPlan,
   type AreaSize,
   type PanelSide,
   type PanelRect

@@ -1,4 +1,4 @@
-import { cascadeSpot, DRAWER_DEFAULT_WIDTH, freeSpot, type AreaSize, type PanelRect } from '../../conversation/FloatingPanel'
+import { cascadeSpot, DRAWER_DEFAULT_WIDTH, freeSpot, roomForPlan, type AreaSize, type PanelRect } from '../../conversation/FloatingPanel'
 import type { LineRange } from '../../conversation/fileLinks'
 import type { ActiveConversation, ActiveDesign } from '../CanvasContext'
 import type { ProjectData } from '../types'
@@ -18,6 +18,10 @@ type CodeState = {
   project: ProjectData | null
   file: OpenFile | null
 }
+
+// Plano aberto ao lado de um drawer (o markdown inteiro, como estava ao clicar em "Abrir ao lado").
+// Sem drawer (pedido por uma conversa do canvas), fica encostado à esquerda, na largura padrão.
+export type OpenPlan = { slot: SlotId | null; text: string }
 
 // Um drawer de conversa. Fixado: fica onde está, e a próxima conversa abre num drawer novo, no
 // espaço livre ao lado dos fixados (sem espaço, em cascata por cima). O solto troca de conversa.
@@ -40,6 +44,8 @@ export type DrawerState = {
   design: ActiveDesign | null
   // Código aberto acompanha a pasta da conversa aberta.
   code: CodeState
+  // Plano aberto: fica no lugar do código enquanto está à vista.
+  plan: OpenPlan | null
 }
 
 const CLOSED_CODE: CodeState = { open: false, slot: null, project: null, file: null }
@@ -49,7 +55,8 @@ export const INITIAL_DRAWERS: DrawerState = {
   lastRect: null,
   nextId: 1,
   design: null,
-  code: CLOSED_CODE
+  code: CLOSED_CODE,
+  plan: null
 }
 
 export type DrawerAction =
@@ -73,8 +80,12 @@ export type DrawerAction =
   | { type: 'fileDiff'; diff: boolean }
   | { type: 'closeFile' }
   | { type: 'closeCode' }
+  | { type: 'openPlan'; slot: SlotId | null; text: string; area: AreaSize }
+  | { type: 'closePlan' }
 
 const withCode = (state: DrawerState, code: CodeState): DrawerState => (code === state.code ? state : { ...state, code })
+// Abrir o código (ou um arquivo) fecha o plano: os dois ficam no mesmo lugar.
+const withoutPlan = (state: DrawerState): DrawerState => (state.plan ? { ...state, plan: null } : state)
 
 const isSameConversation = (a: ActiveConversation, id: string) => a.conversationId === id || a.sessionId === id
 
@@ -105,12 +116,13 @@ function show(state: DrawerState, conversation: ActiveConversation, area: AreaSi
   return { ...s, drawers: [...s.drawers, drawer], nextId: s.nextId + 1 }
 }
 
-const closeAll = (state: DrawerState): DrawerState => ({ ...state, drawers: [], code: CLOSED_CODE })
+const closeAll = (state: DrawerState): DrawerState => ({ ...state, drawers: [], code: CLOSED_CODE, plan: null })
 
-// Fecha só aquele drawer. O código fecha junto só se era dele.
+// Fecha só aquele drawer. O código e o plano fecham junto só se eram dele.
 function close(state: DrawerState, slot: SlotId): DrawerState {
   const code = state.code.slot === slot ? CLOSED_CODE : state.code
-  return { ...state, drawers: state.drawers.filter((d) => d.id !== slot), code }
+  const plan = state.plan?.slot === slot ? null : state.plan
+  return { ...state, drawers: state.drawers.filter((d) => d.id !== slot), code, plan }
 }
 
 const update = (state: DrawerState, slot: SlotId, change: (d: Drawer) => Drawer): DrawerState => ({
@@ -153,7 +165,18 @@ function forget(state: DrawerState, conversationId: string): DrawerState {
   const drawers = state.drawers.filter((d) => !isSameConversation(d.conversation, conversationId))
   if (drawers.length === state.drawers.length) return state
   const gone = !drawers.some((d) => d.id === state.code.slot) && state.code.slot !== null
-  return { ...state, drawers, code: gone ? CLOSED_CODE : state.code }
+  const plan = state.plan?.slot && !drawers.some((d) => d.id === state.plan?.slot) ? null : state.plan
+  return { ...state, drawers, code: gone ? CLOSED_CODE : state.code, plan }
+}
+
+// Plano aberto ao lado do drawer `slot`. Sem espaço à esquerda dele (inclusive no 100% da largura),
+// o drawer encolhe ou anda para a direita para caber (roomForPlan).
+function openPlan(state: DrawerState, action: Extract<DrawerAction, { type: 'openPlan' }>): DrawerState {
+  const plan = { slot: action.slot, text: action.text }
+  const drawer = state.drawers.find((d) => d.id === action.slot)
+  if (!drawer?.rect) return { ...state, plan }
+  const next = roomForPlan(drawer.rect, action.area)
+  return { ...(next === drawer.rect ? state : rect(state, drawer.id, next)), plan }
 }
 
 function openFile(state: DrawerState, action: Extract<DrawerAction, { type: 'openFile' }>): DrawerState {
@@ -203,14 +226,15 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
     }
     case 'closeDesign':
       return state.design ? { ...state, design: null } : state
+    // Com o plano por cima do código, o botão mostra o código em vez de fechá-lo.
     case 'toggleCode':
-      return state.code.open && state.code.slot === action.slot
+      return state.code.open && state.code.slot === action.slot && !state.plan
         ? withCode(state, CLOSED_CODE)
-        : withCode(state, { ...state.code, open: true, slot: action.slot, project: null })
+        : withCode(withoutPlan(state), { ...state.code, open: true, slot: action.slot, project: null })
     case 'openProjectCode':
-      return openProjectCode(state, action.project)
+      return openProjectCode(withoutPlan(state), action.project)
     case 'openFile':
-      return openFile(state, action)
+      return openFile(action.file ? withoutPlan(state) : state, action)
     case 'selectFile':
       return file(state, { root: action.root, path: action.path })
     case 'renamedFile': {
@@ -225,5 +249,9 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
       return file(state, null)
     case 'closeCode':
       return withCode(state, CLOSED_CODE)
+    case 'openPlan':
+      return openPlan(state, action)
+    case 'closePlan':
+      return withoutPlan(state)
   }
 }

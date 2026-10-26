@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { PanelRect } from '../../conversation/FloatingPanel'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { PANEL_MARGIN, PLAN_WIDTH, type PanelRect } from '../../conversation/FloatingPanel'
+import { publishOpenPlan } from '../../conversation/openPlanStore'
 import { MOTION, Presence } from '../../motion'
 import { CodePanel } from './CodePanel'
 import { DesignPanel } from './DesignPanel'
 import type { DrawerLayout, SlotTargets } from './drawerLayout'
 import { DrawerSlot, type SlotActions } from './DrawerSlot'
+import { PlanPanel } from './PlanPanel'
 import type { Drawer, DrawerState, SlotId } from './drawerState'
 import type { DesignView, SlotTarget } from './drawerView'
 import type { DrawerCommands } from './useDrawers'
@@ -22,7 +24,8 @@ type Props = {
   aside: PanelRect | null
 }
 
-// Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código, os
+// Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código (ou,
+// no lugar dele, o plano aberto ao lado de um drawer), os
 // drawers de conversa (do mais antigo ao mais novo) e o do design. O drawer de conversa só existe
 // com a conversa na lista: se ela for excluída, sai daqui e a saída anima.
 export function DrawerHost({ state, targets, design, layout, commands, actions, onShown, aside }: Props) {
@@ -30,10 +33,21 @@ export function DrawerHost({ state, targets, design, layout, commands, actions, 
   const leaving = useLeaving(state.drawers)
   // Com vários drawers de conversa à vista, um não passa por cima nem por baixo dos outros.
   const placed = state.drawers.filter((d) => d.rect && targets[d.id])
+  // O plano vai até a borda do drawer que o abriu (sem drawer, na largura padrão); o código volta
+  // quando ele fecha.
+  const planDrawer = state.plan?.slot ? placed.find((d) => d.id === state.plan?.slot) : undefined
+  const drawerX = state.plan?.slot ? planDrawer?.rect?.x : PLAN_WIDTH + PANEL_MARGIN * 2
+  const plan = state.plan && drawerX !== undefined ? { text: state.plan.text, drawerX } : null
+  // O cartão do plano aberto mostra "Fechar" no lugar de "Abrir ao lado".
+  const planText = plan?.text ?? null
+  useLayoutEffect(() => publishOpenPlan(planText, commands.closePlan), [planText, commands])
   return (
     <>
       <Presence>
-        {code && (
+        {plan && <PlanPanel key={plan.text} text={plan.text} drawerX={plan.drawerX} onClose={commands.closePlan} />}
+      </Presence>
+      <Presence>
+        {code && !plan && (
           <CodePanel
             root={code.root}
             name={code.name}

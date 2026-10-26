@@ -13,6 +13,8 @@ export type TimelineItem =
 // de respiro em cima; o subagente ainda tem borda e padding da caixa.
 export const DOT_ROW = 10.5
 export const DOT_AGENT = 15.5
+// O cartão do plano: margem, borda e o cabeçalho com o botão.
+export const DOT_PLAN = 21
 
 export const stepItem = (key: string, dot: string, node: ReactNode, dotTop?: number): TimelineItem => ({
   kind: 'step',

@@ -31,6 +31,8 @@ export function useCodeEditor(
   // O arquivo mudou no disco enquanto havia edição não salva: não troca o texto sem perguntar.
   const [conflict, setConflict] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // Sobe a cada mudança no texto (digitação ou recarga do disco): a prévia do .md relê com text().
+  const [docVersion, setDocVersion] = useState(0)
 
   const save = async () => {
     const file = opened.current
@@ -80,6 +82,7 @@ export function useCodeEditor(
           readOnly: res.truncated,
           onSave: () => onSaveKey(),
           onChange: (doc) => {
+            setDocVersion((v) => v + 1)
             if (!file) return
             const isDirty = !doc.eq(file.base)
             setDirty(isDirty)
@@ -150,5 +153,9 @@ export function useCodeEditor(
     setDraft(root, path, null)
   }
 
-  return { content, dirty, conflict, saveError, save, reloadFromDisk }
+  // Texto como está no editor, com o que ainda não foi salvo.
+  const text = () => opened.current?.view.state.doc.toString() ?? ''
+  const focus = () => opened.current?.view.focus()
+
+  return { content, dirty, conflict, saveError, save, reloadFromDisk, docVersion, text, focus }
 }

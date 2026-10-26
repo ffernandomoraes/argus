@@ -1,6 +1,6 @@
-import { memo, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { agentRef, type ProviderId } from '../../../shared/providers'
-import { usableUsage } from '../../../shared/usage'
+import { expiredUsage, usableUsage } from '../../../shared/usage'
 import { useAuth } from '../auth/useAuth'
 import { AgentIcon } from '../icons/AgentIcon'
 import { useNow } from '../lib/clock'
@@ -39,6 +39,10 @@ export const UsageIndicator = memo(function UsageIndicator({
   const ref = useRef<HTMLDivElement>(null)
   useOutsideClick(ref, () => onOpenChange(false), open)
   useEscape(() => onOpenChange(false), open)
+  // Painel aberto: quem abre quer o número de agora (o monitor só lê se a última leitura não for recente).
+  useEffect(() => {
+    if (open) window.api.usage.refresh()
+  }, [open])
 
   // Na ordem das configurações: o Claude primeiro (a principal antes), depois as do Codex.
   // Conta desconectada sai da barra mesmo com uso na mão; sem status (não deu para conferir), fica.
@@ -52,7 +56,8 @@ export const UsageIndicator = memo(function UsageIndicator({
   ]
   const shown = candidates.flatMap((c): ShownUsage[] => {
     const usage = usages[c.key] && usableUsage(usages[c.key], now)
-    return usage?.session ? [{ ...c, usage }] : []
+    // Sem atualizar há mais de uma hora, fica sem números, com o aviso no painel.
+    return usage && (usage.session || expiredUsage(usage, now)) ? [{ ...c, usage }] : []
   })
   const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn))
   if (!shown.length) return null
@@ -60,28 +65,36 @@ export const UsageIndicator = memo(function UsageIndicator({
   // Contas por agente: o nome só aparece quando o mesmo agente tem mais de uma (o logo já diz qual é).
   const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
   const saved = shown.some((x) => x.usage.saved)
+  const stale = shown.some((x) => x.usage.failure || !x.usage.session)
 
   return (
     <div ref={ref} className="relative flex items-center self-stretch">
       <button
         aria-label={mixed ? tr('Ver limites de uso', 'View usage limits') : tr('Ver limites do Claude', 'View Claude limits')}
         aria-expanded={open}
-        title={saved ? tr('Último uso guardado, conferindo de novo', 'Last saved usage, checking again') : undefined}
+        title={
+          stale
+            ? tr('O uso não atualizou, veja o motivo nos limites', 'Usage didn’t update, see why in the limits')
+            : saved
+              ? tr('Último uso guardado, conferindo de novo', 'Last saved usage, checking again')
+              : undefined
+        }
         onClick={() => onOpenChange(!open)}
         className={`flex items-center gap-2 rounded-md px-2 py-0.5 text-[12px] text-faint hover:bg-fill hover:text-muted ${
           open ? 'bg-fill text-muted' : ''
         }`}
       >
         {shown.map(({ key, provider, name, usage }, i) => {
-          const percent = Math.round(usage.session!.percent)
+          // Sem sessão: sem atualizar há mais de uma hora (ver acima).
+          const percent = usage.session ? Math.round(usage.session.percent) : null
           const firstOfAgent = i === 0 || shown[i - 1].provider !== provider
           return (
-            <span key={key} className={`flex items-center gap-2 ${usage.saved ? 'opacity-50' : ''}`}>
+            <span key={key} className={`flex items-center gap-2 ${usage.saved || usage.failure ? 'opacity-50' : ''}`}>
               {i > 0 && <span>-</span>}
               {firstOfAgent && <AgentIcon provider={provider} size={12} />}
               {perAgent(provider) > 1 && <span className="max-w-24 truncate">{name}</span>}
-              <UsageBar percent={percent} className="h-1 w-10" />
-              <span className="font-mono text-muted">{percent}%</span>
+              <UsageBar percent={percent ?? 0} className="h-1 w-10" />
+              <span className="font-mono text-muted">{percent === null ? '--' : `${percent}%`}</span>
             </span>
           )
         })}

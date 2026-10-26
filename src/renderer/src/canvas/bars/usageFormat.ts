@@ -1,3 +1,4 @@
+import type { Usage } from '../../../../shared/usage'
 import { LOCALE, tr } from '../../i18n'
 
 // Textos e cores dos limites do Claude (barra de título).
@@ -38,6 +39,32 @@ export function windowTitle(minutes?: number): string {
   if (minutes < 60) return tr(`Sessão (${minutes} min)`, `Session (${minutes} min)`)
   const h = Math.round(minutes / 60)
   return h === 1 ? tr('Sessão (1 hora)', 'Session (1 hour)') : tr(`Sessão (${h} horas)`, `Session (${h} hours)`)
+}
+
+// Por que a leitura mais recente não trouxe número novo: "o servidor pediu para esperar, nova
+// tentativa às 11:45".
+export function failureText(failure: NonNullable<Usage['failure']>): string {
+  switch (failure.reason) {
+    case 'rate_limited': {
+      if (!failure.retryAt) return tr('o servidor pediu para esperar', 'the server asked to wait')
+      const at = new Date(failure.retryAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
+      return tr(`o servidor pediu para esperar, nova tentativa às ${at}`, `the server asked to wait, trying again at ${at}`)
+    }
+    case 'timeout':
+      return tr('sem resposta na última tentativa', 'no response on the last try')
+    case 'login':
+      return tr('login vencido, renovando', 'sign-in expired, renewing')
+    default:
+      return tr('a última tentativa falhou', 'the last try failed')
+  }
+}
+
+// Aviso de uma conta que não atualizou: sem números há mais de uma hora (expired) ou com os
+// últimos números e o motivo. Nulo quando a leitura mais recente deu certo.
+export function staleText(usage: Usage, expired: boolean): string | null {
+  const why = usage.failure ? `: ${failureText(usage.failure)}` : ''
+  if (expired) return tr(`Não deu para ler o uso na última hora${why}.`, `Couldn’t read usage in the last hour${why}.`)
+  return usage.failure ? tr(`Sem atualizar${why}.`, `Not updated${why}.`) : null
 }
 
 export function barColor(percent: number): string {

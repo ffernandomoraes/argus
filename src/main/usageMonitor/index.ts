@@ -61,7 +61,8 @@ export class UsageMonitors {
       const monitor = new UsageMonitor(
         account,
         (usage) => {
-          this.saved.remember(account, usage, this.emails.get(account))
+          // Com falha, são os mesmos números já guardados.
+          if (!usage.failure) this.saved.remember(account, usage, this.emails.get(account))
           this.onUpdate(account, usage)
         },
         (info) => this.onInfo(account, info)
@@ -80,10 +81,11 @@ export class UsageMonitors {
     this.onUpdate(account, null)
   }
 
-  // Uma janela do Argus ganhou foco: cada conta do Claude atualiza, se a última leitura passou de
-  // 1 minuto. As do Codex seguem a cada 5 minutos, com ou sem foco (cada leitura abre um processo).
-  refresh(): void {
-    this.monitors.forEach((m) => m.refresh())
+  // Uma janela do Argus ganhou foco ou o painel dos limites abriu (open): cada conta do Claude
+  // atualiza, se a última leitura passou do intervalo (ver UsageMonitor.refresh). As do Codex seguem
+  // a cada 5 minutos, com ou sem foco (cada leitura abre um processo).
+  refresh(open = false): void {
+    this.monitors.forEach((m) => m.refresh(open))
   }
 
   // O `claude` do app trocou (ver claudeVersion): todos abrem de novo com ele.
@@ -114,7 +116,7 @@ export class UsageMonitors {
       const saved = this.saved.get(key)
       if (saved) out[key] = saved
     }
-    for (const [account, monitor] of this.monitors) if (monitor.last) out[account] = monitor.last
+    for (const [account, monitor] of this.monitors) if (monitor.current) out[account] = monitor.current
     return { ...out, ...this.codex.all() }
   }
 

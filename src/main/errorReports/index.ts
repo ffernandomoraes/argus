@@ -193,6 +193,12 @@ export function reportOpeningProblem(message: string, extra: Record<string, unkn
   if (active) Sentry.captureMessage(message, { level: 'fatal', tags: { opening: 'failed' }, extra })
 }
 
+// Algo parou sem dar erro (o uso do Claude sem atualizar, por exemplo): vai como aviso, com o estado
+// de quem parou. Sem isso, a causa só aparece se cair num travamento, nos últimos minutos dele.
+export function reportWarning(message: string, extra: Record<string, unknown> = {}): void {
+  if (active) Sentry.captureMessage(message, { level: 'warning', extra })
+}
+
 // Para o relato do teste de fumaça.
 export function errorReportsStatus(): string {
   return active ? `envio de erros ligado, detecção de travamento ${blockStatus}` : 'envio de erros desligado'

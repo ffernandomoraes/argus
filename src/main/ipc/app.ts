@@ -99,6 +99,7 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('orchestrator:enabled', (_e, enabled) => setOrchestrationEnabled(enabled))
   handle('popout:payload', (_e, id) => s.popouts.payload(id))
   handle('usage:get', () => s.usage.all())
+  on('usage:refresh', () => s.usage.refresh(true))
   handle('media:get', () => nowPlaying())
   handle('media:command', (_e, command) => mediaCommand(command))
   handle('media:volume', (_e, volume) => setVolume(volume))

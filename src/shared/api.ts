@@ -424,6 +424,8 @@ export type Api = {
   // Limites de cada conta logada; nulo quando a conta sai ou é removida.
   usage: {
     get: () => Promise<Record<string, Usage>>
+    // Painel aberto: lê de novo, se a última leitura não for de agora.
+    refresh: () => void
     onUpdate: (cb: (account: string, usage: Usage | null) => void) => Off
   }
   // O que toca no sistema; nulo sem nada tocando ou sem como ler.

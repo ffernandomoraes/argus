@@ -190,6 +190,8 @@ export type SendChannels = {
   'mascot:target': (key: string, turn: number, rect: { x: number; y: number; width: number; height: number }) => void
   // Experimento do orquestrador (src/main/orchestration/): vale para as conversas abertas depois.
   'orchestrator:enabled': (on: boolean) => void
+  // Painel dos limites aberto: o uso do Claude é lido de novo (ver UsageMonitor.refresh).
+  'usage:refresh': () => void
   'updates:install': () => void
   'cli:ready': () => void
   // Ditado

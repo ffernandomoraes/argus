@@ -1,11 +1,11 @@
 import { PROVIDER_NAMES, type ProviderId } from '../../../../shared/providers'
-import type { Usage, UsageWindow } from '../../../../shared/usage'
+import { expiredUsage, type Usage, type UsageWindow } from '../../../../shared/usage'
 import { AgentIcon } from '../../icons/AgentIcon'
 import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import { useNow } from '../../lib/clock'
 import { MenuArrow } from '../../ui/MenuArrow'
 import { UsageBar } from './UsageBar'
-import { resetLabel, timeLeft, windowTitle } from './usageFormat'
+import { resetLabel, staleText, timeLeft, windowTitle } from './usageFormat'
 import { LOCALE, tr } from '../../i18n'
 
 // Uma conta com limites à vista: do Claude (sem provider) ou de outro agente (hoje, só o Codex).
@@ -97,22 +97,29 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
           </span>
         </div>
         <div className="flex flex-col gap-5">
-          {shown.map((entry) => (
-            <div key={entry.key}>
-              {named && (
-                <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
-                  {mixed && <AgentIcon provider={entry.provider} size={12} />}
-                  <span className="truncate">{entry.name}</span>
-                  {entry.usage.saved && <span className="shrink-0 normal-case tracking-normal font-normal">- {tr('guardado', 'saved')}</span>}
-                </div>
-              )}
-              <div className={`flex flex-col gap-4 ${entry.usage.saved ? 'opacity-60' : ''}`}>
-                {rowsOf(entry).map((row) => (
-                  <WindowDetail key={row.title} title={row.title} window={row.window} now={now} />
-                ))}
+          {shown.map((entry) => {
+            const expired = expiredUsage(entry.usage, now)
+            const stale = staleText(entry.usage, expired)
+            return (
+              <div key={entry.key}>
+                {named && (
+                  <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
+                    {mixed && <AgentIcon provider={entry.provider} size={12} />}
+                    <span className="truncate">{entry.name}</span>
+                    {entry.usage.saved && <span className="shrink-0 normal-case tracking-normal font-normal">- {tr('guardado', 'saved')}</span>}
+                  </div>
+                )}
+                {!expired && (
+                  <div className={`flex flex-col gap-4 ${entry.usage.saved || entry.usage.failure ? 'opacity-60' : ''}`}>
+                    {rowsOf(entry).map((row) => (
+                      <WindowDetail key={row.title} title={row.title} window={row.window} now={now} />
+                    ))}
+                  </div>
+                )}
+                {stale && <div className={`text-[12px] text-needs-you ${expired ? '' : 'mt-3'}`}>{stale}</div>}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
         <div className="mt-4 flex flex-col gap-1 border-t border-line pt-2 text-[11px] text-faint">
           {silent.length > 0 && <span>{silentNote(silent)}</span>}

@@ -308,6 +308,7 @@ const api: Api = {
   },
   usage: {
     get: () => invoke('usage:get'),
+    refresh: () => send('usage:refresh'),
     onUpdate: (cb) => listen('usage:update', cb)
   },
   media: {

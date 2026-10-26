@@ -47,6 +47,8 @@ export type Message =
       result: string
       error?: boolean
       diff?: DiffHunk[]
+      // Arquivo .md criado (Write): o texto dele, que o chat mostra formatado, como o plano.
+      document?: string
       // Id da chamada no Claude Code; liga a linha ao subagente rodando.
       toolUseId?: string
       // Subagente (ferramenta Agent): qual agente foi chamado.

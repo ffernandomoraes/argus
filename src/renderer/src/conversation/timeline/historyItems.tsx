@@ -8,7 +8,7 @@ import { BashRow } from './rows/BashRow'
 import { DayDivider, dayKey } from './rows/DayDivider'
 import { EventDivider } from './rows/EventDivider'
 import { OutputRow } from './rows/OutputRow'
-import { PlanRow } from './rows/PlanRow'
+import { MarkdownFileRow, PlanRow } from './rows/PlanRow'
 import { ThinkingRow } from './rows/ThinkingRow'
 import { ToolRow } from './rows/ToolRow'
 import { UserBubble } from './rows/UserBubble'
@@ -70,6 +70,10 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
       // aparece no pedido de aprovação logo embaixo.
       if (m.name === 'ExitPlanMode' && m.detail && m.result) {
         return stepItem(m.id, m.error ? 'bg-red-400' : 'bg-emerald-400', <PlanRow message={m} />, DOT_PLAN)
+      }
+      // .md criado: formatado como o plano, com o caminho. Esperando a permissão, a linha comum.
+      if (m.document !== undefined && (m.result || m.diff)) {
+        return stepItem(m.id, m.error ? 'bg-red-400' : 'bg-emerald-400', <MarkdownFileRow message={m} />, DOT_PLAN)
       }
       // Sem resultado ainda e com o Claude trabalhando: é a ação em andamento.
       const pending = !m.result && !m.diff && o.running && i === messages.length - 1

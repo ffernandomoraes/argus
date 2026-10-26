@@ -63,7 +63,7 @@ function DrawerSlotView(props: Props) {
     },
     [commands, slot, project]
   )
-  const onOpenPlan = useCallback((plan: string) => commands.openPlan(slot, plan), [commands, slot])
+  const onOpenPlan = useCallback((text: string, path?: string) => commands.openPlan(slot, text, path), [commands, slot])
   // O card da conversa sem projeto não nasce aqui: o Canvas cria (actions/useLooseCards), mesmo
   // com o drawer já fechado.
   const draftId = active.conversationId

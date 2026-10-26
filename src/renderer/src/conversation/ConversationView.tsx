@@ -48,8 +48,9 @@ type Props = {
   onOpenFile?: (path: string, lines?: LineRange) => void
   // Arquivo da lista de não comitados; sem isso, a lista só mostra.
   onOpenDiff?: (path: string) => void
-  // "Abrir ao lado" no cartão do plano; sem isso, fica só o "Mostrar tudo".
-  onOpenPlan?: (plan: string) => void
+  // "Abrir ao lado" no cartão do plano (ou do .md criado, com o caminho); sem isso, fica só o
+  // "Mostrar tudo".
+  onOpenPlan?: (text: string, path?: string) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted?: (sessionId: string) => void
   // Escala do conteúdo, ajustada com ⌘+ / ⌘- (useDrawerZoom).

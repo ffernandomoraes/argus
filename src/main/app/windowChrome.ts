@@ -1,3 +1,4 @@
+import { release } from 'node:os'
 import { BrowserWindow, nativeTheme } from 'electron'
 import { IS_MAC } from '../platform'
 import { linuxIcon } from './linuxDesktop'
@@ -9,8 +10,13 @@ import { linuxIcon } from './linuxDesktop'
 // da conversa segue com a altura de antes, a do cabeçalho dela.
 const TITLE_BAR_HEIGHT = { canvas: 34, conversation: 40 }
 
-// Semáforos do Mac na janela do canvas, no meio da barra de título.
-const CANVAS_TRAFFIC_LIGHTS = { x: 16, y: 11 }
+// Semáforos do Mac na janela do canvas, no meio da barra de título. Eles têm 14 pt de altura do
+// macOS 26 (Darwin 25) em diante e 12 pt antes; o topo sai da sobra dividida entre cima e baixo.
+const TRAFFIC_LIGHT_SIZE = Number(release().split('.')[0]) >= 25 ? 14 : 12
+
+function canvasTrafficLights(zoom = 1): { x: number; y: number } {
+  return { x: 16, y: Math.round((TITLE_BAR_HEIGHT.canvas * zoom - TRAFFIC_LIGHT_SIZE) / 2) }
+}
 
 export type WindowKind = 'canvas' | 'conversation'
 const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
@@ -24,7 +30,7 @@ const windowZooms = new WeakMap<BrowserWindow, number>()
 export function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
   // Na do canvas, os semáforos descem para o meio da barra (mais baixa que a padrão do hiddenInset).
   // A da conversa tem cabeçalho próprio, alinhado com a posição padrão.
-  if (IS_MAC) return kind === 'canvas' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: CANVAS_TRAFFIC_LIGHTS } : { titleBarStyle: 'hiddenInset' }
+  if (IS_MAC) return kind === 'canvas' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: canvasTrafficLights() } : { titleBarStyle: 'hiddenInset' }
   const icon = linuxIcon()
   return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind), ...(icon ? { icon } : {}) }
 }
@@ -45,10 +51,7 @@ export function setInterfaceZoom(win: BrowserWindow, zoom: number): void {
   const kind = windowKinds.get(win)
   if (!kind) return
   if (!IS_MAC) return win.setTitleBarOverlay(overlay(kind, zoom))
-  if (kind === 'canvas') {
-    const { x, y } = CANVAS_TRAFFIC_LIGHTS
-    win.setWindowButtonPosition({ x, y: Math.round(y + (TITLE_BAR_HEIGHT.canvas * (zoom - 1)) / 2) })
-  }
+  if (kind === 'canvas') win.setWindowButtonPosition(canvasTrafficLights(zoom))
 }
 
 // Guarda o tipo da janela para pintar os botões do Windows de novo quando o tema trocar.

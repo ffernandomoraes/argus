@@ -99,7 +99,12 @@ export default defineConfig({
     // Porta fora das comuns (3000, 5173...) para não brigar com outros projetos em dev
     server: { port: 10100 },
     resolve: {
-      alias: { '@': resolve('src/renderer/src') }
+      alias: { '@': resolve('src/renderer/src') },
+      // Uma cópia só de cada peça do CodeMirror. Com duas (o lockfile chegou a ter o
+      // @codemirror/view 6.43.15 do app e o 6.43.13 do @codemirror/language), o editor ignora o
+      // que vem da outra cópia, e o código abria sem coloração nenhuma. Só pacotes que o app instala
+      // direto: o dedupe resolve a partir da raiz, e o pnpm não põe as dependências deles lá.
+      dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language']
     },
     plugins: [react(), tailwindcss(), contentSecurityPolicy(), ...sentryMaps('renderer')],
     build: { sourcemap }

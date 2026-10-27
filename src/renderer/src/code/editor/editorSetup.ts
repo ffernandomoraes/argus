@@ -7,7 +7,8 @@ import type { LineRange } from '../../conversation/fileLinks'
 const ALIASES: Record<string, string> = { mjs: 'js', cjs: 'js', mts: 'ts', cts: 'ts', zsh: 'sh' }
 
 export function languageOf(path: string): LanguageDescription | null {
-  const name = path.split('/').pop() ?? ''
+  // As duas barras: no Windows o caminho vem com "\" (Dockerfile e Makefile são achados pelo nome).
+  const name = path.split(/[\\/]/).pop() ?? ''
   const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
   return LanguageDescription.matchFilename(languages, ALIASES[ext] ? `x.${ALIASES[ext]}` : name)
 }

@@ -15,6 +15,8 @@ declare global {
 // Quadro que levou mais que isso para sair vira uma das últimas ações do relatório.
 const LONG_FRAME_MS = 1000
 
+const BLOCK_CONFIG = { threshold: WINDOW_BLOCK_MS, pollInterval: WINDOW_POLL_MS }
+
 if (window.__SENTRY_IPC__) {
   init({
     // Sem cabeçalhos de rastreamento nas requisições da janela.
@@ -27,10 +29,26 @@ if (window.__SENTRY_IPC__) {
       // Janela parada por 5 s (um laço sem fim, por exemplo): o processo principal pega onde ela
       // estava. O "estou viva" a cada 1 s, e não a cada 2,5 s (o padrão): com o intervalo longo, uma
       // parada de 2,6 s já disparava o aviso de 5 s.
-      eventLoopBlockIntegration({ threshold: WINDOW_BLOCK_MS, pollInterval: WINDOW_POLL_MS })
+      eventLoopBlockIntegration(BLOCK_CONFIG)
     ]
   })
+  reportVisibility()
   watchLongFrames()
+}
+
+type SentryIpc = Record<string, { sendStatus?: (status: unknown) => void } | undefined>
+
+// Janela escondida (minimizada, coberta por outra, a tela bloqueada): o Chromium segura os relógios
+// dela e, depois de 5 min, só os solta uma vez por minuto. O "estou viva" atrasa e o vigia acusava
+// travamento a cada minuto. O SDK só diz ao vigia se a janela está visível quando ela abre; aqui diz
+// a cada mudança. O vigia desliga com ela escondida, mas o SDK o religa ao desbloquear a tela ou
+// acordar o computador: quem descarta esses avisos é o processo principal, que lê esta mesma
+// mensagem (ver hiddenWindowBlock em src/main/errorReports/snapshot.ts). Mesmo canal do SDK
+// ('sentry-ipc', o padrão dele).
+function reportVisibility(): void {
+  const ipc = (window.__SENTRY_IPC__ as SentryIpc)['sentry-ipc']
+  const config = { ...BLOCK_CONFIG, anrThreshold: WINDOW_BLOCK_MS, captureStackTrace: true }
+  document.addEventListener('visibilitychange', () => ipc?.sendStatus?.({ status: document.visibilityState, config }))
 }
 
 // Os tipos do TypeScript ainda não têm esta medição do Chromium (Long Animation Frames).

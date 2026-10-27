@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, type WebContents } from 'electron'
 import * as Sentry from '@sentry/electron/main'
 import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '../../shared/windowBlock'
 
@@ -107,6 +107,62 @@ export function echoOfMainLag(event: Sentry.ErrorEvent): boolean {
   const now = performance.now()
   const recent = lags.filter((l) => now - l.at <= JUST_BEFORE_MS).reduce((worst, l) => Math.max(worst, l.ms), 0)
   return Math.max(recent, now - lastTick - TICK_MS) >= WINDOW_BLOCK_MS - WINDOW_POLL_MS
+}
+
+// Janela escondida (coberta por outra, minimizada, tela bloqueada): o Chromium segura os relógios
+// dela, e depois de 5 min só os solta uma vez por minuto. O "estou viva" atrasa e o vigia acusa
+// travamento, mesmo com a janela parada à toa. O SDK desliga o vigia ao perder o foco e ao bloquear
+// a tela, mas religa ao desbloquear, ao acordar o computador e no foco, com a janela ainda escondida:
+// 2026-10-27 (ARGUS-1 e ARGUS-5), um aviso por minuto depois de desbloquear a tela; 2026-10-26
+// (ARGUS-7), no instante em que a janela reapareceu depois de o Mac acordar. A janela conta quando
+// some e reaparece (ver src/renderer/src/errorReports.ts), pela mesma mensagem que o vigia do SDK
+// lê ('sentry-ipc.status', o canal padrão dele).
+const visibility = new Map<number, { contents: WebContents; name: string; hidden: boolean; shownAt: number }>()
+
+export function watchWindowVisibility(nameOf: (contents: WebContents) => string): void {
+  ipcMain.on('sentry-ipc.status', (e, message: { status?: unknown } | undefined) => {
+    const status = message?.status
+    if (status !== 'visible' && status !== 'hidden') return
+    const contents = e.sender
+    const was = visibility.get(contents.id)
+    if (!was) contents.once('destroyed', () => visibility.delete(contents.id))
+    visibility.set(contents.id, {
+      contents,
+      name: nameOf(contents),
+      hidden: status === 'hidden',
+      shownAt: status === 'visible' && was?.hidden ? performance.now() : (was?.shownAt ?? -Infinity)
+    })
+  })
+}
+
+// Escondida não basta: travada, a janela também não avisa que reapareceu, e o travamento de verdade
+// de uma janela que parou escondida (a pessoa volta a ela e encontra tudo parado) seria descartado
+// junto. 2026-10-27: no app, minimizada, travada por 25 s e restaurada no meio, o aviso não ia. Por
+// isso a pergunta: parada à toa, ela responde na hora (o Chromium segura os relógios dela, não as
+// mensagens); travada, não responde.
+const PING_MS = 1000
+
+function responds(contents: WebContents): Promise<boolean> {
+  if (contents.isDestroyed()) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), PING_MS)
+    const answered = () => {
+      clearTimeout(timer)
+      resolve(true)
+    }
+    contents.executeJavaScript('0').then(answered, answered)
+  })
+}
+
+// Aviso de uma janela escondida agora, ou que reapareceu há menos que o limite (parte do tempo sem
+// sinal foi escondida), que responde: alarme falso. Pelo nome, que é o que o aviso traz: com duas
+// janelas de mesmo nome, todas precisam responder.
+export async function hiddenWindowBlock(event: Sentry.ErrorEvent): Promise<boolean> {
+  if (!isWindowBlock(event)) return false
+  const now = performance.now()
+  const same = [...visibility.values()].filter((w) => w.name === event.tags?.['event.process'])
+  if (!same.some((w) => w.hidden || now - w.shownAt < WINDOW_BLOCK_MS)) return false
+  return (await Promise.all(same.map((w) => responds(w.contents)))).every(Boolean)
 }
 
 export async function withSnapshot(event: Sentry.ErrorEvent): Promise<Sentry.ErrorEvent> {

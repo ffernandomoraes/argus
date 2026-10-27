@@ -8,7 +8,7 @@ import { IS_LINUX, IS_MAC, IS_WIN } from '../platform'
 import { SMOKE_TEST } from '../smokeTest'
 import { claudeDistro, knownDistros } from '../wsl'
 import { scrubBreadcrumb, scrubEvent } from './scrub'
-import { echoOfMainLag, watchMainLag, withSnapshot } from './snapshot'
+import { echoOfMainLag, hiddenWindowBlock, watchMainLag, watchWindowVisibility, withSnapshot } from './snapshot'
 
 export { setAppState } from './snapshot'
 
@@ -93,8 +93,10 @@ export function startErrorReports(): void {
       ],
       transport: smokeSafeTransport,
       // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato. O
-      // aviso de janela travada que é só eco do processo principal parado não vai (ver echoOfMainLag).
-      beforeSend: async (event) => (echoOfMainLag(event) ? null : scrubEvent(tagged(await withSnapshot(event)))),
+      // aviso de janela travada que é só eco do processo principal parado, ou de uma janela escondida
+      // que responde (alarme falso), não vai (ver echoOfMainLag e hiddenWindowBlock).
+      beforeSend: async (event) =>
+        echoOfMainLag(event) || (await hiddenWindowBlock(event)) ? null : scrubEvent(tagged(await withSnapshot(event))),
       beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
       initialScope: { user: { id: installId } },
       maxBreadcrumbs: 60,
@@ -107,6 +109,7 @@ export function startErrorReports(): void {
   }
   watchRenderers()
   watchMainLag()
+  watchWindowVisibility(rendererName)
   void app.whenReady().then(startBlockDetection)
 }
 

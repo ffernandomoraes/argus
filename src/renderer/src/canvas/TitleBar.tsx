@@ -22,8 +22,9 @@ const Divider = () => <span className="h-4 w-px bg-line" />
 // janela e maximiza no duplo clique. Tem fundo próprio, para o título não brigar com o canvas; os
 // painéis começam abaixo dela (PANEL_TOP).
 // Mostra sempre o nome do app no meio; a conversa aberta fica só no título da janela (windowTitle).
-// O workspace (o menu para trocar) fica colado ao botão de fechar: no Mac, logo depois dos semáforos;
-// no Windows e no Linux, na ponta direita, antes de minimizar, maximizar e fechar.
+// O workspace (o menu para trocar) fica na ponta esquerda em todo sistema: no Mac, logo depois dos
+// semáforos; no Windows e no Linux, no canto, para não lotar a direita, que já tem minimizar,
+// maximizar e fechar.
 export const TitleBar = memo(function TitleBar({
   windowTitle,
   uiHidden,
@@ -50,18 +51,16 @@ export const TitleBar = memo(function TitleBar({
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
     // mouse em cima sobe acima de todos: os tooltips dos botões abrem para baixo, por cima do drawer.
     // Modal aberto cobre a barra, então o mouse nem chega nela.
-    // O recuo acompanha o maior dos lados (o workspace à esquerda no Mac; ocultar, nova janela, às
-    // vezes atualizar ao lado da versão e, fora do Mac, o workspace à direita) dos dois lados: o
+    // O recuo acompanha o maior dos lados (o workspace à esquerda; ocultar, nova janela, às vezes
+    // atualizar ao lado da versão e, fora do Mac, os botões da janela à direita) dos dois lados: o
     // título segue no centro sem encostar nele. Os limites e o player ficam na barra de baixo (BottomBar).
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
       className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
     >
-      {IS_MAC && (
-        <div className="absolute inset-y-0 flex items-center" style={{ left: 12 + controls.left }}>
-          <BoardSwitcher confirm={confirm} align="start" />
-        </div>
-      )}
+      <div className="absolute inset-y-0 flex items-center" style={{ left: 12 + controls.left }}>
+        <BoardSwitcher confirm={confirm} align="start" />
+      </div>
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
       {import.meta.env.DEV && (
@@ -96,12 +95,6 @@ export const TitleBar = memo(function TitleBar({
                 <ScrollText size={14} />
               </NavButton>
             </span>
-          </>
-        )}
-        {!IS_MAC && (
-          <>
-            {updates && <Divider />}
-            <BoardSwitcher confirm={confirm} align="end" />
           </>
         )}
       </div>

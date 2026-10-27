@@ -136,7 +136,7 @@ function readStream(e: StreamEvent, chat: ChatState, reader: Reader, ctx: ReadCo
   if (e.type === 'content_block_stop') {
     // Pedido da ferramenta pronto: daqui ela roda.
     const ran = reader.block === 'tool_use'
-    const patch = ran ? { activity: { ...chat.activity!, kind: 'running' as const, since: ctx.now } } : undefined
+    const patch = ran ? { activity: runningTool(reader, ctx.now) } : undefined
     return { reader: { ...reader, block: '' }, patch, urgent: ran }
   }
   if (e.type === 'content_block_delta' && e.delta.type === 'text_delta') {
@@ -147,6 +147,13 @@ function readStream(e: StreamEvent, chat: ChatState, reader: Reader, ctx: ReadCo
     return { reader: next, patch: { turnTokens: next.closedTokens + next.currentTokens } }
   }
   return { reader }
+}
+
+// Vem do leitor, não da etapa na tela: com ferramentas em paralelo, o resultado de uma anterior
+// volta a etapa para "pensando" no meio desta, e ela rodaria sem nome ("Executando: undefined…").
+function runningTool(reader: Reader, now: number): ChatActivity {
+  const { label, summary } = describeTool(reader.toolName, closedFields(reader.toolInput))
+  return { kind: 'running', tool: label, summary: summary || undefined, since: now }
 }
 
 // A prévia só é trocada quando começa outra resposta: até lá o chat já releu o histórico.

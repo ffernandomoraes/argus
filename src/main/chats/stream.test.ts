@@ -122,6 +122,19 @@ describe('readMessage: ferramentas', () => {
     expect(steps[2].urgent).toBe(true)
   })
 
+  it('ferramentas em paralelo: o resultado da anterior no meio da montagem não apaga o nome da seguinte', () => {
+    const { chat } = play([
+      event({ type: 'message_start' }),
+      event({ type: 'content_block_start', content_block: { type: 'tool_use', name: 'Read' } }),
+      event({ type: 'content_block_stop' }),
+      event({ type: 'content_block_start', content_block: { type: 'tool_use', name: 'Bash' } }),
+      event({ type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: '{"command":"ls","description":"Listar"' } }),
+      sdk({ type: 'user', parent_tool_use_id: null, message: { content: [{ type: 'tool_result', tool_use_id: 't1' }] } }),
+      event({ type: 'content_block_stop' })
+    ])
+    expect(chat.activity).toMatchObject({ kind: 'running', tool: 'Comando', summary: 'Listar' })
+  })
+
   it('o resultado da ferramenta volta para "pensando" e relê o histórico', () => {
     const start = idle({ status: 'running', revision: 2, activity: { kind: 'running', tool: 'Comando', since: 1 } })
     const { chat } = play([sdk({ type: 'user', parent_tool_use_id: null, message: { content: [{ type: 'tool_result', tool_use_id: 't1' }] } })], start)

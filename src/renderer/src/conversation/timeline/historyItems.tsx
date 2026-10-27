@@ -25,6 +25,8 @@ export type HistoryOptions = {
   viewFor?: (messageId: string) => ImageView
   // Preview de uma imagem que o Claude leu do disco (ferramenta Ler).
   viewFile?: (messageId: string, load: () => Promise<string[]>) => ImageView
+  // Reenviar uma mensagem sua editada (o lápis do balão). Sem isto, o balão não oferece.
+  onEdit?: (text: string) => void
 }
 
 // Linha do tempo do histórico gravado: suas mensagens em balões; cada passo do Claude (resposta,
@@ -50,7 +52,7 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
   switch (m.role) {
     case 'user': {
       const view = m.images && o.viewFor ? o.viewFor(m.id) : undefined
-      const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} marks={m.marks} files={m.files} />
+      const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} marks={m.marks} files={m.files} onEdit={o.onEdit} />
       return { kind: 'user', key: m.id, node: bubble }
     }
     case 'event':

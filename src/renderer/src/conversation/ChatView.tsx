@@ -134,6 +134,13 @@ export const ChatView = memo(function ChatView({
   // Com mensagem a caminho, sem o "Nova conversa" (ver o comentário onde ele aparece).
   const placeholder = (loading || messages.length === 0) && sends.waiting.length === 0
   const answer = useStableCallback(onAnswer)
+  // Mensagem editada (o lápis do balão): a versão nova vai como mensagem nova, no fim da conversa.
+  // Com o Claude respondendo, ele para antes, e ela roda logo depois do pedido parado. Envio que
+  // falha devolve o texto ao campo, como o da caixa de escrever.
+  const edit = useStableCallback((text: string) => {
+    if (status === 'running' || status === 'needs-you') onInterrupt()
+    submit({ text, typed: text, files: [] }).catch(() => composer.current?.restore(text, [], LOST))
+  })
   const items = useTimeline({
     messages,
     waiting: sends.waiting,
@@ -144,7 +151,9 @@ export const ChatView = memo(function ChatView({
     clean: cleanText ?? asIs,
     viewFor: images.viewFor,
     readsImages: !!loadImages,
-    onAnswer: answer
+    onAnswer: answer,
+    // No modo design o texto gravado já leva os comentários (extraSend): reenviar repetiria.
+    onEdit: extraSend ? undefined : edit
   })
 
   // Enquanto há anteriores, o loader delas vai na frente (olderRow).

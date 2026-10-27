@@ -9,15 +9,17 @@ type Options = LiveOptions & {
   compact: boolean
   // Há quem leia as imagens das mensagens gravadas.
   readsImages: boolean
+  // Reenviar uma mensagem sua editada (ver UserBubble). Função fixa: uma nova refaz o histórico.
+  onEdit?: (text: string) => void
 }
 
 // Itens da linha do tempo. O histórico só é remontado quando as mensagens mudam: o texto chegando
 // aos poucos refaz apenas a parte ao vivo, e a lista é a mesma enquanto nada muda.
-export function useTimeline({ messages, waiting, live, status, clean, viewFor, onAnswer, running, compact, readsImages }: Options) {
+export function useTimeline({ messages, waiting, live, status, clean, viewFor, onAnswer, running, compact, readsImages, onEdit }: Options) {
   const footers = useMemo(() => turnFooters(messages, running), [messages, running])
   const history = useMemo(
-    () => historyItems(messages, { footers, running, compact, clean, viewFor: readsImages ? viewFor : undefined, viewFile: viewFor }),
-    [messages, footers, running, compact, clean, viewFor, readsImages]
+    () => historyItems(messages, { footers, running, compact, clean, viewFor: readsImages ? viewFor : undefined, viewFile: viewFor, onEdit }),
+    [messages, footers, running, compact, clean, viewFor, readsImages, onEdit]
   )
   const tail = useMemo(
     () => liveItems({ messages, waiting, live, status, clean, viewFor, onAnswer }),

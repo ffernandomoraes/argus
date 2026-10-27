@@ -1,9 +1,11 @@
-import { memo } from 'react'
-import { Crosshair, Image as ImageIcon, MessageSquarePlus } from 'lucide-react'
+import { memo, useState, type KeyboardEvent } from 'react'
+import { Crosshair, Image as ImageIcon, MessageSquarePlus, Pencil } from 'lucide-react'
 import { fileName, type AttachedFile } from '../../../../../shared/attachedFiles'
 import type { MessageMark } from '../../types'
 import { CopyButton } from '../../CopyButton'
 import { FileCard } from '../../FileCard'
+import { Button } from '../../../ui/Button'
+import { IconButton } from '../../../ui/IconButton'
 import { formatClock, formatImageCount } from '../../format'
 import type { ImageView } from '../imageViews'
 import { ImageThumbs } from './ImageThumbs'
@@ -12,6 +14,9 @@ import { tr } from '../../../i18n'
 // Mensagem sua. queued: enviada enquanto o Claude trabalhava.
 // imageView: lê as imagens enviadas (miniaturas) e abre o preview grande numa delas.
 // files: os outros anexos, no mesmo cartão da caixa de escrever (o agente recebe o caminho).
+// onEdit: o lápis troca o texto por um campo; enviar manda a versão nova como mensagem nova, no fim
+// da conversa (a original fica onde está). Só em mensagem de texto puro: imagens, anexos e o que foi
+// junto no modo design não iriam no reenvio.
 export const UserBubble = memo(function UserBubble({
   text,
   at,
@@ -19,7 +24,8 @@ export const UserBubble = memo(function UserBubble({
   images = 0,
   imageView,
   marks,
-  files
+  files,
+  onEdit
 }: {
   text: string
   at?: string
@@ -29,7 +35,19 @@ export const UserBubble = memo(function UserBubble({
   // O que foi junto no modo design (parte selecionada, comentários): uma linha discreta embaixo.
   marks?: MessageMark[]
   files?: AttachedFile[]
+  onEdit?: (text: string) => void
 }) {
+  const [editing, setEditing] = useState<string | null>(null)
+  const editable = !!onEdit && !!text && images === 0 && !files?.length && !marks
+  if (editing !== null && onEdit) {
+    const send = () => {
+      const edited = editing.trim()
+      if (!edited) return
+      setEditing(null)
+      onEdit(edited)
+    }
+    return <EditBubble value={editing} onChange={setEditing} onCancel={() => setEditing(null)} onSend={send} />
+  }
   return (
     <div className="flex flex-col gap-1">
       <div className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-[15px]">
@@ -78,9 +96,52 @@ export const UserBubble = memo(function UserBubble({
               {at && formatClock(at)}
             </span>
           )}
+          {editable && (
+            <IconButton size="xs" label={tr('Editar e reenviar', 'Edit and resend')} onClick={() => setEditing(text)}>
+              <Pencil size={12} />
+            </IconButton>
+          )}
           {text && <CopyButton text={text} label={tr('Copiar prompt', 'Copy prompt')} />}
         </div>
       )}
     </div>
   )
 })
+
+// O balão virando campo: Enter envia e Shift+Enter quebra a linha (como na caixa de escrever), Esc
+// desiste. As teclas param aqui: a rolagem da conversa não as toma por navegação.
+function EditBubble({ value, onChange, onCancel, onSend }: { value: string; onChange: (v: string) => void; onCancel: () => void; onSend: () => void }) {
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation()
+    if (e.key === 'Escape') onCancel()
+    else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault()
+      onSend()
+    }
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        // Cursor no fim do texto, sem rolar a conversa até o campo.
+        ref={(el) => {
+          if (!el || el === document.activeElement) return
+          el.focus({ preventScroll: true })
+          el.setSelectionRange(el.value.length, el.value.length)
+        }}
+        aria-label={tr('Editar mensagem', 'Edit message')}
+        className="block max-h-[calc(12lh+1rem)] w-full resize-none rounded-lg border border-accent bg-surface-2 px-3 py-2 text-[15px] outline-none [field-sizing:content]"
+      />
+      <div className="flex justify-end gap-1.5">
+        <Button variant="secondary" size="sm" onClick={onCancel}>
+          {tr('Cancelar', 'Cancel')}
+        </Button>
+        <Button variant="primary" size="sm" onClick={onSend} disabled={!value.trim()}>
+          {tr('Enviar', 'Send')}
+        </Button>
+      </div>
+    </div>
+  )
+}

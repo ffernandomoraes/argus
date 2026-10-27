@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
 import { IconButton } from '../ui/IconButton'
 import { useEscape } from '../useEscape'
+import { TITLE_BAR_HEIGHT } from './panelGeometry'
 import { tr } from '../i18n'
 
 // Imagens enviadas numa mensagem, grandes, sobre o app. ESC ou clique fora fecha; ← → trocam.
@@ -52,8 +53,20 @@ export function ImageViewer({
   }, [count])
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8" onMouseDown={onClose}>
-      <IconButton label={tr('Fechar', 'Close')} variant="floating" size="lg" onClick={onClose} className="absolute right-4 top-4">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8"
+      style={{ paddingTop: TITLE_BAR_HEIGHT + 32 }}
+      onMouseDown={onClose}
+    >
+      {/* Abaixo da barra de título: no Windows, minimizar/maximizar/fechar ficam por cima dela. */}
+      <IconButton
+        label={tr('Fechar', 'Close')}
+        variant="floating"
+        size="lg"
+        onClick={onClose}
+        className="absolute right-4"
+        style={{ top: TITLE_BAR_HEIGHT + 12 }}
+      >
         <X size={15} />
       </IconButton>
       {urls === null ? (

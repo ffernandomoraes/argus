@@ -3,7 +3,7 @@ import { Panel, useReactFlow } from '@xyflow/react'
 import { Bot, Brain, FolderPlus, Menu, MessageCirclePlus, Server, Settings, SquareDashed, StickyNote, type LucideIcon } from 'lucide-react'
 import { CANVAS_BAR_INSET, TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { Presence } from '../motion'
-import { IS_WIN, isMod, keys } from '../platform'
+import { isMod, keys } from '../platform'
 import { MenuArrow } from '../ui/MenuArrow'
 import { MENU_PANEL, MENU_ROW } from '../ui/menuStyles'
 import { useEscape } from '../useEscape'
@@ -47,10 +47,7 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
     ],
     [
       { label: tr('Agentes', 'Agents'), icon: Bot, shortcut: '⇧⌘A', key: 'a', shift: true, onClick: openAgents },
-      // No Windows não dá para saber quais servidores um agente abriu (ver devServers.ts).
-      ...(IS_WIN
-        ? []
-        : [{ label: tr('Servidores rodando', 'Running servers'), icon: Server, shortcut: '⇧⌘S', key: 's', shift: true, onClick: openDevServers }]),
+      { label: tr('Servidores rodando', 'Running servers'), icon: Server, shortcut: '⇧⌘S', key: 's', shift: true, onClick: openDevServers },
       { label: tr('Memória do Claude', 'Claude memory'), icon: Brain, shortcut: '⇧⌘M', key: 'm', shift: true, onClick: () => openMemory() }
     ],
     [{ label: tr('Configurações', 'Settings'), icon: Settings, shortcut: '⌘ ,', onClick: openSettings }]
@@ -88,7 +85,9 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
         </button>
         <Presence kind="menu">
           {open && (
-            <div className={`absolute left-0 top-full mt-2.5 w-52 ${MENU_PANEL}`}>
+            // Largura pelo conteúdo: no Windows os atalhos são mais longos ("Ctrl+Shift+M") e, com
+            // largura fixa, o nome do item quebrava em duas linhas.
+            <div className={`absolute left-0 top-full mt-2.5 w-max min-w-52 ${MENU_PANEL}`}>
               <MenuArrow side="top" at={20} />
               {groups.map((items, i) => (
                 <div key={i}>
@@ -100,11 +99,11 @@ export const NavBar = memo(function NavBar({ zoomShortcuts = true }: { zoomShort
                         onClick()
                         setOpen(false)
                       }}
-                      className={`group ${MENU_ROW} text-text hover:bg-accent hover:text-white`}
+                      className={`group ${MENU_ROW} whitespace-nowrap text-text hover:bg-accent hover:text-white`}
                     >
-                      <Icon size={14} />
+                      <Icon size={14} className="shrink-0" />
                       {label}
-                      {shortcut && <kbd className="ml-auto font-mono text-faint group-hover:text-white">{keys(shortcut)}</kbd>}
+                      {shortcut && <kbd className="ml-auto pl-4 font-mono text-faint group-hover:text-white">{keys(shortcut)}</kbd>}
                     </button>
                   ))}
                 </div>

@@ -1,7 +1,7 @@
-import { Coffee, FlaskConical, MessagesSquare, Network, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
+import { Bell, Coffee, FlaskConical, MessagesSquare, Network, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'orchestrator' | 'appearance' | 'updates' | 'mascot' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
+export type Section = 'general' | 'conversations' | 'notifications' | 'orchestrator' | 'appearance' | 'updates' | 'mascot' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
 
 export type SectionGroup = 'app' | 'agents' | 'extras' | 'footer'
 
@@ -42,6 +42,16 @@ export const SECTIONS: {
     description: tr(
       'Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.',
       'How each chat opens. What you change in the chat itself applies only to that chat.'
+    )
+  },
+  {
+    id: 'notifications',
+    group: 'app',
+    label: tr('Notificações', 'Notifications'),
+    icon: Bell,
+    description: tr(
+      'Os avisos do sistema quando uma conversa precisa de você, termina ou para com erro.',
+      'System alerts when a chat needs you, is done or stops with an error.'
     )
   },
   {

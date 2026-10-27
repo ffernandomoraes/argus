@@ -5,6 +5,10 @@ import type { LangPreference } from './i18n'
 export type AppSettings = {
   // Ícone na barra de menus do macOS com o status das conversas.
   menuBarIcon: boolean
+  // Notificação do sistema quando uma conversa precisa de você, termina ou para com erro.
+  notifications: boolean
+  // Desligado, a notificação aparece sem o som do sistema (Windows e Mac; no Linux depende do ambiente).
+  notificationSound: boolean
   // Idioma da interface; "system" segue o do sistema operacional.
   language: LangPreference
   // Onde o mascote solto na tela ficou (canto de cima da janela dele, em coordenadas da tela).

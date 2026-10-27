@@ -11,6 +11,7 @@ import { ExperimentsSection } from './sections/ExperimentsSection'
 import { GeneralSection } from './sections/GeneralSection'
 import { MascotSection } from './sections/MascotSection'
 import { McpSection } from './sections/McpSection'
+import { NotificationsSection } from './sections/NotificationsSection'
 import { OrchestratorSection } from './sections/OrchestratorSection'
 import { UpdatesSection } from './sections/UpdatesSection'
 import { SECTION_GROUPS, SECTIONS, type Section } from './sections/sectionList'
@@ -87,6 +88,7 @@ export function SettingsPage({
           </header>
           {section === 'general' && <GeneralSection />}
           {section === 'conversations' && <ConversationsSection />}
+          {section === 'notifications' && <NotificationsSection />}
           {section === 'orchestrator' && <OrchestratorSection />}
           {section === 'appearance' && <AppearanceSection theme={theme} onThemeChange={onThemeChange} />}
           {section === 'updates' && <UpdatesSection />}

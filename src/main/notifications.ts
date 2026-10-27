@@ -4,6 +4,7 @@ import { app, BrowserWindow, Notification } from 'electron'
 import type { ChatState } from '../shared/chat'
 import { statusSignature, StatusChanges, titleOf, type ChatEntry } from './chats/entries'
 import { sessionTitles } from './chats/titles'
+import { loadAppSettings } from './appSettings'
 import { tr } from './i18n'
 import { IS_MAC } from './platform'
 
@@ -69,10 +70,12 @@ export class ChatNotifier {
   }
 
   private async show(kind: Kind, cwd: string, sessionId?: string): Promise<void> {
-    if (!Notification.isSupported()) return
+    // Desligadas nos ajustes, só o ícone pisca.
+    const settings = loadAppSettings()
+    if (!Notification.isSupported() || !settings.notifications) return
     const title = titleOf(sessionId ? await sessionTitles(cwd) : new Map(), sessionId)
     const project = cwd === homedir() ? tr('Sem projeto', 'No project') : basename(cwd) || cwd
-    const n = new Notification({ title: `${label(kind)} - ${project}`, body: title })
+    const n = new Notification({ title: `${label(kind)} - ${project}`, body: title, silent: !settings.notificationSound })
     n.on('click', () => {
       this.shown.delete(n)
       this.open(cwd, sessionId)

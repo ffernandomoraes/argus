@@ -68,6 +68,8 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
     s.tray.set(enabled)
     return saveAppSettings({ menuBarIcon: enabled })
   })
+  handle('settings:notifications', (_e, enabled) => saveAppSettings({ notifications: enabled }))
+  handle('settings:notificationSound', (_e, enabled) => saveAppSettings({ notificationSound: enabled }))
   // Idioma trocado: menu e ícone do sistema refeitos aqui; as janelas recarregam (renderer/i18n).
   handle('settings:language', (_e, pref) => {
     const saved = saveAppSettings({ language: pref })

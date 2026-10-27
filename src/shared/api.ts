@@ -410,6 +410,8 @@ export type Api = {
   settings: {
     get: () => Promise<AppSettings>
     setMenuBarIcon: (on: boolean) => Promise<AppSettings>
+    setNotifications: (on: boolean) => Promise<AppSettings>
+    setNotificationSound: (on: boolean) => Promise<AppSettings>
     setLanguage: (pref: LangPreference) => Promise<AppSettings>
   }
   // Atualização do app pelos releases do GitHub.

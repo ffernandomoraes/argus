@@ -4,7 +4,7 @@ import type { AppSettings } from '../shared/appSettings'
 import { readJsonFile, writeJsonAtomicSync } from './lib/jsonFile'
 
 // Guardadas num JSON nos dados do app.
-const DEFAULTS: AppSettings = { menuBarIcon: false, language: 'system', mascotSpot: null }
+const DEFAULTS: AppSettings = { menuBarIcon: false, notifications: true, notificationSound: true, language: 'system', mascotSpot: null }
 const file = () => join(app.getPath('userData'), 'settings.json')
 
 export function loadAppSettings(): AppSettings {

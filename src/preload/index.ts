@@ -297,6 +297,8 @@ const api: Api = {
   settings: {
     get: () => invoke('settings:get'),
     setMenuBarIcon: (on) => invoke('settings:menuBarIcon', on),
+    setNotifications: (on) => invoke('settings:notifications', on),
+    setNotificationSound: (on) => invoke('settings:notificationSound', on),
     setLanguage: (pref) => invoke('settings:language', pref)
   },
   updates: {

@@ -69,6 +69,9 @@ export type ChatState = {
   suggestion?: string
   // O Claude entrou num git worktree ou saiu dele (ferramentas EnterWorktree e ExitWorktree).
   worktree?: ChatWorktree
+  // Pedido aberto pelo próprio Claude Code para entregar o aviso de uma tarefa em segundo plano que
+  // terminou, sem mensagem sua: o fim dele não vira notificação. Sai com a sua próxima mensagem.
+  wake?: boolean
 }
 
 // O Claude Code leva o arquivo da conversa para a pasta de conversas do worktree ao entrar, e de

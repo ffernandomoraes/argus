@@ -23,9 +23,11 @@ const label = (kind: Kind): string =>
 // fechada nem sempre chega, então ficam só as mais recentes.
 const KEEP_SHOWN = 20
 
+// O pedido que só entrega o aviso de uma tarefa em segundo plano não conta como concluído: quem
+// conclui é a conversa respondendo a você. Pedindo permissão ou com erro, ainda precisa de você.
 function kindOf(state: ChatState): Kind | null {
   if (state.status === 'needs-you') return 'needs-you'
-  if (state.status === 'idle') return state.error ? 'error' : 'done'
+  if (state.status === 'idle') return state.error ? 'error' : state.wake ? null : 'done'
   return null
 }
 

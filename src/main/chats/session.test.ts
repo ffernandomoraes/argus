@@ -344,6 +344,56 @@ describe('ChatSession: quando pode fechar', () => {
   })
 })
 
+// O pedido que só entrega o aviso de uma tarefa em segundo plano disparava a notificação de
+// "Concluído" a cada tarefa ou subagente que terminava.
+describe('ChatSession: pedido do aviso de tarefa em segundo plano', () => {
+  const running = { type: 'system', subtype: 'session_state_changed', state: 'running' }
+
+  async function finishTask(q: ReturnType<typeof open>['q']) {
+    q.emit(tasks(['t1']))
+    q.emit(tasks([]))
+    await settle()
+  }
+
+  it('fica marcado, com o session_state chegando antes ou depois do começo da resposta', async () => {
+    for (const order of [[running, startReply()], [startReply(), running]]) {
+      const { session, q } = open()
+      await finishTask(q)
+      order.forEach((m) => q.emit(m))
+      q.emit(result())
+      await settle()
+      expect(session.state).toMatchObject({ status: 'idle', wake: true })
+    }
+  })
+
+  it('pedido seu não fica marcado, nem o que vem depois de um aviso', async () => {
+    const { session, q } = open()
+    await finishTask(q)
+    q.emit(running)
+    q.emit(startReply())
+    q.emit(result())
+    await settle()
+    session.send(request('e agora?'))
+    q.emit(startReply())
+    q.emit(result())
+    await settle()
+    expect(session.state).toMatchObject({ status: 'idle', wake: undefined })
+  })
+
+  it('mensagem sua mandada enquanto a tarefa termina não vira aviso', async () => {
+    const { session, q } = open()
+    q.emit(tasks(['t1']))
+    await settle()
+    session.send(request())
+    q.emit(tasks([]))
+    q.emit(running)
+    q.emit(startReply())
+    q.emit(result())
+    await settle()
+    expect(session.state.wake).toBeUndefined()
+  })
+})
+
 describe('ChatSession: configurações com a conversa aberta', () => {
   it('troca de esforço vai com o ultracode atual, e a troca falhando aparece como erro', async () => {
     const { session, q } = open()

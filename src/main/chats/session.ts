@@ -75,6 +75,8 @@ export class ChatSession {
   private partialTimer: NodeJS.Timeout | undefined
   // Esperando o pedido que entrega o aviso da tarefa em segundo plano (ver WAKE_GRACE_MS).
   private wakeTimer: NodeJS.Timeout | undefined
+  // O session_state "running" do pedido do aviso chegou antes do começo dele (ver read).
+  private waking = false
   // O que o próprio Claude Code diz (session_state): só "idle" é parado de verdade, já sem pedido
   // nem aviso de tarefa por entregar.
   private claudeState: SessionState = 'idle'
@@ -162,7 +164,9 @@ export class ChatSession {
     // Mensagem nova com o Claude parado começa a contagem de tempo e tokens.
     const fresh = this.state.status === 'idle' || !this.state.turnStartedAt
     if (fresh) this.reader = { ...this.reader, closedTokens: 0, currentTokens: 0 }
+    this.waking = false
     this.update({
+      wake: undefined,
       // Permissão esperando resposta continua precisando de você.
       status: this.permissions.size ? 'needs-you' : 'running',
       error: undefined,
@@ -407,6 +411,14 @@ export class ChatSession {
     step.contextWindows?.forEach(([model, tokens]) => learnContextWindow(model, tokens))
     // Antes do update: com a tarefa saindo da lista a sessão já pareceria livre e fecharia ali.
     const finished = !!step.patch && backgroundWork({ ...this.state, ...step.patch }) < backgroundWork(this.state)
+    // Pedido começando com a conversa parada, enquanto o aviso de uma tarefa é esperado: é o pedido
+    // do aviso. O session_state e o começo da resposta chegam em qualquer ordem.
+    if (this.wakeTimer && this.state.status === 'idle' && step.sessionState && step.sessionState !== 'idle') this.waking = true
+    const woke = this.waking || (!!this.wakeTimer && !!step.turnStarted)
+    if (step.turnStarted) {
+      this.waking = false
+      step.patch = { ...step.patch, wake: woke || undefined }
+    }
     if (finished || this.wakeTimer) this.expectWake()
     if (step.sessionState) {
       this.claudeState = step.sessionState

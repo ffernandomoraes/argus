@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { chmodSync, existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -45,6 +45,13 @@ describe('integrateShell', () => {
 // O shell de verdade, pelo node-pty, como o drawer abre. No Linux o node-pty não traz binário pronto
 // (e os testes instalam sem compilar): lá quem confere é o teste de fumaça (smokeTest.ts).
 const pty = await import('node-pty').then((m) => (m as unknown as { default?: typeof m }).default ?? m).catch(() => null)
+// No Mac o node-pty abre o shell pelo spawn-helper, que o pacote traz sem permissão de execução. Quem
+// a dá é o scripts/postinstall.mjs, e os testes do CI instalam sem os scripts: sem ela, o spawn falha
+// com "posix_spawnp failed".
+for (const arch of ['darwin-arm64', 'darwin-x64']) {
+  const helper = `node_modules/node-pty/prebuilds/${arch}/spawn-helper`
+  if (process.platform === 'darwin' && existsSync(helper)) chmodSync(helper, 0o755)
+}
 const shells = (IS_WIN ? [defaultShell()] : ['/bin/zsh', '/bin/bash'].filter(existsSync).map((file) => ({ file, args: ['-l'] }))).filter(() => !!pty)
 
 const until = async (check: () => unknown, ms = 20_000) => {

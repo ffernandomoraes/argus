@@ -59,6 +59,13 @@
   pointer-events: none;
 }
 
+/* Drawer no modo foco cobrindo a tela (ConversationDrawer): o canvas por baixo não é desenhado.
+   Desenhado, ele aparecia por alguns quadros ao rolar a conversa (a GPU às vezes pulava o painel
+   por cima) e seguia gastando com as animações dos blocos sem ninguém ver. */
+body:has([data-covers-canvas]) .react-flow {
+  visibility: hidden;
+}
+
 /* Item da conversa (ChatView). Conversa longa continua leve pela virtualização (Timeline: só o
    que está perto da tela fica montado), e não mais pelo content-visibility, que daria a altura
    estimada aos itens montados fora da tela e erraria a medida. Fica a contenção que ele aplicava

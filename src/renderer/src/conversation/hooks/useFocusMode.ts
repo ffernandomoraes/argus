@@ -9,9 +9,13 @@ const HIDDEN = { opacity: 0, transform: MOTION.panel.to }
 const SHOWN = { opacity: 1, transform: 'none' }
 
 // Modo foco do drawer: ligado ou não, e a troca animada. setFocus é fixo e ignora pedidos no meio
-// de uma troca.
-export function useFocusMode(panelRef: RefObject<HTMLElement | null>): [boolean, (on: boolean) => Promise<void>] {
+// de uma troca. `covering`: o painel já cobre o canvas por inteiro (entrou e terminou de aparecer);
+// sai antes do fade de saída, para o canvas estar lá quando o painel some.
+export function useFocusMode(
+  panelRef: RefObject<HTMLElement | null>
+): [boolean, (on: boolean) => Promise<void>, boolean] {
   const [focus, setFocusNow] = useState(false)
+  const [covering, setCovering] = useState(false)
   const current = useRef(false)
   const switching = useRef(false)
   useLayoutEffect(() => {
@@ -22,8 +26,12 @@ export function useFocusMode(panelRef: RefObject<HTMLElement | null>): [boolean,
     async (on: boolean) => {
       const panel = panelRef.current
       if (on === current.current || switching.current) return
-      if (!panel || reduced()) return setFocusNow(on)
+      if (!panel || reduced()) {
+        setCovering(on)
+        return setFocusNow(on)
+      }
       switching.current = true
+      setCovering(false)
       const out = panel.animate([SHOWN, HIDDEN], { ...MOTION.panel.out, fill: 'forwards' })
       await out.finished.catch(() => {})
       flushSync(() => setFocusNow(on))
@@ -31,10 +39,11 @@ export function useFocusMode(panelRef: RefObject<HTMLElement | null>): [boolean,
       const enter = panel.animate([{ opacity: 0, transform: MOTION.panel.from }, SHOWN], MOTION.panel.in)
       out.cancel()
       await enter.finished.catch(() => {})
+      setCovering(on)
       switching.current = false
     },
     [panelRef]
   )
 
-  return [focus, setFocus]
+  return [focus, setFocus, covering]
 }

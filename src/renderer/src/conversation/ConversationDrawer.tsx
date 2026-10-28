@@ -64,7 +64,7 @@ export function ConversationDrawer(props: Props) {
   const zoom = useDrawerZoom()
   const panelRef = useRef<HTMLElement>(null)
   const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH, props.obstacles)
-  const [focus, setFocus] = useFocusMode(panelRef)
+  const [focus, setFocus, covering] = useFocusMode(panelRef)
   const leaveFocus = useCallback(() => void setFocus(false), [setFocus])
 
   // Outra conversa no mesmo drawer: o painel fica, e só o conteúdo entra com o efeito padrão
@@ -122,6 +122,8 @@ export function ConversationDrawer(props: Props) {
   return (
     <aside
       ref={panelRef}
+      // Coberto pelo foco, o canvas deixa de ser desenhado (components.css).
+      data-covers-canvas={covering || undefined}
       className={`absolute flex flex-col overflow-hidden rounded-xl border border-line bg-bg ${
         focus ? 'z-50' : 'z-40 shadow-2xl shadow-black/50'
       }`}

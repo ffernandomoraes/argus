@@ -18,12 +18,14 @@ import { folderArgs } from '../workspaceFolders'
 import { trustGemini } from '../workspaces'
 import { FOLDERS_CLAUDE_MD } from '../chats/env'
 import { materializeWorktree, withWorktreeHint } from '../worktrees'
+import { dropNonce, integrateShell, type IntegratedShell } from './shellIntegration'
 
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
 // wsl: roda dentro do WSL; o pid do pseudo-terminal é o do wsl.exe, não o do `claude`. newSession:
-// a conversa nova que o app escolheu para ele (só no WSL, ver wslTerminal).
+// a conversa nova que o app escolheu para ele (só no WSL, ver wslTerminal). shellPath, nonce e
+// nonceFile: o shell com a integração do Argus (ver shellIntegration.ts).
 export type Spawned =
-  | { ok: true; pty: IPty; account: string; shell?: string; wsl?: boolean; newSession?: string }
+  | { ok: true; pty: IPty; account: string; shell?: string; wsl?: boolean; newSession?: string; shellPath?: string; nonce?: string; nonceFile?: string }
   | { ok: false; error: string }
 
 // Opções do `claude` que valem nos dois lugares. promptFile: as regras do orquestrador, já no
@@ -76,10 +78,12 @@ function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): 
   env.COLORTERM = 'truecolor'
   prependPath(env, [CLI_BIN])
   const shell = defaultShell()
+  const integrated = req.shell ? integrateShell(shell, env) : null
   try {
-    const pty = spawn(req.shell ? shell.file : launch.file, req.shell ? shell.args : launch.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd, env })
-    return { ok: true, pty, account: req.account!, shell: req.shell ? basename(shell.file) : undefined }
+    const pty = spawn(integrated ? integrated.file : launch.file, integrated ? integrated.args : launch.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd, env })
+    return { ok: true, pty, account: req.account!, ...(integrated && shellFields(shell.file, integrated)) }
   } catch (err) {
+    dropNonce(integrated?.nonceFile)
     return { ok: false, error: tr(`Não consegui abrir o ${name}: ${errorMessage(err)}`, `Couldn’t open ${name}: ${errorMessage(err)}`) }
   }
 }
@@ -125,23 +129,30 @@ function nativeTerminal(req: TerminalOpenRequest, cwd: string): Spawned {
   const account = applyAccount(env, req.account)
   if (req.folders?.length) env[FOLDERS_CLAUDE_MD] = '1'
 
-  // No Mac, shell de login, como o Terminal: carrega .zprofile e .zshrc. No Windows, PowerShell.
+  // No Mac, shell de login, como o Terminal: carrega .zprofile e .zshrc. No Windows, PowerShell. O
+  // do drawer marca o começo e o fim de cada comando (ver shellIntegration.ts).
   const shell = defaultShell()
+  const integrated = req.shell ? integrateShell(shell, env) : null
   const prompt = req.systemPrompt && !req.shell ? writePrompt(req.systemPrompt) : undefined
   const command = claudeCommand(claudeArgs(req, prompt), claude)
-  const program = req.shell ? shell.file : command.file
 
   try {
-    const pty = spawn(program, req.shell ? shell.args : command.args, {
+    const pty = spawn(integrated ? integrated.file : command.file, integrated ? integrated.args : command.args, {
       name: 'xterm-256color',
       cols: req.cols,
       rows: req.rows,
       cwd,
       env
     })
-    return { ok: true, pty, account, shell: req.shell ? basename(shell.file) : undefined }
+    return { ok: true, pty, account, ...(integrated && shellFields(shell.file, integrated)) }
   } catch (err) {
+    dropNonce(integrated?.nonceFile)
     const what = req.shell ? basename(shell.file) : 'claude'
     return { ok: false, error: tr(`Não consegui abrir o ${what}: ${errorMessage(err)}`, `Couldn’t open ${what}: ${errorMessage(err)}`) }
   }
+}
+
+// O shell aberto: o nome (para o app saber quando ele está na frente), o caminho e o nonce das marcas.
+function shellFields(path: string, integrated: IntegratedShell) {
+  return { shell: basename(path), shellPath: path, nonce: integrated.nonce, nonceFile: integrated.nonceFile }
 }

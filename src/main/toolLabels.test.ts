@@ -33,6 +33,8 @@ describe('describeTool', () => {
   it('MCP: "servidor - ação", e os do próprio Argus com nome próprio', () => {
     expect(describeTool('mcp__sentry__search_issues', { query: 'erro' })).toEqual({ label: 'sentry - search issues', summary: 'erro' })
     expect(describeTool('mcp__argus__rodar_no_terminal', { comando: 'pnpm dev' })).toMatchObject({ label: 'Rodar no terminal', summary: 'pnpm dev' })
+    expect(describeTool('mcp__argus__read_terminal', {})).toEqual({ label: 'Ler o terminal', summary: 'últimas 200 linhas' })
+    expect(describeTool('mcp__argus__read_terminal', { wait_ms: 5000 })).toMatchObject({ summary: 'esperando saída nova' })
   })
 
   it('ferramenta desconhecida ou sem entrada não quebra', () => {

@@ -5,10 +5,11 @@ import { join } from 'node:path'
 import { app, type BrowserWindow } from 'electron'
 import { errorMessage } from './lib/errors'
 import type { Terminals } from './terminals'
+import { shellKind } from './terminals/shellIntegration'
 
 // Teste de fumaça do instalador: `Argus --smoke-test` abre o app, espera o canvas montar, abre um
-// terminal com o shell do sistema (pelo node-pty, a parte nativa que mais quebra) e fecha o app pelo
-// caminho normal, com o terminal aberto. Sai com 0 se tudo subiu e fechou sem cair, outro código se
+// terminal com o shell do sistema (pelo node-pty, a parte nativa que mais quebra), confere as marcas
+// da integração do shell e fecha o app pelo caminho normal, com o terminal aberto. Sai com 0 se tudo subiu e fechou sem cair, outro código se
 // não. Roda no GitHub Actions, numa máquina Windows, antes de o .exe ir para o release: ninguém do
 // projeto tem Windows para conferir à mão. O relato fica em argus-smoke.log, na pasta temporária.
 export const SMOKE_TEST = process.argv.includes('--smoke-test')
@@ -64,6 +65,26 @@ async function blockReported(port: number): Promise<string> {
   }
 }
 
+// A integração do shell (terminals/shellIntegration.ts): o prompt marcado e o fim de um comando, com o
+// código de saída. É por ela que o Claude sabe quando termina o comando que roda no terminal do
+// drawer; o script do PowerShell só se confere aqui, no Windows do GitHub.
+async function shellMarks(terminals: Terminals): Promise<{ ok: boolean; text: string }> {
+  const a = terminals.activity(KEY)
+  const shell = terminals.shellOf(KEY)
+  if (!a?.integrated)
+    return shell?.path && shellKind(shell.path) ? { ok: false, text: `${shell.name} abriu sem a integração` } : { ok: true, text: `sem integração (${shell?.name ?? '?'})` }
+  for (let i = 0; i < 60 && !a.marked; i++) await wait(500)
+  if (!a.marked) return { ok: false, text: 'o prompt não foi marcado' }
+  const offset = terminals.outputEnd(KEY)
+  terminals.write(KEY, 'echo argus-smoke\r')
+  for (let i = 0; i < 60; i++) {
+    const end = a.markAfter('D', offset)
+    if (end) return { ok: end.exitCode === 0, text: `fim do comando marcado (código ${end.exitCode ?? '?'})` }
+    await wait(250)
+  }
+  return { ok: false, text: 'o fim do comando não foi marcado' }
+}
+
 // quit: fecha o app como quem fecha a janela, sem a pergunta de confirmação.
 export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasReady: () => boolean, quit: () => void, reports: SmokeReports): void {
   try {
@@ -108,6 +129,9 @@ export function runSmokeTest(win: BrowserWindow, terminals: Terminals, canvasRea
       const again = await terminals.open({ key: KEY, cwd: homedir(), shell: true, cols: 80, rows: 24 })
       if (again.ok && again.buffer.trim()) {
         log(`terminal respondeu: ${JSON.stringify(again.buffer.slice(-200))}`)
+        const marks = await shellMarks(terminals)
+        log(`marcas do shell: ${marks.text}`)
+        if (!marks.ok) return finish(false, `marcas do shell: ${marks.text}`)
         log(reports.status())
         log(`travamento: ${await blockReported(reports.port)}`)
         return finish(true, 'app, canvas e terminal subiram')

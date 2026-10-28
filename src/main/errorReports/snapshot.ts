@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks'
-import { app, BrowserWindow, ipcMain, type WebContents } from 'electron'
+import { app, BrowserWindow, ipcMain, powerMonitor, webContents, type WebContents } from 'electron'
 import * as Sentry from '@sentry/electron/main'
 import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '../../shared/windowBlock'
 
@@ -118,8 +118,10 @@ export function echoOfMainLag(event: Sentry.ErrorEvent): boolean {
 // some e reaparece (ver src/renderer/src/errorReports.ts), pela mesma mensagem que o vigia do SDK
 // lê ('sentry-ipc.status', o canal padrão dele).
 const visibility = new Map<number, { contents: WebContents; name: string; hidden: boolean; shownAt: number }>()
+let nameOf: (contents: WebContents) => string = () => ''
 
-export function watchWindowVisibility(nameOf: (contents: WebContents) => string): void {
+export function watchWindowVisibility(name: (contents: WebContents) => string): void {
+  nameOf = name
   ipcMain.on('sentry-ipc.status', (e, message: { status?: unknown } | undefined) => {
     const status = message?.status
     if (status !== 'visible' && status !== 'hidden') return
@@ -162,7 +164,50 @@ export async function hiddenWindowBlock(event: Sentry.ErrorEvent): Promise<boole
   const now = performance.now()
   const same = [...visibility.values()].filter((w) => w.name === event.tags?.['event.process'])
   if (!same.some((w) => w.hidden || now - w.shownAt < WINDOW_BLOCK_MS)) return false
-  return (await Promise.all(same.map((w) => responds(w.contents)))).every(Boolean)
+  return allRespond(same.map((w) => w.contents))
+}
+
+const allRespond = async (contents: WebContents[]): Promise<boolean> =>
+  (await Promise.all(contents.map(responds))).every(Boolean)
+
+// CPU segurada pelo sistema: no Windows, a economia de energia (ou a temperatura) muda o limite de
+// velocidade da CPU (`speed-limit-change`, às vezes a cada poucos segundos); no Mac, muda o estado
+// térmico. Com a janela sem foco, o sistema segura também a janela, o "estou viva" atrasa e o vigia
+// acusa travamento: 2026-10-28 (ARGUS-1), um aviso por minuto durante 3 horas num notebook parado,
+// com o processo principal em dia. Vale a mesma pergunta da janela escondida: travada, não responde.
+const THROTTLE_KEEP_MS = 30_000
+let throttledAt = -Infinity
+
+// Depois do app pronto (o powerMonitor só existe a partir daí).
+export function watchCpuThrottle(): void {
+  const mark = () => (throttledAt = performance.now())
+  powerMonitor.on('speed-limit-change', mark)
+  powerMonitor.on('thermal-state-change', mark)
+}
+
+// Aviso de uma janela do app, sem nenhuma janela em foco, com a CPU segurada há pouco, e que responde:
+// alarme falso. Como na janela escondida, todas as de mesmo nome precisam responder.
+export async function throttledWindowBlock(event: Sentry.ErrorEvent): Promise<boolean> {
+  if (!isWindowBlock(event) || BrowserWindow.getFocusedWindow() || performance.now() - throttledAt > THROTTLE_KEEP_MS) return false
+  const same = webContents
+    .getAllWebContents()
+    .filter((c) => !c.isDestroyed() && c.getType() === 'window' && nameOf(c) === event.tags?.['event.process'])
+  return same.length > 0 && allRespond(same)
+}
+
+// Nas últimas ações, a mudança de limite da CPU e a do estado térmico entram no máximo uma vez por
+// minuto cada: em sequência, ocupavam as 60 vagas, e o que explicaria o travamento sumia (ARGUS-1,
+// 2026-10-28). O filtro de eventos do powerMonitor que a integração de ações do SDK aceita.
+const NOISY_POWER_EVENTS = ['speed-limit-change', 'thermal-state-change']
+const POWER_BREADCRUMB_MS = 60_000
+const powerBreadcrumbAt = new Map<string, number>()
+
+export function powerBreadcrumb(name: string): boolean {
+  if (!NOISY_POWER_EVENTS.includes(name)) return true
+  const now = performance.now()
+  if (now - (powerBreadcrumbAt.get(name) ?? -Infinity) < POWER_BREADCRUMB_MS) return false
+  powerBreadcrumbAt.set(name, now)
+  return true
 }
 
 export async function withSnapshot(event: Sentry.ErrorEvent): Promise<Sentry.ErrorEvent> {

@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Sentry from '@sentry/electron/main'
-import { echoOfMainLag, hiddenWindowBlock, watchMainLag, watchWindowVisibility } from './snapshot'
+import {
+  echoOfMainLag,
+  hiddenWindowBlock,
+  powerBreadcrumb,
+  throttledWindowBlock,
+  watchCpuThrottle,
+  watchMainLag,
+  watchWindowVisibility
+} from './snapshot'
 
 // Aviso de janela travada que só existe porque o processo principal parou (o vigia da janela roda
 // nele). 2026-10-23 (ARGUS-1): o aviso saiu 42 ms depois de "Processo principal parado por 7200 ms",
@@ -9,10 +17,17 @@ import { echoOfMainLag, hiddenWindowBlock, watchMainLag, watchWindowVisibility }
 const clock = vi.hoisted(() => ({ now: 0 }))
 vi.mock('node:perf_hooks', () => ({ performance: { now: () => clock.now } }))
 const ipc = vi.hoisted(() => ({ status: (_e: unknown, _message: unknown) => {} }))
+const electron = vi.hoisted(() => ({
+  focused: null as object | null,
+  power: {} as Record<string, () => void>,
+  contents: [] as object[]
+}))
 vi.mock('electron', () => ({
   app: { once: () => undefined },
-  BrowserWindow: {},
-  ipcMain: { on: (_channel: string, listener: typeof ipc.status) => (ipc.status = listener) }
+  BrowserWindow: { getFocusedWindow: () => electron.focused },
+  ipcMain: { on: (_channel: string, listener: typeof ipc.status) => (ipc.status = listener) },
+  powerMonitor: { on: (event: string, listener: () => void) => (electron.power[event] = listener) },
+  webContents: { getAllWebContents: () => electron.contents }
 }))
 vi.mock('@sentry/electron/main', () => ({ addBreadcrumb: () => undefined }))
 
@@ -32,6 +47,7 @@ beforeAll(() => {
   vi.useFakeTimers()
   watchMainLag()
   watchWindowVisibility((contents) => (contents.id === 2 ? 'mascot' : 'canvas'))
+  watchCpuThrottle()
 })
 afterAll(() => vi.useRealTimers())
 // Cada teste começa com o processo principal em dia há alguns segundos.
@@ -118,5 +134,76 @@ describe('hiddenWindowBlock', () => {
     expect(await decided).toBe(false)
     status(3, 'visible')
     expect(await hiddenWindowBlock(windowBlock)).toBe(true)
+  })
+})
+
+// Aviso com a CPU segurada pelo sistema: 2026-10-28 (ARGUS-1), Windows com o notebook parado, um aviso
+// por minuto durante 3 horas, com `speed-limit-change` a cada poucos segundos e o processo principal
+// em dia. Sem responder, a janela travou de verdade, e o aviso vai.
+describe('throttledWindowBlock', () => {
+  const page = (id: number, answers = true, type = 'window') => ({
+    id,
+    getType: () => type,
+    isDestroyed: () => false,
+    executeJavaScript: () => (answers ? Promise.resolve(0) : new Promise(() => {}))
+  })
+
+  beforeEach(() => {
+    electron.focused = null
+    electron.contents = [page(1), page(2)]
+    clock.now += 60_000
+  })
+
+  it('CPU segurada há pouco, sem foco, e a janela responde: o aviso não vai', async () => {
+    expect(await throttledWindowBlock(windowBlock)).toBe(false)
+    electron.power['speed-limit-change']()
+    clock.now += 10_000
+    expect(await throttledWindowBlock(windowBlock)).toBe(true)
+    expect(await throttledWindowBlock(mainError)).toBe(false)
+  })
+
+  it('o estado térmico do Mac conta igual', async () => {
+    electron.power['thermal-state-change']()
+    expect(await throttledWindowBlock(windowBlock)).toBe(true)
+  })
+
+  it('CPU segurada há mais de 30 s não explica o aviso', async () => {
+    electron.power['speed-limit-change']()
+    clock.now += 31_000
+    expect(await throttledWindowBlock(windowBlock)).toBe(false)
+  })
+
+  it('com uma janela do app em foco, o aviso vai', async () => {
+    electron.power['speed-limit-change']()
+    electron.focused = {}
+    expect(await throttledWindowBlock(windowBlock)).toBe(false)
+  })
+
+  it('sem responder, travou de verdade: o aviso vai', async () => {
+    electron.contents = [page(1, false)]
+    electron.power['speed-limit-change']()
+    const decided = throttledWindowBlock(windowBlock)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(await decided).toBe(false)
+  })
+
+  it('só as janelas de mesmo nome contam (o mascote e as ferramentas de desenvolvedor, não)', async () => {
+    electron.contents = [page(1, false, 'webview'), page(2, false)]
+    electron.power['speed-limit-change']()
+    expect(await throttledWindowBlock(windowBlock)).toBe(false)
+  })
+})
+
+describe('powerBreadcrumb', () => {
+  it('mudança de limite da CPU entra uma vez por minuto; os outros eventos sempre', () => {
+    clock.now += 120_000
+    expect(powerBreadcrumb('speed-limit-change')).toBe(true)
+    clock.now += 5_000
+    expect(powerBreadcrumb('speed-limit-change')).toBe(false)
+    expect(powerBreadcrumb('thermal-state-change')).toBe(true)
+    expect(powerBreadcrumb('resume')).toBe(true)
+    expect(powerBreadcrumb('resume')).toBe(true)
+    clock.now += 60_000
+    expect(powerBreadcrumb('speed-limit-change')).toBe(true)
   })
 })

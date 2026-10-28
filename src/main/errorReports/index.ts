@@ -8,7 +8,16 @@ import { IS_LINUX, IS_MAC, IS_WIN } from '../platform'
 import { SMOKE_TEST } from '../smokeTest'
 import { claudeDistro, knownDistros } from '../wsl'
 import { scrubBreadcrumb, scrubEvent } from './scrub'
-import { echoOfMainLag, hiddenWindowBlock, watchMainLag, watchWindowVisibility, withSnapshot } from './snapshot'
+import {
+  echoOfMainLag,
+  hiddenWindowBlock,
+  powerBreadcrumb,
+  throttledWindowBlock,
+  watchCpuThrottle,
+  watchMainLag,
+  watchWindowVisibility,
+  withSnapshot
+} from './snapshot'
 
 export { setAppState } from './snapshot'
 
@@ -68,7 +77,7 @@ export function startErrorReports(): void {
       // sessões.
       defaultIntegrations: false,
       integrations: [
-        Sentry.electronBreadcrumbsIntegration(),
+        Sentry.electronBreadcrumbsIntegration({ powerMonitor: powerBreadcrumb }),
         Sentry.electronNetIntegration(),
         Sentry.electronContextIntegration(),
         // Janela ou processo do Electron que caiu vira relatório (sem o minidump, só o motivo).
@@ -94,9 +103,12 @@ export function startErrorReports(): void {
       transport: smokeSafeTransport,
       // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato. O
       // aviso de janela travada que é só eco do processo principal parado, ou de uma janela escondida
-      // que responde (alarme falso), não vai (ver echoOfMainLag e hiddenWindowBlock).
+      // ou com a CPU segurada pelo sistema que responde (alarme falso), não vai (ver echoOfMainLag,
+      // hiddenWindowBlock e throttledWindowBlock).
       beforeSend: async (event) =>
-        echoOfMainLag(event) || (await hiddenWindowBlock(event)) ? null : scrubEvent(tagged(await withSnapshot(event))),
+        echoOfMainLag(event) || (await hiddenWindowBlock(event)) || (await throttledWindowBlock(event))
+          ? null
+          : scrubEvent(tagged(await withSnapshot(event))),
       beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
       initialScope: { user: { id: installId } },
       maxBreadcrumbs: 60,
@@ -110,7 +122,10 @@ export function startErrorReports(): void {
   watchRenderers()
   watchMainLag()
   watchWindowVisibility(rendererName)
-  void app.whenReady().then(startBlockDetection)
+  void app.whenReady().then(() => {
+    watchCpuThrottle()
+    startBlockDetection()
+  })
 }
 
 // No teste de fumaça, nada sai pelo SDK (o travamento vai pela linha de execução à parte, para o

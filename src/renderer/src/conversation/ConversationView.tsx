@@ -3,6 +3,7 @@ import { agentProviderOf } from '../../../shared/agents'
 import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext } from '../auth/useAuth'
 import { useViewing } from '../canvas/sessionsStore'
+import type { SubagentRef } from '../canvas/CanvasContext'
 import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
@@ -24,6 +25,7 @@ import { useLocalEvents } from './localEvents'
 import { McpPanel } from './McpPanel'
 import { OutputStylePanel } from './OutputStylePanel'
 import { PlanOpenContext } from './PlanCard'
+import { SubagentOpenContext, type OpenSubagent } from './subagentOpen'
 import { mergeEvents } from './mergeEvents'
 import { onRevealEnd } from './revealEnd'
 import { useConversationHistory } from './useConversationHistory'
@@ -51,6 +53,8 @@ type Props = {
   // "Abrir ao lado" no cartão do plano (ou do .md criado, com o caminho); sem isso, fica só o
   // "Mostrar tudo".
   onOpenPlan?: (text: string, path?: string) => void
+  // "Ver conversa" na linha de um subagente; sem isso (janela separada), a linha fica sem o botão.
+  onOpenSubagent?: (subagent: SubagentRef) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted?: (sessionId: string) => void
   // Escala do conteúdo, ajustada com ⌘+ / ⌘- (useDrawerZoom).
@@ -83,6 +87,7 @@ export const ConversationView = memo(function ConversationView({
   conversation,
   onOpenFile,
   onOpenPlan,
+  onOpenSubagent,
   onOpenDiff,
   onSessionStarted,
   zoom = 1,
@@ -165,6 +170,12 @@ export const ConversationView = memo(function ConversationView({
       if (at) window.api.files.reveal(at.root, at.rel)
     })
   })
+  // Subagente desta conversa: o histórico dele fica ao lado do da conversa, pela sessão dela.
+  const parentSession = conversation.sessionId ?? sessionId
+  const openSubagent = useStableCallback((toolUseId: string, agent: string, description: string) => {
+    if (parentSession) onOpenSubagent?.({ sessionId: parentSession, toolUseId, agent, description })
+  })
+  const subagentOpen: OpenSubagent | null = onOpenSubagent ? openSubagent : null
   const [mcpOpen, setMcpOpen] = useState(false)
   const openMcp = useCallback(() => setMcpOpen(true), [])
   const closeMcp = useCallback(() => setMcpOpen(false), [])
@@ -195,6 +206,7 @@ export const ConversationView = memo(function ConversationView({
       <FileLinkContext.Provider value={onOpenFile ? openFile : null}>
       <FileRevealContext.Provider value={onOpenFile ? revealFile : null}>
       <PlanOpenContext.Provider value={onOpenPlan ?? null}>
+      <SubagentOpenContext.Provider value={subagentOpen}>
         <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
           <AccountChoiceContext.Provider value={accountChoice}>
           <ChatView
@@ -232,6 +244,7 @@ export const ConversationView = memo(function ConversationView({
           />
           </AccountChoiceContext.Provider>
         </div>
+      </SubagentOpenContext.Provider>
       </PlanOpenContext.Provider>
       </FileRevealContext.Provider>
       </FileLinkContext.Provider>
@@ -253,7 +266,7 @@ function conversationAccount(conversation: ConversationSummary, group?: string, 
 
 // Caminho relativo do link: o Claude às vezes corta o começo ("conversation/X.tsx" dentro de
 // src/renderer/src). O principal acha o arquivo; sem achar, segue o original e o erro aparece.
-async function locate(roots: string[], path: string): Promise<string> {
+export async function locate(roots: string[], path: string): Promise<string> {
   if (isAbsolutePath(path) || path.startsWith('~')) return path
   for (const root of roots) {
     const found = await window.api.files.locate(root, path).catch(() => null)

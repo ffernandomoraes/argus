@@ -47,7 +47,11 @@ export class HistoryParser {
   private lastModelEvent: string | undefined
 
   // `keep`: quantas mensagens guardar, no mínimo (a lista corta quando chega ao dobro).
-  constructor(private keep = MESSAGES_MAX) {}
+  // `sidechain`: o arquivo é o de um subagente, em que toda linha vem marcada como dele.
+  constructor(
+    private keep = MESSAGES_MAX,
+    private sidechain = false
+  ) {}
 
   messages(): Message[] {
     return this.list.slice(-MESSAGES_MAX)
@@ -86,7 +90,7 @@ export class HistoryParser {
     const command = commandMessage(l) ?? commandOutput(l)
     if (command) return this.push(command)
     if (this.queued(l)) return
-    if ((l.type !== 'user' && l.type !== 'assistant') || l.isSidechain || l.isMeta || l.isCompactSummary) return
+    if ((l.type !== 'user' && l.type !== 'assistant') || (l.isSidechain && !this.sidechain) || l.isMeta || l.isCompactSummary) return
     if (l.type === 'user') this.user(l)
     else this.assistant(l)
   }

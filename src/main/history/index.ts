@@ -4,6 +4,7 @@ import { sessionFile } from '../transcripts/projectDir'
 import { readSlice } from '../transcripts/read'
 import { loadTranscript } from './cache'
 import { imagesOf } from './images'
+import { subagentFile } from './subagentFile'
 
 // Histórico de uma sessão, na ordem em que aconteceu. Raciocínio (thinking) e subagentes ficam de fora.
 export async function readHistory(projectPath: string, sessionId: string): Promise<Message[]> {
@@ -17,6 +18,14 @@ export async function readHistory(projectPath: string, sessionId: string): Promi
 export async function readHistoryPage(projectPath: string, sessionId: string, request: HistoryRequest): Promise<HistoryPage> {
   const file = sessionFile(projectPath, sessionId)
   const transcript = file ? await loadTranscript(file, request) : null
+  return transcript ? transcript.history.page(request) : { messages: [], more: false }
+}
+
+// O mesmo trecho, do histórico de um subagente: o que ele recebeu, pensou, fez e entregou. Ainda
+// sem arquivo (acabou de ser lançado), vazio.
+export async function readSubagentPage(projectPath: string, sessionId: string, toolUseId: string, request: HistoryRequest): Promise<HistoryPage> {
+  const file = await subagentFile(projectPath, sessionId, toolUseId)
+  const transcript = file ? await loadTranscript(file, request, true) : null
   return transcript ? transcript.history.page(request) : { messages: [], more: false }
 }
 

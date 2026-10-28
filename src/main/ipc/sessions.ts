@@ -2,12 +2,12 @@ import { shell } from 'electron'
 import { WatchedFolders } from '../app/watchedFolders'
 import { designSessionIds } from '../designStore'
 import { checkoutBranch, currentBranch, fetchBranches, listBranches, repoUrl, uncommittedFiles } from '../gitBranch'
-import { readHistory, readHistoryPage, readImages } from '../history'
+import { readHistory, readHistoryPage, readImages, readSubagentPage } from '../history'
 import type { SessionWatch } from '../sessionWatch'
 import { listKnownFolders, listSessions, searchSessions, sessionContext, trashSession } from '../sessions'
 import { conversationsIn, indexEntry, isAgentConversation, loadConversation, loadImages, trashConversation } from '../agentChats/store'
 import type { SessionSummary } from '../../shared/sessions'
-import { pageOf } from '../../shared/history'
+import { pageOf, type HistoryRequest } from '../../shared/history'
 import { agentRef } from '../../shared/providers'
 import { handle, on } from './register'
 
@@ -40,12 +40,17 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   on('sessions:watch', (e, paths) => watched.set(e.sender, paths))
   handle('sessions:history', async (_e, path, id) => (isAgentConversation(id) ? (loadConversation(id)?.messages ?? []) : readHistory(path, id)))
   handle('sessions:historyPage', async (_e, path, id, request) => {
-    // Vem da tela: um número de verdade, ou a abertura padrão.
-    const wanted = { since: typeof request?.since === 'string' ? request.since : undefined, count: Math.max(1, Math.floor(Number(request?.count)) || 200) }
+    const wanted = wantedPage(request)
     return isAgentConversation(id) ? pageOf(loadConversation(id)?.messages ?? [], wanted) : readHistoryPage(path, id, wanted)
   })
+  handle('sessions:subagentPage', async (_e, path, id, toolUseId, request) => readSubagentPage(path, id, toolUseId, wantedPage(request)))
   handle('sessions:context', async (_e, path, id) => (isAgentConversation(id) ? (indexEntry(id)?.contextPercent ?? 0) : sessionContext(path, id)))
   handle('sessions:images', async (_e, path, id, messageId) => (isAgentConversation(id) ? loadImages(id, messageId) : readImages(path, id, messageId)))
+}
+
+// Trecho do histórico pedido pela tela: um número de verdade, ou a abertura padrão.
+function wantedPage(request: HistoryRequest | undefined): HistoryRequest {
+  return { since: typeof request?.since === 'string' ? request.since : undefined, count: Math.max(1, Math.floor(Number(request?.count)) || 200) }
 }
 
 // Conversas com Codex, Gemini e Cursor nesta pasta, gravadas pelo Argus (ver agentChats/store.ts).

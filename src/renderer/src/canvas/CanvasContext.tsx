@@ -6,13 +6,27 @@ import type { ConversationSummary, ProjectData, TerminalKind } from './types'
 // draft: conversa nova, que ainda não existe na lista da pasta.
 // sessionId: id que o Claude deu à conversa nova no primeiro envio.
 // nodeId nulo: conversa sem projeto que ainda não foi enviada; `at` é onde o botão direito foi dado.
+// subagent: o drawer mostra o histórico de um subagente da conversa, só para ler.
 export type ActiveConversation = {
   nodeId: string | null
   conversationId: string
   draft?: boolean
   sessionId?: string
   at?: XYPosition
+  subagent?: SubagentRef
 }
+
+// Subagente lançado por uma conversa do Claude: a sessão dela e a chamada da ferramenta Agent.
+export type SubagentRef = {
+  sessionId: string
+  toolUseId: string
+  // Tipo do agente (Explore, general-purpose, um da biblioteca...) e a tarefa que recebeu.
+  agent: string
+  description: string
+}
+
+// Id do drawer de um subagente: não se confunde com o de nenhuma conversa.
+export const subagentConversationId = (toolUseId: string): string => `subagent-${toolUseId}`
 
 // Design aberto no drawer: um dos designs da pasta (nodeId). Novo: já nasce com o id que vai usar.
 export type ActiveDesign = {
@@ -49,6 +63,9 @@ export type CanvasActions = {
   // "Mover para workspace": o bloco (com o que vai junto) sai daqui e entra no outro.
   moveToBoard: (id: string, board: string) => void
   openConversation: (nodeId: string, conversationId: string) => void
+  // Histórico de um subagente, no drawer da conversa (por cima dela). Sem nodeId, vale o card da
+  // pasta `path` (ou o da conversa solta).
+  openSubagent: (nodeId: string | null, path: string, subagent: SubagentRef) => void
   newConversation: (nodeId: string) => void
   // "+" na borda do grupo: conversa nova do grupo todo (cria o card das conversas do grupo se faltar).
   newGroupConversation: (groupId: string) => void

@@ -30,10 +30,12 @@ export function useConversationHistory(
   sessionId: string | undefined,
   updatedAt: string,
   // Sobe quando o chat grava algo na sessão: relê na hora, sem esperar a lista atualizar.
-  revision = 0
+  revision = 0,
+  // Chamada da ferramenta Agent: lê o histórico do subagente que ela lançou, não o da conversa.
+  subagent?: string
 ): ConversationHistory {
   const [state, setState] = useState<Loaded | null>(null)
-  const key = `${projectPath}|${sessionId}`
+  const key = subagent ? `${projectPath}|${sessionId}|${subagent}` : `${projectPath}|${sessionId}`
   const reader = useRef<HistoryReader | null>(null)
   // O que já está na tela desta conversa: o próximo pedido começa nele.
   const shown = useRef<Message[]>(NONE)
@@ -53,7 +55,10 @@ export function useConversationHistory(
         const request: HistoryRequest = loaded.length
           ? { since: loaded[0].id, count: loaded.length + extra }
           : { count: HISTORY_FIRST + extra }
-        return window.api.sessions.historyPage(projectPath, sessionId, request).then((page) => ({ page, extra }))
+        const page = subagent
+          ? window.api.sessions.subagentPage(projectPath, sessionId, subagent, request)
+          : window.api.sessions.historyPage(projectPath, sessionId, request)
+        return page.then((page) => ({ page, extra }))
       },
       ({ page, extra }) => {
         const kept = reuseMessages(shown.current, page.messages)
@@ -68,7 +73,7 @@ export function useConversationHistory(
       current.dispose()
       if (reader.current === current) reader.current = null
     }
-  }, [key, projectPath, sessionId])
+  }, [key, projectPath, sessionId, subagent])
 
   useEffect(() => {
     reader.current?.sync(revision, updatedAt ? Date.parse(updatedAt) || 0 : 0)

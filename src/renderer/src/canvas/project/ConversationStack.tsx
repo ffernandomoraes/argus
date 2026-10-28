@@ -1,6 +1,7 @@
 import { memo, useCallback, type MouseEvent as ReactMouseEvent } from 'react'
 import { List } from 'lucide-react'
 import { useCanvasActions } from '../CanvasContext'
+import type { RunningAgent } from '../../../../shared/agents'
 import type { ConversationSummary } from '../types'
 import { useActiveConversationIn, useActiveDesignIn } from '../useCanvasView'
 import { AgentRow } from './AgentRow'
@@ -27,12 +28,22 @@ export const ConversationStack = memo(function ConversationStack({
   flowColor: string
 }) {
   const { rows, legs } = useProjectRows(conversations, collapsed)
-  const { openConversation, openConversationMenu, openAllConversations } = useCanvasActions()
+  const { openConversation, openSubagent, openConversationMenu, openAllConversations } = useCanvasActions()
   // Conversa e design abertos, só se forem desta pasta: abrir em outra pasta não redesenha esta.
   const activeConversation = useActiveConversationIn(nodeId)
   const activeDesign = useActiveDesignIn(nodeId)
   // As mesmas funções para todas as linhas: o memo delas vale enquanto as ações não mudam.
   const open = useCallback((c: ConversationSummary) => openConversation(nodeId, c.id), [openConversation, nodeId])
+  // Subagente rodando: o histórico dele, só para ler. Sem a chamada que o lançou, não há como
+  // achá-lo: abre a conversa.
+  const openAgent = useCallback(
+    (a: RunningAgent, c: ConversationSummary) => {
+      const sessionId = c.sessionId ?? c.id
+      if (!a.toolUseId) return openConversation(nodeId, c.id)
+      openSubagent(nodeId, '', { sessionId, toolUseId: a.toolUseId, agent: a.agent, description: a.description })
+    },
+    [openConversation, openSubagent, nodeId]
+  )
   const openMenu = useCallback(
     (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c),
     [openConversationMenu, nodeId]
@@ -79,7 +90,7 @@ export const ConversationStack = memo(function ConversationStack({
             conversation={row.conversation}
             first={row.first}
             color={flowColor}
-            onOpen={open}
+            onOpen={openAgent}
           />
         ) : row.kind === 'tasks' ? (
           <TasksRow

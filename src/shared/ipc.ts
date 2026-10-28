@@ -136,6 +136,7 @@ export type InvokeChannels = {
   'sessions:changes': (path: string) => UncommittedFile[] | null
   'sessions:history': (path: string, id: string) => Message[]
   'sessions:historyPage': (path: string, id: string, request: HistoryRequest) => HistoryPage
+  'sessions:subagentPage': (path: string, id: string, toolUseId: string, request: HistoryRequest) => HistoryPage
   'sessions:images': (path: string, id: string, messageId: string) => string[]
   'sessions:context': (path: string, id: string) => number
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)

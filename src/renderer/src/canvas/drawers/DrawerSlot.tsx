@@ -2,7 +2,7 @@ import { memo, useCallback, useLayoutEffect } from 'react'
 import { ConversationDrawer } from '../../conversation/ConversationDrawer'
 import type { PanelRect } from '../../conversation/FloatingPanel'
 import type { LineRange } from '../../conversation/fileLinks'
-import type { ActiveConversation } from '../CanvasContext'
+import type { ActiveConversation, SubagentRef } from '../CanvasContext'
 import type { ConversationSummary } from '../types'
 import type { SlotId } from './drawerState'
 import { codeProject } from './codeProject'
@@ -13,6 +13,7 @@ import type { DrawerCommands } from './useDrawers'
 export type SlotActions = {
   pinConversation: (nodeId: string, conversationId: string) => void
   popoutConversation: (nodeId: string, conversationId: string) => void
+  openSubagent: (nodeId: string | null, path: string, subagent: SubagentRef) => void
 }
 
 type Props = {
@@ -64,6 +65,11 @@ function DrawerSlotView(props: Props) {
     [commands, slot, project]
   )
   const onOpenPlan = useCallback((text: string, path?: string) => commands.openPlan(slot, text, path), [commands, slot])
+  // Subagente da conversa: abre por cima dela, neste drawer (ou num novo, se este estiver fixado).
+  const onOpenSubagent = useCallback(
+    (subagent: SubagentRef) => actions.openSubagent(nodeId ?? null, project.path, subagent),
+    [actions, nodeId, project.path]
+  )
   // O card da conversa sem projeto não nasce aqui: o Canvas cria (actions/useLooseCards), mesmo
   // com o drawer já fechado.
   const draftId = active.conversationId
@@ -99,6 +105,7 @@ function DrawerSlotView(props: Props) {
       onOpenFile={onOpenFile}
       onOpenDiff={onOpenDiff}
       onOpenPlan={onOpenPlan}
+      onOpenSubagent={onOpenSubagent}
       onSessionStarted={onSessionStarted}
       onPopout={onPopout}
       onPinToCanvas={onPinToCanvas}

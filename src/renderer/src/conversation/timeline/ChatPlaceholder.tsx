@@ -3,8 +3,10 @@ import { ClaudeIcon } from '../../icons/ClaudeIcon'
 import { IconTile } from '../../settings/controls'
 import { tr } from '../../i18n'
 
-// No lugar das mensagens: o carregando, ou a conversa nova ainda vazia.
-export function ChatPlaceholder({ loading }: { loading: boolean }) {
+// No lugar das mensagens: o carregando, ou a conversa nova ainda vazia. `empty`: outro texto para a
+// conversa vazia (a de um subagente, que só se lê).
+export function ChatPlaceholder({ loading, empty }: { loading: boolean; empty?: string }) {
+  if (!loading && empty) return <div className="m-auto max-w-72 text-center text-xs leading-relaxed text-faint">{empty}</div>
   if (loading) {
     return (
       <div className="m-auto flex items-center gap-2 text-xs text-faint">

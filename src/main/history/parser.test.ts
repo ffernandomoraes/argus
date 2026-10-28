@@ -35,6 +35,12 @@ describe('HistoryParser: mensagens da conversa', () => {
     expect(texts(list)).toEqual(['pedido', 'resposta'])
   })
 
+  it('no arquivo de um subagente, as linhas dele são a conversa', () => {
+    const parser = new HistoryParser(undefined, true)
+    for (const l of [user('procura X', { isSidechain: true }), assistant([text('achei')], {}, { isSidechain: true })]) parser.feed(l)
+    expect(texts(parser.messages())).toEqual(['procura X', 'achei'])
+  })
+
   it('avisos internos (<system-reminder>) não viram mensagem da pessoa', () => {
     const list = messagesOf([user([text('<system-reminder>x</system-reminder>'), text('o pedido de verdade')])])
     expect(texts(list)).toEqual(['o pedido de verdade'])

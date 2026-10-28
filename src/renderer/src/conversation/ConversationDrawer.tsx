@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
 import { ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
 import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
+import type { SubagentRef } from '../canvas/CanvasContext'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { MOTION, reduced } from '../motion'
@@ -40,6 +41,8 @@ type Props = {
   onOpenDiff: (path: string) => void
   // "Abrir ao lado" no cartão do plano: o plano inteiro ao lado do drawer.
   onOpenPlan: (text: string, path?: string) => void
+  // "Ver conversa" na linha de um subagente.
+  onOpenSubagent: (subagent: SubagentRef) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted: (sessionId: string) => void
   // Posição e tamanho no canvas; nulo = ainda não definido (nasce à direita).
@@ -156,6 +159,7 @@ export function ConversationDrawer(props: Props) {
           onOpenFile={openFile}
           onOpenDiff={openDiff}
           onOpenPlan={openPlan}
+          onOpenSubagent={props.onOpenSubagent}
           onSessionStarted={props.onSessionStarted}
           zoom={zoom}
           headerClassName={focus ? '' : 'cursor-grab active:cursor-grabbing'}

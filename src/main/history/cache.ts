@@ -13,12 +13,12 @@ const MARK_BYTES = 64
 
 export type Transcript = { history: HistoryParser; images: ImageIndex }
 
-const fresh = (keep: number): Transcript => ({ history: new HistoryParser(keep), images: new ImageIndex() })
+const fresh = (keep: number, sidechain: boolean): Transcript => ({ history: new HistoryParser(keep, sidechain), images: new ImageIndex() })
 
 class TranscriptFile {
   // Quantas mensagens guardar ao ler do zero (sobe quando a tela rola para trás; ver widen).
   private keep = MESSAGES_MAX
-  data = fresh(this.keep)
+  data: Transcript
   private ino = -1
   private size = -1
   private mtimeMs = -1
@@ -29,7 +29,13 @@ class TranscriptFile {
   // Trechos pedidos pela tela desde a última leitura (ver widen).
   private wanted: HistoryRequest[] = []
 
-  constructor(private file: string) {}
+  // `sidechain`: arquivo de um subagente (ver HistoryParser).
+  constructor(
+    private file: string,
+    private sidechain: boolean
+  ) {
+    this.data = fresh(this.keep, sidechain)
+  }
 
   // Leituras pedidas ao mesmo tempo se juntam: no máximo uma rodando e uma esperando.
   update(request?: HistoryRequest): Promise<boolean> {
@@ -105,7 +111,7 @@ class TranscriptFile {
   }
 
   private reset(ino: number): void {
-    this.data = fresh(this.keep)
+    this.data = fresh(this.keep, this.sidechain)
     this.ino = ino
     this.size = -1
     this.mtimeMs = -1
@@ -117,11 +123,11 @@ class TranscriptFile {
 const files = new Map<string, TranscriptFile>()
 
 // Histórico e índice de imagens do arquivo, em dia com o disco; nulo se não deu para ler.
-// `request`: o trecho que a tela vai pedir (ver widen).
-export async function loadTranscript(file: string, request?: HistoryRequest): Promise<Transcript | null> {
+// `request`: o trecho que a tela vai pedir (ver widen). `sidechain`: arquivo de um subagente.
+export async function loadTranscript(file: string, request?: HistoryRequest, sidechain = false): Promise<Transcript | null> {
   let entry = files.get(file)
   if (entry) files.delete(file)
-  else entry = new TranscriptFile(file)
+  else entry = new TranscriptFile(file, sidechain)
   // O mais recente vai para o fim; os mais antigos saem quando passa do limite.
   files.set(file, entry)
   for (const old of files.keys()) {

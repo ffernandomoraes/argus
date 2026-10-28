@@ -24,6 +24,7 @@ export function useCanvasCommands({ nodeActions, conversations, worktrees, overl
     ...nodeActions,
     addFolder: overlays.addFolder,
     openConversation: conversations.openConversation,
+    openSubagent: conversations.openSubagent,
     newConversation: conversations.newConversation,
     newLooseConversation: conversations.newLooseConversation,
     openDesign: conversations.openDesign,

@@ -59,3 +59,27 @@ describe('drawerReducer: plano de uma conversa do canvas', () => {
     expect(drawerReducer(open, { type: 'close', slot: 'd1' }).plan).toEqual(open.plan)
   })
 })
+
+describe('drawerReducer: subagente', () => {
+  const subagent = { sessionId: 's1', toolUseId: 'toolu_1', agent: 'Explore', description: 'procura' }
+  const showSubagent = (state: ReturnType<typeof shown>) =>
+    drawerReducer(state, { type: 'show', conversation: { nodeId: 'pasta', conversationId: 'subagent-toolu_1', subagent }, area })
+
+  it('abre por cima da conversa, no mesmo drawer, e o voltar traz a conversa de volta', () => {
+    const over = showSubagent(shown('pasta', 's1'))
+    expect(over.drawers).toHaveLength(1)
+    expect(over.drawers[0].conversation.subagent).toEqual(subagent)
+    const back = drawerReducer(over, { type: 'replace', slot: 'd1', conversation: { nodeId: 'pasta', conversationId: 's1' } })
+    expect(back.drawers).toHaveLength(1)
+    expect(back.drawers[0].conversation).toEqual({ nodeId: 'pasta', conversationId: 's1' })
+  })
+
+  it('com a conversa fixada, abre num drawer novo ao lado', () => {
+    const pinned = drawerReducer(shown('pasta', 's1'), { type: 'togglePin', slot: 'd1' })
+    const over = showSubagent(pinned)
+    expect(over.drawers.map((d) => d.conversation.conversationId)).toEqual(['s1', 'subagent-toolu_1'])
+    // Voltar com a conversa já à vista no fixado: o do subagente só fecha.
+    const back = drawerReducer(over, { type: 'replace', slot: 'd2', conversation: { nodeId: 'pasta', conversationId: 's1' } })
+    expect(back.drawers.map((d) => d.id)).toEqual(['d1'])
+  })
+})

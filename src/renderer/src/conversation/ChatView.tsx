@@ -79,6 +79,10 @@ export type ChatViewProps = {
   compact?: boolean
   // Sobe quando a conversa é aberta de novo já estando à vista: volta a seguir o fim.
   endSignal?: number
+  // Só para ler (o histórico de um subagente): sem a caixa de escrever. `emptyText`: o que aparece
+  // enquanto não há mensagens.
+  readOnly?: boolean
+  emptyText?: string
 }
 
 // A conversa: a linha do tempo (o histórico gravado e o que acontece agora), o prompt preso no
@@ -109,7 +113,9 @@ export const ChatView = memo(function ChatView({
   composerChips,
   extraSend,
   cleanText,
-  endSignal = 0
+  endSignal = 0,
+  readOnly = false,
+  emptyText
 }: ChatViewProps) {
   const scroller = useRef<HTMLDivElement>(null)
   // A mesma área, para a linha do tempo virtualizada: ela precisa saber quando a área montou.
@@ -245,7 +251,7 @@ export const ChatView = memo(function ChatView({
           {/* Com mensagem a caminho, sem o "Nova conversa": centralizado, ele empurrava o balão para
               baixo, perto da caixa de escrever, e o balão pulava para o topo quando o histórico
               chegava (e voltava se o histórico sumisse por um instante). */}
-          {placeholder && <ChatPlaceholder loading={loading} />}
+          {placeholder && <ChatPlaceholder loading={loading} empty={emptyText} />}
           {/* O app inteiro tem seleção de texto desligada (index.css); as mensagens, não: dá para copiar. */}
           <div ref={content} className="flex select-text flex-col gap-3">
             {/* key: a lista nasce de novo quando o histórico chega. Ela guarda a posição da rolagem
@@ -271,35 +277,40 @@ export const ChatView = memo(function ChatView({
         </button>
       </div>
 
-      <SuggestionChip text={live?.suggestion} visible={suggestions && !running && !typing} onSend={sendSuggestion} />
-      <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
-        {live?.remote && !remoteAbove && (
-          <div className="mb-1 flex">
-            <RemoteControlTag remote={live.remote} onTurnOff={turnOffRemote} />
+      {/* Só para ler: sem a sugestão nem a caixa de escrever. */}
+      {!readOnly && (
+        <>
+          <SuggestionChip text={live?.suggestion} visible={suggestions && !running && !typing} onSend={sendSuggestion} />
+          <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
+            {live?.remote && !remoteAbove && (
+              <div className="mb-1 flex">
+                <RemoteControlTag remote={live.remote} onTurnOff={turnOffRemote} />
+              </div>
+            )}
+            <Composer
+              ref={composer}
+              draftKey={draftKey}
+              autoFocus={autoFocus}
+              agents={agents}
+              running={running}
+              onSubmit={submit}
+              onOpenMcp={openMcp}
+              onOpenOutputStyle={openOutputStyle}
+              onToggleRemote={toggleRemote}
+              onInterrupt={interrupt}
+              settings={settings}
+              onSettingChange={changeSetting}
+              contextPercent={contextPercent}
+              compact={compact}
+              above={composerAbove}
+              chips={composerChips}
+              extraSend={extraSend}
+              pastPrompts={pastPrompts}
+              onTypingChange={setTyping}
+            />
           </div>
-        )}
-        <Composer
-          ref={composer}
-          draftKey={draftKey}
-          autoFocus={autoFocus}
-          agents={agents}
-          running={running}
-          onSubmit={submit}
-          onOpenMcp={openMcp}
-          onOpenOutputStyle={openOutputStyle}
-          onToggleRemote={toggleRemote}
-          onInterrupt={interrupt}
-          settings={settings}
-          onSettingChange={changeSetting}
-          contextPercent={contextPercent}
-          compact={compact}
-          above={composerAbove}
-          chips={composerChips}
-          extraSend={extraSend}
-          pastPrompts={pastPrompts}
-          onTypingChange={setTyping}
-        />
-      </div>
+        </>
+      )}
       <Presence kind="modal">
         {images.viewer && <ImageViewer load={images.viewer.load} start={images.viewer.start} onClose={images.close} />}
       </Presence>

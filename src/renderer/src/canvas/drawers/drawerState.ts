@@ -65,6 +65,7 @@ export type DrawerAction =
   | { type: 'show'; conversation: ActiveConversation; area: AreaSize }
   | { type: 'closeAll' }
   | { type: 'close'; slot: SlotId }
+  | { type: 'replace'; slot: SlotId; conversation: ActiveConversation }
   | { type: 'togglePin'; slot: SlotId }
   | { type: 'rect'; slot: SlotId; rect: PanelRect }
   | { type: 'sessionStarted'; conversationId: string; sessionId: string; nodeId?: string }
@@ -130,6 +131,13 @@ const update = (state: DrawerState, slot: SlotId, change: (d: Drawer) => Drawer)
   ...state,
   drawers: state.drawers.map((d) => (d.id === slot ? change(d) : d))
 })
+
+// Troca a conversa daquele drawer, fixado ou não (o "voltar" do subagente). Já à vista em outro, este
+// fecha: a mesma conversa em dois drawers brigaria pela mesma sessão.
+function replace(state: DrawerState, slot: SlotId, conversation: ActiveConversation): DrawerState {
+  const elsewhere = state.drawers.some((d) => d.id !== slot && isSameConversation(d.conversation, conversation.conversationId))
+  return elsewhere ? close(state, slot) : update(state, slot, (d) => ({ ...d, conversation }))
+}
 
 // Lugar novo de um drawer. Sozinho na tela, vira o lugar lembrado para o próximo.
 function rect(state: DrawerState, slot: SlotId, next: PanelRect): DrawerState {
@@ -210,6 +218,8 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
       return closeAll(state)
     case 'close':
       return close(state, action.slot)
+    case 'replace':
+      return replace(state, action.slot, action.conversation)
     case 'togglePin':
       return update(state, action.slot, (d) => ({ ...d, pinned: !d.pinned }))
     case 'rect':

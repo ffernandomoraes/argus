@@ -309,6 +309,8 @@ export type Api = {
     history: (path: string, id: string) => Promise<Message[]>
     // O trecho do fim que a conversa mostra (ver HistoryRequest em shared/history).
     historyPage: (path: string, id: string, request: HistoryRequest) => Promise<HistoryPage>
+    // O mesmo trecho, do subagente lançado pela chamada `toolUseId` na conversa `id`.
+    subagentPage: (path: string, id: string, toolUseId: string, request: HistoryRequest) => Promise<HistoryPage>
     // Imagens de uma mensagem sua (data URLs), lidas só quando o preview abre.
     images: (path: string, id: string, messageId: string) => Promise<string[]>
     // Porcentagem da janela de contexto que a conversa ocupa agora.

@@ -13,6 +13,8 @@ export type DrawerCommands = {
   show: (conversation: ActiveConversation) => void
   closeAll: () => void
   close: (slot: SlotId) => void
+  // Troca a conversa daquele drawer (o "voltar" do subagente).
+  replace: (slot: SlotId, conversation: ActiveConversation) => void
   togglePin: (slot: SlotId) => void
   setRect: (slot: SlotId, rect: PanelRect) => void
   // Conversa nova (pelo id provisório) ganhou o id da sessão e, se era solta, o card no canvas.
@@ -51,6 +53,7 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
         dispatch({ type: 'show', conversation, area: { width: window.innerWidth, height: window.innerHeight } }),
       closeAll: () => dispatch({ type: 'closeAll' }),
       close: (slot) => dispatch({ type: 'close', slot }),
+      replace: (slot, conversation) => dispatch({ type: 'replace', slot, conversation }),
       togglePin: (slot) => dispatch({ type: 'togglePin', slot }),
       setRect: (slot, rect) => dispatch({ type: 'rect', slot, rect }),
       sessionStarted: (conversationId, sessionId, nodeId) =>

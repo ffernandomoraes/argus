@@ -6,7 +6,7 @@ import type { ConversationSummary } from '../types'
 import { agentPath } from './geometry'
 
 // Subagente rodando, pendurado embaixo da conversa que o lançou: qual agente, o que está
-// fazendo agora e há quanto tempo. Some quando ele termina. Clicar abre a conversa dele.
+// fazendo agora e há quanto tempo. Some quando ele termina. Clicar abre o histórico dele, só para ler.
 export const AgentRow = memo(function AgentRow({
   agent: a,
   conversation,
@@ -19,12 +19,12 @@ export const AgentRow = memo(function AgentRow({
   // Primeiro subagente da conversa: a linha sai do ícone dela.
   first: boolean
   color: string
-  onOpen: (conversation: ConversationSummary) => void
+  onOpen: (agent: RunningAgent, conversation: ConversationSummary) => void
 }) {
   return (
     <li
       role="button"
-      onClick={() => onOpen(conversation)}
+      onClick={() => onOpen(a, conversation)}
       title={a.description}
       className="nodrag relative flex h-6 cursor-pointer items-center gap-2 rounded-lg pl-[30px] pr-2.5 text-xs hover:bg-fill"
     >

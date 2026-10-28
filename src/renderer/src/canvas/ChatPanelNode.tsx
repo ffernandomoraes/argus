@@ -12,7 +12,7 @@ import { BlockFrame } from './blocks/BlockFrame'
 import { sameNodeProps } from './blocks/sameNodeProps'
 import { useConversationSummary } from './blocks/useConversationSummary'
 import { useGroupOf } from './blocks/useGroupOf'
-import { useCanvasActions } from './CanvasContext'
+import { useCanvasActions, type SubagentRef } from './CanvasContext'
 import { favoriteKey, setFavorite, useFavorites } from './favorites'
 import type { ChatPanelNode as ChatPanelNodeType } from './types'
 import { useIsCodeOpen, useIsNewBlock } from './useCanvasView'
@@ -30,7 +30,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
   // Só o bloco que acabou de ser posto no canvas pega o foco: ao abrir o app, expandir o grupo ou
   // desfazer, a caixa de escrever não rouba as teclas do canvas.
   const isNew = useIsNewBlock(id)
-  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom, openPlanFrom, toggleProjectCode } = useCanvasActions()
+  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom, openPlanFrom, openSubagent, toggleProjectCode } = useCanvasActions()
 
   // Tudo fixo enquanto a pasta não muda: o ConversationView é memorizado, e arrastar o bloco não
   // pode redesenhar a conversa.
@@ -47,6 +47,8 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
   const onOpenFile = useCallback((file: string, lines?: LineRange) => openFileFrom(project, file, lines), [openFileFrom, project])
   const onOpenDiff = useCallback((file: string) => openFileFrom(project, file, undefined, true), [openFileFrom, project])
   const onClose = useCallback(() => closeChatPanel(id), [closeChatPanel, id])
+  // Subagente da conversa: abre no drawer, ao lado do bloco (pela pasta dona da conversa).
+  const onOpenSubagent = useCallback((subagent: SubagentRef) => openSubagent(null, path, subagent), [openSubagent, path])
   // Mesmo menu de mais opções do drawer, com o que faz sentido para o bloco.
   const key = favoriteKey(conversation)
   const favorite = useFavorites().has(key ?? '')
@@ -121,6 +123,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
             conversation={conversation}
             onOpenFile={onOpenFile}
             onOpenPlan={openPlanFrom}
+            onOpenSubagent={onOpenSubagent}
             onOpenDiff={onOpenDiff}
             // chat-panel-drag: o cabeçalho é a alça do bloco (dragHandle, em createChatPanel).
             headerClassName="chat-panel-drag cursor-grab bg-surface-2 active:cursor-grabbing"

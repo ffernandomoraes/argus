@@ -31,6 +31,9 @@ class FakeShell {
   output = new OutputBuffer(200_000)
   activity = new ShellActivity(N)
   writes: string[] = []
+  sizes = [{ at: 0, cols: 80, rows: 24 }]
+  // false: o ConPTY do sistema, no Windows, que reescreve a saída (ver spawnPty).
+  passthrough = true
   front = 'zsh'
   shellPath = '/nao/existe/zsh'
   onWrite: (data: string) => void = () => {}
@@ -51,13 +54,19 @@ class FakeShell {
     this.activity.person(data, this.output.end)
   }
 
+  // A pessoa muda o tamanho do painel; o ConPTY do Windows redesenha a tela inteira do topo.
+  resize(cols: number, rows: number, repaint: string): void {
+    this.sizes.push({ at: this.output.end, cols, rows })
+    this.emit(repaint)
+  }
+
   terminals(): Terminals {
     return {
       has: (key: string) => key === this.key,
       activity: () => this.activity,
-      saved: () => this.output.saved(),
+      saved: () => ({ ...this.output.saved(), sizes: this.sizes }),
       outputEnd: () => this.output.end,
-      size: () => ({ cols: 80, rows: 24 }),
+      passthrough: () => this.passthrough,
       shellOf: () => ({ name: 'zsh', path: this.shellPath, pid: 1 }),
       foreground: () => this.front,
       write: (_key: string, data: string) => {
@@ -198,6 +207,30 @@ describe('read_terminal', () => {
     // Com permissão, a tela vem inteira, mas o valor com cara de segredo não.
     expect(screen.text).toContain('TOKEN=***')
     expect(screen.text).not.toContain('abc')
+  })
+
+  it.each([true, false])('o painel mudou de tamanho depois do comando: o redesenho da tela não entra na saída (passthrough %s)', async (passthrough) => {
+    const shell = new FakeShell()
+    shell.passthrough = passthrough
+    shell.onWrite = () => setTimeout(() => shell.emit(`ls\r\n${C}a.txt\r\nb.txt\r\n${D(0)}${A}$ `), 10)
+    await shell.tool('rodar_no_terminal')({ comando: 'ls' })
+    shell.resize(40, 10, '\x1b[H\x1b[2J$ ls\x1b[K\r\nlixo do redesenho\x1b[K\r\n$ ')
+    const result = await shell.tool('read_terminal')({})
+    expect(result.text).toContain('a.txt\nb.txt')
+    expect(result.text).not.toContain('lixo')
+  })
+
+  it('só o trecho do comando: a tela de antes, o painel estreito e o que vem depois não entram', async () => {
+    const shell = new FakeShell()
+    // Tela bagunçada antes (cursor posicionado no meio) e o painel estreito quando o comando começa.
+    shell.emit('\x1b[5;30Hresto de outro programa\x1b[2;1H')
+    shell.resize(20, 5, '')
+    const long = 'uma linha bem mais comprida que o painel estreito'
+    shell.onWrite = () => setTimeout(() => shell.emit(`echo\r\n${C}${long}\r\nfim\r\n${D(0)}${A}$ `), 10)
+    const result = await shell.tool('rodar_no_terminal')({ comando: 'echo' })
+    expect(result.text).toBe(`O comando terminou com código 0.\n\n${long}\nfim`)
+    shell.resize(120, 40, '\x1b[H\x1b[2Jlixo do redesenho\r\n$ ')
+    expect((await shell.tool('read_terminal')({})).text).toBe(`O comando terminou com código 0.\n\n${long}\nfim`)
   })
 
   it('com wait_ms, espera o comando do Claude terminar', async () => {

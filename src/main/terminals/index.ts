@@ -7,6 +7,7 @@ import { IS_WIN } from '../platform'
 import { childrenOf, processTable } from '../winProcesses'
 import { forceKillLater } from './forceKill'
 import { OutputBuffer } from './outputBuffer'
+import type { Size } from './screenText'
 import { diskLookup, watchSession } from './sessionBinding'
 import { ShellActivity } from './shellActivity'
 import { dropNonce } from './shellIntegration'
@@ -27,6 +28,10 @@ type Session = {
   key: string
   pty: IPty
   output: OutputBuffer
+  // O tamanho de cada trecho da saída, pela posição em que mudou (ver screenText.ts).
+  sizes: Size[]
+  // A saída chega como o programa escreveu (ver spawnPty em spawnTerminal.ts).
+  passthrough: boolean
   account: string
   cwd: string
   shell?: string
@@ -65,7 +70,7 @@ export class Terminals {
     if (pending) await pending
     const existing = this.sessions.get(req.key)
     if (existing) {
-      if (!req.keepSize) existing.pty.resize(req.cols, req.rows)
+      if (!req.keepSize) this.resizePty(existing, req.cols, req.rows)
       // O lote pendente já está no buffer: sai antes da resposta, que a tela ainda descarta, em
       // vez de chegar depois e repetir o fim.
       this.send(existing)
@@ -90,6 +95,8 @@ export class Terminals {
       key: req.key,
       pty: opened.pty,
       output: new OutputBuffer(BUFFER_LIMIT),
+      sizes: [{ at: 0, cols: opened.pty.cols, rows: opened.pty.rows }],
+      passthrough: opened.passthrough,
       account: opened.account,
       cwd,
       shell: opened.shell,
@@ -173,19 +180,24 @@ export class Terminals {
     return this.sessions.get(key)?.activity
   }
 
-  // A saída guardada (ver OutputBuffer.saved) e onde a próxima vai entrar.
-  saved(key: string): { text: string; start: number } | null {
-    return this.sessions.get(key)?.output.saved() ?? null
+  // A saída guardada (ver OutputBuffer.saved) e os tamanhos em que ela foi desenhada, com as posições
+  // contadas do começo dela: o primeiro é o do começo (at 0).
+  saved(key: string): { text: string; start: number; sizes: Size[] } | null {
+    const s = this.sessions.get(key)
+    if (!s) return null
+    const { text, start } = s.output.saved()
+    const from = s.sizes.filter((size) => size.at <= start).length - 1
+    const sizes = s.sizes.slice(Math.max(0, from)).map((size) => ({ ...size, at: Math.max(0, size.at - start) }))
+    return { text, start, sizes }
+  }
+
+  // A saída chega como o programa escreveu, sem o ConPTY do sistema no meio (ver spawnPty).
+  passthrough(key: string): boolean {
+    return this.sessions.get(key)?.passthrough ?? false
   }
 
   outputEnd(key: string): number {
     return this.sessions.get(key)?.output.end ?? 0
-  }
-
-  // Colunas e linhas, o tamanho em que a saída foi desenhada.
-  size(key: string): { cols: number; rows: number } | null {
-    const pty = this.sessions.get(key)?.pty
-    return pty ? { cols: pty.cols, rows: pty.rows } : null
   }
 
   // O shell: nome, caminho e o pid do processo.
@@ -202,7 +214,19 @@ export class Terminals {
   }
 
   resize(key: string, cols: number, rows: number): void {
-    if (cols > 0 && rows > 0) this.sessions.get(key)?.pty.resize(cols, rows)
+    const session = this.sessions.get(key)
+    if (session && cols > 0 && rows > 0) this.resizePty(session, cols, rows)
+  }
+
+  // Muda o tamanho e anota em que ponto da saída. Os tamanhos de antes do texto guardado saem, menos
+  // o do começo dele.
+  private resizePty(session: Session, cols: number, rows: number): void {
+    session.pty.resize(cols, rows)
+    const last = session.sizes.at(-1)
+    if (last?.cols === cols && last.rows === rows) return
+    session.sizes.push({ at: session.output.end, cols, rows })
+    const start = session.output.end - BUFFER_LIMIT
+    while (session.sizes.length > 1 && session.sizes[1].at <= start) session.sizes.shift()
   }
 
   kill(key: string): void {

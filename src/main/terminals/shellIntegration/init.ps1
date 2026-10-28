@@ -16,17 +16,26 @@ if ($__argusNonce) {
   # Prompt: o prompt de antes (o padrão, o do oh-my-posh...). LastId: o último comando do histórico,
   # para saber se a linha anterior rodou algo (Enter vazio não marca o fim). Waiting: o prompt já foi
   # marcado e a linha ainda não foi lida; o PSReadLine redesenha o prompt nesse meio (o prompt
-  # transitório do oh-my-posh, ao apertar Enter), e isso não é um prompt novo.
-  $global:__ArgusShell = @{ Nonce = $__argusNonce; LastId = -1; Started = $false; Waiting = $false; Prompt = $function:prompt; ReadLine = $null }
+  # transitório do oh-my-posh, ao apertar Enter), e isso não é um prompt novo. ExitCode e Error: o
+  # $LASTEXITCODE e o último erro quando a linha foi lida (ver o código, abaixo). ParseFailed: a linha
+  # lida não se lê como PowerShell e nem rodou.
+  $global:__ArgusShell = @{ Nonce = $__argusNonce; LastId = -1; Started = $false; Waiting = $false; Prompt = $function:prompt; ReadLine = $null; ExitCode = $null; Error = $null; ParseFailed = $false }
 
   function global:prompt {
     $ok = $global:?
-    $code = 0
-    if (-not $ok) {
-      $code = 1
-      if ($global:LASTEXITCODE) { $code = $global:LASTEXITCODE }
-    }
     $s = $global:__ArgusShell
+    # O código: 1 quando falhou um comando do PowerShell, o do programa quando foi ele que falhou. O
+    # $LASTEXITCODE guarda o código do último programa, mesmo de comandos atrás: vale se mudou nesta
+    # linha, ou se ela falhou sem erro novo do PowerShell (o mesmo programa, com o mesmo código). Linha
+    # com erro de sintaxe não roda e não mexe no $? (no 5.1): 1.
+    $code = 0
+    if ($s.ParseFailed) { $code = 1 }
+    elseif (-not $ok) {
+      $code = 1
+      $exit = $global:LASTEXITCODE
+      $fresh = $global:Error.Count -gt 0 -and -not [object]::ReferenceEquals($global:Error[0], $s.Error)
+      if ($exit -and ($exit -ne $s.ExitCode -or -not $fresh)) { $code = $exit }
+    }
     $e = [char]27
     $b = [char]7
     $last = Get-History -Count 1
@@ -35,13 +44,19 @@ if ($__argusNonce) {
     if ($s.Started -and $id -ne $s.LastId) { [Console]::Write("$e]133;D;$code;nonce=$($s.Nonce)$b") }
     $s.Started = $true
     $s.LastId = $id
+    $s.ParseFailed = $false
     # O começo do comando vem da leitura da linha do PSReadLine, que só existe depois de carregado.
     if (-not $s.ReadLine -and (Test-Path Function:\PSConsoleHostReadLine)) {
       $s.ReadLine = $function:PSConsoleHostReadLine
       function global:PSConsoleHostReadLine {
         $line = & $global:__ArgusShell.ReadLine
         $global:__ArgusShell.Waiting = $false
-        if ($line -and $line.Trim()) { [Console]::Write("$([char]27)]133;C;nonce=$($global:__ArgusShell.Nonce)$([char]7)") }
+        if ($line -and $line.Trim()) {
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseInput($line, [ref]$null, [ref]$errors)
+          $global:__ArgusShell.ParseFailed = $errors.Count -gt 0
+          [Console]::Write("$([char]27)]133;C;nonce=$($global:__ArgusShell.Nonce)$([char]7)")
+        }
         $line
       }
     }
@@ -54,6 +69,10 @@ if ($__argusNonce) {
     if (-not $ok) { Write-Error 'argus' -ErrorAction Ignore }
     $result = ''
     if ($s.Prompt) { $result += $s.Prompt.Invoke() } else { $result = "PS $($executionContext.SessionState.Path.CurrentLocation)> " }
+    # Depois do prompt de antes, que pode rodar programas (o oh-my-posh roda o dele).
+    $s.ExitCode = $global:LASTEXITCODE
+    $s.Error = $null
+    if ($global:Error.Count -gt 0) { $s.Error = $global:Error[0] }
     $result
   }
 }

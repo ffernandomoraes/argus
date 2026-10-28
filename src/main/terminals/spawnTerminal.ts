@@ -2,14 +2,14 @@ import { createHash, randomUUID } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { app } from 'electron'
-import { spawn, type IPty } from 'node-pty'
+import { spawn, type IBasePtyForkOptions, type IPty } from 'node-pty'
 import type { TerminalOpenRequest } from '../../shared/terminal'
 import { applyAccount } from '../accounts'
 import { CLI_BIN } from '../cli'
 import { claudeCommand, claudePath, claudeReady } from '../claudePath'
 import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
-import { childEnv, defaultShell, prependPath } from '../platform'
+import { childEnv, defaultShell, IS_WIN, prependPath } from '../platform'
 import { distroFor, toLinux } from '../wsl'
 import { parseAgentRef, PROVIDER_NAMES, type AgentRef } from '../../shared/providers'
 import { providerLaunch } from '../providers/env'
@@ -23,10 +23,37 @@ import { dropNonce, integrateShell, type IntegratedShell } from './shellIntegrat
 // account: conta do Claude com que o terminal abriu. shell: nome do shell, quando não é o `claude`.
 // wsl: roda dentro do WSL; o pid do pseudo-terminal é o do wsl.exe, não o do `claude`. newSession:
 // a conversa nova que o app escolheu para ele (só no WSL, ver wslTerminal). shellPath, nonce e
-// nonceFile: o shell com a integração do Argus (ver shellIntegration.ts).
+// nonceFile: o shell com a integração do Argus (ver shellIntegration.ts). passthrough: a saída chega
+// como o programa escreveu (ver spawnPty).
 export type Spawned =
-  | { ok: true; pty: IPty; account: string; shell?: string; wsl?: boolean; newSession?: string; shellPath?: string; nonce?: string; nonceFile?: string }
+  | {
+      ok: true
+      pty: IPty
+      passthrough: boolean
+      account: string
+      shell?: string
+      wsl?: boolean
+      newSession?: string
+      shellPath?: string
+      nonce?: string
+      nonceFile?: string
+    }
   | { ok: false; error: string }
+
+// Windows: o ConPTY que vem com o node-pty (o do Windows Terminal), no lugar do sistema. O do
+// sistema reescreve a saída: redesenha a tela inteira quando o tamanho muda e manda as marcas do
+// shell antes do texto que veio antes delas, e o Claude lia a saída de um comando embaralhada. O
+// novo repassa o que o programa escreveu, na ordem. Sem o conpty.dll (instalação incompleta), fica
+// o do sistema. Fora do Windows não há ConPTY: a saída sempre chega como o programa escreveu.
+function spawnPty(file: string, args: string[], options: IBasePtyForkOptions): { pty: IPty; passthrough: boolean } {
+  if (!IS_WIN) return { pty: spawn(file, args, options), passthrough: true }
+  try {
+    return { pty: spawn(file, args, { ...options, useConptyDll: true }), passthrough: true }
+  } catch (err) {
+    console.warn('[terminal] sem o conpty.dll do node-pty, com o ConPTY do sistema:', err)
+    return { pty: spawn(file, args, options), passthrough: false }
+  }
+}
 
 // Opções do `claude` que valem nos dois lugares. promptFile: as regras do orquestrador, já no
 // caminho que o `claude` enxerga; dir: o mesmo para as pastas do workspace.
@@ -80,8 +107,14 @@ function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): 
   const shell = defaultShell()
   const integrated = req.shell ? integrateShell(shell, env) : null
   try {
-    const pty = spawn(integrated ? integrated.file : launch.file, integrated ? integrated.args : launch.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd, env })
-    return { ok: true, pty, account: req.account!, ...(integrated && shellFields(shell.file, integrated)) }
+    const { pty, passthrough } = spawnPty(integrated ? integrated.file : launch.file, integrated ? integrated.args : launch.args, {
+      name: 'xterm-256color',
+      cols: req.cols,
+      rows: req.rows,
+      cwd,
+      env
+    })
+    return { ok: true, pty, passthrough, account: req.account!, ...(integrated && shellFields(shell.file, integrated)) }
   } catch (err) {
     dropNonce(integrated?.nonceFile)
     return { ok: false, error: tr(`Não consegui abrir o ${name}: ${errorMessage(err)}`, `Couldn’t open ${name}: ${errorMessage(err)}`) }
@@ -110,8 +143,8 @@ async function wslTerminal(req: TerminalOpenRequest, cwd: string, distro: string
   const l = await wslLaunch(distro, { args, shell: req.shell, account: req.account, cwd, env, visibleInstall: true })
   if (!l.ok) return l
   try {
-    const pty = spawn(l.file, l.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd: l.cwd, env: l.env })
-    return { ok: true, pty, account: l.account, shell: req.shell ? 'bash' : undefined, wsl: true, newSession }
+    const { pty, passthrough } = spawnPty(l.file, l.args, { name: 'xterm-256color', cols: req.cols, rows: req.rows, cwd: l.cwd, env: l.env })
+    return { ok: true, pty, passthrough, account: l.account, shell: req.shell ? 'bash' : undefined, wsl: true, newSession }
   } catch (err) {
     return { ok: false, error: tr(`Não consegui abrir o WSL (${distro}): ${errorMessage(err)}`, `Couldn’t open WSL (${distro}): ${errorMessage(err)}`) }
   }
@@ -137,14 +170,14 @@ function nativeTerminal(req: TerminalOpenRequest, cwd: string): Spawned {
   const command = claudeCommand(claudeArgs(req, prompt), claude)
 
   try {
-    const pty = spawn(integrated ? integrated.file : command.file, integrated ? integrated.args : command.args, {
+    const { pty, passthrough } = spawnPty(integrated ? integrated.file : command.file, integrated ? integrated.args : command.args, {
       name: 'xterm-256color',
       cols: req.cols,
       rows: req.rows,
       cwd,
       env
     })
-    return { ok: true, pty, account, ...(integrated && shellFields(shell.file, integrated)) }
+    return { ok: true, pty, passthrough, account, ...(integrated && shellFields(shell.file, integrated)) }
   } catch (err) {
     dropNonce(integrated?.nonceFile)
     const what = req.shell ? basename(shell.file) : 'claude'

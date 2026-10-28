@@ -62,7 +62,8 @@ describe.skipIf(!shells.length)('shell de verdade com a integração', () => {
     const integrated = integrateShell(shell, env)
     const activity = new ShellActivity(integrated.nonce)
     const output = new OutputBuffer(200_000)
-    const p = pty!.spawn(integrated.file, integrated.args, { name: 'xterm-256color', cols: 120, rows: 30, cwd: homedir(), env })
+    // No Windows, o ConPTY que vem com o node-pty, como o app abre (ver spawnPty).
+    const p = pty!.spawn(integrated.file, integrated.args, { name: 'xterm-256color', cols: 120, rows: 30, cwd: homedir(), env, useConptyDll: IS_WIN })
     p.onData((data) => {
       const start = output.end
       output.push(data)
@@ -81,13 +82,27 @@ describe.skipIf(!shells.length)('shell de verdade com a integração', () => {
       expect((await run(IS_WIN ? 'cmd /c exit 3' : 'sh -c "exit 3"'))?.exitCode).toBe(3)
       // Enter sem comando: prompt novo, sem fim de comando.
       expect(await run('')).toBeUndefined()
+      if (IS_WIN) {
+        // O $LASTEXITCODE ainda é o 3 do programa de antes: o comando do PowerShell que falha dá 1.
+        expect((await run('Get-Item argus-nao-existe'))?.exitCode).toBe(1)
+        // Erro de sintaxe não roda nem mexe no $?: 1, não o 0 do comando de antes.
+        await run('echo ok')
+        expect((await run('echo um ) dois'))?.exitCode).toBe(1)
+        // O mesmo programa falhando de novo, com o mesmo código.
+        await run('cmd /c exit 3')
+        expect((await run('cmd /c exit 3'))?.exitCode).toBe(3)
+      }
       // O zsh devolve o ZDOTDIR da pessoa: sem valor, como sem o Argus.
       if (shell.file.endsWith('zsh')) {
         await run('echo "zd=${ZDOTDIR-nenhum}"')
         expect(output.text()).toContain('zd=nenhum')
       }
     } finally {
+      // No Windows o shell sai depois de um instante e, até sair, segura a pasta em que roda (a
+      // pessoal falsa, que o test/setup.ts apaga no fim do arquivo).
+      const exited = new Promise<void>((resolve) => p.onExit(() => resolve()))
       p.kill()
+      await Promise.race([exited, new Promise((r) => setTimeout(r, 10_000))])
     }
   }, 90_000)
 })

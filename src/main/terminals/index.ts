@@ -8,6 +8,8 @@ import { childrenOf, processTable } from '../winProcesses'
 import { forceKillLater } from './forceKill'
 import { OutputBuffer } from './outputBuffer'
 import { diskLookup, watchSession } from './sessionBinding'
+import { ShellActivity } from './shellActivity'
+import { dropNonce } from './shellIntegration'
 import { spawnTerminal } from './spawnTerminal'
 
 // Guarda o fim da saída de cada terminal para redesenhar a tela ao reconectar.
@@ -20,6 +22,7 @@ const SEND_EVERY_MS = 5
 // key: a chave com que o terminal atende. account: conta do Claude com que
 // o terminal abriu. shell: nome do shell, quando não é o `claude`. sessionId: a conversa do
 // `claude` (a retomada, ou a que ele criou, achada pelo pid). unwatch: para a procura dela.
+// activity: no shell, o que acontece nele (comandos, teclas da pessoa; ver shellActivity.ts).
 type Session = {
   key: string
   pty: IPty
@@ -27,6 +30,10 @@ type Session = {
   account: string
   cwd: string
   shell?: string
+  shellPath?: string
+  activity?: ShellActivity
+  // Nonce da integração que o shell ainda pode não ter lido (ver shellIntegration.ts).
+  nonceFile?: string
   sessionId?: string
   // Roda no WSL: o status vem pelo id da conversa, não pelo pid (ver busy).
   wsl?: boolean
@@ -86,6 +93,9 @@ export class Terminals {
       account: opened.account,
       cwd,
       shell: opened.shell,
+      shellPath: opened.shellPath,
+      activity: req.shell ? new ShellActivity(opened.nonce) : undefined,
+      nonceFile: opened.nonceFile,
       sessionId: req.shell ? undefined : req.sessionId,
       wsl: opened.wsl,
       pending: []
@@ -96,12 +106,16 @@ export class Terminals {
     const current = () => this.sessions.get(session.key) === session
     session.pty.onData((data) => {
       if (!current()) return
+      const start = session.output.end
       session.output.push(data)
+      session.activity?.output(data, start)
       session.pending.push(data)
       session.sendTimer ??= setTimeout(() => this.send(session), SEND_EVERY_MS)
     })
     session.pty.onExit(({ exitCode }) => {
       session.unwatch?.()
+      session.activity?.exited()
+      dropNonce(session.nonceFile)
       if (!current()) return
       this.send(session)
       this.sessions.delete(session.key)
@@ -147,6 +161,46 @@ export class Terminals {
     this.sessions.get(key)?.pty.write(data)
   }
 
+  // O que a pessoa digita na tela (o write acima é o que o app digita).
+  input(key: string, data: string): void {
+    const session = this.sessions.get(key)
+    session?.pty.write(data)
+    session?.activity?.person(data, session.output.end)
+  }
+
+  // Shell: o que acontece nele (ver shellActivity.ts).
+  activity(key: string): ShellActivity | undefined {
+    return this.sessions.get(key)?.activity
+  }
+
+  // A saída guardada (ver OutputBuffer.saved) e onde a próxima vai entrar.
+  saved(key: string): { text: string; start: number } | null {
+    return this.sessions.get(key)?.output.saved() ?? null
+  }
+
+  outputEnd(key: string): number {
+    return this.sessions.get(key)?.output.end ?? 0
+  }
+
+  // Colunas e linhas, o tamanho em que a saída foi desenhada.
+  size(key: string): { cols: number; rows: number } | null {
+    const pty = this.sessions.get(key)?.pty
+    return pty ? { cols: pty.cols, rows: pty.rows } : null
+  }
+
+  // O shell: nome, caminho e o pid do processo.
+  shellOf(key: string): { name?: string; path?: string; pid: number } | null {
+    const s = this.sessions.get(key)
+    return s ? { name: s.shell, path: s.shellPath, pid: s.pty.pid } : null
+  }
+
+  // O programa na frente do terminal (o próprio shell, quando está no prompt). No Windows o node-pty
+  // não diz (ver busyShells), e no WSL seria sempre o wsl.exe: nulo.
+  foreground(key: string): string | null {
+    const s = this.sessions.get(key)
+    return s && !IS_WIN ? s.pty.process : null
+  }
+
   resize(key: string, cols: number, rows: number): void {
     if (cols > 0 && rows > 0) this.sessions.get(key)?.pty.resize(cols, rows)
   }
@@ -157,6 +211,8 @@ export class Terminals {
     this.send(session)
     this.sessions.delete(key)
     session.unwatch?.()
+    session.activity?.exited()
+    dropNonce(session.nonceFile)
     // Fora do mapa, o fim real do processo é descartado (current() em open): a janela fica sabendo
     // aqui, com -1 (encerrado pelo app, não pelo próprio processo).
     this.onExit(key, -1)

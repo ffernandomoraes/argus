@@ -21,7 +21,8 @@ export function registerTerminalIpc(terminals: Terminals, chats: Chats, viewers:
     return terminals.open(req)
   })
   handle('terminal:session', (_e, key) => terminals.sessionOf(key))
-  on('terminal:write', (_e, key, data) => terminals.write(key, data))
+  // O que a pessoa digita: o shell do drawer anota, para o Claude saber se ela mexeu depois dele.
+  on('terminal:write', (_e, key, data) => terminals.input(key, data))
   on('terminal:resize', (_e, key, cols, rows) => terminals.resize(key, cols, rows))
   on('terminal:kill', (_e, key) => terminals.kill(key))
   // Shell do drawer: a conversa de cima digita nele (ver terminals/drawerShells.ts).

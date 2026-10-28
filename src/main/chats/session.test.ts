@@ -71,7 +71,13 @@ vi.mock('../orchestration', () => ({
   sdkOrchestrationTools: () => [],
   DelegateCalls: class {}
 }))
-vi.mock('../terminals/drawerShells', () => ({ ARGUS_MCP: 'argus', ARGUS_ALLOWED_TOOLS: [], argusMcp: () => ({}) }))
+vi.mock('../terminals/drawerShells', () => ({
+  ARGUS_MCP: 'argus',
+  ARGUS_ALLOWED_TOOLS: [],
+  ARGUS_READ_TERMINAL: 'mcp__argus__read_terminal',
+  argusMcp: () => ({}),
+  readsOwnOutput: () => false
+}))
 vi.mock('./mcpStatus', () => ({ mcpServersOf: vi.fn(), authenticateMcp: vi.fn(), clearMcpAuth: vi.fn() }))
 
 const settings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: 'manual' }

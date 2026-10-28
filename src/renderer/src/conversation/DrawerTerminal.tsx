@@ -11,7 +11,8 @@ const MAX_RATIO = 0.85
 const newKey = () => `drawer-shell-${crypto.randomUUID()}`
 
 // Shell do sistema embaixo da conversa do drawer, para a pessoa rodar os próprios comandos (ssh,
-// algo que lê o .env) sem sair dela. O Claude pode digitar nele (sem Enter), mas não vê a saída. O processo é da conversa à vista:
+// algo que lê o .env) sem sair dela. O Claude também digita e roda comandos nele e lê a saída dos que
+// ele rodou; o resto da tela, só com permissão (ver terminals/drawerShells.ts). O processo é da conversa à vista:
 // esconder o painel não o encerra (o ssh continua); trocar de conversa ou fechar o drawer, sim.
 export function useDrawerShell(conversation: { id: string; sessionId?: string }) {
   const [shell, setShell] = useState(() => ({ key: newKey(), open: false }))
@@ -31,7 +32,7 @@ export function useDrawerShell(conversation: { id: string; sessionId?: string })
   }, [id, sessionId])
   useEffect(() => () => window.api.terminal.kill(live.current), [])
 
-  // À vista, a conversa de cima pode digitar nele (a ferramenta digitar_no_terminal).
+  // À vista, a conversa de cima pode digitar e rodar comandos nele (digitar_no_terminal, rodar_no_terminal).
   const { key, open } = shell
   useEffect(() => {
     if (!open) return

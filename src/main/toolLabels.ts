@@ -59,6 +59,11 @@ export function describeTool(name: string, input: Input | undefined): ToolDescri
     const label = name.endsWith('rodar_no_terminal') ? tr('Rodar no terminal', 'Run in terminal') : tr('Digitar no terminal', 'Type in terminal')
     return { label, summary: firstLine(i.comando), detail: i.comando }
   }
+  if (name === 'mcp__argus__read_terminal') {
+    const lines = typeof i.lines === 'number' ? i.lines : 200
+    const summary = i.wait_ms ? tr('esperando saída nova', 'waiting for new output') : tr(`últimas ${lines} linhas`, `last ${lines} lines`)
+    return { label: tr('Ler o terminal', 'Read terminal'), summary }
+  }
   // Etapa delegada pelo orquestrador (orchestration/): o título dela e, ao abrir, o pedido inteiro.
   if (name === 'mcp__argus__delegate') return { label: tr('Delegar', 'Delegate'), summary: firstLine(i.title) || firstLine(i.task), detail: i.task }
   // MCP: "mcp__servidor__acao" vira "servidor - acao".

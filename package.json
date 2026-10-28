@@ -21,6 +21,7 @@
     "@sentry/node-native": "11.8.0",
     "@tanstack/react-virtual": "3.14.22",
     "@xterm/addon-webgl": "0.19.0",
+    "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0",
     "onnxruntime-common": "1.30.0",
     "onnxruntime-node": "1.30.0",

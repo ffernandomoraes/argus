@@ -8,7 +8,7 @@ import { resolveAccount } from '../accounts'
 import { learnContextWindow } from '../contextWindows'
 import { tr } from '../i18n'
 import { DelegateCalls, ORCHESTRATION_TOOLS, orchestrationEnabled, sdkOrchestrationTools, type StepHost } from '../orchestration'
-import { ARGUS_ALLOWED_TOOLS, ARGUS_MCP, argusMcp } from '../terminals/drawerShells'
+import { ARGUS_ALLOWED_TOOLS, ARGUS_MCP, ARGUS_READ_TERMINAL, argusMcp, readsOwnOutput } from '../terminals/drawerShells'
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
 import { authenticateMcp, clearMcpAuth, mcpServersOf } from './mcpStatus'
@@ -119,12 +119,17 @@ export class ChatSession {
         // Ao fim de cada pedido, a próxima mensagem provável vira um balão clicável no chat. Usa o
         // cache da conversa (quase de graça); quem desligou no settings.json do Claude Code não recebe.
         promptSuggestions: true,
-        canUseTool: this.permissions.canUseTool,
+        // Ler o terminal do drawer só pergunta quando pode mostrar algo da pessoa: a saída de um comando
+        // que o próprio Claude rodou, sem ela ter digitado depois, vai direto (ver drawerShells.ts).
+        canUseTool: (toolName, input, options) =>
+          toolName === ARGUS_READ_TERMINAL && readsOwnOutput([...this.keys])
+            ? Promise.resolve({ behavior: 'allow', updatedInput: input })
+            : this.permissions.canUseTool(toolName, input, options),
         // Ferramentas do próprio Argus (digitar no terminal do drawer e, com o experimento do
         // orquestrador ligado, delegar etapas), junto dos MCPs da pessoa.
         mcpServers: { [ARGUS_MCP]: argusMcp(() => this.keys, orchestration ? sdkOrchestrationTools(this.stepHost(req)) : []) },
         allowedTools: [...ARGUS_ALLOWED_TOOLS, ...(orchestration ? ORCHESTRATION_TOOLS.map((t) => `mcp__${ARGUS_MCP}__${t}`) : [])],
-        ...(orchestration && { hooks: { PreToolUse: [this.delegateHook()] } })
+        hooks: { PreToolUse: [this.readTerminalHook(), ...(orchestration ? [this.delegateHook()] : [])] }
       }
     })
     void this.run()
@@ -307,6 +312,27 @@ export class ChatSession {
 
   // Guarda o id de cada chamada da delegate (o hook recebe; a ferramenta não), para a etapa achar a
   // linha dela.
+  // A tela do terminal do drawer pode ter o que é da pessoa (um .env impresso): ler pede permissão em
+  // qualquer modo, até no "Ignorar permissões", em que o canUseTool nem é chamado. A saída de um
+  // comando que o próprio Claude rodou segue sem perguntar (ver terminals/drawerShells.ts).
+  private readTerminalHook(): HookCallbackMatcher {
+    return {
+      matcher: ARGUS_READ_TERMINAL,
+      hooks: [
+        async () =>
+          readsOwnOutput([...this.keys])
+            ? {}
+            : {
+                hookSpecificOutput: {
+                  hookEventName: 'PreToolUse' as const,
+                  permissionDecision: 'ask' as const,
+                  permissionDecisionReason: tr('A tela do terminal pode ter coisas suas.', 'The terminal screen may show your own things.')
+                }
+              }
+      ]
+    }
+  }
+
   private delegateHook(): HookCallbackMatcher {
     return {
       matcher: `mcp__${ARGUS_MCP}__${DELEGATE_TOOL}`,

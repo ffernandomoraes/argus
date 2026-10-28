@@ -1,0 +1,3 @@
+# Scripts de shell embutidos no app (src/main/terminals/shellIntegration): o zsh e o bash não aceitam CRLF.
+*.zsh text eol=lf
+*.bash text eol=lf

@@ -5,10 +5,33 @@
 
 const MASK = '***'
 
-// Nome de variável que guarda segredo, em inglês ou português. PWD e OLDPWD são a pasta atual;
-// PASSED, um contador.
-const SECRET_NAME = /(KEY|TOKEN|SECRET|PASSWORD|PASSWD|PASS(?!ED)|PWD|CREDENTIAL|PRIVATE|SIGNATURE|COOKIE|SESSION|SENHA|CHAVE|SEGREDO)/i
-const NOT_SECRET = /^(PWD|OLDPWD)$/i
+// Nome de variável que guarda segredo, em inglês ou português. As palavras longas valem em qualquer
+// parte do nome (DBPASSWORD, apiSecret); as curtas, só inteiras: key em API_KEY e apiKey, não em
+// keyboard ou keywords; pass em DB_PASS, não em passive. Session só no fim (SESSION, SESSION_ID),
+// não em sessionTimeout. PWD é a pasta atual.
+const SECRET_PART = /PASSWORD|PASSWD|PASSPHRASE|SECRET|TOKEN|CREDENTIAL|APIKEY|SENHA|SEGREDO/i
+const SECRET_WORDS = new Set(['key', 'keys', 'pass', 'pwd', 'signature', 'cookie', 'cookies', 'chave', 'chaves'])
+const NOT_SECRET = /^PWD$/i
+
+// O nome em palavras: separadas por _, -, . ou pela maiúscula (apiKey, APIKey).
+const words = (name: string) =>
+  name
+    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z\d]+/)
+    .filter(Boolean)
+
+function isSecretName(name: string): boolean {
+  if (NOT_SECRET.test(name)) return false
+  if (SECRET_PART.test(name)) return true
+  const w = words(name)
+  return w.some((word) => SECRET_WORDS.has(word)) || w.at(-1) === 'session' || (w.at(-2) === 'session' && w.at(-1) === 'id')
+}
+
+// Valor que não guarda segredo: true, false, null e o que não tem letra nem número (o [ que abre uma
+// lista no JSON).
+const NOT_SECRET_VALUE = /^(true|false|null|undefined|none|nil)$|^[^A-Za-z\d]*$/i
 
 // NOME=valor, NOME: valor, "nome": "valor" (o export na frente não muda nada). O valor vai até o
 // espaço, ou entre as aspas dele.
@@ -37,7 +60,7 @@ export function redactSecrets(text: string): { text: string; count: number } {
   let count = 0
   let out = text.replace(ASSIGNMENT, (whole, quote: string, name: string, sep: string, dq?: string, sq?: string, bare?: string) => {
     const value = dq ?? sq ?? bare ?? ''
-    if (!value || value === MASK || !SECRET_NAME.test(name) || NOT_SECRET.test(name)) return whole
+    if (NOT_SECRET_VALUE.test(value) || !isSecretName(name)) return whole
     count++
     const masked = dq !== undefined ? `"${MASK}"` : sq !== undefined ? `'${MASK}'` : MASK
     return `${quote}${name}${quote}${sep}${masked}`

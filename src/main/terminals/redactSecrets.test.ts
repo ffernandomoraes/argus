@@ -22,6 +22,17 @@ describe('redactSecrets', () => {
     expect(masked('PWD=/Users/p/projeto\nOLDPWD=/tmp\nTESTS_PASSED=12')).toBe('PWD=/Users/p/projeto\nOLDPWD=/tmp\nTESTS_PASSED=12')
   })
 
+  it('nome que só contém a palavra (keywords, passive, keyboard, sessionTimeout) não é segredo', () => {
+    const text = ['"keywords": ["a", "b"]', '"passive": "sim"', 'keyboard: pt-BR', 'sessionTimeout: 30', '"private": "x"'].join('\n')
+    expect(masked(text)).toBe(text)
+    expect(masked('apiKey: a1\nAPIKey: b2\nDB_PASS=c3\nDBPASSWORD=d4\nSESSION_ID=e5')).toBe('apiKey: ***\nAPIKey: ***\nDB_PASS=***\nDBPASSWORD=***\nSESSION_ID=***')
+  })
+
+  it('true, false, null e o [ que abre uma lista não são segredo', () => {
+    const text = '"private": true,\n"token": null,\n"secret": false,\n"keys": ['
+    expect(redactSecrets(text)).toEqual({ text, count: 0 })
+  })
+
   it('senha dentro de endereço', () => {
     expect(masked('DATABASE_URL=postgres://app:s3nh4@db:5432/x')).toBe('DATABASE_URL=postgres://app:***@db:5432/x')
   })

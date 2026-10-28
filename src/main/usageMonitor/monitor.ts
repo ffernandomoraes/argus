@@ -295,9 +295,12 @@ export class UsageMonitor {
   }
 
   // Parado há STALL_MS: vai ao Sentry o que o monitor sabe, para achar a causa sem pedir nada a quem
-  // usa (a parada de 2026-10-26 no Windows com WSL não deixou rastro).
+  // usa (a parada de 2026-10-26 no Windows com WSL não deixou rastro). Recusado por excesso (429) e
+  // ainda no prazo que o endereço pediu, o monitor está só esperando: não é parada (ARGUS-A,
+  // 2026-10-28, com 45 minutos de espera pela frente).
   private checkStall(now: number): void {
     if (!this.failingSince || this.reported || now - this.failingSince < STALL_MS) return
+    if (this.failure?.reason === 'rate_limited' && now < this.quietUntil) return
     this.reported = true
     const minutes = (since: number) => Math.round((now - since) / 60_000)
     reportWarning('Uso do Claude sem atualizar', {

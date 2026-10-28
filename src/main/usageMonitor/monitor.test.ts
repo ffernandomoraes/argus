@@ -96,6 +96,23 @@ describe('UsageMonitor', () => {
     expect(fake.fetch.mock.calls.length).toBe(calls)
   })
 
+  it('recusa por excesso com espera longa não avisa o Sentry enquanto espera (ARGUS-A)', async () => {
+    fake.reads.push(login(180 * MIN))
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await startWithRead()
+
+    fake.fetch.mockImplementation(async () => new Response('', { status: 429, headers: { 'retry-after': '3600' } }))
+    await vi.advanceTimersByTimeAsync(15 * MIN)
+    expect(monitor.current?.failure?.reason).toBe('rate_limited')
+    await vi.advanceTimersByTimeAsync(50 * MIN)
+    expect(fake.warn).not.toHaveBeenCalled()
+
+    // Passado o prazo, outra falha que segue vira aviso.
+    fake.fetch.mockImplementation(async () => new Response('', { status: 500 }))
+    await vi.advanceTimersByTimeAsync(20 * MIN)
+    expect(fake.warn).toHaveBeenCalledTimes(1)
+  })
+
   it('leitura que volta a dar certo tira o aviso', async () => {
     fake.reads.push(login(60 * MIN))
     fake.fetch.mockImplementationOnce(async () => ok())

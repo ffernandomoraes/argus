@@ -83,3 +83,15 @@ describe('drawerReducer: subagente', () => {
     expect(back.drawers.map((d) => d.id)).toEqual(['d1'])
   })
 })
+
+describe('drawerReducer: tarefas em segundo plano', () => {
+  const showTasks = (state: ReturnType<typeof shown>, selected: string) =>
+    drawerReducer(state, { type: 'show', conversation: { nodeId: 'pasta', conversationId: 'tasks-s1', tasks: { sessionId: 's1', selected } }, area })
+
+  it('já à vista, mostra a tarefa pedida agora, no mesmo drawer', () => {
+    const first = showTasks(shown('pasta', 's1'), 'b1')
+    const again = showTasks(first, 'b2')
+    expect(again.drawers).toHaveLength(1)
+    expect(again.drawers[0].conversation.tasks?.selected).toBe('b2')
+  })
+})

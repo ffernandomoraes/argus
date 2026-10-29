@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
 import { ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
 import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
-import type { SubagentRef } from '../canvas/CanvasContext'
+import type { SubagentRef, TasksRef } from '../canvas/CanvasContext'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { MOTION, reduced } from '../motion'
@@ -43,6 +43,8 @@ type Props = {
   onOpenPlan: (text: string, path?: string) => void
   // "Ver conversa" na linha de um subagente.
   onOpenSubagent: (subagent: SubagentRef) => void
+  // "Ver saída" num comando em segundo plano.
+  onOpenTasks: (tasks: TasksRef) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted: (sessionId: string) => void
   // Posição e tamanho no canvas; nulo = ainda não definido (nasce à direita).
@@ -160,6 +162,7 @@ export function ConversationDrawer(props: Props) {
           onOpenDiff={openDiff}
           onOpenPlan={openPlan}
           onOpenSubagent={props.onOpenSubagent}
+          onOpenTasks={props.onOpenTasks}
           onSessionStarted={props.onSessionStarted}
           zoom={zoom}
           headerClassName={focus ? '' : 'cursor-grab active:cursor-grabbing'}

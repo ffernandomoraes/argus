@@ -413,6 +413,7 @@ export class ChatSession {
         agents: [],
         backgroundTasks: 0,
         backgroundStarts: undefined,
+        backgroundInfo: undefined,
         activity: undefined,
         retry: undefined,
         compactingSince: undefined,

@@ -1,9 +1,10 @@
 import { memo, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
+import { TaskOutputButton } from '../../taskOpen'
 import type { Message } from '../../types'
 
 // Comando no terminal: fica só a linha do comando, com a seta no fim; o clique abre o comando
-// inteiro (IN) e a saída (OUT).
+// inteiro (IN) e a saída (OUT). Em segundo plano, "Ver saída" abre a saída ao vivo.
 export const BashRow = memo(function BashRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
   const [open, setOpen] = useState(false)
   const command = message.detail ?? message.input
@@ -11,18 +12,22 @@ export const BashRow = memo(function BashRow({ message }: { message: Extract<Mes
   const box = 'max-h-60 overflow-auto'
   return (
     <div className="text-[13px]">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex w-full cursor-pointer items-center gap-2 py-1 text-left leading-5 text-muted hover:text-text"
-      >
-        <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`} title={message.name}>
-          {message.label}
-        </span>
-        <span className="truncate text-muted">{message.input}</span>
-        <ChevronRight size={13} className={`ml-auto shrink-0 transition-transform duration-150 ${open ? 'rotate-90' : ''}`} />
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-1 text-left leading-5 text-muted hover:text-text"
+        >
+          <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`} title={message.name}>
+            {message.label}
+          </span>
+          <span className="truncate text-muted">{message.input}</span>
+          <ChevronRight size={13} className={`ml-auto shrink-0 transition-transform duration-150 ${open ? 'rotate-90' : ''}`} />
+        </button>
+        {/* Comando que foi para segundo plano: a saída dele, que o resultado aqui não traz. */}
+        <TaskOutputButton message={message} />
+      </div>
       {/* Arrastar para copiar um trecho não conta como clique. */}
       {open && (
         <div

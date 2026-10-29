@@ -11,6 +11,7 @@ import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
+import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
 import type { McpAuthResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
@@ -136,6 +137,7 @@ export type InvokeChannels = {
   'sessions:changes': (path: string) => UncommittedFile[] | null
   'sessions:history': (path: string, id: string) => Message[]
   'sessions:historyPage': (path: string, id: string, request: HistoryRequest) => HistoryPage
+  'sessions:taskOutput': (ref: TaskOutputRef, offset: number) => TaskOutputChunk
   'sessions:subagentPage': (path: string, id: string, toolUseId: string, request: HistoryRequest) => HistoryPage
   'sessions:images': (path: string, id: string, messageId: string) => string[]
   'sessions:context': (path: string, id: string) => number

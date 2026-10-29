@@ -8,6 +8,7 @@ import type { DrawerLayout, SlotTargets } from './drawerLayout'
 import { DrawerSlot, type SlotActions } from './DrawerSlot'
 import { PlanPanel } from './PlanPanel'
 import { SubagentSlot } from './SubagentSlot'
+import { TasksSlot } from './TasksSlot'
 import type { Drawer, DrawerState, SlotId } from './drawerState'
 import type { DesignView, SlotTarget } from './drawerView'
 import type { DrawerCommands } from './useDrawers'
@@ -103,8 +104,9 @@ function DrawerEntry({ slot, drawer, target, obstacles, aside, codeOpen, command
     const rects = obstacles.flatMap((o) => (o.id !== slot && o.rect ? [o.rect] : []))
     return aside ? [...rects, aside] : rects
   }, [obstacles, slot, aside])
-  // Subagente: só o histórico dele, sem a conversa da lista.
+  // Subagente e tarefas: só o histórico ou a saída, sem a conversa da lista.
   const subagent = active?.subagent
+  const tasks = active?.tasks
   return (
     <Presence>
       {drawer && target && subagent && (
@@ -120,7 +122,19 @@ function DrawerEntry({ slot, drawer, target, obstacles, aside, codeOpen, command
           onShown={onShown}
         />
       )}
-      {drawer && active && !subagent && target && conversation && (
+      {drawer && target && tasks && (
+        <TasksSlot
+          slot={slot}
+          tasks={tasks}
+          target={target}
+          rect={drawer.rect}
+          obstacles={others}
+          pinned={drawer.pinned}
+          commands={commands}
+          onShown={onShown}
+        />
+      )}
+      {drawer && active && !subagent && !tasks && target && conversation && (
         <DrawerSlot
           slot={slot}
           active={active}

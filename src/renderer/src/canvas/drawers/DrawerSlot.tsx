@@ -2,7 +2,7 @@ import { memo, useCallback, useLayoutEffect } from 'react'
 import { ConversationDrawer } from '../../conversation/ConversationDrawer'
 import type { PanelRect } from '../../conversation/FloatingPanel'
 import type { LineRange } from '../../conversation/fileLinks'
-import type { ActiveConversation, SubagentRef } from '../CanvasContext'
+import type { ActiveConversation, SubagentRef, TasksRef } from '../CanvasContext'
 import type { ConversationSummary } from '../types'
 import type { SlotId } from './drawerState'
 import { codeProject } from './codeProject'
@@ -14,6 +14,7 @@ export type SlotActions = {
   pinConversation: (nodeId: string, conversationId: string) => void
   popoutConversation: (nodeId: string, conversationId: string) => void
   openSubagent: (nodeId: string | null, path: string, subagent: SubagentRef) => void
+  openTasks: (nodeId: string | null, path: string, tasks: TasksRef) => void
 }
 
 type Props = {
@@ -70,6 +71,8 @@ function DrawerSlotView(props: Props) {
     (subagent: SubagentRef) => actions.openSubagent(nodeId ?? null, project.path, subagent),
     [actions, nodeId, project.path]
   )
+  // Saída de um comando em segundo plano: o drawer das tarefas, do mesmo jeito.
+  const onOpenTasks = useCallback((tasks: TasksRef) => actions.openTasks(nodeId ?? null, project.path, tasks), [actions, nodeId, project.path])
   // O card da conversa sem projeto não nasce aqui: o Canvas cria (actions/useLooseCards), mesmo
   // com o drawer já fechado.
   const draftId = active.conversationId
@@ -106,6 +109,7 @@ function DrawerSlotView(props: Props) {
       onOpenDiff={onOpenDiff}
       onOpenPlan={onOpenPlan}
       onOpenSubagent={onOpenSubagent}
+      onOpenTasks={onOpenTasks}
       onSessionStarted={onSessionStarted}
       onPopout={onPopout}
       onPinToCanvas={onPinToCanvas}

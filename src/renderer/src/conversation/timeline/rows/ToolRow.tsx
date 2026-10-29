@@ -3,6 +3,7 @@ import type { Message } from '../../types'
 import { DiffView } from '../../DiffView'
 import { diffStats } from '../../diffLines'
 import type { ImageView } from '../imageViews'
+import { TaskOutputButton } from '../../taskOpen'
 import { LazyDetails } from './LazyDetails'
 
 // Ferramentas cujo detalhe é o caminho de um arquivo ou pasta (ver toolLabels no main).
@@ -54,6 +55,12 @@ export const ToolRow = memo(function ToolRow({
           <span className={`truncate ${image ? 'underline decoration-line-strong underline-offset-2' : 'text-muted'}`}>
             {message.input}
           </span>
+          {/* Monitor: o que ele está vigiando, ao vivo. */}
+          {message.name === 'Monitor' && (
+            <span className="ml-auto">
+              <TaskOutputButton message={message} />
+            </span>
+          )}
           {stats && (
             <span className="ml-auto shrink-0 font-mono">
               <span className="text-emerald-400">+{stats.added}</span>{' '}

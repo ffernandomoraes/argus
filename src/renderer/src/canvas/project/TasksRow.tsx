@@ -6,7 +6,7 @@ import { tr } from '../../i18n'
 
 // Comandos que o Claude deixou rodando em segundo plano, numa linha só com a quantidade, pendurada
 // embaixo da conversa como os subagentes, com há quanto tempo roda a mais antiga. Some quando todos
-// terminam. Clicar abre a conversa.
+// terminam. Clicar abre a saída delas, só para ler.
 export const TasksRow = memo(function TasksRow({
   count,
   since,

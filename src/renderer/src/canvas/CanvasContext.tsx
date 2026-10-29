@@ -14,6 +14,7 @@ export type ActiveConversation = {
   sessionId?: string
   at?: XYPosition
   subagent?: SubagentRef
+  tasks?: TasksRef
 }
 
 // Subagente lançado por uma conversa do Claude: a sessão dela e a chamada da ferramenta Agent.
@@ -27,6 +28,22 @@ export type SubagentRef = {
 
 // Id do drawer de um subagente: não se confunde com o de nenhuma conversa.
 export const subagentConversationId = (toolUseId: string): string => `subagent-${toolUseId}`
+
+// Tarefa em segundo plano a mostrar (comando, monitor...): o id dela no Claude Code e o que o chat
+// sabe dela. Aberta pelo chat, pode já ter terminado.
+export type TaskRef = { id: string; description: string; command?: string; outputFile?: string }
+
+// Drawer das tarefas em segundo plano de uma conversa: a saída de cada uma, só para ler.
+export type TasksRef = {
+  sessionId: string
+  // A que aparece ao abrir; sem ela, a primeira.
+  selected?: string
+  // Aberta pelo chat ("Ver saída"): entra mesmo fora da lista das que estão rodando.
+  extra?: TaskRef
+}
+
+// Id do drawer das tarefas de uma conversa: um por conversa.
+export const tasksConversationId = (sessionId: string): string => `tasks-${sessionId}`
 
 // Design aberto no drawer: um dos designs da pasta (nodeId). Novo: já nasce com o id que vai usar.
 export type ActiveDesign = {
@@ -66,6 +83,8 @@ export type CanvasActions = {
   // Histórico de um subagente, no drawer da conversa (por cima dela). Sem nodeId, vale o card da
   // pasta `path` (ou o da conversa solta).
   openSubagent: (nodeId: string | null, path: string, subagent: SubagentRef) => void
+  // Saída das tarefas em segundo plano de uma conversa, no drawer dela (como o subagente).
+  openTasks: (nodeId: string | null, path: string, tasks: TasksRef) => void
   newConversation: (nodeId: string) => void
   // "+" na borda do grupo: conversa nova do grupo todo (cria o card das conversas do grupo se faltar).
   newGroupConversation: (groupId: string) => void

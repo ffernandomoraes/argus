@@ -11,6 +11,7 @@ import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
+import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
 import type { ClipboardCommand, DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
 import type { McpAuthResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
@@ -311,6 +312,8 @@ export type Api = {
     historyPage: (path: string, id: string, request: HistoryRequest) => Promise<HistoryPage>
     // O mesmo trecho, do subagente lançado pela chamada `toolUseId` na conversa `id`.
     subagentPage: (path: string, id: string, toolUseId: string, request: HistoryRequest) => Promise<HistoryPage>
+    // Saída de uma tarefa em segundo plano: o que o arquivo ganhou desde `offset` (bytes).
+    taskOutput: (ref: TaskOutputRef, offset: number) => Promise<TaskOutputChunk>
     // Imagens de uma mensagem sua (data URLs), lidas só quando o preview abre.
     images: (path: string, id: string, messageId: string) => Promise<string[]>
     // Porcentagem da janela de contexto que a conversa ocupa agora.

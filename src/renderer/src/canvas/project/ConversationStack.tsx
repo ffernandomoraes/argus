@@ -28,7 +28,7 @@ export const ConversationStack = memo(function ConversationStack({
   flowColor: string
 }) {
   const { rows, legs } = useProjectRows(conversations, collapsed)
-  const { openConversation, openSubagent, openConversationMenu, openAllConversations } = useCanvasActions()
+  const { openConversation, openSubagent, openTasks, openConversationMenu, openAllConversations } = useCanvasActions()
   // Conversa e design abertos, só se forem desta pasta: abrir em outra pasta não redesenha esta.
   const activeConversation = useActiveConversationIn(nodeId)
   const activeDesign = useActiveDesignIn(nodeId)
@@ -43,6 +43,11 @@ export const ConversationStack = memo(function ConversationStack({
       openSubagent(nodeId, '', { sessionId, toolUseId: a.toolUseId, agent: a.agent, description: a.description })
     },
     [openConversation, openSubagent, nodeId]
+  )
+  // Tarefas em segundo plano: a saída de cada uma, só para ler.
+  const openTaskList = useCallback(
+    (c: ConversationSummary) => openTasks(nodeId, '', { sessionId: c.sessionId ?? c.id }),
+    [openTasks, nodeId]
   )
   const openMenu = useCallback(
     (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c),
@@ -100,7 +105,7 @@ export const ConversationStack = memo(function ConversationStack({
             conversation={row.conversation}
             first={row.first}
             color={flowColor}
-            onOpen={open}
+            onOpen={openTaskList}
           />
         ) : (
           <ConversationRow

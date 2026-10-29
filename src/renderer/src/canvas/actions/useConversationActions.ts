@@ -5,7 +5,7 @@ import { revealEnd } from '../../conversation/revealEnd'
 import { useStableCallback } from '../../lib/useStableCallback'
 import { getPreferences } from '../../settings/preferences'
 import { patchView, type CanvasViewStore } from '../canvasView'
-import { subagentConversationId, type SubagentRef } from '../CanvasContext'
+import { subagentConversationId, tasksConversationId, type SubagentRef, type TasksRef } from '../CanvasContext'
 import type { ConfirmRequest } from '../ConfirmDialog'
 import { codeProject } from '../drawers/codeProject'
 import { projectOf } from '../drawers/drawerView'
@@ -127,6 +127,10 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
       openSubagent: (nodeId: string | null, path: string, subagent: SubagentRef) => {
         const owner = nodeId ?? ownerOf(nodesRef.current, path, subagent.sessionId)?.id
         if (owner) drawers.show({ nodeId: owner, conversationId: subagentConversationId(subagent.toolUseId), subagent })
+      },
+      openTasks: (nodeId: string | null, path: string, tasks: TasksRef) => {
+        const owner = nodeId ?? ownerOf(nodesRef.current, path, tasks.sessionId)?.id
+        if (owner) drawers.show({ nodeId: owner, conversationId: tasksConversationId(tasks.sessionId), tasks })
       },
       newConversation: (nodeId: string) =>
         drawers.show({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true }),

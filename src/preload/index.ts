@@ -233,6 +233,7 @@ const api: Api = {
     history: (path, id) => invoke('sessions:history', path, id),
     historyPage: (path, id, request) => invoke('sessions:historyPage', path, id, request),
     subagentPage: (path, id, toolUseId, request) => invoke('sessions:subagentPage', path, id, toolUseId, request),
+    taskOutput: (ref, offset) => invoke('sessions:taskOutput', ref, offset),
     images: (path, id, messageId) => invoke('sessions:images', path, id, messageId),
     context: (path, id) => invoke('sessions:context', path, id),
     watch: (paths) => send('sessions:watch', paths),

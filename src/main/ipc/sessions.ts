@@ -9,6 +9,7 @@ import { conversationsIn, indexEntry, isAgentConversation, loadConversation, loa
 import type { SessionSummary } from '../../shared/sessions'
 import { pageOf, type HistoryRequest } from '../../shared/history'
 import { agentRef } from '../../shared/providers'
+import { readTaskOutput } from '../tasks/output'
 import { handle, on } from './register'
 
 // Conversas do Claude Code em cada pasta, o git dela e a vigia que avisa quando algo muda.
@@ -43,6 +44,7 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
     const wanted = wantedPage(request)
     return isAgentConversation(id) ? pageOf(loadConversation(id)?.messages ?? [], wanted) : readHistoryPage(path, id, wanted)
   })
+  handle('sessions:taskOutput', async (_e, ref, offset) => readTaskOutput(ref, Math.max(0, Math.floor(Number(offset)) || 0)))
   handle('sessions:subagentPage', async (_e, path, id, toolUseId, request) => readSubagentPage(path, id, toolUseId, wantedPage(request)))
   handle('sessions:context', async (_e, path, id) => (isAgentConversation(id) ? (indexEntry(id)?.contextPercent ?? 0) : sessionContext(path, id)))
   handle('sessions:images', async (_e, path, id, messageId) => (isAgentConversation(id) ? loadImages(id, messageId) : readImages(path, id, messageId)))

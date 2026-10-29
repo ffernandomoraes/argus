@@ -1,4 +1,5 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import { backgroundTaskOf, type BackgroundTaskInfo } from '../../shared/backgroundTasks'
 import type { ChatActivity, ChatRetry, ChatState, RemoteControl } from '../../shared/chat'
 import { tr } from '../i18n'
 import { describeTool } from '../toolLabels'
@@ -95,12 +96,14 @@ function readSystem(m: Line, chat: ChatState, reader: Reader, now: number): Step
   }
   if (m.subtype === 'background_tasks_changed') {
     // Lista completa a cada mudança. Subagentes já vêm pelos task_*; ambientes não são trabalho.
-    const ids = (m.tasks as Line[]).filter((t) => !t.ambient && t.task_type !== 'local_agent').map((t) => t.task_id as string)
+    const tasks = (m.tasks as Line[]).filter((t) => !t.ambient && t.task_type !== 'local_agent')
+    const ids = tasks.map((t) => t.task_id as string)
     const before = chat.backgroundStarts ?? {}
-    if (ids.length === chat.backgroundTasks && ids.every((id) => id in before)) return { reader }
-    // A mensagem só traz os ids: o início de cada tarefa é a primeira vez que ela aparece.
+    const info = backgroundInfo(chat.backgroundInfo, tasks)
+    if (ids.length === chat.backgroundTasks && ids.every((id) => id in before) && info === chat.backgroundInfo) return { reader }
+    // A mensagem não traz quando começou: o início de cada tarefa é a primeira vez que ela aparece.
     const starts = Object.fromEntries(ids.map((id) => [id, before[id] ?? now]))
-    return { reader, patch: { backgroundTasks: ids.length, backgroundStarts: starts }, urgent: true }
+    return { reader, patch: { backgroundTasks: ids.length, backgroundStarts: starts, backgroundInfo: info }, urgent: true }
   }
   // A API falhou e o Claude Code vai tentar de novo: sem isso a tela parecia travada até a nova
   // tentativa responder (API sobrecarregada, limite de requisições).
@@ -215,10 +218,42 @@ function readTranscript(m: Transcript, chat: ChatState, reader: Reader, { now, c
     if (done.size) patch.activity = activity(chat.activity, 'thinking', now)
     const worktree = m.type === 'user' ? worktreeMove(m.tool_use_result, cwd) : null
     if (worktree) patch.worktree = worktree
+    const files = outputFiles(chat.backgroundInfo, m.message.content as Line[])
+    if (files) patch.backgroundInfo = files
   }
   // Já gravado no arquivo: o chat relê o histórico.
   patch.revision = chat.revision + 1
   return { reader, patch, urgent: true }
+}
+
+// Descrição e tipo das tarefas em segundo plano que estão na lista. As que saíram deixam de valer;
+// a que ainda não entrou mas já tem o arquivo (o resultado do comando chegou antes) fica. Sem
+// mudança, a mesma referência.
+export function backgroundInfo(current: Record<string, BackgroundTaskInfo> | undefined, tasks: Line[]): Record<string, BackgroundTaskInfo> | undefined {
+  const listed = new Set(tasks.map((t) => t.task_id as string))
+  const next: Record<string, BackgroundTaskInfo> = {}
+  for (const [id, info] of Object.entries(current ?? {})) if (!listed.has(id) && !info.description) next[id] = info
+  for (const t of tasks) {
+    const id = t.task_id as string
+    next[id] = { ...current?.[id], description: String(t.description ?? ''), type: String(t.task_type ?? '') }
+  }
+  return JSON.stringify(next) === JSON.stringify(current ?? {}) ? current : next
+}
+
+// Arquivo da saída de cada comando que foi para segundo plano, lido do resultado da ferramenta.
+// Nenhum: nulo.
+export function outputFiles(current: Record<string, BackgroundTaskInfo> | undefined, content: Line[]): Record<string, BackgroundTaskInfo> | null {
+  let next: Record<string, BackgroundTaskInfo> | null = null
+  for (const c of content) {
+    if (c?.type !== 'tool_result') continue
+    const text = typeof c.content === 'string' ? c.content : Array.isArray(c.content) ? c.content.map((x: Line) => x?.text ?? '').join('') : ''
+    const task = backgroundTaskOf(text)
+    if (!task?.outputFile) continue
+    next ??= { ...current }
+    const before = next[task.id]
+    next[task.id] = { description: before?.description ?? '', type: before?.type ?? 'local_bash', outputFile: task.outputFile }
+  }
+  return next
 }
 
 function readResult(m: Result, chat: ChatState, reader: Reader, ctx: ReadContext): Step {

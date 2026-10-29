@@ -1,6 +1,7 @@
 import type { RunningAgent } from './agents'
 import type { AttachedFile } from './attachedFiles'
 import type { DiffHunk, LiveStatus } from './history'
+import type { BackgroundTaskInfo } from './backgroundTasks'
 
 // Pedido de permissão do Claude (editar, rodar comando...) esperando resposta no chat.
 export type PermissionRequest = {
@@ -60,6 +61,9 @@ export type ChatState = {
   backgroundTasks: number
   // Quando cada uma delas apareceu (id da tarefa → ms), para mostrar há quanto tempo rodam.
   backgroundStarts?: Record<string, number>
+  // O que se sabe de cada uma (id da tarefa → descrição, tipo e arquivo da saída), para o drawer que
+  // mostra a saída.
+  backgroundInfo?: Record<string, BackgroundTaskInfo>
   // Mensagens suas na fila do Claude, ainda fora do histórico (ele só grava o texto ao entregar).
   queued?: QueuedMessage[]
   // Conversa com outro agente: agente e conta ("codex:main"). Sem ele: Claude.

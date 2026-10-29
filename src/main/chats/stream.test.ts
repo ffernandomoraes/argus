@@ -178,7 +178,7 @@ describe('readMessage: avisos do sistema', () => {
   })
 
   it('a lista de tarefas igual não gera estado novo; uma trocada por outra, sim', () => {
-    const chat = idle({ backgroundTasks: 1, backgroundStarts: { a: 1 } })
+    const chat = idle({ backgroundTasks: 1, backgroundStarts: { a: 1 }, backgroundInfo: { a: { description: '', type: '' } } })
     const tasks = (id: string) => sdk({ type: 'system', subtype: 'background_tasks_changed', tasks: [{ task_id: id }] })
     expect(readMessage(tasks('a'), chat, newReader(), ctx()).patch).toBeUndefined()
     expect(readMessage(tasks('b'), chat, newReader(), ctx()).patch?.backgroundStarts).toEqual({ b: 1000 })
@@ -247,5 +247,20 @@ describe('readMessage: worktree', () => {
 
   it('o subagente que entra num worktree não leva a conversa', () => {
     expect(play([result('task-1')]).chat.worktree).toBeUndefined()
+  })
+})
+
+describe('tarefas em segundo plano: descrição e arquivo da saída', () => {
+  it('guarda a descrição da lista e o arquivo lido do resultado do comando', async () => {
+    const { backgroundInfo, outputFiles } = await import('./stream')
+    const files = outputFiles(undefined, [
+      { type: 'tool_result', tool_use_id: 't1', content: 'Command running in background with ID: b1. Output is being written to: /tmp/claude-1/-p/s/tasks/b1.output. You will be notified.' }
+    ])
+    expect(files).toEqual({ b1: { description: '', type: 'local_bash', outputFile: '/tmp/claude-1/-p/s/tasks/b1.output' } })
+    const listed = backgroundInfo(files ?? undefined, [{ task_id: 'b1', task_type: 'local_bash', description: 'Sobe o servidor' }])
+    expect(listed).toEqual({ b1: { description: 'Sobe o servidor', type: 'local_bash', outputFile: '/tmp/claude-1/-p/s/tasks/b1.output' } })
+    // Saiu da lista: deixa de valer. Mesma lista: a mesma referência.
+    expect(backgroundInfo(listed, [{ task_id: 'b1', task_type: 'local_bash', description: 'Sobe o servidor' }])).toBe(listed)
+    expect(backgroundInfo(listed, [])).toEqual({})
   })
 })

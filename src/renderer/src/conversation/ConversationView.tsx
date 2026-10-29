@@ -3,7 +3,7 @@ import { agentProviderOf } from '../../../shared/agents'
 import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext } from '../auth/useAuth'
 import { useViewing } from '../canvas/sessionsStore'
-import type { SubagentRef } from '../canvas/CanvasContext'
+import type { SubagentRef, TaskRef, TasksRef } from '../canvas/CanvasContext'
 import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
@@ -26,6 +26,7 @@ import { McpPanel } from './McpPanel'
 import { OutputStylePanel } from './OutputStylePanel'
 import { PlanOpenContext } from './PlanCard'
 import { SubagentOpenContext, type OpenSubagent } from './subagentOpen'
+import { TaskOpenContext } from './taskOpen'
 import { mergeEvents } from './mergeEvents'
 import { onRevealEnd } from './revealEnd'
 import { useConversationHistory } from './useConversationHistory'
@@ -55,6 +56,8 @@ type Props = {
   onOpenPlan?: (text: string, path?: string) => void
   // "Ver conversa" na linha de um subagente; sem isso (janela separada), a linha fica sem o botão.
   onOpenSubagent?: (subagent: SubagentRef) => void
+  // "Ver saída" num comando em segundo plano; sem isso (janela separada), sem o botão.
+  onOpenTasks?: (tasks: TasksRef) => void
   // Conversa nova recebeu o id da sessão do Claude no primeiro envio.
   onSessionStarted?: (sessionId: string) => void
   // Escala do conteúdo, ajustada com ⌘+ / ⌘- (useDrawerZoom).
@@ -88,6 +91,7 @@ export const ConversationView = memo(function ConversationView({
   onOpenFile,
   onOpenPlan,
   onOpenSubagent,
+  onOpenTasks,
   onOpenDiff,
   onSessionStarted,
   zoom = 1,
@@ -176,6 +180,10 @@ export const ConversationView = memo(function ConversationView({
     if (parentSession) onOpenSubagent?.({ sessionId: parentSession, toolUseId, agent, description })
   })
   const subagentOpen: OpenSubagent | null = onOpenSubagent ? openSubagent : null
+  const openTask = useStableCallback((task: TaskRef) => {
+    if (parentSession) onOpenTasks?.({ sessionId: parentSession, selected: task.id, extra: task })
+  })
+  const taskOpen = onOpenTasks ? openTask : null
   const [mcpOpen, setMcpOpen] = useState(false)
   const openMcp = useCallback(() => setMcpOpen(true), [])
   const closeMcp = useCallback(() => setMcpOpen(false), [])
@@ -207,6 +215,7 @@ export const ConversationView = memo(function ConversationView({
       <FileRevealContext.Provider value={onOpenFile ? revealFile : null}>
       <PlanOpenContext.Provider value={onOpenPlan ?? null}>
       <SubagentOpenContext.Provider value={subagentOpen}>
+      <TaskOpenContext.Provider value={taskOpen}>
         <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
           <AccountChoiceContext.Provider value={accountChoice}>
           <ChatView
@@ -244,6 +253,7 @@ export const ConversationView = memo(function ConversationView({
           />
           </AccountChoiceContext.Provider>
         </div>
+      </TaskOpenContext.Provider>
       </SubagentOpenContext.Provider>
       </PlanOpenContext.Provider>
       </FileRevealContext.Provider>

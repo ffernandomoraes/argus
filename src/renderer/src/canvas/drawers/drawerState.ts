@@ -111,7 +111,9 @@ function placeNew(state: DrawerState, area: AreaSize): PanelRect | null {
 // com todos fixados, abre num drawer novo.
 function show(state: DrawerState, conversation: ActiveConversation, area: AreaSize): DrawerState {
   const s = state.design ? { ...state, design: null } : state
-  if (s.drawers.some((d) => isSameConversation(d.conversation, conversation.conversationId))) return s
+  const shown = s.drawers.find((d) => isSameConversation(d.conversation, conversation.conversationId))
+  // As tarefas já à vista mostram a pedida agora.
+  if (shown) return shown.conversation.tasks ? update(s, shown.id, (d) => ({ ...d, conversation })) : s
   const loose = looseDrawer(s.drawers)
   if (loose) return { ...s, drawers: s.drawers.map((d) => (d === loose ? { ...d, conversation } : d)) }
   const drawer: Drawer = { id: `d${s.nextId}`, conversation, pinned: false, rect: placeNew(s, area) }

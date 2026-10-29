@@ -206,6 +206,20 @@ function startBlockDetection(): void {
   }
 }
 
+// Parada de propósito do processo principal (a caixa solta do Mac, que espera a resposta; ver
+// app/messageBox.ts): a detecção de travamento pausa até `run` terminar. Sem isso, a caixa aberta
+// por mais de 5 s virava travamento (ARGUS-E, 2026-10-28: a pergunta ao fechar o app sem janela em
+// foco). Pelo nome da integração, sem carregar o módulo nativo (ver startBlockDetection).
+export async function withoutBlockDetection<T>(run: () => Promise<T>): Promise<T> {
+  const detection = Sentry.getClient()?.getIntegrationByName<{ name: string; start(): void; stop(): void }>('ThreadBlocked')
+  detection?.stop()
+  try {
+    return await run()
+  } finally {
+    detection?.start()
+  }
+}
+
 // A abertura deu errado (ver app/crashGuard.ts): o que o SDK não vê sozinho.
 export function reportOpeningProblem(message: string, extra: Record<string, unknown> = {}): void {
   if (active) Sentry.captureMessage(message, { level: 'fatal', tags: { opening: 'failed' }, extra })

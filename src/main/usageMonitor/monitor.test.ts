@@ -107,10 +107,26 @@ describe('UsageMonitor', () => {
     await vi.advanceTimersByTimeAsync(50 * MIN)
     expect(fake.warn).not.toHaveBeenCalled()
 
-    // Passado o prazo, outra falha que segue vira aviso.
+    // Passado o prazo, outra falha que segue por 15 minutos vira aviso.
     fake.fetch.mockImplementation(async () => new Response('', { status: 500 }))
+    await vi.advanceTimersByTimeAsync(10 * MIN)
+    expect(fake.warn).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(20 * MIN)
     expect(fake.warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('no fim do prazo da recusa, tenta de novo antes de avisar o Sentry (ARGUS-A, 0.1.97)', async () => {
+    // Recusado já na abertura, sem nenhuma leitura boa, com 1 hora de espera.
+    fake.reads.push(login(180 * MIN))
+    fake.fetch.mockImplementationOnce(async () => new Response('', { status: 429, headers: { 'retry-after': '3600' } }))
+    fake.fetch.mockImplementation(async () => ok())
+    await startWithRead()
+    expect(fake.fetch).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(61 * MIN)
+    expect(fake.fetch).toHaveBeenCalledTimes(2)
+    expect(updates.at(-1)?.failure).toBeUndefined()
+    expect(fake.warn).not.toHaveBeenCalled()
   })
 
   it('leitura que volta a dar certo tira o aviso', async () => {

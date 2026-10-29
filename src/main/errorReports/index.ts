@@ -12,9 +12,9 @@ import {
   echoOfMainLag,
   hiddenWindowBlock,
   powerBreadcrumb,
-  throttledWindowBlock,
-  watchCpuThrottle,
+  unfocusedWindowBlock,
   watchMainLag,
+  watchWindowFocus,
   watchWindowVisibility,
   withSnapshot
 } from './snapshot'
@@ -102,11 +102,11 @@ export function startErrorReports(): void {
       ],
       transport: smokeSafeTransport,
       // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato. O
-      // aviso de janela travada que é só eco do processo principal parado, ou de uma janela escondida
-      // ou com a CPU segurada pelo sistema que responde (alarme falso), não vai (ver echoOfMainLag,
-      // hiddenWindowBlock e throttledWindowBlock).
+      // aviso de janela travada que é só eco do processo principal parado, que não foi todo com uma
+      // janela do Argus em foco, ou de uma janela escondida que responde (alarme falso), não vai (ver
+      // echoOfMainLag, unfocusedWindowBlock e hiddenWindowBlock).
       beforeSend: async (event) =>
-        echoOfMainLag(event) || (await hiddenWindowBlock(event)) || (await throttledWindowBlock(event))
+        echoOfMainLag(event) || unfocusedWindowBlock(event) || (await hiddenWindowBlock(event))
           ? null
           : scrubEvent(tagged(await withSnapshot(event))),
       beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
@@ -122,10 +122,8 @@ export function startErrorReports(): void {
   watchRenderers()
   watchMainLag()
   watchWindowVisibility(rendererName)
-  void app.whenReady().then(() => {
-    watchCpuThrottle()
-    startBlockDetection()
-  })
+  watchWindowFocus()
+  void app.whenReady().then(startBlockDetection)
 }
 
 // No teste de fumaça, nada sai pelo SDK (o travamento vai pela linha de execução à parte, para o

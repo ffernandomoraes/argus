@@ -4,9 +4,9 @@ import {
   echoOfMainLag,
   hiddenWindowBlock,
   powerBreadcrumb,
-  throttledWindowBlock,
-  watchCpuThrottle,
+  unfocusedWindowBlock,
   watchMainLag,
+  watchWindowFocus,
   watchWindowVisibility
 } from './snapshot'
 
@@ -17,17 +17,11 @@ import {
 const clock = vi.hoisted(() => ({ now: 0 }))
 vi.mock('node:perf_hooks', () => ({ performance: { now: () => clock.now } }))
 const ipc = vi.hoisted(() => ({ status: (_e: unknown, _message: unknown) => {} }))
-const electron = vi.hoisted(() => ({
-  focused: null as object | null,
-  power: {} as Record<string, () => void>,
-  contents: [] as object[]
-}))
+const electron = vi.hoisted(() => ({ focused: null as object | null, app: {} as Record<string, () => void> }))
 vi.mock('electron', () => ({
-  app: { once: () => undefined },
+  app: { once: () => undefined, on: (event: string, listener: () => void) => (electron.app[event] = listener) },
   BrowserWindow: { getFocusedWindow: () => electron.focused },
-  ipcMain: { on: (_channel: string, listener: typeof ipc.status) => (ipc.status = listener) },
-  powerMonitor: { on: (event: string, listener: () => void) => (electron.power[event] = listener) },
-  webContents: { getAllWebContents: () => electron.contents }
+  ipcMain: { on: (_channel: string, listener: typeof ipc.status) => (ipc.status = listener) }
 }))
 vi.mock('@sentry/electron/main', () => ({ addBreadcrumb: () => undefined }))
 
@@ -47,7 +41,7 @@ beforeAll(() => {
   vi.useFakeTimers()
   watchMainLag()
   watchWindowVisibility((contents) => (contents.id === 2 ? 'mascot' : 'canvas'))
-  watchCpuThrottle()
+  watchWindowFocus()
 })
 afterAll(() => vi.useRealTimers())
 // Cada teste começa com o processo principal em dia há alguns segundos.
@@ -137,60 +131,25 @@ describe('hiddenWindowBlock', () => {
   })
 })
 
-// Aviso com a CPU segurada pelo sistema: 2026-10-28 (ARGUS-1), Windows com o notebook parado, um aviso
-// por minuto durante 3 horas, com `speed-limit-change` a cada poucos segundos e o processo principal
-// em dia. Sem responder, a janela travou de verdade, e o aviso vai.
-describe('throttledWindowBlock', () => {
-  const page = (id: number, answers = true, type = 'window') => ({
-    id,
-    getType: () => type,
-    isDestroyed: () => false,
-    executeJavaScript: () => (answers ? Promise.resolve(0) : new Promise(() => {}))
-  })
-
-  beforeEach(() => {
+// Aviso sem nenhuma janela do Argus em foco: 2026-10-29, ARGUS-1 (o notebook acordou às 3h com a tela
+// bloqueada) e ARGUS-5 (tela desbloqueada com a janela minimizada); 2026-10-28, ARGUS-1 a cada minuto
+// por 3 horas. O SDK religa o vigia ao acordar e ao desbloquear, sem olhar o foco. E com o foco ganho
+// no meio do silêncio: 2026-10-27 (ARGUS-1), 22 ms depois de a janela ganhar o foco.
+describe('unfocusedWindowBlock', () => {
+  it('sem janela do Argus em foco, o aviso de janela travada não vai', () => {
     electron.focused = null
-    electron.contents = [page(1), page(2)]
-    clock.now += 60_000
+    expect(unfocusedWindowBlock(windowBlock)).toBe(true)
+    expect(unfocusedWindowBlock(mainError)).toBe(false)
   })
 
-  it('CPU segurada há pouco, sem foco, e a janela responde: o aviso não vai', async () => {
-    expect(await throttledWindowBlock(windowBlock)).toBe(false)
-    electron.power['speed-limit-change']()
-    clock.now += 10_000
-    expect(await throttledWindowBlock(windowBlock)).toBe(true)
-    expect(await throttledWindowBlock(mainError)).toBe(false)
-  })
-
-  it('o estado térmico do Mac conta igual', async () => {
-    electron.power['thermal-state-change']()
-    expect(await throttledWindowBlock(windowBlock)).toBe(true)
-  })
-
-  it('CPU segurada há mais de 30 s não explica o aviso', async () => {
-    electron.power['speed-limit-change']()
-    clock.now += 31_000
-    expect(await throttledWindowBlock(windowBlock)).toBe(false)
-  })
-
-  it('com uma janela do app em foco, o aviso vai', async () => {
-    electron.power['speed-limit-change']()
+  it('foco ganho há menos de 5 s: o silêncio começou sem foco, e o aviso não vai', () => {
     electron.focused = {}
-    expect(await throttledWindowBlock(windowBlock)).toBe(false)
-  })
-
-  it('sem responder, travou de verdade: o aviso vai', async () => {
-    electron.contents = [page(1, false)]
-    electron.power['speed-limit-change']()
-    const decided = throttledWindowBlock(windowBlock)
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(await decided).toBe(false)
-  })
-
-  it('só as janelas de mesmo nome contam (o mascote e as ferramentas de desenvolvedor, não)', async () => {
-    electron.contents = [page(1, false, 'webview'), page(2, false)]
-    electron.power['speed-limit-change']()
-    expect(await throttledWindowBlock(windowBlock)).toBe(false)
+    electron.app['browser-window-focus']()
+    clock.now += 22
+    expect(unfocusedWindowBlock(windowBlock)).toBe(true)
+    // Em foco desde antes de a janela parar: travamento de verdade, e o aviso vai.
+    clock.now += 5000
+    expect(unfocusedWindowBlock(windowBlock)).toBe(false)
   })
 })
 

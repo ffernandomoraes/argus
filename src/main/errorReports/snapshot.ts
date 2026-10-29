@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks'
-import { app, BrowserWindow, ipcMain, powerMonitor, webContents, type WebContents } from 'electron'
+import { app, BrowserWindow, ipcMain, type WebContents } from 'electron'
 import * as Sentry from '@sentry/electron/main'
 import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '../../shared/windowBlock'
 
@@ -170,29 +170,25 @@ export async function hiddenWindowBlock(event: Sentry.ErrorEvent): Promise<boole
 const allRespond = async (contents: WebContents[]): Promise<boolean> =>
   (await Promise.all(contents.map(responds))).every(Boolean)
 
-// CPU segurada pelo sistema: no Windows, a economia de energia (ou a temperatura) muda o limite de
-// velocidade da CPU (`speed-limit-change`, às vezes a cada poucos segundos); no Mac, muda o estado
-// térmico. Com a janela sem foco, o sistema segura também a janela, o "estou viva" atrasa e o vigia
-// acusa travamento: 2026-10-28 (ARGUS-1), um aviso por minuto durante 3 horas num notebook parado,
-// com o processo principal em dia. Vale a mesma pergunta da janela escondida: travada, não responde.
-const THROTTLE_KEEP_MS = 30_000
-let throttledAt = -Infinity
+// Quando uma janela do Argus ganhou o foco (ver unfocusedWindowBlock).
+let focusedAt = -Infinity
 
-// Depois do app pronto (o powerMonitor só existe a partir daí).
-export function watchCpuThrottle(): void {
-  const mark = () => (throttledAt = performance.now())
-  powerMonitor.on('speed-limit-change', mark)
-  powerMonitor.on('thermal-state-change', mark)
+export function watchWindowFocus(): void {
+  app.on('browser-window-focus', () => (focusedAt = performance.now()))
 }
 
-// Aviso de uma janela do app, sem nenhuma janela em foco, com a CPU segurada há pouco, e que responde:
-// alarme falso. Como na janela escondida, todas as de mesmo nome precisam responder.
-export async function throttledWindowBlock(event: Sentry.ErrorEvent): Promise<boolean> {
-  if (!isWindowBlock(event) || BrowserWindow.getFocusedWindow() || performance.now() - throttledAt > THROTTLE_KEEP_MS) return false
-  const same = webContents
-    .getAllWebContents()
-    .filter((c) => !c.isDestroyed() && c.getType() === 'window' && nameOf(c) === event.tags?.['event.process'])
-  return same.length > 0 && allRespond(same)
+// O aviso sai depois de 5 s sem o "estou viva" da janela, e só conta se esse silêncio inteiro foi com
+// uma janela do Argus em foco: alguém usando o app, com a janela à vista. O SDK já desliga o vigia
+// quando a janela perde o foco, mas o religa sozinho ao acordar o computador e ao desbloquear a tela,
+// sem olhar foco nem visibilidade. Minimizada, atrás de outras ou com a tela bloqueada, a janela tem o
+// "estou viva" segurado pelo Chromium (uma vez por minuto depois de 5 min): o vigia acusava travamento
+// a cada minuto, por horas, e também no instante em que a pessoa voltava à janela. Perguntar à janela
+// se responde (hiddenWindowBlock) e olhar a CPU segurada pelo sistema deixavam passar avisos assim.
+// 2026-10-29: ARGUS-1, 4,9 s depois de o notebook acordar às 3h com a tela bloqueada; ARGUS-5, 5 s
+// depois de desbloquear a tela com a janela minimizada; 2026-10-27 (ARGUS-1), 22 ms depois de a janela
+// ganhar o foco. Travamento que começa com a janela em foco chega aqui com 5 s ou mais de foco.
+export function unfocusedWindowBlock(event: Sentry.ErrorEvent): boolean {
+  return isWindowBlock(event) && (!BrowserWindow.getFocusedWindow() || performance.now() - focusedAt < WINDOW_BLOCK_MS)
 }
 
 // Nas últimas ações, a mudança de limite da CPU e a do estado térmico entram no máximo uma vez por

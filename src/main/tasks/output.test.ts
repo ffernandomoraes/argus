@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { backgroundTaskOf } from '../../shared/backgroundTasks'
 import { completeUtf8, readTaskOutput, taskOutputFile } from './output'
@@ -33,7 +33,8 @@ describe('taskOutputFile', () => {
     const file = outputFile('x')
     expect(await taskOutputFile(ref(file))).toBe(file)
     expect(await taskOutputFile(ref('/etc/passwd'))).toBeNull()
-    expect(await taskOutputFile(ref(file.replace('/tasks/', '/tasks/../tasks/')))).toBeNull()
+    // Com o separador do sistema: no Windows, "/tasks/" não aparece e o caminho sairia sem ".." (fc360b3).
+    expect(await taskOutputFile(ref(file.replace(`${sep}tasks${sep}`, `${sep}tasks${sep}..${sep}tasks${sep}`)))).toBeNull()
     expect(await taskOutputFile(ref(file, 'outra'))).toBeNull()
   })
 })

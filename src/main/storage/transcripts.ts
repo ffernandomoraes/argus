@@ -87,6 +87,24 @@ async function transcriptFiles(dir = projectsRoot()): Promise<Transcript[]> {
 const sessionOf = (file: string) =>
   basename(dirname(file)) === 'subagents' ? basename(dirname(dirname(file))) : basename(file, '.jsonl')
 
+// As linhas do arquivo, só pelo \n: o readline também corta em \r, U+2028 e U+2029, que o JSON
+// aceita dentro de texto (uma conversa de verdade tinha quatro), e a linha saía partida. newline: a
+// linha terminava com \n (a última pode não terminar).
+async function* linesOf(file: string): AsyncGenerator<{ bytes: Buffer; newline: boolean }> {
+  const pending: Buffer[] = []
+  for await (const chunk of createReadStream(file) as AsyncIterable<Buffer>) {
+    let start = 0
+    for (let i = chunk.indexOf(10); i !== -1; i = chunk.indexOf(10, start)) {
+      pending.push(chunk.subarray(start, i))
+      yield { bytes: Buffer.concat(pending), newline: true }
+      pending.length = 0
+      start = i + 1
+    }
+    if (start < chunk.length) pending.push(chunk.subarray(start))
+  }
+  if (pending.length) yield { bytes: Buffer.concat(pending), newline: false }
+}
+
 // Reescreve uma conversa sem os prints. A data do arquivo volta a ser a de antes: a limpeza não é
 // atividade, e a conversa não pode subir na lista nem escapar do prazo. A permissão também (o Claude
 // Code grava só para o dono ler). Se ele gravou nela no meio (retomada agora), desiste. Devolve
@@ -103,20 +121,7 @@ async function trimFile(f: Transcript): Promise<number> {
     if (!out.write(newline ? Buffer.concat([line, NEWLINE]) : line)) await new Promise<void>((r) => out.once('drain', () => r()))
   }
   try {
-    // Linha a linha só pelo \n: o readline também corta em \r, U+2028 e U+2029, que o JSON aceita
-    // dentro de texto (uma conversa de verdade tinha quatro), e a linha saía partida.
-    const pending: Buffer[] = []
-    for await (const chunk of createReadStream(f.file) as AsyncIterable<Buffer>) {
-      let start = 0
-      for (let i = chunk.indexOf(10); i !== -1; i = chunk.indexOf(10, start)) {
-        pending.push(chunk.subarray(start, i))
-        await emit(Buffer.concat(pending), true)
-        pending.length = 0
-        start = i + 1
-      }
-      if (start < chunk.length) pending.push(chunk.subarray(start))
-    }
-    if (pending.length) await emit(Buffer.concat(pending), false)
+    for await (const { bytes, newline } of linesOf(f.file)) await emit(bytes, newline)
     out.end()
     await finished(out)
     const now = await stat(f.file)
@@ -136,6 +141,39 @@ async function trimFile(f: Transcript): Promise<number> {
   }
 }
 
+// As conversas que a limpeza pegaria agora: paradas há mais de `days` dias, fora as rodando.
+async function dueFiles(days: number, live: ReadonlySet<string>, now: number, root?: string): Promise<Transcript[]> {
+  const limit = now - days * 86_400_000
+  return (await transcriptFiles(root)).filter((f) => f.mtimeMs <= limit && !live.has(sessionOf(f.file)))
+}
+
+// Quanto a limpeza liberaria agora, sem gravar nada: o que sai de cada linha com print.
+export async function mediaFreeable(
+  days: number,
+  live: ReadonlySet<string>,
+  now = Date.now(),
+  root?: string
+): Promise<{ conversations: number; bytes: number }> {
+  let conversations = 0
+  let bytes = 0
+  for (const f of await dueFiles(days, live, now, root)) {
+    let freed = 0
+    try {
+      for await (const line of linesOf(f.file)) {
+        const next = stripMediaLine(line.bytes.toString('utf8'))
+        if (next !== null) freed += line.bytes.length - Buffer.byteLength(next)
+      }
+    } catch {
+      continue
+    }
+    if (freed > 0) {
+      conversations++
+      bytes += freed
+    }
+  }
+  return { conversations, bytes }
+}
+
 // Tira os prints das conversas paradas há mais de `days` dias, fora as rodando (`live`).
 export async function trimConversations(
   days: number,
@@ -143,11 +181,9 @@ export async function trimConversations(
   now = Date.now(),
   root?: string
 ): Promise<{ trimmed: number; freedBytes: number }> {
-  const limit = now - days * 86_400_000
   let trimmed = 0
   let freedBytes = 0
-  for (const f of await transcriptFiles(root)) {
-    if (f.mtimeMs > limit || live.has(sessionOf(f.file))) continue
+  for (const f of await dueFiles(days, live, now, root)) {
     try {
       const freed = await trimFile(f)
       if (freed > 0) {

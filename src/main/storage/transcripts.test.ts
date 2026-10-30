@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, statSync, utimesSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { conversationsUsage, stripMediaLine, trimConversations } from './transcripts'
+import { conversationsUsage, mediaFreeable, stripMediaLine, trimConversations } from './transcripts'
 
 // Os prints dentro das conversas: saem as imagens e os anexos em base64; o resto da linha (e da
 // conversa) fica igual, para a conversa continuar abrindo e dar para retomar. Os formatos seguem os
@@ -95,6 +95,17 @@ describe('trimConversations', () => {
     expect(lines).toHaveLength(3)
     expect(lines[1]).toBe(odd)
     expect(lines[2]).toBe('')
+  })
+
+  it('o que sairia agora é medido sem gravar nada, e bate com o que a limpeza libera', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'projects-'))
+    const file = conversation(root, 'antiga', 90, [userWithImage])
+    conversation(root, 'recente', 10, [userWithImage])
+    const before = readFileSync(file, 'utf8')
+    const preview = await mediaFreeable(60, new Set(), NOW, root)
+    expect(preview.conversations).toBe(1)
+    expect(readFileSync(file, 'utf8')).toBe(before)
+    expect((await trimConversations(60, new Set(), NOW, root)).freedBytes).toBe(preview.bytes)
   })
 
   it('a conversa rodando (e os subagentes dela) não é tocada', async () => {

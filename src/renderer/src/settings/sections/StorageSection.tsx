@@ -30,10 +30,48 @@ function lastCleanText(last: CleanResult | null): string {
   return `${auto} ${tr(`Última: ${when} - ${formatBytes(last.freedBytes, BASE)} liberados.`, `Last: ${when} - ${formatBytes(last.freedBytes, BASE)} freed.`)}`
 }
 
+// O que o "Limpar agora" fez, logo abaixo do botão: sem isso, uma limpeza que não achou nada
+// parecia não ter rodado.
+function resultText(r: CleanResult, s: StorageSettings): string {
+  if (!r.freedBytes && !r.scratchRemoved && !r.conversationsTrimmed) {
+    return tr(
+      `Nada passou dos prazos: nenhum rascunho parado há mais de ${days(s.scratchDays)} e nenhuma conversa com prints parada há mais de ${days(s.mediaDays)}.`,
+      `Nothing is past the periods: no scratch files idle for more than ${days(s.scratchDays)} and no chat with screenshots idle for more than ${days(s.mediaDays)}.`
+    )
+  }
+  const parts = [
+    r.scratchRemoved && tr(`${r.scratchRemoved} rascunho${r.scratchRemoved > 1 ? 's' : ''} apagado${r.scratchRemoved > 1 ? 's' : ''}`, `${r.scratchRemoved} scratch folder${r.scratchRemoved > 1 ? 's' : ''} deleted`),
+    r.conversationsTrimmed && tr(`${r.conversationsTrimmed} conversa${r.conversationsTrimmed > 1 ? 's' : ''} sem prints`, `${r.conversationsTrimmed} chat${r.conversationsTrimmed > 1 ? 's' : ''} without screenshots`)
+  ].filter(Boolean)
+  return tr(`${formatBytes(r.freedBytes, BASE)} liberados: ${parts.join(' e ')}.`, `${formatBytes(r.freedBytes, BASE)} freed: ${parts.join(' and ')}.`)
+}
+
+// O que o botão apaga, com os prazos de agora: os rascunhos e os prints que já passaram deles. O total
+// das linhas de cima não é isso (a aba mostrava 21 GB, e o botão não tinha nada para apagar).
+function freeableLabel(f: StorageUsage['freeable']): string {
+  if (!f) return tr('Limpar agora', 'Clean up now')
+  return tr(`Limpar agora: ${formatBytes(f.scratchBytes + f.mediaBytes, BASE)}`, `Clean up now: ${formatBytes(f.scratchBytes + f.mediaBytes, BASE)}`)
+}
+
+function freeableText(f: StorageUsage['freeable'], s: StorageSettings, last: CleanResult | null): string {
+  if (!f) return tr('Medindo o que passou dos prazos…', 'Measuring what is past the periods…')
+  const scratch = tr(
+    `${f.scratchSessions} rascunho${f.scratchSessions === 1 ? '' : 's'} parado${f.scratchSessions === 1 ? '' : 's'} há mais de ${days(s.scratchDays)} (${formatBytes(f.scratchBytes, BASE)})`,
+    `${f.scratchSessions} scratch folder${f.scratchSessions === 1 ? '' : 's'} idle for more than ${days(s.scratchDays)} (${formatBytes(f.scratchBytes, BASE)})`
+  )
+  const media = tr(
+    `prints de ${f.mediaConversations} conversa${f.mediaConversations === 1 ? '' : 's'} parada${f.mediaConversations === 1 ? '' : 's'} há mais de ${days(s.mediaDays)} (${formatBytes(f.mediaBytes, BASE)})`,
+    `screenshots from ${f.mediaConversations} chat${f.mediaConversations === 1 ? '' : 's'} idle for more than ${days(s.mediaDays)} (${formatBytes(f.mediaBytes, BASE)})`
+  )
+  return `${tr('Passaram dos prazos', 'Past the periods')}: ${scratch} ${tr('e', 'and')} ${media}. ${lastCleanText(last)}`
+}
+
 export function StorageSection() {
   const [usage, setUsage] = useState<StorageUsage | null>(null)
   const [settings, setSettings] = useState<StorageSettings | null>(null)
   const [cleaning, setCleaning] = useState(false)
+  // O resultado do último clique em "Limpar agora", nesta abertura da aba.
+  const [result, setResult] = useState<CleanResult | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -44,8 +82,8 @@ export function StorageSection() {
     }
   }, [])
 
-  // Os rascunhos ainda sendo medidos, ou uma limpeza rodando: pergunta de novo daqui a pouco.
-  const pending = !usage || usage.scratchBytes === null || usage.running
+  // Ainda medindo (ou com o prazo recém-trocado), ou uma limpeza rodando: pergunta de novo daqui a pouco.
+  const pending = !usage || usage.scratchBytes === null || !usage.freeable || usage.running
   useEffect(() => {
     if (!pending) return
     let alive = true
@@ -59,13 +97,16 @@ export function StorageSection() {
   const change = (patch: Partial<StorageSettings>) => {
     // Conversas com prazo menor que o dos prints: os dois ficam iguais (o processo principal faz o mesmo).
     if (settings) setSettings(withMediaCap({ ...settings, ...patch }))
-    void window.api.storage.setSettings(patch)
+    // O que dá para liberar muda com o prazo: some até a medida nova chegar.
+    setUsage((u) => (u ? { ...u, freeable: null } : u))
+    setResult(null)
+    void window.api.storage.setSettings(patch).then(() => window.api.storage.usage().then(setUsage))
   }
 
   const cleanNow = async () => {
     setCleaning(true)
     try {
-      await window.api.storage.clean()
+      setResult(await window.api.storage.clean())
       setUsage(await window.api.storage.usage())
     } catch (err) {
       console.error('[configurações] limpeza do disco:', err)
@@ -80,7 +121,14 @@ export function StorageSection() {
       <Group>
         <Row
           label={tr('Conversas', 'Chats')}
-          description={usage ? `${usage.conversations.toLocaleString(LOCALE)} ${tr('conversas', 'chats')} - ${formatBytes(usage.conversationsBytes, BASE)}` : tr('Medindo…', 'Measuring…')}
+          description={
+            usage
+              ? tr(
+                  `Ocupam ${formatBytes(usage.conversationsBytes, BASE)} - ${usage.conversations.toLocaleString(LOCALE)} conversas`,
+                  `Take up ${formatBytes(usage.conversationsBytes, BASE)} - ${usage.conversations.toLocaleString(LOCALE)} chats`
+                )
+              : tr('Medindo…', 'Measuring…')
+          }
           info={tr(
             'O texto, os prints e os anexos de cada conversa, guardados pelo Claude Code. Saem nos prazos abaixo.',
             'The text, screenshots and attachments of each chat, kept by Claude Code. They go after the periods below.'
@@ -92,7 +140,10 @@ export function StorageSection() {
           label={tr('Rascunhos do agente', 'Agent scratch files')}
           description={
             usage && usage.scratchBytes !== null
-              ? `${formatBytes(usage.scratchBytes, BASE)} - ${usage.scratchSessions.toLocaleString(LOCALE)} ${tr('conversas', 'chats')}`
+              ? tr(
+                  `Ocupam ${formatBytes(usage.scratchBytes, BASE)} - ${usage.scratchSessions.toLocaleString(LOCALE)} conversas`,
+                  `Take up ${formatBytes(usage.scratchBytes, BASE)} - ${usage.scratchSessions.toLocaleString(LOCALE)} chats`
+                )
               : tr('Medindo…', 'Measuring…')
           }
           info={tr(
@@ -147,8 +198,11 @@ export function StorageSection() {
               onChange={(v) => change({ mediaDays: Number(v) })}
             />
           </Row>
-          <Row label={tr('Limpar agora', 'Clean up now')} description={lastCleanText(usage?.lastClean ?? null)}>
-            <Button onClick={() => void cleanNow()} disabled={busy}>
+          <Row
+            label={freeableLabel(usage?.freeable ?? null)}
+            description={result ? resultText(result, settings) : freeableText(usage?.freeable ?? null, settings, usage?.lastClean ?? null)}
+          >
+            <Button onClick={() => void cleanNow()} disabled={busy || !usage?.freeable}>
               {busy ? tr('Limpando…', 'Cleaning…') : tr('Limpar agora', 'Clean up now')}
             </Button>
           </Row>

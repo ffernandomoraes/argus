@@ -18,12 +18,15 @@ export const STORAGE_DEFAULTS: StorageSettings = { conversationDays: 90, scratch
 // O que uma limpeza liberou.
 export type CleanResult = { at: number; freedBytes: number; scratchRemoved: number; conversationsTrimmed: number }
 
+// O que ocupa e, separado, o que passou dos prazos e sai na próxima limpeza (o "Limpar agora").
 export type StorageUsage = {
   conversations: number
   conversationsBytes: number
   // Nulo: ainda medindo (a pasta dos rascunhos pode ter milhões de arquivos).
   scratchBytes: number | null
   scratchSessions: number
+  // O que passou dos prazos; nulo enquanto mede (junto com os rascunhos).
+  freeable: { scratchBytes: number; scratchSessions: number; mediaBytes: number; mediaConversations: number } | null
   lastClean: CleanResult | null
   running: boolean
 }

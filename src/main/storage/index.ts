@@ -2,7 +2,7 @@ import { STORAGE_DEFAULTS, withMediaCap, type CleanResult, type StorageSettings,
 import { loadAppSettings, saveAppSettings } from '../appSettings'
 import { conversationDays, ensureConversationDays, setConversationDays } from './retention'
 import { cleanScratch, scratchUsage } from './scratch'
-import { conversationsUsage, trimConversations } from './transcripts'
+import { conversationsUsage, mediaFreeable, trimConversations } from './transcripts'
 
 // Limpeza do que o uso acumula no disco: os rascunhos do agente das conversas paradas e os prints
 // das conversas antigas (o texto fica). Roda sozinha um pouco depois de abrir o app e uma vez por
@@ -20,7 +20,8 @@ export class StorageCleaner {
   private first: NodeJS.Timeout | null = null
   private timer: NodeJS.Timeout | null = null
   private running: Promise<CleanResult> | null = null
-  private scratch: { bytes: number; sessions: number; at: number } | null = null
+  // A última medida: o que ocupa e o que passou dos prazos (cara: o du e a leitura das conversas).
+  private measure: { scratchBytes: number; scratchSessions: number; freeable: NonNullable<StorageUsage['freeable']>; at: number } | null = null
   private measuring: Promise<void> | null = null
 
   // live: as sessões com o `claude` rodando agora (as delas não são tocadas).
@@ -50,6 +51,8 @@ export class StorageCleaner {
     if (days !== undefined) setConversationDays(days)
     const { conversationDays: _file, ...saved } = withMediaCap({ ...this.settings(), ...rest })
     saveAppSettings({ storage: saved })
+    // Com o prazo novo, o que dá para liberar muda: mede de novo.
+    this.measure = null
     return this.settings()
   }
 
@@ -61,20 +64,35 @@ export class StorageCleaner {
 
   async usage(): Promise<StorageUsage> {
     const conversations = await conversationsUsage()
-    if (!this.scratch || Date.now() - this.scratch.at > SCRATCH_CACHE_MS) this.measureScratch()
+    if (!this.measure || Date.now() - this.measure.at > SCRATCH_CACHE_MS) this.measureNow()
     return {
       conversations: conversations.count,
       conversationsBytes: conversations.bytes,
-      scratchBytes: this.scratch?.bytes ?? null,
-      scratchSessions: this.scratch?.sessions ?? 0,
+      scratchBytes: this.measure?.scratchBytes ?? null,
+      scratchSessions: this.measure?.scratchSessions ?? 0,
+      freeable: this.measure?.freeable ?? null,
       lastClean: loadAppSettings().storageLastClean ?? null,
       running: !!this.running
     }
   }
 
-  private measureScratch(): void {
-    this.measuring ??= scratchUsage()
-      .then((u) => void (this.scratch = { ...u, at: Date.now() }))
+  private measureNow(): void {
+    this.measuring ??= (async () => {
+      const s = this.settings()
+      const live = await this.live()
+      const [scratch, media] = await Promise.all([scratchUsage(s.scratchDays, live), mediaFreeable(s.mediaDays, live)])
+      this.measure = {
+        scratchBytes: scratch.bytes,
+        scratchSessions: scratch.sessions,
+        freeable: {
+          scratchBytes: scratch.freeableBytes,
+          scratchSessions: scratch.freeableSessions,
+          mediaBytes: media.bytes,
+          mediaConversations: media.conversations
+        },
+        at: Date.now()
+      }
+    })()
       .catch(() => {})
       .finally(() => (this.measuring = null))
   }
@@ -97,7 +115,8 @@ export class StorageCleaner {
       conversationsTrimmed: media.trimmed
     }
     saveAppSettings({ storageLastClean: result })
-    this.scratch = null
+    // Só mede de novo se algo saiu: sem isso a aba voltava a "Medindo…" depois de uma limpeza vazia.
+    if (scratch.removed || media.trimmed) this.measure = null
     return result
   }
 }

@@ -45,6 +45,13 @@ export async function scratchSessions(roots = tempRoots()): Promise<ScratchSessi
   return out
 }
 
+// As pastas que a limpeza pegaria agora: paradas há mais de `days` dias, fora as das conversas
+// rodando (`live`).
+async function dueSessions(days: number, live: ReadonlySet<string>, now: number, roots: string[]): Promise<ScratchSession[]> {
+  const limit = now - days * 86_400_000
+  return (await scratchSessions(roots)).filter((s) => !live.has(s.sessionId) && s.touchedAt <= limit)
+}
+
 // Apaga as pastas paradas há mais de `days` dias, fora as das conversas rodando (`live`).
 export async function cleanScratch(
   days: number,
@@ -52,11 +59,9 @@ export async function cleanScratch(
   now = Date.now(),
   roots = tempRoots()
 ): Promise<{ removed: number; freedBytes: number }> {
-  const limit = now - days * 86_400_000
   let removed = 0
   let freedBytes = 0
-  for (const s of await scratchSessions(roots)) {
-    if (live.has(s.sessionId) || s.touchedAt > limit) continue
+  for (const s of await dueSessions(days, live, now, roots)) {
     const size = (await diskUsage(s.dir)) ?? 0
     try {
       await rm(s.dir, { recursive: true, force: true })
@@ -69,9 +74,18 @@ export async function cleanScratch(
   return { removed, freedBytes }
 }
 
-// Quanto os rascunhos ocupam, somando as raízes.
-export async function scratchUsage(roots = tempRoots()): Promise<{ bytes: number; sessions: number }> {
+// Quanto os rascunhos ocupam, somando as raízes, e quanto a limpeza liberaria agora com o prazo de
+// `days` dias.
+export async function scratchUsage(
+  days: number,
+  live: ReadonlySet<string>,
+  now = Date.now(),
+  roots = tempRoots()
+): Promise<{ bytes: number; sessions: number; freeableBytes: number; freeableSessions: number }> {
   let bytes = 0
   for (const root of roots) bytes += (await names(root)).length ? ((await diskUsage(root)) ?? 0) : 0
-  return { bytes, sessions: (await scratchSessions(roots)).length }
+  const due = await dueSessions(days, live, now, roots)
+  let freeableBytes = 0
+  for (const s of due) freeableBytes += (await diskUsage(s.dir)) ?? 0
+  return { bytes, sessions: (await scratchSessions(roots)).length, freeableBytes, freeableSessions: due.length }
 }

@@ -45,12 +45,18 @@ describe('cleanScratch', () => {
     expect((await cleanScratch(3, new Set(), NOW, [root])).removed).toBe(0)
   })
 
-  it('mede o tamanho e quantas conversas têm rascunho', async () => {
+  // O total não é o que sai: a aba mostrava 21 GB, e o "Limpar agora" (com o prazo de 7 dias) não
+  // tinha nada para apagar.
+  it('mede o total e, separado, o que passou do prazo e sairia agora', async () => {
     const root = mkdtempSync(join(tmpdir(), 'scratch-'))
     session(root, A, 1)
-    session(root, B, 1)
-    const usage = await scratchUsage([root])
-    expect(usage.sessions).toBe(2)
-    expect(usage.bytes).toBeGreaterThanOrEqual(2 * 64 * 1024)
+    session(root, B, 10)
+    session(root, C, 10)
+    const usage = await scratchUsage(7, new Set([C]), NOW, [root])
+    expect(usage.sessions).toBe(3)
+    expect(usage.bytes).toBeGreaterThanOrEqual(3 * 64 * 1024)
+    expect(usage.freeableSessions).toBe(1)
+    expect(usage.freeableBytes).toBeGreaterThanOrEqual(64 * 1024)
+    expect(usage.freeableBytes).toBeLessThan(usage.bytes)
   })
 })

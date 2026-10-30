@@ -23,47 +23,40 @@ const days = (n: number) => (n === 1 ? tr('1 dia', '1 day') : tr(`${n} dias`, `$
 // Um prazo posto à mão no settings.json do Claude Code (fora das opções) aparece também, marcado.
 const withCurrent = (list: number[], current: number) => (list.includes(current) ? list : [...list, current].sort((a, b) => a - b))
 
-function lastCleanText(last: CleanResult | null): string {
-  const auto = tr('Roda sozinha ao abrir o Argus e uma vez por dia.', 'Runs on its own when Argus opens and once a day.')
-  if (!last) return auto
+// A data da última limpeza, sozinha: o detalhe do que sai fica no ícone de info.
+function lastCleanText(last: CleanResult | null): string | undefined {
+  if (!last) return undefined
   const when = new Date(last.at).toLocaleString(LOCALE, { dateStyle: 'short', timeStyle: 'short' })
-  return `${auto} ${tr(`Última: ${when} - ${formatBytes(last.freedBytes, BASE)} liberados.`, `Last: ${when} - ${formatBytes(last.freedBytes, BASE)} freed.`)}`
+  return tr(`Última limpeza: ${when}`, `Last cleanup: ${when}`)
 }
 
 // O que o "Limpar agora" fez, logo abaixo do botão: sem isso, uma limpeza que não achou nada
 // parecia não ter rodado.
-function resultText(r: CleanResult, s: StorageSettings): string {
-  if (!r.freedBytes && !r.scratchRemoved && !r.conversationsTrimmed) {
-    return tr(
-      `Nada passou dos prazos: nenhum rascunho parado há mais de ${days(s.scratchDays)} e nenhuma conversa com prints parada há mais de ${days(s.mediaDays)}.`,
-      `Nothing is past the periods: no scratch files idle for more than ${days(s.scratchDays)} and no chat with screenshots idle for more than ${days(s.mediaDays)}.`
-    )
-  }
-  const parts = [
-    r.scratchRemoved && tr(`${r.scratchRemoved} rascunho${r.scratchRemoved > 1 ? 's' : ''} apagado${r.scratchRemoved > 1 ? 's' : ''}`, `${r.scratchRemoved} scratch folder${r.scratchRemoved > 1 ? 's' : ''} deleted`),
-    r.conversationsTrimmed && tr(`${r.conversationsTrimmed} conversa${r.conversationsTrimmed > 1 ? 's' : ''} sem prints`, `${r.conversationsTrimmed} chat${r.conversationsTrimmed > 1 ? 's' : ''} without screenshots`)
-  ].filter(Boolean)
-  return tr(`${formatBytes(r.freedBytes, BASE)} liberados: ${parts.join(' e ')}.`, `${formatBytes(r.freedBytes, BASE)} freed: ${parts.join(' and ')}.`)
+function resultText(r: CleanResult): string {
+  if (!r.freedBytes && !r.scratchRemoved && !r.conversationsTrimmed) return tr('Nada passou dos prazos.', 'Nothing is past the periods.')
+  return tr(`Liberou ${formatBytes(r.freedBytes, BASE)}.`, `Freed ${formatBytes(r.freedBytes, BASE)}.`)
 }
 
 // O que o botão apaga, com os prazos de agora: os rascunhos e os prints que já passaram deles. O total
 // das linhas de cima não é isso (a aba mostrava 21 GB, e o botão não tinha nada para apagar).
 function freeableLabel(f: StorageUsage['freeable']): string {
-  if (!f) return tr('Limpar agora', 'Clean up now')
-  return tr(`Limpar agora: ${formatBytes(f.scratchBytes + f.mediaBytes, BASE)}`, `Clean up now: ${formatBytes(f.scratchBytes + f.mediaBytes, BASE)}`)
+  if (!f) return tr('Medindo o que dá para liberar…', 'Measuring what can be freed…')
+  return tr(`Pode liberar ${formatBytes(f.scratchBytes + f.mediaBytes, BASE)}`, `Can free ${formatBytes(f.scratchBytes + f.mediaBytes, BASE)}`)
 }
 
-function freeableText(f: StorageUsage['freeable'], s: StorageSettings, last: CleanResult | null): string {
-  if (!f) return tr('Medindo o que passou dos prazos…', 'Measuring what is past the periods…')
-  const scratch = tr(
-    `${f.scratchSessions} rascunho${f.scratchSessions === 1 ? '' : 's'} parado${f.scratchSessions === 1 ? '' : 's'} há mais de ${days(s.scratchDays)} (${formatBytes(f.scratchBytes, BASE)})`,
-    `${f.scratchSessions} scratch folder${f.scratchSessions === 1 ? '' : 's'} idle for more than ${days(s.scratchDays)} (${formatBytes(f.scratchBytes, BASE)})`
-  )
-  const media = tr(
-    `prints de ${f.mediaConversations} conversa${f.mediaConversations === 1 ? '' : 's'} parada${f.mediaConversations === 1 ? '' : 's'} há mais de ${days(s.mediaDays)} (${formatBytes(f.mediaBytes, BASE)})`,
-    `screenshots from ${f.mediaConversations} chat${f.mediaConversations === 1 ? '' : 's'} idle for more than ${days(s.mediaDays)} (${formatBytes(f.mediaBytes, BASE)})`
-  )
-  return `${tr('Passaram dos prazos', 'Past the periods')}: ${scratch} ${tr('e', 'and')} ${media}. ${lastCleanText(last)}`
+function freeableInfo(f: StorageUsage['freeable'], s: StorageSettings): string | undefined {
+  if (!f) return undefined
+  return [
+    tr(
+      `Rascunhos parados há mais de ${days(s.scratchDays)}: ${formatBytes(f.scratchBytes, BASE)}`,
+      `Scratch files idle for more than ${days(s.scratchDays)}: ${formatBytes(f.scratchBytes, BASE)}`
+    ),
+    tr(
+      `Prints de conversas paradas há mais de ${days(s.mediaDays)}: ${formatBytes(f.mediaBytes, BASE)}`,
+      `Screenshots from chats idle for more than ${days(s.mediaDays)}: ${formatBytes(f.mediaBytes, BASE)}`
+    ),
+    tr('Roda sozinha ao abrir o Argus e uma vez por dia.', 'Runs on its own when Argus opens and once a day.')
+  ].join('\n')
 }
 
 export function StorageSection() {
@@ -200,7 +193,8 @@ export function StorageSection() {
           </Row>
           <Row
             label={freeableLabel(usage?.freeable ?? null)}
-            description={result ? resultText(result, settings) : freeableText(usage?.freeable ?? null, settings, usage?.lastClean ?? null)}
+            info={freeableInfo(usage?.freeable ?? null, settings)}
+            description={result ? resultText(result) : lastCleanText(usage?.lastClean ?? null)}
           >
             <Button onClick={() => void cleanNow()} disabled={busy || !usage?.freeable}>
               {busy ? tr('Limpando…', 'Cleaning…') : tr('Limpar agora', 'Clean up now')}

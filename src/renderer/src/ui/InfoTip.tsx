@@ -50,7 +50,7 @@ export function InfoTip({ text }: { text: string }) {
           <div
             role="tooltip"
             style={{ ...pos, width: WIDTH }}
-            className="pointer-events-none fixed z-[100] rounded-lg border border-line bg-surface/95 px-3 py-2 text-[15px] leading-relaxed text-text shadow-lg backdrop-blur-xl"
+            className="pointer-events-none fixed z-[100] rounded-lg border border-line bg-surface/95 px-3 py-2 whitespace-pre-line text-[15px] leading-relaxed text-text shadow-lg backdrop-blur-xl"
           >
             {text}
           </div>,

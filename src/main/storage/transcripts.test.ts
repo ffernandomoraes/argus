@@ -73,7 +73,8 @@ describe('trimConversations', () => {
     expect(result.freedBytes).toBeGreaterThan(9000)
     const after = statSync(old)
     expect(after.mtimeMs).toBe(before.mtimeMs)
-    expect(after.mode & 0o777).toBe(0o600)
+    // O Windows não tem essa permissão (só "somente leitura"): lá o modo vem sempre 0o666.
+    if (process.platform !== 'win32') expect(after.mode & 0o777).toBe(0o600)
     const lines = readFileSync(old, 'utf8').trim().split('\n').map((l) => JSON.parse(l))
     expect(lines[0].message.content[0]).toEqual({ type: 'text', text: '[imagem removida]' })
     expect(lines[1]).toEqual(text)

@@ -5,7 +5,7 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { Lang, LangPreference } from './i18n'
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -199,6 +199,10 @@ export type Api = {
     onActive: (cb: (chats: ActiveChat[]) => void) => Off
     // Respostas não vistas nesta janela: o ícone da barra de menus conta e lista.
     setUnread: (chats: UnreadChat[]) => void
+    // Conversas que o Argus fechou no meio, e o X do aviso numa delas.
+    interrupted: () => Promise<InterruptedChat[]>
+    onInterrupted: (cb: (chats: InterruptedChat[]) => void) => Off
+    dismissInterrupted: (sessionId: string) => void
   }
   // Biblioteca de agentes de cada provedor (main/agents/folder.ts). Com a pasta, inclui os do projeto.
   agents: {

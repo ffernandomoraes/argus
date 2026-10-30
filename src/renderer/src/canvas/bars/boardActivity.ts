@@ -1,5 +1,5 @@
 import type { BoardSummary } from '../../../../shared/canvas'
-import type { ActiveChat } from '../../../../shared/chat'
+import type { ActiveChat, InterruptedChat } from '../../../../shared/chat'
 import { createStore, type ReadableStore } from '../../lib/createStore'
 import { useStore } from '../../lib/useStore'
 import { activeChats } from '../activeChats'
@@ -8,7 +8,7 @@ import { displayPath } from '../factory'
 
 // O que acontece nos workspaces que esta janela não mostra, para a bolinha do menu de workspaces.
 
-export type BoardStatus = 'needs-you' | 'running' | 'done' | null
+export type BoardStatus = 'needs-you' | 'running' | 'interrupted' | 'done' | null
 
 // A conversa é do workspace: a pasta dela está nele, ou ela foi posta solta nele. A mesma pasta em
 // dois workspaces conta para os dois.
@@ -44,15 +44,23 @@ boardsStore.subscribe(() => {
   })
 })
 
-// Esperando você vale mais que trabalhando, que vale mais que concluído.
-export function boardStatus(board: BoardSummary, chats: ActiveChat[], finished: ReadonlySet<string>): BoardStatus {
+// Esperando você vale mais que trabalhando, que vale mais que interrompida (o Argus fechou com ela
+// trabalhando), que vale mais que concluído.
+export function boardStatus(
+  board: BoardSummary,
+  chats: ActiveChat[],
+  finished: ReadonlySet<string>,
+  interrupted: InterruptedChat[] = []
+): BoardStatus {
   let running = false
   for (const c of chats) {
     if (!boardHas(board, c)) continue
     if (c.status === 'needs-you') return 'needs-you'
     running = true
   }
-  return running ? 'running' : finished.has(board.id) ? 'done' : null
+  if (running) return 'running'
+  if (interrupted.some((c) => board.paths.includes(displayPath(c.cwd)) || board.sessions.includes(c.sessionId))) return 'interrupted'
+  return finished.has(board.id) ? 'done' : null
 }
 
 // Só leitura, para os testes; na tela, useDoneBoards.

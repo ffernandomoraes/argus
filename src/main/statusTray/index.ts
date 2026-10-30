@@ -1,5 +1,5 @@
 import { app, BrowserWindow, Menu, nativeTheme, Tray } from 'electron'
-import type { UnreadChat } from '../../shared/chat'
+import type { InterruptedChat, UnreadChat } from '../../shared/chat'
 import { statusSignature, StatusChanges, type ChatEntry } from '../chats/entries'
 import { sessionTitles } from '../chats/titles'
 import { lang, tr } from '../i18n'
@@ -17,6 +17,7 @@ import { trayMenu, trayRows } from './menu'
 export type TraySources = {
   chats: () => ChatEntry[]
   unread: () => UnreadChat[]
+  interrupted: () => InterruptedChat[]
   showApp: () => void
   openChat: (cwd: string, sessionId: string) => void
 }
@@ -33,6 +34,7 @@ export class StatusTray {
   private changes = new StatusChanges()
   private signature: string | null = null
   private unread: UnreadChat[] = []
+  private interrupted: InterruptedChat[] = []
   // Conversas que pararam com erro enquanto você estava fora do app. Continuam aqui mesmo depois
   // que a sessão é encerrada (conversa fechada na tela), até você voltar ao app.
   private finished = new Map<string, Finished>()
@@ -74,12 +76,14 @@ export class StatusTray {
   refresh(): void {
     const entries = this.sources.chats()
     const unread = this.sources.unread()
+    const interrupted = this.sources.interrupted()
     // O idioma entra na assinatura: trocado nos ajustes, a dica e o menu (Linux) são refeitos.
-    const signature = `${lang()}#${statusSignature(entries)}#${unread.map((u) => u.id).join('|')}`
+    const signature = `${lang()}#${statusSignature(entries)}#${unread.map((u) => u.id).join('|')}#${interrupted.map((c) => c.sessionId).join('|')}`
     if (signature === this.signature) return
     this.signature = signature
     this.entries = entries
     this.unread = unread
+    this.interrupted = interrupted
     for (const { entry, before } of this.changes.next(entries)) {
       const { id, cwd, state } = entry
       if (state.status !== 'idle') this.finished.delete(id)
@@ -108,7 +112,7 @@ export class StatusTray {
 
   // Dica e ícone só mudam quando o que mostram muda.
   private paint(): void {
-    const kinds = trayRows(this.entries, this.finished, this.unread).map((r) => r.kind)
+    const kinds = trayRows(this.entries, this.finished, this.unread, this.interrupted).map((r) => r.kind)
     const tip = tooltip(app.name, kinds)
     if (tip !== this.tip) {
       this.tip = tip
@@ -151,7 +155,7 @@ export class StatusTray {
   }
 
   private async buildMenu(): Promise<Menu> {
-    const rows = trayRows(this.entries, this.finished, this.unread)
+    const rows = trayRows(this.entries, this.finished, this.unread, this.interrupted)
     const titles = new Map<string, string>()
     const untitled = rows.filter((r) => r.title === undefined)
     const read = await Promise.all([...new Set(untitled.map((r) => r.cwd))].map((cwd) => sessionTitles(cwd)))

@@ -106,6 +106,10 @@ export type ActiveChat = {
 // Conversa com resposta que você ainda não viu (bolinha verde na lista), como a janela conta.
 export type UnreadChat = { id: string; cwd: string; title: string }
 
+// Conversa que estava trabalhando (ou esperando você) quando o Argus fechou: aparece interrompida
+// (bolinha vermelha) até você continuar, mandar outra mensagem ou dispensar o aviso.
+export type InterruptedChat = { sessionId: string; cwd: string }
+
 // O que o mascote solto na tela mostra além do que as conversas ativas dizem. done: respostas não
 // vistas que terminaram bem (check verde). failed: chaves das conversas que pararam com erro e
 // você ainda não viu (aviso vermelho); a que acabou de parar conta por alguns segundos mesmo

@@ -1,7 +1,7 @@
 import { nativeImage, nativeTheme, type NativeImage } from 'electron'
 import { IS_LINUX, IS_MAC } from '../platform'
 import type { Kind } from './kinds'
-import { arc, bang, check, cross, hollow, logo, withBadge, type Shape } from './shapes'
+import { arc, bang, check, cross, hollow, logo, pause, withBadge, type Shape } from './shapes'
 
 // Ícones desenhados aqui mesmo, sem arquivos de imagem: as formas de shapes.ts rasterizadas a 2x
 // com antisserrilhado. No Mac são "template": o macOS pinta de claro ou escuro conforme a barra.
@@ -60,6 +60,7 @@ export function drawIcons(dev: boolean): TrayIcons {
       'needs-you': draw(withBadge(base, hollow(bang))),
       done: draw(withBadge(base, hollow(check))),
       error: draw(withBadge(base, hollow(cross))),
+      interrupted: draw(withBadge(base, hollow(pause))),
       idle: draw(base)
     }
   }

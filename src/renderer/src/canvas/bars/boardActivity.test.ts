@@ -60,4 +60,13 @@ describe('boardActivity', () => {
     expect(boardStatus(B, [chat('k', '~/b'), chat('j', '~/b', 'needs-you')], done)).toBe('needs-you')
     expect(boardStatus(A, [chat('k', '~/b')], done)).toBeNull()
   })
+
+  it('interrompida (o Argus fechou com ela trabalhando) fica entre trabalhando e concluído', () => {
+    const done = new Set(['b'])
+    const stopped = [{ sessionId: 's1', cwd: '~/b' }]
+    expect(boardStatus(B, [], done, stopped)).toBe('interrupted')
+    expect(boardStatus(B, [chat('k', '~/b')], done, stopped)).toBe('running')
+    expect(boardStatus(C, [], done, [{ sessionId: 's-solta', cwd: '~' }])).toBe('interrupted')
+    expect(boardStatus(A, [], done, stopped)).toBeNull()
+  })
 })

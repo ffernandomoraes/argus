@@ -5,7 +5,8 @@ const STATUS_LABEL: Record<SessionStatus, string> = {
   idle: tr('parado', 'idle'),
   running: tr('trabalhando', 'working'),
   'needs-you': tr('precisa de você', 'needs you'),
-  done: tr('resposta nova', 'new reply')
+  done: tr('resposta nova', 'new reply'),
+  interrupted: tr('interrompida', 'interrupted')
 }
 
 // A pulsação só com animação ligada no sistema (Reduzir movimento desliga).
@@ -13,7 +14,8 @@ const DOT: Record<SessionStatus, string> = {
   idle: 'border border-faint',
   running: 'bg-running motion-safe:animate-pulse',
   'needs-you': 'bg-needs-you',
-  done: 'bg-done'
+  done: 'bg-done',
+  interrupted: 'bg-interrupted'
 }
 
 // Status discreto: só uma bolinha, com o nome no tooltip.

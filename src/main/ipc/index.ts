@@ -33,7 +33,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerWorktreesIpc()
   registerServersIpc()
   registerFilesIpc(s.unsavedFiles)
-  registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread)
+  registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread, s.interrupted)
   registerTerminalIpc(s.terminals, s.chats, s.terminalViewers)
   registerCliIpc()
 }

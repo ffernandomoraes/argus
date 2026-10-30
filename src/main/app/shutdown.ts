@@ -8,6 +8,8 @@ import { saveCanvasWindowLayout } from './windows'
 // install: com uma versão nova já baixada, troca agora, para abrir atualizado da próxima vez. Fica
 // de fora no desligamento do Windows (ver lifecycle.ts).
 export function shutdown(s: Services, install: boolean): void {
+  // Antes de encerrar as conversas: as que estavam trabalhando ficam marcadas para a próxima abertura.
+  step('conversas interrompidas', () => s.interrupted.freeze())
   step('guardar as janelas', saveCanvasWindowLayout)
   step('gravar o canvas', () => s.boards.flush())
   step('monitores de uso', () => s.usage.stop())

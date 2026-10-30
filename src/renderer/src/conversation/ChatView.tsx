@@ -10,6 +10,7 @@ import { ImageViewer } from './ImageViewer'
 import { RemoteControlTag } from './RemoteControlTag'
 import { usePreference } from '../settings/preferences'
 import { SuggestionChip } from './composer/SuggestionChip'
+import { CONTINUE_TEXT, InterruptedNotice } from './composer/InterruptedNotice'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
 import { olderRow } from './timeline/olderRow'
@@ -83,6 +84,9 @@ export type ChatViewProps = {
   // enquanto não há mensagens.
   readOnly?: boolean
   emptyText?: string
+  // O Argus fechou com a conversa trabalhando: o aviso com "Continuar de onde parou" e o X que
+  // tira a marca. Sem isto, nada aparece.
+  interrupted?: { onDismiss: () => void }
 }
 
 // A conversa: a linha do tempo (o histórico gravado e o que acontece agora), o prompt preso no
@@ -115,7 +119,8 @@ export const ChatView = memo(function ChatView({
   cleanText,
   endSignal = 0,
   readOnly = false,
-  emptyText
+  emptyText,
+  interrupted
 }: ChatViewProps) {
   const scroller = useRef<HTMLDivElement>(null)
   // A mesma área, para a linha do tempo virtualizada: ela precisa saber quando a área montou.
@@ -221,6 +226,7 @@ export const ChatView = memo(function ChatView({
   // Texto no campo esconde a sugestão; clicar nela envia pelo mesmo caminho da caixa de escrever.
   const [typing, setTyping] = useState(false)
   const sendSuggestion = useStableCallback((text: string) => composer.current?.send(text))
+  const sendContinue = useStableCallback(() => composer.current?.send(CONTINUE_TEXT))
   // Desligada em Configurações > Conversas, o balão nunca aparece.
   const suggestions = usePreference('promptSuggestions')
   const changeSetting = useStableCallback(onSettingChange)
@@ -280,6 +286,7 @@ export const ChatView = memo(function ChatView({
       {/* Só para ler: sem a sugestão nem a caixa de escrever. */}
       {!readOnly && (
         <>
+          {interrupted && !running && <InterruptedNotice onContinue={sendContinue} onDismiss={interrupted.onDismiss} />}
           <SuggestionChip text={live?.suggestion} visible={suggestions && !running && !typing} onSend={sendSuggestion} />
           <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
             {live?.remote && !remoteAbove && (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MessageSquarePlus, X } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
+import { dismissInterrupted, useIsInterrupted } from '../canvas/interruptedChats'
 import { ChatView } from '../conversation/ChatView'
 import { McpPanel } from '../conversation/McpPanel'
 import { OutputStylePanel } from '../conversation/OutputStylePanel'
@@ -56,6 +57,8 @@ export function PrototypeChat({
   const [styleOpen, setStyleOpen] = useState(false)
   const { key, live, settings, history } = session
   const { ready } = comments
+  // O Argus fechou com o protótipo trabalhando: o aviso para continuar de onde parou.
+  const interrupted = useIsInterrupted(sessionId)
 
   return (
     <>
@@ -80,6 +83,7 @@ export function PrototypeChat({
             contextPercent={contextPercent}
             compact
             agents={agents}
+            interrupted={interrupted && sessionId ? { onDismiss: () => dismissInterrupted(sessionId) } : undefined}
             composerAbove={
               <div className="mb-1.5 flex items-center gap-1">
                 <Button

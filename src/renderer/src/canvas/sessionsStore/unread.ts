@@ -4,9 +4,39 @@ import { useStore } from '../../lib/useStore'
 import type { ConversationSummary } from '../types'
 
 // Respostas que chegaram sem você estar vendo a conversa: a bolinha da lista fica verde até você
-// abrir a conversa. Só nesta janela e até fechar o app.
+// abrir a conversa. Cada janela conta as suas; ficam guardadas (localStorage) para a janela e o app
+// abertos de novo, depois de uma atualização, por exemplo, ainda mostrarem o que terminou.
 
-export const unread = createStore<ReadonlySet<string>>(new Set())
+const SAVED_KEY = 'unreadChats'
+// Só as mais recentes: as antigas (conversa apagada, pasta fora do canvas) saem.
+const MAX_SAVED = 200
+
+function readSaved(): string[] {
+  try {
+    const list: unknown = JSON.parse(localStorage.getItem(SAVED_KEY) ?? '[]')
+    return Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export const unread = createStore<ReadonlySet<string>>(new Set(readSaved()))
+
+// Grava só o que mudou nesta janela (as que entraram e as que saíram), por cima do guardado: outra
+// janela aberta grava as dela no mesmo lugar.
+let lastSaved = unread.get()
+unread.subscribe(() => {
+  const now = unread.get()
+  const added = [...now].filter((id) => !lastSaved.has(id))
+  const gone = new Set([...lastSaved].filter((id) => !now.has(id)))
+  lastSaved = now
+  const keep = readSaved().filter((id) => !gone.has(id) && !added.includes(id))
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify([...keep, ...added].slice(-MAX_SAVED)))
+  } catch {
+    // Sem gravar, vale só até fechar a janela.
+  }
+})
 
 // Conversas na tela agora (drawer, bloco no canvas, design aberto), com quantos mostram cada uma.
 const viewing = new Map<string, number>()

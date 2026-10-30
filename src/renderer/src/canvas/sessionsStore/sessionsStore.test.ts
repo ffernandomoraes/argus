@@ -16,6 +16,8 @@ const silent = new Set<string>()
 let gate: Promise<void> = Promise.resolve()
 let branchGate: Promise<void> = Promise.resolve()
 const reads = vi.fn()
+// O localStorage da janela, onde as não vistas ficam guardadas.
+const storage = new Map<string, string>()
 
 let mod: {
   convert: typeof import('./convert')
@@ -28,6 +30,10 @@ beforeAll(async () => {
   // unread.ts ouve o foco da janela e pergunta se ela está em foco ao ser carregado.
   globals.window.addEventListener = () => undefined
   globals.document.hasFocus = () => false
+  ;(globalThis as Record<string, unknown>).localStorage = {
+    getItem: (k: string) => storage.get(k) ?? null,
+    setItem: (k: string, v: string) => void storage.set(k, v)
+  }
   globals.window.api.sessions = {
     list: async (path: string) => {
       reads(path)
@@ -238,5 +244,19 @@ describe('respostas não vistas', () => {
     mod.unread.setPoppedOut(new Set(['d']))
     mod.unread.noteFinished([conv('d', 'running')], [conv('d', 'idle')])
     expect(mod.unread.unread.get().has('d')).toBe(false)
+  })
+
+  // Atualizar o Argus apagava a bolinha verde de tudo que tinha terminado sem você ver.
+  it('ficam guardadas para a janela aberta de novo (depois de uma atualização)', async () => {
+    mod.unread.markUnread('g')
+    mod.unread.markUnread('h')
+    mod.unread.markAsRead('h')
+    const saved = JSON.parse(storage.get('unreadChats') ?? '[]') as string[]
+    expect(saved).toContain('g')
+    expect(saved).not.toContain('h')
+    vi.resetModules()
+    const reopened = await import('./unread')
+    expect(reopened.unread.get().has('g')).toBe(true)
+    expect(reopened.unread.get().has('h')).toBe(false)
   })
 })

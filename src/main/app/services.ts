@@ -1,3 +1,5 @@
+import { join } from 'node:path'
+import { app } from 'electron'
 import { resolveAccount } from '../accounts'
 import { Auth } from '../auth'
 import { Providers } from '../providers'
@@ -21,6 +23,7 @@ import { Updater } from '../updater'
 import { UsageMonitors } from '../usageMonitor'
 import { readyCanvas } from './canvasRegistry'
 import { DockBadge } from './dockBadge'
+import { InterruptedChats } from './interruptedChats'
 import { KeepAwake } from './keepAwake'
 import { openFolder } from './folderOpener'
 import { MascotOverlay } from './mascotOverlay'
@@ -59,7 +62,12 @@ export function createServices() {
     badge.refresh()
     mascot.refresh()
   })
-  const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), showApp, openChat })
+  // Conversas que o app fechou no meio: as janelas mostram interrompidas, e o ícone da barra lista.
+  const interrupted = new InterruptedChats(join(app.getPath('userData'), 'interruptedChats.json'), () => {
+    broadcast('chat:interrupted', interrupted.list())
+    tray.refresh()
+  })
+  const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), interrupted: () => interrupted.list(), showApp, openChat })
   const badge = new DockBadge(() => chats.list(), () => unread.list())
   // Mascote solto na tela: check verde com resposta não vista, aviso vermelho com erro.
   const mascot = new MascotOverlay(() => unread.list(), () => chats.list())
@@ -76,6 +84,8 @@ export function createServices() {
 
   const chats = new Chats((key, state) => {
     broadcast('chat:state', key, state)
+    // Antes do ícone da barra: a que voltou a trabalhar sai das interrompidas.
+    interrupted.update(chats.list())
     tray.refresh()
     badge.refresh()
     notifier.refresh()
@@ -188,6 +198,7 @@ export function createServices() {
     sessionWatch,
     tray,
     unread,
+    interrupted,
     chats,
     chatHolders,
     notifier,

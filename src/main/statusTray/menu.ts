@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 import type { MenuItemConstructorOptions, NativeImage } from 'electron'
-import type { UnreadChat } from '../../shared/chat'
+import type { InterruptedChat, UnreadChat } from '../../shared/chat'
 import { titleOf, type ChatEntry } from '../chats/entries'
 import { tr } from '../i18n'
 import { kindOf, label, PRIORITY, summary, type Finished, type Kind } from './kinds'
@@ -26,21 +26,32 @@ function shorten(text: string): string {
   return text.length > MAX_TITLE ? text.slice(0, MAX_TITLE - 1) + '…' : text
 }
 
-// As conversas abertas, as que pararam com erro com você fora do app e as com resposta não vista,
-// que continuam aqui mesmo depois que a sessão é encerrada (conversa fechada na tela).
-export function trayRows(entries: ChatEntry[], finished: Map<string, Finished>, unread: UnreadChat[]): TrayRow[] {
+// As conversas abertas, as que pararam com erro com você fora do app, as que o Argus fechou no
+// meio e as com resposta não vista, que continuam aqui mesmo depois que a sessão é encerrada
+// (conversa fechada na tela).
+export function trayRows(
+  entries: ChatEntry[],
+  finished: Map<string, Finished>,
+  unread: UnreadChat[],
+  interrupted: InterruptedChat[]
+): TrayRow[] {
   const unreadIds = new Set(unread.map((u) => u.id))
+  const interruptedIds = new Set(interrupted.map((c) => c.sessionId))
   const live = new Set(entries.map((e) => e.id))
   const errors = [...finished].filter(([id]) => !live.has(id)).map(([, f]) => f)
-  // Conversas que já têm linha: a não vista delas não entra de novo.
+  // Conversas que já têm linha: a interrompida e a não vista delas não entram de novo.
   const listed = new Set([...entries.map((e) => e.state.sessionId), ...errors.map((f) => f.sessionId)])
+  const stopped = interrupted.filter((c) => !listed.has(c.sessionId))
+  for (const c of stopped) listed.add(c.sessionId)
+  const has = (ids: Set<string>, id?: string) => !!id && ids.has(id)
   return [
     ...entries.map((e) => ({
       cwd: e.cwd,
       sessionId: e.state.sessionId,
-      kind: kindOf(e.state, finished.get(e.id), !!e.state.sessionId && unreadIds.has(e.state.sessionId))
+      kind: kindOf(e.state, finished.get(e.id), has(unreadIds, e.state.sessionId), has(interruptedIds, e.state.sessionId))
     })),
     ...errors.map((f) => ({ ...f })),
+    ...stopped.map((c) => ({ cwd: c.cwd, sessionId: c.sessionId, kind: 'interrupted' as const })),
     ...unread.filter((u) => !listed.has(u.id)).map((u) => ({ cwd: u.cwd, sessionId: u.id, title: u.title, kind: 'done' as const }))
   ]
 }

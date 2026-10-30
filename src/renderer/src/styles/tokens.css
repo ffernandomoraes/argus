@@ -42,6 +42,8 @@
   --color-running: #60a5fa;
   --color-needs-you: #fbbf24;
   --color-done: #34d399;
+  /* Conversa que o Argus fechou no meio: vermelho, que nenhum outro estado usa. */
+  --color-interrupted: #f87171;
 
   /* Pergunta ou permissão no chat: na cor do grupo da conversa, que o painel e o bloco do canvas
      trocam no style. Fora de grupo, o amarelo do "precisa de você". */
@@ -104,6 +106,7 @@
   --color-running: #2563eb;
   --color-needs-you: #d97706;
   --color-done: #059669;
+  --color-interrupted: #dc2626;
 
   --color-guide: #db2777;
 

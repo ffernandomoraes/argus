@@ -1,6 +1,6 @@
 import { memo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import type { ActiveChat } from '../../../shared/chat'
+import type { ActiveChat, InterruptedChat } from '../../../shared/chat'
 import { Elapsed } from '../conversation/Elapsed'
 import { activityLabel } from '../conversation/timeline/activityLabel'
 import { Presence } from '../motion'
@@ -9,14 +9,16 @@ import { MENU_HOVER, MENU_PANEL, MENU_ROW } from '../ui/menuStyles'
 import { useOutsideClick } from '../useOutsideClick'
 import { useActiveChatsInCanvas } from './canvasScope'
 import { displayPath } from './factory'
+import { useInterruptedInCanvas } from './interruptedChats'
 import { untildify } from '../platform'
 import { useFinishedChats, useSessions, type FinishedChat } from './sessionsStore'
 import { StatusDot } from './StatusBadge'
 import { tr } from '../i18n'
 
-// No canto esquerdo da barra de baixo, enquanto alguma conversa do app trabalha, espera você ou
-// terminou sem você ver (bolinha verde): quantas de cada, numa linha, e o clique abre a lista com
-// cada uma, para cima. Clicar numa linha abre a conversa (a concluída sai da lista ao ser vista).
+// No canto esquerdo da barra de baixo, enquanto alguma conversa do app trabalha, espera você, foi
+// interrompida pelo Argus fechando (bolinha vermelha) ou terminou sem você ver (bolinha verde):
+// quantas de cada, numa linha, e o clique abre a lista com cada uma, para cima. Clicar numa linha
+// abre a conversa (a concluída sai da lista ao ser vista; a interrompida, ao continuar).
 export const RunningIndicator = memo(function RunningIndicator({
   onOpen
 }: {
@@ -24,10 +26,11 @@ export const RunningIndicator = memo(function RunningIndicator({
 }) {
   const chats = useActiveChatsInCanvas()
   const finished = useFinishedChats()
+  const interrupted = useInterruptedInCanvas()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useOutsideClick(ref, () => setOpen(false), open)
-  const empty = !chats.length && !finished.length
+  const empty = !chats.length && !finished.length && !interrupted.length
   // Tudo visto: na próxima vez a pílula volta fechada.
   if (empty && open) setOpen(false)
   if (empty) return null
@@ -35,10 +38,12 @@ export const RunningIndicator = memo(function RunningIndicator({
   const waiting = chats.filter((c) => c.status === 'needs-you').length
   const working = chats.length - waiting
   const done = finished.length
+  const stopped = interrupted.length
   // Cada estado com a sua bolinha, lado a lado.
   const lines = [
     { status: 'needs-you', n: waiting, text: tr(`${waiting} precisa${waiting > 1 ? 'm' : ''} de você`, `${waiting} need${waiting > 1 ? '' : 's'} you`) },
     { status: 'running', n: working, text: tr(`${working} trabalhando`, `${working} working`) },
+    { status: 'interrupted', n: stopped, text: tr(`${stopped} interrompida${stopped > 1 ? 's' : ''}`, `${stopped} interrupted`) },
     { status: 'done', n: done, text: tr(`${done} concluído${done > 1 ? 's' : ''}`, `${done} done`) }
   ] as const
   const pick = (cwd: string, sessionId: string) => {
@@ -55,6 +60,9 @@ export const RunningIndicator = memo(function RunningIndicator({
             <ul className="max-h-[50vh] overflow-y-auto">
               {chats.map((c) => (
                 <ActiveRow key={c.key} chat={c} onOpen={() => pick(c.cwd, c.sessionId ?? c.key)} />
+              ))}
+              {interrupted.map((c) => (
+                <InterruptedRow key={c.sessionId} chat={c} onOpen={() => pick(c.cwd, c.sessionId)} />
               ))}
               {finished.map((c) => (
                 <FinishedRow key={c.id} chat={c} onOpen={() => pick(untildify(c.path), c.id)} />
@@ -139,6 +147,32 @@ function FinishedRow({ chat: c, onOpen }: { chat: FinishedChat; onOpen: () => vo
             <span className="ml-auto shrink-0 text-[11px] text-faint">{folder}</span>
           </span>
           <span className="truncate text-[11px] text-faint">{tr('Concluído', 'Done')}</span>
+        </span>
+      </button>
+    </li>
+  )
+}
+
+// Conversa que o Argus fechou no meio: título, pasta e o que fazer.
+function InterruptedRow({ chat: c, onOpen }: { chat: InterruptedChat; onOpen: () => void }) {
+  const path = displayPath(c.cwd)
+  const sessions = useSessions(path)
+  const title = sessions.find((s) => s.sessionId === c.sessionId)?.title ?? tr('Conversa', 'Chat')
+  const folder = path.split(/[\\/]/).filter(Boolean).at(-1) ?? path
+  return (
+    <li>
+      <button onClick={onOpen} className={`${MENU_ROW} ${MENU_HOVER} !items-start !py-1.5`}>
+        <span className="mt-[5px] flex">
+          <StatusDot status="interrupted" />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="flex min-w-0 items-baseline gap-2">
+            <span className="min-w-0 truncate">{title}</span>
+            <span className="ml-auto shrink-0 text-[11px] text-faint">{folder}</span>
+          </span>
+          <span className="truncate text-[11px] text-faint">
+            {tr('Interrompida ao fechar o Argus - abra para continuar', 'Interrupted when Argus quit - open to continue')}
+          </span>
         </span>
       </button>
     </li>

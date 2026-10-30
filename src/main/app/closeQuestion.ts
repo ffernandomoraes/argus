@@ -34,8 +34,8 @@ export async function askToClose(update: boolean, items: string[]): Promise<bool
       ? tr('Atualizar agora interrompe o que está rodando.', 'Updating now stops what is running.')
       : tr('Fechar o Argus interrompe o que está rodando.', 'Quitting Argus stops what is running.'),
     detail: `${items.map((i) => `- ${i}`).join('\n')}\n\n${tr(
-      'O que estiver no meio para e não continua sozinho.',
-      "Anything in progress stops and won't resume on its own."
+      'O que estiver no meio para. As conversas ficam marcadas como interrompidas, para você continuar de onde pararam.',
+      'Anything in progress stops. Chats are marked as interrupted, so you can continue where they left off.'
     )}${items.includes(unsavedLabel()) ? tr(' As alterações não salvas se perdem.', ' Unsaved changes will be lost.') : ''}`,
     buttons: [
       update ? tr('Atualizar mesmo assim', 'Update Anyway') : tr('Fechar mesmo assim', 'Quit Anyway'),

@@ -1,6 +1,7 @@
 import type { Node } from '@xyflow/react'
 
-export type SessionStatus = 'idle' | 'running' | 'needs-you' | 'done'
+// done e interrupted só aparecem na tela: resposta não vista e conversa que o Argus fechou no meio.
+export type SessionStatus = 'idle' | 'running' | 'needs-you' | 'done' | 'interrupted'
 
 export type AreaData = {
   label: string

@@ -66,6 +66,8 @@ export const withBadge =
 export const bang: Shape = (u, v) => segment(u, v, 0, -1.8, 0, 0.3) <= 0.6 || Math.hypot(u, v - 1.6) <= 0.65
 export const check: Shape = (u, v) =>
   Math.min(segment(u, v, -1.6, 0.1, -0.5, 1.2), segment(u, v, -0.5, 1.2, 1.7, -1.1)) <= 0.55
+// Pausa: duas barras em pé (interrompida).
+export const pause: Shape = (u, v) => segment(u, v, -0.85, -1.3, -0.85, 1.3) <= 0.5 || segment(u, v, 0.85, -1.3, 0.85, 1.3) <= 0.5
 export const cross: Shape = (u, v) =>
   Math.min(segment(u, v, -1.2, -1.2, 1.2, 1.2), segment(u, v, 1.2, -1.2, -1.2, 1.2)) <= 0.55
 

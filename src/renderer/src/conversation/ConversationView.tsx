@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type C
 import { agentProviderOf } from '../../../shared/agents'
 import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext } from '../auth/useAuth'
+import { dismissInterrupted, useIsInterrupted } from '../canvas/interruptedChats'
 import { useViewing } from '../canvas/sessionsStore'
 import type { SubagentRef, TaskRef, TasksRef } from '../canvas/CanvasContext'
 import type { ConversationSummary } from '../canvas/types'
@@ -115,6 +116,13 @@ export const ConversationView = memo(function ConversationView({
   // Com o chat ligado aqui, o status dele manda: o registro do Claude Code demora a dizer
   // que parou, e isso deixava a conversa como "trabalhando" depois de você mandar parar.
   const status = live ? live.status : conversation.status
+  // O Argus fechou com ela trabalhando: o aviso para continuar de onde parou.
+  const interruptedId = conversation.sessionId ?? live?.sessionId
+  const isInterrupted = useIsInterrupted(interruptedId)
+  const interrupted = useMemo(
+    () => (isInterrupted && interruptedId ? { onDismiss: () => dismissInterrupted(interruptedId) } : undefined),
+    [isInterrupted, interruptedId]
+  )
   // Conversa nova ainda sem sessão guarda as trocas (e a conta) pelo id provisório.
   const settingsId = conversation.sessionId ?? conversation.id
   const chosen = useConversationAccountChoice(settingsId)
@@ -250,6 +258,7 @@ export const ConversationView = memo(function ConversationView({
             }
             remoteAbove
             autoFocus={autoFocus}
+            interrupted={interrupted}
           />
           </AccountChoiceContext.Provider>
         </div>

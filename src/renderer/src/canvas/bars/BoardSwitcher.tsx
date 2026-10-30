@@ -11,6 +11,7 @@ import { createBoard, switchBoard, useBoards, useCurrentBoard } from '../boards'
 import type { ConfirmRequest } from '../ConfirmDialog'
 import { TRASH_EN } from '../menus/shared'
 import { StatusDot } from '../StatusBadge'
+import { useInterruptedChats } from '../interruptedChats'
 import { boardStatus, useDoneBoards, type BoardStatus } from './boardActivity'
 import { tr } from '../../i18n'
 
@@ -18,7 +19,7 @@ const PANEL_WIDTH = 256
 
 // O mais urgente entre vários.
 const mostUrgent = (list: BoardStatus[]): BoardStatus =>
-  list.includes('needs-you') ? 'needs-you' : list.includes('running') ? 'running' : list.includes('done') ? 'done' : null
+  (['needs-you', 'running', 'interrupted', 'done'] as const).find((s) => list.includes(s)) ?? null
 
 // Workspaces na barra de título, colados ao botão de fechar: o nome do atual abre a lista para
 // trocar, criar, renomear e fechar. `align`: a ponta da barra onde ele está (a lista abre para
@@ -36,13 +37,14 @@ export const BoardSwitcher = memo(function BoardSwitcher({
   const current = useCurrentBoard()
   const chats = useActiveChats()
   const done = useDoneBoards()
+  const interrupted = useInterruptedChats()
   const anchor = useRef<HTMLButtonElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const menu = useAnchoredMenu(anchor, panel)
   // Workspace com o nome em edição, ou 'new' para o campo do workspace novo.
   const [editing, setEditing] = useState<string | null>(null)
 
-  const status = new Map(boards.map((b) => [b.id, boardStatus(b, chats, done)]))
+  const status = new Map(boards.map((b) => [b.id, boardStatus(b, chats, done, interrupted)]))
   const elsewhere = mostUrgent(boards.filter((b) => b.id !== current).map((b) => status.get(b.id) ?? null))
   const name = boards.find((b) => b.id === current)?.name ?? ''
   const open = boards.filter((b) => !b.closed)

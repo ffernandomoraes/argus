@@ -163,7 +163,10 @@ const api: Api = {
     onOpen: (cb) => listen('chat:open', cb),
     active: () => invoke('chat:active'),
     onActive: (cb) => listen('chat:active', cb),
-    setUnread: (chats) => send('chat:unread', chats)
+    setUnread: (chats) => send('chat:unread', chats),
+    interrupted: () => invoke('chat:interrupted'),
+    onInterrupted: (cb) => listen('chat:interrupted', cb),
+    dismissInterrupted: (sessionId) => send('chat:dismissInterrupted', sessionId)
   },
   agents: {
     list: (provider, projectPath) => invoke('agents:list', provider, projectPath),

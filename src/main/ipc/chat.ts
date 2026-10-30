@@ -1,3 +1,4 @@
+import type { InterruptedChats } from '../app/interruptedChats'
 import type { UnreadChats } from '../app/unreadChats'
 import type { ChatHolders } from '../chatHolders'
 import type { Chats } from '../chats'
@@ -7,7 +8,7 @@ import { materializeWorktree, withWorktreeHint } from '../worktrees'
 import { handle, on } from './register'
 
 // Conversas pelo chat (SDK do Claude).
-export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: Terminals, unread: UnreadChats): void {
+export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: Terminals, unread: UnreadChats, interrupted: InterruptedChats): void {
   handle('chat:state', (_e, key) => chats.state(key))
   handle('chat:active', () => activeChats(chats.list()))
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma
@@ -46,4 +47,6 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   on('chat:interrupt', (_e, key) => chats.interrupt(key))
   on('chat:configure', (_e, key, patch) => chats.configure(key, patch))
   on('chat:unread', (e, list) => unread.set(e.sender, list))
+  handle('chat:interrupted', () => interrupted.list())
+  on('chat:dismissInterrupted', (_e, sessionId) => interrupted.dismiss(sessionId))
 }

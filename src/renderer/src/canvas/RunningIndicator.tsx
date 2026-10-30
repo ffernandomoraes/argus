@@ -153,7 +153,7 @@ function FinishedRow({ chat: c, onOpen }: { chat: FinishedChat; onOpen: () => vo
   )
 }
 
-// Conversa que o Argus fechou no meio: título, pasta e o que fazer.
+// Conversa que parou no meio sem você pedir: título, pasta, o motivo e o que fazer.
 function InterruptedRow({ chat: c, onOpen }: { chat: InterruptedChat; onOpen: () => void }) {
   const path = displayPath(c.cwd)
   const sessions = useSessions(path)
@@ -171,7 +171,9 @@ function InterruptedRow({ chat: c, onOpen }: { chat: InterruptedChat; onOpen: ()
             <span className="ml-auto shrink-0 text-[11px] text-faint">{folder}</span>
           </span>
           <span className="truncate text-[11px] text-faint">
-            {tr('Interrompida ao fechar o Argus - abra para continuar', 'Interrupted when Argus quit - open to continue')}
+            {c.reason === 'memory'
+              ? tr('Parou por falta de memória - abra para continuar', 'Stopped for lack of memory - open to continue')
+              : tr('Interrompida ao fechar o Argus - abra para continuar', 'Interrupted when Argus quit - open to continue')}
           </span>
         </span>
       </button>

@@ -6,6 +6,7 @@ import { tr } from '../i18n'
 import { writeJsonAtomicSync, readJsonFile } from '../lib/jsonFile'
 import { errorMessage } from '../lib/errors'
 import { SMOKE_TEST } from '../smokeTest'
+import { recordHealthEvent } from '../systemHealth'
 import { Updater } from '../updater'
 import { isCanvasReady, isCanvasWindow } from './canvasRegistry'
 import { showMessageBox } from './messageBox'
@@ -45,7 +46,15 @@ export function armCrashGuard(): boolean {
   process.on('uncaughtException', onMainError)
   app.on('render-process-gone', (_e, wc, details) => {
     if (details.reason === 'clean-exit' || !isCanvasWindow(BrowserWindow.fromWebContents(wc))) return
-    void offerRecovery('crash', tr(`A janela do canvas caiu (${details.reason}).`, `The canvas window crashed (${details.reason}).`))
+    // Sem memória: diz isso, e fica também no aviso da barra de cima.
+    const oom = details.reason === 'oom'
+    if (oom) recordHealthEvent({ kind: 'windowCrashed' })
+    void offerRecovery(
+      'crash',
+      oom
+        ? tr('A janela do canvas fechou por falta de memória.', 'The canvas window closed for lack of memory.')
+        : tr(`A janela do canvas caiu (${details.reason}).`, `The canvas window crashed (${details.reason}).`)
+    )
   })
   // Fechar no meio da abertura não é quebra.
   app.on('will-quit', finishOpening)

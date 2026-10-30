@@ -6,6 +6,8 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
 import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { SystemHealthState } from './systemHealth'
+import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -97,6 +99,14 @@ export type InvokeChannels = {
   'chat:active': () => ActiveChat[]
   // Conversas que o Argus fechou no meio (ver main/app/interruptedChats.ts).
   'chat:interrupted': () => InterruptedChat[]
+  // Memória e disco do computador: o guardado, ou lido agora (o aviso aberto mostra os números).
+  'health:get': () => SystemHealthState
+  'health:read': () => SystemHealthState
+  // Aba Armazenamento: quanto ocupa, os prazos da limpeza e limpar agora.
+  'storage:usage': () => StorageUsage
+  'storage:settings': () => StorageSettings
+  'storage:setSettings': (patch: Partial<StorageSettings>) => StorageSettings
+  'storage:clean': () => CleanResult
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
   'chat:outputStyle': (key: string, cwd: string, account?: string) => OutputStyleStatus
   'chat:setOutputStyle': (key: string, cwd: string, style: string) => OutputStyleStatus
@@ -242,6 +252,8 @@ export type SendChannels = {
   'chat:unread': (chats: UnreadChat[]) => void
   // O X do aviso de interrompida.
   'chat:dismissInterrupted': (sessionId: string) => void
+  // "Entendi" no aviso de memória e disco: o que foi encerrado já foi visto.
+  'health:dismiss': () => void
   'chat:interrupt': (key: string) => void
   'chat:configure': (key: string, patch: Partial<ChatSettings>) => void
   // Canvas (de um workspace: `board`)
@@ -325,6 +337,8 @@ export type EventChannels = {
   'chat:active': (chats: ActiveChat[]) => void
   // A lista das interrompidas mudou (continuada, dispensada).
   'chat:interrupted': (chats: InterruptedChat[]) => void
+  // Mudou o nível da memória ou do disco, ou algo parou por falta deles.
+  'health:state': (state: SystemHealthState) => void
   // Clique na notificação do sistema.
   'chat:open': (cwd: string, sessionId: string) => void
   'canvas:remote': (board: string, nodes: unknown) => void

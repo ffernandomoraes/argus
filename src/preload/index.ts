@@ -168,6 +168,18 @@ const api: Api = {
     onInterrupted: (cb) => listen('chat:interrupted', cb),
     dismissInterrupted: (sessionId) => send('chat:dismissInterrupted', sessionId)
   },
+  health: {
+    get: () => invoke('health:get'),
+    read: () => invoke('health:read'),
+    dismiss: () => send('health:dismiss'),
+    onState: (cb) => listen('health:state', cb)
+  },
+  storage: {
+    usage: () => invoke('storage:usage'),
+    settings: () => invoke('storage:settings'),
+    setSettings: (patch) => invoke('storage:setSettings', patch),
+    clean: () => invoke('storage:clean')
+  },
   agents: {
     list: (provider, projectPath) => invoke('agents:list', provider, projectPath),
     save: (provider, req) => invoke('agents:save', provider, req),

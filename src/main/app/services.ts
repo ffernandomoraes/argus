@@ -17,7 +17,13 @@ import { ChatNotifier } from '../notifications'
 import { setClaudeInfo } from '../orchestration'
 import { Popouts } from '../popouts'
 import { SessionWatch } from '../sessionWatch'
+import { onDiskFull } from '../lib/atomicWrite'
 import { Speech } from '../speech'
+import { StorageCleaner } from '../storage'
+import { liveSessions } from '../liveSessions'
+import { readDisk } from '../systemHealth/disk'
+import { readMemory } from '../systemHealth/memory'
+import { SystemHealth } from '../systemHealth'
 import { Terminals } from '../terminals'
 import { Updater } from '../updater'
 import { UsageMonitors } from '../usageMonitor'
@@ -62,6 +68,18 @@ export function createServices() {
     badge.refresh()
     mascot.refresh()
   })
+  // Memória e disco do computador e o que parou por falta deles: o aviso da barra de cima.
+  const health = new SystemHealth({ memory: readMemory, disk: (previous) => readDisk(app.getPath('userData'), previous) }, (state) =>
+    broadcast('health:state', state)
+  )
+  health.start()
+  onDiskFull(() => health.record({ kind: 'diskFull' }))
+
+  // Rascunhos do agente e prints das conversas antigas: limpos sozinhos (aba Armazenamento). Antes de
+  // tudo que abre o `claude`: o histórico precisa estar guardado quando ele abrir.
+  const storage = new StorageCleaner(async () => new Set((await liveSessions()).keys()))
+  storage.start()
+
   // Conversas que o app fechou no meio: as janelas mostram interrompidas, e o ícone da barra lista.
   const interrupted = new InterruptedChats(join(app.getPath('userData'), 'interruptedChats.json'), () => {
     broadcast('chat:interrupted', interrupted.list())
@@ -82,18 +100,31 @@ export function createServices() {
     broadcast('chat:active', list)
   }
 
-  const chats = new Chats((key, state) => {
-    broadcast('chat:state', key, state)
-    // Antes do ícone da barra: a que voltou a trabalhar sai das interrompidas.
-    interrupted.update(chats.list())
-    tray.refresh()
-    badge.refresh()
-    notifier.refresh()
-    // Antes da lista de ativas: a janela do mascote precisa saber do erro quando vê o pedido acabar.
-    mascot.refresh()
-    publishActive()
-    keepAwake.refresh()
-  })
+  const chats = new Chats(
+    (key, state) => {
+      broadcast('chat:state', key, state)
+      // Antes do ícone da barra: a que voltou a trabalhar sai das interrompidas.
+      interrupted.update(chats.list())
+      // Trabalhando de novo: a fechada para liberar memória perde a linha que explica a demora. O
+      // estado parado que a sessão manda ao fechar não conta.
+      if (state.status !== 'idle') health.reopened(state.sessionId)
+      tray.refresh()
+      badge.refresh()
+      notifier.refresh()
+      // Antes da lista de ativas: a janela do mascote precisa saber do erro quando vê o pedido acabar.
+      mascot.refresh()
+      publishActive()
+      keepAwake.refresh()
+    },
+    {
+      freed: (cwd, sessionId) => health.record({ kind: 'chatClosed', cwd, sessionId }),
+      // Sem memória no meio de uma resposta: a conversa fica interrompida, com o botão de continuar.
+      limit: (cwd, sessionId, limit, busy) => {
+        health.record(limit === 'disk' ? { kind: 'diskFull' } : { kind: 'claudeStopped', cwd, sessionId, busy })
+        if (limit === 'memory' && busy && sessionId) interrupted.mark(sessionId, cwd, 'memory')
+      }
+    }
+  )
 
   // Com agente trabalhando, o computador não dorme por inatividade.
   const keepAwake = new KeepAwake({ chats: () => chats.list(), terminalsWorking: () => terminals.claudeWorking() })
@@ -199,6 +230,8 @@ export function createServices() {
     tray,
     unread,
     interrupted,
+    health,
+    storage,
     chats,
     chatHolders,
     notifier,

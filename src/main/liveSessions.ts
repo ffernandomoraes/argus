@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { readdir, readFile } from 'node:fs/promises'
+import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { LiveStatus } from '../shared/history'
 import { statusDirsWithPlace, type StatusDir } from './claudeHome'
@@ -145,4 +145,29 @@ export function sessionIdByPid(pid: number): string | null {
     if (info?.pid === pid && info.sessionId) return info.sessionId
   }
   return null
+}
+
+// O pid do `claude` dessa sessão que já saiu: encerrado à força (SIGKILL), ele não tem tempo de
+// apagar o arquivo de status. Com vários, o gravado por último. Serve para achar no relatório do
+// macOS por que ele foi encerrado (ver systemHealth/jetsam.ts). Só os do próprio sistema.
+export async function stoppedPidOf(sessionId: string): Promise<number | null> {
+  let found: { pid: number; at: number } | null = null
+  for (const { dir, distro } of statusDirsWithPlace()) {
+    if (distro) continue
+    const names = (await readdir(dir).catch(() => [] as string[])).filter((n) => STATUS_FILE.test(n))
+    for (const name of names) {
+      const file = join(dir, name)
+      let info: Record<string, unknown> | null
+      try {
+        info = JSON.parse(await readFile(file, 'utf8')) as Record<string, unknown> | null
+      } catch {
+        continue
+      }
+      const pid = Number(info?.pid)
+      if (info?.sessionId !== sessionId || !Number.isInteger(pid) || pid <= 0 || alive(pid)) continue
+      const at = (await stat(file).catch(() => null))?.mtimeMs ?? 0
+      if (!found || at > found.at) found = { pid, at }
+    }
+  }
+  return found?.pid ?? null
 }

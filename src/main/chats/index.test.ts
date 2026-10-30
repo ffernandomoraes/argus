@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChatSendRequest, ChatState } from '../../shared/chat'
-import { Chats } from './index'
+import { Chats, type ChatHooks } from './index'
 
 // O registro das conversas abertas: quando cada sessão do Claude fecha. Aqui a sessão é falsa (a
 // de verdade tem testes próprios em session.test.ts); o que importa é o registro não derrubar uma
@@ -51,7 +51,7 @@ const fake = vi.hoisted(() => {
 vi.mock('./session', () => ({ ChatSession: fake.FakeSession }))
 vi.mock('../agentChats/session', () => ({ AgentChatSession: class {} }))
 vi.mock('../agentChats/store', () => ({ isAgentConversation: () => false, indexEntry: () => undefined, samePath: (a: string, b: string) => a === b }))
-vi.mock('./systemMemory', () => ({ memoryTight: fake.memoryTight }))
+vi.mock('../systemHealth/memory', () => ({ memoryTight: fake.memoryTight }))
 vi.mock('./accountMcp', () => ({ AccountMcp: class { closeAll() {} } }))
 vi.mock('./mcpStatus', () => ({ mcpStatusFor: vi.fn(), removeMcp: vi.fn() }))
 vi.mock('./outputStyle', () => ({ readOutputStyle: vi.fn(), writeOutputStyle: vi.fn() }))
@@ -62,8 +62,8 @@ const MINUTE = 60_000
 const settings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: 'manual' }
 const send = (key: string, patch: Partial<ChatSendRequest> = {}): ChatSendRequest => ({ key, cwd: '/p', settings, text: 'oi', images: [], ...patch })
 
-function setup() {
-  const chats = new Chats(() => undefined)
+function setup(hooks: ChatHooks = {}) {
+  const chats = new Chats(() => undefined, hooks)
   // Abre uma conversa na tela e manda a primeira mensagem.
   const openChat = (key: string, patch: Partial<ChatSendRequest> = {}) => {
     chats.retain(key)
@@ -173,6 +173,23 @@ describe('Chats: memória do computador', () => {
     expect(b.closed).toBe(true)
   })
 
+  // Fechar sem dizer por quê fazia a primeira resposta demorar sem explicação: parecia defeito.
+  it('avisa quem fechou para liberar memória; fechar por passar do limite de quantidade não conta', async () => {
+    const freed = vi.fn()
+    const { chats, openChat } = setup({ freed })
+    const [a, b, c, d] = [openChat('a'), openChat('b'), openChat('c'), openChat('d')]
+    a.state = { ...a.state, sessionId: 's-a' }
+    for (const key of ['a', 'b', 'c', 'd']) chats.release(key)
+    // A quarta fechada encerra a mais antiga (a) pelo limite de quantidade, sem aviso.
+    expect(a.closed).toBe(true)
+    expect(freed).not.toHaveBeenCalled()
+    b.state = { ...b.state, sessionId: 's-b' }
+    fake.memoryTight.mockResolvedValue(true)
+    await vi.advanceTimersByTimeAsync(MINUTE)
+    expect([b.closed, c.closed, d.closed]).toEqual([true, false, false])
+    expect(freed).toHaveBeenCalledWith('/p', 's-b')
+  })
+
   it('com folga, ou sem saber, nada encerra antes do prazo', async () => {
     const { chats, openChat } = setup()
     const a = openChat('a')
@@ -191,6 +208,25 @@ describe('Chats: memória do computador', () => {
     fake.memoryTight.mockResolvedValue(true)
     await vi.advanceTimersByTimeAsync(MINUTE)
     expect([working.closed, working.closeWhenIdle, idle.closed]).toEqual([false, false, true])
+  })
+})
+
+describe('Chats: estado de sessão que já terminou', () => {
+  // O motivo da queda do Claude chega segundos depois do fim da sessão (o relatório do macOS): ele
+  // não pode passar por cima da sessão nova que a próxima mensagem abriu na mesma conversa.
+  it('vale para a conversa sem sessão aberta, não para a que já tem outra', () => {
+    const onState = vi.fn()
+    const chats = new Chats(onState)
+    chats.retain('a')
+    chats.send(send('a'))
+    const old = fake.sessions.at(-1)!
+    old.events.ended(old)
+    old.events.changed(old)
+    expect(onState).toHaveBeenCalledTimes(1)
+    chats.send(send('a'))
+    onState.mockClear()
+    old.events.changed(old)
+    expect(onState).not.toHaveBeenCalled()
   })
 })
 

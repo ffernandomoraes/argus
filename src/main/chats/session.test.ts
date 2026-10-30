@@ -79,6 +79,10 @@ vi.mock('../terminals/drawerShells', () => ({
   readsOwnOutput: () => false
 }))
 vi.mock('./mcpStatus', () => ({ mcpServersOf: vi.fn(), authenticateMcp: vi.fn(), clearMcpAuth: vi.fn() }))
+// O que o sistema confirma sobre a queda do Claude (ver systemHealth/stopEvidence.ts): por padrão,
+// nada além do que a mensagem já diz.
+const evidence = vi.hoisted(() => ({ confirm: vi.fn(async (kind: string, _sessionId?: string, _at?: number) => (kind === 'heap' ? 'processLimit' : kind)) }))
+vi.mock('../systemHealth/stopEvidence', () => ({ confirmStopCause: evidence.confirm }))
 
 const settings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: 'manual' }
 const request = (text = 'oi'): ChatSendRequest => ({ key: 'k1', cwd: '/Users/ana/proj', settings, text, images: [] })
@@ -102,6 +106,7 @@ function open() {
 beforeEach(() => {
   vi.useFakeTimers()
   fake.queries.length = 0
+  evidence.confirm.mockClear()
 })
 afterEach(() => vi.useRealTimers())
 
@@ -209,6 +214,70 @@ describe('ChatSession: fim do processo', () => {
     q.fail(new Error('Claude Code native binary not found'))
     await settle()
     expect(session.state.error).toContain('não está instalado')
+  })
+
+  // O sistema sem memória encerrou o Claude: a conversa mostrava, em inglês, "process terminated by
+  // signal SIGKILL". Agora diz o que a mensagem diz e troca quando o sistema confirma o motivo.
+  it('encerrado: diz que foi encerrado e, com a confirmação do sistema, que faltou memória', async () => {
+    let confirm: (cause: string) => void = () => undefined
+    evidence.confirm.mockImplementationOnce(() => new Promise((r) => (confirm = r)))
+    const limit = vi.fn()
+    const events = { changed: vi.fn(), identified: vi.fn(), ended: vi.fn(), limit } satisfies SessionEvents
+    const session = new ChatSession('k1', request(), events)
+    const q = fake.queries.at(-1)!
+    q.emit({ type: 'system', subtype: 'init', session_id: 'sess-1' })
+    await settle()
+    session.send(request())
+    q.fail(new Error('Claude Code process terminated by signal SIGKILL'))
+    await settle()
+    // A sessão já terminou; o motivo ainda não veio.
+    expect(events.ended).toHaveBeenCalledTimes(1)
+    expect(session.state.error).toContain('foi encerrado')
+    expect(session.state.error).not.toContain('memória')
+    expect(evidence.confirm).toHaveBeenCalledWith('killed', 'sess-1', expect.any(Number))
+    confirm('memory')
+    await settle()
+    expect(session.state.error).toContain('falta de memória')
+    expect(limit).toHaveBeenCalledWith(session, 'memory', true)
+  })
+
+  it('sem confirmação do sistema, fica "foi encerrado", sem culpar a memória', async () => {
+    const limit = vi.fn()
+    const session = new ChatSession('k1', request(), { changed: vi.fn(), identified: vi.fn(), ended: vi.fn(), limit })
+    fake.queries.at(-1)!.fail(new Error('Claude Code process terminated by signal SIGKILL'))
+    await settle()
+    expect(session.state.error).toContain('foi encerrado')
+    expect(limit).not.toHaveBeenCalled()
+  })
+
+  it('o limite de memória do próprio processo tem texto próprio e não conta como falta no computador', async () => {
+    const limit = vi.fn()
+    const session = new ChatSession('k1', request(), { changed: vi.fn(), identified: vi.fn(), ended: vi.fn(), limit })
+    fake.queries.at(-1)!.fail(new Error('Claude Code process exited with code 134\nFATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory'))
+    await settle()
+    expect(session.state.error).toContain('limite de memória do próprio processo')
+    expect(session.state.error).not.toContain('Feche')
+    expect(limit).not.toHaveBeenCalled()
+  })
+
+  it('disco cheio conta como limite do computador', async () => {
+    const limit = vi.fn()
+    const session = new ChatSession('k1', request(), { changed: vi.fn(), identified: vi.fn(), ended: vi.fn(), limit })
+    fake.queries.at(-1)!.fail(new Error('ENOSPC: no space left on device, write'))
+    await settle()
+    expect(session.state.error).toContain('Disco cheio')
+    expect(limit).toHaveBeenCalledWith(session, 'disk', false)
+  })
+
+  it('fechada pelo Argus, o fim do processo não é limite de ninguém', async () => {
+    const limit = vi.fn()
+    const session = new ChatSession('k1', request(), { changed: vi.fn(), identified: vi.fn(), ended: vi.fn(), limit })
+    const q = fake.queries.at(-1)!
+    session.close()
+    q.fail(new Error('Claude Code process terminated by signal SIGKILL'))
+    await settle()
+    expect(evidence.confirm).not.toHaveBeenCalled()
+    expect(limit).not.toHaveBeenCalled()
   })
 })
 

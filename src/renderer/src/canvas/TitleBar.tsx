@@ -4,6 +4,7 @@ import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
 import { Presence } from '../motion'
+import { HealthAlert } from '../systemHealth/HealthAlert'
 import { ReleaseNotesModal } from '../updates/ReleaseNotesModal'
 import { useUpdates } from '../updates/useUpdates'
 import { IS_MAC } from '../platform'
@@ -62,6 +63,8 @@ export const TitleBar = memo(function TitleBar({
         <BoardSwitcher confirm={confirm} align="start" />
       </div>
       <span className="text-[13px] font-semibold text-muted">Argus</span>
+      {/* Memória ou disco do computador chegando no limite (ou algo já encerrado por isso). */}
+      <HealthAlert />
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
       {import.meta.env.DEV && (
         <span className="rounded-full border border-dev/40 bg-dev/10 px-2 py-px text-[11px] font-medium tracking-wide text-dev uppercase">

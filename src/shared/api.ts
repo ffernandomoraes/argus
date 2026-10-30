@@ -6,6 +6,8 @@ import type { Lang, LangPreference } from './i18n'
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
 import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { SystemHealthState } from './systemHealth'
+import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
 import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
@@ -203,6 +205,20 @@ export type Api = {
     interrupted: () => Promise<InterruptedChat[]>
     onInterrupted: (cb: (chats: InterruptedChat[]) => void) => Off
     dismissInterrupted: (sessionId: string) => void
+  }
+  // Memória e disco do computador (o aviso da barra de cima). read: lê agora; get: o guardado.
+  health: {
+    get: () => Promise<SystemHealthState>
+    read: () => Promise<SystemHealthState>
+    dismiss: () => void
+    onState: (cb: (state: SystemHealthState) => void) => Off
+  }
+  // O que as conversas e os rascunhos do agente ocupam, e a limpeza deles (aba Armazenamento).
+  storage: {
+    usage: () => Promise<StorageUsage>
+    settings: () => Promise<StorageSettings>
+    setSettings: (patch: Partial<StorageSettings>) => Promise<StorageSettings>
+    clean: () => Promise<CleanResult>
   }
   // Biblioteca de agentes de cada provedor (main/agents/folder.ts). Com a pasta, inclui os do projeto.
   agents: {

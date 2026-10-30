@@ -13,6 +13,7 @@ import { MascotSection } from './sections/MascotSection'
 import { McpSection } from './sections/McpSection'
 import { NotificationsSection } from './sections/NotificationsSection'
 import { OrchestratorSection } from './sections/OrchestratorSection'
+import { StorageSection } from './sections/StorageSection'
 import { UpdatesSection } from './sections/UpdatesSection'
 import { SECTION_GROUPS, SECTIONS, type Section } from './sections/sectionList'
 import { tr } from '../i18n'
@@ -92,6 +93,7 @@ export function SettingsPage({
           {section === 'orchestrator' && <OrchestratorSection />}
           {section === 'appearance' && <AppearanceSection theme={theme} onThemeChange={onThemeChange} />}
           {section === 'updates' && <UpdatesSection />}
+          {section === 'storage' && <StorageSection />}
           {section === 'mascot' && <MascotSection />}
           {section === 'accounts' && <AccountsSection />}
           {section === 'mcp' && <McpSection />}

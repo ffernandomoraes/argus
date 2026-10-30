@@ -1,11 +1,11 @@
-import type { InterruptedChat } from '../../shared/chat'
+import type { InterruptedChat, InterruptReason } from '../../shared/chat'
 import type { ChatEntry } from '../chats/entries'
 import { readJsonFile, writeJsonAtomicSync } from '../lib/jsonFile'
 
 // Conversas que o Argus fechou no meio (atualização, ⌘Q, queda do app): ao abrir de novo, aparecem
-// interrompidas, com o botão de continuar de onde pararam. As que estão trabalhando vão para o
-// arquivo quando começam e saem quando param: a marca sobrevive também a uma queda, que não passa
-// pela saída do app.
+// interrompidas, com o botão de continuar de onde pararam. Também as que o sistema encerrou sem
+// memória no meio de uma resposta (ver mark). As que estão trabalhando vão para o arquivo quando
+// começam e saem quando param: a marca sobrevive também a uma queda, que não passa pela saída do app.
 
 type Saved = { interrupted: InterruptedChat[]; running: InterruptedChat[] }
 
@@ -18,7 +18,9 @@ const busy = (e: ChatEntry) => e.state.status !== 'idle' || e.state.agents.lengt
 function valid(list: unknown): InterruptedChat[] {
   if (!Array.isArray(list)) return []
   return list.flatMap((c: Partial<InterruptedChat> | null) =>
-    typeof c?.sessionId === 'string' && typeof c.cwd === 'string' ? [{ sessionId: c.sessionId, cwd: c.cwd }] : []
+    typeof c?.sessionId === 'string' && typeof c.cwd === 'string'
+      ? [{ sessionId: c.sessionId, cwd: c.cwd, ...(c.reason === 'memory' && { reason: c.reason }) }]
+      : []
   )
 }
 
@@ -69,6 +71,14 @@ export class InterruptedChats {
     this.running = running
     this.save()
     if (resumed) this.onChange()
+  }
+
+  // Parou no meio sem o app fechar (o sistema encerrou o Claude por falta de memória): marcada do
+  // mesmo jeito, com o motivo.
+  mark(sessionId: string, cwd: string, reason: InterruptReason): void {
+    this.interrupted = joined(this.interrupted, [{ sessionId, cwd, reason }])
+    this.save()
+    this.onChange()
   }
 
   // O X do aviso na conversa.

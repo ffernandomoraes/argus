@@ -23,8 +23,8 @@ function isOutputFile(file: string, taskId: string): boolean {
 }
 
 // Pastas onde o Claude Code pode ter gravado: a pedida pela variável dele, o /tmp (Mac e Linux) e a
-// temporária do sistema (Windows).
-function tempRoots(): string[] {
+// temporária do sistema (Windows). Também são as dos rascunhos do agente (ver storage/scratch.ts).
+export function tempRoots(): string[] {
   const roots = [process.env.CLAUDE_CODE_TMPDIR, IS_WIN ? undefined : '/tmp', tmpdir()].filter((r): r is string => !!r)
   const user = IS_WIN ? 'claude' : `claude-${process.getuid?.() ?? ''}`
   return [...new Set(roots)].flatMap((r) => [join(r, user), join(r, 'claude')])

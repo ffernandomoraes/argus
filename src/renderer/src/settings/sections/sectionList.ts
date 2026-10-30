@@ -1,7 +1,19 @@
-import { Bell, Coffee, FlaskConical, MessagesSquare, Network, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
+import { Bell, Coffee, FlaskConical, HardDrive, MessagesSquare, Network, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
-export type Section = 'general' | 'conversations' | 'notifications' | 'orchestrator' | 'appearance' | 'updates' | 'mascot' | 'accounts' | 'mcp' | 'experiments' | 'coffee'
+export type Section =
+  | 'general'
+  | 'conversations'
+  | 'notifications'
+  | 'orchestrator'
+  | 'appearance'
+  | 'updates'
+  | 'storage'
+  | 'mascot'
+  | 'accounts'
+  | 'mcp'
+  | 'experiments'
+  | 'coffee'
 
 export type SectionGroup = 'app' | 'agents' | 'extras' | 'footer'
 
@@ -67,6 +79,16 @@ export const SECTIONS: {
     label: tr('Atualizações', 'Updates'),
     icon: RefreshCw,
     description: tr('As versões do Argus e do Claude Code, e o que mudou em cada uma.', 'The Argus and Claude Code versions, and what changed in each.')
+  },
+  {
+    id: 'storage',
+    group: 'app',
+    label: tr('Armazenamento', 'Storage'),
+    icon: HardDrive,
+    description: tr(
+      'O espaço que as conversas e os rascunhos do agente ocupam, e a limpeza automática deles.',
+      'The space chats and the agent’s scratch files take up, and their automatic cleanup.'
+    )
   },
   {
     id: 'accounts',

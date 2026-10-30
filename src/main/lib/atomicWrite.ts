@@ -28,6 +28,24 @@ type Slot = {
 const slots = new Map<string, Slot>()
 let tmpCount = 0
 
+// Sem espaço no disco (ou na cota): quem quiser saber (o aviso da barra de cima, ver systemHealth) é
+// avisado. A gravação falha do mesmo jeito.
+const NO_SPACE = new Set(['ENOSPC', 'EDQUOT'])
+let noSpace: (path: string) => void = () => {}
+
+export function onDiskFull(listener: (path: string) => void): void {
+  noSpace = listener
+}
+
+function watchSpace(err: unknown, path: string): void {
+  if (!NO_SPACE.has(errorCode(err))) return
+  try {
+    noSpace(path)
+  } catch {
+    // Quem ouve não derruba a gravação (o erro dela é o que importa aqui).
+  }
+}
+
 // Windows: antivírus e indexador seguram o arquivo por um instante e o rename falha com estes.
 const BUSY = new Set(['EPERM', 'EBUSY', 'EACCES'])
 const ASYNC_TRIES = 8
@@ -59,6 +77,9 @@ export function writeFileAtomic(path: string, text: string, options: AtomicWrite
       await writeTmp(tmp, text, options.mode)
       swapped = await swapIn(slot, version, tmp, target)
       return swapped
+    } catch (err) {
+      watchSpace(err, target)
+      throw err
     } finally {
       if (!swapped) await rm(tmp, { force: true }).catch(() => {})
     }
@@ -87,6 +108,7 @@ export function writeFileAtomicSync(path: string, text: string, options: AtomicW
     writeTmpSync(tmp, text, options.mode)
     renameRetryingSync(tmp, target)
   } catch (err) {
+    watchSpace(err, target)
     try {
       rmSync(tmp, { force: true })
     } catch {

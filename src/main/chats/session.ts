@@ -12,7 +12,8 @@ import { ARGUS_ALLOWED_TOOLS, ARGUS_MCP, ARGUS_READ_TERMINAL, argusMcp, readsOwn
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
 import { authenticateMcp, clearMcpAuth, mcpServersOf } from './mcpStatus'
-import { friendlyError, userMessage } from './messages'
+import { confirmStopCause } from '../systemHealth/stopEvidence'
+import { firstCause, friendlyError, stopKind, stopText, userMessage, type StopKind } from './messages'
 import { PendingPermissions } from './permissions'
 import { QueuedSends } from './queuedSends'
 import { setRemoteControl } from './remote'
@@ -27,6 +28,8 @@ export type SessionEvents = {
   identified: (session: ChatSession, id: string) => void
   // O processo do Claude terminou.
   ended: (session: ChatSession) => void
+  // O Claude parou por um limite do computador (sem memória, disco cheio). busy: no meio de um pedido.
+  limit?: (session: ChatSession, limit: 'memory' | 'disk', busy: boolean) => void
 }
 
 export type OpenRequest = Omit<ChatSendRequest, 'text' | 'images'>
@@ -64,6 +67,8 @@ export class ChatSession {
   state: ChatState = { status: 'idle', partial: '', permissions: [], revision: 0, turnTokens: 0, agents: [], backgroundTasks: 0 }
   // Parada pedida por você: o fim do pedido não é erro.
   private interrupted = false
+  // Encerrada pelo Argus (conversa fechada, app saindo): o fim do processo não é limite de ninguém.
+  private closing = false
   // Parada com mensagem sua que continua na fila do Claude: o fim do pedido parado emenda no seguinte.
   private resumes = false
   // Configurações em vigor, para mandar o ultracode junto quando o esforço muda (ver flagChanges).
@@ -284,6 +289,7 @@ export class ChatSession {
   }
 
   close(): void {
+    this.closing = true
     clearTimeout(this.partialTimer)
     this.stopDelegatedSteps()
     this.stopWaitingWake()
@@ -401,7 +407,11 @@ export class ChatSession {
         }
       }
     } catch (err) {
-      this.update({ error: friendlyError((err as Error).message) })
+      const message = (err as Error | null)?.message ?? ''
+      const kind = this.closing ? null : stopKind(message)
+      this.update({ error: kind ? stopText(firstCause(kind)) : friendlyError(message) })
+      // Antes do finally, que zera o estado: dá para saber se parou no meio de um pedido.
+      if (kind) void this.confirmStop(kind, this.busy)
     } finally {
       this.queued.clear()
       this.stopWaitingWake()
@@ -421,6 +431,15 @@ export class ChatSession {
       })
       this.events.ended(this)
     }
+  }
+
+  // O processo do Claude acabou sozinho: o motivo que o sistema confirmar (o relatório do macOS
+  // demora alguns segundos) troca o texto da mensagem e, se foi limite do computador, vai ao aviso da
+  // barra de cima e à conversa interrompida. Roda depois do fim da sessão.
+  private async confirmStop(kind: StopKind, busy: boolean): Promise<void> {
+    const cause = await confirmStopCause(kind, this.state.sessionId, Date.now()).catch(() => firstCause(kind))
+    if (cause !== firstCause(kind)) this.update({ error: stopText(cause) })
+    if (cause === 'memory' || cause === 'disk') this.events.limit?.(this, cause, busy)
   }
 
   private read(m: SDKMessage): void {

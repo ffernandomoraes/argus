@@ -8,11 +8,13 @@ import { registerChatIpc } from './chat'
 import { registerCliIpc } from './cli'
 import { registerDesignIpc } from './design'
 import { registerFilesIpc } from './files'
+import { registerHealthIpc } from './health'
 import { registerMemoryIpc } from './memory'
 import { registerProvidersIpc } from './providers'
 import { registerServersIpc } from './servers'
 import { registerSessionsIpc } from './sessions'
 import { registerSpeechIpc } from './speech'
+import { registerStorageIpc } from './storage'
 import { registerTerminalIpc } from './terminal'
 import { registerTranscriptionIpc } from './transcription'
 import { registerWorktreesIpc } from './worktrees'
@@ -34,6 +36,8 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerServersIpc()
   registerFilesIpc(s.unsavedFiles)
   registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread, s.interrupted)
+  registerHealthIpc(s.health)
+  registerStorageIpc(s.storage)
   registerTerminalIpc(s.terminals, s.chats, s.terminalViewers)
   registerCliIpc()
 }

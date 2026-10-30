@@ -4,9 +4,10 @@ import { useStore } from '../lib/useStore'
 import { canvasScope, inScope } from './canvasScope'
 import { displayPath } from './factory'
 
-// Conversas que o Argus fechou no meio (atualização, ⌘Q, queda): bolinha vermelha na lista e o aviso
-// com "Continuar de onde parou" na conversa, até você continuar, mandar outra mensagem ou dispensar.
-// Quem guarda é o processo principal (main/app/interruptedChats.ts); a lista vem dele quando muda.
+// Conversas que pararam no meio sem você pedir (o Argus fechou, faltou memória): bolinha vermelha na
+// lista e o aviso com "Continuar de onde parou" na conversa, até você continuar, mandar outra
+// mensagem ou dispensar. Quem guarda é o processo principal (main/app/interruptedChats.ts); a lista
+// vem dele quando muda.
 const interrupted = createStore<InterruptedChat[]>([])
 
 let received = false
@@ -27,6 +28,11 @@ export function useInterruptedChats(): InterruptedChat[] {
 
 export function useIsInterrupted(sessionId: string | undefined): boolean {
   return useStore(interrupted, (list) => !!sessionId && list.some((c) => c.sessionId === sessionId))
+}
+
+// A marca da conversa, com o motivo; o mesmo objeto enquanto a lista não muda.
+export function useInterrupted(sessionId: string | undefined): InterruptedChat | undefined {
+  return useStore(interrupted, (list) => (sessionId ? list.find((c) => c.sessionId === sessionId) : undefined))
 }
 
 export function dismissInterrupted(sessionId: string): void {

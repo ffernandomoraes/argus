@@ -8,7 +8,7 @@ import { parseAgentRef, type AgentRef } from '../../shared/providers'
 import { AgentChatSession } from '../agentChats/session'
 import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
 import { ChatSession, type OpenRequest } from './session'
-import { memoryTight } from './systemMemory'
+import { memoryTight } from '../systemHealth/memory'
 import { resolveAccount } from '../accounts'
 import { tr } from '../i18n'
 
@@ -20,6 +20,16 @@ type Events = {
   changed: (s: AnySession) => void
   identified: (s: AnySession, id: string) => void
   ended: (s: AnySession) => void
+  limit: (s: AnySession, limit: 'memory' | 'disk', busy: boolean) => void
+}
+
+// O que o registro conta para fora quando um limite do computador encerra algo (o aviso da barra de
+// cima e a conversa interrompida; ver app/services.ts).
+export type ChatHooks = {
+  // O Argus fechou a conversa parada, fora da tela, para liberar memória.
+  freed?: (cwd: string, sessionId: string | undefined) => void
+  // O Claude da conversa parou sem memória ou com o disco cheio. busy: no meio de um pedido.
+  limit?: (cwd: string, sessionId: string | undefined, limit: 'memory' | 'disk', busy: boolean) => void
 }
 
 // Quem roda a conversa: uma já gravada continua com o agente dela, seja qual for o do grupo agora;
@@ -46,8 +56,8 @@ const RELEASE_DELAY_MS = 10 * 60_000
 const MAX_RELEASING = 3
 // Cada sessão parada não gasta CPU, mas ocupa memória: medido em 2026-10-14, ~300 MB do Claude
 // mais os servidores MCP globais da pessoa (~550 MB no total aqui). Com o computador apertado de
-// memória (systemMemory.ts), as sessões fechadas na tela encerram antes do prazo, da fechada há mais
-// tempo para a mais nova, uma de cada vez, até a máquina sair do aperto. Com folga, nada encerra
+// memória (systemHealth/memory.ts), as sessões fechadas na tela encerram antes do prazo, da fechada
+// há mais tempo para a mais nova, uma de cada vez, até a máquina sair do aperto. Com folga, nada encerra
 // antes: máquina mais forte aguenta mais. As abertas na tela e as que estão trabalhando nunca entram.
 // Com sessão esperando, a memória é conferida a cada minuto; depois de encerrar uma, de novo pouco
 // depois (o processo leva um instante para sair e o sistema, para recuperar a memória).
@@ -70,8 +80,11 @@ export class Chats {
   // Avisos das sessões (ver SessionEvents): o mesmo objeto para todas.
   private events: Events = {
     changed: (s) => {
-      s.keys.forEach((k) => this.onState(k, s.state))
-      this.closeIfDone(s)
+      // Uma sessão que já terminou ainda pode mandar estado (o motivo da queda confirmado depois):
+      // vale só para a chave que não tem outra sessão agora, e não há o que fechar.
+      const current = (k: string) => (this.sessions.get(k) ?? s) === s
+      s.keys.forEach((k) => current(k) && this.onState(k, s.state))
+      if ([...s.keys].some((k) => this.sessions.get(k) === s)) this.closeIfDone(s)
     },
     identified: (s, id) => {
       s.keys.add(id)
@@ -81,10 +94,14 @@ export class Chats {
       s.keys.forEach((k) => this.sessions.get(k) === s && this.sessions.delete(k))
       clearTimeout(this.releasing.get(s))
       this.releasing.delete(s)
-    }
+    },
+    limit: (s, limit, busy) => this.hooks.limit?.(s.cwd, s.state.sessionId, limit, busy)
   }
 
-  constructor(private onState: (key: string, state: ChatState) => void) {}
+  constructor(
+    private onState: (key: string, state: ChatState) => void,
+    private hooks: ChatHooks = {}
+  ) {}
 
   // Conversa aberta de novo: cancela o encerramento que estava agendado.
   retain(key: string): void {
@@ -134,7 +151,10 @@ export class Chats {
     if (this.releasing.size === 0) return
     const tight = await memoryTight().catch(() => null)
     const oldest = tight ? [...this.releasing.keys()].find((s) => !s.busy && !s.remoteOn) : undefined
-    if (oldest) this.endEarly(oldest)
+    if (oldest) {
+      this.hooks.freed?.(oldest.cwd, oldest.state.sessionId)
+      this.endEarly(oldest)
+    }
     this.watchMemory(oldest ? MEMORY_SETTLE_MS : MEMORY_CHECK_MS)
   }
 

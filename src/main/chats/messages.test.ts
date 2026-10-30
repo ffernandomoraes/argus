@@ -2,7 +2,7 @@ import type { UUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { filesInBlock } from '../../shared/attachedFiles'
 import type { ChatSendRequest } from '../../shared/chat'
-import { friendlyError, userMessage } from './messages'
+import { friendlyError, stopKind, userMessage } from './messages'
 
 const UUID_A = '11111111-1111-4111-8111-111111111111' as UUID
 
@@ -44,5 +44,25 @@ describe('friendlyError', () => {
 
   it('os outros erros passam como vieram', () => {
     expect(friendlyError('rate limited')).toBe('rate limited')
+  })
+})
+
+describe('stopKind', () => {
+  it('disco cheio, limite do próprio processo, sem memória e encerrado de fora', () => {
+    expect(stopKind('ENOSPC: no space left on device, write')).toBe('disk')
+    expect(stopKind('exited with code 134 FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory')).toBe('heap')
+    expect(stopKind('Claude Code process exited with code 1 out of memory')).toBe('oom')
+    // STATUS_NO_MEMORY do Windows, com e sem sinal.
+    expect(stopKind('Claude Code process exited with code 3221225495')).toBe('oom')
+    expect(stopKind('Claude Code process exited with code -1073741801')).toBe('oom')
+    expect(stopKind('Claude Code process terminated by signal SIGKILL')).toBe('killed')
+    expect(stopKind('Claude Code process exited with code 137')).toBe('killed')
+  })
+
+  it('o resto não é limite: código 1, SIGTERM (o próprio Argus fechando), erro da API', () => {
+    expect(stopKind('Claude Code process exited with code 1')).toBeNull()
+    expect(stopKind('Claude Code process exited with code 1370')).toBeNull()
+    expect(stopKind('Claude Code process terminated by signal SIGTERM')).toBeNull()
+    expect(stopKind('rate limited')).toBeNull()
   })
 })

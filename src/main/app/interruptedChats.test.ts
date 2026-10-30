@@ -78,6 +78,19 @@ describe('InterruptedChats', () => {
     expect(ids(new InterruptedChats(file, () => undefined))).toEqual([])
   })
 
+  it('o Claude encerrado sem memória no meio de uma resposta fica interrompido, com o motivo guardado', () => {
+    const file = fileIn()
+    const onChange = vi.fn()
+    const m = new InterruptedChats(file, onChange)
+    m.update([entry('a', 'running')])
+    m.mark('a', '/p', 'memory')
+    // O processo caiu: a conversa para, e a marca continua.
+    m.update([entry('a', 'idle')])
+    expect(m.list()).toEqual([{ sessionId: 'a', cwd: '/p', reason: 'memory' }])
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(new InterruptedChats(file, () => undefined).list()).toEqual([{ sessionId: 'a', cwd: '/p', reason: 'memory' }])
+  })
+
   it('arquivo estragado ou de formato estranho vira lista vazia, sem quebrar', () => {
     const file = fileIn()
     writeFileSync(file, '{ não é json')

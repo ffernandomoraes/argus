@@ -1,7 +1,7 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
-import type { ChatState, PermissionAnswer } from '../../../shared/chat'
+import type { ChatState, InterruptReason, PermissionAnswer } from '../../../shared/chat'
 import type { SessionStatus } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
@@ -10,7 +10,7 @@ import { ImageViewer } from './ImageViewer'
 import { RemoteControlTag } from './RemoteControlTag'
 import { usePreference } from '../settings/preferences'
 import { SuggestionChip } from './composer/SuggestionChip'
-import { CONTINUE_TEXT, InterruptedNotice } from './composer/InterruptedNotice'
+import { CONTINUE_TEXT, FreedNotice, InterruptedNotice } from './composer/InterruptedNotice'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
 import { olderRow } from './timeline/olderRow'
@@ -84,9 +84,11 @@ export type ChatViewProps = {
   // enquanto não há mensagens.
   readOnly?: boolean
   emptyText?: string
-  // O Argus fechou com a conversa trabalhando: o aviso com "Continuar de onde parou" e o X que
-  // tira a marca. Sem isto, nada aparece.
-  interrupted?: { onDismiss: () => void }
+  // Parou no meio sem você pedir (o Argus fechou, faltou memória): o aviso com "Continuar de onde
+  // parou" e o X que tira a marca. Sem isto, nada aparece.
+  interrupted?: { reason?: InterruptReason; onDismiss: () => void }
+  // Fechada para liberar memória do computador: a linha que explica a primeira resposta mais lenta.
+  freed?: boolean
 }
 
 // A conversa: a linha do tempo (o histórico gravado e o que acontece agora), o prompt preso no
@@ -120,7 +122,8 @@ export const ChatView = memo(function ChatView({
   endSignal = 0,
   readOnly = false,
   emptyText,
-  interrupted
+  interrupted,
+  freed = false
 }: ChatViewProps) {
   const scroller = useRef<HTMLDivElement>(null)
   // A mesma área, para a linha do tempo virtualizada: ela precisa saber quando a área montou.
@@ -286,7 +289,8 @@ export const ChatView = memo(function ChatView({
       {/* Só para ler: sem a sugestão nem a caixa de escrever. */}
       {!readOnly && (
         <>
-          {interrupted && !running && <InterruptedNotice onContinue={sendContinue} onDismiss={interrupted.onDismiss} />}
+          {interrupted && !running && <InterruptedNotice reason={interrupted.reason} onContinue={sendContinue} onDismiss={interrupted.onDismiss} />}
+          {freed && !interrupted && !running && <FreedNotice />}
           <SuggestionChip text={live?.suggestion} visible={suggestions && !running && !typing} onSend={sendSuggestion} />
           <div className={`px-3 pb-2 pt-3 ${composerBorder ? 'border-t border-line' : ''}`}>
             {live?.remote && !remoteAbove && (

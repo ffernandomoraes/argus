@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { liveSessions, liveStatusByPid, sessionIdByPid } from './liveSessions'
+import { liveSessions, liveStatusByPid, sessionIdByPid, stoppedPidOf } from './liveSessions'
 
 // Pastas que não respondem (a do WSL com a máquina virtual travada) ou que dão erro de leitura; o
 // resto lê o disco.
@@ -85,5 +85,17 @@ describe('liveStatusByPid e sessionIdByPid', () => {
     expect(liveStatusByPid().get(process.pid)).toBe('running')
     expect(sessionIdByPid(process.pid)).toBe('do-terminal')
     expect(sessionIdByPid(-5)).toBeNull()
+  })
+})
+
+describe('stoppedPidOf', () => {
+  // O `claude` encerrado à força deixa o arquivo de status: o pid dele serve para achar no relatório
+  // do macOS por que ele foi encerrado.
+  it('o pid do processo que já saiu com essa sessão; o vivo e o de outra sessão não contam', async () => {
+    const dead = deadPid()
+    write(`${dead}.json`, { pid: dead, sessionId: 'caiu', status: 'busy' })
+    write(`${process.pid}.json`, { pid: process.pid, sessionId: 'caiu', status: 'busy' })
+    expect(await stoppedPidOf('caiu')).toBe(dead)
+    expect(await stoppedPidOf('outra')).toBeNull()
   })
 })

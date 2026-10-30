@@ -15,7 +15,7 @@ import './unreadSync'
 
 export { DESIGN_PREFIX } from './convert'
 export type { ListState } from './state'
-export { setPoppedOut, useIsUnread, useViewing } from './unread'
+export { isUnread, markAsRead, markUnread, setPoppedOut, useIsUnread, useViewing } from './unread'
 
 // Conversas de cada pasta, lidas dos arquivos do Claude Code, a branch atual dela e os arquivos
 // não comitados. Não entram no canvas salvo nem no desfazer: são sempre relidas do disco.

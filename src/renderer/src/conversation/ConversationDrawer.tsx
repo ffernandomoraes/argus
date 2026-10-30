@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
-import { ExternalLink, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
+import { ExternalLink, Mail, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
 import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
+import { markUnread } from '../canvas/sessionsStore'
 import type { SubagentRef, TasksRef } from '../canvas/CanvasContext'
 import type { ConversationSummary, ProjectData } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
@@ -194,13 +195,18 @@ export function ConversationDrawer(props: Props) {
 // Botões do cabeçalho do drawer: o menu de mais opções. Some no foco. Memorizados,
 // para o cabeçalho e a conversa não redesenharem enquanto o painel é arrastado.
 function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>) {
-  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout } = props
+  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, onClose } = props
   const draft = !!conversation.draft
   // Favoritar precisa do id da sessão: a conversa ainda não enviada não tem.
   const key = favoriteKey(conversation)
   const favorite = useFavorites().has(key ?? '')
   // Estável: a conversa muda a cada passo do Claude e redesenharia o cabeçalho à toa.
   const toggleFavorite = useStableCallback(() => setFavorite(conversation, !favorite))
+  // Fecha junto: com a conversa na tela, a bolinha apagaria de novo ao voltar para a janela.
+  const leaveUnread = useStableCallback(() => {
+    markUnread(conversation.sessionId ?? conversation.id)
+    onClose()
+  })
   return useMemo(() => {
     if (focus) return null
     const items: MoreMenuItem[] = [
@@ -217,12 +223,13 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
                     : { label: tr('Favoritar', 'Add to favorites'), icon: Star, onClick: toggleFavorite }
                 ]
               : []),
+            { label: tr('Marcar como não lida', 'Mark as unread'), icon: Mail, onClick: leaveUnread },
             { label: tr('Colocar no canvas', 'Place on canvas'), icon: PictureInPicture2, onClick: onPinToCanvas },
             { label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }
           ])
     ]
     return <MoreMenu items={items} />
-  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, onPinToCanvas, onPopout])
+  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, leaveUnread, onPinToCanvas, onPopout])
 }
 
 // Botões do código e do terminal em cima da caixa de escrever. O do código some no foco; o do

@@ -1,7 +1,8 @@
-import { MessageCircle, PenTool, Star, StarOff, Trash2 } from 'lucide-react'
+import { Mail, MailOpen, MessageCircle, PenTool, Star, StarOff, Trash2 } from 'lucide-react'
 import { isWslFolder, SYSTEM_NAME } from '../../platform'
 import type { MenuItem } from '../ContextMenu'
 import { isFavorite, setFavorite } from '../favorites'
+import { isUnread, markAsRead, markUnread } from '../sessionsStore'
 import type { ConversationSummary, ProjectNode } from '../types'
 import { isBusy, TRASH_EN } from './shared'
 import type { Deps } from './types'
@@ -48,6 +49,7 @@ export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conv
       onSelect: () => deps.openConversation(node.id, conversation.id)
     },
     favoriteItem(conversation),
+    unreadItem(conversation),
     { type: 'separator' },
     {
       type: 'action',
@@ -102,5 +104,16 @@ function favoriteItem(conversation: ConversationSummary): MenuItem {
     label: on ? tr('Remover dos favoritos', 'Remove from favorites') : tr('Favoritar', 'Add to favorites'),
     icon: on ? StarOff : Star,
     onSelect: () => setFavorite(conversation, !on)
+  }
+}
+
+// A bolinha verde da lista, ligada à mão: a conversa aberta sem querer volta a parecer concluída.
+function unreadItem(conversation: ConversationSummary): MenuItem {
+  const on = isUnread(conversation.id)
+  return {
+    type: 'action',
+    label: on ? tr('Marcar como lida', 'Mark as read') : tr('Marcar como não lida', 'Mark as unread'),
+    icon: on ? MailOpen : Mail,
+    onSelect: () => (on ? markAsRead(conversation.id) : markUnread(conversation.id))
   }
 }

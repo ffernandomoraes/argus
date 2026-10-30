@@ -27,6 +27,19 @@ function markRead(ids: Iterable<string>): void {
   })
 }
 
+// "Marcar como não lida" (menu da conversa): a bolinha volta a ficar verde, como se a resposta
+// tivesse chegado sem você ver, e some quando você abrir a conversa de novo. Para achar depois
+// a conversa que abriu sem querer.
+export function markUnread(id: string): void {
+  unread.set((s) => (s.has(id) ? s : new Set([...s, id])))
+}
+
+export function markAsRead(id: string): void {
+  markRead([id])
+}
+
+export const isUnread = (id: string): boolean => unread.get().has(id)
+
 // Lista nova de uma pasta: conversa que estava trabalhando (ou esperando você) e parou, sem
 // ninguém olhando, vira não lida.
 export function noteFinished(before: ConversationSummary[] | undefined, after: ConversationSummary[] | undefined): void {

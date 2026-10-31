@@ -3,6 +3,7 @@ import { Button } from '../../ui/Button'
 import { useUpdates } from '../../updates/useUpdates'
 import { Row } from '../controls'
 import { tr } from '../../i18n'
+import { IS_WIN } from '../../platform'
 
 function statusText(state: UpdateState): string {
   switch (state.status) {
@@ -15,11 +16,14 @@ function statusText(state: UpdateState): string {
         `Baixando a versão ${state.version} - ${Math.round(state.progress * 100)}%.`,
         `Downloading version ${state.version} - ${Math.round(state.progress * 100)}%.`
       )
+    // No Windows, fechar o app não instala (ver shutdown.ts no processo principal).
     case 'ready':
-      return tr(
-        `A versão ${state.version} está pronta: entra ao reiniciar ou quando o app fechar.`,
-        `Version ${state.version} is ready: it installs when you restart or when the app quits.`
-      )
+      return IS_WIN
+        ? tr(`A versão ${state.version} está pronta: entra ao reiniciar.`, `Version ${state.version} is ready: it installs when you restart.`)
+        : tr(
+            `A versão ${state.version} está pronta: entra ao reiniciar ou quando o app fechar.`,
+            `Version ${state.version} is ready: it installs when you restart or when the app quits.`
+          )
     // Windows: a versão nova saiu, mas o instalador ainda não subiu (não é erro).
     case 'waiting':
     case 'error':

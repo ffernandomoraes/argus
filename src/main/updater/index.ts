@@ -18,7 +18,7 @@ import { installedByInstaller, spawnInstaller } from './windows'
 // Atualização pelos releases do GitHub, sem o Squirrel (electron-updater): o app é assinado com
 // certificado próprio, não com o da Apple. No Mac, baixa o .zip, confere se a assinatura é a mesma
 // do app instalado e troca o .app depois que o processo sai (mac.ts). No Windows, baixa o
-// instalador da versão nova e roda ele em modo silencioso quando o app fecha (windows.ts). No Linux,
+// instalador da versão nova e roda ele em modo silencioso no "Reiniciar e atualizar" (windows.ts). No Linux,
 // baixa o AppImage novo e troca o arquivo no lugar do atual (o Linux deixa trocar com o app aberto:
 // a cópia em uso segue lendo o arquivo antigo até sair).
 
@@ -296,7 +296,8 @@ export class Updater {
     }
   }
 
-  // relaunch: reinicia agora. Sem ele (app fechando), a versão nova entra na próxima abertura.
+  // relaunch: reinicia agora. Sem ele (app fechando, fora do Windows), a versão nova entra na
+  // próxima abertura.
   // Devolve false quando não deu nem para começar (o app então não fecha).
   install(relaunch: boolean): boolean {
     return this.launch(relaunch) !== null

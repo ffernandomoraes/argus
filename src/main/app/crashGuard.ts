@@ -5,6 +5,7 @@ import { reportOpeningProblem } from '../errorReports'
 import { tr } from '../i18n'
 import { writeJsonAtomicSync, readJsonFile } from '../lib/jsonFile'
 import { errorMessage } from '../lib/errors'
+import { IS_WIN } from '../platform'
 import { SMOKE_TEST } from '../smokeTest'
 import { recordHealthEvent } from '../systemHealth'
 import { Updater } from '../updater'
@@ -193,8 +194,9 @@ async function checkNewer(updater: Updater, restart: () => Promise<void>): Promi
   return false
 }
 
-// Reinicia com a versão baixada. true: a troca começou, ou ficou para quando o app fechar (o
-// usuário respondeu "Cancelar" à pergunta de fechar o que estava rodando).
+// Reinicia com a versão baixada. true: a troca começou, ou ficou para depois (o usuário respondeu
+// "Cancelar" à pergunta de fechar o que estava rodando): ao fechar o app ou, no Windows, pelo
+// "Reiniciar e atualizar" (ver shutdown.ts).
 async function install(updater: Updater, restart: () => Promise<void>, version: string): Promise<boolean> {
   await restart()
   if (updater.swapping) return true
@@ -206,7 +208,9 @@ async function install(updater: Updater, restart: () => Promise<void>, version: 
   await showMessageBox({
     type: 'info',
     message: tr(`A versão ${version} está baixada.`, `Version ${version} is downloaded.`),
-    detail: tr('Ela entra quando o Argus fechar.', 'It will be installed when Argus quits.'),
+    detail: IS_WIN
+      ? tr(`Ela entra pelo botão "Atualizar para ${version}", na barra de título.`, `It will be installed with the "Update to ${version}" button in the title bar.`)
+      : tr('Ela entra quando o Argus fechar.', 'It will be installed when Argus quits.'),
     buttons: ['OK']
   })
   return true

@@ -200,7 +200,8 @@ export function createServices() {
 
   const speech = new Speech()
 
-  // Versão nova baixada em segundo plano: entra com o botão da barra de título ou ao fechar o app.
+  // Versão nova baixada em segundo plano: entra com o botão da barra de título ou, fora do Windows,
+  // ao fechar o app (ver shutdown.ts).
   const updater = new Updater((state) => broadcast('updates:state', state))
 
   const cli = new Cli(openFolder)

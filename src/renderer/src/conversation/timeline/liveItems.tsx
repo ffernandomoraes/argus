@@ -6,6 +6,7 @@ import { currentTurn } from '../turnInfo'
 import type { Message } from '../types'
 import type { ImageView } from './imageViews'
 import type { PendingSend } from './optimisticSends'
+import { savedPreviewId } from './previewKeys'
 import { PermissionRow } from './rows/PermissionRow'
 import { UserBubble } from './rows/UserBubble'
 import { WorkingRow } from './rows/WorkingRow'
@@ -25,9 +26,14 @@ export type LiveOptions = {
   onAnswer: (id: string, answer: PermissionAnswer) => void
 }
 
+type LiveItemsOptions = LiveOptions & {
+  // Chave da prévia: a resposta gravada herda a mesma (ver previewKeys).
+  previewKey: string
+}
+
 // O que vem depois do histórico gravado: os balões a caminho, a resposta sendo escrita, os
 // pedidos de permissão, o passo em andamento e os avisos.
-export function liveItems(o: LiveOptions): TimelineItem[] {
+export function liveItems(o: LiveItemsOptions): TimelineItem[] {
   const items: TimelineItem[] = []
   for (const w of o.waiting) {
     const view = w.images ? o.viewFor(w.id, w.read) : undefined
@@ -42,7 +48,7 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
         <StreamingMarkdown text={o.clean(partial)} />
       </div>
     )
-    items.push(stepItem('partial', 'bg-running animate-pulse', node))
+    items.push(stepItem(o.previewKey, 'bg-running animate-pulse', node))
   }
   // data-continues-turn: responder deixa o pedido seguir, então o clique não solta o fim da conversa
   // (ver useStickyScroll).
@@ -92,11 +98,7 @@ export function liveItems(o: LiveOptions): TimelineItem[] {
 // A prévia da resposta some quando o mesmo texto já chegou no histórico.
 function partialText(live: ChatState | null, messages: Message[]): string {
   if (!live?.partial) return ''
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i]
-    if (m.role === 'assistant') return m.text === live.partial.trim() ? '' : live.partial
-  }
-  return live.partial
+  return savedPreviewId(live, messages) === null ? live.partial : ''
 }
 
 // Os anexos que não são imagem, como o balão do histórico vai mostrar (o caminho vira o nome).

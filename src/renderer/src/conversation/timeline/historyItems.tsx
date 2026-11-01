@@ -27,6 +27,8 @@ export type HistoryOptions = {
   viewFile?: (messageId: string, load: () => Promise<string[]>) => ImageView
   // Reenviar uma mensagem sua editada (o lápis do balão). Sem isto, o balão não oferece.
   onEdit?: (text: string) => void
+  // Chave da resposta na linha do tempo: a que chegou no lugar da prévia herda a dela (previewKeys).
+  answerKey?: (id: string) => string
 }
 
 // Linha do tempo do histórico gravado: suas mensagens em balões; cada passo do Claude (resposta,
@@ -85,7 +87,7 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
     default: {
       const footer = o.footers.get(m.id)
       const row = <AssistantRow text={o.clean(m.text)} footerAt={footer?.at} duration={footer?.duration} tokens={footer?.tokens} />
-      return stepItem(m.id, 'bg-faint', row)
+      return stepItem(o.answerKey?.(m.id) ?? m.id, 'bg-faint', row)
     }
   }
 }

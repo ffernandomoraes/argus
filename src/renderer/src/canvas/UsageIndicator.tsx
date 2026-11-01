@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from 'react'
 import { agentRef, type ProviderId } from '../../../shared/providers'
-import { expiredUsage, usableUsage } from '../../../shared/usage'
+import { barWindow, expiredUsage, usableUsage } from '../../../shared/usage'
 import { useAuth } from '../auth/useAuth'
 import { AgentIcon } from '../icons/AgentIcon'
 import { useNow } from '../lib/clock'
@@ -17,7 +17,7 @@ import { tr } from '../i18n'
 const SILENT: ProviderId[] = ['gemini', 'cursor']
 
 // Limites no canto direito da barra de baixo; o painel abre para cima. O botão mostra a janela mais curta de cada
-// conta (a sessão de 5 horas no Claude), com o logo antes das contas de cada agente e o nome quando
+// conta (a sessão de 5 horas no Claude; o semanal na conta sem sessão, ver barWindow), com o logo antes das contas de cada agente e o nome quando
 // o agente tem mais de uma; o painel traz todas as janelas de todas. As contas dos outros agentes
 // (hoje, só o Codex informa limite) entram só com o experimento de vários agentes ligado.
 // Só o que ainda vale (ver usableUsage): janela que já recomeçou não mostra o número antigo, e o
@@ -57,7 +57,7 @@ export const UsageIndicator = memo(function UsageIndicator({
   const shown = candidates.flatMap((c): ShownUsage[] => {
     const usage = usages[c.key] && usableUsage(usages[c.key], now)
     // Sem atualizar há mais de uma hora, fica sem números, com o aviso no painel.
-    return usage && (usage.session || expiredUsage(usage, now)) ? [{ ...c, usage }] : []
+    return usage && (barWindow(usage) || expiredUsage(usage, now)) ? [{ ...c, usage }] : []
   })
   const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn))
   if (!shown.length) return null
@@ -65,7 +65,7 @@ export const UsageIndicator = memo(function UsageIndicator({
   // Contas por agente: o nome só aparece quando o mesmo agente tem mais de uma (o logo já diz qual é).
   const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
   const saved = shown.some((x) => x.usage.saved)
-  const stale = shown.some((x) => x.usage.failure || !x.usage.session)
+  const stale = shown.some((x) => x.usage.failure || !barWindow(x.usage))
 
   return (
     <div ref={ref} className="relative flex items-center self-stretch">
@@ -85,11 +85,18 @@ export const UsageIndicator = memo(function UsageIndicator({
         }`}
       >
         {shown.map(({ key, provider, name, usage }, i) => {
-          // Sem sessão: sem atualizar há mais de uma hora (ver acima).
-          const percent = usage.session ? Math.round(usage.session.percent) : null
+          // Sem janela: sem atualizar há mais de uma hora (ver acima).
+          const limit = barWindow(usage)
+          const percent = limit ? Math.round(limit.percent) : null
           const firstOfAgent = i === 0 || shown[i - 1].provider !== provider
+          const dimmed = usage.saved || usage.failure
           return (
-            <span key={key} className={`flex items-center gap-2 ${usage.saved || usage.failure ? 'opacity-50' : ''}`}>
+            <span
+              key={key}
+              // A conta sem sessão mostra o semanal: a dica diz de qual janela é o número.
+              title={usage.noSession && limit && !dimmed ? tr('Semanal - sem limite de 5 horas', 'Weekly - no 5-hour limit') : undefined}
+              className={`flex items-center gap-2 ${dimmed ? 'opacity-50' : ''}`}
+            >
               {i > 0 && <span>-</span>}
               {firstOfAgent && <AgentIcon provider={provider} size={12} />}
               {perAgent(provider) > 1 && <span className="max-w-24 truncate">{name}</span>}

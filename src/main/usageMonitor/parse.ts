@@ -54,19 +54,27 @@ type RawLimit = { kind?: unknown; percent?: unknown; resets_at?: string | null; 
 
 // Lista `limits`, o formato novo (conferido na 2.1.300): uma linha por janela, com o tipo em `kind`.
 // É o que o /usage do Claude Code desenha. Os campos antigos (five_hour...) podem vir nulos com a
-// lista preenchida: a sessão estourada aparecia como 0%. null: lista ausente ou sem a sessão.
+// lista preenchida: a sessão estourada aparecia como 0%. Lista com o semanal e sem a sessão: conta
+// sem sessão de 5 horas (Ultra verificado). O /usage do Claude Code também tira a linha quando a
+// sessão vem nula. null: lista ausente ou sem sessão nem semanal.
 function fromLimits(raw: unknown): Usage | null {
   if (!Array.isArray(raw)) return null
   const rows = (raw as RawLimit[]).filter((r) => typeof r?.percent === 'number')
   const win = (r: RawLimit): UsageWindow => ({ percent: r.percent as number, resetsAt: r.resets_at ?? null })
   const session = rows.find((r) => r.kind === 'session')
-  if (!session) return null
   const weekly = rows.find((r) => r.kind === 'weekly_all')
+  if (!session && !weekly) return null
   const models = rows.flatMap((r) => {
     const name = r.scope?.model?.display_name
     return r.kind === 'weekly_scoped' && typeof name === 'string' ? [{ name, window: win(r) }] : []
   })
-  return { session: win(session), weekly: weekly ? win(weekly) : null, models, updatedAt: 0 }
+  return {
+    session: session ? win(session) : null,
+    weekly: weekly ? win(weekly) : null,
+    models,
+    ...(session ? {} : { noSession: true }),
+    updatedAt: 0
+  }
 }
 
 // info: resposta ao "init" (modelos, modo de permissão, conta). usage: resposta a um "usage-N"

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { app } from 'electron'
-import { usableUsage, type Usage, type UsageWindow } from '../../shared/usage'
+import { barWindow, usableUsage, type Usage, type UsageWindow } from '../../shared/usage'
 import { errorMessage } from '../lib/errors'
 import { readJsonFile, writeJsonAtomic } from '../lib/jsonFile'
 
@@ -32,6 +32,7 @@ function validEntry(e: unknown): e is Entry {
     typeof u.updatedAt === 'number' &&
     (u.session === null || isWindow(u.session)) &&
     (u.weekly === null || isWindow(u.weekly)) &&
+    (u.noSession === undefined || typeof u.noSession === 'boolean') &&
     Array.isArray(u.models) &&
     u.models.every((m) => typeof m?.name === 'string' && isWindow(m.window))
   )
@@ -50,7 +51,8 @@ export class SavedUsages {
     for (const [key, e] of Object.entries(read.data)) {
       if (!validEntry(e)) continue
       // Já vencido: nem entra.
-      if (!usableUsage({ ...e.usage, saved: true }, now)?.session) continue
+      const usable = usableUsage({ ...e.usage, saved: true }, now)
+      if (!usable || !barWindow(usable)) continue
       this.entries.set(key, { usage: { ...e.usage, saved: undefined }, email: e.email })
     }
   }

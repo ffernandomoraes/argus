@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expiredUsage, LIVE_MAX_MS, usableUsage, type Usage } from './usage'
+import { barWindow, expiredUsage, LIVE_MAX_MS, usableUsage, type Usage } from './usage'
 
 // O que a tela pode mostrar do uso: depois de uma hora sem atualizar, nenhum número (2026-10-26: o uso
 // de domingo 16:53 aparecia na segunda como se fosse atual).
@@ -31,5 +31,17 @@ describe('usableUsage', () => {
     const u = usableUsage(usage(NOW - 2 * LIVE_MAX_MS, { saved: true }), NOW)!
     expect(expiredUsage(u, NOW)).toBe(false)
     expect(u.session?.percent).toBe(42)
+  })
+})
+
+describe('barWindow', () => {
+  it('mostra a sessão; na conta sem sessão, o semanal', () => {
+    expect(barWindow(usage(NOW))).toBe(window)
+    const weekly = { percent: 34, resetsAt: '2026-10-30T09:00:00Z' }
+    expect(barWindow(usage(NOW, { session: null, weekly, noSession: true }))).toBe(weekly)
+  })
+
+  it('sessão nula sem a marca (leitura parada, janela recomeçada): nada', () => {
+    expect(barWindow(usage(NOW, { session: null }))).toBeNull()
   })
 })

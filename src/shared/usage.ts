@@ -16,6 +16,9 @@ export type Usage = {
   // Semanal de um modelo só (ex.: Fable), além do semanal de todos. No Codex, os limites à parte de
   // um modelo, com a duração de cada janela.
   models: { name: string; window: UsageWindow }[]
+  // A conta não tem a sessão de 5 horas, só o semanal (Claude Ultra verificado, desde 2026-10-30):
+  // o servidor manda a lista de limites sem a linha da sessão. `session` fica nulo.
+  noSession?: boolean
   updatedAt: number
   // Lido numa abertura anterior do app e guardado (ver usageMonitor/saved.ts): nesta abertura ainda
   // não veio leitura nova da conta.
@@ -35,6 +38,12 @@ export const SAVED_MAX_MS = 12 * 60 * 60_000
 // Leitura desta abertura sem conseguir atualizar há mais que isso: os números somem. Um número de uma
 // hora atrás numa janela de 5 horas já é outro (mesma regra do NodeTerm).
 export const LIVE_MAX_MS = 60 * 60_000
+
+// A janela que a barra de baixo mostra: a sessão de 5 horas, ou o semanal na conta sem sessão.
+// Nulo: nada que valha mostrar (janela recomeçada, guardado antigo, leitura parada).
+export function barWindow(usage: Usage): UsageWindow | null {
+  return usage.session ?? (usage.noSession ? usage.weekly : null)
+}
 
 // A leitura desta abertura passou de LIVE_MAX_MS sem atualizar: a conta fica à vista, sem números,
 // com o aviso de que não deu para ler.

@@ -12,15 +12,20 @@ import { LOCALE, tr } from '../../i18n'
 // key: a mesma do aviso de uso ("main", "codex:main").
 export type ShownUsage = { key: string; provider?: ProviderId; name: string; usage: Usage }
 
-type Row = { title: string; window: UsageWindow | null }
+// note: o texto no lugar da barra quando a janela não existe na conta (não é falta de dado).
+type Row = { title: string; window: UsageWindow | null; note?: string }
 
 // Linhas de uma conta. As do Claude têm rótulo fixo (sessão de 5 horas e semanal, que aparece mesmo
-// sem dados). As dos outros agentes vêm da duração que cada janela informa, e só as que existem: o
+// sem dados); na conta sem sessão (Ultra verificado), a linha da sessão diz que não há limite. As dos outros agentes vêm da duração que cada janela informa, e só as que existem: o
 // plano free do Codex tem uma janela só, de 30 dias.
 function rowsOf({ provider, usage }: ShownUsage): Row[] {
   if (!provider) {
     return [
-      { title: tr('Sessão (5 horas)', 'Session (5 hours)'), window: usage.session },
+      {
+        title: tr('Sessão (5 horas)', 'Session (5 hours)'),
+        window: usage.session,
+        note: usage.noSession ? tr('Sem limite neste plano', 'No limit on this plan') : undefined
+      },
       { title: tr('Semanal', 'Weekly'), window: usage.weekly },
       ...usage.models.map((m) => ({ title: tr(`Semanal ${m.name}`, `Weekly ${m.name}`), window: m.window }))
     ]
@@ -40,12 +45,12 @@ function silentNote(silent: ProviderId[]): string {
   return tr(`${list} não informam os limites.`, `${list} don’t report their limits.`)
 }
 
-function WindowDetail({ title, window, now }: { title: string; window: UsageWindow | null; now: number }) {
+function WindowDetail({ title, window, note, now }: Row & { now: number }) {
   if (!window) {
     return (
       <div>
         <div className="text-xs text-text">{title}</div>
-        <div className="mt-1 text-[12px] text-faint">{tr('Sem dados', 'No data')}</div>
+        <div className="mt-1 text-[12px] text-faint">{note ?? tr('Sem dados', 'No data')}</div>
       </div>
     )
   }
@@ -112,7 +117,7 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
                 {!expired && (
                   <div className={`flex flex-col gap-4 ${entry.usage.saved || entry.usage.failure ? 'opacity-60' : ''}`}>
                     {rowsOf(entry).map((row) => (
-                      <WindowDetail key={row.title} title={row.title} window={row.window} now={now} />
+                      <WindowDetail key={row.title} {...row} now={now} />
                     ))}
                   </div>
                 )}

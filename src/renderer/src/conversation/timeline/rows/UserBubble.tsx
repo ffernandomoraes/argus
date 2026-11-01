@@ -54,7 +54,7 @@ export const UserBubble = memo(function UserBubble({
         <div className="min-w-0">
           {images > 0 && (
             <div className={`flex flex-col gap-1.5 ${text ? 'mb-1.5' : ''}`}>
-              {imageView && <ImageThumbs count={images} load={imageView.load} onOpen={imageView.open} />}
+              {imageView && <ImageThumbs count={images} load={imageView.load} ready={imageView.ready} onOpen={imageView.open} />}
               <button
                 onClick={() => imageView?.open(0)}
                 disabled={!imageView}

@@ -3,18 +3,21 @@ import { tr } from '../../../i18n'
 
 // Miniaturas das imagens de uma mensagem. Só carregam quando o balão aparece na tela: conversa
 // longa com muitos prints não lê todos de uma vez. Antes disso, quadros vazios do mesmo tamanho.
+// Já lidas (`ready`), aparecem de cara.
 export function ImageThumbs({
   count,
   load,
+  ready,
   onOpen
 }: {
   count: number
   // Função fixa por mensagem (ver timeline/imageViews): uma nova refaria o observador.
   load: () => Promise<string[]>
+  ready?: () => string[] | undefined
   onOpen: (index: number) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [urls, setUrls] = useState<string[] | null>(null)
+  const [urls, setUrls] = useState<string[] | null>(() => ready?.() ?? null)
 
   useEffect(() => {
     const el = ref.current

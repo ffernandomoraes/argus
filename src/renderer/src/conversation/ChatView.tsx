@@ -266,7 +266,14 @@ export const ChatView = memo(function ChatView({
             {/* key: a lista nasce de novo quando o histórico chega. Ela guarda a posição da rolagem
                 de quando nasceu: criada no "Carregando conversa", vazia, desenhava as primeiras
                 mensagens enquanto a rolagem já estava no fim, e a conversa abria em branco. */}
-            <Timeline key={loading ? 'loading' : 'ready'} rows={rows} scroller={scrollerEl} placeholder={placeholder} handle={timeline} />
+            <Timeline
+              key={loading ? 'loading' : 'ready'}
+              rows={rows}
+              scroller={scrollerEl}
+              placeholder={placeholder}
+              handle={timeline}
+              onShift={sticky.onShift}
+            />
           </div>
         </div>
         {/* Longe do fim: volta para ele com uma rolagem suave. Com o Claude trabalhando, a borda

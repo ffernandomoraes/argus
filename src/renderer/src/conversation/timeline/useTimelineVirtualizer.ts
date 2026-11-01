@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useState, type RefObject } from 'react'
-import { useVirtualizer, type Rect, type VirtualItem, type Virtualizer } from '@tanstack/react-virtual'
+import { elementScroll, useVirtualizer, type Rect, type VirtualItem, type Virtualizer } from '@tanstack/react-virtual'
 import type { TimelineItem } from './timelineItem'
 
 // Altura de um item antes de ser medido, em px do layout (uma resposta curta, uma ação). Os
@@ -67,12 +67,14 @@ function measureLayout(el: HTMLDivElement, entry: ResizeObserverEntry | undefine
 // A linha do tempo virtualizada: só os itens perto da tela ficam montados. Ao entrar item em cima
 // (as mensagens anteriores), quem você lia continua no lugar (anchorTo 'end'); seguir o fim ao
 // chegar coisa nova fica com o useStickyScroll. `list`: o elemento da lista, dentro da área.
-// `placeholder`: o "Carregando conversa" acima dela muda onde a lista começa.
+// `placeholder`: o "Carregando conversa" acima dela muda onde a lista começa. `onShift`: quanto a
+// lista moveu a rolagem sozinha (ver scrollToFn abaixo).
 export function useTimelineVirtualizer(
   scroller: HTMLDivElement | null,
   list: RefObject<HTMLDivElement | null>,
   rows: TimelineItem[],
-  placeholder: boolean
+  placeholder: boolean,
+  onShift: (px: number) => void
 ): TimelineVirtualizer {
   // Onde a lista começa dentro da área de rolagem (o respiro de cima, o "Carregando conversa").
   const [margin, setMargin] = useState(0)
@@ -95,6 +97,15 @@ export function useTimelineVirtualizer(
     initialOffset: () => Math.max(0, rows.length * ESTIMATE + margin - (scroller?.clientHeight ?? 0)),
     anchorTo: 'end',
     observeElementRect: observeLayoutRect,
-    measureElement: measureLayout
+    measureElement: measureLayout,
+    // A lista também mexe na rolagem: a correção ao medir um item acima da tela, a volta para onde
+    // você estava quando chegam as mensagens anteriores. Avisa quanto andou de fato, para o
+    // useStickyScroll não tomar isso por rolagem sua (scrollMoves).
+    scrollToFn: (offset, options, instance) => {
+      const el = instance.scrollElement
+      const before = el?.scrollTop ?? 0
+      elementScroll(offset, options, instance)
+      if (el) onShift(el.scrollTop - before)
+    }
   })
 }

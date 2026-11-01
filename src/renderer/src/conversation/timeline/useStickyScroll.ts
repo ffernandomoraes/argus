@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type KeyboardEvent, type PointerEvent, type UIEvent, type WheelEvent } from 'react'
 import { scrollWithin } from '../scrollWithin'
+import { createScrollMoves } from './scrollMoves'
 
 const UP_KEYS = new Set(['ArrowUp', 'PageUp', 'Home'])
 // Por quanto tempo depois de roda, tecla ou toque uma rolagem ainda conta como sua.
@@ -33,7 +34,8 @@ export function useStickyScroll(
   timeline: StickyTimeline
 ) {
   const following = useRef(true)
-  const lastTop = useRef(0)
+  // O quanto cada rolagem andou por você, sem o que a lista virtualizada moveu sozinha (onShift).
+  const [moves] = useState(createScrollMoves)
   const [pinnedKey, setPinnedKey] = useState<string | null>(null)
   const [scrollingUp, setScrollingUp] = useState(false)
   // Longe do fim sem estar seguindo: o botão de ir ao fim aparece. O ref evita pedir um desenho a
@@ -162,8 +164,8 @@ export function useStickyScroll(
 
   const onScroll = (e: UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget
-    const delta = el.scrollTop - lastTop.current
-    lastTop.current = el.scrollTop
+    // Só o que você rolou: a correção da lista virtualizada move a rolagem junto com o conteúdo.
+    const { delta, listOnly } = moves.read(el.scrollTop)
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight
     // No fim (também quando o conteúdo encolhe e puxa a rolagem): segue. Qualquer subida solta na
     // hora; antes, só passar de 40px do fim soltava, e cada atualização puxava de volta.
@@ -183,7 +185,9 @@ export function useStickyScroll(
       // tamanho para o observer). Antes isso soltava o fim e o "Pensando…" ficava abaixo da tela.
       toEnd()
       return
-    } else {
+    } else if (!listOnly) {
+      // Só a lista mexeu (listOnly): você não rolou, então nada muda em seguir o fim nem no prompt
+      // preso. Antes, a correção contava como descida e o prompt preso piscava na subida.
       if (delta < 0) following.current = false
       else if (distance < 40) following.current = true
       trackDirection(delta)
@@ -261,5 +265,6 @@ export function useStickyScroll(
     setTimeout(() => el.classList.remove('jump-flash'), FLASH_MS)
   }
 
-  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, toEnd, follow, jumpToEnd, settle, pinnedKey, scrollingUp, scrollToPrompt, away }
+  // onShift: a lista virtualizada avisa quanto moveu a rolagem sozinha (useTimelineVirtualizer).
+  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, onShift: moves.shift, toEnd, follow, jumpToEnd, settle, pinnedKey, scrollingUp, scrollToPrompt, away }
 }

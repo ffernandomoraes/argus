@@ -21,7 +21,8 @@ export const Timeline = memo(function Timeline({
   rows,
   scroller,
   placeholder,
-  handle
+  handle,
+  onShift
 }: {
   rows: TimelineItem[]
   // A área de rolagem da conversa; nula até ela montar.
@@ -29,9 +30,11 @@ export const Timeline = memo(function Timeline({
   // O "Carregando conversa" está acima da lista.
   placeholder: boolean
   handle: Ref<TimelineHandle>
+  // Quanto a lista moveu a rolagem sozinha, para não contar como rolagem sua (useStickyScroll).
+  onShift: (px: number) => void
 }) {
   const list = useRef<HTMLDivElement>(null)
-  const virtualizer = useTimelineVirtualizer(scroller, list, rows, placeholder)
+  const virtualizer = useTimelineVirtualizer(scroller, list, rows, placeholder, onShift)
   useImperativeHandle(
     handle,
     () => ({

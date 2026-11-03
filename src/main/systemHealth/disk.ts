@@ -8,7 +8,7 @@ const GB = 1024 ** 3
 // Com menos que isso livre, cheio: gravar começa a falhar.
 const FULL_BYTES = 1 * GB
 // Com menos que isso, quase cheio: o aviso amarelo.
-const LOW_BYTES = 5 * GB
+const LOW_BYTES = 3 * GB
 // Para sair de um nível, um pouco acima do limite (ver o MARGIN da memória).
 const MARGIN_BYTES = GB / 2
 

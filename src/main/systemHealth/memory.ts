@@ -10,9 +10,9 @@ import { IS_LINUX, IS_MAC } from '../platform'
 // meio minuto (ver SystemHealth).
 
 // Abaixo desta fração disponível, apertado.
-const TIGHT_SHARE = 0.15
+const TIGHT_SHARE = 0.1
 // Abaixo desta, chegando lá: o aviso amarelo na barra de cima.
-const LOW_SHARE = 0.2
+const LOW_SHARE = 0.15
 // Para sair de um nível, um pouco acima do limite: perto dele, o aviso não some e volta a cada leitura.
 const MARGIN = 0.03
 

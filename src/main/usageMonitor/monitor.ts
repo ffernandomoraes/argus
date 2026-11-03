@@ -13,7 +13,7 @@ import { parseControlReply, parseRateLimits } from './parse'
 
 // Os limites de uso de uma conta do Claude. Vêm do mesmo endereço que o Claude Code consulta para
 // o /usage (GET /api/oauth/usage, conferido no binário da 2.1.300), com o login que ele guarda: uma
-// chamada a cada 5 minutos com o Argus em foco (15 sem) e outra ao abrir o painel, sem processo aberto. Antes era um `claude` aberto por conta só para isso
+// chamada a cada 3 minutos com o Argus em foco (15 sem) e outra ao abrir o painel, sem processo aberto. Antes era um `claude` aberto por conta só para isso
 // (~155 MB cada, medido em 2026-10-16), o caminho da extensão do VS Code, que já tem um aberto
 // para a conversa.
 // O `claude` ainda entra em três casos, e fecha ao responder (o pedido de controle get_usage, que
@@ -27,8 +27,9 @@ import { parseControlReply, parseRateLimits } from './parse'
 const TICK_MS = 60_000
 // Com uma janela do Argus em foco. Era 1 minuto até a 0.1.88: a cota desse endereço é pequena e
 // dividida com todo `claude` aberto com o mesmo login, e a recusa por excesso (429) deixava a tela
-// parada (o NodeTerm pergunta a cada 15 minutos). Quem quer o número da hora abre o painel (refresh).
-const POLL_MS = 5 * 60_000
+// parada (o NodeTerm pergunta a cada 15 minutos). Foi 5 minutos até a 0.1.104; 3 a pedido do Fernando
+// (2026-11-03), porque a barra ficava atrás do painel. Quem quer o número da hora abre o painel (refresh).
+const POLL_MS = 3 * 60_000
 // Sem nenhuma janela do Argus em foco, ninguém está olhando a barra. Ao voltar o foco, pergunta na
 // hora se a última passou de POLL_MS (ver refresh): perder e voltar o foco várias vezes seguidas não
 // faz mais chamadas que antes.

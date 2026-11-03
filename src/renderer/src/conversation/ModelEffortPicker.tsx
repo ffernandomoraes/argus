@@ -1,12 +1,9 @@
 import { useRef, useState } from 'react'
-import { Brain, ChevronUp, Network, Workflow } from 'lucide-react'
+import { Brain, ChevronUp, Workflow } from 'lucide-react'
 import type { SessionSettings } from './SessionSettings'
 import { EFFORTS, effortLabel } from './modelOptions'
 import { parseAgentRef } from '../../../shared/providers'
-import { resolveAccount, useAuth, useConversationAccount } from '../auth/useAuth'
-import { useProviders } from '../providers/useProviders'
-import { useAccountChoice } from './conversationAccount'
-import { orchestratorFit } from './orchestrator'
+import { useConversationAccount } from '../auth/useAuth'
 import { useModels } from './useModels'
 import { EffortDots, EffortSlider } from './composer/EffortSlider'
 import { ModelList } from './composer/ModelList'
@@ -17,8 +14,6 @@ import { useOutsideClick } from '../useOutsideClick'
 import { Presence } from '../motion'
 import { MenuArrow } from '../ui/MenuArrow'
 import { tr } from '../i18n'
-import { getPreferences, usePreference } from '../settings/preferences'
-import { ExperimentTag } from '../ui/ExperimentTag'
 
 // Níveis de esforço e famílias de modelo moram em modelOptions.ts; saem daqui também, como antes,
 // para as Configurações.
@@ -41,17 +36,9 @@ export function ModelEffortPicker({
   const ref = useRef<HTMLDivElement>(null)
   const models = useModels()
   // Outro agente (Codex, Gemini, Cursor): os modelos e esforços são os da conta dele; thinking e
-  // Ultracode são do Claude Code. O orquestrador vale para todos (ver src/main/orchestration/).
+  // Ultracode são do Claude Code.
   const account = useConversationAccount()
   const agent = !!parseAgentRef(account)
-  const orchestratorEnabled = usePreference('orchestratorEnabled')
-  // O orquestrador configurado cabe nesta conversa? Conversa vazia adota o agente dele; a que já
-  // começou com outro agente não troca (o histórico de cada um é próprio dele).
-  const orchestrator = usePreference('orchestrator')
-  const auth = useAuth()
-  const providers = useProviders()
-  const choice = useAccountChoice()
-  const fit = orchestratorFit(orchestrator.agent, account, !!choice?.empty, resolveAccount(auth, undefined), providers)
   useOutsideClick(ref, () => setOpen(false), open)
   useEscape(() => setOpen(false), open)
 
@@ -85,7 +72,6 @@ export function ModelEffortPicker({
           </>
         )}
         {settings.ultracode && !agent && <Workflow size={12} className="text-running" aria-label={tr('Ultracode ligado', 'Ultracode on')} />}
-        {orchestratorEnabled && settings.orchestrator && <Network size={12} className="text-running" aria-label={tr('Orquestrador ligado', 'Orchestrator on')} />}
         <ChevronUp size={12} className="text-faint" />
       </button>
 
@@ -113,31 +99,6 @@ export function ModelEffortPicker({
               checked={settings.ultracode}
               onChange={(ultracode) => onChange({ ultracode })}
             />}
-            {orchestratorEnabled && (
-              <Toggle
-                label={tr('Orquestrador', 'Orchestrator')}
-                tag={<ExperimentTag />}
-                icon={<Network size={12} />}
-                checked={settings.orchestrator}
-                disabled={fit.kind === 'blocked' && !settings.orchestrator}
-                note={
-                  fit.kind === 'blocked' &&
-                  tr(
-                    `Esta conversa começou com outro agente. Para usar o orquestrador atual (${fit.agent}), inicie uma conversa nova.`,
-                    `This chat started with another agent. To use the current orchestrator (${fit.agent}), start a new chat.`
-                  )
-                }
-                onChange={(on) => {
-                  // Ligar põe a conversa no agente (se vazia), modelo e esforço do orquestrador;
-                  // desligar mantém os atuais.
-                  if (!on) return onChange({ orchestrator: false })
-                  const o = getPreferences().orchestrator
-                  if (fit.kind === 'blocked') return
-                  if (fit.kind === 'adopt') choice?.choose(fit.account)
-                  onChange({ orchestrator: true, model: o.model, effort: o.effort })
-                }}
-              />
-            )}
           </div>
         )}
       </Presence>

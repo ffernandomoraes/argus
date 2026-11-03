@@ -74,13 +74,11 @@ describe('PendingPermissions', () => {
     expect(p.size).toBe(0)
   })
 
-  it('conversa fechada nega tudo que esperava, inclusive as perguntas das etapas delegadas', async () => {
+  it('conversa fechada nega tudo que esperava', async () => {
     const { p } = setup()
     const tool = p.canUseTool('Bash', { command: 'ls' }, options('t1'))
-    const step = p.ask({ id: 'ext', toolName: 'x', label: 'x', summary: '', canAlwaysAllow: false })
     p.denyAll('Conversa fechada.')
     expect(await tool).toEqual({ behavior: 'deny', message: 'Conversa fechada.' })
-    expect(await step).toBe('deny')
     expect(p.size).toBe(0)
   })
 

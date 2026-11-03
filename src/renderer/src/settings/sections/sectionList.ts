@@ -1,11 +1,10 @@
-import { Bell, Coffee, FlaskConical, HardDrive, MessagesSquare, Network, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
+import { Bell, Coffee, FlaskConical, HardDrive, MessagesSquare, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
 export type Section =
   | 'general'
   | 'conversations'
   | 'notifications'
-  | 'orchestrator'
   | 'appearance'
   | 'updates'
   | 'storage'
@@ -105,17 +104,6 @@ export const SECTIONS: {
     description: tr(
       'Os servidores MCP de cada conta: autorize, reconecte ou desconecte sem abrir uma conversa.',
       'Each account’s MCP servers: authorize, reconnect or sign out without opening a chat.'
-    )
-  },
-  {
-    id: 'orchestrator',
-    group: 'agents',
-    label: tr('Orquestrador', 'Orchestrator'),
-    icon: Network,
-    experimental: true,
-    description: tr(
-      'Ligado numa conversa, não executa: divide o pedido em etapas e manda cada uma ao modelo e esforço que ela pede.',
-      'When on in a chat, it doesn’t do the work: splits the request into steps and sends each to the model and effort it needs.'
     )
   },
   {

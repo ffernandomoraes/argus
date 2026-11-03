@@ -40,7 +40,6 @@ import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
 import { Mascot } from './mascot/Mascot'
 import { MascotBridge } from './mascot/MascotBridge'
-import { OrchestratorBridge } from '../conversation/OrchestratorBridge'
 import { usePreference } from '../settings/preferences'
 import { useWorktreeActions } from './worktrees/useWorktreeActions'
 import { useWorktreeMoves } from './worktrees/useWorktreeMoves'
@@ -184,7 +183,6 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
         />
         <MascotBridge nodesRef={nodesRef} />
         <Mascot nodesRef={nodesRef} hidden={uiHidden} />
-        <OrchestratorBridge />
         {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
         <div
           aria-hidden="true"

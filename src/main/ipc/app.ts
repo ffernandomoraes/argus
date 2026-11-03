@@ -12,7 +12,6 @@ import { ensureDistro, homeUnc, listDistros } from '../wsl'
 import { wslDiagnostics } from '../wsl/diagnostics'
 import { parseAgentRef } from '../../shared/providers'
 import { agentInfo } from '../agentChats/models'
-import { setOrchestrationEnabled } from '../orchestration'
 import { handle, on, onSync } from './register'
 import { syncWorkspace } from '../workspaces'
 import { IS_MAC } from '../platform'
@@ -98,7 +97,6 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('mascot:findTarget', (_e, key, turn) => s.mascot.findTarget(key, turn))
   handle('mascot:walk', (e, x, y) => (s.mascot.owns(e.sender) ? s.mascot.walk(x, y) : undefined))
   handle('mascot:homeSpot', () => s.mascot.homeSpot())
-  on('orchestrator:enabled', (_e, enabled) => setOrchestrationEnabled(enabled))
   handle('popout:payload', (_e, id) => s.popouts.payload(id))
   handle('usage:get', () => s.usage.all())
   on('usage:refresh', () => s.usage.refresh(true))

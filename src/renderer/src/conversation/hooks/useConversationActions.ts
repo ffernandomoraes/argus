@@ -1,11 +1,9 @@
 import { agentProviderOf, type AgentDef } from '../../../../shared/agents'
 import type { PermissionAnswer } from '../../../../shared/chat'
-import { orchestratorPrompt } from '../../../../shared/orchestrator'
 import { parseAgentRef } from '../../../../shared/providers'
 import { getAuth, resolveAccount } from '../../auth/useAuth'
 import type { ConversationSummary } from '../../canvas/types'
 import { useStableCallback } from '../../lib/useStableCallback'
-import { getPreferences } from '../../settings/preferences'
 import { agentHint, mentionedAgents } from '../agentMentions'
 import { forgetTranscripts, transcriptsText } from '../audio/transcripts'
 import { imagesForSend, isSendableImage } from '../chatImages'
@@ -16,11 +14,9 @@ import { liveCommands, type SessionSettings } from '../SessionSettings'
 import { settingChangeEvents } from '../settingChangeEvents'
 import { useClaudeInfo } from '../useModels'
 
-// Agentes chamados com @ e, com o orquestrador ligado, as regras dele. Vão em toda mensagem: valem
-// assim que a pessoa liga, sem reabrir a conversa, e sobrevivem à compactação.
-function hintFor(text: string, agents: AgentDef[], settings: SessionSettings, account?: string): string | undefined {
-  const parts = [agentHint(mentionedAgents(text, agents), agentProviderOf(account)), settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator) : undefined]
-  return parts.filter(Boolean).join('\n\n') || undefined
+// Agentes chamados com @. Vão em toda mensagem: sobrevivem à compactação.
+function hintFor(text: string, agents: AgentDef[], account?: string): string | undefined {
+  return agentHint(mentionedAgents(text, agents), agentProviderOf(account)) || undefined
 }
 
 type Options = {
@@ -69,7 +65,7 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
       text: full,
       images,
       files: attached,
-      hint: hintFor(text, agents, settings, account)
+      hint: hintFor(text, agents, account)
     })
   })
 

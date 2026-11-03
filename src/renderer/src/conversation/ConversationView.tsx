@@ -10,7 +10,7 @@ import type { ConversationSummary } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
 import { Presence } from '../motion'
 import { ChatView } from './ChatView'
-import { AccountChoiceContext, moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
+import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
 import { moveConversationSettings, useConversationSettings } from './conversationSettings'
 import { fileInFolder, ownFolder } from '../canvas/drawers/fileInFolder'
 import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
@@ -139,7 +139,6 @@ export const ConversationView = memo(function ConversationView({
   const canSwitchClaude = !empty && !parseAgentRef(account) && status !== 'running' && status !== 'needs-you'
   const canChangeAccount = empty || canSwitchClaude
   const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
-  const accountChoice = useMemo(() => ({ empty, choose: chooseAccount }), [empty, chooseAccount])
   const settings = useConversationSettings(settingsId)
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
   const { remoteControl } = actionsFor
@@ -228,7 +227,6 @@ export const ConversationView = memo(function ConversationView({
       <SubagentOpenContext.Provider value={subagentOpen}>
       <TaskOpenContext.Provider value={taskOpen}>
         <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`} style={zoom === 1 ? undefined : { zoom }}>
-          <AccountChoiceContext.Provider value={accountChoice}>
           <ChatView
             key={viewKey}
             draftKey={conversation.id}
@@ -264,7 +262,6 @@ export const ConversationView = memo(function ConversationView({
             interrupted={interrupted}
             freed={freed}
           />
-          </AccountChoiceContext.Provider>
         </div>
       </TaskOpenContext.Provider>
       </SubagentOpenContext.Provider>

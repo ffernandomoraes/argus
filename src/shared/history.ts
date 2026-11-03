@@ -55,7 +55,7 @@ export type Message =
       agent?: string
     }
 
-export type EventKind = 'model' | 'effort' | 'mode' | 'thinking' | 'ultracode' | 'orchestrator' | 'compact' | 'interrupted'
+export type EventKind = 'model' | 'effort' | 'mode' | 'thinking' | 'ultracode' | 'compact' | 'interrupted'
 
 // Status de uma sessão aberta do Claude Code (em qualquer lugar: VS Code, terminal, este app).
 export type LiveStatus = 'running' | 'needs-you' | 'idle'

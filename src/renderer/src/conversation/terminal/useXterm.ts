@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState, type RefObject } from 'react'
 import { getConversationSettings } from '../conversationSettings'
-import { orchestratorPrompt } from '../../../../shared/orchestrator'
-import { getPreferences } from '../../settings/preferences'
 import { launchSettings } from '../SessionSettings'
 import { connectPty } from './connectPty'
 import type { Xterm } from './createXterm'
@@ -63,8 +61,7 @@ export function useXterm(
         model: settings.model || undefined,
         effort: settings.effort || undefined,
         settingsJson: launchSettings(settings),
-        permissionMode: settings.permissionMode || undefined,
-        systemPrompt: settings.orchestrator && getPreferences().orchestratorEnabled ? orchestratorPrompt(getPreferences().orchestrator, 'native') : undefined
+        permissionMode: settings.permissionMode || undefined
       },
       {
         onError: (error) => setEnded({ generation, error, exitCode: null }),

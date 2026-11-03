@@ -42,16 +42,6 @@ const fake = vi.hoisted(() => {
 vi.mock('./codex', () => ({ CodexDriver: fake.FakeDriver }))
 vi.mock('./acp', () => ({ AcpDriver: fake.FakeDriver }))
 vi.mock('./models', () => ({ sanitizeSettings: async (_ref: unknown, s: unknown) => s }))
-vi.mock('../orchestration', () => ({
-  orchestrationEnabled: () => false,
-  registerHost: async () => ({ url: '', dispose: () => {} }),
-  DelegateCalls: class {
-    seen() {}
-    claim() {
-      return undefined
-    }
-  }
-}))
 
 const { AgentChatSession } = await import('./session')
 
@@ -221,17 +211,6 @@ describe('ferramentas', () => {
     driver().finish()
     await idle(session)
     expect(stored(session).messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool'])
-  })
-
-  it('etapa delegada mantém o resultado quando o agente atualiza a linha sem repetir', async () => {
-    const { session } = open()
-    send(session, 'oi')
-    await started()
-    driver().events.tool(tool({ id: 'd1', agent: 'Gemini', result: 'entregue', done: true }))
-    driver().events.tool(tool({ id: 'd1', agent: 'Gemini', result: '', done: true }))
-    driver().finish()
-    await idle(session)
-    expect(stored(session).messages.find((m) => m.role === 'tool')).toMatchObject({ result: 'entregue' })
   })
 })
 

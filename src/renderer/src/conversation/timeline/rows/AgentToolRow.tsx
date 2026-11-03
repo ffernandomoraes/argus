@@ -13,8 +13,7 @@ const SECTION_TITLE = 'mb-1 px-1 text-[13px] uppercase tracking-wide text-faint'
 
 // Subagente chamado pela conversa: qual agente, o pedido que recebeu, o que está fazendo
 // (enquanto roda) e o que entregou. O relatório só é formatado ao abrir a linha. "Ver conversa"
-// abre tudo o que ele fez num drawer só para ler (só os do Claude: as etapas delegadas pelo
-// orquestrador não têm histórico gravado).
+// abre tudo o que ele fez num drawer só para ler (só os do Claude).
 export const AgentToolRow = memo(function AgentToolRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
   const running = useRunningAgent(message.toolUseId)
   const openSubagent = useContext(SubagentOpenContext)

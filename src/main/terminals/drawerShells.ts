@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { createSdkMcpServer, tool, type SdkMcpToolDefinition } from '@anthropic-ai/claude-agent-sdk'
+import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import type { Terminals } from '.'
 import { IS_WIN } from '../platform'
@@ -419,8 +419,7 @@ export function readsOwnOutput(conversations: string[]): boolean {
 }
 
 // conversations: as chaves da conversa que chama, lidas na hora (a nova ganha o id da sessão depois).
-// extra: outras ferramentas do Argus na mesma conversa (as do orquestrador, ver orchestration/).
-export function argusMcp(conversations: () => Iterable<string>, extra: SdkMcpToolDefinition<any>[] = []) {
+export function argusMcp(conversations: () => Iterable<string>) {
   return createSdkMcpServer({
     name: ARGUS_MCP,
     alwaysLoad: true,
@@ -450,8 +449,7 @@ export function argusMcp(conversations: () => Iterable<string>, extra: SdkMcpToo
             )
         },
         async ({ lines, wait_ms }, extra) => readTerminal([...conversations()], lines, wait_ms, signalOf(extra))
-      ),
-      ...extra
+      )
     ]
   })
 }

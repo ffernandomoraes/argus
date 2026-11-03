@@ -1,7 +1,5 @@
 import { isInterfaceZoom } from '../../../shared/interfaceZoom'
-import type { OrchestratorConfig } from '../../../shared/orchestrator'
 import { DEFAULT_LOOK, normalizeLook, type MascotLook } from '../canvas/mascot/look'
-import { defaultOrchestrator } from '../conversation/orchestrator'
 import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
@@ -31,16 +29,12 @@ export type Preferences = {
   mascotCanvasSpot: { x: number; y: number } | null
   // Visual do mascote e o golpe no envio (Configurações > Mascote).
   mascotLook: MascotLook
-  // Modo orquestrador disponível (Configurações > Experimentos): mostra a aba e o item no seletor.
-  orchestratorEnabled: boolean
   // Modo design (Configurações > Experimentos): "Novo design" na pasta, os designs na lista dela e o
   // drawer do design. Desligado, nada disso aparece (os designs continuam guardados).
   designMode: boolean
   // Worktrees (Configurações > Experimentos): "Nova tarefa em paralelo" no menu da pasta, que cria um git
   // worktree como card filho dela.
   worktrees: boolean
-  // Modelo e esforço do orquestrador e as regras de delegação dele (Configurações > Orquestrador).
-  orchestrator: OrchestratorConfig
   // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
   favoriteChats: string[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
@@ -61,10 +55,8 @@ const DEFAULTS: Preferences = {
   mascotFloating: false,
   mascotCanvasSpot: null,
   mascotLook: DEFAULT_LOOK,
-  orchestratorEnabled: false,
   designMode: false,
   worktrees: false,
-  orchestrator: defaultOrchestrator(),
   favoriteChats: [],
   promptSuggestions: true
 }

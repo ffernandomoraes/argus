@@ -217,14 +217,7 @@ describe('permissões', () => {
     expect(log.asks).toEqual([])
   })
 
-  it('ferramenta do próprio Argus passa sem perguntar', async () => {
-    const { log } = await opened()
-    await permission({ toolCall: { toolCallId: 'd1', title: 'argus-delegate: delegate', kind: 'other' }, options: OPTIONS })
-    expect(log.asks).toEqual([])
-  })
-
-  // Segurança: só o servidor do Argus passa direto; um arquivo numa pasta "argus" é outra coisa.
-  it('arquivo ou comando com "argus" no nome continua perguntando', async () => {
+  it('arquivo ou comando com "argus" no nome pergunta', async () => {
     const { log } = await opened()
     await permission({ toolCall: { toolCallId: 'e2', kind: 'edit', title: 'argus: editar config', locations: [{ path: '/argus/a.ts' }] }, options: OPTIONS })
     await permission({ toolCall: { toolCallId: 'c2', kind: 'execute', title: 'argus-x run', rawInput: { command: 'argus-x run', providerIdentifier: 'argus' } }, options: OPTIONS })

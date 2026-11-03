@@ -91,9 +91,6 @@ const api: Api = {
     onTyping: (cb) => listen('mascot:typing', cb),
     onReleased: (cb) => listen('mascot:released', cb)
   },
-  orchestrator: {
-    setEnabled: (on) => send('orchestrator:enabled', on)
-  },
   claude: {
     info: (account) => invoke('claude:info', account),
     onInfo: (cb) => listen('claude:info', cb)

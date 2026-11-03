@@ -5,7 +5,6 @@ import { tr } from '../../i18n'
 // Coisas em teste ou só por diversão. Tudo aqui vem desligado.
 export function ExperimentsSection() {
   const mascot = usePreference('mascot')
-  const orchestrator = usePreference('orchestratorEnabled')
   const designMode = usePreference('designMode')
   const worktrees = usePreference('worktrees')
   return (
@@ -19,16 +18,6 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Mascote', 'Mascot')} checked={mascot} onChange={(next) => setPreferences({ mascot: next })} />
-      </Row>
-      <Row
-        label={tr('Orquestrador', 'Orchestrator')}
-        description={tr('Divide o pedido em etapas e delega cada uma a outro agente.', 'Splits the request into steps and delegates each to another agent.')}
-        info={tr(
-          'Na conversa em que for ligado, não executa: divide o pedido em etapas e manda cada uma ao agente, modelo e esforço que ela pede, de qualquer empresa (Claude, Codex, Gemini, Cursor). Liga o item no seletor de modelo e a aba Orquestrador, onde ficam as regras. Vale para as conversas abertas depois de ligar.',
-          'In the chat where it’s on, it doesn’t do the work: splits the request into steps and sends each to the agent, model and effort it needs, from any company (Claude, Codex, Gemini, Cursor). Enables the item in the model picker and the Orchestrator tab, where the rules live. Applies to chats opened after turning it on.'
-        )}
-      >
-        <Switch label={tr('Orquestrador', 'Orchestrator')} checked={orchestrator} onChange={(next) => setPreferences({ orchestratorEnabled: next })} />
       </Row>
       <Row
         label={tr('Modo design', 'Design mode')}

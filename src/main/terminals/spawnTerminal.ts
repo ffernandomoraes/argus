@@ -55,7 +55,10 @@ function spawnPty(file: string, args: string[], options: IBasePtyForkOptions): {
   }
 }
 
-// Opções do `claude` que valem nos dois lugares. promptFile: as regras do orquestrador, já no
+// O pedido com o aviso do worktree (quando a pasta é um), para --append-system-prompt-file.
+type SpawnRequest = TerminalOpenRequest & { systemPrompt?: string }
+
+// Opções do `claude` que valem nos dois lugares. promptFile: o aviso do worktree, já no
 // caminho que o `claude` enxerga; dir: o mesmo para as pastas do workspace.
 function claudeArgs(req: TerminalOpenRequest, promptFile?: string, dir?: (path: string) => string): string[] {
   return [
@@ -72,10 +75,10 @@ function claudeArgs(req: TerminalOpenRequest, promptFile?: string, dir?: (path: 
 // Abre o `claude` (ou o shell do sistema, com req.shell) num pseudo-terminal na pasta. Pasta do
 // WSL: dentro da distro (ver wsl/index.ts).
 export async function spawnTerminal(open: TerminalOpenRequest, cwd: string): Promise<Spawned> {
-  // Tarefa isolada reservada: o worktree nasce agora. Num worktree, o aviso dele vai junto das
-  // regras do orquestrador.
+  // Tarefa isolada reservada: o worktree nasce agora. Num worktree, o aviso dele vai como
+  // --append-system-prompt-file.
   await materializeWorktree(cwd, '')
-  const req = { ...open, systemPrompt: await withWorktreeHint(open.systemPrompt, cwd) }
+  const req = { ...open, systemPrompt: await withWorktreeHint(undefined, cwd) }
   const distro = distroFor(cwd)
   const agent = parseAgentRef(req.account)
   if (agent && distro)
@@ -121,13 +124,10 @@ function agentTerminal(req: TerminalOpenRequest, cwd: string, agent: AgentRef): 
   }
 }
 
-// Texto de várias linhas como argumento quebra no Windows e no WSL: vai num arquivo. Um só para
-// todos os terminais, porque as regras são as mesmas (vêm das Configurações). Com o aviso de um
-// worktree, que muda de pasta para pasta, um por texto.
+// Texto de várias linhas como argumento quebra no Windows e no WSL: vai num arquivo. O aviso do
+// worktree muda de pasta para pasta: um arquivo por texto.
 function writePrompt(text: string): string {
-  const name = text.includes('<worktree>')
-    ? `worktree-prompt-${createHash('sha1').update(text).digest('hex').slice(0, 12)}.md`
-    : 'orchestrator-prompt.md'
+  const name = `worktree-prompt-${createHash('sha1').update(text).digest('hex').slice(0, 12)}.md`
   const path = join(app.getPath('userData'), name)
   writeFileSync(path, text)
   return path
@@ -135,7 +135,7 @@ function writePrompt(text: string): string {
 
 // No WSL o app não tem como achar pelo pid a conversa que o `claude` cria (o pid é do wsl.exe e o
 // status gravado traz o do Linux): a conversa nova já abre com um id escolhido aqui.
-async function wslTerminal(req: TerminalOpenRequest, cwd: string, distro: string): Promise<Spawned> {
+async function wslTerminal(req: SpawnRequest, cwd: string, distro: string): Promise<Spawned> {
   const newSession = req.shell || req.sessionId ? undefined : randomUUID()
   const prompt = req.systemPrompt && !req.shell ? toLinux(writePrompt(req.systemPrompt)) : undefined
   const args = [...claudeArgs(req, prompt, toLinux), ...(newSession ? ['--session-id', newSession] : [])]
@@ -150,7 +150,7 @@ async function wslTerminal(req: TerminalOpenRequest, cwd: string, distro: string
   }
 }
 
-function nativeTerminal(req: TerminalOpenRequest, cwd: string): Spawned {
+function nativeTerminal(req: SpawnRequest, cwd: string): Spawned {
   const claude = claudePath()
   const env = childEnv()
   env.TERM = 'xterm-256color'

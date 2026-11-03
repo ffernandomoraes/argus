@@ -107,10 +107,6 @@ export type Api = {
     onTyping: (cb: (typing: boolean) => void) => Off
     onReleased: (cb: () => void) => Off
   }
-  // Experimento do orquestrador ligado: as conversas abertas depois recebem a ferramenta delegate.
-  orchestrator: {
-    setEnabled: (on: boolean) => void
-  }
   // Modelos e modo padrão que o `claude` de cada conta informa; sem conta, a padrão.
   claude: {
     info: (account?: string) => Promise<ClaudeInfo | null>

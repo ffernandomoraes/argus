@@ -187,13 +187,6 @@ describe('o que chega na conversa', () => {
     expect(log.tools[0]).toMatchObject({ name: 'edit', input: 'a.ts, b.ts', diff: [{ oldStart: 1, newStart: 1, lines: ['-a', '+b'] }] })
   })
 
-  it('chamada da delegate do Argus vira a linha de subagente', async () => {
-    const { log } = await opened()
-    const item = { type: 'mcpToolCall', id: 'd1', server: 'argus', tool: 'delegate', arguments: { agent: 'gemini', model: 'gemini-3-flash', task: 'Revisar o PR\ncom calma', title: '' } }
-    notify('item/completed', { item: { ...item, status: 'completed', result: { content: [{ type: 'text', text: 'feito' }] } } })
-    expect(log.tools[0]).toMatchObject({ label: 'Delegar', input: 'Revisar o PR', agent: 'Gemini - gemini-3-flash', delegateTask: 'Revisar o PR\ncom calma', result: 'feito' })
-  })
-
   it('tipo de item desconhecido não vira linha nenhuma', async () => {
     const { log } = await opened()
     notify('item/started', { item: { type: 'algoNovo', id: 'x' } })
@@ -217,12 +210,6 @@ describe('aprovações', () => {
     notify('item/started', { item: { type: 'fileChange', id: 'f1', changes: [{ path: '/p/a.ts', diff: '@@ -1 +1 @@\n-a\n+b' }] } })
     await ask('item/fileChange/requestApproval', { itemId: 'f1' })
     expect(log.asks[0]).toMatchObject({ toolName: 'edit', summary: 'a.ts', diff: [{ lines: ['-a', '+b'] }] })
-  })
-
-  it('pergunta das ferramentas do próprio Argus é aceita sem incomodar', async () => {
-    const { log } = await opened()
-    expect(await ask('mcpServer/elicitation/request', { serverName: 'argus' })).toEqual({ action: 'accept', content: {} })
-    expect(log.asks).toEqual([])
   })
 
   it('pergunta de outro servidor MCP não é aceita sozinha', async () => {

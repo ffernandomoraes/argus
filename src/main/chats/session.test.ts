@@ -65,12 +65,6 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
 vi.mock('./env', () => ({ claudeCodeOptions: (cwd: string) => ({ cwd, env: {} }) }))
 vi.mock('../accounts', () => ({ resolveAccount: (id?: string) => id || 'main' }))
 vi.mock('../contextWindows', () => ({ learnContextWindow: vi.fn() }))
-vi.mock('../orchestration', () => ({
-  orchestrationEnabled: () => false,
-  ORCHESTRATION_TOOLS: [],
-  sdkOrchestrationTools: () => [],
-  DelegateCalls: class {}
-}))
 vi.mock('../terminals/drawerShells', () => ({
   ARGUS_MCP: 'argus',
   ARGUS_ALLOWED_TOOLS: [],

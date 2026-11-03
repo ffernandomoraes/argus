@@ -99,11 +99,6 @@ describe('HistoryParser: ferramentas', () => {
     expect(list[1].result.length).toBeLessThan(20_100)
     expect(list[1].agent).toBe('Explore')
   })
-
-  it('etapa delegada pelo orquestrador aparece como subagente com o agente e o modelo', () => {
-    const list = messagesOf([assistant([toolUse('d', 'mcp__argus__delegate', { agent: 'codex', model: 'gpt-5.5', task: 'faz', title: 'Etapa' })])])
-    expect(list[0]).toMatchObject({ role: 'tool', agent: 'Codex - gpt-5.5', label: 'Delegar', input: 'Etapa' })
-  })
 })
 
 describe('HistoryParser: tokens', () => {

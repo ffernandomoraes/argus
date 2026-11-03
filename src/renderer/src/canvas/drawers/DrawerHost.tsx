@@ -3,21 +3,19 @@ import { PANEL_MARGIN, PLAN_WIDTH, type PanelRect } from '../../conversation/Flo
 import { publishOpenPlan } from '../../conversation/openPlanStore'
 import { MOTION, Presence } from '../../motion'
 import { CodePanel } from './CodePanel'
-import { DesignPanel } from './DesignPanel'
 import type { DrawerLayout, SlotTargets } from './drawerLayout'
 import { DrawerSlot, type SlotActions } from './DrawerSlot'
 import { PlanPanel } from './PlanPanel'
 import { SubagentSlot } from './SubagentSlot'
 import { TasksSlot } from './TasksSlot'
 import type { Drawer, DrawerState, SlotId } from './drawerState'
-import type { DesignView, SlotTarget } from './drawerView'
+import type { SlotTarget } from './drawerView'
 import type { DrawerCommands } from './useDrawers'
 import { useSlotConversation } from './useSlotConversation'
 
 type Props = {
   state: DrawerState
   targets: SlotTargets
-  design: DesignView | null
   layout: DrawerLayout
   commands: DrawerCommands
   actions: SlotActions
@@ -28,9 +26,9 @@ type Props = {
 
 // Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código (ou,
 // no lugar dele, o plano aberto ao lado de um drawer), os
-// drawers de conversa (do mais antigo ao mais novo) e o do design. O drawer de conversa só existe
+// drawers de conversa (do mais antigo ao mais novo). O drawer de conversa só existe
 // com a conversa na lista: se ela for excluída, sai daqui e a saída anima.
-export function DrawerHost({ state, targets, design, layout, commands, actions, onShown, aside }: Props) {
+export function DrawerHost({ state, targets, layout, commands, actions, onShown, aside }: Props) {
   const { code } = layout
   const leaving = useLeaving(state.drawers)
   // Com vários drawers de conversa à vista, um não passa por cima nem por baixo dos outros.
@@ -74,7 +72,6 @@ export function DrawerHost({ state, targets, design, layout, commands, actions, 
           {...{ commands, actions, onShown }}
         />
       ))}
-      <Presence>{design && <DesignPanel key={design.designId} {...design} onClose={commands.closeDesign} />}</Presence>
     </>
   )
 }

@@ -31,7 +31,6 @@ export function useConversationSearch(path: string, conversations: ConversationS
     if (!q) return null
     const fresh = content?.q === q && content.path === path
     const snippets = fresh ? content.hits : new Map<string, string>()
-    // Design: o conteúdo é da conversa do protótipo (sessionId).
     const snippetOf = (c: ConversationSummary) => snippets.get(c.sessionId ?? c.id) ?? snippets.get(c.id)
     const results: SearchResult[] = conversations
       .map((c) => {

@@ -1,4 +1,4 @@
-import { Bot, ExternalLink, MessageCircle, PenTool } from 'lucide-react'
+import { Bot, ExternalLink, MessageCircle } from 'lucide-react'
 import { Highlight } from '../Highlight'
 import { useIsInterrupted } from '../interruptedChats'
 import { useIsUnread } from '../sessionsStore'
@@ -7,7 +7,7 @@ import type { ConversationSummary } from '../types'
 import { tr } from '../../i18n'
 
 // Começo de toda linha de conversa (card solto, painel de todas e lista da pasta): o ícone
-// (balão de conversa ou pincel do modo design), o título com a bolinha de status logo depois e os selos de agente e de
+// (balão de conversa), o título com a bolinha de status logo depois e os selos de agente e de
 // "aberta em janela separada". Fica dentro do flex de quem usa, que decide o espaçamento.
 // query: termo da busca, marcado no título.
 export function ConversationLabel({ conversation: c, poppedOut, query }: { conversation: ConversationSummary; poppedOut: boolean; query?: string }) {
@@ -18,11 +18,7 @@ export function ConversationLabel({ conversation: c, poppedOut, query }: { conve
   const status = c.status !== 'idle' ? c.status : interrupted ? 'interrupted' : unread ? 'done' : 'idle'
   return (
     <>
-      {c.design || c.kind === 'design' ? (
-        <PenTool size={13} className="shrink-0 text-muted" aria-label={tr('Modo design', 'Design mode')} />
-      ) : (
-        <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
-      )}
+      <MessageCircle size={13} className="shrink-0 text-muted" aria-hidden="true" />
       <span className="min-w-0 truncate">
         <Highlight text={c.title} query={query} />
       </span>

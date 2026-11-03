@@ -1,5 +1,4 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DesignSummary } from '../../../../shared/design'
 import type { SessionSummary } from '../../../../shared/sessions'
 import type { ConversationSummary } from '../types'
 
@@ -46,7 +45,6 @@ beforeAll(async () => {
     },
     changes: async () => []
   }
-  globals.window.api.design = { list: async () => [] }
   mod = {
     convert: await import('./convert'),
     state: await import('./state'),
@@ -72,19 +70,18 @@ afterEach(() => {
 
 const session = (id: string, repliedAt: string, extra: Partial<SessionSummary> = {}) =>
   ({ id, title: id, updatedAt: repliedAt, repliedAt, contextPercent: 10, ...extra }) as SessionSummary
-const design = (id: string, updatedAt: string, extra: Partial<DesignSummary> = {}) => ({ id, name: id, updatedAt, ...extra }) as DesignSummary
 // Espera as leituras em andamento (cada uma termina em microtarefas).
 const settle = () => new Promise((r) => setTimeout(r, 0))
 
 describe('folderList', () => {
-  it('conversas e designs juntos, da resposta mais recente para a mais antiga', () => {
-    const list = mod.convert.folderList(
-      [session('velha', '2026-10-01T00:00:00Z'), session('nova', '2026-10-20T00:00:00Z', { live: 'running' })],
-      [design('tela', '2026-10-10T00:00:00Z', { sessionId: 's-design' })]
-    )
-    expect(list.map((c) => c.id)).toEqual(['nova', 'design:tela', 'velha'])
+  it('da resposta mais recente para a mais antiga', () => {
+    const list = mod.convert.folderList([
+      session('velha', '2026-10-01T00:00:00Z'),
+      session('nova', '2026-10-20T00:00:00Z', { live: 'running' }),
+      session('meio', '2026-10-10T00:00:00Z')
+    ])
+    expect(list.map((c) => c.id)).toEqual(['nova', 'meio', 'velha'])
     expect(list[0]).toMatchObject({ kind: 'conversa', status: 'running', sessionId: 'nova' })
-    expect(list[1]).toMatchObject({ kind: 'design', designId: 'tela', sessionId: 's-design' })
     expect(list[2].status).toBe('idle')
   })
 })

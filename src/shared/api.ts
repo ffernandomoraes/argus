@@ -9,12 +9,11 @@ import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteR
 import type { SystemHealthState } from './systemHealth'
 import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
-import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
 import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
-import type { ClipboardCommand, DesignCommentAction, DesignRoute, EditAction, ThemeSource } from './ipc'
+import type { ClipboardCommand, EditAction, ThemeSource } from './ipc'
 import type { McpAuthResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
@@ -278,26 +277,6 @@ export type Api = {
     // (um seletor de pasta que continuou aberto) não deve entrar no canvas.
     onCancel: (cb: (id: string) => void) => Off
   }
-  // Modo design: protótipos guardados em ~/.argus/design (o código fica no projeto).
-  design: {
-    load: (id: string) => Promise<Design | null>
-    // Grava o design.json; falso se não deu.
-    save: (design: Design) => Promise<boolean>
-    // Designs da pasta, para a lista de conversas dela.
-    list: (projectPath: string) => Promise<DesignSummary[]>
-    // Pasta do design para a Lixeira.
-    trash: (id: string) => Promise<boolean>
-    // Visualizar: o Esc dentro da página do protótipo chega ao drawer (mensagem 'escape').
-    escape: (origin: string, on: boolean) => void
-    // A página do protótipo passa a avisar o endereço a cada navegação (mensagem 'location').
-    track: (origin: string) => void
-    // Retrato da tela em texto (título, modais, avisos, campos, botões à vista); nulo se não deu.
-    snapshot: (origin: string) => Promise<string | null>
-    // Comentários na página: liga ou desliga o clique que marca o ponto, tira um ponto ou todos.
-    comment: (origin: string, action: DesignCommentAction, id?: number) => void
-    // Rotas do projeto lidas do código (pastas de páginas, rotas escritas), para a lista do endereço.
-    routes: (projectPath: string) => Promise<DesignRoute[]>
-  }
   sessions: {
     // Conversas da pasta; nulo se ela não respondeu ou não deu para ler (o WSL parado ou travado):
     // não é o mesmo que não ter conversa nenhuma.
@@ -332,8 +311,6 @@ export type Api = {
     taskOutput: (ref: TaskOutputRef, offset: number) => Promise<TaskOutputChunk>
     // Imagens de uma mensagem sua (data URLs), lidas só quando o preview abre.
     images: (path: string, id: string, messageId: string) => Promise<string[]>
-    // Porcentagem da janela de contexto que a conversa ocupa agora.
-    context: (path: string, id: string) => Promise<number>
     // Pastas desta janela que o processo principal vigia (avisa em onChanged).
     watch: (paths: string[]) => void
     // change: o que mudou (conversa, status ou git), para reler só o necessário.
@@ -362,8 +339,7 @@ export type Api = {
   // Servidor de cada pasta do canvas: rodando (venha de onde vier) e iniciar/encerrar.
   projectServers: {
     status: (paths: string[]) => Promise<Record<string, ProjectServer>>
-    // noBrowser: o servidor não abre o navegador sozinho (BROWSER=none), como no modo design.
-    start: (path: string, noBrowser?: boolean) => Promise<boolean>
+    start: (path: string) => Promise<boolean>
     stop: (path: string) => Promise<boolean>
   }
   files: {

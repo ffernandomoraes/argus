@@ -62,7 +62,7 @@ export function CodeButton({ project }: { project: ProjectData }) {
   )
 }
 
-// "+": abre direto uma conversa nova. Novo design fica só no menu do botão direito da pasta.
+// "+": abre direto uma conversa nova.
 function NewButton({ nodeId }: { nodeId: string }) {
   const { newConversation } = useCanvasActions()
   return (

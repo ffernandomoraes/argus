@@ -1,4 +1,4 @@
-import { ExternalLink, FolderMinus, FolderOpen, FolderPlus, GitBranchPlus, MessageCirclePlus, PenTool, Pencil, StickyNote, Trash2 } from 'lucide-react'
+import { ExternalLink, FolderMinus, FolderOpen, FolderPlus, GitBranchPlus, MessageCirclePlus, Pencil, StickyNote, Trash2 } from 'lucide-react'
 import type { XYPosition } from '@xyflow/react'
 import type { MenuItem } from '../ContextMenu'
 import { groupAccount, removeNode } from '../operations'
@@ -21,7 +21,6 @@ type ProjectDeps = Pick<
   | 'addNote'
   | 'addTerminal'
   | 'newConversation'
-  | 'openDesign'
   | 'addWorkspaceFolder'
   | 'removeWorkspaceFolder'
   | 'newWorktree'
@@ -40,7 +39,7 @@ function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
   return [{ type: 'action', label, icon: ExternalLink, onSelect: () => window.api.sessions.openRepo(node.data.path) }]
 }
 
-// Workspace: pôr e tirar pastas e abrir cada uma no Finder. Sem repositório nem design: cada
+// Workspace: pôr e tirar pastas e abrir cada uma no Finder. Sem repositório: cada
 // pasta pode ser um repositório diferente. Nas conversas do grupo, as pastas são as do grupo: só
 // abrir no Finder.
 function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[]): MenuItem[] {
@@ -81,11 +80,6 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
     { type: 'separator' },
     { type: 'action', label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
     terminalSubmenu(tr('Novo terminal aqui', 'New terminal here'), (kind, account) => deps.addTerminal(node.position, node.parentId, node.data.path, kind, account, workspace, workspace && node.data.name), groupAccount(deps.nodes, node)),
-    // Modo design é experimento (Configurações > Experimentos). Sem design no workspace: o design é
-    // do código e do servidor de um projeto só.
-    ...(workspace || !getPreferences().designMode
-      ? []
-      : [{ type: 'action', label: tr('Novo design', 'New design'), icon: PenTool, experiment: true, onSelect: () => deps.openDesign(node.id) } as const]),
     // Tarefa em paralelo (git worktree) é experimento. Não sai de workspace (várias pastas, vários repositórios) nem de
     // outra tarefa: sai da pasta principal.
     ...(workspace || worktree || !getPreferences().worktrees

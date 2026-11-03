@@ -1,11 +1,10 @@
 import { shell } from 'electron'
 import { WatchedFolders } from '../app/watchedFolders'
-import { designSessionIds } from '../designStore'
 import { checkoutBranch, currentBranch, fetchBranches, listBranches, repoUrl, uncommittedFiles } from '../gitBranch'
 import { readHistory, readHistoryPage, readImages, readSubagentPage } from '../history'
 import type { SessionWatch } from '../sessionWatch'
-import { listKnownFolders, listSessions, searchSessions, sessionContext, trashSession } from '../sessions'
-import { conversationsIn, indexEntry, isAgentConversation, loadConversation, loadImages, trashConversation } from '../agentChats/store'
+import { listKnownFolders, listSessions, searchSessions, trashSession } from '../sessions'
+import { conversationsIn, isAgentConversation, loadConversation, loadImages, trashConversation } from '../agentChats/store'
 import type { SessionSummary } from '../../shared/sessions'
 import { pageOf, type HistoryRequest } from '../../shared/history'
 import { agentRef } from '../../shared/providers'
@@ -19,10 +18,7 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
     const listed = await listSessions(path)
     // Sem resposta da pasta (o WSL parado ou travado): nulo, e a janela fica com a lista que já tinha.
     if (!listed) return null
-    // A conversa de um protótipo faz parte do design dele, que já está na lista: não aparece solta.
-    const sessions = [...listed, ...agentSessions(path)]
-    const inDesigns = designSessionIds(path)
-    return inDesigns.size ? sessions.filter((s) => !inDesigns.has(s.id)) : sessions
+    return [...listed, ...agentSessions(path)]
   })
   handle('sessions:folders', () => listKnownFolders())
   handle('sessions:search', (_e, path, query) => searchSessions(path, typeof query === 'string' ? query : ''))
@@ -46,7 +42,6 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   })
   handle('sessions:taskOutput', async (_e, ref, offset) => readTaskOutput(ref, Math.max(0, Math.floor(Number(offset)) || 0)))
   handle('sessions:subagentPage', async (_e, path, id, toolUseId, request) => readSubagentPage(path, id, toolUseId, wantedPage(request)))
-  handle('sessions:context', async (_e, path, id) => (isAgentConversation(id) ? (indexEntry(id)?.contextPercent ?? 0) : sessionContext(path, id)))
   handle('sessions:images', async (_e, path, id, messageId) => (isAgentConversation(id) ? loadImages(id, messageId) : readImages(path, id, messageId)))
 }
 
@@ -64,7 +59,6 @@ function agentSessions(path: string): SessionSummary[] {
     repliedAt: c.repliedAt ?? c.updatedAt,
     contextPercent: c.contextPercent,
     live: null,
-    agent: agentRef(c.provider, c.account),
-    ...(c.design && { design: true })
+    agent: agentRef(c.provider, c.account)
   }))
 }

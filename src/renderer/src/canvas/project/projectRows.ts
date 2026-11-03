@@ -21,10 +21,8 @@ export type Row =
   | { kind: 'agent'; agent: RunningAgent; conversation: ConversationSummary; first: boolean }
   | { kind: 'tasks'; count: number; since?: number; conversation: ConversationSummary; first: boolean }
 
-// Chave dos subagentes de uma conversa da lista. Design: os agentes são da conversa do protótipo
-// dele (a sessão), não do item da lista; sem sessão ainda, nenhuma ('').
-export const agentsKeyOf = (conversation: ConversationSummary): string =>
-  (conversation.kind === 'design' ? conversation.sessionId : conversation.id) ?? ''
+// Chave dos subagentes de uma conversa da lista.
+export const agentsKeyOf = (conversation: ConversationSummary): string => conversation.id
 
 export function withAgents(
   conversations: ConversationSummary[],

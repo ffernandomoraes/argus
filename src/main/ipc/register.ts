@@ -4,7 +4,7 @@ import { isAppFrame } from '../app/appUrl'
 
 // Registro dos canais, tipados pelo contrato (src/shared/ipc.ts): um handler com argumentos ou
 // resposta diferentes do canal é erro de tipo. Todos aceitam só o quadro principal de uma janela do
-// app; o resto (a página do protótipo, um site que a janela tenha aberto) é recusado.
+// app; o resto (um iframe, um site que a janela tenha aberto) é recusado.
 
 type Awaitable<T> = T | Promise<T>
 

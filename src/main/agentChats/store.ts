@@ -26,12 +26,11 @@ export type StoredConversation = {
   updatedAt: string
   nativeId?: string
   contextPercent: number
-  design?: boolean
   messages: Message[]
 }
 
 // repliedAt: última resposta do agente (ver SessionSummary). Índice antigo não tem: vale o updatedAt.
-export type IndexEntry = Pick<StoredConversation, 'provider' | 'account' | 'cwd' | 'title' | 'updatedAt' | 'contextPercent' | 'design'> & {
+export type IndexEntry = Pick<StoredConversation, 'provider' | 'account' | 'cwd' | 'title' | 'updatedAt' | 'contextPercent'> & {
   repliedAt?: string
 }
 
@@ -81,9 +80,9 @@ export function saveConversation(c: StoredConversation): void {
   try {
     mkdirSync(root(), { recursive: true })
     writeJsonAtomicSync(fileOf(c.id), c)
-    const { provider, account, cwd, title, updatedAt, contextPercent, design } = c
+    const { provider, account, cwd, title, updatedAt, contextPercent } = c
     const repliedAt = [...c.messages].reverse().find((m) => m.role === 'assistant' && m.at)?.at ?? c.createdAt
-    readIndex()[c.id] = { provider, account, cwd, title, updatedAt, repliedAt, contextPercent, ...(design && { design }) }
+    readIndex()[c.id] = { provider, account, cwd, title, updatedAt, repliedAt, contextPercent }
     writeJsonAtomicSync(indexFile(), readIndex())
     onSaved(c.cwd)
   } catch (err) {

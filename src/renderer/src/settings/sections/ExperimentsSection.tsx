@@ -5,7 +5,6 @@ import { tr } from '../../i18n'
 // Coisas em teste ou só por diversão. Tudo aqui vem desligado.
 export function ExperimentsSection() {
   const mascot = usePreference('mascot')
-  const designMode = usePreference('designMode')
   const worktrees = usePreference('worktrees')
   return (
     <Group>
@@ -18,16 +17,6 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Mascote', 'Mascot')} checked={mascot} onChange={(next) => setPreferences({ mascot: next })} />
-      </Row>
-      <Row
-        label={tr('Modo design', 'Design mode')}
-        description={tr('Protótipos de tela no código, com a página ao lado do chat.', 'Screen prototypes in code, with the page next to the chat.')}
-        info={tr(
-          'Protótipos de tela no código do projeto, com a página do servidor de desenvolvimento ao lado do chat. Liga o "Novo design" no menu da pasta e os designs na lista dela.',
-          'Screen prototypes in the project’s code, with the dev server page next to the chat. Turns on "New design" in the folder menu and the designs in its list.'
-        )}
-      >
-        <Switch label={tr('Modo design', 'Design mode')} checked={designMode} onChange={(next) => setPreferences({ designMode: next })} />
       </Row>
       <Row
         label={tr('Tarefas em paralelo (worktrees)', 'Parallel tasks (worktrees)')}

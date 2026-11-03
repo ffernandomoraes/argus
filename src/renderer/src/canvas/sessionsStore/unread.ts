@@ -38,7 +38,7 @@ unread.subscribe(() => {
   }
 })
 
-// Conversas na tela agora (drawer, bloco no canvas, design aberto), com quantos mostram cada uma.
+// Conversas na tela agora (drawer, bloco no canvas), com quantos mostram cada uma.
 const viewing = new Map<string, number>()
 // Conversas em janela separada: também contam como vistas (setPoppedOut, pelo Canvas).
 let poppedOut: ReadonlySet<string> = new Set()

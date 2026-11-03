@@ -1,4 +1,4 @@
-import type { ActiveConversation, ActiveDesign } from '../CanvasContext'
+import type { ActiveConversation } from '../CanvasContext'
 import { looseProject } from '../factory'
 import { groupAccount } from '../operations'
 import type { CanvasNode, ConversationSummary, ProjectData } from '../types'
@@ -94,20 +94,4 @@ export function conversationOf(
 ): ConversationSummary | undefined {
   const started = active.sessionId ? sessions.find((c) => c.id === active.sessionId) : undefined
   return started ?? draft ?? sessions.find((c) => c.id === active.conversationId)
-}
-
-// Design aberto no drawer: um da pasta. Some se a pasta sair do canvas.
-export type DesignView = { designId: string; projectPath: string; projectName: string; account?: string; tint?: string }
-
-export function designView(nodes: CanvasNode[], design: ActiveDesign | null): DesignView | null {
-  if (!design) return null
-  const node = nodes.find((n) => n.id === design.nodeId)
-  if (node?.type !== 'project') return null
-  return {
-    designId: design.designId,
-    projectPath: node.data.path,
-    projectName: node.data.name,
-    account: groupAccount(nodes, node),
-    tint: tintOf(nodes, node.parentId)
-  }
 }

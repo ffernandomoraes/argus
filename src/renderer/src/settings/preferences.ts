@@ -29,9 +29,6 @@ export type Preferences = {
   mascotCanvasSpot: { x: number; y: number } | null
   // Visual do mascote e o golpe no envio (Configurações > Mascote).
   mascotLook: MascotLook
-  // Modo design (Configurações > Experimentos): "Novo design" na pasta, os designs na lista dela e o
-  // drawer do design. Desligado, nada disso aparece (os designs continuam guardados).
-  designMode: boolean
   // Worktrees (Configurações > Experimentos): "Nova tarefa em paralelo" no menu da pasta, que cria um git
   // worktree como card filho dela.
   worktrees: boolean
@@ -55,7 +52,6 @@ const DEFAULTS: Preferences = {
   mascotFloating: false,
   mascotCanvasSpot: null,
   mascotLook: DEFAULT_LOOK,
-  designMode: false,
   worktrees: false,
   favoriteChats: [],
   promptSuggestions: true

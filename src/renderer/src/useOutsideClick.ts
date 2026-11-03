@@ -18,7 +18,7 @@ const contains = (ref: ElementRef, target: Node) => !!ref.current?.contains(targ
 
 // Menu aberto fecha com um clique em qualquer lugar fora dele, como no macOS. O ouvinte é na fase
 // de captura, para valer mesmo onde o clique para no caminho (canvas, drawer). Clique dentro de um
-// iframe ou webview (a tela do modo design, o navegador) não chega à janela: ela só perde o foco,
+// iframe ou webview não chega à janela: ela só perde o foco,
 // e isso também fecha. Ouve o pointerdown, não o mousedown: quem arrasta (o cabeçalho do drawer, o
 // canvas) cancela o pointerdown, e aí o navegador nem dispara o mousedown. `ignore`: outros
 // elementos onde o clique também não conta como fora.

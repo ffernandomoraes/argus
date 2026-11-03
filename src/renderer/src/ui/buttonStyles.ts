@@ -33,7 +33,7 @@ const TONES: Record<ButtonVariant, { normal: string; danger: string; pressed: st
     danger: 'text-red-400 hover:bg-red-500/10 disabled:hover:bg-transparent',
     pressed: 'bg-surface-2 text-text'
   },
-  // Ligado na cor de destaque, como o "Visualizar" da barra do protótipo.
+  // Ligado na cor de destaque.
   subtle: {
     normal: 'text-muted hover:bg-fill hover:text-text disabled:hover:bg-transparent disabled:hover:text-muted',
     danger: 'text-red-400 hover:bg-red-500/10 disabled:hover:bg-transparent',

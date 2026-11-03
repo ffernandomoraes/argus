@@ -57,12 +57,9 @@ type Props = {
   settings: SessionSettings
   onSettingChange: (patch: Partial<SessionSettings>) => void
   contextPercent: number
-  compact: boolean
   above?: ReactNode
   // Começou ou parou de haver texto no campo (a sugestão de cima some enquanto você escreve).
   onTypingChange?: (typing: boolean) => void
-  chips?: ReactNode
-  extraSend?: { compose: (text: string) => string }
   // Pedidos gravados na conversa, do mais velho ao mais novo: as setas percorrem eles.
   pastPrompts?: string[]
 }
@@ -73,7 +70,7 @@ const NO_PROMPTS: string[] = []
 // menus de comandos e de agentes, anexos (botão ou ⌘V), ditado, enviar ou parar, e os seletores
 // de modelo e modo embaixo.
 export const Composer = memo(function Composer(props: Props) {
-  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onToggleRemote, onInterrupt, extraSend } = props
+  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onToggleRemote, onInterrupt } = props
   const attachments = useAttachments(draftKey)
   const field = useRef<HTMLTextAreaElement>(null)
   const [draft, setDraft] = useDraft(draftKey)
@@ -124,7 +121,7 @@ export const Composer = memo(function Composer(props: Props) {
   const onTypingChange = props.onTypingChange
   useEffect(() => onTypingChange?.(typing), [typing, onTypingChange])
 
-  const canSend = typing || attachments.items.length > 0 || !!extraSend
+  const canSend = typing || attachments.items.length > 0
   // Áudio anexado ainda transcrevendo (ou esperando o modelo, ou a resposta de baixar): o Enviar
   // fica desabilitado até terminar ou até escolher "Agora não" nele.
   const transcribing = useStore(transcriptStore, (map) => transcriptsPending(attachments.items.map((a) => a.file), map))
@@ -140,7 +137,7 @@ export const Composer = memo(function Composer(props: Props) {
     if (dictation.state !== 'idle') dictation.stop()
     if (!command && !canSend) return
     const typed = command ?? draft.trim()
-    const text = extraSend && !typed.startsWith('/') ? extraSend.compose(typed) : typed
+    const text = typed
     if (text === '/mcp') {
       setDraft('')
       return onOpenMcp()
@@ -282,7 +279,6 @@ export const Composer = memo(function Composer(props: Props) {
             <AgentMenu items={menus.mention.items} active={menus.active} onHover={menus.setActive} onSelect={selectAgent} />
           )}
         </Presence>
-        {props.chips}
         <AttachmentList items={attachments.items} onRemove={attachments.remove} />
         {/* Começa com 1 linha e cresce com o texto até 3; daí em diante rola. O placeholder
             não quebra linha: se quebrasse, a caixa vazia já nasceria alta. */}
@@ -314,7 +310,6 @@ export const Composer = memo(function Composer(props: Props) {
         settings={props.settings}
         onSettingChange={props.onSettingChange}
         contextPercent={props.contextPercent}
-        compact={props.compact}
       />
     </>
   )

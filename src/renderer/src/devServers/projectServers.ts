@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
 import type { ProjectServer } from '../../../shared/devServers'
 import { createStore } from '../lib/createStore'
 import { useStore } from '../lib/useStore'
@@ -10,9 +10,6 @@ const POLL = 5000
 const FAST = 1000
 
 const servers = createStore<ReadonlyMap<string, ProjectServer>>(new Map())
-// Consultas que terminaram. Quem precisa esperar "duas consultas seguidas" acompanha daqui (a
-// página do protótipo, quando a porta dela some de uma consulta).
-const polls = createStore(0)
 const watching = new Map<string, number>()
 let timer: ReturnType<typeof setTimeout> | null = null
 let running = false
@@ -41,8 +38,6 @@ async function refresh(): Promise<void> {
   timer = null
   try {
     const status = await window.api.projectServers.status([...watching.keys()])
-    // Antes do estado novo: quem vê a porta sumir já lê o número desta consulta.
-    polls.set((n) => n + 1)
     servers.set((current) => merge(current, status))
   } catch {
     // Tenta de novo na próxima volta.
@@ -57,8 +52,7 @@ async function refresh(): Promise<void> {
 
 function schedule(): void {
   if (watching.size === 0 || document.hidden) return
-  // Também enquanto confere quais portas mostram página (modo design).
-  const starting = [...servers.get().values()].some((s) => s.state === 'starting' || s.apps?.some((a) => a.page === undefined))
+  const starting = [...servers.get().values()].some((s) => s.state === 'starting')
   timer = setTimeout(() => void refresh(), starting ? FAST : POLL)
 }
 
@@ -89,17 +83,8 @@ export function useProjectServer(path: string): ProjectServer | null {
   return useStore(servers, (m) => m.get(path) ?? null)
 }
 
-const idle = () => () => {}
-
-// Número de consultas já feitas. `enabled` falso: não acompanha (não redesenha a cada consulta) e
-// devolve o número da hora da leitura.
-export function useServerPolls(enabled: boolean): number {
-  return useSyncExternalStore(enabled ? polls.subscribe : idle, polls.get)
-}
-
-// noBrowser: sem abrir o navegador sozinho (modo design: a página fica no drawer).
-export async function startProjectServer(path: string, noBrowser = false): Promise<void> {
-  await window.api.projectServers.start(path, noBrowser)
+export async function startProjectServer(path: string): Promise<void> {
+  await window.api.projectServers.start(path)
   await refresh()
 }
 

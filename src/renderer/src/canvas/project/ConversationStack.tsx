@@ -3,7 +3,7 @@ import { List } from 'lucide-react'
 import { useCanvasActions } from '../CanvasContext'
 import type { RunningAgent } from '../../../../shared/agents'
 import type { ConversationSummary } from '../types'
-import { useActiveConversationIn, useActiveDesignIn } from '../useCanvasView'
+import { useActiveConversationIn } from '../useCanvasView'
 import { AgentRow } from './AgentRow'
 import { ConversationRow } from './ConversationRow'
 import { TasksRow } from './TasksRow'
@@ -29,9 +29,8 @@ export const ConversationStack = memo(function ConversationStack({
 }) {
   const { rows, legs } = useProjectRows(conversations, collapsed)
   const { openConversation, openSubagent, openTasks, openConversationMenu, openAllConversations } = useCanvasActions()
-  // Conversa e design abertos, só se forem desta pasta: abrir em outra pasta não redesenha esta.
+  // Conversa aberta, só se for desta pasta: abrir em outra pasta não redesenha esta.
   const activeConversation = useActiveConversationIn(nodeId)
-  const activeDesign = useActiveDesignIn(nodeId)
   // As mesmas funções para todas as linhas: o memo delas vale enquanto as ações não mudam.
   const open = useCallback((c: ConversationSummary) => openConversation(nodeId, c.id), [openConversation, nodeId])
   // Subagente rodando: o histórico dele, só para ler. Sem a chamada que o lançou, não há como
@@ -60,8 +59,7 @@ export const ConversationStack = memo(function ConversationStack({
   const showAll = !collapsed && conversations.length > MAX_CONVERSATIONS
 
   const isActive = (c: ConversationSummary) =>
-    (!!activeConversation && (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)) ||
-    (!!c.designId && activeDesign === c.designId)
+    !!activeConversation && (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)
 
   return (
     <ul className={`relative flex flex-col gap-1 pr-3 ${showAll ? 'pb-1.5' : 'pb-3'}`} style={{ paddingLeft: INDENT }}>

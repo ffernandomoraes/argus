@@ -9,7 +9,6 @@ import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteR
 import type { SystemHealthState } from './systemHealth'
 import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
-import type { Design, DesignSummary } from './design'
 import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
@@ -43,10 +42,6 @@ export type EditAction = 'undo' | 'redo'
 // página não lê a área de transferência (main/app/permissions.ts).
 export type ClipboardCommand = 'cut' | 'copy' | 'paste'
 export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste']
-// Comentários na página do protótipo: liga ou desliga o clique que marca o ponto, tira um ou todos.
-export type DesignCommentAction = 'on' | 'off' | 'remove' | 'clear'
-// Rota do projeto lida do código, para a lista do endereço do modo design.
-export type DesignRoute = { route: string; from: string }
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
 export type InvokeChannels = {
@@ -129,13 +124,6 @@ export type InvokeChannels = {
   'memory:write': (path: string, text: string, projects: MemoryProject[], base?: string) => MemoryWriteResult
   // Canvas
   'canvasAgent:state': () => CanvasAgentState
-  // Modo design
-  'design:load': (id: string) => Design | null
-  'design:list': (projectPath: string) => DesignSummary[]
-  'design:save': (design: Design) => boolean
-  'design:trash': (id: string) => boolean
-  'design:snapshot': (origin: string) => string | null
-  'design:routes': (projectPath: string) => DesignRoute[]
   // Sessões do Claude Code e git da pasta
   'sessions:list': (path: string) => SessionSummary[] | null
   'sessions:folders': () => KnownFolder[]
@@ -152,7 +140,6 @@ export type InvokeChannels = {
   'sessions:taskOutput': (ref: TaskOutputRef, offset: number) => TaskOutputChunk
   'sessions:subagentPage': (path: string, id: string, toolUseId: string, request: HistoryRequest) => HistoryPage
   'sessions:images': (path: string, id: string, messageId: string) => string[]
-  'sessions:context': (path: string, id: string) => number
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)
   'worktrees:reserve': (folder: string) => WorktreeReserved
   'worktrees:adopt': (path: string, from: string) => WorktreeReserved
@@ -162,7 +149,7 @@ export type InvokeChannels = {
   'devServers:list': (paths: string[]) => DevServer[]
   'devServers:kill': (pgid: number, paths: string[]) => boolean
   'projectServers:status': (paths: string[]) => Record<string, ProjectServer>
-  'projectServers:start': (path: string, noBrowser?: boolean) => boolean
+  'projectServers:start': (path: string) => boolean
   'projectServers:stop': (path: string) => boolean
   // Arquivos
   'files:list': (root: string, rel: string) => FileEntry[]
@@ -272,10 +259,6 @@ export type SendChannels = {
   'canvasAgent:send': (text: string) => void
   'canvasAgent:interrupt': () => void
   'canvasAgent:result': (result: CanvasToolResult) => void
-  // Modo design
-  'design:escape': (origin: string, on: boolean) => void
-  'design:track': (origin: string) => void
-  'design:comment': (origin: string, action: DesignCommentAction, id?: number) => void
   // Sessões
   'sessions:openRepo': (path: string) => void
   'sessions:watch': (paths: string[]) => void

@@ -3,8 +3,8 @@ import { getPreferences, setPreferences, usePreference } from '../settings/prefe
 import type { ConversationSummary } from './types'
 
 // Conversas favoritas: guardadas pelo id da sessão do Claude, que é o mesmo na lista da pasta e
-// no drawer (a conversa nova só ganha um ao primeiro envio). Design não entra: tem lista própria.
-export const favoriteKey = (c: ConversationSummary): string | null => (c.kind === 'design' ? null : (c.sessionId ?? null))
+// no drawer (a conversa nova só ganha um ao primeiro envio).
+export const favoriteKey = (c: ConversationSummary): string | null => c.sessionId ?? null
 
 export function useFavorites(): ReadonlySet<string> {
   const ids = usePreference('favoriteChats')

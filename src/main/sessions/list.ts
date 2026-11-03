@@ -50,8 +50,7 @@ export async function listSessions(projectPath: string): Promise<SessionSummary[
       updatedAt: s.updatedAt,
       repliedAt: s.repliedAt,
       contextPercent: percentOf(s.usage),
-      live: live.get(s.id) ?? null,
-      ...(s.design && { design: true })
+      live: live.get(s.id) ?? null
     }))
 }
 

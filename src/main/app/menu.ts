@@ -65,7 +65,7 @@ export function setAppMenu(checkForUpdates: () => Promise<void>): void {
       {
         label: tr('Ver', 'View'),
         submenu: [
-          // A interface decide: com a página do protótipo aberta, recarrega só ela (ver preload/keys.ts).
+          // A interface decide (ver preload/keys.ts).
           {
             label: tr('Recarregar', 'Reload'),
             accelerator: 'CmdOrCtrl+R',

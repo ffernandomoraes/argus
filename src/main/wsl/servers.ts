@@ -17,7 +17,7 @@ const RUN_DIR = app.isPackaged ? '.argus/run' : '.argus-dev/run'
 
 export type WslServer = { child: ChildProcess; stop: () => Promise<void>; stopSync: () => void }
 
-export async function launchInWsl(distro: string, linuxCwd: string, command: string, noBrowser: boolean): Promise<WslServer | string> {
+export async function launchInWsl(distro: string, linuxCwd: string, command: string): Promise<WslServer | string> {
   const info = await ensureDistro(distro)
   if (!info) return tr(`Não deu para abrir o WSL (${distro}).`, `Couldn’t open WSL (${distro}).`)
   const pidFile = `${info.home}/${RUN_DIR}/server-${randomUUID()}.pid`
@@ -25,7 +25,7 @@ export async function launchInWsl(distro: string, linuxCwd: string, command: str
   const script = `echo $$ > '${pidFile}'; exec ${command}`
   // -w: o processo que o wsl.exe abre já lidera o próprio grupo, e aí o setsid se divide e sai na
   // hora com 0. Sem esperar o filho, o app via o servidor "parado sem erro" logo após o clique.
-  const cmd = await wslCommand(distro, info, linuxCwd, ['setsid', '-w', 'bash', '-lic', script], noBrowser ? { BROWSER: 'none' } : {})
+  const cmd = await wslCommand(distro, info, linuxCwd, ['setsid', '-w', 'bash', '-lic', script], {})
   const child = spawn(cmd.file, cmd.args, { env: childEnv(), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
   const unc = toUnc(distro, pidFile)
   const group = (): string | null => {

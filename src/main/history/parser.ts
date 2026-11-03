@@ -3,7 +3,7 @@ import { diffFromResult } from '../diffs'
 import { tr } from '../i18n'
 import { describeTool, markdownDocument } from '../toolLabels'
 import { arr, atOf, contentOf, idOf, obj, str, type Line } from '../transcripts/line'
-import { marksOf, promptParts, resultText } from './content'
+import { promptParts, resultText } from './content'
 import { commandEvent, commandMessage, commandOutput, compactEvent, interruptEvent, isCompactOutput, modelName } from './events'
 
 const RESULT_MAX = 2000
@@ -101,7 +101,7 @@ export class HistoryParser {
     const images = arr(attachment.prompt)?.filter((c) => obj(c)?.type === 'image').length ?? 0
     // Mensagem só com print ou arquivo, sem texto, também aparece.
     if (text || images || files) {
-      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), queued: true, images: images || undefined, marks: marksOf(attachment.prompt), files })
+      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), queued: true, images: images || undefined, files })
       // A mesma mensagem pode vir depois como linha comum, com o id que o anexo guarda em
       // source_uuid: é por ele que o SDK junta as duas. Sessões sem esse id: pelo texto.
       const source = str(attachment.source_uuid)
@@ -130,7 +130,7 @@ export class HistoryParser {
     if (text && this.queuedTexts.delete(text)) return
     // Mensagem só com print ou arquivo, sem texto, também aparece.
     if (text || images || files) {
-      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), images: images || undefined, marks: marksOf(content), files })
+      this.push({ id: idOf(l), role: 'user', text: text ?? '', at: atOf(l), images: images || undefined, files })
     }
   }
 

@@ -26,8 +26,6 @@ import type { Message } from './types'
 import { tr } from '../i18n'
 
 const NO_AGENTS: AgentDef[] = []
-const NO_PROMPTS: string[] = []
-const asIs = (text: string) => text
 const LOST = tr('A mensagem não chegou ao Claude. Tente enviar de novo.', 'The message didn’t reach Claude. Try sending it again.')
 
 export type ChatViewProps = {
@@ -63,21 +61,10 @@ export type ChatViewProps = {
   // Foco na caixa de escrever ao aparecer (padrão). O bloco de conversa no canvas só pede quando
   // acabou de ser criado (useIsNewBlock).
   autoFocus?: boolean
-  // Em cima da caixa de escrever (o "Selecionar" do modo design).
+  // Em cima da caixa de escrever (a linha da branch).
   composerAbove?: ReactNode
   // O remote control ligado já vai no composerAbove (na linha da branch); sem isto, ganha linha própria.
   remoteAbove?: boolean
-  // Dentro da caixa, antes do texto (a parte escolhida na página, com o X para soltar).
-  composerChips?: ReactNode
-  // Algo a enviar além do texto (os comentários na página do modo design): libera o Enviar mesmo
-  // com a caixa vazia, e `compose` monta o texto que vai.
-  extraSend?: { compose: (text: string) => string }
-  // Tira da resposta do Claude o que é recado para o app, não para a pessoa (as linhas ROTA e TELA
-  // do modo design). Função fixa (de módulo): uma nova a cada desenho refaz a conversa inteira.
-  cleanText?: (text: string) => string
-  // Chat reduzido (o modo design): comandos e edições só na linha, sem o último pedido preso no
-  // topo, e a linha de baixo mais curta (esforço sem as bolinhas, contexto sem a palavra).
-  compact?: boolean
   // Sobe quando a conversa é aberta de novo já estando à vista: volta a seguir o fim.
   endSignal?: number
   // Só para ler (o histórico de um subagente): sem a caixa de escrever. `emptyText`: o que aparece
@@ -92,7 +79,7 @@ export type ChatViewProps = {
 }
 
 // A conversa: a linha do tempo (o histórico gravado e o que acontece agora), o prompt preso no
-// topo e a caixa de escrever. Serve à conversa (ConversationView) e ao chat do modo design.
+// topo e a caixa de escrever. Serve à conversa (ConversationView) e ao histórico do subagente.
 export const ChatView = memo(function ChatView({
   draftKey,
   messages,
@@ -113,12 +100,8 @@ export const ChatView = memo(function ChatView({
   agents = NO_AGENTS,
   composerBorder = true,
   autoFocus = true,
-  compact = false,
   composerAbove,
   remoteAbove = false,
-  composerChips,
-  extraSend,
-  cleanText,
   endSignal = 0,
   readOnly = false,
   emptyText,
@@ -161,13 +144,10 @@ export const ChatView = memo(function ChatView({
     live,
     status,
     running,
-    compact,
-    clean: cleanText ?? asIs,
     viewFor: images.viewFor,
     readsImages: !!loadImages,
     onAnswer: answer,
-    // No modo design o texto gravado já leva os comentários (extraSend): reenviar repetiria.
-    onEdit: extraSend ? undefined : edit
+    onEdit: edit
   })
 
   // Enquanto há anteriores, o loader delas vai na frente (olderRow).
@@ -195,18 +175,10 @@ export const ChatView = memo(function ChatView({
     if (!loading) return settle()
   }, [loading, endSignal, settle])
 
-  // No chat reduzido (protótipo do modo design), o último pedido não fica preso no topo.
-  const pinned = useMemo(
-    () => (compact ? null : promptOf(sticky.pinnedKey, messages, sends.waiting)),
-    [compact, sticky.pinnedKey, messages, sends.waiting]
-  )
+  const pinned = useMemo(() => promptOf(sticky.pinnedKey, messages, sends.waiting), [sticky.pinnedKey, messages, sends.waiting])
 
-  // Pedidos já feitos, para as setas da caixa de escrever. No modo design o texto gravado leva os
-  // comentários junto (extraSend), então lá só vale o que foi digitado com o app aberto.
-  const pastPrompts = useMemo(
-    () => (extraSend ? NO_PROMPTS : messages.flatMap((m) => (m.role === 'user' && m.text.trim() ? [m.text] : []))),
-    [messages, extraSend]
-  )
+  // Pedidos já feitos, para as setas da caixa de escrever.
+  const pastPrompts = useMemo(() => messages.flatMap((m) => (m.role === 'user' && m.text.trim() ? [m.text] : [])), [messages])
 
   // A mensagem aparece na hora como balão provisório. Envio que falha antes de sair tira o balão
   // e repassa o erro: o campo devolve o texto e os anexos.
@@ -319,10 +291,7 @@ export const ChatView = memo(function ChatView({
               settings={settings}
               onSettingChange={changeSetting}
               contextPercent={contextPercent}
-              compact={compact}
               above={composerAbove}
-              chips={composerChips}
-              extraSend={extraSend}
               pastPrompts={pastPrompts}
               onTypingChange={setTyping}
             />

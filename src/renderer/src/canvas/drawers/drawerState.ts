@@ -1,6 +1,6 @@
 import { cascadeSpot, DRAWER_DEFAULT_WIDTH, freeSpot, roomForPlan, type AreaSize, type PanelRect } from '../../conversation/FloatingPanel'
 import type { LineRange } from '../../conversation/fileLinks'
-import type { ActiveConversation, ActiveDesign } from '../CanvasContext'
+import type { ActiveConversation } from '../CanvasContext'
 import type { ProjectData } from '../types'
 
 // Id de um drawer de conversa à vista (d1, d2...): fica o mesmo enquanto ele está aberto, mesmo
@@ -41,8 +41,6 @@ export type DrawerState = {
   // nenhum fixado, nasce ali.
   lastRect: PanelRect | null
   nextId: number
-  // Modo design: um drawer de cada vez, no lugar do da conversa.
-  design: ActiveDesign | null
   // Código aberto acompanha a pasta da conversa aberta.
   code: CodeState
   // Plano aberto: fica no lugar do código enquanto está à vista.
@@ -55,7 +53,6 @@ export const INITIAL_DRAWERS: DrawerState = {
   drawers: [],
   lastRect: null,
   nextId: 1,
-  design: null,
   code: CLOSED_CODE,
   plan: null
 }
@@ -71,8 +68,6 @@ export type DrawerAction =
   | { type: 'sessionStarted'; conversationId: string; sessionId: string; nodeId?: string }
   | { type: 'forget'; conversationId: string }
   | { type: 'moved'; conversationId: string; sessionId?: string; nodeId: string }
-  | { type: 'openDesign'; design: ActiveDesign | null }
-  | { type: 'closeDesign' }
   | { type: 'toggleCode'; slot: SlotId }
   | { type: 'openProjectCode'; project: ProjectData }
   | { type: 'openFile'; slot?: SlotId; project?: ProjectData; file: OpenFile | null }
@@ -110,7 +105,7 @@ function placeNew(state: DrawerState, area: AreaSize): PanelRect | null {
 // Abre a conversa no drawer. Já à vista, fica como está. Senão vai para o solto, trocando a dele;
 // com todos fixados, abre num drawer novo.
 function show(state: DrawerState, conversation: ActiveConversation, area: AreaSize): DrawerState {
-  const s = state.design ? { ...state, design: null } : state
+  const s = state
   const shown = s.drawers.find((d) => isSameConversation(d.conversation, conversation.conversationId))
   // As tarefas já à vista mostram a pedida agora.
   if (shown) return shown.conversation.tasks ? update(s, shown.id, (d) => ({ ...d, conversation })) : s
@@ -232,13 +227,6 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
       return forget(state, action.conversationId)
     case 'moved':
       return moved(state, action.conversationId, action.sessionId, action.nodeId)
-    // O drawer do design fica no lugar do da conversa (e do código dela).
-    case 'openDesign': {
-      const closed = closeAll(state)
-      return action.design ? { ...closed, design: action.design } : closed
-    }
-    case 'closeDesign':
-      return state.design ? { ...state, design: null } : state
     // Com o plano por cima do código, o botão mostra o código em vez de fechá-lo.
     case 'toggleCode':
       return state.code.open && state.code.slot === action.slot && !state.plan

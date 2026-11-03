@@ -22,11 +22,9 @@ function PathLine({ path }: { path: string }) {
 
 export const ToolRow = memo(function ToolRow({
   message,
-  compact,
   image
 }: {
   message: Extract<Message, { role: 'tool' }>
-  compact?: boolean
   image?: ImageView
 }) {
   const stats = message.diff && diffStats(message.diff)
@@ -36,7 +34,7 @@ export const ToolRow = memo(function ToolRow({
   return (
     <LazyDetails
       className="group text-[13px]"
-      open={!compact && !!message.diff}
+      open={!!message.diff}
       summary={
         <summary
           className="flex cursor-pointer list-none items-center gap-2 py-1 leading-5 text-muted hover:text-text"

@@ -37,7 +37,7 @@ describe('insideRoot', () => {
     expect(insideRoot('~/proj', 'a.ts')).toBe(join(root, 'a.ts'))
   })
 
-  // Quem escreve arquivos a pedido da janela (editor, design) confia nisto para não sair da pasta.
+  // Quem escreve arquivos a pedido da janela (o editor) confia nisto para não sair da pasta.
   it('recusa o que tenta sair dela', () => {
     expect(insideRoot(root, '../outro/a.ts')).toBeNull()
     expect(insideRoot(root, '..')).toBeNull()

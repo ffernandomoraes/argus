@@ -18,9 +18,6 @@ export type HistoryOptions = {
   footers: Map<string, TurnFooter>
   // Claude trabalhando: a última ação sem resultado é a que está rodando.
   running: boolean
-  compact: boolean
-  // Tira da resposta o que é recado para o app (ver cleanText no ChatView).
-  clean: (text: string) => string
   // Imagens de uma mensagem gravada; sem quem as leia, o balão só conta quantas foram.
   viewFor?: (messageId: string) => ImageView
   // Preview de uma imagem que o Claude leu do disco (ferramenta Ler).
@@ -54,7 +51,7 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
   switch (m.role) {
     case 'user': {
       const view = m.images && o.viewFor ? o.viewFor(m.id) : undefined
-      const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} marks={m.marks} files={m.files} onEdit={o.onEdit} />
+      const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} files={m.files} onEdit={o.onEdit} />
       return { kind: 'user', key: m.id, node: bubble }
     }
     case 'event':
@@ -81,12 +78,12 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
       const pending = !m.result && !m.diff && o.running && i === messages.length - 1
       const dot = m.error ? 'bg-red-400' : pending ? 'bg-running animate-pulse' : 'bg-emerald-400'
       const image = m.name === 'Read' && m.detail && o.viewFile ? fileView(m.id, m.detail, o.viewFile) : undefined
-      const row = m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} compact={o.compact} image={image} />
+      const row = m.name === 'Bash' ? <BashRow message={m} /> : <ToolRow message={m} image={image} />
       return stepItem(m.id, dot, row, DOT_ROW)
     }
     default: {
       const footer = o.footers.get(m.id)
-      const row = <AssistantRow text={o.clean(m.text)} footerAt={footer?.at} duration={footer?.duration} tokens={footer?.tokens} />
+      const row = <AssistantRow text={m.text} footerAt={footer?.at} duration={footer?.duration} tokens={footer?.tokens} />
       return stepItem(o.answerKey?.(m.id) ?? m.id, 'bg-faint', row)
     }
   }

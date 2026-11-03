@@ -17,8 +17,6 @@ export type SessionSummary = {
   contextPercent: number
   // Nulo: nenhum processo do Claude Code está com a sessão aberta.
   live: LiveStatus | null
-  // Conversa de um protótipo do modo design (começou com as instruções <modo-design>).
-  design?: boolean
   // Conversa com outro agente (Codex, Gemini, Cursor), gravada pelo Argus: agente e conta dela
   // ("codex:main", ver providers.ts). Sem ele: Claude Code.
   agent?: string
@@ -42,7 +40,7 @@ export type UncommittedFile = {
 }
 
 // Por que a pasta mudou, no aviso sessions:changed: a lista de conversas mudou (transcript: uma
-// conversa gravou, apareceu, ou um design dela mudou), o status de algum Claude Code mudou (status)
+// conversa gravou ou apareceu), o status de algum Claude Code mudou (status)
 // ou o .git mudou (git: checkout, add, commit). A janela relê só o que o motivo pede: o git status,
 // o mais caro, só no aviso do git.
 export type SessionChange = 'transcript' | 'status' | 'git'

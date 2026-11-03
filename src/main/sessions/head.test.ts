@@ -1,6 +1,6 @@
 import { appendFileSync, statSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { assistant, image, text, user, writeTranscript } from '../../../test/transcript'
+import { image, user, writeTranscript } from '../../../test/transcript'
 import { emptyHead, readHead } from './head'
 
 const headOf = async (lines: Parameters<typeof writeTranscript>[0]) => {
@@ -33,11 +33,6 @@ describe('readHead', () => {
     const head = await headOf([{ type: 'queue-operation', operation: 'enqueue' }, user('meta', { isMeta: true })])
     expect(head.hasMessages).toBe(false)
     expect(head.firstPrompt).toBeNull()
-  })
-
-  it('reconhece o protótipo do modo design pelo primeiro pedido', async () => {
-    const head = await headOf([user([text('<modo-design>instruções</modo-design>'), text('faz a tela')]), assistant([text('ok')])])
-    expect(head.design).toBe(true)
   })
 
   it('continua de onde parou quando o arquivo cresce, e a linha cortada no fim é lida depois', async () => {

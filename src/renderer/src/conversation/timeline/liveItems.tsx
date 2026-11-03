@@ -20,7 +20,6 @@ export type LiveOptions = {
   waiting: PendingSend[]
   live: ChatState | null
   status: SessionStatus
-  clean: (text: string) => string
   // Mesmo objeto por mensagem; a que está a caminho traz a leitura das próprias imagens.
   viewFor: (id: string, read?: () => Promise<string[]>) => ImageView
   onAnswer: (id: string, answer: PermissionAnswer) => void
@@ -45,7 +44,7 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
   if (partial) {
     const node = (
       <div className="text-[15px] leading-relaxed text-text">
-        <StreamingMarkdown text={o.clean(partial)} />
+        <StreamingMarkdown text={partial} />
       </div>
     )
     items.push(stepItem(o.previewKey, 'bg-running animate-pulse', node))

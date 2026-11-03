@@ -2,7 +2,7 @@ import { useMemo, useReducer } from 'react'
 import { outsideEditor } from '../../../../shared/files'
 import type { PanelRect } from '../../conversation/FloatingPanel'
 import type { LineRange } from '../../conversation/fileLinks'
-import type { ActiveConversation, ActiveDesign } from '../CanvasContext'
+import type { ActiveConversation } from '../CanvasContext'
 import type { ProjectData } from '../types'
 import { drawerReducer, INITIAL_DRAWERS, type DrawerState, type SlotId } from './drawerState'
 import { fileInFolder } from './fileInFolder'
@@ -22,9 +22,6 @@ export type DrawerCommands = {
   forget: (conversationId: string) => void
   // A conversa passou a ser do card `nodeId` (worktree em que o Claude entrou, ou a pasta de volta).
   moved: (conversationId: string, sessionId: string | undefined, nodeId: string) => void
-  // Fecha os drawers de conversa e abre o do design (nulo: só fecha).
-  openDesign: (design: ActiveDesign | null) => void
-  closeDesign: () => void
   toggleCode: (slot: SlotId) => void
   // Código da pasta pelo botão do card dela, sem conversa aberta.
   openProjectCode: (project: ProjectData) => void
@@ -43,7 +40,7 @@ export type DrawerCommands = {
   closePlan: () => void
 }
 
-// Drawers de conversa (os fixados e o solto), o do design e o painel de código.
+// Drawers de conversa (os fixados e o solto) e o painel de código.
 export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
   const [state, dispatch] = useReducer(drawerReducer, INITIAL_DRAWERS)
 
@@ -60,8 +57,6 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
         dispatch({ type: 'sessionStarted', conversationId, sessionId, nodeId }),
       forget: (conversationId) => dispatch({ type: 'forget', conversationId }),
       moved: (conversationId, sessionId, nodeId) => dispatch({ type: 'moved', conversationId, sessionId, nodeId }),
-      openDesign: (design) => dispatch({ type: 'openDesign', design }),
-      closeDesign: () => dispatch({ type: 'closeDesign' }),
       toggleCode: (slot) => dispatch({ type: 'toggleCode', slot }),
       openProjectCode: (project) => dispatch({ type: 'openProjectCode', project }),
       openFile: (from, root, path, lines, diff) => {

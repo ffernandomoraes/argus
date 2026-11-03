@@ -61,7 +61,7 @@ const namesSync = (dir: string) => {
 
 // Sem resposta de uma pasta de status nesse tempo (a do WSL parado ou travado), vale o que ela tinha
 // na última leitura: as conversas de lá não aparecem paradas, nem como resposta nova não vista, só
-// porque o Linux demorou. Sem isso a lista de conversas e a dos designs esperavam junto.
+// porque o Linux demorou. Sem isso a lista de conversas esperava junto.
 const DIR_ANSWER_MS = 5000
 const lastRead = new Map<string, Map<string, LiveStatus>>()
 

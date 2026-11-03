@@ -15,11 +15,6 @@ window.addEventListener('keydown', (e) => {
   top()
 })
 
-// Esc que aconteceu numa página embutida (a tela do modo design), onde o teclado não chega à janela.
-export function pressEscape(): void {
-  stack[stack.length - 1]?.()
-}
-
 // `enabled` falso tira a camada da pilha (menu fechado). A posição na pilha é a de quando abriu,
 // mesmo que `onEscape` mude depois.
 export function useEscape(onEscape: () => void, enabled = true): void {

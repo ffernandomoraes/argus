@@ -7,7 +7,6 @@ import type { TimelineItem } from './timelineItem'
 
 type Options = LiveOptions & {
   running: boolean
-  compact: boolean
   // Há quem leia as imagens das mensagens gravadas.
   readsImages: boolean
   // Reenviar uma mensagem sua editada (ver UserBubble). Função fixa: uma nova refaz o histórico.
@@ -16,7 +15,7 @@ type Options = LiveOptions & {
 
 // Itens da linha do tempo. O histórico só é remontado quando as mensagens mudam: o texto chegando
 // aos poucos refaz apenas a parte ao vivo, e a lista é a mesma enquanto nada muda.
-export function useTimeline({ messages, waiting, live, status, clean, viewFor, onAnswer, running, compact, readsImages, onEdit }: Options) {
+export function useTimeline({ messages, waiting, live, status, viewFor, onAnswer, running, readsImages, onEdit }: Options) {
   // A resposta gravada fica com a chave da prévia que estava na tela (ver previewKeys). Antes de
   // montar o histórico: é na leitura que traz a resposta que ela herda a chave.
   const [previews] = useState(createPreviewKeys)
@@ -28,18 +27,16 @@ export function useTimeline({ messages, waiting, live, status, clean, viewFor, o
       historyItems(messages, {
         footers,
         running,
-        compact,
-        clean,
         viewFor: readsImages ? viewFor : undefined,
         viewFile: viewFor,
         onEdit,
         answerKey: previews.keyOf
       }),
-    [messages, footers, running, compact, clean, viewFor, readsImages, onEdit, previews]
+    [messages, footers, running, viewFor, readsImages, onEdit, previews]
   )
   const tail = useMemo(
-    () => liveItems({ messages, waiting, live, status, clean, viewFor, onAnswer, previewKey }),
-    [messages, waiting, live, status, clean, viewFor, onAnswer, previewKey]
+    () => liveItems({ messages, waiting, live, status, viewFor, onAnswer, previewKey }),
+    [messages, waiting, live, status, viewFor, onAnswer, previewKey]
   )
   return useMemo<TimelineItem[]>(() => (tail.length ? [...history, ...tail] : history), [history, tail])
 }

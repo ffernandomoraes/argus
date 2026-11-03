@@ -38,7 +38,6 @@ export type Deps = {
   // Conversa aberta em janela separada agora (lido na hora do clique).
   isPoppedOut: (conversationId: string) => boolean
   trashConversation: (path: string, conversationId: string) => void
-  openDesign: (nodeId: string, designId?: string) => void
   // Tarefa isolada (git worktree): criar a partir da pasta (abre a conversa dela) e remover.
   newWorktree: (nodeId: string) => void
   removeWorktree: (nodeId: string) => void

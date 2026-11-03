@@ -7,6 +7,6 @@ export function registerServersIpc(): void {
   handle('devServers:list', (_e, paths) => listDevServers(paths))
   handle('devServers:kill', (_e, pgid, paths) => killDevServer(pgid, paths))
   handle('projectServers:status', (_e, paths) => projectServers(paths))
-  handle('projectServers:start', (_e, path, noBrowser) => startProjectServer(path, !!noBrowser))
+  handle('projectServers:start', (_e, path) => startProjectServer(path))
   handle('projectServers:stop', (_e, path) => stopProjectServer(path))
 }

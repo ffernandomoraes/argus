@@ -77,7 +77,7 @@ export const KEY_PAGES: Record<'gemini' | 'cursor', string> = {
 export type ClipboardKey = { provider: ProviderId; hint: string } | null
 
 // Agente + conta de um grupo do canvas, no mesmo campo da conta do Claude (`account`), para passar
-// por todo o caminho que ela já faz (grupo, conversa, janela avulsa, modo design): "codex:main",
+// por todo o caminho que ela já faz (grupo, conversa, janela avulsa): "codex:main",
 // "gemini:ab12cd34". As contas do Claude ("main" ou 8 letras/números) nunca têm dois-pontos.
 export type AgentRef = { provider: ProviderId; account: string }
 

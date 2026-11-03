@@ -26,8 +26,8 @@ export function openLinksOutside(wc: WebContents): void {
   })
 }
 
-// O quadro principal não sai do app (link sem target, arquivo solto na janela, a página do
-// protótipo mexendo em window.top). O iframe do protótipo navega livre: não é o quadro principal.
+// O quadro principal não sai do app (link sem target, arquivo solto na janela, um iframe
+// mexendo em window.top). Um iframe navega livre: não é o quadro principal.
 // <webview> nunca entra.
 export function lockNavigation(wc: WebContents): void {
   wc.on('will-navigate', (e) => {

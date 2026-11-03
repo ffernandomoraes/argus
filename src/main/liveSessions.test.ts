@@ -56,8 +56,8 @@ describe('liveSessions', () => {
     expect((await liveSessions()).size).toBe(0)
   })
 
-  // 2026-10-23: com o WSL travado, ler a pasta de status de lá segurava a lista de conversas e a
-  // dos designs; e sem status, as conversas pareceriam ter parado.
+  // 2026-10-23: com o WSL travado, ler a pasta de status de lá segurava a lista de conversas; e
+  // sem status, as conversas pareceriam ter parado.
   it('pasta de status que não responde: vale a última leitura dela', async () => {
     write(`${process.pid}.json`, { pid: process.pid, sessionId: 'viva', status: 'busy' })
     expect([...(await liveSessions())]).toEqual([['viva', 'running']])

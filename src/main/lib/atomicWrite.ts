@@ -134,7 +134,7 @@ async function writeTmp(tmp: string, text: string, mode?: number): Promise<void>
     await write()
   } catch (err) {
     if (errorCode(err) !== 'ENOENT') throw err
-    // A pasta ainda não existe (ex.: primeiro design de um projeto): cria e tenta de novo.
+    // A pasta ainda não existe (ex.: o primeiro arquivo de uma pasta nova): cria e tenta de novo.
     await mkdir(dirname(tmp), { recursive: true })
     await write()
   }

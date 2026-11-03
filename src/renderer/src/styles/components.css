@@ -84,8 +84,8 @@ body:has([data-covers-canvas]) .react-flow {
 }
 
 /* Pé da conversa esmaecendo quando tem mais conteúdo abaixo (ChatView, junto com o botão de ir ao
-   fim). Máscara em vez de um degradê por cima: a conversa aparece no canvas, na gaveta, na janela e
-   no protótipo, cada um com um fundo. Só entra longe do fim; seguindo a resposta, nada a mais para
+   fim). Máscara em vez de um degradê por cima: a conversa aparece no canvas, na gaveta e na janela,
+   cada um com um fundo. Só entra longe do fim; seguindo a resposta, nada a mais para
    a GPU compor. A altura cresce ao entrar (@property deixa a variável ser animada). */
 @property --chat-fade {
   syntax: '<length>';

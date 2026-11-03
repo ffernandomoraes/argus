@@ -45,11 +45,6 @@ export type TasksRef = {
 // Id do drawer das tarefas de uma conversa: um por conversa.
 export const tasksConversationId = (sessionId: string): string => `tasks-${sessionId}`
 
-// Design aberto no drawer: um dos designs da pasta (nodeId). Novo: já nasce com o id que vai usar.
-export type ActiveDesign = {
-  nodeId: string
-  designId: string
-}
 
 // Os comandos que os blocos e as barras pedem ao Canvas (montados em actions/useCanvasCommands).
 // O objeto é criado uma vez e nunca muda: ler o contexto não faz ninguém redesenhar. O que muda
@@ -95,8 +90,6 @@ export type CanvasActions = {
   openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => void
   // Painel flutuante com todas as conversas da pasta.
   openAllConversations: (nodeId: string) => void
-  // Drawer do modo design: um design da pasta (sem designId, um novo).
-  openDesign: (nodeId: string, designId?: string) => void
   openSettings: () => void
   // Com projectPath, mostra só a memória daquela pasta.
   openMemory: (projectPath?: string) => void

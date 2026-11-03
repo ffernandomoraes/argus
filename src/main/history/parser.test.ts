@@ -171,11 +171,6 @@ describe('HistoryParser: prints e anexos', () => {
     const list = messagesOf([user('resume\n\nArquivos anexados:\n- /p/a.pdf')])
     expect(list[0]).toMatchObject({ role: 'user', text: 'resume', files: [{ path: '/p/a.pdf' }] })
   })
-
-  it('marcas do modo design vão junto do pedido', () => {
-    const list = messagesOf([user([text('<argus-marca tipo="selecao">Topo › Botão</argus-marca>'), text('muda a cor')])])
-    expect(list[0]).toMatchObject({ text: 'muda a cor', marks: [{ kind: 'selecao', text: 'Topo › Botão' }] })
-  })
 })
 
 describe('HistoryParser: divisores', () => {

@@ -5,7 +5,7 @@ import type { ConversationSummary } from '../types'
 import { useIsPoppedOut } from '../useCanvasView'
 import { tr } from '../../i18n'
 
-// Conversa como linha dentro da caixa da pasta: ícone (conversa ou design), título com a bolinha
+// Conversa como linha dentro da caixa da pasta: ícone, título com a bolinha
 // de status logo depois e, à direita, "esperando você" quando ela pede atenção ou há quanto
 // tempo mexeu (rodando, a bolinha já diz). Altura fixa de 32px (ROW_HEIGHT, em geometry.ts).
 export const ConversationRow = memo(function ConversationRow({

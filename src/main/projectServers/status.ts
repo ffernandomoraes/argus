@@ -5,7 +5,6 @@ import type { Listening } from '../processScan'
 import { errors, started } from './launch'
 import { ofProject, rootsOf } from './matching'
 import { packageName } from './packageJson'
-import { servesPage } from './pageCheck'
 import { projectScript, type ProjectScript } from './scripts'
 import { isWslPath } from '../wsl'
 import { portsInOutput } from '../wsl/servers'
@@ -30,7 +29,7 @@ export async function statusOf(path: string, listening: Listening[]): Promise<Pr
     script: run?.script ?? null,
     command: run?.command ?? null,
     ports: apps.map((a) => a.port),
-    apps: await Promise.all(apps.map(async ({ cwd, pid, ...a }) => ({ ...a, name: await packageName(cwd), page: servesPage(pid, a.port) })))
+    apps: await Promise.all(apps.map(async ({ cwd, pid: _pid, ...a }) => ({ ...a, name: await packageName(cwd) })))
   }
   if (mine.length > 0) {
     return { ...base, state: 'running', locked: mine.every((p) => p.locked) ? mine[0].locked : undefined }
@@ -53,13 +52,12 @@ export function wslPorts(entry: Started): number[] {
 // portas que o servidor anunciou na saída.
 async function wslStatus(root: string, entry: Started | undefined, run: ProjectScript | null): Promise<ProjectServer> {
   const ports = entry ? wslPorts(entry) : []
-  const pid = entry?.child.pid ?? 0
   const name = await packageName(root)
   const base = {
     script: run?.script ?? null,
     command: run?.command ?? null,
     ports,
-    apps: ports.map((port) => ({ port, dir: '', name, page: servesPage(pid, port) }))
+    apps: ports.map((port) => ({ port, dir: '', name }))
   }
   if (!entry) return { ...base, state: 'stopped', error: errors.get(root) }
   if (ports.length) return { ...base, state: 'running' }

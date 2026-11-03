@@ -1,7 +1,6 @@
 import { memo, useState, type KeyboardEvent } from 'react'
-import { Crosshair, Image as ImageIcon, MessageSquarePlus, Pencil } from 'lucide-react'
+import { Image as ImageIcon, Pencil } from 'lucide-react'
 import { fileName, type AttachedFile } from '../../../../../shared/attachedFiles'
-import type { MessageMark } from '../../types'
 import { CopyButton } from '../../CopyButton'
 import { FileCard } from '../../FileCard'
 import { Button } from '../../../ui/Button'
@@ -15,15 +14,14 @@ import { tr } from '../../../i18n'
 // imageView: lê as imagens enviadas (miniaturas) e abre o preview grande numa delas.
 // files: os outros anexos, no mesmo cartão da caixa de escrever (o agente recebe o caminho).
 // onEdit: o lápis troca o texto por um campo; enviar manda a versão nova como mensagem nova, no fim
-// da conversa (a original fica onde está). Só em mensagem de texto puro: imagens, anexos e o que foi
-// junto no modo design não iriam no reenvio.
+// da conversa (a original fica onde está). Só em mensagem de texto puro: imagens e anexos não iriam
+// no reenvio.
 export const UserBubble = memo(function UserBubble({
   text,
   at,
   queued,
   images = 0,
   imageView,
-  marks,
   files,
   onEdit
 }: {
@@ -32,13 +30,11 @@ export const UserBubble = memo(function UserBubble({
   queued?: boolean
   images?: number
   imageView?: ImageView
-  // O que foi junto no modo design (parte selecionada, comentários): uma linha discreta embaixo.
-  marks?: MessageMark[]
   files?: AttachedFile[]
   onEdit?: (text: string) => void
 }) {
   const [editing, setEditing] = useState<string | null>(null)
-  const editable = !!onEdit && !!text && images === 0 && !files?.length && !marks
+  const editable = !!onEdit && !!text && images === 0 && !files?.length
   if (editing !== null && onEdit) {
     const send = () => {
       const edited = editing.trim()
@@ -74,16 +70,6 @@ export const UserBubble = memo(function UserBubble({
             </div>
           )}
           {text && <span className="whitespace-pre-wrap break-words">{text}</span>}
-          {marks && (
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-faint">
-              {marks.map((m, i) => (
-                <span key={i} className="flex min-w-0 items-center gap-1">
-                  {m.kind === 'comentarios' ? <MessageSquarePlus size={11} className="shrink-0" /> : <Crosshair size={11} className="shrink-0" />}
-                  <span className="truncate">{m.text}</span>
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </div>
       {/* Hora e copiar ficam embaixo do balão, à direita, para o texto usar a largura toda. */}

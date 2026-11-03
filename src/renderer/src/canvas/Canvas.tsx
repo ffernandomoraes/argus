@@ -14,7 +14,7 @@ import { CanvasViewContext, createCanvasView, patchView } from './canvasView'
 import { CanvasOverlays } from './drawers/CanvasOverlays'
 import { DrawerHost } from './drawers/DrawerHost'
 import { drawerLayout } from './drawers/drawerLayout'
-import { designView, slotTarget } from './drawers/drawerView'
+import { slotTarget } from './drawers/drawerView'
 import { useCanvasProjects } from './drawers/useCanvasProjects'
 import { useDrawers } from './drawers/useDrawers'
 import { useFitBeside } from './drawers/useFitBeside'
@@ -40,7 +40,6 @@ import { setCanvasScope } from './canvasScope'
 import { useHistory } from './useHistory'
 import { Mascot } from './mascot/Mascot'
 import { MascotBridge } from './mascot/MascotBridge'
-import { usePreference } from '../settings/preferences'
 import { useWorktreeActions } from './worktrees/useWorktreeActions'
 import { useWorktreeMoves } from './worktrees/useWorktreeMoves'
 
@@ -139,14 +138,10 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
   const openChat = useNotificationOpen({ nodesRef, shown: shownConversations, openConversation: conversations.openConversation })
   // A conversa destacada no bloco é a do drawer solto (a última aberta), senão a do último fixado.
   const main = (looseDrawer(open) ?? open[open.length - 1])?.conversation ?? null
-  // A conversa e o design abertos vão para o store, onde cada bloco lê se é o dele.
-  const activeDesign = drawers.state.design
-  useLayoutEffect(() => patchView(view, { activeConversation: main, activeDesign }), [view, main, activeDesign])
+  // A conversa aberta vai para o store, onde cada bloco lê se é a dele.
+  useLayoutEffect(() => patchView(view, { activeConversation: main }), [view, main])
 
   const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open])
-  // Modo design desligado (experimento): nenhum design abre, nem um que já estava aberto.
-  const designMode = usePreference('designMode')
-  const design = useMemo(() => (designMode ? designView(nodes, drawers.state.design) : null), [designMode, nodes, drawers.state.design])
   const layout = drawerLayout(drawers.state, targets, shownDrawers.titles)
   const { shown } = layout
   const codeRoot = layout.code?.root ?? null
@@ -179,7 +174,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
           spaceHeld={spaceHeld}
           uiHidden={uiHidden}
           arranging={arranging}
-          zoomShortcuts={!shown && !design}
+          zoomShortcuts={!shown}
         />
         <MascotBridge nodesRef={nodesRef} />
         <Mascot nodesRef={nodesRef} hidden={uiHidden} />
@@ -187,14 +182,14 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-200 ${
-            shown || allConversations || design ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
+            shown || allConversations ? 'opacity-[0.22] [[data-theme=light]_&]:opacity-[0.12]' : 'opacity-0'
           }`}
         />
         {/* Na janela (menu Janela, Mission Control), a conversa aberta e o projeto; sem conversa, o nome do app. */}
         <BottomBar onOpenChat={openChat} />
         <TitleBar
           windowTitle={
-            shown ? `${shown.title} - ${shown.target.project.name}` : design ? `Design - ${design.projectName}` : 'Argus'
+            shown ? `${shown.title} - ${shown.target.project.name}` : 'Argus'
           }
           uiHidden={uiHidden}
           onToggleUi={toggleUi}
@@ -203,7 +198,6 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
         <DrawerHost
           state={drawers.state}
           targets={targets}
-          design={design}
           layout={layout}
           commands={drawers.commands}
           actions={conversations}

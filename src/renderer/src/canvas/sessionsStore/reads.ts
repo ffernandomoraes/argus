@@ -4,7 +4,7 @@ import { folderList } from './convert'
 import { changesAt, merge, store, watching, watchingChanges, type ReadPart } from './state'
 import { noteFinished } from './unread'
 
-// Leituras das pastas pelo processo principal: a lista de conversas (com os designs), a branch e o
+// Leituras das pastas pelo processo principal: a lista de conversas, a branch e o
 // git status. Cada pedido diz o que quer reler (Need): o aviso de uma conversa relê a lista e, com
 // limite de tempo (requestChangesSoon), o git status, o mais caro (um processo git por pasta); o
 // aviso do .git e o refreshNow releem o git status na hora; a conferência periódica, quando vencido.
@@ -49,12 +49,12 @@ async function read(path: string, need: Need): Promise<void> {
   for (const part of parts) if (part.status === 'rejected') console.error('[sessões] não consegui ler a pasta', path, part.reason)
 }
 
-// A lista da pasta com os designs dela; nula se a pasta não respondeu (o WSL parado ou travado) ou
+// A lista da pasta; nula se a pasta não respondeu (o WSL parado ou travado) ou
 // se a leitura falhou: a guardada fica.
 async function listOf(path: string): Promise<ConversationSummary[] | null> {
   try {
-    const [sessions, designs] = await Promise.all([window.api.sessions.list(path), window.api.design.list(path)])
-    return sessions ? folderList(sessions, designs) : null
+    const sessions = await window.api.sessions.list(path)
+    return sessions ? folderList(sessions) : null
   } catch (err) {
     console.error('[sessões] não consegui ler as conversas da pasta', path, err)
     return null

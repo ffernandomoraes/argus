@@ -39,12 +39,6 @@ export function useActiveConversationIn(nodeId: string): ActiveConversation | nu
   return useStore(view, (s) => (s.activeConversation?.nodeId === nodeId ? s.activeConversation : null))
 }
 
-// Design aberto no drawer, se for desta pasta; senão, nulo.
-export function useActiveDesignIn(nodeId: string): string | null {
-  const view = useCanvasView()
-  return useStore(view, (s) => (s.activeDesign?.nodeId === nodeId ? s.activeDesign.designId : null))
-}
-
 // Painel de código aberto com esta pasta (pelo botão do card ou por uma conversa dela).
 export function useIsCodeOpen(path: string): boolean {
   const view = useCanvasView()

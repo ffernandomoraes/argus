@@ -13,7 +13,7 @@ import type { DrawerCommands } from '../drawers/useDrawers'
 import { createChatPanel } from '../factory'
 import { revealNode } from '../focus/reveal'
 import { groupAccount, placeBeside, removeNode } from '../operations'
-import { DESIGN_PREFIX, getSessions, refreshNow } from '../sessionsStore'
+import { getSessions, refreshNow } from '../sessionsStore'
 import type { ConversationSummary, ProjectData } from '../types'
 import { chatPanelOf, ownerOf } from './lookup'
 import type { FocusNode, NodesApi } from './types'
@@ -88,11 +88,6 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
 
   // Lê as janelas separadas do store na hora do clique.
   const openConversation = useStableCallback((nodeId: string, conversationId: string) => {
-    // Conversa do modo design: abre o drawer do design, não o chat.
-    if (conversationId.startsWith(DESIGN_PREFIX)) {
-      if (!getPreferences().designMode) return
-      return drawers.openDesign({ nodeId, designId: conversationId.slice(DESIGN_PREFIX.length) })
-    }
     // Já à vista (no drawer ou no canvas), vai para o fim; senão, já abre lá.
     revealEnd(conversationId)
     const openIn = getPreferences().openIn
@@ -138,12 +133,6 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
         const conversationId = `new-${crypto.randomUUID()}`
         watchLoose(conversationId, position)
         drawers.show({ nodeId: null, conversationId, draft: true, at: position })
-      },
-      // O drawer do design fica no lugar do da conversa (e do código dela). Na pasta, sem designId,
-      // começa um design novo (ela pode ter vários, cada um na lista dela).
-      openDesign: (nodeId: string, designId?: string) => {
-        const isProject = nodesRef.current.find((n) => n.id === nodeId)?.type === 'project'
-        drawers.openDesign(isProject ? { nodeId, designId: designId ?? crypto.randomUUID() } : null)
       },
       // Conversa no canvas (ChatPanelNode): fechar tira o bloco (a conversa continua salva).
       closeChatPanel: (nodeId: string) => change((ns) => removeNode(ns, nodeId)),

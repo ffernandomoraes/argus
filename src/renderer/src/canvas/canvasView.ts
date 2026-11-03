@@ -1,6 +1,6 @@
 import { createContext } from 'react'
 import { createStore, type Store } from '../lib/createStore'
-import type { ActiveConversation, ActiveDesign } from './CanvasContext'
+import type { ActiveConversation } from './CanvasContext'
 
 // O que os blocos mostram e muda com o uso do canvas (quem está sendo renomeado, o grupo que recebe
 // o bloco arrastado, a conversa aberta...). Fica num store, fora do contexto dos comandos: cada bloco
@@ -10,9 +10,8 @@ export type CanvasView = {
   renamingId: string | null
   // Grupo destacado: recebe o bloco solto que está sendo arrastado, se ele for largado agora.
   dropTargetId: string | null
-  // Conversa e design abertos nos drawers (espelho do estado dos drawers, no Canvas).
+  // Conversa aberta nos drawers (espelho do estado dos drawers, no Canvas).
   activeConversation: ActiveConversation | null
-  activeDesign: ActiveDesign | null
   // Pasta do painel de código aberto (nula: fechado).
   codeRoot: string | null
   // Conversas abertas em janela separada.
@@ -29,7 +28,6 @@ export function createCanvasView(): CanvasViewStore {
     renamingId: null,
     dropTargetId: null,
     activeConversation: null,
-    activeDesign: null,
     codeRoot: null,
     poppedOut: new Set(),
     newBlockId: null

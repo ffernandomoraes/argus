@@ -4,7 +4,6 @@ import { shallowEqual } from '../../lib/shallowEqual'
 import { useBackgroundBusy } from '../backgroundTasks'
 import { canvasScope, inScope } from '../canvasScope'
 import { useStore } from '../../lib/useStore'
-import { usePreference } from '../../settings/preferences'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
@@ -13,7 +12,6 @@ import { unread } from './unread'
 // Efeito de importar: as não vistas vão para o ícone da barra de menus.
 import './unreadSync'
 
-export { DESIGN_PREFIX } from './convert'
 export type { ListState } from './state'
 export { isUnread, markAsRead, markUnread, setPoppedOut, useIsUnread, useViewing } from './unread'
 
@@ -59,23 +57,17 @@ export function getSessions(path: string): ConversationSummary[] {
 // do app: aparece rodando. Sem nenhuma assim, a mesma lista (o memo de quem a recebe continua valendo).
 function withBackground(list: ConversationSummary[], busy: ReadonlySet<string>): ConversationSummary[] {
   if (!busy.size) return list
-  const keyOf = (c: ConversationSummary) => (c.kind === 'design' ? c.sessionId : c.id)
-  const marked = (c: ConversationSummary) => c.status === 'idle' && busy.has(keyOf(c) ?? '')
+  const marked = (c: ConversationSummary) => c.status === 'idle' && busy.has(c.id)
   if (!list.some(marked)) return list
   return list.map((c) => (marked(c) ? { ...c, status: 'running' } : c))
 }
-
-// Modo design desligado (é experimento): os designs saem da lista; continuam guardados.
-const withoutDesigns = (list: ConversationSummary[], designs: boolean): ConversationSummary[] =>
-  designs || !list.some((c) => c.kind === 'design') ? list : list.filter((c) => c.kind !== 'design')
 
 // Conversas de uma pasta; mantém a lista atualizada enquanto o componente estiver na tela.
 export function useSessions(path: string): ConversationSummary[] {
   useEffect(() => watch(path), [path])
   const list = useStore(store, (s) => s.sessions.get(path) ?? EMPTY)
   const busy = useBackgroundBusy()
-  const designs = usePreference('designMode')
-  return useMemo(() => withBackground(withoutDesigns(list, designs), busy), [list, busy, designs])
+  return useMemo(() => withBackground(list, busy), [list, busy])
 }
 
 // Como está a lista da pasta: ainda lendo, sem resposta dela (o WSL parado ou travado) ou lida.
@@ -96,8 +88,7 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
   }, [key])
   const lists = useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual)
   const busy = useBackgroundBusy()
-  const designs = usePreference('designMode')
-  return useMemo(() => lists.map((list) => withBackground(withoutDesigns(list, designs), busy)), [lists, busy, designs])
+  return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy])
 }
 
 // Conversas que terminaram sem você ver (bolinha verde), nas pastas lidas que estão no canvas: a

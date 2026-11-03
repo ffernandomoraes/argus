@@ -34,7 +34,7 @@ import { onRevealEnd } from './revealEnd'
 import { useConversationHistory } from './useConversationHistory'
 
 // O botão do cabeçalho e as cores das mudanças moram em header/; saem daqui também, como antes,
-// para o canvas, o design e o código.
+// para o canvas e o código.
 export { HeaderButton } from './header/HeaderButton'
 export { KIND_COLOR, KIND_LABEL } from './header/changeKinds'
 

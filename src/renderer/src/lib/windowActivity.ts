@@ -20,7 +20,7 @@ export function installWindowActivity(): void {
     if (idle) root.setAttribute(ATTR, 'idle')
     else root.removeAttribute(ATTR)
   }
-  // Lido no tique seguinte: clicar no iframe do modo design dispara `blur` na janela antes de o foco
+  // Lido no tique seguinte: clicar num iframe dispara `blur` na janela antes de o foco
   // chegar nele, e só depois `hasFocus()` responde que a janela continua com o foco.
   const schedule = () => setTimeout(apply, 0)
 

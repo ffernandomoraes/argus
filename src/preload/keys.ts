@@ -31,8 +31,8 @@ export function onEdit(cb: (action: EditAction) => void): () => void {
   }
 }
 
-// Recarregar (⌘R no menu Ver; no Windows e no Linux, Ctrl+R). Com alguém escutando (a página do protótipo
-// aberta no modo design), recarrega só ela; sem ninguém, no Mac recarrega a janela, como antes.
+// Recarregar (⌘R no menu Ver; no Windows e no Linux, Ctrl+R). Com alguém escutando (os rascunhos do
+// painel de código, ver draftsReloadGuard), ele decide; sem ninguém, no Mac recarrega a janela.
 const reloadListeners: (() => void)[] = []
 const reloadKey = (): boolean => {
   const top = reloadListeners[reloadListeners.length - 1]

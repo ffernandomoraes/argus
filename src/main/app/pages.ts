@@ -4,8 +4,8 @@ import type { WebContents } from 'electron'
 // a janela fechar, recarregar (o quadro principal abre outro documento) ou a página cair. A página
 // nova pede de novo ao montar.
 //
-// Recarregar é medido no did-navigate (só o quadro principal, só documento novo, já confirmado): o
-// iframe do modo design carregando não conta, nem uma navegação barrada pelas travas de segurança.
+// Recarregar é medido no did-navigate (só o quadro principal, só documento novo, já confirmado): um
+// iframe carregando não conta, nem uma navegação barrada pelas travas de segurança.
 function onPageGone(wc: WebContents, cb: () => void): () => void {
   const gone = (): void => {
     stop()

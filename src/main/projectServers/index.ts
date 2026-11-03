@@ -4,10 +4,9 @@ import { invalidateScan, scanListening, terminate } from '../processScan'
 import { errors, launch, launchWsl, started } from './launch'
 import { isWslPath } from '../wsl'
 import { ofProject, rootsOf } from './matching'
-import { keepPages, pageKey } from './pageCheck'
 import { freePort } from './freePort'
 import { projectScript } from './scripts'
-import { statusOf, wslPorts } from './status'
+import { statusOf } from './status'
 
 // Servidor de cada pasta do canvas, para o botão de iniciar e encerrar acima dela.
 export { stopStartedServers } from './launch'
@@ -15,10 +14,6 @@ export { stopStartedServers } from './launch'
 // Uma varredura de portas só, para todas as pastas na tela.
 export async function projectServers(paths: string[]): Promise<Record<string, ProjectServer>> {
   const listening = await scanListening()
-  // Os do WSL não aparecem na varredura do Windows: sem eles aqui, a conferência da página era
-  // apagada a cada consulta, antes de responder, e o modo design ficava carregando para sempre.
-  const wsl = [...started.values()].flatMap((e) => wslPorts(e).map((port) => pageKey(e.child.pid ?? 0, port)))
-  keepPages([...listening.flatMap((p) => p.ports.map((port) => pageKey(p.pid, port))), ...wsl])
   const entries = await Promise.all(paths.map(async (path) => [path, await statusOf(path, listening)] as const))
   return Object.fromEntries(entries)
 }
@@ -27,16 +22,15 @@ export async function projectServers(paths: string[]): Promise<Record<string, Pr
 // package.json leva um instante) não sobe outro servidor.
 const reserving = new Set<string>()
 
-// noBrowser: sem abrir o navegador sozinho (ver launch.ts).
-export async function startProjectServer(path: string, noBrowser = false): Promise<boolean> {
+export async function startProjectServer(path: string): Promise<boolean> {
   const root = realRoot(path)
   if (started.has(root) || reserving.has(root)) return false
   reserving.add(root)
   try {
     const run = await projectScript(root)
     if (!run) return false
-    if (isWslPath(root)) await launchWsl(root, run, noBrowser)
-    else launch(root, await freePort(root, run), noBrowser)
+    if (isWslPath(root)) await launchWsl(root, run)
+    else launch(root, await freePort(root, run))
     invalidateScan()
     return true
   } finally {

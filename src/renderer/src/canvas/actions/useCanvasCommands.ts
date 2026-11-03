@@ -28,7 +28,6 @@ export function useCanvasCommands({ nodeActions, conversations, worktrees, overl
     openTasks: conversations.openTasks,
     newConversation: conversations.newConversation,
     newLooseConversation: conversations.newLooseConversation,
-    openDesign: conversations.openDesign,
     closeChatPanel: conversations.closeChatPanel,
     chatPanelToDrawer: conversations.chatPanelToDrawer,
     chatPanelPopout: conversations.chatPanelPopout,

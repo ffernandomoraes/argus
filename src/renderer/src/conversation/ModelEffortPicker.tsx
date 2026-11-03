@@ -24,13 +24,10 @@ export { EFFORTS, groupByFamily } from './modelOptions'
 // thinking e Ultracode. A lista de modelos vem do próprio `claude` (ver useModels).
 export function ModelEffortPicker({
   settings,
-  onChange,
-  dots: showDots = true
+  onChange
 }: {
   settings: SessionSettings
   onChange: (patch: Partial<SessionSettings>) => void
-  // Falso nas colunas estreitas (modo design): o esforço fica só escrito, sem as bolinhas.
-  dots?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -67,7 +64,7 @@ export function ModelEffortPicker({
         <span>{currentName}</span>
         {allowed.length > 0 && (
           <>
-            {showDots && <EffortDots level={dots} />}
+            <EffortDots level={dots} />
             <span className="text-faint">{effortLabel(settings.effort)}</span>
           </>
         )}

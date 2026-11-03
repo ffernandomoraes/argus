@@ -3,7 +3,7 @@ import type { Edges } from './panelGeometry'
 import { tr } from '../i18n'
 
 // Painel flutuante: a geometria fica em panelGeometry.ts e o arraste em hooks/useFloatingRect.ts.
-// Daqui saem também os dois, como antes, para o canvas, o código e o design.
+// Daqui saem também os dois, como antes, para o canvas e o código.
 export {
   BOTTOM_BAR_HEIGHT,
   CANVAS_BAR_INSET,

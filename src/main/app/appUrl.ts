@@ -12,7 +12,7 @@ export function rendererEntry(): RendererEntry {
 // Guarda a última resposta: quase toda conferência é do mesmo endereço (a janela que manda IPC).
 let last: { url: string; ok: boolean } | null = null
 
-// Endereço do próprio app (e não de um site ou da página do protótipo).
+// Endereço do próprio app (e não de um site).
 export function isAppUrl(url: string | undefined): boolean {
   if (!url) return false
   if (last?.url === url) return last.ok
@@ -21,8 +21,8 @@ export function isAppUrl(url: string | undefined): boolean {
   return ok
 }
 
-// Quadro principal de uma janela do app: só ele fala com o processo principal. A página do
-// protótipo (iframe em localhost) e qualquer site fora do app ficam de fora.
+// Quadro principal de uma janela do app: só ele fala com o processo principal. Um iframe e
+// qualquer site fora do app ficam de fora.
 export function isAppFrame(frame: Electron.WebFrameMain | null | undefined): boolean {
   try {
     return !!frame && !frame.detached && !frame.parent && isAppUrl(frame.url)

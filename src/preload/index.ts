@@ -219,17 +219,6 @@ const api: Api = {
     respond: (result) => send('canvasAgent:result', result),
     onCancel: (cb) => listen('canvasAgent:cancel', cb)
   },
-  design: {
-    load: (id) => invoke('design:load', id),
-    save: (design) => invoke('design:save', design),
-    list: (projectPath) => invoke('design:list', projectPath),
-    trash: (id) => invoke('design:trash', id),
-    escape: (origin, on) => send('design:escape', origin, on),
-    track: (origin) => send('design:track', origin),
-    snapshot: (origin) => invoke('design:snapshot', origin),
-    comment: (origin, action, id) => send('design:comment', origin, action, id),
-    routes: (projectPath) => invoke('design:routes', projectPath)
-  },
   sessions: {
     list: (path) => invoke('sessions:list', path),
     folders: () => invoke('sessions:folders'),
@@ -247,7 +236,6 @@ const api: Api = {
     subagentPage: (path, id, toolUseId, request) => invoke('sessions:subagentPage', path, id, toolUseId, request),
     taskOutput: (ref, offset) => invoke('sessions:taskOutput', ref, offset),
     images: (path, id, messageId) => invoke('sessions:images', path, id, messageId),
-    context: (path, id) => invoke('sessions:context', path, id),
     watch: (paths) => send('sessions:watch', paths),
     onChanged: (cb) => listen('sessions:changed', cb)
   },
@@ -263,7 +251,7 @@ const api: Api = {
   },
   projectServers: {
     status: (paths) => invoke('projectServers:status', paths),
-    start: (path, noBrowser) => invoke('projectServers:start', path, noBrowser),
+    start: (path) => invoke('projectServers:start', path),
     stop: (path) => invoke('projectServers:stop', path)
   },
   files: {

@@ -27,15 +27,12 @@ export const errors = new Map<string, string>()
 
 // Roda o script num shell de login, em segundo plano e num grupo próprio, para encerrar o
 // comando inteiro depois (pnpm + vite), como o painel de servidores faz.
-// noBrowser: sem abrir o navegador sozinho (o --open ou server.open do Vite, o do Create React App),
-// para a página ficar só no drawer do modo design. Os dois leem BROWSER=none.
-export function launch(root: string, run: ProjectScript, noBrowser: boolean): void {
+export function launch(root: string, run: ProjectScript): void {
   // Sem as variáveis do Electron: um projeto Electron abriria como Node puro.
   const env = childEnv()
   // Não foi o Claude Code que rodou; a marca do app põe o servidor no painel mesmo assim.
   delete env.CLAUDECODE
   env[APP_MARK] = '1'
-  if (noBrowser) env.BROWSER = 'none'
   prependPath(env, [])
 
   errors.delete(root)
@@ -60,11 +57,11 @@ export function launch(root: string, run: ProjectScript, noBrowser: boolean): vo
 }
 
 // Pasta do WSL: o script roda dentro da distro, pelo shell de login de lá (ver wsl/servers.ts).
-export async function launchWsl(root: string, run: ProjectScript, noBrowser: boolean): Promise<void> {
+export async function launchWsl(root: string, run: ProjectScript): Promise<void> {
   const wsl = parseWslPath(root)
   if (!wsl) return
   errors.delete(root)
-  const server = await launchInWsl(wsl.distro, wsl.linux, run.command, noBrowser).catch((err: Error) => err.message)
+  const server = await launchInWsl(wsl.distro, wsl.linux, run.command).catch((err: Error) => err.message)
   if (typeof server === 'string') {
     errors.set(root, server)
     return

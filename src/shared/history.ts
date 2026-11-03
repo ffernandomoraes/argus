@@ -5,9 +5,6 @@ export type DiffHunk = { oldStart: number; newStart: number; lines: string[] }
 
 // Mensagem da conversa como o chat mostra. at: quando foi gravada (ISO).
 // tokens: tokens gerados pela resposta do Claude, contados na primeira parte dela.
-// Marca de um pedido do modo design: o tipo (selecao, comentarios) e o texto curto.
-export type MessageMark = { kind: string; text: string }
-
 export type Message =
   // queued: enviada enquanto o Claude trabalhava; ele leva em conta no mesmo pedido.
   // images: quantos prints/imagens foram enviados junto da mensagem.
@@ -18,9 +15,6 @@ export type Message =
       at?: string
       queued?: boolean
       images?: number
-      // O que foi junto do pedido no modo design (a parte selecionada, os comentários na página),
-      // lido das marcas <argus-marca> do contexto; aparece discreto no balão.
-      marks?: MessageMark[]
       // Anexos que não são imagem: cartões no balão, no lugar dos caminhos.
       files?: AttachedFile[]
     }

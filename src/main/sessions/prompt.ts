@@ -11,15 +11,6 @@ export function userText(line: Line): string | null {
   return clean && !clean.startsWith('<') ? clean : null
 }
 
-// Protótipo do modo design: o primeiro pedido leva as instruções num bloco <modo-design>.
-export function isDesign(line: Line): boolean {
-  const content = line.type === 'user' && !line.isSidechain ? contentOf(line) : null
-  return !!arr(content)?.some((item) => {
-    const c = obj(item)
-    return c?.type === 'text' && String(c.text).trimStart().startsWith('<modo-design>')
-  })
-}
-
 // Mensagem de verdade: texto ou print da pessoa, ou resposta do Claude. Conversa aberta e fechada
 // sem nada disso não entra na lista.
 export function isMessage(line: Line): boolean {

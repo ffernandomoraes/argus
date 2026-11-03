@@ -1,4 +1,4 @@
-import { Mail, MailOpen, MessageCircle, PenTool, Star, StarOff, Trash2 } from 'lucide-react'
+import { Mail, MailOpen, MessageCircle, Star, StarOff, Trash2 } from 'lucide-react'
 import { isWslFolder, SYSTEM_NAME } from '../../platform'
 import type { MenuItem } from '../ContextMenu'
 import { isFavorite, setFavorite } from '../favorites'
@@ -10,37 +10,9 @@ import { tr } from '../../i18n'
 
 type ConversationDeps = Pick<Deps, 'openConversation' | 'confirm' | 'isPoppedOut' | 'trashConversation'>
 
-// Conversa do modo design na lista da pasta: abre o drawer do design; apagar manda a pasta dele
-// para a Lixeira (o código de um protótipo fica no projeto).
-function designConversationMenu(deps: ConversationDeps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
-  return [
-    { type: 'action', label: tr('Abrir design', 'Open design'), icon: PenTool, onSelect: () => deps.openConversation(node.id, conversation.id) },
-    { type: 'separator' },
-    {
-      type: 'action',
-      label: tr('Mover design para a Lixeira', `Move design to ${TRASH_EN}`),
-      icon: Trash2,
-      danger: true,
-      onSelect: () =>
-        deps.confirm({
-          title: tr(`Mover "${conversation.title}" para a Lixeira?`, `Move "${conversation.title}" to ${TRASH_EN}?`),
-          description: tr(
-            `O design vai para a Lixeira do ${SYSTEM_NAME}. O código do protótipo continua no projeto, e a conversa dele volta para a lista como uma conversa comum.`,
-            `The design goes to the ${SYSTEM_NAME} ${TRASH_EN}. The prototype code stays in the project, and its chat goes back to the list as a regular chat.`
-          ),
-          confirmLabel: tr('Mover para a Lixeira', `Move to ${TRASH_EN}`),
-          onConfirm: () => {
-            if (conversation.designId) void window.api.design.trash(conversation.designId)
-          }
-        })
-    }
-  ]
-}
-
 // Conversa na lista de uma pasta. A Lixeira leva o arquivo do Claude Code: some também do
 // `claude --resume` e só volta restaurando pela Lixeira do sistema.
 export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
-  if (conversation.kind === 'design') return designConversationMenu(deps, node, conversation)
   return [
     {
       type: 'action',

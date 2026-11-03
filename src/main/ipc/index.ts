@@ -6,7 +6,6 @@ import { registerAuthIpc } from './auth'
 import { registerCanvasIpc } from './canvas'
 import { registerChatIpc } from './chat'
 import { registerCliIpc } from './cli'
-import { registerDesignIpc } from './design'
 import { registerFilesIpc } from './files'
 import { registerHealthIpc } from './health'
 import { registerMemoryIpc } from './memory'
@@ -28,7 +27,6 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerSpeechIpc(s.speech)
   registerTranscriptionIpc()
   registerCanvasIpc(s.boards, s.canvasAgent, s.terminals)
-  registerDesignIpc()
   registerMemoryIpc()
   registerAgentsIpc()
   registerSessionsIpc(s.sessionWatch)

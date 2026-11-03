@@ -2,7 +2,7 @@ import { session } from 'electron'
 import { isAppUrl } from './appUrl'
 
 // Permissões do navegador: só o que o app usa, e só para o quadro principal do app. O resto (e
-// tudo da página do protótipo, que é um iframe em localhost) é negado.
+// tudo de um iframe ou site aberto pela janela) é negado.
 // - media (só áudio): o ditado do Windows grava pela janela (preload/winMic/);
 // - clipboard-sanitized-write: os botões de copiar (navigator.clipboard.writeText);
 // - fullscreen: tela cheia pedida pela página.

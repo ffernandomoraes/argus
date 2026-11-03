@@ -60,6 +60,7 @@ export function HealthModal({ onClose }: { onClose: () => void }) {
           base={1024}
           level={s.memory.level}
           text={memoryText(s.memory.level)}
+          available
         />
       )}
       {s.disk && (
@@ -103,13 +104,32 @@ export function HealthModal({ onClose }: { onClose: () => void }) {
 }
 
 // Memória ou disco: quanto está livre, a barra do que está em uso e o que isso afeta.
-function Meter({ label, free, total, base, level, text }: { label: string; free: number; total: number; base: number; level: MemoryLevel | DiskLevel; text: string }) {
+// available: a memória, que conta também o que o sistema libera na hora (o cache); o disco, só o livre.
+function Meter({
+  label,
+  free,
+  total,
+  base,
+  level,
+  text,
+  available = false
+}: {
+  label: string
+  free: number
+  total: number
+  base: number
+  level: MemoryLevel | DiskLevel
+  text: string
+  available?: boolean
+}) {
   const used = total > 0 ? Math.min(1, Math.max(0, 1 - free / total)) : 0
+  const f = formatGb(free, base)
+  const t = formatGb(total, base)
   return (
     <div className="mt-4">
       <div className="flex items-baseline justify-between gap-3 text-xs">
         <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-muted">{tr(`${formatGb(free, base)} livres de ${formatGb(total, base)}`, `${formatGb(free, base)} free of ${formatGb(total, base)}`)}</span>
+        <span className="tabular-nums text-muted">{available ? tr(`${f} disponíveis de ${t}`, `${f} available of ${t}`) : tr(`${f} livres de ${t}`, `${f} free of ${t}`)}</span>
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-fill">
         <div className={`h-full rounded-full ${FILL[level]}`} style={{ width: `${Math.round(used * 100)}%` }} />

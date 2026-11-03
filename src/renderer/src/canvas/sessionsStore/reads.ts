@@ -1,4 +1,5 @@
 import type { SessionChange } from '../../../../shared/sessions'
+import { onWindowActive, windowActive } from '../../lib/windowActivity'
 import type { ConversationSummary } from '../types'
 import { folderList } from './convert'
 import { changesAt, merge, store, watching, watchingChanges, type ReadPart } from './state'
@@ -131,9 +132,22 @@ function start(path: string): void {
 // marca uma releitura para quando o intervalo vencer (vários avisos viram uma só).
 const CHANGES_GAP_MS = 4000
 const changesTimers = new Map<string, ReturnType<typeof setTimeout>>()
+// Avisos que chegaram com a janela sem foco: o git status roda quando alguém voltar, como no VS
+// Code. Com várias conversas trabalhando, era um git por pasta a cada 4 s com ninguém olhando (no
+// WSL, um wsl.exe cada).
+const changesOnFocus = new Set<string>()
+onWindowActive(() => {
+  const paths = [...changesOnFocus]
+  changesOnFocus.clear()
+  for (const path of paths) requestChangesSoon(path)
+})
 
 export function requestChangesSoon(path: string): void {
   if (!watchingChanges.has(path) || changesTimers.has(path)) return
+  if (!windowActive()) {
+    changesOnFocus.add(path)
+    return
+  }
   const wait = CHANGES_GAP_MS - (Date.now() - (changesAt.get(path) ?? 0))
   if (wait <= 0) return request(path, { list: false, branch: false, changes: true })
   changesTimers.set(
@@ -154,4 +168,5 @@ export function forgetReads(path: string): void {
   changesAt.delete(path)
   clearTimeout(changesTimers.get(path))
   changesTimers.delete(path)
+  changesOnFocus.delete(path)
 }

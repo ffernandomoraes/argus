@@ -9,9 +9,22 @@
 
 const ATTR = 'data-window'
 
+// O mesmo estado para o que roda git de fundo (a faixa dos worktrees, o git status das pastas):
+// como o VS Code, espera alguém voltar para a janela. Janela sem o vigia instalado (a do mascote)
+// conta como ativa.
+let idle = false
+const onActive = new Set<() => void>()
+
+export const windowActive = (): boolean => !idle
+
+// Chamado quando a janela volta a ter alguém olhando; devolve como parar de ouvir.
+export function onWindowActive(fn: () => void): () => void {
+  onActive.add(fn)
+  return () => onActive.delete(fn)
+}
+
 export function installWindowActivity(): void {
   const root = document.documentElement
-  let idle = false
 
   const apply = () => {
     const next = !document.hasFocus() || document.visibilityState === 'hidden'
@@ -19,6 +32,7 @@ export function installWindowActivity(): void {
     idle = next
     if (idle) root.setAttribute(ATTR, 'idle')
     else root.removeAttribute(ATTR)
+    if (!idle) for (const fn of [...onActive]) fn()
   }
   // Lido no tique seguinte: clicar num iframe dispara `blur` na janela antes de o foco
   // chegar nele, e só depois `hasFocus()` responde que a janela continua com o foco.

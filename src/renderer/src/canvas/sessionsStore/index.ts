@@ -4,6 +4,7 @@ import { shallowEqual } from '../../lib/shallowEqual'
 import { useBackgroundBusy } from '../backgroundTasks'
 import { canvasScope, inScope } from '../canvasScope'
 import { useStore } from '../../lib/useStore'
+import { onWindowActive, windowActive } from '../../lib/windowActivity'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
@@ -39,10 +40,14 @@ function refreshAll(): void {
       .sort((a, b) => (changesAt.get(a) ?? 0) - (changesAt.get(b) ?? 0))
       .slice(0, GIT_PER_ROUND)
   )
-  for (const path of watching.keys()) request(path, { list: true, branch: true, changes: due.has(path) })
+  // Sem foco, o git status espera: a volta para a janela faz esta conferência na hora.
+  const active = windowActive()
+  for (const path of watching.keys()) request(path, { list: true, branch: true, changes: active && due.has(path) })
 }
 setInterval(refreshAll, REFRESH_MS)
-window.addEventListener('focus', refreshAll)
+// Pela volta do foco já marcada (lib/windowActivity.ts), não pelo evento `focus` da janela: nele, a
+// janela ainda conta como sem foco, e o git status vencido ficaria para a próxima conferência.
+onWindowActive(refreshAll)
 window.api.sessions.onChanged((path, change) => {
   if (!watching.has(path)) return
   request(path, needFor(change))

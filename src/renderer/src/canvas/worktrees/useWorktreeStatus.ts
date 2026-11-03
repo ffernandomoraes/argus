@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { WorktreeStatus } from '../../../../shared/worktrees'
 import { createStore } from '../../lib/createStore'
 import { useStore } from '../../lib/useStore'
+import { onWindowActive, windowActive } from '../../lib/windowActivity'
 import { useSessions, useUncommitted } from '../sessionsStore'
+import { createWorktreePoller, type WorktreePoller } from './worktreePoller'
 
 // Situação de cada tarefa isolada, pela pasta. Quem lê (o nome da branch no cabeçalho) usa
 // useWorktreeStatus; quem pergunta ao processo principal é só a faixa do card (usePollWorktree).
@@ -10,38 +12,41 @@ const store = createStore<ReadonlyMap<string, WorktreeStatus | null>>(new Map())
 
 export const useWorktreeStatus = (path: string): WorktreeStatus | null => useStore(store, (s) => s.get(path) ?? null)
 
-// Preparando (criando a pasta, instalando dependências) ou com conversa rodando: confere de perto.
-// Fora isso, a cada mudança nos arquivos (o aviso do git status), a cada resposta e, sem aviso, de
-// tempos em tempos (um commit ou a branch renomeada pelo agente não mexem nos arquivos).
-const FAST_MS = 2000
-const SLOW_MS = 15_000
-
+// Quando perguntar: ver worktreePoller.ts. Os avisos de mudança são a lista de arquivos não
+// comitados (relida pelo aviso do .git e pelas respostas do Claude) e a hora da última resposta.
 export function usePollWorktree(path: string): WorktreeStatus | null {
   const status = useWorktreeStatus(path)
   const uncommitted = useUncommitted(path)
   const conversations = useSessions(path)
   const lastReply = conversations.reduce((max, c) => (c.repliedAt > max ? c.repliedAt : max), '')
-  const busy = conversations.some((c) => c.status === 'running')
-  const settling = !status || status.state === 'preparing' || busy
+  const fast = useRef(false)
+  fast.current = !status || status.state === 'preparing'
+  const poller = useRef<WorktreePoller | null>(null)
+
   useEffect(() => {
-    let alive = true
-    let timer: ReturnType<typeof setTimeout> | undefined
-    // A próxima pergunta só depois da resposta da anterior: com o WSL lento, perguntar a cada 2 s sem
-    // esperar empilhava dezenas delas, cada uma com vários git rodando lá dentro (2026-10-23).
-    const read = () =>
-      void window.api.worktrees
-        .status(path)
-        // Igual ao que já estava (o caso comum, a cada 2 ou 15 s): nada muda e a faixa não redesenha.
-        .then((s) => alive && store.set((prev) => (prev.has(path) && JSON.stringify(prev.get(path)) === JSON.stringify(s) ? prev : new Map(prev).set(path, s))))
-        .catch(() => {})
-        .finally(() => {
-          if (alive) timer = setTimeout(read, settling ? FAST_MS : SLOW_MS)
-        })
-    read()
+    const p = createWorktreePoller({
+      // Igual ao que já estava (o caso comum): nada muda e a faixa não redesenha.
+      read: () =>
+        window.api.worktrees
+          .status(path)
+          .then((s) => store.set((prev) => (prev.has(path) && JSON.stringify(prev.get(path)) === JSON.stringify(s) ? prev : new Map(prev).set(path, s)))),
+      fast: () => fast.current,
+      active: windowActive,
+      onActive: onWindowActive
+    })
+    poller.current = p
     return () => {
-      alive = false
-      clearTimeout(timer)
+      p.stop()
+      poller.current = null
     }
-  }, [path, uncommitted, lastReply, settling])
+  }, [path])
+
+  // A primeira passada é a montagem, que já leu; daí em diante, cada mudança avisa.
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (mounted.current) poller.current?.changed()
+    mounted.current = true
+  }, [uncommitted, lastReply])
+
   return status
 }

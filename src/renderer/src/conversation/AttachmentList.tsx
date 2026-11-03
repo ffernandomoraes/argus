@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { AudioLines, X } from 'lucide-react'
 import { isAudioFile } from '../../../shared/transcription'
 import { IconButton } from '../ui/IconButton'
-import { usePreference } from '../settings/preferences'
 import { AudioStatus } from './audio/AudioStatus'
 import { FileCard, formatSize } from './FileCard'
 import { ImageViewer } from './ImageViewer'
@@ -13,7 +12,6 @@ import { tr } from '../i18n'
 // dos outros arquivos (no áudio, a transcrição). O X aparece ao passar o mouse. Clicar na miniatura
 // abre a imagem grande, antes de enviar.
 export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRemove: (id: string) => void }) {
-  const transcribe = usePreference('audioTranscription')
   // Índice, entre as imagens anexadas, da que está aberta.
   const [viewing, setViewing] = useState<number | null>(null)
   const urls = useMemo(() => items.flatMap((a) => (a.previewUrl ? [a.previewUrl] : [])), [items])
@@ -35,7 +33,7 @@ export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRem
             >
               <img src={a.previewUrl} alt={a.file.name} className="size-14 rounded-md border border-line object-cover" />
             </button>
-          ) : transcribe && isAudioFile(a.file.name, a.file.type) ? (
+          ) : isAudioFile(a.file.name, a.file.type) ? (
             // Áudio: mais largo, com a transcrição embaixo do nome (ver AudioStatus).
             <div className="flex h-14 max-w-80 items-center gap-2 rounded-md border border-line bg-surface-2 px-2.5">
               <AudioLines size={16} className="shrink-0 text-muted" />

@@ -1,9 +1,8 @@
 import { isAudioFile, TRANSCRIPTION_SAMPLE_RATE, type TranscriptionModel } from '../../../../shared/transcription'
 import { createStore } from '../../lib/createStore'
-import { getPreferences } from '../../settings/preferences'
 import { tr } from '../../i18n'
 
-// Transcrição dos áudios anexados (Configurações > Experimentos). Cada áudio anexado ganha uma
+// Transcrição dos áudios anexados. Cada áudio anexado ganha uma
 // situação; o texto pronto vai junto da mensagem (ver transcriptsText). Sem o modelo no
 // computador, o anexo pergunta antes de baixar; com a resposta "agora não", vai sem transcrição.
 export type Transcript =
@@ -50,10 +49,10 @@ function each(status: Transcript['status'], fn: (file: File) => void): void {
   for (const [file, t] of transcriptStore.get()) if (t.status === status) fn(file)
 }
 
-// Anexo novo: com a transcrição ligada e sendo áudio, começa (ou pergunta, sem o modelo). Anexo que
+// Anexo novo: sendo áudio, começa (ou pergunta, sem o modelo). Anexo que
 // já tem situação (voltou ao campo depois de um envio que falhou) fica como estava.
 export async function watchAudio(file: File): Promise<void> {
-  if (!getPreferences().audioTranscription || !isAudioFile(file.name, file.type)) return
+  if (!isAudioFile(file.name, file.type)) return
   if (transcriptStore.get().has(file)) return
   put(file, { status: 'waiting' })
   const model = await currentModel()

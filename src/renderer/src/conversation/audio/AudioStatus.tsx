@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useStore } from '../../lib/useStore'
-import { ExperimentTag } from '../../ui/ExperimentTag'
 import { tr } from '../../i18n'
 import { cancelDownload, downloadModel, modelStore, retryTranscript, skipTranscript, transcriptStore } from './transcripts'
 
@@ -10,7 +9,7 @@ const megabytes = (bytes: number) => Math.round(bytes / 1_000_000)
 const LINK = 'text-accent hover:underline'
 
 // Linha embaixo do nome de um áudio anexado: a pergunta para baixar o modelo, o download, a
-// transcrição andando ou o texto pronto (inteiro no title). Áudio sem transcrição ligada: nada.
+// transcrição andando ou o texto pronto (inteiro no title).
 export function AudioStatus({ file }: { file: File }) {
   const transcript = useStore(transcriptStore, (map) => map.get(file))
   const model = useStore(modelStore)
@@ -18,7 +17,6 @@ export function AudioStatus({ file }: { file: File }) {
 
   const row = (children: ReactNode, title?: string) => (
     <div title={title} className="flex min-w-0 items-center gap-1.5 text-[11px] text-faint">
-      <ExperimentTag />
       {children}
     </div>
   )

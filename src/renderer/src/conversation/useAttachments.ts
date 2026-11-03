@@ -40,7 +40,7 @@ export function useAttachments(key: string) {
   const add = useCallback((files: FileList | File[]) => {
     const next = Array.from(files).map((file) => withPreview({ id: crypto.randomUUID(), file }, urls.current))
     if (next.length) setItems((all) => [...all, ...next])
-    // Áudio, com a transcrição ligada (Experimentos), começa a ser transcrito já ao anexar.
+    // Áudio começa a ser transcrito já ao anexar.
     for (const a of next) void watchAudio(a.file)
   }, [])
 

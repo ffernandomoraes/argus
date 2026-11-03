@@ -8,7 +8,6 @@ export function ExperimentsSection() {
   const orchestrator = usePreference('orchestratorEnabled')
   const designMode = usePreference('designMode')
   const worktrees = usePreference('worktrees')
-  const audioTranscription = usePreference('audioTranscription')
   return (
     <Group>
       <Row
@@ -50,20 +49,6 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Tarefas em paralelo', 'Parallel tasks')} checked={worktrees} onChange={(next) => setPreferences({ worktrees: next })} />
-      </Row>
-      <Row
-        label={tr('Transcrever áudios anexados', 'Transcribe attached audio')}
-        description={tr('Transforma áudio anexado em texto, neste computador.', 'Turns attached audio into text, on this computer.')}
-        info={tr(
-          'Áudio anexado na conversa (.ogg do WhatsApp, .mp3, .m4a…) é transcrito neste computador, e o texto vai junto da mensagem. Na primeira vez, pede para baixar o modelo de transcrição (~300 MB).',
-          'Audio attached to a chat (WhatsApp .ogg, .mp3, .m4a…) is transcribed on this computer, and the text goes with the message. The first time, it asks to download the transcription model (~300 MB).'
-        )}
-      >
-        <Switch
-          label={tr('Transcrever áudios anexados', 'Transcribe attached audio')}
-          checked={audioTranscription}
-          onChange={(next) => setPreferences({ audioTranscription: next })}
-        />
       </Row>
     </Group>
   )

@@ -1,4 +1,4 @@
-// Transcrição de áudio anexado à conversa (Configurações > Experimentos). O modelo não vem com o
+// Transcrição de áudio anexado à conversa. O modelo não vem com o
 // app: é baixado na primeira vez que a pessoa aceita, e fica guardado nos dados do app.
 
 // Situação do modelo neste computador. received/total em bytes.

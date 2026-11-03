@@ -1,8 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { transcriptsPending, type Transcript } from './transcripts'
-
-// As preferências leem o localStorage e ouvem a janela; aqui só importa a regra do envio.
-vi.mock('../../settings/preferences', () => ({ getPreferences: () => ({ audioTranscription: true }) }))
 
 const audio = (name: string) => new File([], name, { type: 'audio/ogg' })
 

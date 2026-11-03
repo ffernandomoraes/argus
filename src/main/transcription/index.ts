@@ -13,7 +13,7 @@ const PROGRESS_MS = 200
 
 type Pending = { resolve: (text: string) => void; reject: (err: Error) => void }
 
-// Transcrição de áudio anexado (Configurações > Experimentos): o modelo, baixado só quando a pessoa
+// Transcrição de áudio anexado: o modelo, baixado só quando a pessoa
 // aceita, e o processo que roda o Whisper (worker.ts).
 export class Transcription {
   private state: TranscriptionModel = { status: 'missing', total: MODEL_BYTES }

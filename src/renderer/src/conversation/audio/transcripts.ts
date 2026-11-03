@@ -90,9 +90,9 @@ export function forgetTranscripts(files: File[]): void {
   })
 }
 
-// Algum áudio ainda sem decisão ou sem texto: o envio espera (ver Composer).
-export function transcriptsPending(files: File[]): boolean {
-  const map = transcriptStore.get()
+// Algum áudio ainda sem decisão ou sem texto: o envio espera (ver Composer). Recebe o mapa para o
+// Composer ler pelo useStore e desabilitar o Enviar enquanto isso.
+export function transcriptsPending(files: File[], map: Map<File, Transcript> = transcriptStore.get()): boolean {
   return files.some((f) => {
     const s = map.get(f)?.status
     return s === 'asking' || s === 'waiting' || s === 'transcribing'

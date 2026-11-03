@@ -16,7 +16,7 @@ import { Presence } from '../../motion'
 import { keys } from '../../platform'
 import { AgentMenu } from '../AgentMenu'
 import { AttachmentList } from '../AttachmentList'
-import { transcriptsPending } from '../audio/transcripts'
+import { transcriptsPending, transcriptStore } from '../audio/transcripts'
 import type { SessionSettings } from '../SessionSettings'
 import { SlashMenu } from '../SlashMenu'
 import type { SlashCommand } from '../slashCommands'
@@ -31,6 +31,7 @@ import { useComposerMenus } from './useComposerMenus'
 import { useDraft } from './useDraft'
 import { usePromptHistory } from './usePromptHistory'
 import { tr } from '../../i18n'
+import { useStore } from '../../lib/useStore'
 
 export type ComposerHandle = {
   // Envio que não chegou: o texto volta (se o campo estiver vazio), os anexos voltam e o aviso aparece.
@@ -124,6 +125,9 @@ export const Composer = memo(function Composer(props: Props) {
   useEffect(() => onTypingChange?.(typing), [typing, onTypingChange])
 
   const canSend = typing || attachments.items.length > 0 || !!extraSend
+  // Áudio anexado ainda transcrevendo (ou esperando o modelo, ou a resposta de baixar): o Enviar
+  // fica desabilitado até terminar ou até escolher "Agora não" nele.
+  const transcribing = useStore(transcriptStore, (map) => transcriptsPending(attachments.items.map((a) => a.file), map))
 
   const updateDraft = (value: string) => {
     setDraft(value)
@@ -301,7 +305,8 @@ export const Composer = memo(function Composer(props: Props) {
           stopping={running && !canSend}
           onStop={onInterrupt}
           onSend={() => send()}
-          sendDisabled={!canSend && dictation.state === 'idle'}
+          sendDisabled={transcribing || (!canSend && dictation.state === 'idle')}
+          sendTitle={transcribing ? tr('Espere a transcrição do áudio terminar', 'Wait for the audio transcript to finish') : undefined}
         />
       </div>
       <ComposerNotices sendError={sendError} error={dictation.error} />

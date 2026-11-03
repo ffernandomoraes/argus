@@ -16,7 +16,8 @@ export function ComposerActions({
   stopping,
   onStop,
   onSend,
-  sendDisabled
+  sendDisabled,
+  sendTitle
 }: {
   onOpenCommands: () => void
   onFiles: (files: FileList) => void
@@ -27,6 +28,8 @@ export function ComposerActions({
   onStop: () => void
   onSend: () => void
   sendDisabled: boolean
+  // Por que o Enviar está desabilitado (no lugar do "Enviar (Enter)").
+  sendTitle?: string
 }) {
   const fileInput = useRef<HTMLInputElement>(null)
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +69,7 @@ export function ComposerActions({
           <Square size={11} fill="currentColor" />
         </IconButton>
       ) : (
-        <IconButton label={tr('Enviar', 'Send')} title={tr('Enviar (Enter)', 'Send (Enter)')} variant="primary" onClick={onSend} disabled={sendDisabled}>
+        <IconButton label={tr('Enviar', 'Send')} title={sendTitle ?? tr('Enviar (Enter)', 'Send (Enter)')} variant="primary" onClick={onSend} disabled={sendDisabled}>
           <SendHorizontal size={14} />
         </IconButton>
       )}

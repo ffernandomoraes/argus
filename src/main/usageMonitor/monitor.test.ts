@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events'
+import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Usage } from '../../shared/usage'
 
@@ -8,10 +10,23 @@ import type { Usage } from '../../shared/usage'
 const fake = vi.hoisted(() => ({
   reads: [] as (() => Promise<unknown>)[],
   fetch: vi.fn(),
-  warn: vi.fn()
+  warn: vi.fn(),
+  // Com true, o `claude` abre (um falso que nunca responde); senão, falha ao abrir.
+  launches: false,
+  spawned: 0
 }))
 
-vi.mock('../chats', () => ({ claudeLaunch: async () => ({ ok: false, error: 'sem claude no teste' }) }))
+vi.mock('../chats', () => ({
+  claudeLaunch: async () =>
+    fake.launches ? { ok: true, file: 'claude', args: [], cwd: '/', env: {} } : { ok: false, error: 'sem claude no teste' }
+}))
+vi.mock('node:child_process', () => ({
+  spawn: () => {
+    fake.spawned++
+    const proc = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough() })
+    return Object.assign(proc, { kill: () => setTimeout(() => proc.emit('close'), 0) })
+  }
+}))
 vi.mock('../claudeAuth/store', () => ({ readStored: () => (fake.reads.shift() ?? (() => Promise.resolve(null)))() }))
 vi.mock('../errorReports', () => ({ reportWarning: fake.warn }))
 
@@ -34,6 +49,8 @@ beforeEach(() => {
   fake.reads = []
   fake.fetch.mockReset()
   fake.warn.mockReset()
+  fake.launches = false
+  fake.spawned = 0
   updates = []
   monitor = new UsageMonitor('main', (u) => updates.push(u))
 })
@@ -163,5 +180,20 @@ describe('UsageMonitor', () => {
     monitor.refresh(true)
     await vi.advanceTimersByTimeAsync(0)
     expect(fake.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('o claude de reserva calado reabre depois da espera, não do intervalo de 15 minutos', async () => {
+    // Sem login para ler aqui (WSL): fica o `claude` de reserva, que nunca responde.
+    fake.launches = true
+    monitor.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fake.spawned).toBe(1)
+    // O da abertura fecha em 1 minuto; na batida seguinte, sem login, abre o de reserva.
+    await vi.advanceTimersByTimeAsync(2 * MIN)
+    expect(fake.spawned).toBe(2)
+    // Calado por mais de 1 minuto: fecha na batida e reabre 30 s depois (sem foco, o intervalo é de 15).
+    await vi.advanceTimersByTimeAsync(2 * MIN + 31_000)
+    expect(fake.spawned).toBe(3)
+    expect(monitor.current).toBeNull()
   })
 })

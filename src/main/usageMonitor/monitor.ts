@@ -184,10 +184,13 @@ export class UsageMonitor {
 
   private async poll(open = false): Promise<void> {
     if (this.stopped || this.polling) return
-    // O de reserva que não respondeu à última pergunta: fecha, e a próxima batida abre outro.
+    // O de reserva que não respondeu à última pergunta: fecha e reabre depois da espera (backoff). O
+    // closeProc solta o processo antes do 'close', que por isso não agenda a reabertura: até a 0.1.104
+    // o próximo só abria passado o intervalo das perguntas (15 min sem foco, o prazo do aviso ARGUS-A).
     if (this.proc && !this.oneShot && this.askedClaudeAt && Date.now() - this.askedClaudeAt > ONE_SHOT_TIMEOUT_MS) {
       this.closeProc()
       this.fail('timeout')
+      if (!this.restart) this.relaunchLater()
     }
     const every = open
       ? this.failure

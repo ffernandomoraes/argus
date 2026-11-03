@@ -43,6 +43,9 @@ export function startApp(s: Services, life: Lifecycle): void {
   app.on('browser-window-focus', () => {
     s.tray.seen()
     s.usage.refresh()
+    // Com o Argus em segundo plano e nada trabalhando, o macOS adia o timer de 30 s (App Nap): a
+    // memória liberada não chegava ao aviso da barra de cima, que ficava aceso até abrir o modal.
+    void s.health.read()
   })
   step('janelas do canvas', restoreCanvasWindows)
   const firstCanvas = activeCanvas()

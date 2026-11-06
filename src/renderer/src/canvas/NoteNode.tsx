@@ -134,7 +134,9 @@ function NoteEditor({ text, onDone }: { text: string; onDone: (text: string) => 
 
   return (
     // O texto escondido embaixo dá o tamanho; o campo ocupa a mesma célula e acompanha.
-    <div className="grid">
+    // minmax(0, 1fr): sem isso a coluna não fica mais estreita que a maior palavra (uma URL,
+    // por exemplo) e o texto todo vaza pela borda direita da nota.
+    <div className="grid grid-cols-[minmax(0,1fr)]">
       <span aria-hidden className={`invisible col-start-1 row-start-1 ${TEXT}`}>
         {(draft || tr('Escreva a nota', 'Write a note')) + ' '}
       </span>

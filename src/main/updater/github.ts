@@ -36,14 +36,14 @@ async function fetchRetrying(url: string, init: () => RequestInit): Promise<Resp
 }
 
 // null quando o endereço não existe (nenhum release publicado ainda).
-async function getJson<T>(path: string): Promise<T | null> {
+async function getJson<T>(path: string, timeoutMs = TIMEOUT_MS): Promise<T | null> {
   const url = `${API}${path}`
   const cached = cache.get(url)
   let res: Response
   try {
     res = await fetchRetrying(url, () => ({
       headers: { Accept: 'application/vnd.github+json', ...(cached && { 'If-None-Match': cached.etag }) },
-      signal: AbortSignal.timeout(TIMEOUT_MS)
+      signal: AbortSignal.timeout(timeoutMs)
     }))
   } catch (err) {
     if ((err as Error).name === 'TimeoutError') throw new Error(tr('O GitHub não respondeu a tempo ao procurar a versão nova.', "GitHub didn't respond in time while checking for a new version."))
@@ -61,7 +61,8 @@ async function getJson<T>(path: string): Promise<T | null> {
 export const fetchLatestRelease = () => getJson<Release>('/releases/latest')
 
 // Os mais recentes (do mais novo para o mais velho), para achar um que tenha o instalador.
-export async function fetchRecentReleases(count = 10): Promise<Release[]> {
-  const list = await getJson<Release[]>(`/releases?per_page=${count}`)
+// `timeoutMs` encurta a espera de cada tentativa quando há alguém olhando a tela (Novidades).
+export async function fetchRecentReleases(count = 10, timeoutMs?: number): Promise<Release[]> {
+  const list = await getJson<Release[]>(`/releases?per_page=${count}`, timeoutMs)
   return Array.isArray(list) ? list : []
 }

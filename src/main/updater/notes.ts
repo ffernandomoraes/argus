@@ -23,9 +23,13 @@ const toNote = (r: Release): ReleaseNote => ({
   items: parseNotes(r.body ?? '')
 })
 
+// A janela de Novidades fica em "Buscando…" enquanto isso: 10 s sem resposta já basta para
+// mostrar o erro com o "Tentar de novo", em vez dos 30 s da busca de atualização.
+const TIMEOUT_MS = 10_000
+
 // As últimas versões publicadas, da mais nova para a mais velha. Mesma consulta do atualizador:
 // o ETag guardado faz a repetição não contar no limite do GitHub.
 export async function fetchReleaseNotes(count = 5): Promise<ReleaseNote[]> {
-  const releases = await fetchRecentReleases()
+  const releases = await fetchRecentReleases(10, TIMEOUT_MS)
   return releases.filter((r) => !r.draft && !r.prerelease).slice(0, count).map(toNote)
 }

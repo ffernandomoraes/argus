@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Bug, ExternalLink, Minus, ScrollText, Sparkles, TrendingUp, type LucideIcon } from 'lucide-react'
 import type { ReleaseNote, ReleaseNoteKind } from '../../../shared/updates'
+import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { ModalCloseButton } from '../ui/ModalCloseButton'
 import { LOCALE, tr } from '../i18n'
@@ -30,9 +31,12 @@ type Load = { status: 'loading' } | { status: 'error' } | { status: 'ok'; notes:
 // Novidades: o que mudou nas últimas versões, lido dos releases do GitHub a cada abertura.
 export function ReleaseNotesModal({ current, onClose }: { current: string; onClose: () => void }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
+  // Cada "Tentar de novo" soma 1 e refaz a busca.
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let alive = true
+    setLoad({ status: 'loading' })
     window.api.updates
       .notes()
       .then((notes) => alive && setLoad({ status: 'ok', notes }))
@@ -43,7 +47,7 @@ export function ReleaseNotesModal({ current, onClose }: { current: string; onClo
     return () => {
       alive = false
     }
-  }, [])
+  }, [attempt])
 
   return (
     <Modal label={tr('Novidades', "What's new")} size="md" className="flex flex-col" onClose={onClose}>
@@ -58,12 +62,13 @@ export function ReleaseNotesModal({ current, onClose }: { current: string; onClo
 
       {load.status === 'loading' ? (
         <p className="px-5 py-10 text-center text-sm text-muted">{tr('Buscando no GitHub…', 'Fetching from GitHub…')}</p>
-      ) : load.status === 'error' || load.notes.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">
-          {load.status === 'error'
-            ? tr('Não deu para buscar as novidades no GitHub.', "Couldn't fetch the release notes from GitHub.")
-            : tr('Nenhuma versão publicada ainda.', 'No published versions yet.')}
-        </p>
+      ) : load.status === 'error' ? (
+        <div className="flex flex-col items-center gap-3 px-5 py-10">
+          <p className="text-center text-sm text-muted">{tr('Não deu para buscar as novidades no GitHub.', "Couldn't fetch the release notes from GitHub.")}</p>
+          <Button onClick={() => setAttempt((n) => n + 1)}>{tr('Tentar de novo', 'Try again')}</Button>
+        </div>
+      ) : load.notes.length === 0 ? (
+        <p className="px-5 py-10 text-center text-sm text-muted">{tr('Nenhuma versão publicada ainda.', 'No published versions yet.')}</p>
       ) : (
         <div className="flex flex-col gap-5 overflow-y-auto px-5 py-4">
           {load.notes.map((note) => (

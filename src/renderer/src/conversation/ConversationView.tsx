@@ -64,6 +64,8 @@ type Props = {
   onSessionStarted?: (sessionId: string) => void
   // Escala do conteúdo, ajustada com ⌘+ / ⌘- (useDrawerZoom).
   zoom?: number
+  // Sobe para abrir a busca na conversa (⌘F e a lupa do drawer); sem isto, não há busca.
+  searchSignal?: number
   // Botões extras do cabeçalho, antes do fechar.
   actions?: ReactNode
   // À direita da linha em cima da caixa de escrever (o botão do código, no drawer).
@@ -97,6 +99,7 @@ export const ConversationView = memo(function ConversationView({
   onOpenDiff,
   onSessionStarted,
   zoom = 1,
+  searchSignal,
   actions,
   composerAboveEnd,
   headerClassName = '',
@@ -231,6 +234,7 @@ export const ConversationView = memo(function ConversationView({
             key={viewKey}
             draftKey={conversation.id}
             endSignal={endSignal}
+            searchSignal={searchSignal}
             messages={messages}
             loading={history.loading}
             older={history.older}

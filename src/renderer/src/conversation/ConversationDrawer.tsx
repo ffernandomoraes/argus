@@ -1,5 +1,5 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from 'react'
-import { ExternalLink, Mail, Maximize2, PictureInPicture2, Pin, PinOff, Star, StarOff } from 'lucide-react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { ExternalLink, Mail, Maximize2, PictureInPicture2, Pin, PinOff, Search, Star, StarOff } from 'lucide-react'
 import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
 import { markUnread } from '../canvas/sessionsStore'
 import type { SubagentRef, TasksRef } from '../canvas/CanvasContext'
@@ -13,12 +13,15 @@ import { CodeTerminalButtons } from './composer/CodeTerminalButtons'
 import { ConversationView } from './ConversationView'
 import { DrawerTerminal, useDrawerShell } from './DrawerTerminal'
 import type { LineRange } from './fileLinks'
+import { HeaderButton } from './header/HeaderButton'
 import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
 import { useFloatingRect } from './hooks/useFloatingRect'
 import { useFocusMode } from './hooks/useFocusMode'
 import { BOTTOM_BAR_HEIGHT, DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
 import { ResizeHandles } from './FloatingPanel'
+import { useSearchShortcut } from './search/searchShortcut'
 import { useDrawerZoom } from './useDrawerZoom'
+import { keys } from '../platform'
 import { tr } from '../i18n'
 
 type Props = {
@@ -119,7 +122,11 @@ export function ConversationDrawer(props: Props) {
     }),
     [zoom, tint, focus]
   )
-  const actions = useDrawerActions(props, focus, setFocus)
+  // Busca na conversa: ⌘F (Ctrl+F) com este drawer em uso, ou a lupa do cabeçalho.
+  const [searchSignal, setSearchSignal] = useState(0)
+  const openSearch = useCallback(() => setSearchSignal((n) => n + 1), [])
+  useSearchShortcut(panelRef, openSearch)
+  const actions = useDrawerActions(props, focus, setFocus, openSearch)
   const shell = useDrawerShell(conversation)
   const codeButton = useCodeButton(props, focus, shell.open, shell.toggle)
   // Workspace: o shell abre na primeira pasta dele (a do workspace em si é só um id).
@@ -166,6 +173,7 @@ export function ConversationDrawer(props: Props) {
           onOpenTasks={props.onOpenTasks}
           onSessionStarted={props.onSessionStarted}
           zoom={zoom}
+          searchSignal={searchSignal}
           headerClassName={focus ? '' : 'cursor-grab active:cursor-grabbing'}
           minimalHeader={focus}
           headerStyle={headerStyle}
@@ -192,9 +200,10 @@ export function ConversationDrawer(props: Props) {
   )
 }
 
-// Botões do cabeçalho do drawer: o menu de mais opções. Some no foco. Memorizados,
-// para o cabeçalho e a conversa não redesenharem enquanto o painel é arrastado.
-function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>) {
+// Botões do cabeçalho do drawer: a lupa da busca e o menu de mais opções. Somem no foco (lá o ⌘F
+// continua valendo). Memorizados, para o cabeçalho e a conversa não redesenharem enquanto o painel
+// é arrastado.
+function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>, onSearch: () => void) {
   const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, onClose } = props
   const draft = !!conversation.draft
   // Favoritar precisa do id da sessão: a conversa ainda não enviada não tem.
@@ -228,8 +237,15 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
             { label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }
           ])
     ]
-    return <MoreMenu items={items} />
-  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, leaveUnread, onPinToCanvas, onPopout])
+    return (
+      <>
+        <HeaderButton label={tr(`Buscar na conversa (${keys('⌘F')})`, `Search in chat (${keys('⌘F')})`)} onClick={onSearch}>
+          <Search size={15} />
+        </HeaderButton>
+        <MoreMenu items={items} />
+      </>
+    )
+  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, leaveUnread, onPinToCanvas, onPopout, onSearch])
 }
 
 // Botões do código e do terminal em cima da caixa de escrever. O do código some no foco; o do

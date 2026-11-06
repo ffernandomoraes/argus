@@ -10,6 +10,8 @@ import { ImageViewer } from './ImageViewer'
 import { RemoteControlTag } from './RemoteControlTag'
 import { usePreference } from '../settings/preferences'
 import { SuggestionChip } from './composer/SuggestionChip'
+import { ChatSearchBox } from './search/ChatSearchBox'
+import { useChatSearch } from './search/useChatSearch'
 import { CONTINUE_TEXT, FreedNotice, InterruptedNotice } from './composer/InterruptedNotice'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
@@ -67,6 +69,8 @@ export type ChatViewProps = {
   remoteAbove?: boolean
   // Sobe quando a conversa é aberta de novo já estando à vista: volta a seguir o fim.
   endSignal?: number
+  // Sobe para abrir a busca na conversa (⌘F, a lupa do cabeçalho do drawer); 0 = nunca pedida.
+  searchSignal?: number
   // Só para ler (o histórico de um subagente): sem a caixa de escrever. `emptyText`: o que aparece
   // enquanto não há mensagens.
   readOnly?: boolean
@@ -103,6 +107,7 @@ export const ChatView = memo(function ChatView({
   composerAbove,
   remoteAbove = false,
   endSignal = 0,
+  searchSignal = 0,
   readOnly = false,
   emptyText,
   interrupted,
@@ -176,6 +181,7 @@ export const ChatView = memo(function ChatView({
   }, [loading, endSignal, settle])
 
   const pinned = useMemo(() => promptOf(sticky.pinnedKey, messages, sends.waiting), [sticky.pinnedKey, messages, sends.waiting])
+  const search = useChatSearch({ rows, scroller, timeline, older, openSignal: searchSignal, onJump: sticky.release })
 
   // Pedidos já feitos, para as setas da caixa de escrever.
   const pastPrompts = useMemo(() => messages.flatMap((m) => (m.role === 'user' && m.text.trim() ? [m.text] : [])), [messages])
@@ -209,7 +215,9 @@ export const ChatView = memo(function ChatView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {pinned && (
+        {/* A busca fica no lugar do prompt preso: os dois no topo se cobriam. */}
+        {search.open && <ChatSearchBox search={search} />}
+        {pinned && !search.open && (
           <PinnedPrompt
             text={pinned.text}
             images={pinned.images}

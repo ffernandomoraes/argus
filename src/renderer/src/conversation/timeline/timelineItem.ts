@@ -2,11 +2,13 @@ import type { ReactNode } from 'react'
 
 // Um item da linha do tempo da conversa: mensagem sua (balão), divisor ou passo do Claude (com a
 // bolinha à esquerda e a linha até o próximo passo).
+// search: o texto em que a busca na conversa procura (o que fica dentro do data-search-text da
+// linha); sem ele, a linha fica de fora da busca.
 export type TimelineItem =
   // fresh: mensagem que você acabou de enviar (a provisória, antes do histórico); entra animada.
-  | { kind: 'user'; key: string; node: ReactNode; fresh?: boolean }
+  | { kind: 'user'; key: string; node: ReactNode; fresh?: boolean; search?: string }
   | { kind: 'divider'; key: string; node: ReactNode }
-  | { kind: 'step'; key: string; dot: string; dotTop?: number; node: ReactNode }
+  | { kind: 'step'; key: string; dot: string; dotTop?: number; node: ReactNode; search?: string }
 
 // Altura da bolinha (topo, em px) para ficar no meio da primeira linha do passo. A padrão
 // serve à resposta (15px, leading-relaxed); ações e raciocínio têm linha de 20px com 4px
@@ -16,10 +18,11 @@ export const DOT_AGENT = 15.5
 // O cartão do plano: margem, borda e o cabeçalho com o botão.
 export const DOT_PLAN = 21
 
-export const stepItem = (key: string, dot: string, node: ReactNode, dotTop?: number): TimelineItem => ({
+export const stepItem = (key: string, dot: string, node: ReactNode, dotTop?: number, search?: string): TimelineItem => ({
   kind: 'step',
   key,
   dot,
   dotTop,
-  node
+  node,
+  search
 })

@@ -9,6 +9,8 @@ export type OlderMessages = {
   more: boolean
   loading: boolean
   load: () => void
+  // Todas as que faltam de uma vez (a busca na conversa).
+  loadAll?: () => void
 }
 
 // Carrega as mensagens anteriores ao rolar perto do topo. Quando elas entram em cima, quem você lia

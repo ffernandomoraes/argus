@@ -69,7 +69,12 @@ export const UserBubble = memo(function UserBubble({
               ))}
             </div>
           )}
-          {text && <span className="whitespace-pre-wrap break-words">{text}</span>}
+          {text && (
+            // data-search-text: onde a busca na conversa destaca (ChatSearch).
+            <span data-search-text className="whitespace-pre-wrap break-words">
+              {text}
+            </span>
+          )}
         </div>
       </div>
       {/* Hora e copiar ficam embaixo do balão, à direita, para o texto usar a largura toda. */}

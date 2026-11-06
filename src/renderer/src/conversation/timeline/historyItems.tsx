@@ -52,12 +52,12 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
     case 'user': {
       const view = m.images && o.viewFor ? o.viewFor(m.id) : undefined
       const bubble = <UserBubble text={m.text} at={m.at} queued={m.queued} images={m.images} imageView={view} files={m.files} onEdit={o.onEdit} />
-      return { kind: 'user', key: m.id, node: bubble }
+      return { kind: 'user', key: m.id, node: bubble, search: m.text }
     }
     case 'event':
       return { kind: 'divider', key: m.id, node: <EventDivider text={m.text} at={m.at} /> }
     case 'output':
-      return stepItem(m.id, 'bg-line', <OutputRow text={m.text} />)
+      return stepItem(m.id, 'bg-line', <OutputRow text={m.text} />, undefined, m.text)
     case 'thinking':
       return stepItem(m.id, 'bg-line', <ThinkingRow message={m} />, DOT_ROW)
     case 'tool': {
@@ -84,7 +84,7 @@ function itemOf(m: Message, i: number, messages: Message[], o: HistoryOptions): 
     default: {
       const footer = o.footers.get(m.id)
       const row = <AssistantRow text={m.text} footerAt={footer?.at} duration={footer?.duration} tokens={footer?.tokens} />
-      return stepItem(o.answerKey?.(m.id) ?? m.id, 'bg-faint', row)
+      return stepItem(o.answerKey?.(m.id) ?? m.id, 'bg-faint', row, undefined, m.text)
     }
   }
 }

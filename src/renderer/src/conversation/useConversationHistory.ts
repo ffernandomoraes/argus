@@ -11,6 +11,8 @@ const NONE: Message[] = []
 // balão, comando ou resposta conta uma.
 export const HISTORY_FIRST = 200
 export const HISTORY_MORE = 100
+// "Todas as anteriores", para a busca na conversa: o principal lê até o começo do arquivo.
+const HISTORY_ALL = 1e9
 
 type Loaded = { key: string; messages: Message[]; more: boolean }
 
@@ -97,8 +99,16 @@ export function useConversationHistory(
     setSeen({ key, sessionId, born })
   }
 
+  // A busca na conversa procura em tudo: traz de uma vez as que faltam (mesmo com um lote no meio).
+  const loadAll = useCallback(() => {
+    if (!more || asked.current >= HISTORY_ALL / 2) return
+    asked.current = HISTORY_ALL
+    setOlderFor(key)
+    reader.current?.now()
+  }, [more, key])
+
   const loadingOlder = more && olderFor === key
-  const older = useMemo(() => ({ more, loading: loadingOlder, load: loadOlder }), [more, loadingOlder, loadOlder])
+  const older = useMemo(() => ({ more, loading: loadingOlder, load: loadOlder, loadAll }), [more, loadingOlder, loadOlder, loadAll])
 
   if (!sessionId) return { messages: NONE, loading: false, older }
   // Enquanto a outra conversa não chega, não mostra o histórico da anterior.

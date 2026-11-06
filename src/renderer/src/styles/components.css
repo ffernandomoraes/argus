@@ -102,3 +102,13 @@ body:has([data-covers-canvas]) .react-flow {
   mask-image: linear-gradient(to bottom, #000 calc(100% - var(--chat-fade)), transparent);
   animation: chat-fade-in 200ms ease-out;
 }
+
+/* Busca na conversa (search/highlights.ts): os resultados em amarelo claro, como no Safari e no
+   Finder; o escolhido em amarelo cheio, com texto escuro para ler nos dois temas. */
+::highlight(chat-search) {
+  background-color: color-mix(in srgb, #facc15 35%, transparent);
+}
+::highlight(chat-search-current) {
+  background-color: #fbbf24;
+  color: #1c1c1c;
+}

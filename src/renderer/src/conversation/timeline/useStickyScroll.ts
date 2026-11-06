@@ -265,6 +265,12 @@ export function useStickyScroll(
     setTimeout(() => el.classList.remove('jump-flash'), FLASH_MS)
   }
 
+  // A busca na conversa pulou para um resultado: para de seguir o fim, como quem subiu para ler.
+  const release = useCallback(() => {
+    following.current = false
+    intentAt.current = performance.now()
+  }, [])
+
   // onShift: a lista virtualizada avisa quanto moveu a rolagem sozinha (useTimelineVirtualizer).
-  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, onShift: moves.shift, toEnd, follow, jumpToEnd, settle, pinnedKey, scrollingUp, scrollToPrompt, away }
+  return { onScroll, onWheel, onKeyDown, onPointerDown, onTouchMove, onShift: moves.shift, toEnd, follow, jumpToEnd, settle, release, pinnedKey, scrollingUp, scrollToPrompt, away }
 }

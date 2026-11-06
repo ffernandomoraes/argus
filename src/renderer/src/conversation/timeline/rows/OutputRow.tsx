@@ -5,7 +5,8 @@ import { Markdown } from '../../Markdown'
 // caixa discreta, para não se passar por resposta do modelo.
 export const OutputRow = memo(function OutputRow({ text }: { text: string }) {
   return (
-    <div className="rounded-md border border-line bg-surface-2/60 px-3 py-2 text-[13px] leading-relaxed text-muted">
+    // data-search-text: onde a busca na conversa destaca (ChatSearch).
+    <div data-search-text className="rounded-md border border-line bg-surface-2/60 px-3 py-2 text-[13px] leading-relaxed text-muted">
       <Markdown text={text} />
     </div>
   )

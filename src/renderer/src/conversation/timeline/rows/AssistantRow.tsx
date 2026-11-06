@@ -20,7 +20,10 @@ export const AssistantRow = memo(function AssistantRow({
 }) {
   return (
     <div className="text-[15px] leading-relaxed text-text">
-      <Markdown text={text} />
+      {/* data-search-text: onde a busca na conversa destaca (ChatSearch); o rodapé fica de fora. */}
+      <div data-search-text>
+        <Markdown text={text} />
+      </div>
       {footerAt !== undefined && (
         <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-faint">
           <span>

@@ -7,26 +7,32 @@ import { Presence } from '../motion'
 import { MenuArrow } from '../ui/MenuArrow'
 import { MENU_HOVER, MENU_PANEL, MENU_ROW } from '../ui/menuStyles'
 import { useOutsideClick } from '../useOutsideClick'
-import { useActiveChatsInCanvas } from './canvasScope'
+import {
+  useActiveChatsEverywhere,
+  useFinishedChatsEverywhere,
+  useInterruptedEverywhere,
+  useOtherBoardName,
+  type FinishedChat
+} from './allWorkspaces'
 import { displayPath } from './factory'
-import { useInterruptedInCanvas } from './interruptedChats'
 import { untildify } from '../platform'
-import { useFinishedChats, useSessions, type FinishedChat } from './sessionsStore'
+import { useSessions } from './sessionsStore'
 import { StatusDot } from './StatusBadge'
 import { tr } from '../i18n'
 
-// No canto esquerdo da barra de baixo, enquanto alguma conversa do app trabalha, espera você, foi
+// No canto esquerdo da barra de baixo, enquanto alguma conversa do app (de qualquer workspace) trabalha, espera você, foi
 // interrompida pelo Argus fechando (bolinha vermelha) ou terminou sem você ver (bolinha verde):
 // quantas de cada, numa linha, e o clique abre a lista com cada uma, para cima. Clicar numa linha
-// abre a conversa (a concluída sai da lista ao ser vista; a interrompida, ao continuar).
+// abre a conversa, trocando de workspace se ela for de outro (a concluída sai da lista ao ser vista;
+// a interrompida, ao continuar).
 export const RunningIndicator = memo(function RunningIndicator({
   onOpen
 }: {
   onOpen: (cwd: string, sessionId: string) => void
 }) {
-  const chats = useActiveChatsInCanvas()
-  const finished = useFinishedChats()
-  const interrupted = useInterruptedInCanvas()
+  const chats = useActiveChatsEverywhere()
+  const finished = useFinishedChatsEverywhere()
+  const interrupted = useInterruptedEverywhere()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useOutsideClick(ref, () => setOpen(false), open)
@@ -94,12 +100,18 @@ export const RunningIndicator = memo(function RunningIndicator({
   )
 })
 
+// Pasta da conversa e, se ela for de outro workspace, o nome dele.
+function withBoard(path: string, board: string | null): string {
+  const folder = path.split(/[\\/]/).filter(Boolean).at(-1) ?? path
+  return board ? `${folder} - ${board}` : folder
+}
+
 // Uma conversa: título e pasta; embaixo, o que ela está fazendo e há quanto tempo.
 function ActiveRow({ chat: c, onOpen }: { chat: ActiveChat; onOpen: () => void }) {
   const path = displayPath(c.cwd)
   const sessions = useSessions(path)
   const title = sessions.find((s) => s.id === c.sessionId)?.title ?? tr('Conversa nova', 'New chat')
-  const folder = path.split(/[\\/]/).filter(Boolean).at(-1) ?? path
+  const folder = withBoard(path, useOtherBoardName(path, c.sessionId ?? c.key))
   // Pedido já terminado: só o que ficou em segundo plano roda.
   const turnDone = c.status === 'running' && c.turnStartedAt === undefined && !c.activity && c.background > 0
   const doing =
@@ -134,7 +146,7 @@ function ActiveRow({ chat: c, onOpen }: { chat: ActiveChat; onOpen: () => void }
 
 // Conversa que terminou sem você ver: título, pasta e "Concluído".
 function FinishedRow({ chat: c, onOpen }: { chat: FinishedChat; onOpen: () => void }) {
-  const folder = c.path.split(/[\\/]/).filter(Boolean).at(-1) ?? c.path
+  const folder = withBoard(c.path, useOtherBoardName(c.path, c.id))
   return (
     <li>
       <button onClick={onOpen} className={`${MENU_ROW} ${MENU_HOVER} !items-start !py-1.5`}>
@@ -158,7 +170,7 @@ function InterruptedRow({ chat: c, onOpen }: { chat: InterruptedChat; onOpen: ()
   const path = displayPath(c.cwd)
   const sessions = useSessions(path)
   const title = sessions.find((s) => s.sessionId === c.sessionId)?.title ?? tr('Conversa', 'Chat')
-  const folder = path.split(/[\\/]/).filter(Boolean).at(-1) ?? path
+  const folder = withBoard(path, useOtherBoardName(path, c.sessionId))
   return (
     <li>
       <button onClick={onOpen} className={`${MENU_ROW} ${MENU_HOVER} !items-start !py-1.5`}>

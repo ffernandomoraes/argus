@@ -2,14 +2,12 @@ import { useEffect, useMemo } from 'react'
 import type { UncommittedFile } from '../../../../shared/sessions'
 import { shallowEqual } from '../../lib/shallowEqual'
 import { useBackgroundBusy } from '../backgroundTasks'
-import { canvasScope, inScope } from '../canvasScope'
 import { useStore } from '../../lib/useStore'
 import { onWindowActive, windowActive } from '../../lib/windowActivity'
 import type { ConversationSummary } from '../types'
 import { watch, watchChanges } from './observers'
 import { EVERYTHING, needFor, request, requestChangesSoon } from './reads'
 import { changesAt, listStateOf, store, watching, watchingChanges, type ListState } from './state'
-import { unread } from './unread'
 // Efeito de importar: as não vistas vão para o ícone da barra de menus.
 import './unreadSync'
 
@@ -94,31 +92,6 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
   const lists = useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual)
   const busy = useBackgroundBusy()
   return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy])
-}
-
-// Conversas que terminaram sem você ver (bolinha verde), nas pastas lidas que estão no canvas: a
-// pasta como está no store, o id e o título. A que voltou a trabalhar sai daqui (já aparece como
-// ativa). Pasta que saiu do canvas mas ainda tem a lista guardada não entra (ver canvasScope).
-export type FinishedChat = { path: string; id: string; title: string }
-const NO_FINISHED: FinishedChat[] = []
-
-export function useFinishedChats(): FinishedChat[] {
-  const ids = useStore(unread)
-  const sessions = useStore(store, (s) => s.sessions)
-  const scope = useStore(canvasScope)
-  return useMemo(() => {
-    const list: FinishedChat[] = []
-    if (ids.size) {
-      for (const [path, conversations] of sessions) {
-        for (const c of conversations) {
-          if (ids.has(c.id) && c.status === 'idle' && inScope(scope, path, c.id)) list.push({ path, id: c.id, title: c.title })
-        }
-      }
-    }
-    // Nenhuma: sempre a mesma lista vazia. A lista das pastas muda a cada passo do Claude, e uma
-    // vazia nova redesenhava a barra de baixo e o mascote à toa.
-    return list.length ? list : NO_FINISHED
-  }, [ids, sessions, scope])
 }
 
 // Branch atual da pasta; nulo fora de repositório ou antes da primeira leitura.

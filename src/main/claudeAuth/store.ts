@@ -1,12 +1,10 @@
-import { execFile, spawn } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { accountDir } from '../accounts'
 import { keychainAccount, keychainService } from '../accounts/keychain'
 import { configDir } from '../claudeHome'
-import { writeStdin } from '../lib/childProcess'
-import { writeJsonAtomic } from '../lib/jsonFile'
 import { IS_MAC } from '../platform'
 
 // Onde o Claude Code guarda o login de cada conta: nas Chaves do macOS no Mac (um item por pasta
@@ -21,56 +19,54 @@ export type OAuth = {
   scopes?: string[]
   subscriptionType?: unknown
   rateLimitTier?: unknown
+  // Gravado pelo Claude Code ao apagar o login (ver loginState): "time_limit" quando venceu o prazo.
+  loginEnded?: string
 }
-// O item guarda mais que o login do Claude (os logins dos MCPs, por exemplo): gravar sempre por
-// cima do que foi lido, nunca só o claudeAiOauth.
+// O item guarda mais que o login do Claude (os logins dos MCPs, por exemplo). O Argus só lê: quem
+// grava é o Claude Code (ver renew.ts).
 export type Stored = { claudeAiOauth?: OAuth } & Record<string, unknown>
 
 const run = promisify(execFile)
-// Comando mais longo que o `security -i` aceita no stdin; acima disso, o Claude Code passa pelos
-// argumentos (conferido na 2.1.295). Aqui, igual.
-const STDIN_LIMIT = 4032
 
 // Do Claude Code do app: no Windows sem o `claude` de lá, o do WSL (ver claudeHome.ts).
 const credentialsFile = (account: string) => join(configDir(account), '.credentials.json')
 
-// null sem login guardado, ou se não deu para ler.
-export async function readStored(account: string): Promise<Stored | null> {
+// Como estava o login lido. ok: com acesso. ended: o Claude Code apagou o login depois de a
+// renovação ser recusada (refreshToken e accessToken vazios, expiresAt 0; conferido no binário da
+// 2.1.319), e só volta entrando de novo. empty: guardado, sem login do Claude (chave de API). missing:
+// nada guardado. unreadable: não deu para ler (no WSL, o arquivo atrás do \\wsl.localhost).
+export type StoredState = 'ok' | 'ended' | 'empty' | 'missing' | 'unreadable'
+
+export function loginState(stored: Stored | null): StoredState {
+  const oauth = stored?.claudeAiOauth
+  if (!oauth) return 'empty'
+  if (oauth.accessToken) return 'ok'
+  return oauth.refreshToken === '' || oauth.loginEnded ? 'ended' : 'empty'
+}
+
+// O guardado e o estado dele. Nunca rejeita.
+export async function readStoredState(account: string): Promise<{ stored: Stored | null; state: StoredState }> {
+  let text: string
   try {
-    if (!IS_MAC) return JSON.parse(await readFile(credentialsFile(account), 'utf8')) as Stored
-    const service = keychainService(accountDir(account))
-    const { stdout } = await run('security', ['find-generic-password', '-a', keychainAccount(), '-s', service, '-w'])
-    return JSON.parse(stdout.trim()) as Stored
+    if (!IS_MAC) text = await readFile(credentialsFile(account), 'utf8')
+    else {
+      const service = keychainService(accountDir(account))
+      text = (await run('security', ['find-generic-password', '-a', keychainAccount(), '-s', service, '-w'])).stdout
+    }
+  } catch (err) {
+    // Sem o arquivo; no Mac, o `security` sai com 44 quando o item não existe nas Chaves.
+    const code = (err as { code?: unknown } | null)?.code
+    return { stored: null, state: code === 'ENOENT' || code === 44 ? 'missing' : 'unreadable' }
+  }
+  try {
+    const stored = JSON.parse(text.trim()) as Stored | null
+    return { stored, state: loginState(stored) }
   } catch {
-    return null
+    return { stored: null, state: 'unreadable' }
   }
 }
 
-// No Mac, pelo stdin do `security`, para o login não aparecer na lista de processos (grande
-// demais para o stdin, vai pelos argumentos, como o Claude Code faz). No Windows, gravação
-// atômica: o Claude Code lendo ao mesmo tempo vê o arquivo antigo ou o novo, nunca pela metade.
-// false: não gravou.
-export async function writeStored(account: string, data: Stored): Promise<boolean> {
-  if (!IS_MAC) {
-    return writeJsonAtomic(credentialsFile(account), data, { mode: 0o600 }).then(
-      () => true,
-      () => false
-    )
-  }
-  const hex = Buffer.from(JSON.stringify(data), 'utf-8').toString('hex')
-  const user = keychainAccount()
-  const service = keychainService(accountDir(account))
-  const command = `add-generic-password -U -a "${user}" -s "${service}" -X "${hex}"\n`
-  if (command.length > STDIN_LIMIT) {
-    return run('security', ['add-generic-password', '-U', '-a', user, '-s', service, '-X', hex]).then(
-      () => true,
-      () => false
-    )
-  }
-  return new Promise((resolve) => {
-    const proc = spawn('security', ['-i'], { stdio: ['pipe', 'ignore', 'ignore'] })
-    proc.on('error', () => resolve(false))
-    proc.on('exit', (code) => resolve(code === 0))
-    writeStdin(proc, command)
-  })
+// null sem login guardado, ou se não deu para ler.
+export async function readStored(account: string): Promise<Stored | null> {
+  return (await readStoredState(account)).stored
 }

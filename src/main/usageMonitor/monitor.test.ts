@@ -13,7 +13,13 @@ const fake = vi.hoisted(() => ({
   warn: vi.fn(),
   // Com true, o `claude` abre (um falso que nunca responde); senão, falha ao abrir.
   launches: false,
-  spawned: 0
+  spawned: 0,
+  // Quantos `claude` deste teste fecharam (pelo fim da entrada ou pelo kill). O do teste anterior
+  // pode terminar de fechar já no seguinte (o fim da entrada chega depois do afterEach): conta pela vez.
+  closed: 0,
+  round: 0,
+  // O que o `claude` falso responde a cada pedido de controle; sem isso, fica calado.
+  answer: null as ((request: any) => object | null) | null
 }))
 
 vi.mock('../chats', () => ({
@@ -23,11 +29,44 @@ vi.mock('../chats', () => ({
 vi.mock('node:child_process', () => ({
   spawn: () => {
     fake.spawned++
-    const proc = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough() })
-    return Object.assign(proc, { kill: () => setTimeout(() => proc.emit('close'), 0) })
+    const round = fake.round
+    const proc = Object.assign(new EventEmitter(), {
+      stdin: new PassThrough(),
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      exitCode: null as number | null,
+      signalCode: null
+    })
+    const exit = (code: number) => {
+      if (proc.exitCode !== null) return
+      proc.exitCode = code
+      if (round === fake.round) fake.closed++
+      setTimeout(() => {
+        proc.emit('exit', code)
+        proc.emit('close', code)
+      }, 0)
+    }
+    // Como o `claude -p`: responde cada linha e sai quando a entrada acaba (ver closeGently).
+    proc.stdin.on('data', (chunk: Buffer) => {
+      for (const line of chunk.toString().split('\n').filter(Boolean)) {
+        const reply = fake.answer?.(JSON.parse(line))
+        if (reply) proc.stdout.write(JSON.stringify(reply) + '\n')
+      }
+    })
+    proc.stdin.on('finish', () => exit(0))
+    return Object.assign(proc, { kill: () => exit(143) })
   }
 }))
-vi.mock('../claudeAuth/store', () => ({ readStored: () => (fake.reads.shift() ?? (() => Promise.resolve(null)))() }))
+// Cada leitura do login devolve o guardado e o estado dele, na regra de store.ts (loginState).
+vi.mock('../claudeAuth/store', () => ({
+  readStoredState: async () => {
+    const stored = (await (fake.reads.shift() ?? (() => Promise.resolve(null)))()) as any
+    if (!stored) return { stored: null, state: 'missing' }
+    const oauth = stored.claudeAiOauth
+    const state = !oauth ? 'empty' : oauth.accessToken ? 'ok' : oauth.refreshToken === '' ? 'ended' : 'empty'
+    return { stored, state }
+  }
+}))
 vi.mock('../errorReports', () => ({ reportWarning: fake.warn }))
 
 const { UsageMonitor } = await import('./monitor')
@@ -36,6 +75,21 @@ const MIN = 60_000
 const login = (expiresIn: number) => () =>
   Promise.resolve({ claudeAiOauth: { accessToken: 'token', expiresAt: Date.now() + expiresIn, subscriptionType: 'max' } })
 const never = () => () => new Promise<never>(() => {})
+// O login como o Claude Code deixa ao apagá-lo, depois de a renovação ser recusada (2.1.319).
+const ended = () => () =>
+  Promise.resolve({ claudeAiOauth: { accessToken: '', refreshToken: '', expiresAt: 0, loginEnded: 'time_limit' } })
+// O `claude` sem limites para dar (sem login): responde ao "init" e ao pedido de uso, este sem os limites.
+const noLimitsAnswer = (req: any) => ({
+  type: 'control_response',
+  response: {
+    subtype: 'success',
+    request_id: req.request_id,
+    response:
+      req.request.subtype === 'initialize'
+        ? { models: [] }
+        : { rate_limits_available: false, rate_limits: null, subscription_type: null }
+  }
+})
 const body = { limits: [{ kind: 'session', percent: 42, resets_at: '2099-01-01T00:00:00Z' }] }
 const ok = () => new Response(JSON.stringify(body), { status: 200 })
 
@@ -51,6 +105,9 @@ beforeEach(() => {
   fake.warn.mockReset()
   fake.launches = false
   fake.spawned = 0
+  fake.closed = 0
+  fake.round++
+  fake.answer = null
   updates = []
   monitor = new UsageMonitor('main', (u) => updates.push(u))
 })
@@ -195,5 +252,98 @@ describe('UsageMonitor', () => {
     await vi.advanceTimersByTimeAsync(2 * MIN + 31_000)
     expect(fake.spawned).toBe(3)
     expect(monitor.current).toBeNull()
+  })
+
+  // Até a 0.1.108, a resposta sem limites contava como silêncio: o de uma vez só esperava 1 minuto e o
+  // de reserva era fechado e reaberto em laço, com "timeout" no aviso (ARGUS-A, 2026-11-08).
+  it('o claude que responde sem limites não é fechado e reaberto em laço', async () => {
+    fake.launches = true
+    fake.answer = noLimitsAnswer
+    monitor.start()
+    await vi.advanceTimersByTimeAsync(1000)
+    // O de uma vez só fecha ao responder, sem esperar 1 minuto.
+    expect(fake.spawned).toBe(1)
+    expect(fake.closed).toBe(1)
+
+    // Sem login para ler: fica o de reserva, que responde sem limites e segue aberto.
+    await vi.advanceTimersByTimeAsync(20 * MIN)
+    expect(fake.spawned).toBe(2)
+    expect(fake.closed).toBe(1)
+    expect(fake.warn).toHaveBeenCalledTimes(1)
+    expect(fake.warn.mock.calls[0][1]).toMatchObject({
+      reason: 'unavailable',
+      claudeNoLimits: true,
+      claudeOpen: true,
+      loginState: 'missing'
+    })
+  })
+
+  // O mecanismo do "Claude sai da conta" (2026-11-08): renovação recusada, o Claude Code apaga o login.
+  it('login apagado pelo Claude Code: mostra que terminou, sem abrir o claude de reserva', async () => {
+    fake.reads.push(login(60 * MIN))
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await startWithRead()
+
+    // 401; relido, o login é o mesmo, e o `claude` que renova apaga o login e responde sem limites.
+    fake.fetch.mockImplementation(async () => new Response('', { status: 401 }))
+    fake.reads.push(login(60 * MIN), ended(), ended(), ended(), ended())
+    fake.launches = true
+    fake.answer = noLimitsAnswer
+    await vi.advanceTimersByTimeAsync(17 * MIN)
+    expect(updates.at(-1)?.failure?.reason).toBe('signed_out')
+    expect(fake.spawned).toBe(1)
+
+    await vi.advanceTimersByTimeAsync(15 * MIN)
+    expect(fake.spawned).toBe(1)
+    expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining('sem a chamada direta'))
+    expect(fake.warn).toHaveBeenCalledTimes(1)
+    expect(fake.warn.mock.calls[0][1]).toMatchObject({
+      reason: 'signed_out',
+      httpStatus: 401,
+      tokenRejected: true,
+      loginState: 'ended',
+      loginEnded: 'time_limit'
+    })
+  })
+
+  // ARGUS-A, 2026-11: uma conta recebia 403 em toda tentativa; o monitor insistia, ia para o `claude`
+  // de reserva e avisava o Sentry em toda abertura.
+  it('recusa da conta (403) espera 1 hora, sem claude de reserva e sem aviso ao Sentry', async () => {
+    fake.reads.push(login(600 * MIN))
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await startWithRead()
+
+    fake.fetch.mockImplementation(async () => new Response('', { status: 403 }))
+    await vi.advanceTimersByTimeAsync(15 * MIN)
+    expect(updates.at(-1)?.failure).toMatchObject({ reason: 'forbidden', retryAt: Date.now() + 60 * MIN })
+
+    const calls = fake.fetch.mock.calls.length
+    monitor.refresh(true)
+    await vi.advanceTimersByTimeAsync(59 * MIN)
+    expect(fake.fetch.mock.calls.length).toBe(calls)
+
+    await vi.advanceTimersByTimeAsync(3 * 60 * MIN)
+    expect(fake.fetch.mock.calls.length).toBeLessThanOrEqual(calls + 4)
+    expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining('sem a chamada direta'))
+    expect(fake.warn).not.toHaveBeenCalled()
+  })
+
+  // ARGUS-A, 2026-11-04: uma falha só e a janela escondida logo depois. Sem foco, a nova tentativa sai
+  // em 15 minutos, o mesmo prazo do aviso, e o aviso saía antes dela, na mesma batida.
+  it('uma falha e a janela sem foco: tenta de novo antes de avisar o Sentry', async () => {
+    fake.reads.push(login(600 * MIN))
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await startWithRead()
+
+    fake.fetch.mockImplementationOnce(async () => {
+      throw new TypeError('fetch failed')
+    })
+    fake.fetch.mockImplementation(async () => ok())
+    await vi.advanceTimersByTimeAsync(15 * MIN)
+    expect(monitor.current?.failure?.reason).toBe('failed')
+
+    await vi.advanceTimersByTimeAsync(16 * MIN)
+    expect(monitor.current?.failure).toBeUndefined()
+    expect(fake.warn).not.toHaveBeenCalled()
   })
 })

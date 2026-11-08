@@ -1,21 +1,19 @@
-import { execFile } from 'node:child_process'
 import { join } from 'node:path'
-import { promisify } from 'node:util'
 import type { Account } from '../../shared/auth'
 import { claudeLaunch } from '../chats'
+import { runGently } from '../lib/childProcess'
 import { readJsonFile } from '../lib/jsonFile'
 import { claudeJsonDir } from '../claudeHome'
 import { distroFor } from '../wsl'
 import { emailFrom, parseAuthStatus, parseFailedStatus, userNameFrom } from './parseStatus'
 
-const run = promisify(execFile)
-
-// Comando do `claude` fora do SDK. windowsHide: sem ele, o Windows pisca uma janela de terminal a
-// cada conferência de login. No WSL o prazo é maior: o primeiro wsl.exe liga a máquina virtual.
+// Comando do `claude` fora do SDK, sem janela de terminal no Windows. No WSL o prazo é maior: o
+// primeiro wsl.exe liga a máquina virtual. Passado o prazo, para de esperar mas não mata na hora: um
+// `claude` morto no meio de uma renovação levava o login junto (ver closeGently).
 export async function runClaude(args: string[], account: string) {
   const l = await claudeLaunch(args, account)
   if (!l.ok) throw new Error(l.error)
-  return run(l.file, l.args, { env: l.env, cwd: l.cwd, timeout: distroFor() ? 30_000 : 15_000, windowsHide: true })
+  return runGently(l.file, l.args, { env: l.env, cwd: l.cwd, timeoutMs: distroFor() ? 30_000 : 15_000, graceMs: 30_000 })
 }
 
 // Nome da pessoa na conta, guardado pelo Claude Code no .claude.json dela (ver userNameFrom).

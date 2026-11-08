@@ -4,10 +4,11 @@ import { BrowserWindow } from 'electron'
 import type { ClaudeInfo } from '../../shared/models'
 import type { Usage, UsageFailure } from '../../shared/usage'
 import { claudeLaunch } from '../chats'
-import { readStored } from '../claudeAuth/store'
+import { CONTROL_ARGS as ARGS } from '../claudeAuth/renew'
+import { readStoredState, type Stored, type StoredState } from '../claudeAuth/store'
 import { reportWarning } from '../errorReports'
 import { createBackoff } from '../lib/backoff'
-import { guardStdin, writeStdin } from '../lib/childProcess'
+import { closeGently, guardStdin, writeStdin } from '../lib/childProcess'
 import { withTimeout } from '../lib/timeout'
 import { parseControlReply, parseRateLimits } from './parse'
 
@@ -49,24 +50,14 @@ const READ_TIMEOUT_MS = 10_000
 const STALL_MS = 15 * 60_000
 // Batida atrasada mais que isso: o computador dormiu, e o tempo dormindo não conta como parada.
 const SLEPT_MS = 2 * TICK_MS
-// --strict-mcp-config sem --mcp-config: nenhum MCP. Só para ler o limite, subir os MCPs da pessoa
-// custava centenas de MB por conta (o Playwright, por exemplo).
-const ARGS = [
-  '-p',
-  '--input-format',
-  'stream-json',
-  '--output-format',
-  'stream-json',
-  '--verbose',
-  '--no-session-persistence',
-  '--strict-mcp-config'
-]
-
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const OAUTH_BETA = 'oauth-2025-04-20'
 const FETCH_TIMEOUT_MS = 10_000
 // Recusou por excesso (429): espera o que o servidor pedir, ou isto.
 const QUIET_MS = 5 * 60_000
+// Recusou a conta (403): insistir não muda a resposta. Visto em 2026-11 (ARGUS-A) numa conta só, numa
+// máquina em que outra conta lia normal, depois de um 429 de 1 hora, em toda abertura do app.
+const FORBIDDEN_MS = 60 * 60_000
 // Perto de vencer, o login não serve: o `claude` renova.
 const TOKEN_MARGIN_MS = 60_000
 // O `claude` de uma vez só que não respondeu fecha depois disto.
@@ -76,7 +67,7 @@ const RENEW_GAP_MS = 10 * 60_000
 // Chamadas diretas que falham em seguida (rede, resposta estranha) antes de voltar ao `claude` aberto.
 const MAX_FAILURES = 3
 
-type Token = { value: string; expiresAt: number; plan: unknown }
+type Token = { value: string; expiresAt: number; plan: unknown; scopes: string[] }
 
 export class UsageMonitor {
   private proc: ChildProcessWithoutNullStreams | null = null
@@ -106,7 +97,15 @@ export class UsageMonitor {
   private askedAt = 0
   // Leitura do login em andamento: a próxima pergunta espera a mesma, sem empilhar leituras enquanto
   // a anterior (o WSL travado) não volta.
-  private tokenRead: ReturnType<typeof readStored> | null = null
+  private tokenRead: ReturnType<typeof readStoredState> | null = null
+  // Para o aviso ao Sentry: o status HTTP da última chamada direta que falhou, como estava o login
+  // na última leitura, se o último `claude` respondeu sem limites e com que código saiu o último que
+  // fechou sozinho. Sem eles, a ARGUS-A só se explicava pelo rastro, que guarda poucos minutos.
+  private status: number | null = null
+  private loginState: StoredState | null = null
+  private loginEnded: string | null = null
+  private claudeNoLimits = false
+  private claudeExit: number | null = null
   // Por que a leitura mais recente não deu certo; nulo quando deu.
   private failure: NonNullable<Usage['failure']> | null = null
   // Desde quando não dá certo (0: a última deu), e se essa parada já foi avisada ao Sentry.
@@ -164,6 +163,11 @@ export class UsageMonitor {
     this.failingSince = 0
     this.reported = false
     this.askedClaudeAt = 0
+    this.status = null
+    this.loginState = null
+    this.loginEnded = null
+    this.claudeNoLimits = false
+    this.claudeExit = null
     this.backoff.reset()
     this.start()
   }
@@ -178,8 +182,9 @@ export class UsageMonitor {
     const now = Date.now()
     if (now - this.tickedAt > SLEPT_MS && this.failingSince) this.failingSince = now
     this.tickedAt = now
-    this.checkStall(now)
+    // A pergunta antes do aviso: o checkStall espera a resposta de uma tentativa que acabou de sair.
     void this.poll()
+    this.checkStall(now)
   }
 
   private async poll(open = false): Promise<void> {
@@ -224,25 +229,44 @@ export class UsageMonitor {
 
   private async read(): Promise<void> {
     const token = await this.validToken()
+    // Sem login (o Claude Code apagou): renovar não dá, e o `claude` de reserva não teria o que
+    // responder. Segue relendo no intervalo, e volta sozinho quando a pessoa entrar de novo.
+    if (token === 'ended') return this.fail('signed_out')
     if (token === 'none') return this.fallBack()
     if (!token) return this.renewLogin()
     await this.fetchUsage(token)
   }
 
-  // O login da conta: válido; null vencido ou recusado (o `claude` renova); 'none' sem login para
-  // ler aqui (chave de API, Chaves inacessíveis, WSL).
-  private async validToken(): Promise<Token | null | 'none'> {
+  // O login da conta: válido; null vencido ou recusado (o `claude` renova); 'ended' apagado pelo
+  // Claude Code; 'none' sem login para ler aqui (chave de API, Chaves inacessíveis, WSL).
+  private async validToken(): Promise<Token | null | 'none' | 'ended'> {
     const usable = (t: Token) => t.value !== this.rejected && t.expiresAt - TOKEN_MARGIN_MS > Date.now()
     if (this.token && usable(this.token)) return this.token
-    const pending = this.tokenRead ?? readStored(this.account)
+    const { stored, state } = await this.readLogin()
+    if (state === 'ended') return 'ended'
+    const oauth = stored?.claudeAiOauth
+    if (!oauth?.accessToken) return 'none'
+    this.token = {
+      value: oauth.accessToken,
+      expiresAt: oauth.expiresAt ?? Infinity,
+      plan: oauth.subscriptionType ?? null,
+      scopes: oauth.scopes ?? []
+    }
+    return usable(this.token) ? this.token : null
+  }
+
+  // Lê o login (a leitura em andamento, se houver) e guarda o estado dele para o aviso.
+  private async readLogin(): Promise<{ stored: Stored | null; state: StoredState }> {
+    const pending = this.tokenRead ?? readStoredState(this.account)
     if (!this.tokenRead) {
       this.tokenRead = pending
       void pending.finally(() => this.tokenRead === pending && (this.tokenRead = null))
     }
-    const oauth = (await pending)?.claudeAiOauth
-    if (!oauth?.accessToken) return 'none'
-    this.token = { value: oauth.accessToken, expiresAt: oauth.expiresAt ?? Infinity, plan: oauth.subscriptionType ?? null }
-    return usable(this.token) ? this.token : null
+    const read = await pending
+    this.loginState = read.state
+    const ended = read.stored?.claudeAiOauth?.loginEnded
+    this.loginEnded = typeof ended === 'string' ? ended : null
+    return read
   }
 
   private async fetchUsage(token: Token): Promise<void> {
@@ -253,9 +277,19 @@ export class UsageMonitor {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
       })
     } catch (err) {
+      this.status = null
       return this.failed((err as Error | null)?.name === 'TimeoutError' ? 'timeout' : 'failed')
     }
     if (this.stopped) return
+    this.status = res.ok ? null : res.status
+    if (res.status === 403) {
+      // Não conta como falha seguida: o `claude` de reserva pergunta ao mesmo endereço com o mesmo
+      // login. A espera não conta como parada (checkStall), então não vira aviso ao Sentry. Os escopos
+      // do login vão para o rastro (não são segredo): um login só com user:inference não lê o uso.
+      this.quietUntil = Date.now() + FORBIDDEN_MS
+      console.warn(`[usage] o endereço de uso recusou esta conta (403); escopos do login: ${token.scopes.join(' ') || 'nenhum'}`)
+      return this.fail('forbidden', this.quietUntil)
+    }
     if (res.status === 401) {
       // O Claude Code pode já ter renovado: a próxima leitura das Chaves traz o novo; se for o
       // mesmo, o `claude` renova (renewLogin). Na próxima batida, sem esperar o intervalo.
@@ -281,6 +315,9 @@ export class UsageMonitor {
   }
 
   private succeeded(usage: Usage): void {
+    this.status = null
+    this.claudeNoLimits = false
+    this.claudeExit = null
     this.failure = null
     this.failingSince = 0
     this.reported = false
@@ -303,8 +340,13 @@ export class UsageMonitor {
   // ao recusar por excesso (429) não conta: o monitor está só esperando, e parada é continuar
   // falhando STALL_MS depois dele. ARGUS-A: 2026-10-28, com 45 minutos de espera pela frente; na
   // 0.1.97, na batida em que a espera de 1 hora acabou, antes de a nova tentativa sair.
+  // Com uma tentativa saindo (a chamada direta, ou o `claude` perguntado há menos de 1 minuto), espera
+  // a resposta dela. Sem foco, a próxima tentativa sai em 15 minutos, o mesmo prazo do aviso, e ele
+  // saía na batida da nova tentativa, antes dela: ARGUS-A, 2026-11-04, uma falha só e a janela
+  // escondida logo depois.
   private checkStall(now: number): void {
     if (!this.failingSince || this.reported || now - Math.max(this.failingSince, this.quietUntil) < STALL_MS) return
+    if (this.polling || (this.askedClaudeAt && now - this.askedClaudeAt < ONE_SHOT_TIMEOUT_MS)) return
     this.reported = true
     const minutes = (since: number) => Math.round((now - since) / 60_000)
     reportWarning('Uso do Claude sem atualizar', {
@@ -313,14 +355,19 @@ export class UsageMonitor {
       minutesSinceLastRead: this.last ? minutes(this.last.updatedAt) : null,
       persistent: this.persistent,
       claudeOpen: !!this.proc,
-      oneShot: this.oneShot,
+      oneShot: !!this.proc && this.oneShot,
       relaunchPending: !!this.restart,
       claudeSilentMinutes: this.askedClaudeAt ? minutes(this.askedClaudeAt) : null,
       loginReadPending: !!this.tokenRead,
       tokenRejected: !!this.rejected,
       failures: this.failures,
       quietSeconds: Math.max(0, Math.round((this.quietUntil - now) / 1000)),
-      renewedMinutesAgo: this.renewedAt ? minutes(this.renewedAt) : null
+      renewedMinutesAgo: this.renewedAt ? minutes(this.renewedAt) : null,
+      httpStatus: this.status,
+      loginState: this.loginState,
+      loginEnded: this.loginEnded,
+      claudeNoLimits: this.claudeNoLimits,
+      claudeExitCode: this.claudeExit
     })
   }
 
@@ -370,16 +417,17 @@ export class UsageMonitor {
     createInterface({ input: proc.stdout }).on('line', (line) => {
       const reply = this.onLine(line)
       gotInfo ||= !!reply?.info
-      gotUsage ||= !!reply?.usage
+      gotUsage ||= !!reply?.usage || !!reply?.noLimits
       // O de uma vez só já deu o que tinha a dar.
       if (oneShot && gotInfo && gotUsage && this.proc === proc) this.closeProc()
     })
     proc.stderr.on('data', () => {})
     proc.on('error', (err) => console.warn('[usage] falha ao iniciar o claude:', err.message))
     // 'close' e não 'exit': quando o `claude` nem abre (não achado), vêm só 'error' e 'close'.
-    proc.on('close', () => {
-      // Já trocado por um novo (restart): não mexe no que é dele.
+    proc.on('close', (code: number | null) => {
+      // Já trocado por um novo (restart), ou fechado pelo Argus: não mexe no que é dele.
       if (this.proc !== proc) return
+      this.claudeExit = code
       this.proc = null
       this.clearOneShotTimer()
       // Caiu sem responder à pergunta.
@@ -434,8 +482,33 @@ export class UsageMonitor {
       this.succeeded(reply.usage)
       // O `claude` pode ter renovado o login: a próxima chamada direta relê das Chaves.
       this.token = null
-    }
+    } else if (reply.noLimits) this.noLimits()
     return reply
+  }
+
+  // O `claude` respondeu, mas sem limites: sem login, chave de API ou o servidor recusando. Não é
+  // silêncio: fechar e reabrir não muda a resposta. Até a 0.1.108, contava como calado, e o de reserva
+  // era fechado em 1 minuto e reaberto 30 s depois, em laço, com "timeout" no aviso (ARGUS-A). O de uma
+  // vez só fecha ao responder (attach); o de reserva fica aberto e é perguntado de novo no intervalo.
+  private noLimits(): void {
+    this.claudeNoLimits = true
+    this.askedClaudeAt = 0
+    this.fail('unavailable')
+    void this.checkLogin()
+  }
+
+  // Sem limites porque o Claude Code apagou o login: o motivo é esse, e o de reserva não tem o que
+  // responder até a pessoa entrar de novo. Sai da reserva para a leitura direta voltar sozinha quando o
+  // login reaparecer (ver read).
+  private async checkLogin(): Promise<void> {
+    if ((await this.readLogin()).state !== 'ended' || this.stopped) return
+    if (this.persistent) {
+      this.persistent = false
+      if (this.restart) clearTimeout(this.restart)
+      this.restart = null
+      if (this.proc && !this.oneShot) this.closeProc()
+    }
+    this.fail('signed_out')
   }
 
   private closeProc(): void {
@@ -443,7 +516,9 @@ export class UsageMonitor {
     this.proc = null
     this.askedClaudeAt = 0
     this.clearOneShotTimer()
-    proc?.kill()
+    // Com calma: o `claude` pode estar renovando o login, e morto no meio levava o login junto (ver
+    // closeGently).
+    if (proc) closeGently(proc)
   }
 
   private clearOneShotTimer(): void {

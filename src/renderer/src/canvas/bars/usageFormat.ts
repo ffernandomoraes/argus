@@ -50,6 +50,16 @@ export function failureText(failure: NonNullable<Usage['failure']>): string {
       const at = new Date(failure.retryAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
       return tr(`o servidor pediu para esperar, nova tentativa às ${at}`, `the server asked to wait, trying again at ${at}`)
     }
+    case 'forbidden': {
+      const refused = tr('o Claude recusou mostrar o uso desta conta', 'Claude refused to share this account’s usage')
+      if (!failure.retryAt) return refused
+      const at = new Date(failure.retryAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
+      return tr(`${refused}, nova tentativa às ${at}`, `${refused}, trying again at ${at}`)
+    }
+    case 'unavailable':
+      return tr('o Claude respondeu sem os limites desta conta', 'Claude answered without this account’s limits')
+    case 'signed_out':
+      return tr('o login do Claude nesta conta terminou, é preciso entrar de novo', 'this account’s Claude sign-in ended, sign in again')
     case 'timeout':
       return tr('sem resposta na última tentativa', 'no response on the last try')
     case 'login':

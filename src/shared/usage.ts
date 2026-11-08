@@ -30,8 +30,11 @@ export type Usage = {
 
 // rate_limited: o servidor recusou por excesso (429), a cota é a mesma de todo `claude` com o mesmo
 // login. timeout: sem resposta no prazo (no Windows, o WSL travado). login: vencido ou recusado,
-// renovando. failed: o resto (rede, resposta estranha, o `claude` que não abriu).
-export type UsageFailure = 'rate_limited' | 'timeout' | 'login' | 'failed'
+// renovando. failed: o resto (rede, resposta estranha, o `claude` que não abriu). forbidden: o
+// endereço de uso recusou a conta (403), nova tentativa em retryAt. unavailable: o `claude` respondeu,
+// mas sem os limites (sem login, chave de API). signed_out: o Claude Code apagou o login da conta
+// depois de a renovação ser recusada; só volta entrando de novo.
+export type UsageFailure = 'rate_limited' | 'timeout' | 'login' | 'failed' | 'forbidden' | 'unavailable' | 'signed_out'
 
 // Guardado há mais tempo que isso não aparece mais.
 export const SAVED_MAX_MS = 12 * 60 * 60_000

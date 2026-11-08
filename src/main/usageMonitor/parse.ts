@@ -78,8 +78,10 @@ function fromLimits(raw: unknown): Usage | null {
 }
 
 // info: resposta ao "init" (modelos, modo de permissão, conta). usage: resposta a um "usage-N"
-// com os limites. Vazio: outra resposta de sucesso, sem nada para o app.
-export type ControlReply = { info?: ClaudeInfo; usage?: Usage }
+// com os limites. noLimits: resposta a um "usage-N" sem limites (rate_limits nulo e
+// rate_limits_available falso, conferido na 2.1.319 sem login): o `claude` respondeu, não está calado.
+// Vazio: outra resposta de sucesso, sem nada para o app.
+export type ControlReply = { info?: ClaudeInfo; usage?: Usage; noLimits?: true }
 
 // Resposta de sucesso a um pedido de controle, ou null (outra linha, erro ou JSON quebrado).
 export function parseControlReply(line: string, now: number): ControlReply | null {
@@ -106,7 +108,7 @@ export function parseControlReply(line: string, now: number): ControlReply | nul
   if (!String(res.request_id).startsWith('usage-')) return {}
 
   const usage = parseRateLimits(res.response?.rate_limits, res.response?.subscription_type, now)
-  return usage ? { usage } : {}
+  return usage ? { usage } : { noLimits: true }
 }
 
 // Os limites no formato do servidor: o corpo do GET /api/oauth/usage, que o `claude` repassa como

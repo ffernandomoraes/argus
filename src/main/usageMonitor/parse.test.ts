@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../i18n', () => ({ tr: (pt: string) => pt }))
 
-const { parseRateLimits } = await import('./parse')
+const { parseControlReply, parseRateLimits } = await import('./parse')
 
 // Os limites que o `claude` repassa do servidor. Formato conferido na 2.1.316 (conta team, 2026-11-01).
 
@@ -37,5 +37,24 @@ describe('parseRateLimits', () => {
     const usage = parseRateLimits({ five_hour: null, seven_day: { utilization: 10, resets_at: null } }, 'pro', NOW)!
     expect(usage.session).toEqual({ percent: 0, resetsAt: null })
     expect(usage.noSession).toBeUndefined()
+  })
+})
+
+describe('parseControlReply', () => {
+  const reply = (response: object) =>
+    JSON.stringify({ type: 'control_response', response: { subtype: 'success', request_id: 'usage-1', response } })
+
+  // Conferido na 2.1.319 sem login (2026-11-08): sucesso, mas sem os limites. Antes virava resposta
+  // vazia, e o monitor tratava o `claude` como calado (ARGUS-A).
+  it('resposta ao pedido de uso sem limites vira noLimits, não resposta vazia', () => {
+    expect(parseControlReply(reply({ rate_limits_available: false, rate_limits: null, subscription_type: null }), NOW)).toEqual({
+      noLimits: true
+    })
+  })
+
+  it('resposta ao pedido de uso com limites traz o uso', () => {
+    const parsed = parseControlReply(reply({ rate_limits: { limits: [row('session', 12)] }, subscription_type: 'max' }), NOW)
+    expect(parsed?.usage?.session?.percent).toBe(12)
+    expect(parsed?.noLimits).toBeUndefined()
   })
 })

@@ -1,6 +1,6 @@
 import type { AreaData, CanvasNode } from '../types'
 import { type Box, boxOf, FIT_PADDING, isPlaced, sizeOf, STILL } from './geometry'
-import { pushAway } from './push'
+import { pullBack, pushAway } from './push'
 import { childrenOf } from './tree'
 
 // Tamanho do grupo diante do que tem dentro: ajustar (encolhe ou cresce para caber exato) e
@@ -72,23 +72,43 @@ export function growGroupsToFit(nodes: CanvasNode[], changedIds: string[]): Canv
   return out
 }
 
-// Depois de uma medição (ou de um arraste dentro do grupo): o grupo cresce para caber o conteúdo e, junto com o bloco solto que
-// cresceu (pasta com conversa nova, por exemplo), empurra os vizinhos. Grupo redimensionado
-// na mão não entra: é decisão de quem arrasta a borda.
+// Depois de uma medição (ou de um arraste dentro do grupo): o bloco que cresceu (pasta com
+// conversa nova ou subagente aberto, por exemplo) empurra os vizinhos — dentro do grupo, os
+// irmãos —, o grupo cresce para caber o conteúdo e, se cresceu, empurra os blocos de fora. Ao
+// encolher (subagente terminou), o caminho volta: quem estava encostado embaixo sobe junto, o
+// grupo que cresceu sozinho encolhe e puxa os de fora.
+// Grupo redimensionado na mão não entra: é decisão de quem arrasta a borda.
 export function fitAfterResize(before: CanvasNode[], after: CanvasNode[], resizedIds: string[]): CanvasNode[] {
-  const grown = growGroupsToFit(after, resizedIds)
-  const pushers = new Set<string>()
-  grown.forEach((n, i) => n.type === 'area' && n !== after[i] && pushers.add(n.id))
+  const grownBlocks: string[] = []
+  const shrunkBlocks: { id: string; oldBottom: number }[] = []
   for (const id of resizedIds) {
     const prev = before.find((n) => n.id === id)
-    const next = grown.find((n) => n.id === id)
+    const next = after.find((n) => n.id === id)
     // Sem medida anterior é a primeira medição (ao abrir o app), não crescimento.
-    if (!prev?.measured?.height || !next || next.parentId || next.type === 'area') continue
+    if (!prev?.measured?.height || !next || next.type === 'area') continue
     const a = sizeOf(prev)
     const b = sizeOf(next)
-    if (b.width > a.width || b.height > a.height) pushers.add(id)
+    if (b.width > a.width || b.height > a.height) grownBlocks.push(id)
+    else if (b.height < a.height) {
+      const box = boxOf(next)
+      shrunkBlocks.push({ id, oldBottom: box.y + box.height - b.height + a.height })
+    }
   }
-  return pushers.size ? pushAway(grown, [...pushers]) : grown
+  const pushed = grownBlocks.length ? pushAway(after, grownBlocks) : after
+  const pulled = shrunkBlocks.length ? pullBack(pushed, shrunkBlocks) : pushed
+  const grown = growGroupsToFit(pulled, resizedIds)
+  const grownGroups: string[] = []
+  const shrunkGroups: { id: string; oldBottom: number }[] = []
+  grown.forEach((n, i) => {
+    const prev = pulled[i]
+    if (n.type !== 'area' || n === prev) return
+    const a = boxOf(prev)
+    const b = boxOf(n)
+    if (b.y + b.height < a.y + a.height) shrunkGroups.push({ id: n.id, oldBottom: a.y + a.height })
+    else grownGroups.push(n.id)
+  })
+  const groupsPushed = grownGroups.length ? pushAway(grown, grownGroups) : grown
+  return shrunkGroups.length ? pullBack(groupsPushed, shrunkGroups) : groupsPushed
 }
 
 // Fração de pixel na medida do nó não conta como transbordo, senão o grupo cresceria

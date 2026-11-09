@@ -36,6 +36,7 @@ export function QuestionCard({
     return [...labels, ...(typed ? [typed] : [])].join(', ')
   }
   const complete = questions.every((q) => answerOf(q))
+  const submit = () => onSubmit(Object.fromEntries(questions.map((q) => [q.question, answerOf(q)])))
 
   return (
     <div className="rounded-lg border border-dashed border-ask/40 bg-ask/10 p-3 text-xs">
@@ -102,6 +103,13 @@ export function QuestionCard({
                   autoFocus
                   value={other[q.question] ?? ''}
                   onChange={(e) => setOther((all) => ({ ...all, [q.question]: e.target.value }))}
+                  // Enter responde (na última aba) ou passa para a próxima; ignora o Enter que fecha um acento/IME.
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' || e.nativeEvent.isComposing || !answerOf(q)) return
+                    e.preventDefault()
+                    if (!last) setStep(step + 1)
+                    else if (complete) submit()
+                  }}
                   placeholder={tr('Escreva sua resposta', 'Type your answer')}
                   className="rounded-md border border-line bg-bg px-2.5 py-1.5 text-text outline-none focus:border-line-strong"
                 />
@@ -122,7 +130,7 @@ export function QuestionCard({
         {last ? (
           <button
             disabled={!complete}
-            onClick={() => onSubmit(Object.fromEntries(questions.map((q) => [q.question, answerOf(q)])))}
+            onClick={submit}
             className="rounded-md bg-ask px-2.5 py-1 font-medium text-ask-text hover:brightness-110 disabled:opacity-40"
           >
             {tr('Responder', 'Answer')}

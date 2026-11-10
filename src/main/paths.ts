@@ -1,4 +1,5 @@
 import { realpathSync, statSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { IS_WIN } from './platform'
@@ -44,6 +45,16 @@ export const inside = (root: string, dir: string): boolean => dir === root || di
 export function isDirectory(path: string): boolean {
   try {
     return statSync(path, { throwIfNoEntry: false })?.isDirectory() ?? false
+  } catch {
+    return false
+  }
+}
+
+// O mesmo sem segurar o app: para pasta que pode ser do WSL (\\wsl.localhost\...), onde a conferência
+// síncrona trava tudo enquanto a máquina virtual liga ou demora a responder.
+export async function isDirectoryAsync(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isDirectory()
   } catch {
     return false
   }

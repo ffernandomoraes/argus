@@ -28,7 +28,15 @@ export class UsageMonitors {
     this.codex = new CodexUsageMonitors(onUpdate, this.saved)
     // O guardado do Claude aparece já na abertura se o .claude.json da conta tem o mesmo login, sem
     // esperar o `claude auth status` (que pode demorar ou falhar). Os do Codex esperam a conferência.
-    for (const key of this.saved.keys()) if (!key.includes(':')) this.saved.trust(key, configEmail(key))
+    for (const key of this.saved.keys()) if (!key.includes(':')) void this.trustSaved(key)
+  }
+
+  // O .claude.json chega depois que a tela já pediu o uso: liberado, avisa (a não ser que a conta já
+  // tenha leitura nova).
+  private async trustSaved(key: string): Promise<void> {
+    const email = await configEmail(key)
+    if (this.closed || !this.saved.trust(key, email) || this.monitors.get(key)?.last) return
+    this.onUpdate(key, this.saved.get(key))
   }
 
   // Cada conferência de login das contas do Claude. Sem status (não deu para conferir), a conta fica

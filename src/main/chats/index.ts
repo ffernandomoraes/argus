@@ -335,7 +335,7 @@ export class Chats {
     if (parseAgentRef(account)) return { ok: false, error: tr('Só as conversas do Claude têm estilo de resposta.', 'Only Claude chats have an output style.') }
     try {
       const session = this.sessions.get(key)
-      return { ok: true, style: session instanceof ChatSession ? await session.outputStyle() : readOutputStyle(cwd) }
+      return { ok: true, style: session instanceof ChatSession ? await session.outputStyle() : await readOutputStyle(cwd) }
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }
@@ -345,7 +345,7 @@ export class Chats {
     try {
       const session = this.sessions.get(key)
       if (session instanceof ChatSession) await session.setOutputStyle(style)
-      else writeOutputStyle(cwd, style)
+      else await writeOutputStyle(cwd, style)
       return { ok: true, style }
     } catch (err) {
       return { ok: false, error: (err as Error).message }

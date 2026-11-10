@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { writeFileAtomic, writeFileAtomicSync } from './atomicWrite'
-import { quarantine, readJsonFile, writeJsonAtomic, writeJsonAtomicSync } from './jsonFile'
+import { quarantine, readJsonFile, readJsonFileAsync, writeJsonAtomic, writeJsonAtomicSync } from './jsonFile'
 
 // Base de todo arquivo do app (canvas, contas, configurações): ler sem confundir "não existe" com
 // "estragado", e gravar sem nunca deixar o arquivo pela metade.
@@ -27,6 +27,17 @@ describe('readJsonFile', () => {
     const dir = folder()
     mkdirSync(join(dir, 'x.json'))
     expect(readJsonFile(join(dir, 'x.json')).status).toBe('corrupt')
+  })
+
+  it('a assíncrona responde igual à síncrona', async () => {
+    const dir = folder()
+    writeFileSync(join(dir, 'a.json'), '﻿{"a":1}')
+    writeFileSync(join(dir, 'bad.json'), '{"a": ')
+    mkdirSync(join(dir, 'x.json'))
+    expect(await readJsonFileAsync(join(dir, 'a.json'))).toEqual({ status: 'ok', data: { a: 1 } })
+    expect(await readJsonFileAsync(join(dir, 'none.json'))).toEqual({ status: 'missing' })
+    expect((await readJsonFileAsync(join(dir, 'bad.json'))).status).toBe('corrupt')
+    expect((await readJsonFileAsync(join(dir, 'x.json'))).status).toBe('corrupt')
   })
 })
 

@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { readJsonFile } from '../lib/jsonFile'
+import { readJsonFileAsync } from '../lib/jsonFile'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { processTable } from '../winProcesses'
 import { distroInfo, homeUnc, runningDistros, toUnc } from '../wsl'
@@ -21,20 +21,20 @@ const MANAGED_LINUX = '/etc/claude-code/managed-settings.json'
 
 const truthy = (v: unknown): boolean => /^(1|true|yes)$/i.test(String(v ?? '').trim())
 
-function envOff(file: string): boolean {
-  const r = readJsonFile<{ env?: Record<string, unknown> }>(file)
+async function envOff(file: string): Promise<boolean> {
+  const r = await readJsonFileAsync<{ env?: Record<string, unknown> }>(file)
   const env = r.status === 'ok' ? r.data?.env : null
   return !!env && typeof env === 'object' && OFF_VARS.some((k) => truthy(env[k]))
 }
 
 // A pessoa desligou a atualização? Pelo ambiente, pelas configurações dela (ou da empresa) ou pelo
 // `autoUpdates: false` antigo do .claude.json. `home`: pasta do usuário (a do Linux, vista pelo
-// Windows, para o WSL).
-function updatesOff(home: string, configDir: string, managed: string, env: NodeJS.ProcessEnv): boolean {
+// Windows, para o WSL: por isso a leitura não segura o app, que travava enquanto o WSL respondia).
+async function updatesOff(home: string, configDir: string, managed: string, env: NodeJS.ProcessEnv): Promise<boolean> {
   if (OFF_VARS.some((k) => truthy(env[k]))) return true
-  const config = readJsonFile<{ autoUpdates?: unknown }>(join(env.CLAUDE_CONFIG_DIR ? configDir : home, '.claude.json'))
+  const config = await readJsonFileAsync<{ autoUpdates?: unknown }>(join(env.CLAUDE_CONFIG_DIR ? configDir : home, '.claude.json'))
   if (config.status === 'ok' && config.data?.autoUpdates === false) return true
-  return envOff(join(configDir, 'settings.json')) || envOff(managed)
+  return (await envOff(join(configDir, 'settings.json'))) || (await envOff(managed))
 }
 
 function managedSettings(): string {
@@ -43,7 +43,7 @@ function managedSettings(): string {
   return '/Library/Application Support/ClaudeCode/managed-settings.json'
 }
 
-export function nativeUpdatesOff(): boolean {
+export function nativeUpdatesOff(): Promise<boolean> {
   const home = homedir()
   return updatesOff(home, process.env.CLAUDE_CONFIG_DIR ?? join(home, '.claude'), managedSettings(), process.env)
 }
@@ -82,7 +82,7 @@ export async function updateWslClaudes(): Promise<void> {
     const info = distroInfo(distro)
     const home = homeUnc(distro)
     if (!info?.claude || !home) continue
-    if (updatesOff(home, join(home, '.claude'), toUnc(distro, MANAGED_LINUX), {})) continue
+    if (await updatesOff(home, join(home, '.claude'), toUnc(distro, MANAGED_LINUX), {})) continue
     const { file, args } = await wslCommand(distro, info, info.home, [info.claude, 'update'], {})
     await new Promise<void>((resolve) => {
       execFile(file, args, { timeout: UPDATE_TIMEOUT_MS, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {

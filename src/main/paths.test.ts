@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, symlinkSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, sep } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { expandHome, inside, insideRoot, isDirectory, realRoot } from './paths'
+import { expandHome, inside, insideRoot, isDirectory, isDirectoryAsync, realRoot } from './paths'
 
 // Quantas vezes a pasta real foi procurada no disco (o resto do fs é o de verdade).
 const disk = vi.hoisted(() => ({ realpaths: [] as string[] }))
@@ -69,6 +69,15 @@ describe('isDirectory e realRoot', () => {
     expect(isDirectory(dir)).toBe(true)
     expect(isDirectory(join(dir, 'nada'))).toBe(false)
     expect(realRoot(join(dir, 'nada'))).toBe(join(dir, 'nada'))
+  })
+
+  it('a assíncrona responde igual, e arquivo não é pasta', async () => {
+    const dir = mkdtempSync(join(homedir(), 'paths-'))
+    mkdirSync(join(dir, 'sub'))
+    writeFileSync(join(dir, 'a.txt'), '')
+    expect(await isDirectoryAsync(join(dir, 'sub'))).toBe(true)
+    expect(await isDirectoryAsync(join(dir, 'a.txt'))).toBe(false)
+    expect(await isDirectoryAsync(join(dir, 'nada'))).toBe(false)
   })
 
   // 2026-10-23: a consulta dos servidores, a cada poucos segundos, resolvia a pasta do WSL pela

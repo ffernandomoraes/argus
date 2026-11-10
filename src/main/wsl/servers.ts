@@ -1,12 +1,10 @@
-import { execFile, execFileSync, spawn, type ChildProcess } from 'node:child_process'
+import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { readFileSync, rmSync } from 'node:fs'
 import { app } from 'electron'
 import { tr } from '../i18n'
 import { childEnv } from '../platform'
 import { ensureDistro, WSL_EXE } from './distros'
 import { log } from './log'
-import { toUnc } from './path'
 import { wslCommand } from './run'
 
 // Servidor do projeto (o `dev` do package.json) dentro do WSL. Ele abre num grupo de processos
@@ -27,41 +25,29 @@ export async function launchInWsl(distro: string, linuxCwd: string, command: str
   // hora com 0. Sem esperar o filho, o app via o servidor "parado sem erro" logo após o clique.
   const cmd = await wslCommand(distro, info, linuxCwd, ['setsid', '-w', 'bash', '-lic', script], {})
   const child = spawn(cmd.file, cmd.args, { env: childEnv(), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
-  const unc = toUnc(distro, pidFile)
-  const group = (): string | null => {
-    try {
-      const pid = readFileSync(unc, 'utf8').trim()
-      return /^\d+$/.test(pid) ? pid : null
-    } catch {
-      return null
-    }
-  }
-  const forget = () => rmSync(unc, { force: true })
-  const killArgs = (pid: string) => ['-d', distro, '--exec', 'kill', '-TERM', '--', `-${pid}`]
+  // Ler o número do grupo e apagar o arquivo, tudo dentro do Linux: pela pasta de rede, do Windows,
+  // a leitura síncrona travava o app inteiro enquanto o WSL respondia. Sem o arquivo, o servidor
+  // nem chegou a abrir no Linux: só o wsl.exe para fechar.
+  const killArgs = ['-d', distro, '--exec', 'sh', '-c', `p=$(cat '${pidFile}' 2>/dev/null) && kill -TERM -- "-$p"; rm -f '${pidFile}'`]
   return {
     child,
     stop: () =>
       new Promise<void>((resolve) => {
-        const pid = group()
-        if (!pid) {
-          child.kill()
-          return resolve()
-        }
-        execFile(WSL_EXE, killArgs(pid), { timeout: 10_000, windowsHide: true }, (err) => {
+        execFile(WSL_EXE, killArgs, { timeout: 10_000, windowsHide: true }, (err) => {
           if (err) log(`não deu para parar o servidor no WSL (${distro})`, err.message)
-          forget()
           child.kill()
           resolve()
         })
       }),
+    // Fechando o app, que não espera nada assíncrono: o encerramento segue sozinho, sem segurar a
+    // saída (antes eram até 5 s por servidor, um depois do outro).
     stopSync: () => {
-      const pid = group()
+      const fail = (err: Error) => log(`não deu para parar o servidor no WSL (${distro})`, err.message)
       try {
-        if (pid) execFileSync(WSL_EXE, killArgs(pid), { timeout: 5000, windowsHide: true })
-      } catch {
-        // Já saiu.
+        spawn(WSL_EXE, killArgs, { detached: true, stdio: 'ignore', windowsHide: true }).on('error', fail).unref()
+      } catch (err) {
+        fail(err as Error)
       }
-      forget()
       child.kill()
     }
   }

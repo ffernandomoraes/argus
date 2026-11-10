@@ -1,4 +1,5 @@
 import { constants, copyFileSync, existsSync, readFileSync, renameSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { writeFileAtomic, writeFileAtomicSync, type AtomicWriteOptions } from './atomicWrite'
 import { errorCode, errorMessage } from './errors'
@@ -20,9 +21,29 @@ export function readJsonFile<T = unknown>(path: string): JsonRead<T> {
   try {
     text = readFileSync(path, 'utf8')
   } catch (err) {
-    if (errorCode(err) === 'ENOENT') return { status: 'missing' }
-    return { status: 'corrupt', error: errorMessage(err) }
+    return unreadable(err)
   }
+  return parseJson<T>(text)
+}
+
+// A mesma leitura sem segurar o app: para arquivo que pode estar no WSL (\\wsl.localhost\...), onde
+// a síncrona trava tudo enquanto a máquina virtual liga ou demora a responder.
+export async function readJsonFileAsync<T = unknown>(path: string): Promise<JsonRead<T>> {
+  let text: string
+  try {
+    text = await readFile(path, 'utf8')
+  } catch (err) {
+    return unreadable(err)
+  }
+  return parseJson<T>(text)
+}
+
+function unreadable(err: unknown): JsonRead<never> {
+  if (errorCode(err) === 'ENOENT') return { status: 'missing' }
+  return { status: 'corrupt', error: errorMessage(err) }
+}
+
+function parseJson<T>(text: string): JsonRead<T> {
   try {
     // Salvo pelo Bloco de Notas do Windows, pode começar com o BOM.
     return { status: 'ok', data: JSON.parse(text.replace(/^﻿/, '')) as T }

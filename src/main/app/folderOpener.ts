@@ -27,11 +27,18 @@ export function canvasMounted(wc: WebContents): void {
 // ele aberto, a segunda instância entrega a pasta a esta e sai. No Mac, uma segunda cópia aberta
 // (`open -n`) só traz esta para frente.
 export function receiveFolders(): void {
-  const startFolder = !IS_MAC && validFolder(openArg(process.argv))
-  if (startFolder) pendingOpens.push(startFolder)
+  // A conferência da pasta não segura a abertura: se o canvas montar antes dela, a pasta vai direto.
+  if (!IS_MAC)
+    void validFolder(openArg(process.argv)).then((path) => {
+      if (!path) return
+      const win = readyCanvas()
+      if (win) sendTo(win.webContents, 'cli:open', path)
+      else pendingOpens.push(path)
+    })
   app.on('second-instance', (_e, argv, _cwd, data) => {
-    const path = validFolder((data as { open?: string | null } | undefined)?.open ?? openArg(argv))
-    if (path) openFolder(path)
-    else showApp()
+    void validFolder((data as { open?: string | null } | undefined)?.open ?? openArg(argv)).then((path) => {
+      if (path) openFolder(path)
+      else showApp()
+    })
   })
 }

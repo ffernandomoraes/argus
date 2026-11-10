@@ -1,11 +1,12 @@
 import { readdirSync, statSync } from 'node:fs'
+import { readdir, stat } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
 import { claudeDir } from '../claudeHome'
 import { expandHome } from '../paths'
 import { IS_MAC, IS_WIN } from '../platform'
-import { distroFor, toLinux } from '../wsl'
+import { distroFor, isWslPath, toLinux } from '../wsl'
 import { cwdsIn } from './cwd'
-import { readSliceSync } from './read'
+import { readSlice, readSliceSync } from './read'
 
 // O Claude Code grava cada conversa num .jsonl dentro de uma pasta com o caminho do
 // projeto "achatado": tudo que não é letra ou número vira "-".
@@ -73,6 +74,7 @@ const MISS_MS = 30_000
 const longDirs = new Map<string, Found>()
 
 function longProjectDir(root: string, full: string, name: string): string {
+  if (isWslPath(root)) return wslLongProjectDir(root, full, name)
   const stamp = mtimeOf(root)
   const now = Date.now()
   const hit = longDirs.get(full)
@@ -138,7 +140,46 @@ function holdsProject(dir: string, name: string): boolean {
     } catch {
       continue
     }
-    for (const cwd of cwdsIn(text)) if (fold(flatten(nfc(cwd))) === fold(name)) return true
+    if (textHoldsProject(text, name)) return true
   }
   return false
+}
+
+function textHoldsProject(text: string, name: string): boolean {
+  for (const cwd of cwdsIn(text)) if (fold(flatten(nfc(cwd))) === fold(name)) return true
+  return false
+}
+
+// No WSL a procura vai pela pasta de rede: síncrona, ela travava o app inteiro enquanto o WSL
+// respondia. Responde o que já achou (ou, da primeira vez, o nome com o hash, o mais comum) e
+// procura em segundo plano; a próxima pergunta já vem com o achado. Sem a data da pasta para saber
+// quando mudou, o achado também vale por pouco tempo e é conferido de novo.
+const searching = new Set<string>()
+
+function wslLongProjectDir(root: string, full: string, name: string): string {
+  const hit = longDirs.get(full)
+  const expected = join(root, `${name.slice(0, MAX_NAME)}-${pathHash(full)}`)
+  if ((!hit || Date.now() >= hit.until) && !searching.has(full)) {
+    searching.add(full)
+    void findLongDir(root, name, expected)
+      .then((found) => longDirs.set(full, { dir: found ?? expected, stamp: 0, until: Date.now() + MISS_MS }))
+      .finally(() => searching.delete(full))
+  }
+  return hit?.dir ?? expected
+}
+
+async function findLongDir(root: string, name: string, expected: string): Promise<string | null> {
+  if (await stat(expected).then((s) => s.isDirectory(), () => false)) return expected
+  const prefix = fold(name.slice(0, MAX_NAME) + '-')
+  const dirs = await readdir(root, { withFileTypes: true }).catch(() => [])
+  for (const e of dirs) {
+    if (!e.isDirectory() || !fold(e.name).startsWith(prefix)) continue
+    const dir = join(root, e.name)
+    const files = (await readdir(dir).catch(() => [] as string[])).filter((n) => n.endsWith('.jsonl')).slice(0, PROBE_FILES)
+    for (const file of files) {
+      const text = await readSlice(join(dir, file), 0, PROBE_BYTES).catch(() => '')
+      if (textHoldsProject(text, name)) return dir
+    }
+  }
+  return null
 }

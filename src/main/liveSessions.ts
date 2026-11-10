@@ -108,7 +108,7 @@ async function readStatusDir({ dir, distro }: StatusDir): Promise<Map<string, Li
 // pid → status, lido na hora: o terminal do app roda o `claude` direto e sabe o pid dele. Síncrono
 // porque serve à pergunta de fechar o app, que precisa ser decidida no mesmo instante. Só os do
 // próprio sistema: no WSL o terminal conhece o pid do wsl.exe, não o do `claude` (ver
-// liveStatusBySessionSync).
+// lastWslStatusBySession).
 export function liveStatusByPid(): Map<number, LiveStatus> {
   const out = new Map<number, LiveStatus>()
   for (const { dir, distro } of statusDirsWithPlace()) {
@@ -121,16 +121,17 @@ export function liveStatusByPid(): Map<number, LiveStatus> {
   return out
 }
 
-// sessionId → status dos Claude Code do WSL, lido na hora (para a pergunta de fechar o app). O
-// terminal de um projeto do WSL abre o `claude` já com o id da conversa (ver spawnTerminal.ts).
-export function liveStatusBySessionSync(): Map<string, LiveStatus> {
+// sessionId → status dos Claude Code do WSL, como na última leitura (para a pergunta de fechar o
+// app, decidida no mesmo instante). O terminal de um projeto do WSL abre o `claude` já com o id da
+// conversa (ver spawnTerminal.ts). Ler na hora, pela pasta de rede, travava o app inteiro enquanto o
+// WSL respondia; a vigia das sessões relê as pastas a cada mudança de status (ver sessionWatch), e
+// aqui pede mais uma leitura, para a próxima pergunta.
+export function lastWslStatusBySession(): Map<string, LiveStatus> {
   const out = new Map<string, LiveStatus>()
-  for (const { dir, distro } of statusDirsWithPlace()) {
-    if (!distro) continue
-    for (const name of namesSync(dir)) {
-      const info = parseStatus(readSync(join(dir, name)), distro)
-      if (info?.sessionId) out.set(info.sessionId, info.status)
-    }
+  for (const place of statusDirsWithPlace()) {
+    if (!place.distro) continue
+    for (const [id, status] of lastRead.get(place.dir) ?? []) keepUrgent(out, id, status)
+    void statusIn(place)
   }
   return out
 }

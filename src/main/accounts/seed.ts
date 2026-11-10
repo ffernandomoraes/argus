@@ -1,7 +1,7 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { errorMessage } from '../lib/errors'
-import { readJsonFile, writeJsonAtomicSync } from '../lib/jsonFile'
+import { readJsonFile, readJsonFileAsync, writeJsonAtomic, writeJsonAtomicSync, type JsonRead } from '../lib/jsonFile'
 
 // Copiados da principal uma vez, ao criar a conta: o terminal dela não repete a apresentação nem
 // pergunta de novo se confia em cada pasta, e os MCPs começam iguais (os que pedem login pedem
@@ -38,8 +38,29 @@ const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v =
 // do zero, como um Claude Code recém-instalado. `home`: pasta do usuário onde está o da principal
 // (a do Linux, numa conta usada no WSL).
 export function seed(dir: string, home = homedir()): void {
-  const read = readJsonFile(join(home, '.claude.json'))
-  if (read.status !== 'ok' || !isObject(read.data)) return
+  const config = seedConfig(readJsonFile(join(home, '.claude.json')))
+  if (!config) return
+  try {
+    writeJsonAtomicSync(join(dir, '.claude.json'), config, SEED_WRITE)
+  } catch (err) {
+    console.warn('[accounts] não deu para copiar as configurações da principal:', errorMessage(err))
+  }
+}
+
+// O mesmo sem segurar o app, para a conta usada no WSL: as duas pastas ficam lá (pela pasta de
+// rede), e a cópia síncrona travava tudo enquanto o WSL respondia.
+export async function seedAsync(dir: string, home: string): Promise<void> {
+  const config = seedConfig(await readJsonFileAsync(join(home, '.claude.json')))
+  if (!config) return
+  await writeJsonAtomic(join(dir, '.claude.json'), config, SEED_WRITE).catch((err: unknown) =>
+    console.warn('[accounts] não deu para copiar as configurações da principal:', errorMessage(err))
+  )
+}
+
+const SEED_WRITE = { indent: 2, mode: 0o600 }
+
+function seedConfig(read: JsonRead<unknown>): Record<string, unknown> | null {
+  if (read.status !== 'ok' || !isObject(read.data)) return null
   const main = read.data
   const config = Object.fromEntries(Object.entries(main).filter(([k]) => SEED_KEYS.has(k) || SEED_MIGRATIONS.test(k)))
   if (isObject(main.projects)) {
@@ -47,9 +68,5 @@ export function seed(dir: string, home = homedir()): void {
       Object.entries(main.projects).map(([path, p]) => [path, pick(isObject(p) ? p : {}, SEED_PROJECT_KEYS)])
     )
   }
-  try {
-    writeJsonAtomicSync(join(dir, '.claude.json'), config, { indent: 2, mode: 0o600 })
-  } catch (err) {
-    console.warn('[accounts] não deu para copiar as configurações da principal:', errorMessage(err))
-  }
+  return config
 }

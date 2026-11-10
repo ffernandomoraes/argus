@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync } from 'node:fs'
+import { access, mkdir } from 'node:fs/promises'
 import { app } from 'electron'
 import { MAIN_ACCOUNT } from '../../shared/auth'
 import { SHARED } from '../accounts/links'
-import { seed } from '../accounts/seed'
+import { seedAsync } from '../accounts/seed'
 import { writeStdin } from '../lib/childProcess'
 import { WSL_EXE, type DistroInfo } from './distros'
 import { log } from './log'
@@ -41,6 +41,12 @@ function linkScript(dir: string, main: string): string {
 
 const ready = new Set<string>()
 
+const exists = (path: string) =>
+  access(path).then(
+    () => true,
+    () => false
+  )
+
 // Prepara a pasta da conta no Linux antes de cada `claude` dela: cria, copia as configurações da
 // principal na primeira vez e liga o que é compartilhado. Uma vez por abertura do app.
 export async function prepareWslAccount(distro: string, info: DistroInfo, id: string): Promise<void> {
@@ -48,10 +54,11 @@ export async function prepareWslAccount(distro: string, info: DistroInfo, id: st
   const key = `${distro}\0${id}`
   if (!dir || ready.has(key)) return
   const unc = toUnc(distro, dir)
+  // Pela pasta de rede: sem segurar o app, que travava enquanto o WSL respondia.
   try {
-    if (!existsSync(unc)) {
-      mkdirSync(unc, { recursive: true })
-      seed(unc, toUnc(distro, info.home))
+    if (!(await exists(unc))) {
+      await mkdir(unc, { recursive: true })
+      await seedAsync(unc, toUnc(distro, info.home))
     }
   } catch (err) {
     log(`conta ${id} no WSL (${distro}): não deu para criar a pasta`, (err as Error).message)

@@ -12,39 +12,48 @@ function settings(file: string, value: unknown): void {
 }
 
 describe('readOutputStyle', () => {
-  it('vale o primeiro que tiver: local da pasta, projeto, usuário', () => {
+  it('vale o primeiro que tiver: local da pasta, projeto, usuário', async () => {
     const dir = project()
-    expect(readOutputStyle(dir)).toBe('default')
+    expect(await readOutputStyle(dir)).toBe('default')
     settings(join(homedir(), '.claude', 'settings.json'), { outputStyle: 'Explanatory' })
-    expect(readOutputStyle(dir)).toBe('Explanatory')
+    expect(await readOutputStyle(dir)).toBe('Explanatory')
     settings(join(dir, '.claude', 'settings.json'), { outputStyle: 'Learning' })
-    expect(readOutputStyle(dir)).toBe('Learning')
+    expect(await readOutputStyle(dir)).toBe('Learning')
     settings(join(dir, '.claude', 'settings.local.json'), { outputStyle: 'Mine' })
-    expect(readOutputStyle(dir)).toBe('Mine')
+    expect(await readOutputStyle(dir)).toBe('Mine')
   })
 
-  it('arquivo quebrado ou estilo vazio não derruba: passa para o seguinte', () => {
+  it('arquivo quebrado ou estilo vazio não derruba: passa para o seguinte', async () => {
     const dir = project()
     mkdirSync(join(dir, '.claude'), { recursive: true })
     writeFileSync(join(dir, '.claude', 'settings.local.json'), '{ quebrado')
     settings(join(dir, '.claude', 'settings.json'), { outputStyle: '' })
-    expect(readOutputStyle(dir)).not.toBe('')
+    expect(await readOutputStyle(dir)).not.toBe('')
   })
 })
 
 describe('writeOutputStyle', () => {
-  it('grava no settings.local.json da pasta sem apagar o resto', () => {
+  it('grava no settings.local.json da pasta sem apagar o resto', async () => {
     const dir = project()
     const file = join(dir, '.claude', 'settings.local.json')
     settings(file, { permissions: { allow: ['Bash(ls:*)'] } })
-    writeOutputStyle(dir, 'Explanatory')
+    await writeOutputStyle(dir, 'Explanatory')
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ permissions: { allow: ['Bash(ls:*)'] }, outputStyle: 'Explanatory' })
-    expect(readOutputStyle(dir)).toBe('Explanatory')
+    expect(await readOutputStyle(dir)).toBe('Explanatory')
   })
 
-  it('cria a pasta .claude quando ainda não existe', () => {
+  it('cria a pasta .claude quando ainda não existe', async () => {
     const dir = project()
-    writeOutputStyle(dir, 'Learning')
-    expect(readOutputStyle(dir)).toBe('Learning')
+    await writeOutputStyle(dir, 'Learning')
+    expect(await readOutputStyle(dir)).toBe('Learning')
+  })
+
+  it('arquivo ilegível: recusa, sem gravar por cima do que a pessoa escreveu', async () => {
+    const dir = project()
+    const file = join(dir, '.claude', 'settings.local.json')
+    mkdirSync(join(dir, '.claude'), { recursive: true })
+    writeFileSync(file, '{ quebrado')
+    await expect(writeOutputStyle(dir, 'Learning')).rejects.toThrow()
+    expect(readFileSync(file, 'utf8')).toBe('{ quebrado')
   })
 })

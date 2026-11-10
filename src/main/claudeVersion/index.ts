@@ -168,8 +168,10 @@ export class ClaudeVersion {
   private async autoUpdate(): Promise<void> {
     if (this.retry) clearTimeout(this.retry)
     this.retry = null
+    // As configurações primeiro: o resto é conferido depois da leitura, com o estado de agora.
+    if (await nativeUpdatesOff()) return
     const installed = this.installed()
-    if (!this.state.outdated || !installed || this.state.updating || nativeUpdatesOff()) return
+    if (!this.state.outdated || !installed || this.state.updating) return
     // Windows: a trava vem antes de olhar os processos, para nenhum abrir entre olhar e trocar.
     const release = IS_WIN ? holdClaude() : null
     if (release) await new Promise((r) => setTimeout(r, SETTLE_MS))

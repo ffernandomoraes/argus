@@ -1,8 +1,8 @@
 import type { IPty } from 'node-pty'
 import type { TerminalOpenRequest, TerminalOpenResult } from '../../shared/terminal'
 import { tr } from '../i18n'
-import { liveStatusByPid, liveStatusBySessionSync } from '../liveSessions'
-import { expandHome, isDirectory } from '../paths'
+import { lastWslStatusBySession, liveStatusByPid } from '../liveSessions'
+import { expandHome, isDirectoryAsync } from '../paths'
 import { IS_WIN } from '../platform'
 import { childrenOf, processTable } from '../winProcesses'
 import { forceKillLater } from './forceKill'
@@ -87,7 +87,7 @@ export class Terminals {
 
   private async start(req: TerminalOpenRequest): Promise<TerminalOpenResult> {
     const cwd = expandHome(req.cwd)
-    if (!isDirectory(cwd)) return { ok: false, error: tr(`A pasta não existe: ${req.cwd}`, `Folder doesn’t exist: ${req.cwd}`) }
+    if (!(await isDirectoryAsync(cwd))) return { ok: false, error: tr(`A pasta não existe: ${req.cwd}`, `Folder doesn’t exist: ${req.cwd}`) }
     const opened = await spawnTerminal(req, cwd)
     if (!opened.ok) return opened
 
@@ -255,7 +255,7 @@ export class Terminals {
   // node-pty não diz qual processo está na frente: os shells ficam para o busyShells().
   busy(): string[] {
     const status = liveStatusByPid()
-    const wsl = [...this.sessions.values()].some((s) => s.wsl) ? liveStatusBySessionSync() : null
+    const wsl = [...this.sessions.values()].some((s) => s.wsl) ? lastWslStatusBySession() : null
     const claudeStatus = (s: Session) => (s.wsl ? (s.sessionId && wsl?.get(s.sessionId)) : status.get(s.pty.pid)) || 'idle'
     return [...this.sessions.values()]
       .filter((s) => (s.shell ? !IS_WIN && s.pty.process !== s.shell : claudeStatus(s) !== 'idle'))

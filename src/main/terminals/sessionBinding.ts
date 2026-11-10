@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { access } from 'node:fs/promises'
 import { sessionIdByPid } from '../liveSessions'
 import { sessionFile } from '../transcripts/projectDir'
 
@@ -13,20 +13,26 @@ const POLL_MS = 1000
 export type SessionLookup = {
   // Sessão do processo; nula se ele ainda não gravou o status (ou já saiu).
   sessionOf(pid: number): string | null
-  // A conversa já foi gravada na pasta de conversas de `cwd`?
-  saved(cwd: string, sessionId: string): boolean
+  // A conversa já foi gravada na pasta de conversas de `cwd`? Sem segurar o app: no WSL a pasta é
+  // de rede (\\wsl.localhost\...), e a conferência síncrona, a cada segundo, travava tudo sempre que
+  // a máquina virtual demorava a responder.
+  saved(cwd: string, sessionId: string): Promise<boolean>
 }
 
 export const diskLookup: SessionLookup = {
   sessionOf: sessionIdByPid,
-  saved: (cwd, sessionId) => {
+  saved: async (cwd, sessionId) => {
     const file = sessionFile(cwd, sessionId)
-    return !!file && existsSync(file)
+    if (!file) return false
+    return access(file).then(
+      () => true,
+      () => false
+    )
   }
 }
 
 // Consulta a cada `every` ms até achar a conversa gravada; chama onFound uma vez. Devolve como
-// parar (o terminal fechou ou saiu antes).
+// parar (o terminal fechou ou saiu antes). A próxima consulta só começa quando a anterior responde.
 export function watchSession(
   pid: number,
   cwd: string,
@@ -35,14 +41,19 @@ export function watchSession(
   every = POLL_MS
 ): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null
-  const check = () => {
+  let stopped = false
+  const check = async () => {
     timer = null
     const id = lookup.sessionOf(pid)
-    if (id && lookup.saved(cwd, id)) return onFound(id)
-    timer = setTimeout(check, every)
+    const found = id ? await lookup.saved(cwd, id).catch(() => false) : false
+    // Parado enquanto a resposta não vinha: o terminal já fechou.
+    if (stopped) return
+    if (id && found) return onFound(id)
+    timer = setTimeout(() => void check(), every)
   }
-  timer = setTimeout(check, every)
+  timer = setTimeout(() => void check(), every)
   return () => {
+    stopped = true
     if (timer) clearTimeout(timer)
     timer = null
   }

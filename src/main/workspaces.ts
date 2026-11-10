@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { app } from 'electron'
@@ -57,17 +58,20 @@ ${list}
 }
 
 // Cria a pasta de um workspace novo (sem `dir`) ou atualiza a de um existente, com o aviso das
-// pastas. Devolve o caminho dela.
+// pastas. Devolve o caminho dela. A gravação não segura o app: a pasta pode estar no WSL
+// (\\wsl.localhost\...), e síncrona ela travava tudo enquanto o WSL respondia.
 export async function syncWorkspace(folders: string[], dir?: string): Promise<string> {
   const target = dir ? expandHome(dir) : await newWorkspaceDir(randomUUID(), folders)
   if (!isWorkspaceDir(target)) throw new Error(`Pasta de workspace inválida: ${dir}`)
-  mkdirSync(target, { recursive: true })
-  const text = instructions(folders, !!distroFor(target))
-  for (const name of ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md']) writeFileSync(join(target, name), text)
   // O Gemini não lê o GEMINI.md das pastas adicionais sem isto (o Claude tem a opção equivalente,
   // FOLDERS_CLAUDE_MD). Configuração do workspace: só vale com a pasta confiável (trustGemini).
-  mkdirSync(join(target, '.gemini'), { recursive: true })
-  writeFileSync(join(target, '.gemini', 'settings.json'), JSON.stringify({ context: { loadMemoryFromIncludeDirectories: true } }, null, 2))
+  // Criar a .gemini cria também a do workspace.
+  await mkdir(join(target, '.gemini'), { recursive: true })
+  const text = instructions(folders, !!distroFor(target))
+  await Promise.all([
+    ...['CLAUDE.md', 'AGENTS.md', 'GEMINI.md'].map((name) => writeFile(join(target, name), text)),
+    writeFile(join(target, '.gemini', 'settings.json'), JSON.stringify({ context: { loadMemoryFromIncludeDirectories: true } }, null, 2))
+  ])
   return target
 }
 

@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { Account } from '../../shared/auth'
 import { claudeLaunch } from '../chats'
 import { runGently } from '../lib/childProcess'
-import { readJsonFile } from '../lib/jsonFile'
+import { readJsonFileAsync } from '../lib/jsonFile'
 import { claudeJsonDir } from '../claudeHome'
 import { distroFor } from '../wsl'
 import { emailFrom, parseAuthStatus, parseFailedStatus, userNameFrom } from './parseStatus'
@@ -16,15 +16,13 @@ export async function runClaude(args: string[], account: string) {
   return runGently(l.file, l.args, { env: l.env, cwd: l.cwd, timeoutMs: distroFor() ? 30_000 : 15_000, graceMs: 30_000 })
 }
 
-// Nome da pessoa na conta, guardado pelo Claude Code no .claude.json dela (ver userNameFrom).
-function readUserName(id: string, email: string | undefined): string | undefined {
-  const read = readJsonFile(join(claudeJsonDir(id), '.claude.json'))
-  return read.status === 'ok' ? userNameFrom(read.data, email) : undefined
-}
+// O .claude.json da conta, sem segurar o app: com o Claude só no WSL, o arquivo está lá, e a máquina
+// virtual ainda desligada (ou lenta) segurava o app inteiro enquanto respondia.
+const readConfig = (id: string) => readJsonFileAsync(join(claudeJsonDir(id), '.claude.json'))
 
 // E-mail do login atual da conta, lido do .claude.json dela. undefined se não deu para ler.
-export function configEmail(id: string): string | undefined {
-  const read = readJsonFile(join(claudeJsonDir(id), '.claude.json'))
+export async function configEmail(id: string): Promise<string | undefined> {
+  const read = await readConfig(id)
   return read.status === 'ok' ? emailFrom(read.data) : undefined
 }
 
@@ -35,7 +33,9 @@ export type AccountRead = { ok: true; account: Account } | { ok: false }
 export async function readAccount(id: string): Promise<AccountRead> {
   try {
     const { stdout } = await runClaude(['auth', 'status', '--json'], id)
-    return { ok: true, account: parseAuthStatus(stdout, (email) => readUserName(id, email)) }
+    // Nome da pessoa, guardado pelo Claude Code no .claude.json dela (ver userNameFrom).
+    const config = await readConfig(id)
+    return { ok: true, account: parseAuthStatus(stdout, (email) => (config.status === 'ok' ? userNameFrom(config.data, email) : undefined)) }
   } catch (err) {
     const account = parseFailedStatus((err as { stdout?: string }).stdout)
     if (account) return { ok: true, account }

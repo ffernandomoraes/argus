@@ -7,19 +7,29 @@ import { tr } from '../i18n'
 // O que vai e volta do Claude em texto: a mensagem que você manda e o erro que ele devolve.
 
 // Imagens, o texto, os caminhos dos outros anexos e, por último, o aviso que não aparece no chat:
-// o título da conversa continua sendo o que você escreveu. O uuid deixa o Claude dizer, ao parar, se ela ainda vai rodar.
+// o título da conversa continua sendo o que você escreveu. Comando de barra vai depois de tudo (ver
+// isCommand). O uuid deixa o Claude dizer, ao parar, se ela ainda vai rodar.
 export function userMessage(req: ChatSendRequest, uuid: UUID): SDKUserMessage {
-  const content = [
-    ...req.images.map((img) => ({
-      type: 'image' as const,
-      source: { type: 'base64' as const, media_type: img.mediaType as 'image/png', data: img.data }
-    })),
-    ...(req.text ? [{ type: 'text' as const, text: req.text }] : []),
+  const images = req.images.map((img) => ({
+    type: 'image' as const,
+    source: { type: 'base64' as const, media_type: img.mediaType as 'image/png', data: img.data }
+  }))
+  const text = req.text ? [{ type: 'text' as const, text: req.text }] : []
+  const extra = [
     ...(req.files?.length ? [{ type: 'text' as const, text: filesBlock(req.files) }] : []),
     ...(req.hint ? [{ type: 'text' as const, text: req.hint }] : [])
   ]
+  const content = [...images, ...(isCommand(req.text) ? [...extra, ...text] : [...text, ...extra])]
   return { type: 'user', message: { role: 'user', content }, parent_tool_use_id: null, uuid }
 }
+
+// Comando de barra (/compact, /clear, /context, uma skill...). O Claude Code só procura o comando no
+// último bloco de texto da mensagem: com o aviso do worktree, o de agente chamado com @ ou um anexo
+// depois, o comando ia ao modelo como texto comum, e com o Claude trabalhando entrava no meio do
+// pedido em vez de esperar o fim (conferido na 2.1.319 em 2026-11-10). Texto que só parece comando
+// (um caminho como /Users/...) vai por último também: quem decide é o Claude Code, como numa
+// conversa sem aviso.
+const isCommand = (text: string) => text.startsWith('/')
 
 // O SDK avisa em inglês quando não acha o `claude`; a tela de boas-vindas instala.
 export function friendlyError(message: string): string {

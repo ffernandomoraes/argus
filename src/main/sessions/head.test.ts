@@ -1,6 +1,6 @@
 import { appendFileSync, statSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { image, user, writeTranscript } from '../../../test/transcript'
+import { image, text, user, writeTranscript } from '../../../test/transcript'
 import { emptyHead, readHead } from './head'
 
 const headOf = async (lines: Parameters<typeof writeTranscript>[0]) => {
@@ -21,6 +21,13 @@ describe('readHead', () => {
     const head = await headOf([user([image('x'.repeat(400 * 1024))]), user('agora com texto')])
     expect(head.firstPrompt).toBe('agora com texto')
     expect(head.hasMessages).toBe(true)
+  })
+
+  // Texto que começa com / vai depois do aviso oculto (ver chats/messages.ts): o título é o texto.
+  it('aviso oculto antes do texto não tira o título, e comando gravado em lista não vira título', async () => {
+    const hint = text('<worktree>\nVocê está num git worktree\n</worktree>')
+    const head = await headOf([user([hint, text('<command-name>/compact</command-name>')]), user([hint, text('/Users/ana/app.ts está quebrado')])])
+    expect(head.firstPrompt).toBe('/Users/ana/app.ts está quebrado')
   })
 
   it('conversa só com print conta como conversa, mesmo sem texto para título', async () => {

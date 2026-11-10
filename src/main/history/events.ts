@@ -1,6 +1,6 @@
 import type { Message } from '../../shared/history'
 import { locale, tr } from '../i18n'
-import { atOf, contentOf, idOf, num, obj, type Line } from '../transcripts/line'
+import { arr, atOf, contentOf, idOf, num, obj, str, type Line } from '../transcripts/line'
 
 type EventMessage = Extract<Message, { role: 'event' }>
 
@@ -42,12 +42,22 @@ export function interruptEvent(l: Line): EventMessage | null {
 
 // "/rename teste": o Claude Code grava o comando e os argumentos em marcadores próprios.
 export function commandMessage(l: Line): Message | null {
-  const content = contentOf(l)
-  if (l.type !== 'user' || typeof content !== 'string') return null
-  const name = /<command-name>\/?([\w:-]+)<\/command-name>/.exec(content)?.[1]
-  if (!name) return null
-  const args = /<command-args>([\s\S]*?)<\/command-args>/.exec(content)?.[1]?.trim()
+  if (l.type !== 'user') return null
+  const raw = commandText(contentOf(l))
+  const name = raw && /<command-name>\/?([\w:-]+)<\/command-name>/.exec(raw)?.[1]
+  if (!raw || !name) return null
+  const args = /<command-args>([\s\S]*?)<\/command-args>/.exec(raw)?.[1]?.trim()
   return { id: idOf(l), role: 'user', text: `/${name}${args ? ` ${args}` : ''}`, at: atOf(l) }
+}
+
+// O texto com os marcadores do comando. Com o aviso do worktree ou um anexo antes do comando na
+// mesma mensagem (ver chats/messages.ts), o Claude Code grava a linha em lista: os marcadores ficam
+// na parte de texto que começa por eles.
+function commandText(content: unknown): string | undefined {
+  if (typeof content === 'string') return content
+  return arr(content)
+    ?.map((c) => str(obj(c)?.text)?.trimStart())
+    .find((t) => t?.startsWith('<command-'))
 }
 
 // A resposta de um comando vem numa linha de sistema ("local_command"); em sessões

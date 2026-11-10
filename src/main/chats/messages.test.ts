@@ -31,6 +31,20 @@ describe('userMessage', () => {
     expect(m.parent_tool_use_id).toBeNull()
   })
 
+  // Bug de 2026-11-10: num worktree, o /compact ia ao modelo como texto. O Claude Code só procura o
+  // comando no último bloco de texto, e o aviso do worktree vinha depois dele.
+  it('comando de barra vai depois dos anexos e do aviso, senão o Claude Code não reconhece', () => {
+    const m = userMessage(
+      request({ text: '/compact', images: [{ mediaType: 'image/png', data: 'AAA' }], files: [{ path: '/p/a.pdf', size: 10 }], hint: '<worktree>' }),
+      UUID_A
+    )
+    const content = m.message.content as { type: string; text?: string }[]
+    expect(content.map((c) => c.type)).toEqual(['image', 'text', 'text', 'text'])
+    expect(filesInBlock(content[1].text!)).toEqual([{ path: '/p/a.pdf', size: 10 }])
+    expect(content[2].text).toBe('<worktree>')
+    expect(content[3].text).toBe('/compact')
+  })
+
   it('mensagem só com print não manda texto vazio', () => {
     const content = userMessage(request({ images: [{ mediaType: 'image/jpeg', data: 'B' }] }), UUID_A).message.content as { type: string }[]
     expect(content.map((c) => c.type)).toEqual(['image'])

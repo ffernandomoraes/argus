@@ -208,6 +208,25 @@ describe('HistoryParser: divisores', () => {
     ])
   })
 
+  // Com o aviso do worktree antes do comando (ver chats/messages.ts), o Claude Code grava a linha do
+  // comando em lista (visto na 2.1.319 em 2026-11-10). Sem ler a lista, o balão do comando sumia.
+  it('comando gravado em lista, com o aviso antes, aparece como o comando e sem o aviso', () => {
+    const hint = text('<worktree>\nVocê está num git worktree criado pelo Argus: /w\n</worktree>')
+    const list = messagesOf([
+      user([hint, text('<command-name>/context</command-name>\n            <command-message>context</command-message>\n            <command-args>agora</command-args>')]),
+      { type: 'system', subtype: 'local_command', uuid: 'out-2', content: '<local-command-stdout>## Context Usage</local-command-stdout>' },
+      // Comando que vira pedido (/init, skill): o pedido expandido vem como linha meta, com o aviso antes.
+      user('<command-message>init</command-message>\n<command-name>/init</command-name>'),
+      user([hint, text('Please analyze this codebase and create a CLAUDE.md file')], { isMeta: true })
+    ])
+    expect(list).toMatchObject([
+      { role: 'user', text: '/context agora' },
+      { role: 'output', text: '## Context Usage' },
+      { role: 'user', text: '/init' }
+    ])
+    expect(list).toHaveLength(3)
+  })
+
   it('o "Compacted" do /compact não vira caixa: o divisor da compactação já mostra', () => {
     const list = messagesOf([
       compactBoundary(80_000, 9_000),

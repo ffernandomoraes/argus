@@ -1,14 +1,17 @@
 import { arr, contentOf, obj, type Line } from '../transcripts/line'
 
 // Primeiro texto que a pessoa escreveu na linha. Comandos e avisos internos (<command-name>,
-// <local-command-...>) não servem de título.
+// <local-command-...>) não servem de título. Em lista, o aviso oculto pode vir antes do texto (o do
+// worktree antes de um texto que começa com /, ver chats/messages.ts): vale a primeira parte que não é aviso.
 export function userText(line: Line): string | null {
   if (line.type !== 'user' || line.isSidechain || line.isMeta) return null
   const content = contentOf(line)
-  const text = typeof content === 'string' ? content : obj(arr(content)?.find((c) => obj(c)?.type === 'text'))?.text
-  if (typeof text !== 'string') return null
-  const clean = text.trim()
-  return clean && !clean.startsWith('<') ? clean : null
+  const texts = typeof content === 'string' ? [content] : (arr(content) ?? []).map((c) => (obj(c)?.type === 'text' ? obj(c)?.text : undefined))
+  for (const text of texts) {
+    const clean = typeof text === 'string' ? text.trim() : ''
+    if (clean && !clean.startsWith('<')) return clean
+  }
+  return null
 }
 
 // Mensagem de verdade: texto ou print da pessoa, ou resposta do Claude. Conversa aberta e fechada

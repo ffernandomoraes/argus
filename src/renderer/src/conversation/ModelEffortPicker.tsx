@@ -31,12 +31,13 @@ export function ModelEffortPicker({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const submenuRef = useRef<HTMLDivElement>(null)
   const models = useModels()
   // Outro agente (Codex, Gemini, Cursor): os modelos e esforços são os da conta dele; thinking e
   // Ultracode são do Claude Code.
   const account = useConversationAccount()
   const agent = !!parseAgentRef(account)
-  useOutsideClick(ref, () => setOpen(false), open)
+  useOutsideClick(ref, () => setOpen(false), open, [submenuRef])
   useEscape(() => setOpen(false), open)
 
   // Modelo salvo que a conta não tem (um do Claude numa conversa do Codex): vale o padrão dela.
@@ -76,7 +77,7 @@ export function ModelEffortPicker({
         {open && (
           <div className={`absolute bottom-full right-0 z-10 mb-2.5 w-72 whitespace-normal ${POPOVER}`}>
             <MenuArrow side="bottom" align="end" />
-            <ModelList models={models} value={settings.model} onChange={(model) => onChange({ model })} />
+            <ModelList models={models} value={settings.model} onChange={(model) => onChange({ model })} submenuRef={submenuRef} />
             {allowed.length > 0 && (
               <>
                 <div className="my-1 h-px bg-line" />

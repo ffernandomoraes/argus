@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { agentProviderOf } from '../../../shared/agents'
 import { parseAgentRef } from '../../../shared/providers'
-import { AccountContext } from '../auth/useAuth'
+import { AccountContext, ConversationFolderContext } from '../auth/useAuth'
 import { dismissInterrupted, useInterrupted } from '../canvas/interruptedChats'
 import { useWasFreed } from '../systemHealth/store'
 import { useViewing } from '../canvas/sessionsStore'
@@ -206,6 +206,7 @@ export const ConversationView = memo(function ConversationView({
 
   return (
     <AccountContext.Provider value={account}>
+      <ConversationFolderContext.Provider value={cwd}>
       <ConversationHeader
         title={conversation.title}
         cwd={cwd}
@@ -276,6 +277,7 @@ export const ConversationView = memo(function ConversationView({
         {mcpOpen && <McpPanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeMcp} />}
         {styleOpen && <OutputStylePanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeStyle} />}
       </Presence>
+      </ConversationFolderContext.Provider>
     </AccountContext.Provider>
   )
 })

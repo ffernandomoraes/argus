@@ -19,7 +19,7 @@ export function AccountsSection() {
   const auth = useAuth()
   const providers = useProviders()
   // Login aberto aqui: numa conta da lista ou numa nova (adding).
-  const [target, setTarget] = useState<{ accountId?: string } | null>(null)
+  const [target, setTarget] = useState<{ accountId?: string; distro?: string } | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const login = auth?.login
 
@@ -43,7 +43,7 @@ export function AccountsSection() {
   if (!auth || !login) return <p className="text-[15px] text-faint">{tr('Conferindo as contas…', 'Checking accounts…')}</p>
 
   // Login em andamento, mesmo que tenha começado na tela de boas-vindas.
-  const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId } : target
+  const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId, distro: login.distro } : target
   if (active) {
     const account = active.accountId ? auth.accounts.find((a) => a.id === active.accountId) : undefined
     return (
@@ -54,7 +54,12 @@ export function AccountsSection() {
                 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.',
                 'Sign in with the other account. It stays in Argus only: the terminal and VS Code keep the main one.'
               )
-            : account.id === MAIN_ACCOUNT
+            : active.distro
+              ? tr(
+                  `Entre com a conta que ${account.name} vai usar nas pastas do WSL (${active.distro}). O login de lá é separado do login do Windows.`,
+                  `Sign in with the account ${account.name} will use in WSL (${active.distro}) folders. Its sign-in is separate from the Windows one.`
+                )
+              : account.id === MAIN_ACCOUNT
               ? tr(
                   `Entre com a conta que vai ficar no lugar da principal, ou com a mesma para renovar o acesso. Vale também para o terminal e o VS Code ${THIS_COMPUTER}.`,
                   `Sign in with the account that will replace the main one, or with the same one to renew access. This also applies to the terminal and VS Code ${THIS_COMPUTER}.`
@@ -66,7 +71,7 @@ export function AccountsSection() {
         </p>
         <LoginPanel
           login={login}
-          onStart={(method) => (account ? window.api.auth.login(account.id, method) : window.api.auth.add(method))}
+          onStart={(method) => (account ? window.api.auth.login(account.id, method, active.distro) : window.api.auth.add(method))}
           onCancel={() => setTarget(null)}
         />
       </div>
@@ -93,7 +98,7 @@ export function AccountsSection() {
             key={account.id}
             account={account}
             auth={auth}
-            onLogin={() => setTarget({ accountId: account.id })}
+            onLogin={(distro) => setTarget({ accountId: account.id, distro })}
             onConfirm={setConfirm}
           />
         ))}

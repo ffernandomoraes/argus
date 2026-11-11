@@ -208,7 +208,7 @@ export type SendChannels = {
   // Contas
   'auth:refresh': () => void
   'auth:install': () => void
-  'auth:login': (accountId: string, method: LoginMethod) => void
+  'auth:login': (accountId: string, method: LoginMethod, distro?: string) => void
   'auth:add': (method: LoginMethod) => void
   'auth:code': (code: string) => void
   'auth:cancel': () => void

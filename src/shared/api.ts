@@ -125,8 +125,9 @@ export type Api = {
     refresh: () => void
     // Claude Code não achado: roda o instalador oficial (o andamento chega em state.claude).
     install: () => void
-    // Entra de novo numa conta da lista (ou em outra no lugar dela).
-    login: (accountId: string, method: LoginMethod) => void
+    // Entra de novo numa conta da lista (ou em outra no lugar dela). distro: o login da conta dentro
+    // daquela distro do WSL, usado pelas pastas de lá.
+    login: (accountId: string, method: LoginMethod, distro?: string) => void
     // Conta nova; entra na lista quando o login termina.
     add: (method: LoginMethod) => void
     submitCode: (code: string) => void

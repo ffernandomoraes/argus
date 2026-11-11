@@ -153,8 +153,9 @@ export function createServices() {
       usage.sync(state.accounts)
       sessionWatch.refreshStatusDirs()
     },
-    (id) => {
-      usage.reconnect(id)
+    (id, distro) => {
+      // Login da conta só dentro de uma distro do WSL: o uso segue o login do `claude` do app.
+      if (!distro) usage.reconnect(id)
       chats.releaseAll(id)
     },
     (id) => {

@@ -1,5 +1,5 @@
 import { shell } from 'electron'
-import { MAIN_ACCOUNT, type Account, type AuthState, type ClaudeInstall, type LoginMethod, type LoginState } from '../../shared/auth'
+import { MAIN_ACCOUNT, type Account, type AuthState, type ClaudeInstall, type LoginMethod, type LoginState, type WslLogin } from '../../shared/auth'
 import {
   accountDir,
   accountIds,
@@ -22,6 +22,7 @@ import { createBackoff } from '../lib/backoff'
 import { distroFor } from '../wsl'
 import { openLoginQuery, type LoginQuery } from './loginQuery'
 import { readAccount, runClaude, type AccountRead } from './status'
+import { loginDistro, otherDistros, readWslAccount, wslPlace } from './wslPlace'
 
 // Mesmo caminho da extensão do VS Code: um `claude` aberto só para o login gera o link,
 // recebe o retorno do navegador e grava o login, nas Chaves do macOS (no Windows, num arquivo da
@@ -37,8 +38,13 @@ function installState(status: ClaudeInstall['status'], message?: string): Claude
 // adding: conta nova, cuja pasta some se o login não terminar.
 type LoginSession = { q: LoginQuery; inbox: Inbox; accountId: string; adding: boolean }
 
+// Chave do login de uma conta dentro de uma distro do WSL (ver wslPlace.ts).
+const wslKey = (distro: string, id: string) => `${distro.toLowerCase()}\0${id}`
+
 export class Auth {
   private statuses = new Map<string, Account | null>()
+  // Login de cada conta nas distros do WSL que não são a do `claude` do app (ver wslKey).
+  private wslStatuses = new Map<string, Account>()
   // Número da conferência mais recente de cada conta (ver settle).
   private checks = new Map<string, number>()
   private loginState: LoginState = { status: 'idle' }
@@ -56,7 +62,8 @@ export class Auth {
   constructor(
     private onState: (state: AuthState) => void,
     // Entrou ou saiu de uma conta: o que roda com o login antigo dela precisa recomeçar.
-    private onAccountChanged: (id: string) => void,
+    // distro: trocou só o login dela dentro daquela distro do WSL.
+    private onAccountChanged: (id: string, distro?: string) => void,
     // Conta removida: o que roda com ela é encerrado antes de a pasta sumir.
     private onAccountRemoved: (id: string) => void
   ) {
@@ -65,12 +72,14 @@ export class Auth {
 
   private build(): AuthState {
     const taken = new Set<string>()
+    const distros = otherDistros()
     const accounts = accountIds().map((id) => {
       const status = this.statuses.get(id) ?? null
       const custom = customName(id)
       const name = custom ?? suggestedName(id, status, taken)
       taken.add(name)
-      return { id, name, customName: !!custom, dir: accountDir(id), status }
+      const wsl: WslLogin[] = distros.map((distro) => ({ distro, status: this.wslStatuses.get(wslKey(distro, id)) ?? null }))
+      return { id, name, customName: !!custom, dir: accountDir(id), status, ...(wsl.length > 0 && { wsl }) }
     })
     return { claude: this.install, accounts, defaultId: defaultAccount(), login: this.loginState }
   }
@@ -143,6 +152,29 @@ export class Auth {
     )
     this.emit()
     this.retryLater()
+    // Sem segurar quem espera a conferência (a abertura do app): o WSL pode demorar a responder.
+    void this.checkWsl(ids)
+  }
+
+  // O login das mesmas contas dentro de cada distro do WSL com o Claude Code. Falha (o WSL não
+  // respondeu) mantém o que se sabia.
+  private async checkWsl(ids: string[]): Promise<void> {
+    const distros = otherDistros()
+    if (!distros.length) return
+    let changed = false
+    await Promise.all(
+      distros.flatMap((distro) =>
+        ids.map(async (id) => {
+          const key = wslKey(distro, id)
+          const seq = this.nextCheck(key)
+          const read = await readWslAccount(distro, id).catch((): AccountRead => ({ ok: false }))
+          if (this.checks.get(key) !== seq || !read.ok || !accountIds().includes(id)) return
+          this.wslStatuses.set(key, read.account)
+          changed = true
+        })
+      )
+    )
+    if (changed && !this.closed) this.emit()
   }
 
   // Claude Code não achado: roda o instalador oficial e confere as contas de novo. Com um login já
@@ -165,10 +197,11 @@ export class Auth {
     await this.refresh()
   }
 
-  // Entra de novo numa conta da lista, ou em outra no lugar dela.
-  login(accountId: string, method: LoginMethod): void {
+  // Entra de novo numa conta da lista, ou em outra no lugar dela. distro: o login da conta dentro
+  // daquela distro do WSL (o das pastas de lá); a do próprio `claude` do app é o login comum.
+  login(accountId: string, method: LoginMethod, distro?: string): void {
     if (!accountIds().includes(accountId)) return
-    void this.start(accountId, false, method)
+    void this.start(accountId, false, method, loginDistro(distro))
   }
 
   // Conta nova: ganha a pasta agora e só entra na lista quando o login termina.
@@ -177,13 +210,13 @@ export class Auth {
     void this.start(createPendingAccount(), true, method)
   }
 
-  private async start(accountId: string, adding: boolean, method: LoginMethod): Promise<void> {
+  private async start(accountId: string, adding: boolean, method: LoginMethod, distro?: string): Promise<void> {
     this.stop()
-    const { q, inbox } = openLoginQuery(accountId)
+    const { q, inbox } = openLoginQuery(accountId, distro && wslPlace(distro))
     const session: LoginSession = { q, inbox, accountId, adding }
     this.session = session
     const current = () => this.session === session
-    const target = { accountId, adding }
+    const target = { accountId, adding, ...(distro && { distro }) }
     this.setLogin({ status: 'starting', method, ...target })
 
     try {
@@ -195,6 +228,18 @@ export class Auth {
       void shell.openExternal(automaticUrl)
       await done
       if (!current()) return
+      if (distro) {
+        // O login do Windows não mudou: só o da distro é conferido, e só as conversas reabrem.
+        const key = wslKey(distro, accountId)
+        const seq = this.nextCheck(key)
+        const read = await readWslAccount(distro, accountId).catch((): AccountRead => ({ ok: false }))
+        if (!current()) return
+        if (this.checks.get(key) === seq && read.ok) this.wslStatuses.set(key, read.account)
+        this.stop(false)
+        this.onAccountChanged(accountId, distro)
+        this.setLogin({ status: 'idle' })
+        return
+      }
       // Confere a conta antes de sair da espera, para a tela não voltar às opções por um instante.
       const seq = this.nextCheck(accountId)
       const read = await readAccount(accountId)
@@ -232,7 +277,8 @@ export class Auth {
     const [authorizationCode, state = ''] = code.trim().split('#')
     s.q.claudeOAuthCallback(authorizationCode, state).catch((err: Error) => {
       if (this.session === s) {
-        this.setLogin({ status: 'error', message: err.message || tr('Código recusado.', 'Code rejected.'), accountId: s.accountId, adding: s.adding })
+        const distro = this.loginState.status !== 'idle' ? this.loginState.distro : undefined
+        this.setLogin({ status: 'error', message: err.message || tr('Código recusado.', 'Code rejected.'), accountId: s.accountId, adding: s.adding, ...(distro && { distro }) })
       }
     })
   }
@@ -278,6 +324,7 @@ export class Auth {
     this.unsure.delete(id)
     // Uma conferência ainda em andamento não traz a conta de volta.
     this.checks.delete(id)
+    for (const key of [...this.wslStatuses.keys()]) if (key.endsWith(`\0${id}`)) this.wslStatuses.delete(key)
     this.emit()
     return true
   }

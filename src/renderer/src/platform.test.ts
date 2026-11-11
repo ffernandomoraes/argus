@@ -107,3 +107,21 @@ describe('keys', () => {
     expect(keys('⌘⌫')).toBe('Ctrl+Backspace')
   })
 })
+
+// Relato de 2026-11-11: a conversa de uma pasta do WSL usa o login de lá, e o botão de entrar
+// precisa saber em qual distro.
+describe('wslDistroOf', () => {
+  it('dá a distro da pasta do WSL, nos dois jeitos de escrever', async () => {
+    const { wslDistroOf } = await asPlatform('win32', load)
+    expect(wslDistroOf('\\\\wsl.localhost\\Ubuntu\\home\\ana\\proj')).toBe('Ubuntu')
+    expect(wslDistroOf('\\\\wsl$\\Ubuntu-22.04')).toBe('Ubuntu-22.04')
+    expect(wslDistroOf('//wsl.localhost/Debian/home/ana')).toBe('Debian')
+  })
+
+  it('não dá nada para pasta do Windows nem fora do Windows', async () => {
+    const win = await asPlatform('win32', load)
+    expect(win.wslDistroOf('C:\\Users\\ana\\proj')).toBeUndefined()
+    const mac = await asPlatform('darwin', load)
+    expect(mac.wslDistroOf('\\\\wsl.localhost\\Ubuntu\\home')).toBeUndefined()
+  })
+})

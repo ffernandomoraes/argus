@@ -80,6 +80,12 @@ const WSL_ROOT = /^[\\/]{2}(?:wsl\.localhost|wsl\$)[\\/][^\\/]+(?=[\\/]|$)/i
 // Pasta do WSL: o que vai para a Lixeira vai para a do Linux, não para a do Windows.
 export const isWslFolder = (path: string) => IS_WIN && WSL_ROOT.test(path)
 
+// Distro de uma pasta do WSL ("Ubuntu"); nada se a pasta não é de lá.
+export function wslDistroOf(path: string): string | undefined {
+  const root = IS_WIN ? WSL_ROOT.exec(path) : null
+  return root ? root[0].split(/[\\/]/).pop() : undefined
+}
+
 // O Claude que roda no WSL escreve caminhos do Linux ("/home/ana/proj/x.ts"). Numa pasta do WSL,
 // viram o caminho que o Windows enxerga; "/mnt/c/x" é o disco C: do Windows.
 function fromLinux(path: string, dir: string): string {

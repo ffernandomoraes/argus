@@ -19,6 +19,11 @@ export type Account = {
 // numa pasta própria, com login separado e o resto ligado à principal (ver src/main/accounts/).
 export const MAIN_ACCOUNT = 'main'
 
+// Login da conta dentro de uma distro do WSL (Argus no Windows), separado do login do Windows: é o
+// que as conversas e os terminais das pastas daquela distro usam. status nulo: ainda conferindo, ou
+// o `claude` de lá não respondeu.
+export type WslLogin = { distro: string; status: Account | null }
+
 export type ClaudeAccount = {
   id: string
   // Apelido escolhido ou, sem ele, o sugerido pela conta (nome da pessoa, da organização ou "Pessoal").
@@ -28,11 +33,14 @@ export type ClaudeAccount = {
   dir?: string
   // Nulo enquanto confere, ou se o `claude` não rodou (não instalado).
   status: Account | null
+  // Só no Windows com o Claude Code instalado também numa distro do WSL que não é a do app.
+  wsl?: WslLogin[]
 }
 
 // starting: pedindo o link ao `claude`. waiting: navegador aberto, esperando a pessoa terminar.
 // adding: conta nova, que só entra na lista quando o login termina.
-type LoginTarget = { accountId: string; adding: boolean }
+// distro: o login é o da conta dentro daquela distro do WSL (ver WslLogin).
+type LoginTarget = { accountId: string; adding: boolean; distro?: string }
 
 export type LoginState =
   | { status: 'idle' }

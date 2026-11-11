@@ -7,7 +7,7 @@ export function registerAuthIpc(auth: Auth): void {
   handle('auth:state', () => auth.state)
   on('auth:refresh', () => auth.refresh())
   on('auth:install', () => auth.installClaude())
-  on('auth:login', (_e, accountId, method) => auth.login(accountId, method))
+  on('auth:login', (_e, accountId, method, distro) => auth.login(accountId, method, distro))
   on('auth:add', (_e, method) => auth.add(method))
   on('auth:code', (_e, code) => auth.submitCode(code))
   on('auth:cancel', () => auth.cancel())

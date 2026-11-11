@@ -20,7 +20,8 @@ export function AccountCard({
 }: {
   account: ClaudeAccount
   auth: AuthState
-  onLogin: () => void
+  // distro: o login da conta dentro daquela distro do WSL.
+  onLogin: (distro?: string) => void
   onConfirm: (req: ConfirmRequest) => void
 }) {
   const [logoutFailed, setLogoutFailed] = useState(false)
@@ -80,7 +81,7 @@ export function AccountCard({
             {loggedIn && account.dir && <CopyTerminalCommand dir={account.dir} />}
             {loggedIn && multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
             {/* Conectada, o login serve para pôr outra conta no lugar desta (ou renovar o acesso). */}
-            <Button onClick={onLogin} title={loggedIn ? tr('Entra com outra conta no lugar desta, ou renova o acesso', 'Sign in with another account in place of this one, or renew access') : undefined}>
+            <Button onClick={() => onLogin()} title={loggedIn ? tr('Entra com outra conta no lugar desta, ou renova o acesso', 'Sign in with another account in place of this one, or renew access') : undefined}>
               {loggedIn ? tr('Trocar conta', 'Switch account') : main ? tr('Entrar', 'Sign in') : tr('Reconectar', 'Reconnect')}
             </Button>
             {main
@@ -122,6 +123,20 @@ export function AccountCard({
                 )}
           </div>
         )}
+        {/* O login da mesma conta dentro do WSL, separado do de cima: é o que as pastas de lá usam. */}
+        {account.wsl?.map(({ distro, status }) => (
+          <div key={distro} className="mt-2.5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-2.5">
+            <span className="mr-auto min-w-0 truncate text-[15px] text-faint">
+              {`WSL (${distro}) - `}
+              {status === null
+                ? tr('conferindo…', 'checking…')
+                : status.loggedIn
+                  ? (status.email ?? tr('conectada', 'connected'))
+                  : tr('sem login: as conversas das pastas de lá não respondem', 'signed out: chats in its folders don’t respond')}
+            </span>
+            <Button onClick={() => onLogin(distro)}>{status?.loggedIn ? tr('Trocar conta', 'Switch account') : tr('Entrar', 'Sign in')}</Button>
+          </div>
+        ))}
         {logoutFailed && (
           <p role="alert" className="mt-2 text-right text-[15px] text-red-400">
             {tr(

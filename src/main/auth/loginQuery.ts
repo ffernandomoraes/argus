@@ -10,14 +10,15 @@ export type LoginQuery = Query & {
 }
 
 // Um `claude` aberto só para o login, na pasta da conta: sem configurações nem MCPs, e sem
-// ferramenta liberada.
-export function openLoginQuery(accountId: string): { q: LoginQuery; inbox: Inbox } {
+// ferramenta liberada. place: uma pasta do WSL, para o login ser o da conta naquela distro (ver
+// wslPlace.ts); sem ela, o `claude` do app.
+export function openLoginQuery(accountId: string, place?: string): { q: LoginQuery; inbox: Inbox } {
   const inbox = new Inbox()
   const q = query({
     prompt: inbox,
     options: {
       cwd: homedir(),
-      ...claudeProcess(accountId),
+      ...claudeProcess(accountId, place),
       settingSources: [],
       strictMcpConfig: true,
       persistSession: false,

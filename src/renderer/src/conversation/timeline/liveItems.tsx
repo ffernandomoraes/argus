@@ -7,6 +7,7 @@ import type { Message } from '../types'
 import type { ImageView } from './imageViews'
 import type { PendingSend } from './optimisticSends'
 import { savedPreviewId } from './previewKeys'
+import { ErrorRow } from './rows/ErrorRow'
 import { PermissionRow } from './rows/PermissionRow'
 import { UserBubble } from './rows/UserBubble'
 import { WorkingRow } from './rows/WorkingRow'
@@ -79,7 +80,7 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
     )
     items.push(stepItem('working', 'bg-running animate-pulse', row))
   }
-  if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <p className="py-0.5 text-[13px] text-red-400">{o.live.error}</p>))
+  if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <ErrorRow error={o.live.error} />))
   if (o.status === 'needs-you' && !o.live?.permissions.length) {
     const notice = (
       <div className="rounded-lg border border-ask/40 bg-ask/10 px-3 py-2 text-[13px] text-text">

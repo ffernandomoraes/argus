@@ -153,6 +153,7 @@ const api: Api = {
     mcpRemove: (key, cwd, account, name, scope) => invoke('mcp:remove', key, cwd, account, name, scope),
     outputStyle: (key, cwd, account) => invoke('chat:outputStyle', key, cwd, account),
     setOutputStyle: (key, cwd, style) => invoke('chat:setOutputStyle', key, cwd, style),
+    rename: (req) => invoke('chat:rename', req),
     release: (key) => send('chat:release', key),
     restartIn: (cwd) => send('chat:restartIn', cwd),
     configure: (key, patch) => send('chat:configure', key, patch),

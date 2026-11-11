@@ -52,6 +52,8 @@ type Props = {
   onSubmit: (message: OutgoingMessage) => Promise<void>
   onOpenMcp: () => void
   onOpenOutputStyle: () => void
+  // /rename [nome]: devolve o erro, que aparece embaixo do campo.
+  onRename: (title: string) => string | null
   onToggleRemote: () => void
   onInterrupt: () => void
   settings: SessionSettings
@@ -70,7 +72,7 @@ const NO_PROMPTS: string[] = []
 // menus de comandos e de agentes, anexos (botão ou ⌘V), ditado, enviar ou parar, e os seletores
 // de modelo e modo embaixo.
 export const Composer = memo(function Composer(props: Props) {
-  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onToggleRemote, onInterrupt } = props
+  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onRename, onToggleRemote, onInterrupt } = props
   const attachments = useAttachments(draftKey)
   const field = useRef<HTMLTextAreaElement>(null)
   const [draft, setDraft] = useDraft(draftKey)
@@ -145,6 +147,15 @@ export const Composer = memo(function Composer(props: Props) {
     if (text === '/output-style') {
       setDraft('')
       return onOpenOutputStyle()
+    }
+    // /rename sozinho (ou escolhido na lista) abre o título para editar; com o nome, já renomeia.
+    // Vale para qualquer agente: não vai para o Claude, que mostraria o comando no chat.
+    const rename = text.match(/^\/rename(?:\s+([\s\S]*))?$/)
+    if (rename) {
+      const error = onRename(rename[1] ?? '')
+      if (error) return setSendError(error)
+      setDraft('')
+      return setSendError(null)
     }
     if (text === '/remote-control') {
       setDraft('')

@@ -127,6 +127,13 @@ export class AgentChatSession {
     this.update({ remote: { status: 'failed', detail: tr('Só o Claude tem controle remoto.', 'Only Claude has remote control.') } })
   }
 
+  // Nome dado pela pessoa: vale por cima do que o agente gerar (ver o evento title).
+  rename(title: string): void {
+    this.conversation.title = title
+    this.conversation.renamed = true
+    this.save(true)
+  }
+
   send(req: ChatSendRequest): void {
     const id = randomUUID()
     const at = new Date().toISOString()
@@ -296,6 +303,7 @@ export class AgentChatSession {
           this.update({ status: 'needs-you', permissions: [...this.state.permissions, request] })
         }),
       title: (title) => {
+        if (this.conversation.renamed) return
         this.conversation.title = title
         this.save()
       },

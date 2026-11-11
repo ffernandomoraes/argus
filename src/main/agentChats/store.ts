@@ -25,6 +25,8 @@ export type StoredConversation = {
   createdAt: string
   updatedAt: string
   nativeId?: string
+  // Renomeada pela pessoa: o título que o agente gerar depois não troca o dela.
+  renamed?: boolean
   contextPercent: number
   messages: Message[]
 }
@@ -88,6 +90,14 @@ export function saveConversation(c: StoredConversation): void {
   } catch (err) {
     console.error('[agentChats] não deu para gravar a conversa:', errorMessage(err))
   }
+}
+
+// Renomear conversa que não está aberta agora (a aberta muda pela sessão: AgentChatSession.rename).
+export function renameConversation(id: string, title: string): string | null {
+  const c = loadConversation(id)
+  if (!c) return tr('Conversa inválida.', 'Invalid chat.')
+  saveConversation({ ...c, title, renamed: true })
+  return null
 }
 
 // Imagens enviadas em cada mensagem sua (data URLs), fora do arquivo principal: pesam, e só são

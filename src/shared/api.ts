@@ -5,7 +5,7 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { Lang, LangPreference } from './i18n'
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { SystemHealthState } from './systemHealth'
 import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
@@ -186,6 +186,8 @@ export type Api = {
     mcpRemove: (key: string, cwd: string, account: string | undefined, name: string, scope: string) => Promise<McpStatus>
     outputStyle: (key: string, cwd: string, account?: string) => Promise<OutputStyleStatus>
     setOutputStyle: (key: string, cwd: string, style: string) => Promise<OutputStyleStatus>
+    // Erro em texto, ou nulo quando deu certo.
+    rename: (req: ChatRenameRequest) => Promise<string | null>
     release: (key: string) => void
     restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void

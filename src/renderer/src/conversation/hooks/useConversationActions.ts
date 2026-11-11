@@ -83,11 +83,15 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
   const remoteControl = useStableCallback((enabled: boolean) =>
     window.api.chat.remoteControl({ key: chatKey, cwd, folders, account, sessionId: conversation.sessionId, settings, enabled })
   )
+  // Erro em texto, ou nulo. Sem sessão ainda (conversa nova), não há o que renomear: quem chama confere.
+  const rename = useStableCallback((sessionId: string, title: string) =>
+    window.api.chat.rename({ key: chatKey, cwd, sessionId, title })
+  )
   const interrupt = useStableCallback(() => window.api.chat.interrupt(chatKey))
   const answer = useStableCallback((id: string, a: PermissionAnswer) => window.api.chat.answer(chatKey, id, a))
   const loadImages = useStableCallback((messageId: string) =>
     conversation.sessionId ? window.api.sessions.images(cwd, conversation.sessionId, messageId) : Promise.resolve([])
   )
 
-  return { send, change, remoteControl, interrupt, answer, loadImages }
+  return { send, change, remoteControl, rename, interrupt, answer, loadImages }
 }

@@ -1,8 +1,11 @@
-import { memo, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
-import { ChevronRight, Star, X } from 'lucide-react'
+import { memo, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { ChevronRight, Pencil, Star, X } from 'lucide-react'
+import { ContextMenu, type MenuState } from '../../canvas/ContextMenu'
 import { AccountTag } from './AccountTag'
 import { FolderTag } from './FolderTag'
 import { HeaderButton } from './HeaderButton'
+import { TitleField } from './TitleField'
 import { tr } from '../../i18n'
 
 // Cabeçalho da conversa, numa linha só: a pasta e o título (pasta > conversa, com a estrela se favorita) e, à
@@ -17,6 +20,10 @@ export const ConversationHeader = memo(function ConversationHeader({
   onAccountChange,
   claudeOnly,
   favorite = false,
+  renaming = false,
+  onRenamingChange,
+  onRename,
+  renameError,
   minimal,
   actions,
   onClose,
@@ -35,6 +42,13 @@ export const ConversationHeader = memo(function ConversationHeader({
   claudeOnly?: boolean
   // Conversa favoritada: estrela antes do título.
   favorite?: boolean
+  // Renomear: botão direito no título abre o menu, e o título vira campo enquanto `renaming`. Sem
+  // onRename (conversa nova, ainda sem sessão), sem menu.
+  renaming?: boolean
+  onRenamingChange?: (renaming: boolean) => void
+  onRename?: (title: string) => void
+  // O nome não foi gravado: o aviso fica ao lado do título.
+  renameError?: string | null
   // Modo foco: uma linha só, com o título e o fechar, sem a borda de baixo.
   minimal: boolean
   actions?: ReactNode
@@ -43,6 +57,23 @@ export const ConversationHeader = memo(function ConversationHeader({
   style?: CSSProperties
   onPointerDown?: (e: PointerEvent) => void
 }) {
+  const [menu, setMenu] = useState<MenuState | null>(null)
+  const showMenu = (e: MouseEvent) => {
+    if (!onRename) return
+    // Sem subir: no canvas, o card do chat abriria o menu dele junto.
+    e.preventDefault()
+    e.stopPropagation()
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [{ type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => onRenamingChange?.(true) }]
+    })
+  }
+  const finishRename = (value: string | null) => {
+    onRenamingChange?.(false)
+    if (value) onRename?.(value)
+  }
+
   return (
     <header
       onPointerDown={onPointerDown}
@@ -65,7 +96,20 @@ export const ConversationHeader = memo(function ConversationHeader({
               <Star size={13} className="fill-current text-amber-400" aria-label={tr('Conversa favoritada', 'Favorite chat')} />
             </span>
           )}
-          <div className="min-w-0 truncate font-medium text-text">{title}</div>
+          {renaming && onRename ? (
+            <TitleField value={title} onDone={finishRename} />
+          ) : (
+            // no-drag: na janela separada o cabeçalho arrasta a janela, e lá o botão direito não chega.
+            <div onContextMenu={showMenu} className={`min-w-0 truncate font-medium text-text ${onRename ? 'no-drag' : ''}`}>
+              {title}
+            </div>
+          )}
+          {renameError && !renaming && (
+            <span title={renameError} className="min-w-0 shrink truncate text-xs text-danger">
+              {tr('Não deu para renomear: ', "Couldn't rename: ")}
+              {renameError}
+            </span>
+          )}
         </div>
       </div>
 
@@ -78,6 +122,8 @@ export const ConversationHeader = memo(function ConversationHeader({
           <X size={15} />
         </HeaderButton>
       </div>
+      {/* No body: dentro do canvas o `fixed` seguiria o zoom e o deslocamento dele. */}
+      {menu && createPortal(<ContextMenu menu={menu} onClose={() => setMenu(null)} />, document.body)}
     </header>
   )
 })

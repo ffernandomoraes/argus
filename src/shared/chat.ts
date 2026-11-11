@@ -173,5 +173,15 @@ export type ChatSendRequest = {
 // /remote-control: liga ou desliga. Sem sessão aberta, abre uma (por isso os dados da conversa).
 export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'files' | 'hint'> & { enabled: boolean }
 
+// Renomear a conversa (botão direito no título ou /rename). key: a chave do chat na tela.
+export type ChatRenameRequest = { key: string; cwd: string; sessionId: string; title: string }
+
+// Nome digitado pela pessoa: uma linha só, sem espaços sobrando. Vazio: nada a renomear. O limite é
+// o mesmo da lista de conversas (sessions/summary.ts).
+export const MAX_TITLE = 120
+export function cleanTitle(text: string): string {
+  return text.replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE)
+}
+
 // /output-style: o estilo de resposta em vigor na pasta (nome do Claude Code: "default", "Explanatory"...).
 export type OutputStyleStatus = { ok: true; style: string } | { ok: false; error: string }

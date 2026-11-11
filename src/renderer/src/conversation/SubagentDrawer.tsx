@@ -135,6 +135,7 @@ export function SubagentDrawer(props: Props) {
                 onSend={noop}
                 onOpenMcp={noop}
                 onOpenOutputStyle={noop}
+                onRename={() => null}
                 onRemoteControl={noop}
                 onInterrupt={noop}
                 onAnswer={noop}

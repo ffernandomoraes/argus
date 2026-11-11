@@ -5,7 +5,7 @@ import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { SystemHealthState } from './systemHealth'
 import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
@@ -105,6 +105,8 @@ export type InvokeChannels = {
   'mcp:status': (key: string, cwd: string, account?: string) => McpStatus
   'chat:outputStyle': (key: string, cwd: string, account?: string) => OutputStyleStatus
   'chat:setOutputStyle': (key: string, cwd: string, style: string) => OutputStyleStatus
+  // Erro em texto, ou nulo quando deu certo.
+  'chat:rename': (req: ChatRenameRequest) => string | null
   'mcp:reconnect': (key: string, name: string) => McpStatus
   'mcp:authenticate': (key: string, name: string) => McpAuthResult
   'mcp:clearAuth': (key: string, name: string) => McpStatus

@@ -1,4 +1,4 @@
-import type { ChatRemoteRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from '../../shared/chat'
+import { cleanTitle, type ChatRemoteRequest, type ChatRenameRequest, type ChatSendRequest, type ChatSettings, type ChatState, type OutputStyleStatus, type PermissionAnswer } from '../../shared/chat'
 import type { McpAuthResult, McpStatus } from '../../shared/mcp'
 import type { ChatEntry } from './entries'
 import { AccountMcp } from './accountMcp'
@@ -6,7 +6,9 @@ import { mcpStatusFor, removeMcp } from './mcpStatus'
 import { readOutputStyle, writeOutputStyle } from './outputStyle'
 import { parseAgentRef, type AgentRef } from '../../shared/providers'
 import { AgentChatSession } from '../agentChats/session'
-import { indexEntry, isAgentConversation, samePath } from '../agentChats/store'
+import { indexEntry, isAgentConversation, renameConversation, samePath } from '../agentChats/store'
+import { renameSessionFile } from '../sessions/rename'
+import { withTimeout } from '../lib/timeout'
 import { ChatSession, type OpenRequest } from './session'
 import { memoryTight } from '../systemHealth/memory'
 import { resolveAccount } from '../accounts'
@@ -66,6 +68,9 @@ const MAX_RELEASING = 3
 // depois (o processo leva um instante para sair e o sistema, para recuperar a memória).
 const MEMORY_CHECK_MS = 60_000
 const MEMORY_SETTLE_MS = 10_000
+// Renomear pela sessão aberta é imediato (o Claude Code só grava uma linha); sem resposta nesse
+// prazo, o processo está travado ou saindo, e o nome vai direto para o arquivo.
+const RENAME_TIMEOUT_MS = 5_000
 
 // Uma sessão do Claude por conversa aberta no chat. A chave é o id da conversa no app;
 // conversa nova ganha também o id da sessão como chave, assim que o Claude informa.
@@ -354,6 +359,31 @@ export class Chats {
     } catch (err) {
       return { ok: false, error: (err as Error).message }
     }
+  }
+
+  // Renomear (botão direito no título ou /rename). Aberta aqui: pela sessão, que guarda o título
+  // (ver ChatSession.rename e AgentChatSession.rename). Fechada: no arquivo da conversa.
+  async rename(req: ChatRenameRequest): Promise<string | null> {
+    const title = cleanTitle(req.title)
+    if (!title) return tr('O nome não pode ficar vazio.', 'The name cannot be empty.')
+    const session = this.sessions.get(req.key) ?? this.sessions.get(req.sessionId)
+    const live = session?.state.sessionId === req.sessionId ? session : undefined
+    if (live instanceof AgentChatSession) {
+      live.rename(title)
+      return null
+    }
+    if (isAgentConversation(req.sessionId)) return renameConversation(req.sessionId, title)
+    if (live instanceof ChatSession) {
+      // Sessão que recusa (mudou de conversa) ou não responde (processo caindo): grava no arquivo,
+      // como fechada.
+      const done = await withTimeout(
+        live.rename(title, req.sessionId).then(() => true, () => false),
+        RENAME_TIMEOUT_MS,
+        false
+      )
+      if (done) return null
+    }
+    return renameSessionFile(req.cwd, req.sessionId, title)
   }
 
   interrupt(key: string): void {

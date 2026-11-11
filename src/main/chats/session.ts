@@ -17,6 +17,9 @@ import { setRemoteControl } from './remote'
 import { flagChanges, mergeSettings, openingFlags, toPermissionMode } from './settings'
 import { newReader, readMessage, type Reader, type SessionState } from './stream'
 
+// Pedido de renomear do SDK que não está nos tipos (ver rename).
+type RenamableQuery = Query & { renameSession(title: string, sessionId?: string): Promise<void> }
+
 // O que a sessão avisa ao registro (Chats).
 export type SessionEvents = {
   // Estado novo da conversa. Único ponto de emissão (ver flush).
@@ -229,6 +232,13 @@ export class ChatSession {
 
   clearMcpAuth(name: string): Promise<void> {
     return clearMcpAuth(this.q, name)
+  }
+
+  // Renomear com a sessão aberta: o Claude Code grava o título e guarda ele, como no /rename (gravar
+  // no arquivo por fora seria desfeito, porque ele regrava o título que guarda). O pedido existe no
+  // SDK (conferido na 0.3.308: rename_session, source "host"), mas não está nos tipos.
+  async rename(title: string, sessionId: string): Promise<void> {
+    await (this.q as RenamableQuery).renameSession(title, sessionId)
   }
 
   // /output-style: o Claude Code grava no settings.local.json da pasta e já aplica aqui.

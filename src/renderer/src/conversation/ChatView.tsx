@@ -49,6 +49,8 @@ export type ChatViewProps = {
   onOpenMcp: () => void
   // /output-style abre a escolha do estilo de resposta aqui no app.
   onOpenOutputStyle: () => void
+  // /rename: o nome da conversa (vazio: o título vira campo). Devolve o erro para mostrar no campo.
+  onRename: (title: string) => string | null
   // /remote-control liga; de novo (ou o X da faixa), desliga.
   onRemoteControl: (enabled: boolean) => void
   onInterrupt: () => void
@@ -95,6 +97,7 @@ export const ChatView = memo(function ChatView({
   loadImages,
   onOpenMcp,
   onOpenOutputStyle,
+  onRename,
   onRemoteControl,
   onInterrupt,
   onAnswer,
@@ -203,6 +206,7 @@ export const ChatView = memo(function ChatView({
   const turnOffRemote = useStableCallback(() => onRemoteControl(false))
   const openMcp = useStableCallback(onOpenMcp)
   const openOutputStyle = useStableCallback(onOpenOutputStyle)
+  const rename = useStableCallback(onRename)
   const interrupt = useStableCallback(onInterrupt)
   // Texto no campo esconde a sugestão; clicar nela envia pelo mesmo caminho da caixa de escrever.
   const [typing, setTyping] = useState(false)
@@ -294,6 +298,7 @@ export const ChatView = memo(function ChatView({
               onSubmit={submit}
               onOpenMcp={openMcp}
               onOpenOutputStyle={openOutputStyle}
+              onRename={rename}
               onToggleRemote={toggleRemote}
               onInterrupt={interrupt}
               settings={settings}

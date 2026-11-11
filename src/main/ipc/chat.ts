@@ -5,6 +5,7 @@ import type { Chats } from '../chats'
 import { activeChats } from '../chats/entries'
 import type { Terminals } from '../terminals'
 import { materializeWorktree, withWorktreeHint } from '../worktrees'
+import { cleanTitle } from '../../shared/chat'
 import { handle, on } from './register'
 
 // Conversas pelo chat (SDK do Claude).
@@ -34,6 +35,13 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   handle('mcp:remove', (_e, key, cwd, account, name, scope) => chats.removeMcp(key, cwd, account, name, scope))
   handle('chat:outputStyle', (_e, key, cwd, account) => chats.outputStyle(key, cwd, account))
   handle('chat:setOutputStyle', (_e, key, cwd, style) => chats.setOutputStyle(key, cwd, style))
+  // Conversa aberta no terminal (o `claude` dela): o /rename vai por lá, senão o Claude Code de lá
+  // regravaria o título antigo. Só no terminal que está com esta sessão: num shell viraria comando.
+  handle('chat:rename', (_e, req) => {
+    for (const key of new Set([req.key, req.sessionId]))
+      if (terminals.sessionOf(key) === req.sessionId) terminals.write(key, `/rename ${cleanTitle(req.title)}\r`)
+    return chats.rename(req)
+  })
   handle('mcp:account:status', (_e, account, wait) => chats.accountMcp.status(account, wait))
   handle('mcp:account:reconnect', (_e, account, name) => chats.accountMcp.reconnect(account, name))
   handle('mcp:account:authenticate', (_e, account, name) => chats.accountMcp.authenticate(account, name))

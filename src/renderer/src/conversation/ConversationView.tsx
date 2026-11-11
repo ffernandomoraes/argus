@@ -1,5 +1,7 @@
 import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { agentProviderOf } from '../../../shared/agents'
+import { cleanTitle } from '../../../shared/chat'
+import { tr } from '../i18n'
 import { parseAgentRef } from '../../../shared/providers'
 import { AccountContext, ConversationFolderContext } from '../auth/useAuth'
 import { dismissInterrupted, useInterrupted } from '../canvas/interruptedChats'
@@ -37,6 +39,11 @@ import { useConversationHistory } from './useConversationHistory'
 // para o canvas e o código.
 export { HeaderButton } from './header/HeaderButton'
 export { KIND_COLOR, KIND_LABEL } from './header/changeKinds'
+
+// Quanto o nome novo fica na tela esperando a lista trazer o gravado.
+const RENAME_SETTLE_MS = 10_000
+// Quanto o aviso de que não deu para renomear fica ao lado do título.
+const RENAME_ERROR_MS = 8_000
 
 type Props = {
   // Pasta onde o Claude roda.
@@ -145,6 +152,52 @@ export const ConversationView = memo(function ConversationView({
   const settings = useConversationSettings(settingsId)
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
   const { remoteControl } = actionsFor
+
+  // Renomear: o nome novo aparece na hora e fica até a lista trazer o gravado (o arquivo da
+  // conversa muda e a lista relê). Sem sessão ainda, não há o que renomear.
+  const renameId = conversation.sessionId ?? live?.sessionId
+  const [renaming, setRenaming] = useState(false)
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null)
+  const [renameError, setRenameError] = useState<string | null>(null)
+  const savedTitle = conversation.title
+  // Outra conversa no mesmo lugar (o drawer troca sem recriar): nada do renomear da anterior fica.
+  const conversationId = conversation.id
+  useEffect(() => {
+    setRenaming(false)
+    setPendingTitle(null)
+    setRenameError(null)
+  }, [conversationId])
+  // O aviso de erro some sozinho, como os outros do cabeçalho.
+  useEffect(() => {
+    if (!renameError) return
+    const timer = setTimeout(() => setRenameError(null), RENAME_ERROR_MS)
+    return () => clearTimeout(timer)
+  }, [renameError])
+  useEffect(() => {
+    if (pendingTitle === null) return
+    if (savedTitle === pendingTitle) return setPendingTitle(null)
+    // A lista não trouxe (vigia atrasada): volta ao que ela diz, sem ficar preso no provisório.
+    const timer = setTimeout(() => setPendingTitle(null), RENAME_SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [pendingTitle, savedTitle])
+  const rename = useStableCallback((raw: string) => {
+    const title = cleanTitle(raw)
+    if (!renameId || !title) return
+    setRenameError(null)
+    setPendingTitle(title)
+    void actionsFor.rename(renameId, title).then((error) => {
+      if (!error) return
+      setPendingTitle(null)
+      setRenameError(error)
+    })
+  })
+  // /rename: com o nome, renomeia; sozinho, abre o título para editar.
+  const renameCommand = useStableCallback((raw: string): string | null => {
+    if (!renameId) return tr('Envie a primeira mensagem antes de dar nome à conversa.', 'Send the first message before naming the chat.')
+    if (cleanTitle(raw)) rename(raw)
+    else setRenaming(true)
+    return null
+  })
   const turnOffRemote = useCallback(() => remoteControl(false), [remoteControl])
 
   // Conversa nova recebeu o id da sessão: as trocas feitas antes vão junto, e quem mostra fica sabendo.
@@ -208,7 +261,7 @@ export const ConversationView = memo(function ConversationView({
     <AccountContext.Provider value={account}>
       <ConversationFolderContext.Provider value={cwd}>
       <ConversationHeader
-        title={conversation.title}
+        title={pendingTitle ?? conversation.title}
         cwd={cwd}
         folders={folders}
         project={project}
@@ -216,6 +269,10 @@ export const ConversationView = memo(function ConversationView({
         onAccountChange={canChangeAccount ? chooseAccount : undefined}
         claudeOnly={!empty}
         favorite={favorite}
+        renaming={renaming}
+        onRenamingChange={setRenaming}
+        onRename={renameId ? rename : undefined}
+        renameError={renameError}
         minimal={minimalHeader}
         actions={actions}
         onClose={onClose}
@@ -245,6 +302,7 @@ export const ConversationView = memo(function ConversationView({
             loadImages={actionsFor.loadImages}
             onOpenMcp={openMcp}
             onOpenOutputStyle={openStyle}
+            onRename={renameCommand}
             onRemoteControl={actionsFor.remoteControl}
             onInterrupt={actionsFor.interrupt}
             onAnswer={actionsFor.answer}

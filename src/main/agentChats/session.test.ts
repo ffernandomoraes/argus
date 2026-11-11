@@ -256,3 +256,17 @@ describe('agente calado', () => {
     expect(session.state.status).toBe('running')
   })
 })
+
+describe('renomear', () => {
+  it('o nome dado pela pessoa fica, mesmo com o agente mandando outro título depois', async () => {
+    const { session } = open()
+    send(session, 'Arrumar o login')
+    await started()
+    session.rename('Login do app')
+    expect(stored(session)).toMatchObject({ title: 'Login do app', renamed: true })
+    driver().events.title('Título do Codex')
+    driver().finish()
+    await idle(session)
+    expect(stored(session).title).toBe('Login do app')
+  })
+})

@@ -5,6 +5,7 @@ export const SLASH_COMMANDS = [
   { name: 'compact', description: tr('Resume a conversa até aqui para liberar contexto.', 'Summarizes the chat so far to free up context.') },
   { name: 'mcp', description: tr('Mostra os servidores MCP: conectados, com erro e os que precisam de autorização.', 'Shows MCP servers: connected, failed, and those that need authorization.') },
   { name: 'output-style', description: tr('Escolhe o estilo de resposta: padrão, explicativo ou aprendizado.', 'Chooses the output style: default, explanatory, or learning.') },
+  { name: 'rename', description: tr('Renomeia a conversa: /rename e o nome novo, ou só /rename para editar o título.', 'Renames the chat: /rename and the new name, or just /rename to edit the title.') },
   { name: 'remote-control', description: tr('Continua esta conversa pelo claude.ai ou pelo celular. De novo, desliga.', 'Continues this chat on claude.ai or your phone. Run again to turn off.') }
 ]
 

@@ -21,6 +21,7 @@ type Events = {
   identified: (s: AnySession, id: string) => void
   ended: (s: AnySession) => void
   limit: (s: AnySession, limit: 'memory' | 'disk', busy: boolean) => void
+  rateLimits: (s: ChatSession, info: unknown) => void
 }
 
 // O que o registro conta para fora quando um limite do computador encerra algo (o aviso da barra de
@@ -30,6 +31,8 @@ export type ChatHooks = {
   freed?: (cwd: string, sessionId: string | undefined) => void
   // O Claude da conversa parou sem memória ou com o disco cheio. busy: no meio de um pedido.
   limit?: (cwd: string, sessionId: string | undefined, limit: 'memory' | 'disk', busy: boolean) => void
+  // Limites da conta do Claude que vieram numa resposta da conversa (para a barra de uso).
+  rateLimits?: (account: string, info: unknown) => void
 }
 
 // Quem roda a conversa: uma já gravada continua com o agente dela, seja qual for o do grupo agora;
@@ -95,7 +98,8 @@ export class Chats {
       clearTimeout(this.releasing.get(s))
       this.releasing.delete(s)
     },
-    limit: (s, limit, busy) => this.hooks.limit?.(s.cwd, s.state.sessionId, limit, busy)
+    limit: (s, limit, busy) => this.hooks.limit?.(s.cwd, s.state.sessionId, limit, busy),
+    rateLimits: (s, info) => this.hooks.rateLimits?.(s.account, info)
   }
 
   constructor(

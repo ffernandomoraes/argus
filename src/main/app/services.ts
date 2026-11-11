@@ -120,7 +120,10 @@ export function createServices() {
       limit: (cwd, sessionId, limit, busy) => {
         health.record(limit === 'disk' ? { kind: 'diskFull' } : { kind: 'claudeStopped', cwd, sessionId, busy })
         if (limit === 'memory' && busy && sessionId) interrupted.mark(sessionId, cwd, 'memory')
-      }
+      },
+      // Cada resposta traz a sessão e o semanal da conta: a barra anda mesmo com a leitura direta
+      // esperando o prazo de uma recusa (429).
+      rateLimits: (account, info) => usage.fromChat(account, info)
     }
   )
 

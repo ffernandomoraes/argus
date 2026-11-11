@@ -4,6 +4,7 @@ import type { Usage } from '../../shared/usage'
 import { configEmail } from '../auth/status'
 import { CodexUsageMonitors } from './codex'
 import { UsageMonitor } from './monitor'
+import { parseChatWindows } from './parse'
 import { SavedUsages } from './saved'
 
 export { UsageMonitor } from './monitor'
@@ -94,6 +95,12 @@ export class UsageMonitors {
   // a cada 5 minutos, com ou sem foco (cada leitura abre um processo).
   refresh(open = false): void {
     this.monitors.forEach((m) => m.refresh(open))
+  }
+
+  // Limites que chegaram numa resposta de conversa da conta (rate_limit_event; ver parseChatWindows).
+  fromChat(account: string, info: unknown): void {
+    const windows = parseChatWindows(info)
+    if (windows) this.monitors.get(account)?.fromChat(windows)
   }
 
   // O `claude` do app trocou (ver claudeVersion): todos abrem de novo com ele.

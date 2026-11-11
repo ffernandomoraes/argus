@@ -55,6 +55,8 @@ export type Step = {
   turnEnded?: boolean
   // Estado que o próprio Claude Code informa (session_state_changed).
   sessionState?: SessionState
+  // Limites da conta que vieram com a resposta (rate_limit_event): vão para a barra de uso.
+  rateLimits?: unknown
 }
 
 export type SessionState = 'idle' | 'running' | 'requires_action'
@@ -65,6 +67,7 @@ export function readMessage(m: SDKMessage, chat: ChatState, reader: Reader, ctx:
   if (m.type === 'stream_event') return m.parent_tool_use_id ? { reader } : readStream(m.event, chat, reader, ctx)
   if (m.type === 'assistant' || m.type === 'user') return readTranscript(m, chat, reader, ctx)
   if (m.type === 'result') return readResult(m, chat, reader, ctx)
+  if (m.type === 'rate_limit_event') return { reader, rateLimits: m.rate_limit_info }
   // Chega depois do result. Pedido novo já começado nesse meio-tempo: a sugestão era do anterior.
   if (m.type === 'prompt_suggestion') return chat.turnStartedAt ? { reader } : { reader, patch: { suggestion: m.suggestion }, urgent: true }
   return { reader }

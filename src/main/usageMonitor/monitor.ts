@@ -10,7 +10,7 @@ import { reportWarning } from '../errorReports'
 import { createBackoff } from '../lib/backoff'
 import { closeGently, guardStdin, writeStdin } from '../lib/childProcess'
 import { withTimeout } from '../lib/timeout'
-import { parseControlReply, parseRateLimits } from './parse'
+import { parseControlReply, parseRateLimits, type ChatWindows } from './parse'
 
 // Os limites de uso de uma conta do Claude. Vêm do mesmo endereço que o Claude Code consulta para
 // o /usage (GET /api/oauth/usage, conferido no binário da 2.1.300), com o login que ele guarda: uma
@@ -53,8 +53,11 @@ const SLEPT_MS = 2 * TICK_MS
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const OAUTH_BETA = 'oauth-2025-04-20'
 const FETCH_TIMEOUT_MS = 10_000
-// Recusou por excesso (429): espera o que o servidor pedir, ou isto.
+// Recusou por excesso (429): espera o que o servidor pedir, até o teto. O teto sobe a cada recusa
+// seguida (5, 10, 15 minutos) e volta ao início quando uma leitura dá certo. Sem teto, em 2026-11-11 o
+// servidor pediu 1 hora e a barra ficou parada esse tempo todo. Sem prazo pedido, espera o teto.
 const QUIET_MS = 5 * 60_000
+const QUIET_MAX_MS = 15 * 60_000
 // Recusou a conta (403): insistir não muda a resposta. Visto em 2026-11 (ARGUS-A) numa conta só, numa
 // máquina em que outra conta lia normal, depois de um 429 de 1 hora, em toda abertura do app.
 const FORBIDDEN_MS = 60 * 60_000
@@ -90,6 +93,8 @@ export class UsageMonitor {
   // O servidor recusou este login (401): não usa mais, espera o `claude` renovar.
   private rejected: string | null = null
   private quietUntil = 0
+  // Recusas por excesso (429) seguidas, para o teto da espera (ver QUIET_MS).
+  private rateLimited = 0
   private renewedAt = 0
   private failures = 0
   private polling = false
@@ -156,6 +161,7 @@ export class UsageMonitor {
     this.persistent = false
     this.failures = 0
     this.quietUntil = 0
+    this.rateLimited = 0
     this.renewedAt = 0
     this.askedAt = 0
     this.tokenRead = null
@@ -299,8 +305,9 @@ export class UsageMonitor {
       return this.fail('login')
     }
     if (res.status === 429) {
-      const wait = Number(res.headers.get('retry-after')) * 1000
-      this.quietUntil = Date.now() + (wait > 0 ? wait : QUIET_MS)
+      const asked = Number(res.headers.get('retry-after')) * 1000
+      const cap = Math.min(QUIET_MS * ++this.rateLimited, QUIET_MAX_MS)
+      this.quietUntil = Date.now() + (asked > 0 ? Math.min(asked, cap) : cap)
       return this.fail('rate_limited', this.quietUntil)
     }
     const usage = res.ok ? parseRateLimits(await res.json().catch(() => null), token.plan, Date.now()) : null
@@ -314,7 +321,30 @@ export class UsageMonitor {
     if (++this.failures >= MAX_FAILURES) this.fallBack()
   }
 
+  // Os números que chegaram numa resposta de conversa desta conta (ver parseChatWindows): a sessão e o
+  // semanal vão para a tela na hora, mesmo com a leitura direta esperando o prazo de uma recusa. O
+  // semanal de um modelo só segue o da última leitura direta. Não mexe no intervalo das perguntas:
+  // a leitura direta continua trazendo o resto.
+  fromChat(windows: ChatWindows): void {
+    if (this.stopped) return
+    const { noSession, ...base }: Usage = this.last ?? { session: null, weekly: null, models: [], updatedAt: 0 }
+    const usage: Usage = {
+      ...base,
+      // Veio a sessão: a conta tem a de 5 horas.
+      ...(noSession && !windows.session && { noSession }),
+      session: windows.session ?? base.session,
+      weekly: windows.weekly ?? base.weekly,
+      updatedAt: Date.now()
+    }
+    this.failure = null
+    this.failingSince = 0
+    this.reported = false
+    this.last = usage
+    this.onUpdate(usage)
+  }
+
   private succeeded(usage: Usage): void {
+    this.rateLimited = 0
     this.status = null
     this.claudeNoLimits = false
     this.claudeExit = null

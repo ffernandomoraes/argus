@@ -2,8 +2,8 @@ import type { ClaudeInfo, ClaudeModel } from '../../shared/models'
 import type { Usage, UsageWindow } from '../../shared/usage'
 import { tr } from '../i18n'
 
-// Respostas do `claude` (stream-json) aos pedidos de controle do monitor. Lógica pura: o que vale
-// de cada linha.
+// Respostas do `claude` (stream-json) aos pedidos de controle do monitor, e os limites que chegam nas
+// conversas. Lógica pura: o que vale de cada linha.
 
 type RawWindow = { utilization?: number | null; resets_at?: string | null } | null | undefined
 
@@ -120,4 +120,25 @@ export function parseRateLimits(limits: any, plan: unknown, now: number): Usage 
   // Sessão ausente com o resto presente: a janela de 5 horas ainda não começou.
   const session = toWindow(limits.five_hour) ?? { percent: 0, resetsAt: null }
   return { session, weekly: toWindow(limits.seven_day), models: toModelWindows(limits, plan), updatedAt: now }
+}
+
+// Os limites que chegam a cada resposta das conversas (rate_limit_event, `unifiedWindows`, conferido
+// na 2.1.322): a porcentagem de 0 a 1 e a hora de recomeçar em segundos, da sessão de 5 horas e do
+// semanal. Não traz o semanal de um modelo só (Fable). null: sem nenhuma das duas.
+export type ChatWindows = { session?: UsageWindow; weekly?: UsageWindow }
+
+export function parseChatWindows(info: any): ChatWindows | null {
+  const raw = info?.unifiedWindows
+  if (!raw || typeof raw !== 'object') return null
+  const win = (w: any): UsageWindow | undefined =>
+    typeof w?.utilization === 'number'
+      ? {
+          percent: Math.round(w.utilization * 100),
+          resetsAt: typeof w.resetsAt === 'number' ? new Date(w.resetsAt * 1000).toISOString() : null
+        }
+      : undefined
+  const session = win(raw.five_hour)
+  const weekly = win(raw.seven_day)
+  if (!session && !weekly) return null
+  return { ...(session && { session }), ...(weekly && { weekly }) }
 }

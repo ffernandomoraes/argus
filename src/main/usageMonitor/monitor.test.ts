@@ -158,16 +158,72 @@ describe('UsageMonitor', () => {
     fake.fetch.mockImplementationOnce(async () => ok())
     await startWithRead()
 
-    fake.fetch.mockImplementation(async () => new Response('', { status: 429, headers: { 'retry-after': '600' } }))
+    fake.fetch.mockImplementation(async () => new Response('', { status: 429, headers: { 'retry-after': '120' } }))
     await vi.advanceTimersByTimeAsync(15 * MIN)
     const failure = updates.at(-1)?.failure
     expect(failure?.reason).toBe('rate_limited')
-    expect(failure?.retryAt).toBe(Date.now() + 600_000)
+    expect(failure?.retryAt).toBe(Date.now() + 120_000)
 
     const calls = fake.fetch.mock.calls.length
     monitor.refresh(true)
-    await vi.advanceTimersByTimeAsync(5 * MIN)
+    await vi.advanceTimersByTimeAsync(MIN)
     expect(fake.fetch.mock.calls.length).toBe(calls)
+  })
+
+  it('espera pedida longa tem teto: 5 minutos, depois 10 e 15 seguidas (2026-11-11, 1 hora pedida)', async () => {
+    fake.reads.push(login(180 * MIN))
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await startWithRead()
+
+    const start = Date.now()
+    fake.fetch.mockImplementation(async () => new Response('', { status: 429, headers: { 'retry-after': '3600' } }))
+    await vi.advanceTimersByTimeAsync(MIN)
+    monitor.refresh(true)
+    await vi.advanceTimersByTimeAsync(0)
+    const retries: number[] = []
+    for (let i = 0; i < 4; i++) {
+      const calls = fake.fetch.mock.calls.length
+      retries.push(updates.at(-1)!.failure!.retryAt! - Date.now())
+      while (fake.fetch.mock.calls.length === calls && Date.now() - start < 3 * 60 * MIN) {
+        await vi.advanceTimersByTimeAsync(MIN)
+        monitor.refresh(true)
+        await vi.advanceTimersByTimeAsync(0)
+      }
+    }
+    expect(retries).toEqual([5 * MIN, 10 * MIN, 15 * MIN, 15 * MIN])
+
+    // Dando certo, o teto volta aos 5 minutos.
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await vi.advanceTimersByTimeAsync(16 * MIN)
+    monitor.refresh(true)
+    await vi.advanceTimersByTimeAsync(2 * MIN)
+    expect(updates.at(-1)!.failure!.retryAt! - Date.now()).toBeLessThanOrEqual(5 * MIN)
+  })
+
+  it('números das conversas atualizam a barra durante a espera, mantendo o semanal do modelo', async () => {
+    fake.reads.push(login(180 * MIN))
+    const withFable = {
+      limits: [
+        { kind: 'session', percent: 24, resets_at: '2099-01-01T00:00:00Z' },
+        { kind: 'weekly_all', percent: 16, resets_at: '2099-01-08T00:00:00Z' },
+        { kind: 'weekly_scoped', percent: 5, resets_at: '2099-01-08T00:00:00Z', scope: { model: { display_name: 'Fable' } } }
+      ]
+    }
+    fake.fetch.mockImplementationOnce(async () => new Response(JSON.stringify(withFable), { status: 200 }))
+    await startWithRead()
+    fake.fetch.mockImplementation(async () => new Response('', { status: 429, headers: { 'retry-after': '3600' } }))
+    await vi.advanceTimersByTimeAsync(MIN)
+    monitor.refresh(true)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(updates.at(-1)?.failure?.reason).toBe('rate_limited')
+
+    monitor.fromChat({ session: { percent: 30, resetsAt: '2099-01-01T00:00:00Z' } })
+    const last = updates.at(-1)!
+    expect(last.failure).toBeUndefined()
+    expect(last.session?.percent).toBe(30)
+    expect(last.weekly?.percent).toBe(16)
+    expect(last.models).toEqual([{ name: 'Fable', window: { percent: 5, resetsAt: '2099-01-08T00:00:00Z' } }])
+    expect(last.updatedAt).toBe(Date.now())
   })
 
   it('recusa por excesso com espera longa não avisa o Sentry enquanto espera (ARGUS-A)', async () => {
@@ -197,7 +253,7 @@ describe('UsageMonitor', () => {
     await startWithRead()
     expect(fake.fetch).toHaveBeenCalledTimes(1)
 
-    await vi.advanceTimersByTimeAsync(61 * MIN)
+    await vi.advanceTimersByTimeAsync(16 * MIN)
     expect(fake.fetch).toHaveBeenCalledTimes(2)
     expect(updates.at(-1)?.failure).toBeUndefined()
     expect(fake.warn).not.toHaveBeenCalled()

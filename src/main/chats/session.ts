@@ -27,6 +27,8 @@ export type SessionEvents = {
   ended: (session: ChatSession) => void
   // O Claude parou por um limite do computador (sem memória, disco cheio). busy: no meio de um pedido.
   limit?: (session: ChatSession, limit: 'memory' | 'disk', busy: boolean) => void
+  // Limites da conta que vieram numa resposta (rate_limit_event).
+  rateLimits?: (session: ChatSession, info: unknown) => void
 }
 
 export type OpenRequest = Omit<ChatSendRequest, 'text' | 'images'>
@@ -401,6 +403,7 @@ export class ChatSession {
     })
     this.reader = step.reader
     if (step.sessionId) this.events.identified(this, step.sessionId)
+    if (step.rateLimits) this.events.rateLimits?.(this, step.rateLimits)
     step.contextWindows?.forEach(([model, tokens]) => learnContextWindow(model, tokens))
     // Antes do update: com a tarefa saindo da lista a sessão já pareceria livre e fecharia ali.
     const finished = !!step.patch && backgroundWork({ ...this.state, ...step.patch }) < backgroundWork(this.state)

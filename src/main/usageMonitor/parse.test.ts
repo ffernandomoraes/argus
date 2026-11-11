@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../i18n', () => ({ tr: (pt: string) => pt }))
 
-const { parseControlReply, parseRateLimits } = await import('./parse')
+const { parseChatWindows, parseControlReply, parseRateLimits } = await import('./parse')
 
 // Os limites que o `claude` repassa do servidor. Formato conferido na 2.1.316 (conta team, 2026-11-01).
 
@@ -56,5 +56,37 @@ describe('parseControlReply', () => {
     const parsed = parseControlReply(reply({ rate_limits: { limits: [row('session', 12)] }, subscription_type: 'max' }), NOW)
     expect(parsed?.usage?.session?.percent).toBe(12)
     expect(parsed?.noLimits).toBeUndefined()
+  })
+})
+
+describe('parseChatWindows', () => {
+  // O rate_limit_event de uma conversa, como veio na 2.1.322 (conta team, 2026-11-11).
+  const info = {
+    status: 'allowed',
+    resetsAt: 1794416400,
+    rateLimitType: 'five_hour',
+    unifiedWindows: {
+      five_hour: { utilization: 0.3, resetsAt: 1794416400, status: 'allowed' },
+      seven_day: { utilization: 0.16, resetsAt: 1794848400, status: 'allowed' }
+    }
+  }
+
+  it('lê a sessão e o semanal em porcentagem, com a hora de recomeçar', () => {
+    expect(parseChatWindows(info)).toEqual({
+      session: { percent: 30, resetsAt: new Date(1794416400_000).toISOString() },
+      weekly: { percent: 16, resetsAt: new Date(1794848400_000).toISOString() }
+    })
+  })
+
+  it('só o que veio com porcentagem', () => {
+    expect(parseChatWindows({ unifiedWindows: { seven_day: { utilization: 0.5, resetsAt: 1794848400 } } })).toEqual({
+      weekly: { percent: 50, resetsAt: new Date(1794848400_000).toISOString() }
+    })
+  })
+
+  it('sem as janelas (versão antiga do Claude Code), nada', () => {
+    expect(parseChatWindows({ status: 'allowed', utilization: 0.3 })).toBeNull()
+    expect(parseChatWindows({ unifiedWindows: {} })).toBeNull()
+    expect(parseChatWindows(null)).toBeNull()
   })
 })

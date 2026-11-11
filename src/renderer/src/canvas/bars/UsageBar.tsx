@@ -1,6 +1,6 @@
 import { barColor } from './usageFormat'
 
-// Barrinha de uso: cinza, âmbar a partir de 75% e vermelha a partir de 90%.
+// Barrinha de uso: a cor muda com o quanto já foi usado (ver barColor).
 export function UsageBar({ percent, className }: { percent: number; className: string }) {
   return (
     <div className={`overflow-hidden rounded-full bg-line ${className}`}>

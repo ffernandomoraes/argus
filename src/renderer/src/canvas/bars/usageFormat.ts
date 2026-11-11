@@ -77,8 +77,10 @@ export function staleText(usage: Usage, expired: boolean): string | null {
   return usage.failure ? tr(`Sem atualizar${why}.`, `Not updated${why}.`) : null
 }
 
+// Verde até 50%, amarelo de 50 a 70, amarelo alaranjado de 70 a 90 e vermelho de 90 em diante.
 export function barColor(percent: number): string {
   if (percent >= 90) return 'bg-red-500'
-  if (percent >= 75) return 'bg-needs-you'
-  return 'bg-muted'
+  if (percent >= 70) return 'bg-amber-500'
+  if (percent >= 50) return 'bg-yellow-400'
+  return 'bg-green-500'
 }

@@ -2,7 +2,7 @@ import { nativeClaudeFound } from '../claudePath'
 import { expandHome } from '../paths'
 import { IS_WIN } from '../platform'
 import { claudeDistro } from './distros'
-import { parseWslPath } from './path'
+import { parseWslPath, sameDistro } from './path'
 
 // Projetos no Linux do WSL, com o app instalado no Windows. Quem decide onde o Claude Code roda é a
 // pasta: uma do WSL (\\wsl.localhost\<distro>\...) roda dentro daquela distro, com o `claude`, o
@@ -31,4 +31,14 @@ export function distroFor(path?: string): string | null {
   const wsl = path ? parseWslPath(expandHome(path)) : null
   if (wsl) return wsl.distro
   return hasNativeClaude() ? null : claudeDistro()
+}
+
+// A conversa desta pasta roda com o mesmo login do `claude` do app (o que a barra de uso lê)? Com o
+// `claude.exe` no Windows, a de uma pasta do WSL usa o login de lá, que pode ser de outra conta do
+// Claude: os limites que ela informa não são os da conta que o app mostra (relato de 2026-11-12: a
+// barra trocava o semanal de uma conta pelo de outra a cada resposta).
+export function sharesAppLogin(cwd: string): boolean {
+  const own = distroFor()
+  const distro = distroFor(cwd)
+  return own && distro ? sameDistro(own, distro) : own === distro
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { barWindow, expiredUsage, LIVE_MAX_MS, usableUsage, type Usage } from './usage'
+import { barWindow, expiredUsage, LIVE_MAX_MS, showsUsage, usableUsage, type Usage } from './usage'
 
 // O que a tela pode mostrar do uso: depois de uma hora sem atualizar, nenhum número (2026-10-26: o uso
 // de domingo 16:53 aparecia na segunda como se fosse atual).
@@ -43,5 +43,38 @@ describe('barWindow', () => {
 
   it('sessão nula sem a marca (leitura parada, janela recomeçada): nada', () => {
     expect(barWindow(usage(NOW, { session: null }))).toBeNull()
+  })
+})
+
+// 2026-11-12: a cada sessão de 5 horas que acabava, a conta sumia da barra até a leitura seguinte
+// (minutos; até 1 hora com o servidor recusando), sem explicação.
+describe('showsUsage', () => {
+  const past = { percent: 80, resetsAt: '2026-10-26T11:59:00Z' }
+
+  it('sessão que acabou de recomeçar: a conta fica, sem o número antigo e com a marca', () => {
+    const u = usableUsage(usage(NOW - 60_000, { session: past }), NOW)!
+    expect(u.session).toBeNull()
+    expect(u.restarted).toEqual({ session: true })
+    expect(barWindow(u)).toBeNull()
+    expect(showsUsage(u)).toBe(true)
+  })
+
+  it('janelas valendo: sem marca', () => {
+    expect(usableUsage(usage(NOW), NOW)!.restarted).toBeUndefined()
+  })
+
+  it('guardado da abertura anterior: só aparece com algum número que ainda vale', () => {
+    const withWeekly = usableUsage(usage(NOW - 60_000, { saved: true, session: past }), NOW)!
+    expect(showsUsage(withWeekly)).toBe(true)
+    const nothing = usableUsage(usage(NOW - 60_000, { saved: true, session: past, weekly: past, models: [] }), NOW)!
+    expect(showsUsage(nothing)).toBe(false)
+  })
+
+  it('login de uma distro do WSL desligada: a linha fica enquanto os números valem e sai quando vencem', () => {
+    const off = { failure: { reason: 'wsl_stopped' as const } }
+    expect(showsUsage(usableUsage(usage(NOW - 60_000, off), NOW)!)).toBe(true)
+    expect(showsUsage(usableUsage(usage(NOW - LIVE_MAX_MS - 1, off), NOW)!)).toBe(false)
+    // Outra falha: a conta fica, com o motivo.
+    expect(showsUsage(usableUsage(usage(NOW - LIVE_MAX_MS - 1, { failure: { reason: 'timeout' } }), NOW)!)).toBe(true)
   })
 })

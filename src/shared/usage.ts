@@ -26,6 +26,9 @@ export type Usage = {
   // A leitura mais recente não deu certo: os números são os da última que deu (updatedAt).
   // retryAt: o servidor pediu para esperar até essa hora.
   failure?: { reason: UsageFailure; retryAt?: number }
+  // Só no que vai para a tela (ver usableUsage): a janela já recomeçou e o número dela saiu; o novo
+  // vem na próxima leitura.
+  restarted?: { session?: true; weekly?: true }
 }
 
 // rate_limited: o servidor recusou por excesso (429), a cota é a mesma de todo `claude` com o mesmo
@@ -33,8 +36,9 @@ export type Usage = {
 // renovando. failed: o resto (rede, resposta estranha, o `claude` que não abriu). forbidden: o
 // endereço de uso recusou a conta (403), nova tentativa em retryAt. unavailable: o `claude` respondeu,
 // mas sem os limites (sem login, chave de API). signed_out: o Claude Code apagou o login da conta
-// depois de a renovação ser recusada; só volta entrando de novo.
-export type UsageFailure = 'rate_limited' | 'timeout' | 'login' | 'failed' | 'forbidden' | 'unavailable' | 'signed_out'
+// depois de a renovação ser recusada; só volta entrando de novo. wsl_stopped: o uso é o do login de
+// uma distro do WSL, e ela está desligada (o app não liga a distro só para ler o uso).
+export type UsageFailure = 'rate_limited' | 'timeout' | 'login' | 'failed' | 'forbidden' | 'unavailable' | 'signed_out' | 'wsl_stopped'
 
 // Guardado há mais tempo que isso não aparece mais.
 export const SAVED_MAX_MS = 12 * 60 * 60_000
@@ -55,21 +59,24 @@ export function expiredUsage(usage: Usage, now: number): boolean {
 }
 
 // O que dá para mostrar agora, sem nunca mostrar uma porcentagem que já não vale. Janela que já
-// recomeçou (hora de recomeçar no passado) some: o número dela era da janela anterior. Do guardado,
-// some também a janela que ainda não tinha começado (pode ter começado depois) e tudo o que for
-// antigo demais. A tela some com a janela; a conta sem sessão sai da barra de baixo. Da leitura desta
-// abertura parada há mais de LIVE_MAX_MS, somem todos os números (ver expiredUsage).
+// recomeçou (hora de recomeçar no passado) some: o número dela era da janela anterior (fica marcada
+// em `restarted`, e a conta segue na barra sem número até a leitura nova; ver showsUsage). Do
+// guardado, some também a janela que ainda não tinha começado (pode ter começado depois) e tudo o
+// que for antigo demais. Da leitura desta abertura parada há mais de LIVE_MAX_MS, somem todos os
+// números (ver expiredUsage).
 export function usableUsage(usage: Usage, now: number): Usage | null {
   if (usage.saved && (now - usage.updatedAt > SAVED_MAX_MS || usage.updatedAt > now)) return null
   const expired = expiredUsage(usage, now)
+  const passed = (w: UsageWindow | null): boolean => !!w?.resetsAt && !(Date.parse(w.resetsAt) > now)
   const valid = (w: UsageWindow | null): UsageWindow | null => {
     if (!w || expired) return null
     if (!w.resetsAt) return usage.saved ? null : w
-    const resetsAt = Date.parse(w.resetsAt)
-    return Number.isFinite(resetsAt) && resetsAt > now ? w : null
+    return passed(w) ? null : w
   }
+  const restarted = { ...(passed(usage.session) && { session: true as const }), ...(passed(usage.weekly) && { weekly: true as const }) }
   return {
     ...usage,
+    ...(!expired && Object.keys(restarted).length > 0 && { restarted }),
     session: valid(usage.session),
     weekly: valid(usage.weekly),
     models: usage.models.flatMap((m) => {
@@ -77,4 +84,14 @@ export function usableUsage(usage: Usage, now: number): Usage | null {
       return window ? [{ ...m, window }] : []
     })
   }
+}
+
+// A conta aparece na barra? (Sobre o que usableUsage devolveu.) A leitura desta abertura, sempre: sem
+// janela para mostrar (a sessão acabou de recomeçar, a leitura parou), fica sem número até a
+// próxima, em vez de sumir e voltar. O guardado da abertura anterior, só com algum número que ainda
+// vale; e o do login de uma distro do WSL desligada, também (ninguém está gastando lá: a linha sai
+// quando os números vencem e volta com a distro).
+export function showsUsage(usage: Usage): boolean {
+  const hasNumber = !!(barWindow(usage) || usage.weekly || usage.models.length)
+  return hasNumber || (!usage.saved && usage.failure?.reason !== 'wsl_stopped')
 }

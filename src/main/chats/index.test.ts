@@ -7,7 +7,12 @@ import { Chats, type ChatHooks } from './index'
 // conversa trabalhando nem deixar processo parado ocupando memória.
 
 const fake = vi.hoisted(() => {
-  type Events = { changed: (s: FakeSession) => void; identified: (s: FakeSession, id: string) => void; ended: (s: FakeSession) => void }
+  type Events = {
+    changed: (s: FakeSession) => void
+    identified: (s: FakeSession, id: string) => void
+    ended: (s: FakeSession) => void
+    rateLimits: (s: FakeSession, info: unknown) => void
+  }
   class FakeSession {
     readonly keys = new Set<string>()
     readonly cwd: string
@@ -57,6 +62,8 @@ vi.mock('./mcpStatus', () => ({ mcpStatusFor: vi.fn(), removeMcp: vi.fn() }))
 vi.mock('./outputStyle', () => ({ readOutputStyle: vi.fn(), writeOutputStyle: vi.fn() }))
 vi.mock('./env', () => ({ claudeEnv: vi.fn(), claudeLaunch: vi.fn(), claudeProcess: vi.fn() }))
 vi.mock('../accounts', () => ({ resolveAccount: (id?: string) => id || 'main' }))
+// Pasta do WSL com o `claude` do app no Windows: o login da conversa é outro.
+vi.mock('../wsl', () => ({ sharesAppLogin: (cwd: string) => !cwd.startsWith('\\\\wsl.localhost\\') }))
 
 const MINUTE = 60_000
 const settings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: 'manual' }
@@ -279,5 +286,41 @@ describe('Chats: chaves e contas', () => {
     const s = openChat('a')
     s.events.ended(s)
     expect(chats.has('a')).toBe(false)
+  })
+})
+
+describe('Chats: limites que chegam nas respostas', () => {
+  it('vão para a barra de uso, na conta da conversa', () => {
+    const rateLimits = vi.fn()
+    const { openChat } = setup({ rateLimits })
+    const s = openChat('a', { account: 'ab12cd34' })
+    s.events.rateLimits(s, { status: 'allowed' })
+    expect(rateLimits).toHaveBeenCalledWith('ab12cd34', { status: 'allowed' })
+  })
+
+  // 2026-11-12: no Windows com o claude.exe, a conversa da pasta do WSL usa o login de lá, que era de
+  // outra conta do Claude. O semanal dela (42%) aparecia na conta do app, que lia 0% pelo login do Windows.
+  it('de uma conversa que roda com outro login (pasta do WSL) não vão', () => {
+    const rateLimits = vi.fn()
+    const { openChat } = setup({ rateLimits })
+    const s = openChat('a', { cwd: '\\\\wsl.localhost\\Ubuntu\\home\\ana\\p' })
+    s.events.rateLimits(s, { status: 'allowed' })
+    expect(rateLimits).not.toHaveBeenCalled()
+  })
+
+  // Login trocado com a conversa trabalhando: ela termina o pedido com o login antigo.
+  it('de uma conversa aberta antes de o login da conta trocar não vão', () => {
+    const rateLimits = vi.fn()
+    const { chats, openChat } = setup({ rateLimits })
+    const old = openChat('a')
+    old.busy = true
+    chats.loginChanged('main')
+    old.events.rateLimits(old, { status: 'allowed' })
+    expect(rateLimits).not.toHaveBeenCalled()
+    expect(old.closeWhenIdle).toBe(true)
+
+    const other = openChat('b', { account: 'ab12cd34' })
+    other.events.rateLimits(other, { status: 'allowed' })
+    expect(rateLimits).toHaveBeenCalledTimes(1)
   })
 })

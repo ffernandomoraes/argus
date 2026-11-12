@@ -14,6 +14,7 @@ import { memoryTight } from '../systemHealth/memory'
 import { resolveAccount } from '../accounts'
 import { telemetry } from '../telemetry'
 import { tr } from '../i18n'
+import { sharesAppLogin } from '../wsl'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
 // as mesmas operações.
@@ -86,6 +87,8 @@ export class Chats {
   // Chaves abertas em alguma janela agora (ver ChatHolders). A sessão vale enquanto qualquer chave
   // dela estiver aberta: conversa nova tem duas, e cada janela pode estar usando uma.
   private held = new Set<string>()
+  // Conversas abertas com um login que já foi trocado (ver loginChanged).
+  private oldLogin = new WeakSet<AnySession>()
   // Avisos das sessões (ver SessionEvents): o mesmo objeto para todas.
   private events: Events = {
     changed: (s) => {
@@ -105,7 +108,11 @@ export class Chats {
       this.releasing.delete(s)
     },
     limit: (s, limit, busy) => this.hooks.limit?.(s.cwd, s.state.sessionId, limit, busy),
-    rateLimits: (s, info) => this.hooks.rateLimits?.(s.account, info)
+    // Só da conversa que roda com o login que a barra de uso lê (ver sharesAppLogin), e aberta com
+    // o login de agora (ver loginChanged).
+    rateLimits: (s, info) => {
+      if (sharesAppLogin(s.cwd) && !this.oldLogin.has(s)) this.hooks.rateLimits?.(s.account, info)
+    }
   }
 
   constructor(
@@ -172,6 +179,13 @@ export class Chats {
   // mudou e as conversas paradas precisam abrir de novo com o novo).
   releaseAll(account?: string): void {
     new Set(this.sessions.values()).forEach((s) => (!account || s.account === account) && this.letGo(s))
+  }
+
+  // O login do `claude` do app trocou nesta conta: a conversa que ainda trabalha termina o pedido com
+  // o login antigo, e os limites que ela informar são da conta anterior (não vão para a barra de uso).
+  loginChanged(account: string): void {
+    new Set(this.sessions.values()).forEach((s) => s.account === account && this.oldLogin.add(s))
+    this.releaseAll(account)
   }
 
   // Workspace ganhou ou perdeu pasta: as sessões abertas na pasta dele encerram, e a próxima

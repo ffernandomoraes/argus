@@ -21,9 +21,10 @@ export async function runClaude(args: string[], account: string, place?: string)
 // virtual ainda desligada (ou lenta) segurava o app inteiro enquanto respondia.
 const readConfig = (id: string, place?: string) => readJsonFileAsync(join(claudeJsonDir(id, place), '.claude.json'))
 
-// E-mail do login atual da conta, lido do .claude.json dela. undefined se não deu para ler.
-export async function configEmail(id: string): Promise<string | undefined> {
-  const read = await readConfig(id)
+// E-mail do login atual da conta, lido do .claude.json dela (place: o da conta dentro de uma distro
+// do WSL). undefined se não deu para ler.
+export async function configEmail(id: string, place?: string): Promise<string | undefined> {
+  const read = await readConfig(id, place)
   return read.status === 'ok' ? emailFrom(read.data) : undefined
 }
 

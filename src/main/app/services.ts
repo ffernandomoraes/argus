@@ -148,7 +148,13 @@ export function createServices() {
   // Limites de cada conta logada.
   const usage = new UsageMonitors(
     (account, data) => broadcast('usage:update', account, data),
-    (account, info) => broadcast('claude:info', account, info)
+    (account, info) => broadcast('claude:info', account, info),
+    // Login trocado por fora, no terminal: a conferência reabre o monitor de uso com o login novo, e
+    // as conversas da conta abrem de novo com ele (as do WSL já não informam os limites à barra).
+    (account, inWsl) => {
+      if (!inWsl) chats.loginChanged(account)
+      void auth.refresh(account)
+    }
   )
 
   // Contas do Claude Code. O login de uma conta trocou: o monitor de uso e as conversas paradas
@@ -162,8 +168,13 @@ export function createServices() {
     },
     (id, distro) => {
       // Login da conta só dentro de uma distro do WSL: o uso segue o login do `claude` do app.
-      if (!distro) usage.reconnect(id)
-      chats.releaseAll(id)
+      // As conversas de uma pasta de lá já não informam os limites à barra (ver sharesAppLogin).
+      if (distro) {
+        usage.wsl.reconnect(distro, id)
+        return chats.releaseAll(id)
+      }
+      usage.reconnect(id)
+      chats.loginChanged(id)
     },
     (id) => {
       usage.remove(id)

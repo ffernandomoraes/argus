@@ -60,6 +60,8 @@ export function failureText(failure: NonNullable<Usage['failure']>): string {
       return tr('o Claude respondeu sem os limites desta conta', 'Claude answered without this account’s limits')
     case 'signed_out':
       return tr('o login do Claude nesta conta terminou, é preciso entrar de novo', 'this account’s Claude sign-in ended, sign in again')
+    case 'wsl_stopped':
+      return tr('o WSL está desligado', 'WSL is not running')
     case 'timeout':
       return tr('sem resposta na última tentativa', 'no response on the last try')
     case 'login':

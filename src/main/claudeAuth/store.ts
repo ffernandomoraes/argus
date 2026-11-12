@@ -28,8 +28,9 @@ export type Stored = { claudeAiOauth?: OAuth } & Record<string, unknown>
 
 const run = promisify(execFile)
 
-// Do Claude Code do app: no Windows sem o `claude` de lá, o do WSL (ver claudeHome.ts).
-const credentialsFile = (account: string) => join(configDir(account), '.credentials.json')
+// Do Claude Code do app: no Windows sem o `claude` de lá, o do WSL (ver claudeHome.ts). place: uma
+// pasta do WSL, para o login da conta dentro daquela distro (ver auth/wslPlace.ts).
+const credentialsFile = (account: string, place?: string) => join(configDir(account, place), '.credentials.json')
 
 // Como estava o login lido. ok: com acesso. ended: o Claude Code apagou o login depois de a
 // renovação ser recusada (refreshToken e accessToken vazios, expiresAt 0; conferido no binário da
@@ -45,10 +46,10 @@ export function loginState(stored: Stored | null): StoredState {
 }
 
 // O guardado e o estado dele. Nunca rejeita.
-export async function readStoredState(account: string): Promise<{ stored: Stored | null; state: StoredState }> {
+export async function readStoredState(account: string, place?: string): Promise<{ stored: Stored | null; state: StoredState }> {
   let text: string
   try {
-    if (!IS_MAC) text = await readFile(credentialsFile(account), 'utf8')
+    if (!IS_MAC) text = await readFile(credentialsFile(account, place), 'utf8')
     else {
       const service = keychainService(accountDir(account))
       text = (await run('security', ['find-generic-password', '-a', keychainAccount(), '-s', service, '-w'])).stdout

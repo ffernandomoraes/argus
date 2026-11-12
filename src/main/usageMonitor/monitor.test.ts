@@ -226,6 +226,141 @@ describe('UsageMonitor', () => {
     expect(last.updatedAt).toBe(Date.now())
   })
 
+  // 2026-11-12 (print de um Windows): a conversa de uma pasta do WSL rodava com o login de outra
+  // conta, e o semanal dela (42%) aparecia na conta que a leitura direta dava como 0%.
+  it('números de uma conversa de outra conta (a janela recomeça em outra hora) não entram', async () => {
+    fake.reads.push(login(180 * MIN))
+    const mine = {
+      limits: [
+        { kind: 'weekly_all', percent: 0, resets_at: '2099-01-08T02:00:00.332746+00:00' },
+        { kind: 'weekly_scoped', percent: 0, resets_at: '2099-01-08T02:00:00+00:00', scope: { model: { display_name: 'Fable' } } }
+      ]
+    }
+    fake.fetch.mockImplementationOnce(async () => new Response(JSON.stringify(mine), { status: 200 }))
+    await startWithRead()
+    const read = updates.length
+
+    monitor.fromChat({ weekly: { percent: 42, resetsAt: '2099-01-07T01:00:00.000Z' } })
+    expect(updates).toHaveLength(read)
+    expect(monitor.current?.weekly?.percent).toBe(0)
+
+    // Da mesma conta: a mesma hora de recomeçar, com a diferença de menos de 1 s entre as duas fontes.
+    monitor.fromChat({ weekly: { percent: 1, resetsAt: '2099-01-08T02:00:00.000Z' } })
+    expect(updates.at(-1)).toMatchObject({ weekly: { percent: 1 }, noSession: true })
+  })
+
+  it('o que a conversa não traz some depois de uma hora sem leitura direta, em vez de ficar como novo', async () => {
+    fake.reads.push(login(180 * MIN))
+    const withFable = {
+      limits: [
+        { kind: 'session', percent: 24, resets_at: '2099-01-01T00:00:00Z' },
+        { kind: 'weekly_all', percent: 16, resets_at: '2099-01-08T00:00:00Z' },
+        { kind: 'weekly_scoped', percent: 5, resets_at: '2099-01-08T00:00:00Z', scope: { model: { display_name: 'Fable' } } }
+      ]
+    }
+    fake.fetch.mockImplementationOnce(async () => new Response(JSON.stringify(withFable), { status: 200 }))
+    await startWithRead()
+    fake.fetch.mockImplementation(async () => new Response('', { status: 403 }))
+
+    await vi.advanceTimersByTimeAsync(50 * MIN)
+    monitor.fromChat({ session: { percent: 30, resetsAt: '2099-01-01T00:00:00Z' } })
+    expect(updates.at(-1)).toMatchObject({ session: { percent: 30 }, weekly: { percent: 16 }, models: [{ name: 'Fable' }] })
+
+    // Passada uma hora da leitura direta, a sessão (que a conversa trouxe há 20 minutos) continua.
+    await vi.advanceTimersByTimeAsync(20 * MIN)
+    monitor.fromChat({ weekly: { percent: 17, resetsAt: '2099-01-08T00:00:00Z' } })
+    expect(updates.at(-1)).toMatchObject({ session: { percent: 30 }, weekly: { percent: 17 }, models: [] })
+  })
+
+  it('login trocado com a leitura direta no ar: a resposta da conta anterior não entra', async () => {
+    fake.reads.push(login(180 * MIN))
+    let answer!: (res: Response) => void
+    fake.fetch.mockImplementationOnce(() => new Promise<Response>((resolve) => (answer = resolve)))
+    await startWithRead()
+    expect(updates).toHaveLength(0)
+
+    monitor.reconnect()
+    answer(ok())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(updates).toHaveLength(0)
+    expect(monitor.current).toBeNull()
+  })
+
+  // Sem foco, a próxima leitura só sairia em 15 minutos, e a conta ficava sem número na barra até lá.
+  it('quando a sessão recomeça, lê de novo em seguida, sem esperar o intervalo', async () => {
+    fake.reads.push(login(180 * MIN))
+    const soon = { limits: [{ kind: 'session', percent: 80, resets_at: new Date(Date.now() + 4 * MIN).toISOString() }] }
+    fake.fetch.mockImplementationOnce(async () => new Response(JSON.stringify(soon), { status: 200 }))
+    fake.fetch.mockImplementation(async () => ok())
+    await startWithRead()
+    expect(fake.fetch).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(4 * MIN)
+    expect(fake.fetch).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(6_000)
+    expect(fake.fetch).toHaveBeenCalledTimes(2)
+    expect(updates.at(-1)?.session?.percent).toBe(42)
+  })
+
+  // Login trocado por fora (no terminal): quem confere avisa o app, e a leitura com o login em
+  // memória (ainda da conta anterior) não acontece.
+  it('login que não é mais o conferido pelo app: não lê', async () => {
+    let same = false
+    monitor = new UsageMonitor('main', (u) => updates.push(u), undefined, { sameLogin: async () => same })
+    fake.reads.push(login(180 * MIN))
+    fake.fetch.mockImplementation(async () => ok())
+    await startWithRead()
+    expect(fake.fetch).not.toHaveBeenCalled()
+
+    same = true
+    await vi.advanceTimersByTimeAsync(16 * MIN)
+    expect(fake.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  describe('login de uma distro do WSL', () => {
+    let running: boolean
+    beforeEach(() => {
+      running = true
+      fake.launches = true
+      monitor = new UsageMonitor('main', (u) => updates.push(u), undefined, { wsl: { place: '\\\\wsl.localhost\\Ubuntu\\home\\ana', running: async () => running } })
+    })
+
+    it('lê direto, sem abrir o claude na abertura', async () => {
+      fake.reads.push(login(180 * MIN))
+      fake.fetch.mockImplementation(async () => ok())
+      monitor.start()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(fake.spawned).toBe(0)
+      expect(updates.at(-1)?.session?.percent).toBe(42)
+    })
+
+    it('distro desligada: não lê (abrir a pasta dela ligaria a máquina virtual), diz o motivo e não avisa o Sentry', async () => {
+      fake.reads.push(login(180 * MIN))
+      fake.fetch.mockImplementation(async () => ok())
+      monitor.start()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(fake.fetch).toHaveBeenCalledTimes(1)
+
+      running = false
+      await vi.advanceTimersByTimeAsync(40 * MIN)
+      expect(fake.fetch).toHaveBeenCalledTimes(1)
+      expect(monitor.current?.failure?.reason).toBe('wsl_stopped')
+      expect(fake.warn).not.toHaveBeenCalled()
+
+      running = true
+      await vi.advanceTimersByTimeAsync(16 * MIN)
+      expect(fake.fetch).toHaveBeenCalledTimes(2)
+      expect(monitor.current?.failure).toBeUndefined()
+    })
+
+    it('sem login para ler lá: falha, sem deixar um claude aberto de reserva', async () => {
+      monitor.start()
+      await vi.advanceTimersByTimeAsync(20 * MIN)
+      expect(fake.spawned).toBe(0)
+      expect(fake.fetch).not.toHaveBeenCalled()
+    })
+  })
+
   it('recusa por excesso com espera longa não avisa o Sentry enquanto espera (ARGUS-A)', async () => {
     fake.reads.push(login(180 * MIN))
     fake.fetch.mockImplementationOnce(async () => ok())

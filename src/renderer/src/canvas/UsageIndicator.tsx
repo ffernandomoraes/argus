@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef } from 'react'
 import { agentRef, type ProviderId } from '../../../shared/providers'
-import { barWindow, expiredUsage, usableUsage } from '../../../shared/usage'
+import { barWindow, expiredUsage, showsUsage, usableUsage } from '../../../shared/usage'
+import { wslUsage } from '../../../shared/wslUsage'
 import { useAuth } from '../auth/useAuth'
 import { AgentIcon } from '../icons/AgentIcon'
 import { useNow } from '../lib/clock'
@@ -20,8 +21,11 @@ const SILENT: ProviderId[] = ['gemini', 'cursor']
 // conta (a sessão de 5 horas no Claude; o semanal na conta sem sessão, ver barWindow), com o logo antes das contas de cada agente e o nome quando
 // o agente tem mais de uma; o painel traz todas as janelas de todas. As contas dos outros agentes
 // (hoje, só o Codex informa limite) entram só com o experimento de vários agentes ligado.
-// Só o que ainda vale (ver usableUsage): janela que já recomeçou não mostra o número antigo, e o
-// relógio é o mesmo do painel. O uso guardado da abertura anterior aparece apagado até a leitura nova.
+// Só o que ainda vale (ver usableUsage): janela que já recomeçou não mostra o número antigo (a conta
+// fica com "--" até a leitura nova, sem sumir; ver showsUsage), e o relógio é o mesmo do painel. O
+// uso guardado da abertura anterior aparece apagado até a leitura nova.
+// No Windows com o claude.exe, o login de uma conta dentro do WSL que é de outra conta do Claude tem
+// a linha dele, logo depois da conta ("Nome - WSL"; ver shared/wslUsage.ts).
 // O contêiner ocupa a altura da barra: o painel abre acima dela, não sobre a borda.
 // O aberto fica com a BottomBar: enquanto o painel está à vista, ela sobe acima dos drawers.
 export const UsageIndicator = memo(function UsageIndicator({
@@ -46,8 +50,25 @@ export const UsageIndicator = memo(function UsageIndicator({
 
   // Na ordem das configurações: o Claude primeiro (a principal antes), depois as do Codex.
   // Conta desconectada sai da barra mesmo com uso na mão; sem status (não deu para conferir), fica.
+  const accounts = auth?.accounts ?? []
+  const wsl = wslUsage(accounts)
+  const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? ''
   const candidates: Omit<ShownUsage, 'usage'>[] = [
-    ...(auth?.accounts ?? []).filter((a) => a.status?.loggedIn !== false).map((a) => ({ key: a.id, name: a.name })),
+    ...accounts.flatMap((a) => {
+      const lent = wsl.borrowed.find((b) => b.account === a.id)
+      const note = lent
+        ? tr(
+            `No WSL, esta conta está com o login de ${nameOf(lent.from)}: o uso de lá aparece em ${nameOf(lent.from)}.`,
+            `In WSL, this account is signed in as ${nameOf(lent.from)}: usage from there shows under ${nameOf(lent.from)}.`
+          )
+        : undefined
+      const own = a.status?.loggedIn !== false ? [{ key: a.id, name: a.name, note }] : []
+      // Com mais de uma distro, o nome diz qual.
+      const there = wsl.logins
+        .filter((l) => l.account === a.id)
+        .map((l) => ({ key: l.key, name: a.name, place: (a.wsl?.length ?? 0) > 1 ? `WSL (${l.distro})` : 'WSL' }))
+      return [...own, ...there]
+    }),
     ...(providers?.providers.codex.accounts ?? []).filter((a) => a.status?.signedIn !== false).map((a) => ({
       key: agentRef('codex', a.id),
       provider: 'codex' as const,
@@ -56,8 +77,9 @@ export const UsageIndicator = memo(function UsageIndicator({
   ]
   const shown = candidates.flatMap((c): ShownUsage[] => {
     const usage = usages[c.key] && usableUsage(usages[c.key], now)
-    // Sem atualizar há mais de uma hora, fica sem números, com o aviso no painel.
-    return usage && (barWindow(usage) || expiredUsage(usage, now)) ? [{ ...c, usage }] : []
+    // Sem atualizar há mais de uma hora, ou com a janela recém-recomeçada, fica sem números, com o
+    // motivo no painel.
+    return usage && showsUsage(usage) ? [{ ...c, usage }] : []
   })
   const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn))
   if (!shown.length) return null
@@ -65,7 +87,9 @@ export const UsageIndicator = memo(function UsageIndicator({
   // Contas por agente: o nome só aparece quando o mesmo agente tem mais de uma (o logo já diz qual é).
   const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
   const saved = shown.some((x) => x.usage.saved)
-  const stale = shown.some((x) => x.usage.failure || !barWindow(x.usage))
+  const stale = shown.some((x) => x.usage.failure || expiredUsage(x.usage, now))
+  // Sem número e sem falha: a janela recomeçou e a leitura nova ainda não chegou.
+  const waiting = shown.some((x) => !barWindow(x.usage))
   // Barra mais larga com uma conta só; encolhe conforme entram outras, para o botão não crescer demais.
   const barWidth = shown.length === 1 ? 'w-20' : shown.length === 2 ? 'w-14' : 'w-10'
 
@@ -79,15 +103,17 @@ export const UsageIndicator = memo(function UsageIndicator({
             ? tr('O uso não atualizou, veja o motivo nos limites', 'Usage didn’t update, see why in the limits')
             : saved
               ? tr('Último uso guardado, conferindo de novo', 'Last saved usage, checking again')
-              : undefined
+              : waiting
+                ? tr('A janela recomeçou, aguardando a próxima leitura', 'The window restarted, waiting for the next reading')
+                : undefined
         }
         onClick={() => onOpenChange(!open)}
         className={`flex items-center gap-2 rounded-md px-2 py-0.5 text-[12px] text-faint hover:bg-fill hover:text-muted ${
           open ? 'bg-fill text-muted' : ''
         }`}
       >
-        {shown.map(({ key, provider, name, usage }, i) => {
-          // Sem janela: sem atualizar há mais de uma hora (ver acima).
+        {shown.map(({ key, provider, name, place, usage }, i) => {
+          // Sem janela: sem atualizar há mais de uma hora, ou recém-recomeçada (ver acima).
           const limit = barWindow(usage)
           const percent = limit ? Math.round(limit.percent) : null
           const firstOfAgent = i === 0 || shown[i - 1].provider !== provider
@@ -101,7 +127,13 @@ export const UsageIndicator = memo(function UsageIndicator({
             >
               {i > 0 && <span>-</span>}
               {firstOfAgent && <AgentIcon provider={provider} size={12} />}
-              {perAgent(provider) > 1 && <span className="max-w-24 truncate">{name}</span>}
+              {/* O lugar fica fora do corte do nome: "Nome compri… - WSL". */}
+              {(perAgent(provider) > 1 || place) && (
+                <span className="flex items-center gap-1">
+                  <span className="max-w-24 truncate">{name}</span>
+                  {place && <span className="whitespace-nowrap">- {place}</span>}
+                </span>
+              )}
               <UsageBar percent={percent ?? 0} className={`h-1 ${barWidth}`} />
               <span className="font-mono text-muted">{percent === null ? '--' : `${percent}%`}</span>
             </span>

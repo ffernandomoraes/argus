@@ -1,11 +1,13 @@
-import type { Account } from '../../shared/auth'
+import type { ClaudeAccount } from '../../shared/auth'
 import type { ClaudeInfo } from '../../shared/models'
 import type { Usage } from '../../shared/usage'
 import { configEmail } from '../auth/status'
 import { CodexUsageMonitors } from './codex'
+import { LoginWatch } from './loginWatch'
 import { UsageMonitor } from './monitor'
 import { parseChatWindows } from './parse'
 import { SavedUsages } from './saved'
+import { WslUsageMonitors } from './wsl'
 
 export { UsageMonitor } from './monitor'
 
@@ -13,6 +15,8 @@ export { UsageMonitor } from './monitor'
 // As contas do Codex vão pelo mesmo aviso ('usage:update'), com a chave "codex:<id>" (ver codex.ts).
 // Enquanto a conta não tem leitura nova nesta abertura, vale o último uso guardado dela, se o
 // login for o mesmo que o gerou (ver saved.ts).
+// O login da conta dentro de uma distro do WSL, quando é de outra conta do Claude, tem o uso dele à
+// parte (ver wsl.ts), pelo mesmo aviso.
 export class UsageMonitors {
   private monitors = new Map<string, UsageMonitor>()
   // E-mail do login conferido de cada conta, guardado junto com o uso lido.
@@ -20,13 +24,20 @@ export class UsageMonitors {
   // App fechando: um aviso de login que chegue depois não abre processo novo.
   private closed = false
   private saved = new SavedUsages()
+  private logins: LoginWatch
   readonly codex: CodexUsageMonitors
+  readonly wsl: WslUsageMonitors
 
   constructor(
     private onUpdate: (account: string, usage: Usage | null) => void,
-    private onInfo: (account: string, info: ClaudeInfo) => void
+    private onInfo: (account: string, info: ClaudeInfo) => void,
+    // O login de uma conta foi trocado por fora (ver loginWatch.ts): o app confere a conta de novo.
+    // inWsl: só o login dela dentro de uma distro do WSL.
+    onLoginChanged: (account: string, inWsl: boolean) => void = () => {}
   ) {
+    this.logins = new LoginWatch(onLoginChanged)
     this.codex = new CodexUsageMonitors(onUpdate, this.saved)
+    this.wsl = new WslUsageMonitors(onUpdate, this.logins)
     // O guardado do Claude aparece já na abertura se o .claude.json da conta tem o mesmo login, sem
     // esperar o `claude auth status` (que pode demorar ou falhar). Os do Codex esperam a conferência.
     for (const key of this.saved.keys()) if (!key.includes(':')) void this.trustSaved(key)
@@ -42,8 +53,9 @@ export class UsageMonitors {
 
   // Cada conferência de login das contas do Claude. Sem status (não deu para conferir), a conta fica
   // como estava: nem abre monitor, nem perde o guardado.
-  sync(accounts: { id: string; status: Account | null }[]): void {
+  sync(accounts: Pick<ClaudeAccount, 'id' | 'status' | 'wsl'>[]): void {
     if (this.closed) return
+    this.wsl.sync(accounts)
     const ids = new Set(accounts.map((a) => a.id))
     for (const key of this.saved.keys()) if (!key.includes(':') && !ids.has(key)) this.forgetSaved(key)
     for (const { id, status } of accounts) {
@@ -55,6 +67,7 @@ export class UsageMonitors {
       this.emails.set(id, email)
       const monitor = this.monitors.get(id)
       // Sem login, o monitor é fechado logo abaixo (drop).
+      if (changed) this.logins.forget(id)
       if (changed && monitor && status.loggedIn) {
         monitor.reconnect()
         this.onUpdate(id, null)
@@ -74,7 +87,8 @@ export class UsageMonitors {
           if (!usage.failure) this.saved.remember(account, usage, this.emails.get(account))
           this.onUpdate(account, usage)
         },
-        (info) => this.onInfo(account, info)
+        (info) => this.onInfo(account, info),
+        { sameLogin: () => this.logins.same(account, account, this.emails.get(account)) }
       )
       this.monitors.set(account, monitor)
       monitor.start()
@@ -85,6 +99,7 @@ export class UsageMonitors {
   // estava na tela era do login anterior: some até a leitura do novo.
   reconnect(account: string): void {
     this.emails.delete(account)
+    this.logins.forget(account)
     this.saved.forget(account)
     this.monitors.get(account)?.reconnect()
     this.onUpdate(account, null)
@@ -95,6 +110,7 @@ export class UsageMonitors {
   // a cada 5 minutos, com ou sem foco (cada leitura abre um processo).
   refresh(open = false): void {
     this.monitors.forEach((m) => m.refresh(open))
+    this.wsl.refresh(open)
   }
 
   // Limites que chegaram numa resposta de conversa da conta (rate_limit_event; ver parseChatWindows).
@@ -117,6 +133,7 @@ export class UsageMonitors {
   private drop(account: string, monitor: UsageMonitor): void {
     monitor.stop()
     this.monitors.delete(account)
+    this.logins.forget(account)
     this.saved.forget(account)
     this.onUpdate(account, null)
   }
@@ -132,7 +149,7 @@ export class UsageMonitors {
       if (saved) out[key] = saved
     }
     for (const [account, monitor] of this.monitors) if (monitor.current) out[account] = monitor.current
-    return { ...out, ...this.codex.all() }
+    return { ...out, ...this.codex.all(), ...this.wsl.all() }
   }
 
   info(account: string): ClaudeInfo | null {
@@ -144,5 +161,6 @@ export class UsageMonitors {
     this.monitors.forEach((m) => m.stop())
     this.monitors.clear()
     this.codex.stop()
+    this.wsl.stop()
   }
 }

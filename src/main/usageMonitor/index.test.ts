@@ -17,6 +17,7 @@ vi.mock('../auth/status', () => ({
 }))
 vi.mock('./codex', () => ({ CodexUsageMonitors: class { all = () => ({}); stop() {} } }))
 vi.mock('./monitor', () => ({ UsageMonitor: class {} }))
+vi.mock('./wsl', () => ({ WslUsageMonitors: class { all = () => ({}); stop() {} } }))
 vi.mock('./saved', () => ({
   SavedUsages: class {
     keys = () => [...fake.saved.keys()]

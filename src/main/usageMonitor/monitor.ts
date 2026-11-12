@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { BrowserWindow } from 'electron'
 import type { ClaudeInfo } from '../../shared/models'
-import type { Usage, UsageFailure } from '../../shared/usage'
+import { LIVE_MAX_MS, type Usage, type UsageFailure, type UsageWindow } from '../../shared/usage'
 import { claudeLaunch } from '../chats'
 import { CONTROL_ARGS as ARGS } from '../claudeAuth/renew'
 import { readStoredState, type Stored, type StoredState } from '../claudeAuth/store'
@@ -69,8 +69,34 @@ const ONE_SHOT_TIMEOUT_MS = 60_000
 const RENEW_GAP_MS = 10 * 60_000
 // Chamadas diretas que falham em seguida (rede, resposta estranha) antes de voltar ao `claude` aberto.
 const MAX_FAILURES = 3
+// Uma janela acabou de recomeçar: lê de novo logo depois, em vez de esperar o intervalo com a conta
+// sem número na barra. Mais longe que o teto (nenhuma janela passa de uma semana), não agenda.
+const RESET_SLACK_MS = 5_000
+const RESET_MAX_MS = 8 * 24 * 60 * 60_000
+// A mesma janela recomeça na mesma hora na leitura direta e na resposta da conversa (menos de 1 s de
+// diferença, conferido em 2026-11-12). Mais que isso: a conversa roda com o login de outra conta.
+const SAME_RESET_MS = 5 * 60_000
+
+// As duas janelas estão em andamento e recomeçam em horas diferentes: não são da mesma conta.
+function otherAccount(known: UsageWindow | null, chat: UsageWindow | undefined, now: number): boolean {
+  if (!known?.resetsAt || !chat?.resetsAt) return false
+  const a = Date.parse(known.resetsAt)
+  const b = Date.parse(chat.resetsAt)
+  return a > now && b > now && Math.abs(a - b) > SAME_RESET_MS
+}
 
 type Token = { value: string; expiresAt: number; plan: unknown; scopes: string[] }
+
+export type MonitorOptions = {
+  // O uso é o do login da conta dentro de uma distro do WSL, não o do `claude` do app (Windows com o
+  // claude.exe; ver usageMonitor/wsl.ts). place: uma pasta de lá. running: a distro está ligada?
+  // Desligada, nada é lido: abrir a pasta dela ligaria a máquina virtual só por causa da barra. Sem
+  // `claude` aberto na abertura nem de reserva: só a leitura direta, e o de uma vez só para renovar.
+  wsl?: { place: string; running: () => Promise<boolean> }
+  // O login guardado ainda é o da conta que o app conferiu? Falso: trocaram por fora (no terminal), e
+  // quem confere avisa o app para conferir de novo (ver loginWatch.ts); esta leitura não acontece.
+  sameLogin?: () => Promise<boolean>
+}
 
 export class UsageMonitor {
   private proc: ChildProcessWithoutNullStreams | null = null
@@ -88,6 +114,12 @@ export class UsageMonitor {
   private seq = 0
   // Cada start; um anterior que ainda esperava o WSL não abre nada (ver launch).
   private starts = 0
+  // Cada troca de login (reconnect): a leitura direta ou o `claude` que já estavam no ar respondem
+  // pela conta anterior, e a resposta deles não vale mais.
+  private epoch = 0
+  // Quando chegou cada parte do uso (leitura direta ou conversa): a conversa só traz a sessão e o
+  // semanal, e o que ela não traz não pode ficar na tela como novo para sempre (ver fromChat).
+  private seenAt = { session: 0, weekly: 0, models: 0 }
   // O login, guardado até perto de vencer: ler as Chaves do macOS a cada minuto abriria um processo.
   private token: Token | null = null
   // O servidor recusou este login (401): não usa mais, espera o `claude` renovar.
@@ -119,6 +151,10 @@ export class UsageMonitor {
   // O `claude` recebeu a pergunta e ainda não respondeu: o de reserva calado é fechado e reaberto.
   private askedClaudeAt = 0
   private tickedAt = 0
+  private resetTimer: NodeJS.Timeout | null = null
+  // A última leitura pedida por uma janela que recomeçou: no máximo uma por batida, mesmo que o
+  // servidor siga devolvendo uma janela prestes a recomeçar.
+  private resetReadAt = 0
   // A última leitura que deu certo (sem o motivo da falha; para a tela, ver current).
   last: Usage | null = null
   info: ClaudeInfo | null = null
@@ -126,13 +162,16 @@ export class UsageMonitor {
   constructor(
     private account: string,
     private onUpdate: (usage: Usage) => void,
-    private onInfo: (info: ClaudeInfo) => void = () => {}
+    private onInfo: (info: ClaudeInfo) => void = () => {},
+    private options: MonitorOptions = {}
   ) {}
 
   start(): void {
     this.stopped = false
-    // Os modelos, a conta e os primeiros limites; depois, a chamada direta (ver poll).
-    this.launch(true)
+    // Os modelos, a conta e os primeiros limites; depois, a chamada direta (ver poll). O login de uma
+    // distro do WSL só tem os limites para dar: direto a chamada.
+    if (this.options.wsl) void this.poll()
+    else this.launch(true)
     this.tickedAt = Date.now()
     this.timer = setInterval(() => this.tick(), TICK_MS)
   }
@@ -148,12 +187,16 @@ export class UsageMonitor {
     this.clearTimer()
     if (this.restart) clearTimeout(this.restart)
     this.restart = null
+    if (this.resetTimer) clearTimeout(this.resetTimer)
+    this.resetTimer = null
     this.closeProc()
   }
 
   // Conta trocada: o `claude` aberto guardou o login antigo e responderia pela conta anterior.
   reconnect(): void {
     this.stop()
+    this.epoch++
+    this.seenAt = { session: 0, weekly: 0, models: 0 }
     this.last = null
     this.info = null
     this.token = null
@@ -234,13 +277,22 @@ export class UsageMonitor {
   }
 
   private async read(): Promise<void> {
+    const epoch = this.epoch
+    const { wsl, sameLogin } = this.options
+    if (wsl && !(await wsl.running())) {
+      if (epoch === this.epoch) this.fail('wsl_stopped')
+      return
+    }
+    if (sameLogin && !(await sameLogin())) return
     const token = await this.validToken()
+    // O login trocou enquanto era lido: quem responde agora é a leitura do novo (ver reconnect).
+    if (epoch !== this.epoch) return
     // Sem login (o Claude Code apagou): renovar não dá, e o `claude` de reserva não teria o que
     // responder. Segue relendo no intervalo, e volta sozinho quando a pessoa entrar de novo.
     if (token === 'ended') return this.fail('signed_out')
-    if (token === 'none') return this.fallBack()
+    if (token === 'none') return wsl ? this.fail('failed') : this.fallBack()
     if (!token) return this.renewLogin()
-    await this.fetchUsage(token)
+    await this.fetchUsage(token, epoch)
   }
 
   // O login da conta: válido; null vencido ou recusado (o `claude` renova); 'ended' apagado pelo
@@ -263,7 +315,7 @@ export class UsageMonitor {
 
   // Lê o login (a leitura em andamento, se houver) e guarda o estado dele para o aviso.
   private async readLogin(): Promise<{ stored: Stored | null; state: StoredState }> {
-    const pending = this.tokenRead ?? readStoredState(this.account)
+    const pending = this.tokenRead ?? readStoredState(this.account, this.options.wsl?.place)
     if (!this.tokenRead) {
       this.tokenRead = pending
       void pending.finally(() => this.tokenRead === pending && (this.tokenRead = null))
@@ -275,7 +327,7 @@ export class UsageMonitor {
     return read
   }
 
-  private async fetchUsage(token: Token): Promise<void> {
+  private async fetchUsage(token: Token, epoch: number): Promise<void> {
     let res: Response
     try {
       res = await fetch(USAGE_URL, {
@@ -283,10 +335,12 @@ export class UsageMonitor {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
       })
     } catch (err) {
+      if (this.stopped || epoch !== this.epoch) return
       this.status = null
       return this.failed((err as Error | null)?.name === 'TimeoutError' ? 'timeout' : 'failed')
     }
-    if (this.stopped) return
+    // Conta que saiu, ou login trocado com a chamada no ar: a resposta é da conta anterior.
+    if (this.stopped || epoch !== this.epoch) return
     this.status = res.ok ? null : res.status
     if (res.status === 403) {
       // Não conta como falha seguida: o `claude` de reserva pergunta ao mesmo endereço com o mesmo
@@ -311,6 +365,7 @@ export class UsageMonitor {
       return this.fail('rate_limited', this.quietUntil)
     }
     const usage = res.ok ? parseRateLimits(await res.json().catch(() => null), token.plan, Date.now()) : null
+    if (this.stopped || epoch !== this.epoch) return
     if (!usage) return this.failed('failed')
     this.failures = 0
     this.succeeded(usage)
@@ -322,24 +377,35 @@ export class UsageMonitor {
   }
 
   // Os números que chegaram numa resposta de conversa desta conta (ver parseChatWindows): a sessão e o
-  // semanal vão para a tela na hora, mesmo com a leitura direta esperando o prazo de uma recusa. O
-  // semanal de um modelo só segue o da última leitura direta. Não mexe no intervalo das perguntas:
-  // a leitura direta continua trazendo o resto.
+  // semanal vão para a tela na hora, mesmo com a leitura direta esperando o prazo de uma recusa. Não
+  // mexe no intervalo das perguntas: a leitura direta continua trazendo o resto.
+  // De outra conta, não entram: a resposta não diz de quem é, mas a hora de recomeçar de cada janela é
+  // da conta, e a de uma janela em andamento não muda (2026-11-12: a conversa de uma pasta do WSL, com
+  // outro login, punha 42% numa conta que estava em 0%).
+  // O que a conversa não traz (o semanal de um modelo só, ou uma das duas janelas) segue o que já se
+  // sabia, enquanto isso tiver menos de uma hora: a hora do uso passa a ser a da conversa, e sem o
+  // limite um número antigo ficaria na tela como novo enquanto a leitura direta não voltasse.
   fromChat(windows: ChatWindows): void {
     if (this.stopped) return
-    const { noSession, ...base }: Usage = this.last ?? { session: null, weekly: null, models: [], updatedAt: 0 }
+    const now = Date.now()
+    const last = this.last
+    if (last && (otherAccount(last.session, windows.session, now) || otherAccount(last.weekly, windows.weekly, now))) return
+    const recent = (part: keyof typeof this.seenAt) => now - this.seenAt[part] <= LIVE_MAX_MS
+    if (windows.session) this.seenAt.session = now
+    if (windows.weekly) this.seenAt.weekly = now
     const usage: Usage = {
-      ...base,
+      session: windows.session ?? (last && recent('session') ? last.session : null),
+      weekly: windows.weekly ?? (last && recent('weekly') ? last.weekly : null),
+      models: last && recent('models') ? last.models : [],
       // Veio a sessão: a conta tem a de 5 horas.
-      ...(noSession && !windows.session && { noSession }),
-      session: windows.session ?? base.session,
-      weekly: windows.weekly ?? base.weekly,
-      updatedAt: Date.now()
+      ...(last?.noSession && !windows.session && { noSession: true }),
+      updatedAt: now
     }
     this.failure = null
     this.failingSince = 0
     this.reported = false
     this.last = usage
+    this.watchReset(usage)
     this.onUpdate(usage)
   }
 
@@ -353,8 +419,32 @@ export class UsageMonitor {
     this.reported = false
     this.askedClaudeAt = 0
     this.askedAt = Date.now()
+    this.seenAt = { session: usage.updatedAt, weekly: usage.updatedAt, models: usage.updatedAt }
     this.last = usage
+    this.watchReset(usage)
     this.onUpdate(usage)
+  }
+
+  // Na hora em que a próxima janela recomeça, o número dela deixa de valer e sai da tela: lê de novo
+  // em seguida, sem esperar o intervalo (a conta ficava sem número por até 3 minutos a cada sessão).
+  // Uma leitura a mais por janela; recusada ou em espera, vale o intervalo de sempre.
+  private watchReset(usage: Usage): void {
+    if (this.resetTimer) clearTimeout(this.resetTimer)
+    this.resetTimer = null
+    const now = Date.now()
+    const resets = [usage.session, usage.weekly, ...usage.models.map((m) => m.window)]
+      .map((w) => (w?.resetsAt ? Date.parse(w.resetsAt) : NaN))
+      .filter((at) => at > now)
+    if (!resets.length) return
+    const wait = Math.min(...resets) - now + RESET_SLACK_MS
+    if (wait > RESET_MAX_MS) return
+    this.resetTimer = setTimeout(() => {
+      this.resetTimer = null
+      if (Date.now() - this.resetReadAt < TICK_MS) return
+      this.resetReadAt = Date.now()
+      this.askedAt = 0
+      void this.poll()
+    }, wait)
   }
 
   // A leitura não deu certo: a tela segue com os últimos números, marcados com o motivo.
@@ -375,6 +465,8 @@ export class UsageMonitor {
   // saía na batida da nova tentativa, antes dela: ARGUS-A, 2026-11-04, uma falha só e a janela
   // escondida logo depois.
   private checkStall(now: number): void {
+    // A distro desligada não é parada: nada a ler até ela ligar.
+    if (this.failure?.reason === 'wsl_stopped') return
     if (!this.failingSince || this.reported || now - Math.max(this.failingSince, this.quietUntil) < STALL_MS) return
     if (this.polling || (this.askedClaudeAt && now - this.askedClaudeAt < ONE_SHOT_TIMEOUT_MS)) return
     this.reported = true
@@ -403,7 +495,7 @@ export class UsageMonitor {
 
   // A chamada direta não serve para esta conta: o `claude` aberto, como antes.
   private fallBack(): void {
-    if (this.persistent) return
+    if (this.persistent || this.options.wsl) return
     this.persistent = true
     console.warn('[usage] sem a chamada direta para esta conta; segue com o `claude` aberto')
     if (!this.proc) this.launch(false)
@@ -422,7 +514,7 @@ export class UsageMonitor {
   private launch(oneShot: boolean): void {
     const seq = ++this.starts
     // No WSL, espera a distro responder na primeira vez (ver claudeLaunch).
-    void claudeLaunch(ARGS, this.account).then((l) => {
+    void claudeLaunch(ARGS, this.account, this.options.wsl?.place).then((l) => {
       if (this.stopped || seq !== this.starts || this.proc) return
       if (!l.ok) {
         console.warn('[usage] falha ao iniciar o claude:', l.error)
@@ -444,7 +536,10 @@ export class UsageMonitor {
 
     let gotInfo = false
     let gotUsage = false
+    const epoch = this.epoch
     createInterface({ input: proc.stdout }).on('line', (line) => {
+      // Conta que saiu, ou login trocado: este `claude` ainda responde pela conta anterior.
+      if (this.stopped || epoch !== this.epoch) return
       const reply = this.onLine(line)
       gotInfo ||= !!reply?.info
       gotUsage ||= !!reply?.usage || !!reply?.noLimits

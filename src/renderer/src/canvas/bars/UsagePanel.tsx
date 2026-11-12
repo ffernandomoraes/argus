@@ -9,8 +9,10 @@ import { resetLabel, staleText, timeLeft, windowTitle } from './usageFormat'
 import { LOCALE, tr } from '../../i18n'
 
 // Uma conta com limites à vista: do Claude (sem provider) ou de outro agente (hoje, só o Codex).
-// key: a mesma do aviso de uso ("main", "codex:main").
-export type ShownUsage = { key: string; provider?: ProviderId; name: string; usage: Usage }
+// key: a mesma do aviso de uso ("main", "codex:main", "wsl:ubuntu:main"). place: onde vale esse uso
+// quando não é o login comum da conta ("WSL", "WSL (Ubuntu)"). note: um aviso da conta, abaixo das
+// janelas dela (o login dela no WSL é o de outra conta do app).
+export type ShownUsage = { key: string; provider?: ProviderId; name: string; place?: string; usage: Usage; note?: string }
 
 // note: o texto no lugar da barra quando a janela não existe na conta (não é falta de dado).
 type Row = { title: string; window: UsageWindow | null; note?: string }
@@ -18,23 +20,28 @@ type Row = { title: string; window: UsageWindow | null; note?: string }
 // Linhas de uma conta. As do Claude têm rótulo fixo (sessão de 5 horas e semanal, que aparece mesmo
 // sem dados); na conta sem sessão (Ultra verificado), a linha da sessão diz que não há limite. As dos outros agentes vêm da duração que cada janela informa, e só as que existem: o
 // plano free do Codex tem uma janela só, de 30 dias.
+// A janela que já recomeçou fica sem número até a leitura nova (ver usableUsage), e a linha diz isso.
 function rowsOf({ provider, usage }: ShownUsage): Row[] {
+  const restarted = tr('Recomeçou, aguardando a próxima leitura', 'Restarted, waiting for the next reading')
   if (!provider) {
     return [
       {
         title: tr('Sessão (5 horas)', 'Session (5 hours)'),
         window: usage.session,
-        note: usage.noSession ? tr('Sem limite neste plano', 'No limit on this plan') : undefined
+        note: usage.noSession ? tr('Sem limite neste plano', 'No limit on this plan') : usage.restarted?.session ? restarted : undefined
       },
-      { title: tr('Semanal', 'Weekly'), window: usage.weekly },
+      { title: tr('Semanal', 'Weekly'), window: usage.weekly, note: usage.restarted?.weekly ? restarted : undefined },
       ...usage.models.map((m) => ({ title: tr(`Semanal ${m.name}`, `Weekly ${m.name}`), window: m.window }))
     ]
   }
   const windows = [usage.session, usage.weekly].filter((w): w is UsageWindow => !!w)
-  return [
+  const rows = [
     ...windows.map((w) => ({ title: windowTitle(w.minutes), window: w })),
     ...usage.models.map((m) => ({ title: `${m.name} - ${windowTitle(m.window.minutes)}`, window: m.window }))
   ]
+  // A duração da janela foi junto com ela: sem nenhuma outra, uma linha só com o aviso.
+  if (!rows.length && usage.restarted) return [{ title: windowTitle(), window: null, note: restarted }]
+  return rows
 }
 
 // "O Gemini não informa os limites." / "Gemini e Cursor não informam os limites."
@@ -82,7 +89,7 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
 export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: ProviderId[] }) {
   const now = useNow(30_000)
   const mixed = shown.some((x) => x.provider)
-  const named = shown.length > 1 || mixed
+  const named = shown.length > 1 || mixed || shown.some((x) => x.place)
   // A leitura mais antiga das contas à vista: o rodapé nunca diz mais novo do que é.
   const updatedAt = Math.min(...shown.map((x) => x.usage.updatedAt))
   const updatedTime = new Date(updatedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
@@ -110,7 +117,7 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
                 {named && (
                   <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
                     {mixed && <AgentIcon provider={entry.provider} size={12} />}
-                    <span className="truncate">{entry.name}</span>
+                    <span className="truncate">{entry.place ? `${entry.name} - ${entry.place}` : entry.name}</span>
                     {entry.usage.saved && <span className="shrink-0 normal-case tracking-normal font-normal">- {tr('guardado', 'saved')}</span>}
                   </div>
                 )}
@@ -122,6 +129,7 @@ export function UsagePanel({ shown, silent }: { shown: ShownUsage[]; silent: Pro
                   </div>
                 )}
                 {stale && <div className={`text-[12px] text-needs-you ${expired ? '' : 'mt-3'}`}>{stale}</div>}
+                {entry.note && <div className="mt-3 text-[12px] text-faint">{entry.note}</div>}
               </div>
             )
           })}

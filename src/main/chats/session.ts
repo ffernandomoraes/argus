@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { query, type HookCallbackMatcher, type Query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer } from '../../shared/chat'
-import type { McpAuthResult, McpServer } from '../../shared/mcp'
+import type { McpAuthResult, McpCallbackResult, McpServer } from '../../shared/mcp'
 import { resolveAccount } from '../accounts'
 import { learnContextWindow } from '../contextWindows'
 import { tr } from '../i18n'
 import { ARGUS_ALLOWED_TOOLS, ARGUS_MCP, ARGUS_READ_TERMINAL, argusMcp, readsOwnOutput } from '../terminals/drawerShells'
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
-import { authenticateMcp, clearMcpAuth, mcpServersOf } from './mcpStatus'
+import { authenticateMcp, clearMcpAuth, mcpServersOf, submitMcpCallback } from './mcpStatus'
 import { confirmStopCause } from '../systemHealth/stopEvidence'
 import { firstCause, friendlyError, stopKind, stopText, userMessage, type StopKind } from './messages'
 import { PendingPermissions } from './permissions'
@@ -226,8 +226,12 @@ export class ChatSession {
   }
 
   // "Autorizar" e "Desconectar" do painel (ver mcpStatus.ts).
-  authenticateMcp(name: string): Promise<McpAuthResult> {
-    return authenticateMcp(this.q, name)
+  authenticateMcp(name: string, remote?: boolean): Promise<McpAuthResult> {
+    return authenticateMcp(this.q, name, remote)
+  }
+
+  submitMcpCallback(name: string, url: string): Promise<McpCallbackResult> {
+    return submitMcpCallback(this.q, name, url)
   }
 
   clearMcpAuth(name: string): Promise<void> {

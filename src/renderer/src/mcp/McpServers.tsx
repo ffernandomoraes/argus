@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, Check, ChevronRight, Ellipsis, ExternalLink, Loader2, Lock, LogOut, Power, RotateCw, Trash2 } from 'lucide-react'
-import { REMOVABLE_SCOPES, type McpAuthResult, type McpServer, type McpStatus } from '../../../shared/mcp'
+import { REMOVABLE_SCOPES, type McpAuthResult, type McpCallbackResult, type McpServer, type McpStatus } from '../../../shared/mcp'
 import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
 import { ContextMenu, type MenuItem } from '../canvas/ContextMenu'
 import { useAnchoredMenu } from '../ui/useAnchoredMenu'
@@ -14,6 +14,8 @@ export type McpSource = {
   status: (wait: boolean) => Promise<McpStatus>
   reconnect: (name: string) => Promise<McpStatus>
   authenticate: (name: string) => Promise<McpAuthResult>
+  // Janela de acesso remoto: o endereço da volta do navegador, colado pela pessoa.
+  submitCallback: (name: string, url: string) => Promise<McpCallbackResult>
   clearAuth: (name: string) => Promise<McpStatus>
   remove: (name: string, scope: string) => Promise<McpStatus>
 }
@@ -51,6 +53,8 @@ export function useMcpServers(source: McpSource) {
   // Servidores com o link de autorização aberto no navegador. O valor: conector do claude.ai, que é
   // preciso reconectar ao voltar para o app (o site não avisa o Claude).
   const [authorizing, setAuthorizing] = useState<ReadonlyMap<string, boolean>>(new Map())
+  // Janela de acesso remoto: servidores esperando o endereço da volta do navegador, colado aqui.
+  const [pasting, setPasting] = useState<ReadonlySet<string>>(new Set())
 
   // Removidos agora: a sessão aberta da conversa ainda os vê até reabrir, então somem daqui.
   const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set())
@@ -62,6 +66,7 @@ export function useMcpServers(source: McpSource) {
     setLoading(true)
     setStatus(null)
     setAuthorizing(new Map())
+    setPasting(new Set())
     setRemoved(new Set())
     void fetchStatus(true).then((s) => {
       if (!alive) return
@@ -102,6 +107,11 @@ export function useMcpServers(source: McpSource) {
       for (const name of done) next.delete(name)
       return next
     })
+    setPasting((p) => {
+      const next = new Set(p)
+      for (const name of done) next.delete(name)
+      return next
+    })
   }, [servers, authorizing])
 
   const run = (name: string, action: Promise<McpStatus>) => {
@@ -133,9 +143,28 @@ export function useMcpServers(source: McpSource) {
   const authorize = (name: string) => {
     setActionError(null)
     void source.authenticate(name).then(
-      (r) => (r.ok ? setAuthorizing((a) => new Map(a).set(name, r.manualReconnect)) : setActionError(r.error)),
+      (r) => {
+        if (!r.ok) return setActionError(r.error)
+        // Janela de acesso remoto: o link volta para abrir no navegador deste computador.
+        if (r.openUrl) window.api.auth.open(r.openUrl)
+        if (r.pasteBack) setPasting((p) => new Set(p).add(name))
+        setAuthorizing((a) => new Map(a).set(name, r.manualReconnect))
+      },
       (err: unknown) => setActionError(err instanceof Error ? err.message : String(err))
     )
+  }
+
+  // Devolve o erro (para mostrar junto do campo) ou nulo; dando certo, a lista segue esperando o
+  // servidor conectar.
+  const submitCallback = async (name: string, url: string): Promise<string | null> => {
+    const r = await source.submitCallback(name, url).catch((err: unknown) => ({ ok: false as const, error: err instanceof Error ? err.message : String(err) }))
+    if (!r.ok) return r.error
+    setPasting((p) => {
+      const next = new Set(p)
+      next.delete(name)
+      return next
+    })
+    return null
   }
 
   // De volta ao app depois de autorizar um conector do claude.ai no site: reconecta para ele valer.
@@ -147,7 +176,7 @@ export function useMcpServers(source: McpSource) {
     return () => window.removeEventListener('focus', onFocus)
   })
 
-  return { status, servers, live, loading, refresh, reconnecting, authorizing, actionError, reconnect, authorize, signOut, remove }
+  return { status, servers, live, loading, refresh, reconnecting, authorizing, pasting, actionError, reconnect, authorize, submitCallback, signOut, remove }
 }
 
 // Página dos conectores no claude.ai; abre no navegador (ver main/app/navigation.ts).
@@ -160,10 +189,12 @@ type Actions = { onReconnect?: () => void; onAuthorize?: () => void; onSignOut?:
 // authorizing: o link já abriu no navegador e a lista espera a autorização terminar.
 // Na linha fica só o que é a vez do servidor (Autorizar, ou o que está acontecendo agora); o resto
 // vai no menu dos três pontinhos, que com tudo à vista a linha pesava.
-function ServerRow({ server, reconnecting, authorizing, onReconnect, onAuthorize, onSignOut, onRemove }: {
+function ServerRow({ server, reconnecting, authorizing, onReconnect, onAuthorize, onSignOut, onRemove, onPasteBack }: {
   server: McpServer
   reconnecting: boolean
   authorizing: boolean
+  // Janela de acesso remoto esperando o endereço da volta do navegador.
+  onPasteBack?: (url: string) => Promise<string | null>
 } & Actions) {
   const anchorRef = useRef<HTMLButtonElement>(null)
   const menu = useAnchoredMenu(anchorRef)
@@ -196,6 +227,7 @@ function ServerRow({ server, reconnecting, authorizing, onReconnect, onAuthorize
         </div>
         {meta && <div className="truncate text-[15px] text-faint">{meta}</div>}
         {server.error && <p className="mt-0.5 line-clamp-2 text-[15px] leading-snug text-muted">{server.error}</p>}
+        {onPasteBack && <PasteBack onSubmit={onPasteBack} />}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {reconnecting ? (
@@ -237,6 +269,53 @@ function ServerRow({ server, reconnecting, authorizing, onReconnect, onAuthorize
       {/* No body: dentro da área que rola, o menu seria cortado. */}
       {menu.open && pos && createPortal(<ContextMenu menu={{ ...pos, items }} onClose={menu.close} />, document.body)}
     </li>
+  )
+}
+
+// Janela de acesso remoto: ao terminar a autorização, o navegador daqui tenta voltar para um
+// localhost do outro computador e mostra uma página que não abre. O endereço dela leva o código: a
+// pessoa cola aqui e ele vai para o Claude de lá.
+function PasteBack({ onSubmit }: { onSubmit: (url: string) => Promise<string | null> }) {
+  const [url, setUrl] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const submit = () => {
+    if (!url.trim() || sending) return
+    setSending(true)
+    setError(null)
+    void onSubmit(url).then((err) => {
+      setSending(false)
+      setError(err)
+    })
+  }
+  return (
+    <div className="mt-1.5 flex flex-col gap-1">
+      <p className="text-[15px] leading-snug text-faint">
+        {tr(
+          'Ao terminar no navegador, a página final não vai abrir. Copie o endereço dela (começa com http://localhost) e cole aqui.',
+          'When you finish in the browser, the last page won’t load. Copy its address (it starts with http://localhost) and paste it here.'
+        )}
+      </p>
+      <div className="flex items-center gap-1">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && submit()}
+          placeholder="http://localhost:…/callback?code=…"
+          spellCheck={false}
+          className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none placeholder:font-sans placeholder:text-faint focus:border-line-strong"
+        />
+        <button
+          onClick={submit}
+          disabled={!url.trim() || sending}
+          className="flex shrink-0 items-center gap-1 rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
+        >
+          {sending && <Loader2 size={11} className="animate-spin" />}
+          {tr('Enviar', 'Send')}
+        </button>
+      </div>
+      {error && <p className="text-[15px] leading-snug text-red-400">{error}</p>}
+    </div>
   )
 }
 
@@ -329,6 +408,7 @@ export function McpServerList({ state, empty, notLive }: { state: ReturnType<typ
                   server={server}
                   reconnecting={state.reconnecting.has(server.name)}
                   authorizing={state.authorizing.has(server.name)}
+                  onPasteBack={state.pasting.has(server.name) ? (url) => state.submitCallback(server.name, url) : undefined}
                   {...(live && {
                     onReconnect: () => state.reconnect(server.name),
                     onAuthorize: () => state.authorize(server.name),

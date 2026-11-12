@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { filesBlock } from '../../shared/attachedFiles'
 import type { ChatSendRequest, ChatSettings, ChatState, PermissionAnswer, PermissionRequest, QueuedMessage } from '../../shared/chat'
 import type { Message } from '../../shared/history'
-import type { McpAuthResult, McpServer } from '../../shared/mcp'
+import type { McpAuthResult, McpCallbackResult, McpServer } from '../../shared/mcp'
 import type { AgentRef } from '../../shared/providers'
 import { tr } from '../i18n'
 import { expandHome } from '../paths'
@@ -117,6 +117,10 @@ export class AgentChatSession {
   async reconnectMcp(): Promise<void> {}
 
   async authenticateMcp(): Promise<McpAuthResult> {
+    return { ok: false, error: tr('Só o Claude autoriza servidores MCP por aqui.', 'Only Claude authorizes MCP servers here.') }
+  }
+
+  async submitMcpCallback(): Promise<McpCallbackResult> {
     return { ok: false, error: tr('Só o Claude autoriza servidores MCP por aqui.', 'Only Claude authorizes MCP servers here.') }
   }
 

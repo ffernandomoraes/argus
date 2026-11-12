@@ -6,8 +6,6 @@ import {
   releaseDictation,
   setDictationPhase
 } from './dictationOwner'
-import { IS_REMOTE } from '../remote'
-import { tr } from '../i18n'
 
 export type DictationState = 'idle' | 'starting' | 'listening'
 
@@ -40,11 +38,8 @@ export function useDictation(onText: (text: string) => void) {
   )
 
   const start = useCallback(() => {
-    // Na janela remota o microfone seria o deste computador e o ditado roda lá: fica de fora.
-    if (IS_REMOTE) {
-      setError({ message: tr('O ditado não funciona no acesso remoto.', 'Dictation does not work over remote access.') })
-      return
-    }
+    // Na janela remota também: o ditado roda neste computador (microfone e conta daqui; ver
+    // remote/policy.ts) e só o texto vai para o outro.
     setError(null)
     setState('starting')
     claimDictation(session)

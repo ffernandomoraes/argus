@@ -78,6 +78,21 @@ export async function pasteFromClipboard(root: string, dirRel: string): Promise<
         : tr('no Finder com ⌘C', 'in Finder with ⌘C')
     return { ok: false, error: tr(`Nada copiado para colar. Copie arquivos ${hint}.`, `Nothing to paste. Copy files ${hint}.`) }
   }
+  return copyEach(root, dir, sources)
+}
+
+// Copiar e colar na janela de acesso remoto: a área de transferência do sistema é a do notebook, e
+// os arquivos são deste computador. A janela guarda o que foi copiado na árvore (pasta e itens) e
+// pede a cópia direto, entre pastas daqui.
+export async function copyInto(fromRoot: string, rels: string[], root: string, dirRel: string): Promise<FileOpResult> {
+  const dir = insideRoot(root, dirRel)
+  if (!dir) return outside()
+  const sources = rels.map((r) => insideRoot(fromRoot, r)).filter((p): p is string => !!p)
+  if (!sources.length) return outside()
+  return copyEach(root, dir, sources)
+}
+
+async function copyEach(root: string, dir: string, sources: string[]): Promise<FileOpResult> {
   let last = ''
   try {
     for (const src of sources) {

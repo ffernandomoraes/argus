@@ -1,6 +1,6 @@
 import type { Query } from '@anthropic-ai/claude-agent-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { authenticateMcp, mcpServersOf, removeMcp } from './mcpStatus'
+import { authenticateMcp, mcpServersOf, removeMcp, submitMcpCallback } from './mcpStatus'
 
 // O painel de MCPs da conversa. Sem `claude` de verdade: a Query responde o que o teste manda.
 
@@ -8,6 +8,7 @@ const openExternal = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock('electron', () => ({ shell: { openExternal } }))
 vi.mock('../terminals/drawerShells', () => ({ ARGUS_MCP: 'argus' }))
 vi.mock('../wsl', () => ({ distroFor: () => null }))
+vi.mock('../i18n', () => ({ tr: (pt: string) => pt }))
 vi.mock('./env', () => ({ claudeCodeOptions: vi.fn(), claudeLaunch: vi.fn(async () => ({ ok: false, error: 'sem claude' })) }))
 
 type Raw = { name: string; status: string; tools?: unknown[]; config?: { type: string } }
@@ -69,6 +70,39 @@ describe('authenticateMcp', () => {
   it('falha vira mensagem no painel, não exceção', async () => {
     const q = { mcpAuthenticate: vi.fn(async () => Promise.reject(new Error('sem rede'))) } as unknown as Query
     expect(await authenticateMcp(q, 'a')).toEqual({ ok: false, error: 'sem rede' })
+  })
+
+  it('pedido da janela de acesso remoto: não abre aqui, devolve o link e pede o endereço de volta', async () => {
+    openExternal.mockClear()
+    expect(await authenticateMcp(asking({ authUrl: 'https://auth.example.test/x', callbackExpected: true }), 'a', true)).toEqual({
+      ok: true,
+      manualReconnect: false,
+      openUrl: 'https://auth.example.test/x',
+      pasteBack: true
+    })
+    // Conector do claude.ai: abre no site, sem endereço de volta.
+    expect(await authenticateMcp(asking({ authUrl: 'https://claude.ai/x', callbackExpected: false }), 'a', true)).toMatchObject({ manualReconnect: true, pasteBack: false })
+    expect(openExternal).not.toHaveBeenCalled()
+  })
+})
+
+describe('submitMcpCallback', () => {
+  const taking = () => {
+    const mcpSubmitOAuthCallbackUrl = vi.fn(async () => undefined)
+    return { q: { mcpSubmitOAuthCallbackUrl } as unknown as Query, mcpSubmitOAuthCallbackUrl }
+  }
+
+  it('manda ao Claude o endereço colado, sem espaços', async () => {
+    const { q, mcpSubmitOAuthCallbackUrl } = taking()
+    expect(await submitMcpCallback(q, 'linear', '  http://localhost:4321/callback?code=abc&state=x \n')).toEqual({ ok: true })
+    expect(mcpSubmitOAuthCallbackUrl).toHaveBeenCalledWith('linear', 'http://localhost:4321/callback?code=abc&state=x')
+  })
+
+  it('recusa o que não parece a página de volta (sem code=)', async () => {
+    const { q, mcpSubmitOAuthCallbackUrl } = taking()
+    expect(await submitMcpCallback(q, 'linear', 'abc123')).toMatchObject({ ok: false })
+    expect(await submitMcpCallback(q, 'linear', 'http://localhost:4321/')).toMatchObject({ ok: false })
+    expect(mcpSubmitOAuthCallbackUrl).not.toHaveBeenCalled()
   })
 })
 

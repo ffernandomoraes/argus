@@ -243,7 +243,7 @@ export const Composer = memo(function Composer(props: Props) {
   }
 
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
-    const files = pastedFiles(e.clipboardData, (f) => window.api.filePath(f))
+    const files = pastedFiles(e.clipboardData, (f) => window.api.isDiskFile(f))
     if (!files.length) return
     e.preventDefault()
     attachments.add(files)

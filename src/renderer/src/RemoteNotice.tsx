@@ -69,29 +69,34 @@ export function showRemoteNotice(text: string): void {
   for (const l of listeners) l(text)
 }
 
-// Servidor do projeto rodando no outro computador: o localhost daqui é outro.
-export function localhostNotice(): void {
-  const h = host()
-  showRemoteNotice(
-    tr(
-      `Esse servidor roda em ${h}, e o localhost daqui é deste computador. Abra o endereço no navegador de ${h}.`,
-      `This server runs on ${h}, and localhost here is this computer. Open the address in ${h}'s browser.`
-    )
-  )
+// Servidor do projeto rodando no outro computador: abre no navegador daqui por um túnel na ligação
+// (ver main/remote/tunnelClient.ts). Com a porta ocupada aqui, vai por outra, e o aviso diz qual.
+export function openRemoteLocalhost(port: number): void {
+  void window.api.remote.openLocalhost(port).then((r) => {
+    if (!r.ok) return showRemoteNotice(r.error)
+    if (r.port !== port)
+      showRemoteNotice(
+        tr(
+          `A porta ${port} já está em uso neste computador: o servidor de ${host()} abriu em localhost:${r.port}.`,
+          `Port ${port} is already in use on this computer: ${host()}'s server opened at localhost:${r.port}.`
+        )
+      )
+  })
 }
 
-// Arquivos (fora imagens e áudios) arrastados ou colados: o caminho é deste computador.
-export function localFilesNotice(count: number): void {
+// Anexos (fora imagens e áudios) grandes demais para mandar ao outro computador.
+export function bigFilesNotice(count: number, max: number): void {
   const h = host()
+  const mb = Math.round(max / 1024 / 1024)
   showRemoteNotice(
     count === 1
       ? tr(
-          `Esse arquivo está neste computador, e a conversa roda em ${h}: pelo acesso remoto só imagens e áudios vão junto.`,
-          `This file is on this computer, and the chat runs on ${h}: over remote access only images and audio go along.`
+          `Esse arquivo passa de ${mb} MB e não vai para ${h} pelo acesso remoto.`,
+          `This file is over ${mb} MB and can’t be sent to ${h} over remote access.`
         )
       : tr(
-          `Esses ${count} arquivos estão neste computador, e a conversa roda em ${h}: pelo acesso remoto só imagens e áudios vão junto.`,
-          `These ${count} files are on this computer, and the chat runs on ${h}: over remote access only images and audio go along.`
+          `Esses ${count} arquivos passam de ${mb} MB e não vão para ${h} pelo acesso remoto.`,
+          `These ${count} files are over ${mb} MB and can’t be sent to ${h} over remote access.`
         )
   )
 }

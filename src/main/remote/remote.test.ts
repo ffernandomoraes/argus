@@ -204,13 +204,17 @@ describe('mensagens do notebook', () => {
 })
 
 describe('política dos canais', () => {
-  it('tema e zoom ficam no notebook; seletor de pastas e ditado bloqueados; o resto vai para casa', () => {
+  it('tema, zoom e ditado ficam no notebook; seletor de pastas bloqueado; o resto vai para casa', () => {
     expect(channelPolicy('theme:set')).toBe('local')
     expect(channelPolicy('interface:zoom')).toBe('local')
     expect(channelPolicy('dialog:pickFolder')).toBe('blocked')
-    expect(channelPolicy('speech:start')).toBe('blocked')
+    for (const ch of ['speech:start', 'speech:stop', 'speech:audio', 'speech:openSettings']) expect(channelPolicy(ch)).toBe('local')
     expect(channelPolicy('files:reveal')).toBe('blocked')
     expect(channelPolicy('chat:send')).toBe('remote')
+    // Abrir localhost: quem abre a porta é o notebook; o túnel e o login de MCP vão para casa.
+    expect(channelPolicy('remote:openLocalhost')).toBe('local')
+    for (const ch of ['tunnel:open', 'tunnel:data', 'tunnel:close', 'files:copyInto', 'files:upload', 'mcp:authenticate', 'mcp:submitCallback'])
+      expect(channelPolicy(ch)).toBe('remote')
     expect(channelPolicy('terminal:write')).toBe('remote')
     // Entrar na conta do Claude de longe tem que funcionar: sem login lá, não há o que fazer daqui.
     for (const ch of ['auth:login', 'auth:add', 'auth:code', 'auth:install', 'auth:logout']) expect(channelPolicy(ch)).toBe('remote')

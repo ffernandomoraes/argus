@@ -3,7 +3,8 @@ import { isAudioFile } from '../../../shared/transcription'
 import { forgetTranscripts, watchAudio } from './audio/transcripts'
 import { isSendableImage } from './chatImages'
 import { IS_REMOTE } from '../remote'
-import { localFilesNotice } from '../RemoteNotice'
+import { bigFilesNotice } from '../RemoteNotice'
+import { MAX_REMOTE_UPLOAD } from '../../../shared/files'
 
 export type Attachment = {
   id: string
@@ -42,13 +43,13 @@ export function useAttachments(key: string) {
   }, [key, items])
 
   const add = useCallback((files: FileList | File[]) => {
-    // Janela de acesso remoto: o caminho de um arquivo é deste computador e não existe no outro. Só
-    // imagens (vão como dados) e áudios (a transcrição vai como texto) passam; o resto é explicado.
+    // Janela de acesso remoto: o arquivo vai pela ligação ao enviar (ver useConversationActions), até
+    // um limite; o maior fica de fora, com aviso. Imagens vão como dados e áudios, como texto.
     let list = Array.from(files)
     if (IS_REMOTE) {
-      const local = list.filter((f) => !isSendableImage(f) && !isAudioFile(f.name, f.type))
-      if (local.length) localFilesNotice(local.length)
-      list = list.filter((f) => !local.includes(f))
+      const big = list.filter((f) => !isSendableImage(f) && !isAudioFile(f.name, f.type) && f.size > MAX_REMOTE_UPLOAD)
+      if (big.length) bigFilesNotice(big.length, MAX_REMOTE_UPLOAD)
+      list = list.filter((f) => !big.includes(f))
     }
     const next = list.map((file) => withPreview({ id: crypto.randomUUID(), file }, urls.current))
     if (next.length) setItems((all) => [...all, ...next])

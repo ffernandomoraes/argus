@@ -25,6 +25,11 @@ export const REMOVABLE_SCOPES = ['user', 'local', 'project']
 // Sem ela, de uma consulta avulsa, que espera todos terminarem de conectar.
 // "Autorizar" de um servidor: o link abriu no navegador. manualReconnect: conector do claude.ai, que
 // se autoriza no site e não avisa o Claude; ao voltar para o app, é preciso reconectar.
-export type McpAuthResult = { ok: true; manualReconnect: boolean } | { ok: false; error: string }
+// Pedido da janela de acesso remoto: o navegador daqui não é o de quem está usando, então o link
+// volta em openUrl para abrir no notebook. pasteBack: a volta do navegador (o endereço localhost
+// de lá) não chega aqui, e a pessoa cola o endereço da página que não abriu (ver McpCallbackResult).
+export type McpAuthResult = { ok: true; manualReconnect: boolean; openUrl?: string; pasteBack?: boolean } | { ok: false; error: string }
+
+export type McpCallbackResult = { ok: true } | { ok: false; error: string }
 
 export type McpStatus = { ok: true; servers: McpServer[]; live: boolean } | { ok: false; error: string }

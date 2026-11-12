@@ -1,5 +1,5 @@
 import { cleanTitle, type ChatRemoteRequest, type ChatRenameRequest, type ChatSendRequest, type ChatSettings, type ChatState, type OutputStyleStatus, type PermissionAnswer } from '../../shared/chat'
-import type { McpAuthResult, McpStatus } from '../../shared/mcp'
+import type { McpAuthResult, McpCallbackResult, McpStatus } from '../../shared/mcp'
 import type { ChatEntry } from './entries'
 import { AccountMcp } from './accountMcp'
 import { mcpStatusFor, removeMcp } from './mcpStatus'
@@ -309,10 +309,16 @@ export class Chats {
 
   // "Autorizar" e "Desconectar" de um servidor no painel; só com a sessão da conversa aberta (o
   // `claude` dela espera a volta do navegador).
-  async authenticateMcp(key: string, name: string): Promise<McpAuthResult> {
+  async authenticateMcp(key: string, name: string, remote?: boolean): Promise<McpAuthResult> {
     const session = this.sessions.get(key)
     if (!session) return { ok: false, error: tr('A conversa não está aberta.', 'The chat isn’t open.') }
-    return session.authenticateMcp(name)
+    return session.authenticateMcp(name, remote)
+  }
+
+  async submitMcpCallback(key: string, name: string, url: string): Promise<McpCallbackResult> {
+    const session = this.sessions.get(key)
+    if (!session) return { ok: false, error: tr('A conversa não está aberta.', 'The chat isn’t open.') }
+    return session.submitMcpCallback(name, url)
   }
 
   async clearMcpAuth(key: string, name: string): Promise<McpStatus> {

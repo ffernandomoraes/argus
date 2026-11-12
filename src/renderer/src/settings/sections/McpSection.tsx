@@ -22,6 +22,7 @@ export function McpSection() {
       status: (wait) => window.api.accountMcp.status(account, wait),
       reconnect: (name) => window.api.accountMcp.reconnect(account, name),
       authenticate: (name) => window.api.accountMcp.authenticate(account, name),
+      submitCallback: (name, url) => window.api.accountMcp.submitCallback(account, name, url),
       clearAuth: (name) => window.api.accountMcp.clearAuth(account, name),
       remove: (name, scope) => window.api.accountMcp.remove(account, name, scope)
     }),

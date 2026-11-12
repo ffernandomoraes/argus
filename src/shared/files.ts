@@ -22,6 +22,10 @@ export type FileDiff = { ok: true; hunks: DiffHunk[] } | { ok: false; error: str
 // foi gravado.
 export type FileOpResult = { ok: true; path: string } | { ok: false; error: string; conflict?: boolean }
 
+// Tamanho máximo de um anexo pela janela de acesso remoto (vai inteiro numa mensagem da ligação, que
+// aceita até 64 MB).
+export const MAX_REMOTE_UPLOAD = 50 * 1024 * 1024
+
 // Documentos, imagens e mídia: o visualizador do sistema mostra (Quick Look no Mac, app padrão no
 // Windows e no Linux). O editor de código só mostraria lixo.
 const SYSTEM_VIEW = (

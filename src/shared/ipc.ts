@@ -13,7 +13,7 @@ import type { DevServer, ProjectServer } from './devServers'
 import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
 import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
-import type { McpAuthResult, McpStatus } from './mcp'
+import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
@@ -25,7 +25,7 @@ import type { TranscriptionModel } from './transcription'
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
-import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemotePairResult } from './remote'
+import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote'
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -46,6 +46,9 @@ export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', '
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
 export type InvokeChannels = {
+  // Janela de acesso remoto: abre no navegador daqui um servidor que roda no localhost do outro
+  // computador (ver main/remote/tunnelClient.ts).
+  'remote:openLocalhost': (port: number) => RemoteLocalhostResult
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   'dialog:pickFolder': (distro?: string) => string | null
   // Várias pastas de uma vez (workspace); cancelado: vazio.
@@ -110,12 +113,15 @@ export type InvokeChannels = {
   'chat:rename': (req: ChatRenameRequest) => string | null
   'mcp:reconnect': (key: string, name: string) => McpStatus
   'mcp:authenticate': (key: string, name: string) => McpAuthResult
+  // Janela de acesso remoto: o endereço da volta do navegador, colado (ver McpAuthResult.pasteBack).
+  'mcp:submitCallback': (key: string, name: string, url: string) => McpCallbackResult
   'mcp:clearAuth': (key: string, name: string) => McpStatus
   'mcp:remove': (key: string, cwd: string, account: string | undefined, name: string, scope: string) => McpStatus
   // Aba MCP das configurações: os servidores de uma conta, sem conversa ('' é a principal).
   'mcp:account:status': (account: string, wait: boolean) => McpStatus
   'mcp:account:reconnect': (account: string, name: string) => McpStatus
   'mcp:account:authenticate': (account: string, name: string) => McpAuthResult
+  'mcp:account:submitCallback': (account: string, name: string, url: string) => McpCallbackResult
   'mcp:account:clearAuth': (account: string, name: string) => McpStatus
   'mcp:account:remove': (account: string, name: string, scope: string) => McpStatus
   'agents:list': (provider: AgentProvider, projectPath?: string) => AgentDef[]
@@ -168,6 +174,8 @@ export type InvokeChannels = {
   'files:trash': (root: string, rel: string) => FileOpResult
   'files:copy': (root: string, rels: string[]) => void
   'files:paste': (root: string, dir: string) => FileOpResult
+  'files:copyInto': (fromRoot: string, rels: string[], root: string, dir: string) => FileOpResult
+  'files:upload': (name: string, data: Uint8Array) => FileOpResult
   // Terminais
   'terminal:open': (req: TerminalOpenRequest) => TerminalOpenResult
   // Conversa que o `claude` do terminal criou ou retomou, já gravada; nula se ainda não há.
@@ -187,6 +195,11 @@ export type InvokeChannels = {
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
 export type SendChannels = {
+  // "Abrir localhost" pelo acesso remoto: do Argus do notebook para o de casa, nunca de uma janela
+  // (ver main/remote/tunnelHost.ts). As respostas voltam como avisos tunnel:data e tunnel:close.
+  'tunnel:open': (id: number, port: number) => void
+  'tunnel:data': (id: number, data: Uint8Array) => void
+  'tunnel:close': (id: number) => void
   'theme:set': (theme: ThemeSource) => void
   'interface:zoom': (factor: number) => void
   'clipboard:command': (command: ClipboardCommand) => void

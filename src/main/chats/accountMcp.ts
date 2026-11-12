@@ -1,9 +1,9 @@
 import { homedir } from 'node:os'
 import { query, type Query } from '@anthropic-ai/claude-agent-sdk'
-import type { McpAuthResult, McpStatus } from '../../shared/mcp'
+import type { McpAuthResult, McpCallbackResult, McpStatus } from '../../shared/mcp'
 import { claudeCodeOptions } from './env'
 import { Inbox } from './inbox'
-import { authenticateMcp, clearMcpAuth, mcpServersOf, removeMcp } from './mcpStatus'
+import { authenticateMcp, clearMcpAuth, mcpServersOf, removeMcp, submitMcpCallback } from './mcpStatus'
 
 // Sem chamada nesse tempo (aba fechada sem avisar), o `claude` da conta fecha sozinho. Enquanto a
 // aba espera uma autorização, ela pergunta a cada segundo e o mantém aberto.
@@ -54,8 +54,12 @@ export class AccountMcp {
     return this.status(account, false)
   }
 
-  authenticate(account: string, name: string): Promise<McpAuthResult> {
-    return authenticateMcp(this.probe(account), name)
+  authenticate(account: string, name: string, remote?: boolean): Promise<McpAuthResult> {
+    return authenticateMcp(this.probe(account), name, remote)
+  }
+
+  submitCallback(account: string, name: string, url: string): Promise<McpCallbackResult> {
+    return submitMcpCallback(this.probe(account), name, url)
   }
 
   async clearAuth(account: string, name: string): Promise<McpStatus> {

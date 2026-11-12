@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { query, type Query } from '@anthropic-ai/claude-agent-sdk'
 import { shell } from 'electron'
-import { REMOVABLE_SCOPES, type McpAuthResult, type McpServer } from '../../shared/mcp'
+import { REMOVABLE_SCOPES, type McpAuthResult, type McpCallbackResult, type McpServer } from '../../shared/mcp'
 import { tr } from '../i18n'
 import { ARGUS_MCP } from '../terminals/drawerShells'
 import { distroFor } from '../wsl'
@@ -62,18 +62,47 @@ export async function mcpStatusFor(cwd: string, account?: string): Promise<McpSe
 type AuthQuery = {
   mcpAuthenticate(name: string): Promise<{ authUrl?: string; callbackExpected?: boolean } | undefined>
   mcpClearAuth(name: string): Promise<unknown>
+  // Existe no SDK (conferido na versão instalada em 2026-11-11: mcp_oauth_callback_url), fora dos tipos.
+  mcpSubmitOAuthCallbackUrl(name: string, callbackUrl: string): Promise<unknown>
 }
 
 // Começa a autorização de um servidor (o "Autorizar" do painel, como o /mcp do terminal) e abre o
 // link no navegador. O `claude` fica esperando a volta e, ao terminar, reconecta sozinho. Conector do
 // claude.ai: o link é a página dele no site, sem volta (callbackExpected false). Sem link: já estava
 // autorizado.
-export async function authenticateMcp(q: Query, name: string): Promise<McpAuthResult> {
+//
+// remote: pedido da janela de acesso remoto. O link não abre aqui (não tem ninguém na frente deste
+// computador): volta para a janela abrir no navegador do notebook. A volta do navegador vai para um
+// localhost deste computador, que o notebook não alcança: a pessoa cola o endereço (submitMcpCallback).
+export async function authenticateMcp(q: Query, name: string, remote = false): Promise<McpAuthResult> {
   try {
     const start = (await (q as unknown as AuthQuery).mcpAuthenticate(name)) ?? {}
     // Só link da web: o endereço vem do servidor de autorização, de fora do app.
-    if (start.authUrl && /^https?:\/\//i.test(start.authUrl)) await shell.openExternal(start.authUrl)
-    return { ok: true, manualReconnect: !!start.authUrl && start.callbackExpected === false }
+    const url = start.authUrl && /^https?:\/\//i.test(start.authUrl) ? start.authUrl : undefined
+    const manualReconnect = !!start.authUrl && start.callbackExpected === false
+    if (remote) return { ok: true, manualReconnect, openUrl: url, pasteBack: !!url && start.callbackExpected !== false }
+    if (url) await shell.openExternal(url)
+    return { ok: true, manualReconnect }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
+// O endereço da página de volta (http://localhost:…/callback?code=…), colado pela pessoa na janela
+// de acesso remoto: termina a autorização como se o navegador tivesse voltado aqui.
+export async function submitMcpCallback(q: Query, name: string, url: string): Promise<McpCallbackResult> {
+  const clean = url.trim()
+  if (!/^https?:\/\/\S+$/i.test(clean) || !/[?&](code|error)=/.test(clean))
+    return {
+      ok: false,
+      error: tr(
+        'Cole o endereço completo da página que o navegador não conseguiu abrir (começa com http://localhost e tem "code=").',
+        'Paste the full address of the page the browser couldn’t open (it starts with http://localhost and has "code=").'
+      )
+    }
+  try {
+    await (q as unknown as AuthQuery).mcpSubmitOAuthCallbackUrl(name, clean)
+    return { ok: true }
   } catch (err) {
     return { ok: false, error: (err as Error).message }
   }

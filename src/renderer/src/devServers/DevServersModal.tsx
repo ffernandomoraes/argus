@@ -7,7 +7,7 @@ import { ModalCloseButton } from '../ui/ModalCloseButton'
 import { useDevServers } from './useDevServers'
 import { tr } from '../i18n'
 import { IS_REMOTE } from '../remote'
-import { localhostNotice } from '../RemoteNotice'
+import { openRemoteLocalhost } from '../RemoteNotice'
 
 const LOCK_REASON = tr(
   'Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão',
@@ -78,7 +78,7 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <Button size="sm" onClick={() => (IS_REMOTE ? localhostNotice() : void window.open(`http://localhost:${s.port}`))} title={tr(`Abrir localhost:${s.port} no navegador`, `Open localhost:${s.port} in the browser`)}>
+                <Button size="sm" onClick={() => (IS_REMOTE ? openRemoteLocalhost(s.port) : void window.open(`http://localhost:${s.port}`))} title={tr(`Abrir localhost:${s.port} no navegador`, `Open localhost:${s.port} in the browser`)}>
                   <ExternalLink size={12} />
                   {tr('Abrir', 'Open')}
                 </Button>

@@ -47,7 +47,8 @@ const api: Api = {
   remote: {
     host: remote,
     onState: (cb) => listen('remote:state', cb),
-    onBlocked: (cb) => listen('remote:blocked', cb)
+    onBlocked: (cb) => listen('remote:blocked', cb),
+    openLocalhost: (port) => invoke('remote:openLocalhost', port)
   },
   remoteAccess: {
     state: () => invoke('remoteAccess:state'),
@@ -169,10 +170,12 @@ const api: Api = {
   },
   // O arquivo arrastado é deste computador: na janela remota o caminho não serve lá (vazio).
   filePath: (file) => (remote ? '' : webUtils.getPathForFile(file)),
+  isDiskFile: (file) => !!webUtils.getPathForFile(file),
   accountMcp: {
     status: (account, wait) => invoke('mcp:account:status', account, wait),
     reconnect: (account, name) => invoke('mcp:account:reconnect', account, name),
     authenticate: (account, name) => invoke('mcp:account:authenticate', account, name),
+    submitCallback: (account, name, url) => invoke('mcp:account:submitCallback', account, name, url),
     clearAuth: (account, name) => invoke('mcp:account:clearAuth', account, name),
     remove: (account, name, scope) => invoke('mcp:account:remove', account, name, scope),
     release: (account) => send('mcp:account:release', account)
@@ -187,6 +190,7 @@ const api: Api = {
     mcpStatus: (key, cwd, account) => invoke('mcp:status', key, cwd, account),
     mcpReconnect: (key, name) => invoke('mcp:reconnect', key, name),
     mcpAuthenticate: (key, name) => invoke('mcp:authenticate', key, name),
+    mcpSubmitCallback: (key, name, url) => invoke('mcp:submitCallback', key, name, url),
     mcpClearAuth: (key, name) => invoke('mcp:clearAuth', key, name),
     mcpRemove: (key, cwd, account, name, scope) => invoke('mcp:remove', key, cwd, account, name, scope),
     outputStyle: (key, cwd, account) => invoke('chat:outputStyle', key, cwd, account),
@@ -305,6 +309,8 @@ const api: Api = {
     trash: (root, rel) => invoke('files:trash', root, rel),
     copy: (root, rels) => invoke('files:copy', root, rels),
     paste: (root, dir) => invoke('files:paste', root, dir),
+    copyInto: (fromRoot, rels, root, dir) => invoke('files:copyInto', fromRoot, rels, root, dir),
+    upload: (name, data) => invoke('files:upload', name, data),
     reveal: (root, rel) => send('files:reveal', root, rel),
     openFolder: (path) => send('files:openFolder', path),
     view: (root, rel) => send('files:view', root, rel),

@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron'
 import {
+  copyInto,
   copyToClipboard,
   createItem,
   listDir,
@@ -15,6 +16,7 @@ import {
   viewItem,
   writeFile
 } from '../files'
+import { saveUpload } from '../files/upload'
 import { unwatchFile, watchFile } from '../fileWatch'
 import type { UnsavedFiles } from '../app/unsavedFiles'
 import { contentsOf } from './page'
@@ -34,6 +36,8 @@ export function registerFilesIpc(unsaved: UnsavedFiles): void {
   handle('files:trash', (_e, root, rel) => trashItem(root, rel))
   handle('files:copy', (_e, root, rels) => copyToClipboard(root, rels))
   handle('files:paste', (_e, root, dir) => pasteFromClipboard(root, dir))
+  handle('files:copyInto', (_e, fromRoot, rels, root, dir) => copyInto(fromRoot, rels, root, dir))
+  handle('files:upload', (_e, name, data) => saveUpload(name, data))
   on('files:reveal', (_e, root, rel) => revealItem(root, rel))
   on('files:openFolder', (_e, path) => openFolder(path))
   on('files:view', (e, root, rel) => {

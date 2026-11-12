@@ -11,6 +11,12 @@ import { treeMenu, type TreeMenuActions } from './treeMenu'
 import { dirsUpTo, parentOf } from './treePaths'
 import type { FileTree } from './useFileTree'
 import { tr } from '../../i18n'
+import { IS_REMOTE } from '../../remote'
+
+// Janela de acesso remoto: a área de transferência do sistema é a deste computador, e os arquivos são
+// do outro. Copiar na árvore guarda aqui o que foi copiado, e colar copia direto entre as pastas de
+// lá (vale entre árvores e projetos desta janela).
+let remoteCopied: { root: string; rels: string[] } | null = null
 
 // A Lixeira do Windows abre direto da Área de Trabalho; a do Mac, pelo Finder.
 // Em inglês, a Lixeira tem nome diferente em cada sistema.
@@ -118,7 +124,13 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     })
 
   const paste = async (dir: string) => {
-    const path = done(await window.api.files.paste(root, dir))
+    const path = done(
+      !IS_REMOTE
+        ? await window.api.files.paste(root, dir)
+        : remoteCopied
+          ? await window.api.files.copyInto(remoteCopied.root, remoteCopied.rels, root, dir)
+          : { ok: false, error: tr('Nada copiado para colar. Copie arquivos aqui na árvore.', 'Nothing to paste. Copy files here in the tree.') }
+    )
     if (path === null) return
     tree.expand(dir)
     tree.load(dir)
@@ -127,7 +139,7 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
 
   const menuActions: TreeMenuActions = {
     create: startCreate,
-    copy: (path) => void window.api.files.copy(root, [path]),
+    copy: (path) => (IS_REMOTE ? void (remoteCopied = { root, rels: [path] }) : void window.api.files.copy(root, [path])),
     paste: (dir) => void paste(dir),
     copyPath: (path) => void navigator.clipboard.writeText(path),
     // Pasta do projeto + caminho da árvore, com as barras do sistema ("~/proj" vira o caminho completo).

@@ -1,4 +1,7 @@
 import { agentProviderOf, type AgentDef } from '../../../../shared/agents'
+import type { AttachedFile } from '../../../../shared/attachedFiles'
+import { isAudioFile } from '../../../../shared/transcription'
+import { IS_REMOTE } from '../../remote'
 import type { PermissionAnswer } from '../../../../shared/chat'
 import { parseAgentRef } from '../../../../shared/providers'
 import { getAuth, resolveAccount } from '../../auth/useAuth'
@@ -13,6 +16,21 @@ import { addLocalEvent } from '../localEvents'
 import { liveCommands, type SessionSettings } from '../SessionSettings'
 import { settingChangeEvents } from '../settingChangeEvents'
 import { useClaudeInfo } from '../useModels'
+
+// Janela de acesso remoto: o arquivo está neste computador e a conversa roda no outro. O conteúdo vai
+// pela ligação e fica numa pasta temporária de lá (ver main/files/upload.ts); a mensagem leva o
+// caminho de lá. Imagens já vão como dados e áudios, como texto transcrito. Falha rejeita: o texto
+// volta ao campo com o erro.
+async function uploadForRemote(files: File[]): Promise<AttachedFile[]> {
+  const out: AttachedFile[] = []
+  for (const f of files) {
+    if (isSendableImage(f) || isAudioFile(f.name, f.type)) continue
+    const res = await window.api.files.upload(f.name, new Uint8Array(await f.arrayBuffer()))
+    if (!res.ok) throw new Error(res.error)
+    out.push({ path: res.path, size: f.size })
+  }
+  return out
+}
 
 // Agentes chamados com @. Vão em toda mensagem: sobrevivem à compactação.
 function hintFor(text: string, agents: AgentDef[], account?: string): string | undefined {
@@ -45,10 +63,12 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
   // texto ao campo.
   const send = useStableCallback(async (text: string, files: File[]) => {
     const images = await imagesForSend(files)
-    const attached = files
-      .filter((f) => !isSendableImage(f))
-      .map((f) => ({ path: window.api.filePath(f), size: f.size }))
-      .filter((f) => f.path)
+    const attached = IS_REMOTE
+      ? await uploadForRemote(files)
+      : files
+          .filter((f) => !isSendableImage(f))
+          .map((f) => ({ path: window.api.filePath(f), size: f.size }))
+          .filter((f) => f.path)
     const transcripts = transcriptsText(files)
     const full = transcripts ? `${text}\n\n${transcripts}`.trim() : text
     forgetTranscripts(files)

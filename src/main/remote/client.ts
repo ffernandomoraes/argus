@@ -5,6 +5,7 @@ import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } fro
 import { tr } from '../i18n'
 import type { Link } from './link'
 import { decodeHost, encode, PROTOCOL_VERSION, type ClientMessage, type HostMessage } from './protocol'
+import { TunnelClient } from './tunnelClient'
 
 // O lado do notebook: uma ligação com o Argus de casa e as janelas daqui que mostram ele. O pedido
 // dessas janelas não chega aos handlers daqui (ipc/register.ts manda pela rota remota) e o aviso
@@ -39,6 +40,11 @@ export function remoteInfoFor(wcId: number): RemoteHostInfo | null {
   return client?.info ? { ...client.info, clientVersion: client.clientVersion } : null
 }
 
+// A ligação que a janela daqui mostra; nula para as janelas comuns.
+export function remoteClientOf(wcId: number): RemoteClient | null {
+  return windowClients.get(wcId) ?? null
+}
+
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void; timer?: NodeJS.Timeout; sync: boolean }
 
 const noConnection = () => new Error(tr('Sem ligação com o outro computador.', 'No connection to the other computer.'))
@@ -52,6 +58,12 @@ export class RemoteClient {
   private link: Link
   private generation = 0
   private ended = false
+  // "Abrir localhost": portas daqui que levam ao localhost de lá (ver tunnelClient.ts).
+  private tunnels = new TunnelClient((w, ch, args) => {
+    if (this._state !== 'connected') return false
+    this.post({ t: 'call', w, id: 0, kind: 'send', ch, args })
+    return true
+  })
   info: RemoteHostInfo | null = null
 
   constructor(
@@ -123,11 +135,18 @@ export class RemoteClient {
     wc.on('did-navigate', () => this.post({ t: 'nav', w }))
     wc.on('render-process-gone', () => this.post({ t: 'nav', w }))
     wc.once('destroyed', () => {
+      this.tunnels.closeWindow(w)
       this.windows.delete(w)
       windowClients.delete(w)
       this.post({ t: 'close', w })
       if (!this.windows.size) this.close()
     })
+  }
+
+  // A porta daqui que leva à `port` do localhost de lá.
+  openLocalhost(w: number, port: number): Promise<number> {
+    if (this.ended) return Promise.reject(noConnection())
+    return this.tunnels.open(w, port)
   }
 
   routeFor(w: number): RemoteRoute {
@@ -198,6 +217,8 @@ export class RemoteClient {
         this.link.close()
         return this.finish('kicked')
       case 'event': {
+        // Do "abrir localhost": é daqui do processo principal, não da janela.
+        if (message.ch.startsWith('tunnel:')) return this.tunnels.event(message.ch, message.args)
         const wc = this.windows.get(message.w)
         if (wc && !wc.isDestroyed()) wc.send(message.ch, ...message.args)
         return
@@ -235,6 +256,7 @@ export class RemoteClient {
 
   private dropped(): void {
     this.failPending()
+    this.tunnels.dropConnections()
     if (this.ended) return
     if (!this.reconnect || !this.windows.size) return this.finish()
     this.setState('reconnecting')
@@ -277,6 +299,7 @@ export class RemoteClient {
   private finish(state: 'closed' | 'kicked' = 'closed'): void {
     this.ended = true
     this.failPending()
+    this.tunnels.closeAll()
     if (this._state !== 'closed' && this._state !== 'kicked') this.setState(state)
     // As janelas seguem ligadas a esta ligação (encerrada) até fechar: o pedido delas nunca pode cair
     // nos handlers daqui, que mostrariam o Argus deste computador.

@@ -25,6 +25,7 @@ export function McpPanel({
       status: () => window.api.chat.mcpStatus(conversationKey, cwd, account),
       reconnect: (name) => window.api.chat.mcpReconnect(conversationKey, name),
       authenticate: (name) => window.api.chat.mcpAuthenticate(conversationKey, name),
+      submitCallback: (name, url) => window.api.chat.mcpSubmitCallback(conversationKey, name, url),
       clearAuth: (name) => window.api.chat.mcpClearAuth(conversationKey, name),
       remove: (name, scope) => window.api.chat.mcpRemove(conversationKey, cwd, account, name, scope)
     }),

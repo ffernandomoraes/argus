@@ -6,6 +6,7 @@ import { activeChats } from '../chats/entries'
 import type { Terminals } from '../terminals'
 import { materializeWorktree, withWorktreeHint } from '../worktrees'
 import { cleanTitle } from '../../shared/chat'
+import { isRemotePage } from './page'
 import { handle, on } from './register'
 
 // Conversas pelo chat (SDK do Claude).
@@ -30,7 +31,9 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   on('chat:answer', (_e, key, id, answer) => chats.answer(key, id, answer))
   handle('mcp:status', (_e, key, cwd, account) => chats.mcpStatus(key, cwd, account))
   handle('mcp:reconnect', (_e, key, name) => chats.reconnectMcp(key, name))
-  handle('mcp:authenticate', (_e, key, name) => chats.authenticateMcp(key, name))
+  // Da janela de acesso remoto, o link volta para abrir no notebook (ver authenticateMcp).
+  handle('mcp:authenticate', (e, key, name) => chats.authenticateMcp(key, name, isRemotePage(e.sender)))
+  handle('mcp:submitCallback', (_e, key, name, url) => chats.submitMcpCallback(key, name, url))
   handle('mcp:clearAuth', (_e, key, name) => chats.clearMcpAuth(key, name))
   handle('mcp:remove', (_e, key, cwd, account, name, scope) => chats.removeMcp(key, cwd, account, name, scope))
   handle('chat:outputStyle', (_e, key, cwd, account) => chats.outputStyle(key, cwd, account))
@@ -44,7 +47,8 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   })
   handle('mcp:account:status', (_e, account, wait) => chats.accountMcp.status(account, wait))
   handle('mcp:account:reconnect', (_e, account, name) => chats.accountMcp.reconnect(account, name))
-  handle('mcp:account:authenticate', (_e, account, name) => chats.accountMcp.authenticate(account, name))
+  handle('mcp:account:authenticate', (e, account, name) => chats.accountMcp.authenticate(account, name, isRemotePage(e.sender)))
+  handle('mcp:account:submitCallback', (_e, account, name, url) => chats.accountMcp.submitCallback(account, name, url))
   handle('mcp:account:clearAuth', (_e, account, name) => chats.accountMcp.clearAuth(account, name))
   handle('mcp:account:remove', (_e, account, name, scope) => chats.accountMcp.remove(account, name, scope))
   on('mcp:account:release', (_e, account) => chats.accountMcp.release(account))

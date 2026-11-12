@@ -5,11 +5,11 @@
 // app de chat) continua virando anexo. Devolve o que anexar (nada: deixa colar).
 export function pastedFiles(
   data: { files: ArrayLike<File>; types: readonly string[]; getData: (type: string) => string },
-  pathOf: (file: File) => string
+  onDisk: (file: File) => boolean
 ): File[] {
   const files = Array.from(data.files)
   if (!files.length) return []
-  if (!data.types.includes('text/plain') || files.some((f) => pathOf(f))) return files
+  if (!data.types.includes('text/plain') || files.some(onDisk)) return files
   const table = data.types.includes('text/html') && /<table[\s>]/i.test(data.getData('text/html'))
   const lines = data.getData('text/plain').trim().split(/\r?\n/).length > 1
   return table || lines ? [] : files

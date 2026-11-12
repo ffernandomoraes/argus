@@ -14,7 +14,7 @@ import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
 import type { HistoryPage, HistoryRequest, Message } from './history'
 import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
 import type { ClipboardCommand, EditAction, ThemeSource } from './ipc'
-import type { McpAuthResult, McpStatus } from './mcp'
+import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp'
 import type { MediaCommand, NowPlaying } from './media'
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
 import type { ClaudeVersionState } from './claudeVersion'
@@ -26,7 +26,7 @@ import type { TranscriptionModel } from './transcription'
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
-import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemotePairResult } from './remote'
+import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote'
 
 // Formato de `window.api`, a ponte entre a interface e o processo principal. Escrito só aqui: o
 // preload implementa (`const api: Api`) e a interface usa (preload/index.d.ts). Os `on...` devolvem
@@ -46,6 +46,8 @@ export type Api = {
     onState: (cb: (state: RemoteConnectionState) => void) => Off
     // Pediu algo que não funciona pelo acesso remoto (o canal), para a tela explicar.
     onBlocked: (cb: (channel: string) => void) => Off
+    // Abre no navegador daqui o servidor da porta `port` do outro computador.
+    openLocalhost: (port: number) => Promise<RemoteLocalhostResult>
   }
   // Configurações > Acesso remoto: hospedar este computador, parear e abrir outro Argus.
   remoteAccess: {
@@ -188,12 +190,15 @@ export type Api = {
   }
   // Caminho no disco de um arquivo escolhido ou arrastado (anexos do chat).
   filePath: (file: File) => string
+  // Se o arquivo existe no disco deste computador (também na janela remota, onde filePath vem vazio).
+  isDiskFile: (file: File) => boolean
   // Aba MCP das configurações: os servidores de uma conta, sem conversa ('' é a principal). release:
   // a aba saiu da tela, o `claude` dela fecha.
   accountMcp: {
     status: (account: string, wait: boolean) => Promise<McpStatus>
     reconnect: (account: string, name: string) => Promise<McpStatus>
     authenticate: (account: string, name: string) => Promise<McpAuthResult>
+    submitCallback: (account: string, name: string, url: string) => Promise<McpCallbackResult>
     clearAuth: (account: string, name: string) => Promise<McpStatus>
     remove: (account: string, name: string, scope: string) => Promise<McpStatus>
     release: (account: string) => void
@@ -208,6 +213,7 @@ export type Api = {
     mcpStatus: (key: string, cwd: string, account?: string) => Promise<McpStatus>
     mcpReconnect: (key: string, name: string) => Promise<McpStatus>
     mcpAuthenticate: (key: string, name: string) => Promise<McpAuthResult>
+    mcpSubmitCallback: (key: string, name: string, url: string) => Promise<McpCallbackResult>
     mcpClearAuth: (key: string, name: string) => Promise<McpStatus>
     mcpRemove: (key: string, cwd: string, account: string | undefined, name: string, scope: string) => Promise<McpStatus>
     outputStyle: (key: string, cwd: string, account?: string) => Promise<OutputStyleStatus>
@@ -392,6 +398,11 @@ export type Api = {
     copy: (root: string, rels: string[]) => Promise<void>
     // Cola na pasta os arquivos copiados no Finder (ou na árvore).
     paste: (root: string, dir: string) => Promise<FileOpResult>
+    // Copia itens de uma pasta para outra, sem a área de transferência (janela de acesso remoto).
+    copyInto: (fromRoot: string, rels: string[], root: string, dir: string) => Promise<FileOpResult>
+    // Grava um anexo da janela de acesso remoto numa pasta temporária do computador da conversa; o
+    // caminho dele em `path`.
+    upload: (name: string, data: Uint8Array) => Promise<FileOpResult>
     reveal: (root: string, rel: string) => void
     // Abre a própria pasta no Finder ou no Explorador de Arquivos.
     openFolder: (path: string) => void

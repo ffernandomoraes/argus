@@ -45,3 +45,7 @@ export type RemoteAccessState = {
 }
 
 export type RemotePairResult = { ok: true; hostId: string; name: string } | { ok: false; error: string }
+
+// "Abrir localhost" pela janela de acesso remoto: a porta deste computador que leva à do outro (a
+// mesma, se estava livre aqui).
+export type RemoteLocalhostResult = { ok: true; port: number } | { ok: false; error: string }

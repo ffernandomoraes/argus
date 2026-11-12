@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { IS_WIN } from '../platform'
+import { HOST_IS_WIN } from '../platform'
 
 // Trecho do arquivo citado num link: linha inicial e final (iguais quando é uma linha só).
 export type LineRange = { start: number; end: number }
@@ -21,7 +21,7 @@ export function parseFileLink(href: string): { path: string; lines?: LineRange }
     path = rawPath
   }
   // file:///C:/proj/a.ts deixa uma barra antes da letra do disco.
-  if (IS_WIN && /^\/[a-zA-Z]:[\\/]/.test(path)) path = path.slice(1)
+  if (HOST_IS_WIN && /^\/[a-zA-Z]:[\\/]/.test(path)) path = path.slice(1)
   const m = /^L(\d+)(?:-L?(\d+))?$/.exec(hash)
   if (!m) return { path }
   const start = Number(m[1])

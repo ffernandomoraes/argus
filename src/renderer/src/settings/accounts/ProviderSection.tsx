@@ -8,7 +8,7 @@ import {
   type ProvidersState
 } from '../../../../shared/providers'
 import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
-import { IS_WIN } from '../../platform'
+import { HOST_IS_WIN } from '../../platform'
 import { Button } from '../../ui/Button'
 import { AgentIcon } from '../../icons/AgentIcon'
 import { AccountName } from './AccountName'
@@ -109,7 +109,7 @@ function InstallCard({ provider, state }: { provider: ProviderId; state: Provide
         <>
           {state.message && <pre className="whitespace-pre-wrap text-[15px] text-red-400">{state.message}</pre>}
           <p className="text-[15px] text-faint">
-            {tr(`Ou rode no ${IS_WIN ? 'PowerShell' : 'Terminal'}:`, `Or run in ${IS_WIN ? 'PowerShell' : 'Terminal'}:`)}{' '}
+            {tr(`Ou rode no ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}:`, `Or run in ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}:`)}{' '}
             <code className="select-text text-muted">{state.command}</code>
           </p>
         </>

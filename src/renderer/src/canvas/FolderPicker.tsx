@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Folder, FolderOpen, Search } from 'lucide-react'
 import type { KnownFolder } from '../../../shared/sessions'
-import { isAbsolutePath, IS_WIN, lastSep, parentDir } from '../platform'
+import { HOST_IS_WIN, isAbsolutePath, lastSep, parentDir } from '../platform'
 import { IS_REMOTE, REMOTE_HOST } from '../remote'
 import { Modal } from '../ui/Modal'
 import { TimeAgo } from './blocks/TimeAgo'
@@ -32,7 +32,7 @@ export function FolderPicker({
   useEffect(() => {
     let alive = true
     void window.api.sessions.folders().then((all) => alive && setFolders(all))
-    if (IS_WIN && !IS_REMOTE) void window.api.wsl.distros().then((d) => alive && setDistros(d), () => {})
+    if (HOST_IS_WIN && !IS_REMOTE) void window.api.wsl.distros().then((d) => alive && setDistros(d), () => {})
     return () => {
       alive = false
     }

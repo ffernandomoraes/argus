@@ -4,7 +4,7 @@ import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
 import type { MenuState } from '../../canvas/ContextMenu'
 import { refreshNow } from '../../canvas/sessionsStore'
 import { useStableCallback } from '../../lib/useStableCallback'
-import { IS_MAC, IS_WIN, SEP, isMod, isWslFolder, untildify } from '../../platform'
+import { HOST_IS_MAC, HOST_IS_WIN, IS_MAC, isMod, isWslFolder, SEP, untildify } from '../../platform'
 import { moveDrafts } from '../drafts'
 import type { Editing } from './FileTree'
 import { treeMenu, type TreeMenuActions } from './treeMenu'
@@ -14,8 +14,8 @@ import { tr } from '../../i18n'
 
 // A Lixeira do Windows abre direto da Área de Trabalho; a do Mac, pelo Finder.
 // Em inglês, a Lixeira tem nome diferente em cada sistema.
-const TRASH = IS_WIN ? 'Recycle Bin' : 'Trash'
-const RECOVER = IS_MAC
+const TRASH = HOST_IS_WIN ? 'Recycle Bin' : 'Trash'
+const RECOVER = HOST_IS_MAC
   ? tr('Dá para recuperar pelo Finder.', 'You can restore it from the Finder.')
   : tr('Dá para recuperar pela Lixeira.', `You can restore it from the ${TRASH}.`)
 // Pasta do WSL não tem Lixeira do Windows: vai para a do Linux (ver main/wsl/trash.ts).
@@ -132,7 +132,7 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     copyPath: (path) => void navigator.clipboard.writeText(path),
     // Pasta do projeto + caminho da árvore, com as barras do sistema ("~/proj" vira o caminho completo).
     copyAbsolutePath: (path) =>
-      void navigator.clipboard.writeText(untildify(root).replace(/[\\/]+$/, '') + SEP + (IS_WIN ? path.replace(/\//g, '\\') : path)),
+      void navigator.clipboard.writeText(untildify(root).replace(/[\\/]+$/, '') + SEP + (HOST_IS_WIN ? path.replace(/\//g, '\\') : path)),
     rename: (path) => setEditing({ kind: 'rename', path }),
     reveal: (path) => window.api.files.reveal(root, path),
     openInBrowser: (path) => window.api.files.openInBrowser(root, path),

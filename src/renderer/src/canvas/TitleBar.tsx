@@ -1,9 +1,8 @@
 import { memo, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AppWindow, Eye, EyeOff, Globe, ScrollText } from 'lucide-react'
+import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
-import { Tag } from '../ui/Tag'
 import { IS_REMOTE, REMOTE_HOST } from '../remote'
 import { Presence } from '../motion'
 import { HealthAlert } from '../systemHealth/HealthAlert'
@@ -67,10 +66,11 @@ export const TitleBar = memo(function TitleBar({
       <span className="text-[13px] font-semibold text-muted">Argus</span>
       {/* Janela de acesso remoto: o computador que ela mostra. */}
       {REMOTE_HOST && (
-        <span title={tr('Acesso remoto', 'Remote access')}>
-          <Tag icon={Globe} tone="info">
-            {REMOTE_HOST.name}
-          </Tag>
+        <span
+          title={tr('Acesso remoto', 'Remote access')}
+          className="rounded-full border border-remote/40 bg-remote/10 px-2 py-px text-[11px] font-medium tracking-wide text-remote uppercase"
+        >
+          {REMOTE_HOST.name}
         </span>
       )}
       {/* Memória ou disco do computador chegando no limite (ou algo já encerrado por isso). */}

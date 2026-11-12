@@ -5,7 +5,7 @@ import { TimeAgo } from '../canvas/blocks/TimeAgo'
 import { displayPath } from '../canvas/factory'
 import { useSessions } from '../canvas/sessionsStore'
 import { tr } from '../i18n'
-import { IS_MAC } from '../platform'
+import { HOST_IS_MAC } from '../platform'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { severityOf } from './severity'
@@ -68,7 +68,7 @@ export function HealthModal({ onClose }: { onClose: () => void }) {
           label={tr('Disco', 'Disk')}
           free={s.disk.freeBytes}
           total={s.disk.totalBytes}
-          base={IS_MAC ? 1000 : 1024}
+          base={HOST_IS_MAC ? 1000 : 1024}
           level={s.disk.level}
           text={diskText(s.disk.level)}
         />

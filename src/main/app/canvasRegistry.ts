@@ -1,5 +1,7 @@
-import type { BrowserWindow, WebContents } from 'electron'
+import type { BrowserWindow } from 'electron'
+import type { Page } from '../ipc/page'
 import type { CanvasViewport } from '../../shared/canvas'
+import { remotePageList } from '../ipc/events'
 import { PageMap } from './pages'
 
 // O canvas pode estar aberto em várias janelas (uma por monitor), cada uma no workspace dela e com
@@ -45,6 +47,11 @@ export function canvasWindowList(): BrowserWindow[] {
   return [...canvasWindows]
 }
 
+// Páginas que mostram o canvas: as janelas daqui e as de outro computador (acesso remoto).
+export function canvasPages(): Page[] {
+  return [...[...canvasWindows].map((w) => w.webContents), ...remotePageList()]
+}
+
 export function activeCanvas(): BrowserWindow | null {
   if (lastCanvas && !lastCanvas.isDestroyed()) return lastCanvas
   return canvasWindows.values().next().value ?? null
@@ -56,28 +63,28 @@ export function readyCanvas(): BrowserWindow | null {
   return win && ready.has(win.webContents) ? win : null
 }
 
-export function markCanvasReady(wc: WebContents): void {
+export function markCanvasReady(wc: Page): void {
   ready.set(wc, true)
 }
 
-export function isCanvasReady(wc: WebContents): boolean {
+export function isCanvasReady(wc: Page): boolean {
   return ready.has(wc)
 }
 
-export function windowBoard(wc: WebContents): string | undefined {
+export function windowBoard(wc: Page): string | undefined {
   return shownBoards.get(wc.id)
 }
 
-export function setWindowBoard(wc: WebContents, board: string): void {
+export function setWindowBoard(wc: Page, board: string): void {
   shownBoards.set(wc.id, board)
 }
 
 // Sem workspace, o que a janela mostra agora (para guardar ao fechar o app).
-export function windowViewport(wc: WebContents, board = shownBoards.get(wc.id)): CanvasViewport | null {
+export function windowViewport(wc: Page, board = shownBoards.get(wc.id)): CanvasViewport | null {
   return (board && viewports.get(wc.id)?.get(board)) || null
 }
 
-export function setWindowViewport(wc: WebContents, board: string, viewport: CanvasViewport): void {
+export function setWindowViewport(wc: Page, board: string, viewport: CanvasViewport): void {
   const byBoard = viewports.get(wc.id) ?? new Map<string, CanvasViewport>()
   byBoard.set(board, viewport)
   viewports.set(wc.id, byBoard)

@@ -2,6 +2,7 @@ import { memo, useState } from 'react'
 import { BOTTOM_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { usePreference } from '../settings/preferences'
 import { MediaControls } from './bars/MediaControls'
+import { IS_REMOTE } from '../remote'
 import { RunningIndicator } from './RunningIndicator'
 import { UsageIndicator } from './UsageIndicator'
 
@@ -21,7 +22,7 @@ export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (
     >
       <RunningIndicator onOpen={onOpenChat} />
       {/* No meio da barra, não entre os dois lados. Desligado, nem consulta o sistema. */}
-      {mediaPlayer && (
+      {mediaPlayer && !IS_REMOTE && (
         <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center">
           <MediaControls />
         </div>

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import type { WebContents } from 'electron'
+import type { Page } from './ipc/page'
 import type { BoardEntry, BoardsState, BoardSummary } from '../shared/canvas'
-import { canvasWindowList, setWindowBoard, windowBoard } from './app/canvasRegistry'
+import { canvasPages, setWindowBoard, windowBoard } from './app/canvasRegistry'
 import { CanvasHub } from './canvasHub'
 import { trashCanvasFile } from './canvasStore'
 import { boardFile, loadBoards, saveBoards } from './boardsStore'
@@ -31,7 +31,7 @@ export class Boards {
   private lastSent = ''
 
   constructor(
-    private sendRemote: (wc: WebContents, board: string, nodes: unknown) => void,
+    private sendRemote: (wc: Page, board: string, nodes: unknown) => void,
     private sendBoards: (boards: BoardSummary[]) => void
   ) {
     this.entries = loadBoards()
@@ -42,8 +42,7 @@ export class Boards {
   private open(entry: BoardEntry): void {
     const { id } = entry
     const hub = new CanvasHub(boardFile(id), (nodes, except) => {
-      for (const win of canvasWindowList()) {
-        const wc = win.webContents
+      for (const wc of canvasPages()) {
         if (wc !== except && this.shownBy(wc) === id) this.sendRemote(wc, id, nodes)
       }
       this.resummarize(id)
@@ -73,17 +72,17 @@ export class Boards {
   }
 
   // O que a janela mostra; sem nada guardado (ou excluído, ou fechado), o primeiro aberto.
-  shownBy(wc: WebContents): string {
+  shownBy(wc: Page): string {
     const id = windowBoard(wc)
     return id && this.isOpen(id) ? id : this.firstOpen()
   }
 
-  state(wc: WebContents): BoardsState {
+  state(wc: Page): BoardsState {
     return { boards: this.summaries(), current: this.shownBy(wc) }
   }
 
   // Fechado (a notificação de uma conversa dele, por exemplo): abre de novo.
-  show(wc: WebContents, id: string): void {
+  show(wc: Page, id: string): void {
     if (!this.hubs.has(id)) return
     if (!this.isOpen(id)) this.reopen(id)
     setWindowBoard(wc, id)

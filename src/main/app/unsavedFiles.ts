@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from '../ipc/page'
 import { PageMap } from './pages'
 
 // Páginas com arquivo alterado e não salvo no painel de código. Os rascunhos só existem na memória
@@ -7,7 +7,7 @@ import { PageMap } from './pages'
 export class UnsavedFiles {
   private pages = new PageMap<true>()
 
-  set(wc: WebContents, has: boolean): void {
+  set(wc: Page, has: boolean): void {
     if (has) this.pages.set(wc, true)
     else this.pages.delete(wc)
   }

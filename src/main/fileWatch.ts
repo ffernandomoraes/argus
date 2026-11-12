@@ -1,5 +1,5 @@
 import { unwatchFile as stopPolling, watch, watchFile as poll, type Stats } from 'node:fs'
-import type { WebContents } from 'electron'
+import type { Page } from './ipc/page'
 import { sendTo } from './ipc/events'
 import { insideRoot } from './paths'
 
@@ -9,7 +9,7 @@ type Entry = { root: string; rel: string; full: string; watcher?: { close(): voi
 
 const watchers = new Map<number, Entry>()
 // Janelas com o aviso de fechada já registrado: um por janela, não um a cada arquivo aberto.
-const tracked = new WeakSet<WebContents>()
+const tracked = new WeakSet<Page>()
 
 // Editores gravam em vários passos: espera assentar antes de avisar.
 const SETTLE_MS = 150
@@ -30,7 +30,7 @@ function pollFile(full: string, onChange: () => void): { close(): void } {
   return { close: () => stopPolling(full, listener) }
 }
 
-export function unwatchFile(sender: WebContents): void {
+export function unwatchFile(sender: Page): void {
   const current = watchers.get(sender.id)
   if (!current) return
   clearTimeout(current.timer)
@@ -38,7 +38,7 @@ export function unwatchFile(sender: WebContents): void {
   watchers.delete(sender.id)
 }
 
-export function watchFile(sender: WebContents, root: string, rel: string): void {
+export function watchFile(sender: Page, root: string, rel: string): void {
   unwatchFile(sender)
   const full = insideRoot(root, rel)
   if (!full) return
@@ -52,7 +52,7 @@ export function watchFile(sender: WebContents, root: string, rel: string): void 
 }
 
 // Liga o vigia. `changed`: o arquivo voltou depois de sumir, com outro conteúdo.
-function arm(sender: WebContents, entry: Entry, changed: boolean): void {
+function arm(sender: Page, entry: Entry, changed: boolean): void {
   if (watchers.get(sender.id) !== entry || sender.isDestroyed()) return
   entry.watcher?.close()
   entry.watcher = undefined
@@ -72,14 +72,14 @@ function arm(sender: WebContents, entry: Entry, changed: boolean): void {
   }
 }
 
-function retry(sender: WebContents, entry: Entry): void {
+function retry(sender: Page, entry: Entry): void {
   entry.watcher?.close()
   entry.watcher = undefined
   clearTimeout(entry.timer)
   if (entry.retries++ < RETRIES) entry.timer = setTimeout(() => arm(sender, entry, true), RETRY_MS)
 }
 
-function settle(sender: WebContents, entry: Entry): void {
+function settle(sender: Page, entry: Entry): void {
   clearTimeout(entry.timer)
   entry.timer = setTimeout(() => {
     if (watchers.get(sender.id) !== entry || sender.isDestroyed()) return

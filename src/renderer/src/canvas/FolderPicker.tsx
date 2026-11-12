@@ -1,7 +1,8 @@
 import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Folder, FolderOpen, Search } from 'lucide-react'
 import type { KnownFolder } from '../../../shared/sessions'
-import { IS_WIN, lastSep, parentDir } from '../platform'
+import { isAbsolutePath, IS_WIN, lastSep, parentDir } from '../platform'
+import { IS_REMOTE, REMOTE_HOST } from '../remote'
 import { Modal } from '../ui/Modal'
 import { TimeAgo } from './blocks/TimeAgo'
 import { displayPath } from './factory'
@@ -31,7 +32,7 @@ export function FolderPicker({
   useEffect(() => {
     let alive = true
     void window.api.sessions.folders().then((all) => alive && setFolders(all))
-    if (IS_WIN) void window.api.wsl.distros().then((d) => alive && setDistros(d), () => {})
+    if (IS_WIN && !IS_REMOTE) void window.api.wsl.distros().then((d) => alive && setDistros(d), () => {})
     return () => {
       alive = false
     }
@@ -39,6 +40,9 @@ export function FolderPicker({
 
   const q = query.trim().toLowerCase()
   const shown = (folders ?? []).filter((f) => !q || f.path.toLowerCase().includes(q))
+  // Janela remota: sem o seletor do sistema (ele abriria no outro computador), a pasta que não está
+  // na lista entra pelo caminho completo digitado na busca.
+  const typedPath = IS_REMOTE && isAbsolutePath(query.trim()) ? query.trim() : null
 
   useEffect(() => {
     list.current?.children[highlight]?.scrollIntoView({ block: 'nearest' })
@@ -54,6 +58,7 @@ export function FolderPicker({
     else if (e.key === 'ArrowUp') setHighlight((h) => Math.max(h - 1, 0))
     else if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       if (shown[highlight]) onPick(shown[highlight].path)
+      else if (typedPath) onPick(typedPath)
     } else return
     e.preventDefault()
   }
@@ -98,13 +103,32 @@ export function FolderPicker({
         </ul>
       )}
 
-      <button
-        onClick={() => void pickOther()}
-        className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
-      >
-        <FolderOpen size={14} className="shrink-0" />
-        {tr('Escolher outra pasta…', 'Choose another folder…')}
-      </button>
+      {IS_REMOTE ? (
+        typedPath ? (
+          <button
+            onClick={() => onPick(typedPath)}
+            className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+          >
+            <FolderOpen size={14} className="shrink-0" />
+            <span className="truncate">{tr(`Abrir ${typedPath}`, `Open ${typedPath}`)}</span>
+          </button>
+        ) : (
+          <p className="shrink-0 border-t border-line px-3 py-2.5 text-xs text-muted">
+            {tr(
+              `Para outra pasta, digite o caminho completo dela em ${REMOTE_HOST?.name ?? ''}.`,
+              `For another folder, type its full path on ${REMOTE_HOST?.name ?? ''}.`
+            )}
+          </p>
+        )
+      ) : (
+        <button
+          onClick={() => void pickOther()}
+          className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+        >
+          <FolderOpen size={14} className="shrink-0" />
+          {tr('Escolher outra pasta…', 'Choose another folder…')}
+        </button>
+      )}
       {distros.map((d) => (
         <button
           key={d}

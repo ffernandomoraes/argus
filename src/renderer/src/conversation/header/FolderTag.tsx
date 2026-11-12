@@ -4,6 +4,7 @@ import { Folder, FolderOpen, Folders } from 'lucide-react'
 import { ContextMenu, type MenuState } from '../../canvas/ContextMenu'
 import { baseName, FILE_MANAGER } from '../../platform'
 import { tr } from '../../i18n'
+import { IS_REMOTE } from '../../remote'
 
 // Pasta da conversa, no começo do título (pasta > conversa), em cinza e sem selo. Botão direito: abrir a pasta no Finder (no Windows, no Explorador de
 // Arquivos). Workspace (folders): ícone de várias pastas, e o menu abre cada uma.
@@ -12,6 +13,8 @@ export function FolderTag({ cwd, folders, children }: { cwd: string; folders?: s
 
   const showMenu = (e: MouseEvent) => {
     // Sem subir: no canvas, o card do chat abriria o menu dele junto.
+    // Só tem abrir no Finder: na janela remota, nada.
+    if (IS_REMOTE) return
     e.preventDefault()
     e.stopPropagation()
     setMenu({

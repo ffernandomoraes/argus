@@ -17,6 +17,7 @@ import {
 } from '../files'
 import { unwatchFile, watchFile } from '../fileWatch'
 import type { UnsavedFiles } from '../app/unsavedFiles'
+import { contentsOf } from './page'
 import { fileDiff } from '../gitBranch'
 import { handle, on } from './register'
 
@@ -35,7 +36,10 @@ export function registerFilesIpc(unsaved: UnsavedFiles): void {
   handle('files:paste', (_e, root, dir) => pasteFromClipboard(root, dir))
   on('files:reveal', (_e, root, rel) => revealItem(root, rel))
   on('files:openFolder', (_e, path) => openFolder(path))
-  on('files:view', (e, root, rel) => void viewItem(BrowserWindow.fromWebContents(e.sender), root, rel))
+  on('files:view', (e, root, rel) => {
+    const wc = contentsOf(e.sender)
+    void viewItem(wc && BrowserWindow.fromWebContents(wc), root, rel)
+  })
   on('files:openInBrowser', (_e, root, rel) => void openInBrowser(root, rel))
   // Um arquivo vigiado por janela: o que está aberto no painel de código.
   on('files:watch', (e, root, rel) => watchFile(e.sender, root, rel))

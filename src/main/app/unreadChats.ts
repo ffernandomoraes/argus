@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from '../ipc/page'
 import type { UnreadChat } from '../../shared/chat'
 
 // Respostas que você ainda não viu (a bolinha verde da lista), como cada janela conta: quem marca
@@ -8,7 +8,7 @@ export class UnreadChats {
 
   constructor(private onChange: () => void) {}
 
-  set(sender: WebContents, chats: UnreadChat[]): void {
+  set(sender: Page, chats: UnreadChat[]): void {
     const id = sender.id
     if (!this.byWindow.has(id)) {
       sender.once('destroyed', () => {

@@ -11,6 +11,8 @@ import { ExperimentsSection } from './sections/ExperimentsSection'
 import { GeneralSection } from './sections/GeneralSection'
 import { MascotSection } from './sections/MascotSection'
 import { McpSection } from './sections/McpSection'
+import { RemoteAccessSection } from './sections/RemoteAccessSection'
+import { IS_REMOTE } from '../remote'
 import { NotificationsSection } from './sections/NotificationsSection'
 import { StorageSection } from './sections/StorageSection'
 import { UpdatesSection } from './sections/UpdatesSection'
@@ -28,7 +30,9 @@ export function SettingsPage({
   const [section, setSection] = useState<Section>('general')
   // Seção de experimento só aparece com ele ligado em Experimentos.
   const mascot = usePreference('mascot')
-  const sections = SECTIONS.filter((s) => s.id !== 'mascot' || mascot)
+  const remote = usePreference('remoteAccess')
+  // Acesso remoto fica fora da janela remota: parear e hospedar são da máquina de quem está usando.
+  const sections = SECTIONS.filter((s) => (s.id !== 'mascot' || mascot) && (s.id !== 'remote' || (remote && !IS_REMOTE)))
   const current = SECTIONS.find((s) => s.id === section)!
   const CurrentIcon = current.icon
 
@@ -94,6 +98,7 @@ export function SettingsPage({
           {section === 'mascot' && <MascotSection />}
           {section === 'accounts' && <AccountsSection />}
           {section === 'mcp' && <McpSection />}
+          {section === 'remote' && <RemoteAccessSection />}
           {section === 'experiments' && <ExperimentsSection />}
           {section === 'coffee' && <CoffeeSection />}
         </section>

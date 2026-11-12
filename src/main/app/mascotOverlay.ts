@@ -86,8 +86,8 @@ export class MascotOverlay {
     else this.close()
   }
 
-  owns(wc: WebContents): boolean {
-    return !!this.win && !this.win.isDestroyed() && this.win.webContents === wc
+  owns(wc: WebContents | null): boolean {
+    return !!wc && !!this.win && !this.win.isDestroyed() && this.win.webContents === wc
   }
 
   isMascotWindow(win: BrowserWindow): boolean {
@@ -196,7 +196,8 @@ export class MascotOverlay {
 
   // A janela do canvas viu o pedido começar e achou a pasta à vista: o retângulo vem em px da página;
   // vira ponto da tela (o meio da borda esquerda do cabeçalho), contando o zoom da janela.
-  reportTarget(sender: WebContents, key: string, turn: number, rect: { x: number; y: number; width: number; height: number }): void {
+  reportTarget(sender: WebContents | null, key: string, turn: number, rect: { x: number; y: number; width: number; height: number }): void {
+    if (!sender) return
     const win = BrowserWindow.fromWebContents(sender)
     if (!win || win.isDestroyed() || win.isMinimized() || !win.isVisible()) return
     const content = win.getContentBounds()

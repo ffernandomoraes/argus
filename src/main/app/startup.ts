@@ -16,6 +16,7 @@ import { setupPermissions } from './permissions'
 import type { Services } from './services'
 import { step } from './step'
 import { createCanvasWindow, restoreCanvasWindows } from './windows'
+import { openLoopbackWindow, remoteAccess } from '../remote'
 
 // Abertura, com o app pronto. Cada etapa é protegida (ver step.ts): uma que falha fica no console
 // e não impede a janela de abrir.
@@ -48,6 +49,12 @@ export function startApp(s: Services, life: Lifecycle): void {
     void s.health.read()
   })
   step('janelas do canvas', restoreCanvasWindows)
+  // Teste do acesso remoto sem rede (ver src/main/remote/index.ts).
+  if (!app.isPackaged && process.env.ARGUS_REMOTE_LOOPBACK === '1') {
+    step('janela remota de teste', () => openLoopbackWindow().catch((err: unknown) => console.error('[remoto] teste não abriu:', err)))
+  }
+  // Volta a aceitar aparelhos pareados, se estava ligado ao fechar.
+  step('acesso remoto', () => remoteAccess().start())
   const firstCanvas = activeCanvas()
   watchOpening(firstCanvas)
   if (SMOKE_TEST && firstCanvas) {

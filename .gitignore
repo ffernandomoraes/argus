@@ -3,3 +3,7 @@ out
 dist
 .DS_Store
 native/speech/build
+
+# Tipos gerados pelo wrangler (cd relay && wrangler types)
+relay/worker-configuration.d.ts
+relay/.wrangler/

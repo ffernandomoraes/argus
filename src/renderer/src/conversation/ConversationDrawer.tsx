@@ -23,6 +23,7 @@ import { useSearchShortcut } from './search/searchShortcut'
 import { useDrawerZoom } from './useDrawerZoom'
 import { keys } from '../platform'
 import { tr } from '../i18n'
+import { IS_REMOTE } from '../remote'
 
 type Props = {
   project: ProjectData
@@ -234,7 +235,8 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
               : []),
             { label: tr('Marcar como não lida', 'Mark as unread'), icon: Mail, onClick: leaveUnread },
             { label: tr('Colocar no canvas', 'Place on canvas'), icon: PictureInPicture2, onClick: onPinToCanvas },
-            { label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }
+            // Na janela remota a janela separada abriria lá, não aqui.
+            ...(IS_REMOTE ? [] : [{ label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }])
           ])
     ]
     return (

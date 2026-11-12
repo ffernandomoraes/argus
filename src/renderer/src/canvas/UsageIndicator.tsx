@@ -66,6 +66,8 @@ export const UsageIndicator = memo(function UsageIndicator({
   const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
   const saved = shown.some((x) => x.usage.saved)
   const stale = shown.some((x) => x.usage.failure || !barWindow(x.usage))
+  // Barra mais larga com uma conta só; encolhe conforme entram outras, para o botão não crescer demais.
+  const barWidth = shown.length === 1 ? 'w-20' : shown.length === 2 ? 'w-14' : 'w-10'
 
   return (
     <div ref={ref} className="relative flex items-center self-stretch">
@@ -100,7 +102,7 @@ export const UsageIndicator = memo(function UsageIndicator({
               {i > 0 && <span>-</span>}
               {firstOfAgent && <AgentIcon provider={provider} size={12} />}
               {perAgent(provider) > 1 && <span className="max-w-24 truncate">{name}</span>}
-              <UsageBar percent={percent ?? 0} className="h-1 w-10" />
+              <UsageBar percent={percent ?? 0} className={`h-1 ${barWidth}`} />
               <span className="font-mono text-muted">{percent === null ? '--' : `${percent}%`}</span>
             </span>
           )

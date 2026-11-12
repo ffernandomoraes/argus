@@ -1,7 +1,7 @@
 import type { BrowserWindow, WebContents } from 'electron'
 import type { RemoteConnectionState, RemoteHostInfo } from '../../shared/remote'
 import { sendTo, setRemoteWindowCheck } from '../ipc/events'
-import { setRemoteRoute, type CallKind, type RemoteRoute } from '../ipc/register'
+import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } from '../ipc/register'
 import { tr } from '../i18n'
 import type { Link } from './link'
 import { decodeHost, encode, PROTOCOL_VERSION, type ClientMessage, type HostMessage } from './protocol'
@@ -29,6 +29,7 @@ function installRouting(): void {
   routing = true
   setRemoteRoute((wc) => windowClients.get(wc.id)?.routeFor(wc.id) ?? null)
   setRemoteWindowCheck((wc) => windowClients.has(wc.id))
+  setRemoteBlocked((wc, channel) => sendTo(wc, 'remote:blocked', channel))
 }
 
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void; timer?: NodeJS.Timeout; sync: boolean }

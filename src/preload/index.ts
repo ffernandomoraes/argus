@@ -44,7 +44,8 @@ const api: Api = {
   windowsBuild: remote ? remote.windowsBuild : windowsBuild(),
   remote: {
     host: remote,
-    onState: (cb) => listen('remote:state', cb)
+    onState: (cb) => listen('remote:state', cb),
+    onBlocked: (cb) => listen('remote:blocked', cb)
   },
   remoteAccess: {
     state: () => invoke('remoteAccess:state'),

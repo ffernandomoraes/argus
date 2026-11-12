@@ -32,6 +32,13 @@ export function setRemoteRoute(fn: (wc: WebContents) => RemoteRoute | null): voi
   routeOf = fn
 }
 
+// Pedido bloqueado numa janela remota: ela fica sabendo, para explicar à pessoa (ver remote/client.ts).
+let blocked: (wc: WebContents, channel: string) => void = () => {}
+
+export function setRemoteBlocked(fn: (wc: WebContents, channel: string) => void): void {
+  blocked = fn
+}
+
 function fromApp(e: IpcMainEvent | IpcMainInvokeEvent, channel: string): boolean {
   if (isAppFrame(e.senderFrame)) return true
   console.warn(`[ipc] ${channel} recusado: não veio de uma janela do app`)
@@ -61,7 +68,10 @@ export function handle<C extends keyof InvokeChannels>(
   ipcMain.handle(channel, (e, ...args) => {
     if (!fromApp(e, channel)) throw new Error(`Canal ${channel} recusado.`)
     const remote = remoteFor(e.sender, channel)
-    if (remote === 'blocked') return blockedReply(channel)
+    if (remote === 'blocked') {
+      blocked(e.sender, channel)
+      return blockedReply(channel)
+    }
     if (remote) return remote.call('invoke', channel, args)
     return handler(e, ...(args as Parameters<InvokeChannels[C]>))
   })
@@ -76,7 +86,7 @@ export function on<C extends keyof SendChannels>(
   ipcMain.on(channel, (e, ...args) => {
     if (!fromApp(e, channel)) return
     const remote = remoteFor(e.sender, channel)
-    if (remote === 'blocked') return
+    if (remote === 'blocked') return blocked(e.sender, channel)
     if (remote) return void remote.call('send', channel, args).catch((err: unknown) => report(channel, err))
     runSend(channel, handler as AnyHandler, e, args)
   })
@@ -106,6 +116,7 @@ export function onSync<C extends keyof SendSyncChannels>(
     }
     const remote = remoteFor(e.sender, channel)
     if (remote === 'blocked') {
+      blocked(e.sender, channel)
       e.returnValue = blockedReply(channel)
       return
     }

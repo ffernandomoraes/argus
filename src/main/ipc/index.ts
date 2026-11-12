@@ -37,7 +37,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread, s.interrupted)
   registerHealthIpc(s.health)
   registerStorageIpc(s.storage)
-  registerTerminalIpc(s.terminals, s.chats, s.terminalViewers)
+  registerTerminalIpc(s.terminals, s.chats, s.terminalViewers, s.terminalSizes)
   registerCliIpc()
   registerRemoteAccessIpc()
 }

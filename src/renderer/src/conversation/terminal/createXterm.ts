@@ -11,6 +11,9 @@ export type Xterm = {
   term: Terminal
   // Troca o tamanho da fonte e reencaixa (colunas e linhas mudam; quem ouve term.onResize sabe).
   setFontSize(px: number): void
+  // Com tamanho: desenha nele, sem se encaixar na caixa (o terminal está em outra página, que manda
+  // no tamanho; ver TerminalSizes no processo principal). Nulo: volta a se encaixar.
+  follow(size: { cols: number; rows: number } | null): void
   dispose(): void
 }
 
@@ -94,10 +97,11 @@ export function createXterm(el: HTMLElement, fontSize: number, focus = true, gpu
   // term.focus() direto falhava: a pessoa tinha que clicar no terminal para digitar.
   const stopFocus = focus ? focusWhenVisible(() => term.textarea ?? null) : () => {}
 
+  let following: { cols: number; rows: number } | null = null
   let frame = 0
   const observer = new ResizeObserver(() => {
     cancelAnimationFrame(frame)
-    frame = requestAnimationFrame(() => fit.fit())
+    frame = requestAnimationFrame(() => !following && fit.fit())
   })
   observer.observe(el)
 
@@ -105,7 +109,12 @@ export function createXterm(el: HTMLElement, fontSize: number, focus = true, gpu
     term,
     setFontSize(px) {
       term.options.fontSize = px
-      fit.fit()
+      if (!following) fit.fit()
+    },
+    follow(size) {
+      following = size
+      if (!size) return fit.fit()
+      if (term.cols !== size.cols || term.rows !== size.rows) term.resize(size.cols, size.rows)
     },
     dispose() {
       stopFocus()

@@ -19,6 +19,11 @@ export class TerminalViewers {
     for (const [wc, keys] of this.pages.entries()) if (keys.has(key)) sendTo(wc, 'terminal:data', key, data)
   }
 
+  // O tamanho do processo mudou (ou o dono): cada página sabe se é ela quem manda (ver TerminalSizes).
+  size(key: string, cols: number, rows: number, owner: Page | null): void {
+    for (const [page, keys] of this.pages.entries()) if (keys.has(key)) sendTo(page, 'terminal:size', key, cols, rows, page === owner)
+  }
+
   exit(key: string, code: number): void {
     for (const [wc, keys] of this.pages.entries()) if (keys.has(key)) sendTo(wc, 'terminal:exit', key, code)
   }

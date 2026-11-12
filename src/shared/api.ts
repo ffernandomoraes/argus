@@ -404,6 +404,10 @@ export type Api = {
     open: (req: TerminalOpenRequest) => Promise<TerminalOpenResult>
     write: (key: string, data: string) => void
     resize: (key: string, cols: number, rows: number) => void
+    // Clicou no terminal: esta janela passa a mandar no tamanho.
+    claim: (key: string, cols: number, rows: number) => void
+    // Tamanho do processo; mine = esta janela manda nele.
+    onSize: (key: string, cb: (cols: number, rows: number, mine: boolean) => void) => Off
     kill: (key: string) => void
     // A saída do terminal `key` (só a dele).
     onData: (key: string, cb: (data: string) => void) => Off

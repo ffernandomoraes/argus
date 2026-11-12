@@ -285,6 +285,8 @@ export type SendChannels = {
   // Terminais
   'terminal:write': (key: string, data: string) => void
   'terminal:resize': (key: string, cols: number, rows: number) => void
+  // A pessoa clicou no terminal: esta página passa a mandar no tamanho dele.
+  'terminal:claim': (key: string, cols: number, rows: number) => void
   'terminal:kill': (key: string) => void
   // Shell do drawer à vista embaixo das conversas `conversations` (o id no app e o da sessão).
   'terminal:link': (key: string, conversations: string[]) => void
@@ -346,6 +348,8 @@ export type EventChannels = {
   'files:changed': (root: string, rel: string) => void
   'terminal:data': (key: string, data: string) => void
   'terminal:exit': (key: string, code: number) => void
+  // Tamanho do processo do terminal; `mine`: é esta página que manda nele (ver TerminalSizes).
+  'terminal:size': (key: string, cols: number, rows: number, mine: boolean) => void
   // O `claude` do terminal `key` está na conversa `sessionId` (ver terminals/sessionBinding.ts).
   'terminal:session': (key: string, sessionId: string) => void
   // A conversa digitou um comando no shell do drawer `key`: ele pega o foco, para o Enter.

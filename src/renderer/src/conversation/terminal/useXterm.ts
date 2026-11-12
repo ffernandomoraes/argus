@@ -50,7 +50,7 @@ export function useXterm(
     const xterm = createXterm(el, fontSizeFor(fontScale), autoFocus, gpu)
     const settings = getConversationSettings(sessionId)
     const disconnect = connectPty(
-      xterm.term,
+      xterm,
       {
         key: sessionKey,
         cwd,

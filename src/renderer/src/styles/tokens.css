@@ -65,6 +65,8 @@
   --color-dev: #f59e0b;
   /* Etiqueta com o nome do computador na janela de acesso remoto: mesmo formato da de cima, em azul. */
   --color-remote: #3b82f6;
+  /* Fundo da barra de título na janela de acesso remoto: azul escuro, que não muda a cor do resto. */
+  --color-remote-bar: #14223d;
 
   /* Fonte do sistema: SF Pro no Mac, Segoe UI no Windows (a Variable no Windows 11). */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
@@ -116,6 +118,8 @@
 
   --color-dev: #b45309;
   --color-remote: #1d4ed8;
+  /* No claro, azul clarinho: escuro, o texto escuro da barra sumiria. */
+  --color-remote-bar: #dbe7fb;
 }
 
 /* As sombras (shadow-black/50 e afins) foram dosadas para o fundo escuro; no claro gritam.

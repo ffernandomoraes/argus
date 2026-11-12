@@ -25,7 +25,7 @@ import {
   toggleProjectCollapse
 } from '../operations'
 import type { TerminalKind } from '../types'
-import type { NodesApi } from './types'
+import type { FocusNode, NodesApi } from './types'
 import { tr } from '../../i18n'
 
 // Criar, renomear e mexer nos blocos (grupo, nota, terminal) a partir dos menus e dos próprios
@@ -34,7 +34,8 @@ import { tr } from '../../i18n'
 export function useNodeActions(
   { board, nodesRef, setNodes, change }: NodesApi,
   view: CanvasViewStore,
-  confirm: (request: ConfirmRequest) => void
+  confirm: (request: ConfirmRequest) => void,
+  focusNode: FocusNode
 ) {
   const { setCenter, getZoom } = useReactFlow()
 
@@ -53,10 +54,12 @@ export function useNodeActions(
         const current = node?.type === 'area' ? node.data.label : node?.data.name
         if (name && name !== current) change((ns) => rename(ns, id, name))
       },
+      // O grupo pode cair longe do ponto pedido (desce até achar lugar livre): a câmera vai até ele.
       addGroup: (position: XYPosition) => {
         const group = createGroup(position)
         change((ns) => addNode(ns, group))
         setRenamingId(group.id)
+        focusNode(group.id)
       },
       // Diferente dos outros blocos, a nota fica onde foi pedida, mesmo em cima de uma pasta:
       // ela é um lembrete sobre o que está embaixo. Em cima de um grupo, entra nele.
@@ -172,5 +175,5 @@ export function useNodeActions(
         window.api.canvas.forget(board, moved.map((n) => n.id))
       }
     }
-  }, [board, nodesRef, setNodes, change, view, confirm, setCenter, getZoom])
+  }, [board, nodesRef, setNodes, change, view, confirm, focusNode, setCenter, getZoom])
 }

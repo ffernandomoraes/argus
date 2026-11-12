@@ -78,7 +78,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     })
   }, [view])
   const focusNode = useFocusNode(api)
-  const nodeActions = useNodeActions(api, view, overlays.commands.confirm)
+  const nodeActions = useNodeActions(api, view, overlays.commands.confirm, focusNode)
   const { arranging, organizeBoard, organizeGroup } = useArrange(api)
   const watchLoose = useLooseCards(api, drawers.commands)
   const conversations = useConversationActions({
@@ -213,6 +213,8 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
           openConversation={conversations.openConversation}
           newConversation={conversations.newConversation}
           change={change}
+          nodesRef={nodesRef}
+          focusNode={focusNode}
         />
       </CanvasViewContext.Provider>
     </CanvasContext.Provider>

@@ -1,5 +1,5 @@
 import type { XYPosition } from '@xyflow/react'
-import { createFolderInstance, createGroup, createTerminal, GROUP_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, TERMINAL_SIZE } from '../factory'
+import { createFolderInstance, createGroup, findFolderNode, createTerminal, GROUP_SIZE, INSTANCE_MIN_HEIGHT, INSTANCE_WIDTH, TERMINAL_SIZE } from '../factory'
 import { addNode, moveToGroup, removeGroup, removeNode, rename, terminalsIn, ungroup } from '../operations'
 import { findBlock, findGroup, kindOf, num } from './lookup'
 import { ToolError, type Args, type Tool, type ToolEnv } from './tool'
@@ -33,6 +33,9 @@ const adicionarPasta: Tool = async (args, env) => {
   if (!folder) throw new ToolError('A pessoa fechou o seletor sem escolher pasta.')
   // Lido depois do seletor: a pessoa pode ter mexido no canvas enquanto escolhia.
   const nodes = env.nodes()
+  // A mesma pasta duas vezes no canvas só confunde: devolve a que já existe.
+  const existing = findFolderNode(nodes, folder)
+  if (existing) return `A pasta já está no canvas: ${existing.id} (${existing.data.path})`
   const groupId = args.grupo_id ? findGroup(nodes, args.grupo_id).id : undefined
   const node = createFolderInstance(placeAt(env, args, { width: INSTANCE_WIDTH, height: INSTANCE_MIN_HEIGHT }), folder)
   env.apply(addNode(nodes, node, groupId))

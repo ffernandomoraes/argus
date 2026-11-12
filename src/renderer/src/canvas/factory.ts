@@ -1,5 +1,5 @@
 import type { XYPosition } from '@xyflow/react'
-import type { AreaNode, ChatNode, ChatPanelNode, NoteNode, ProjectData, ProjectNode, TerminalKind, TerminalNode, WorktreeLink } from './types'
+import type { AreaNode, CanvasNode, ChatNode, ChatPanelNode, NoteNode, ProjectData, ProjectNode, TerminalKind, TerminalNode, WorktreeLink } from './types'
 import { baseName, tildify } from '../platform'
 import { tr } from '../i18n'
 
@@ -47,6 +47,21 @@ export const AREA_OUTSET = { left: 0, top: 30 }
 // "~/Desktop/proj" (no Windows, "~\Desktop\proj"): é assim que o canvas guarda as pastas.
 export function displayPath(path: string): string {
   return tildify(path)
+}
+
+// Chave para comparar pastas: o seletor do macOS entrega o acento decomposto (NFD) e o Claude
+// Code grava composto (NFC), então a mesma pasta viria como dois textos diferentes.
+export function folderKey(path: string): string {
+  return displayPath(path).normalize('NFC')
+}
+
+// O bloco da pasta já no canvas, se houver. Tarefa isolada e conversas do grupo não contam: o
+// caminho delas é outro (a cópia da tarefa, a pasta do workspace).
+export function findFolderNode(nodes: CanvasNode[], folder: string): ProjectNode | undefined {
+  const key = folderKey(folder)
+  return nodes.find(
+    (n): n is ProjectNode => n.type === 'project' && !n.data.worktree && !n.data.groupWide && folderKey(n.data.path) === key
+  )
 }
 
 // Tamanho que dá para trabalhar sem ocupar o canvas inteiro.

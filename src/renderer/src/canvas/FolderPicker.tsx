@@ -5,7 +5,7 @@ import { HOST_IS_WIN, isAbsolutePath, lastSep, parentDir } from '../platform'
 import { IS_REMOTE, REMOTE_HOST } from '../remote'
 import { Modal } from '../ui/Modal'
 import { TimeAgo } from './blocks/TimeAgo'
-import { displayPath } from './factory'
+import { displayPath, folderKey } from './factory'
 import { tr } from '../i18n'
 
 // "Nova pasta": as pastas onde o Claude Code já conversou, da mais recente para a mais antiga,
@@ -16,7 +16,8 @@ export function FolderPicker({
   onPick,
   onClose
 }: {
-  // Pastas já no canvas (como displayPath): aparecem marcadas, mas dá para adicionar de novo.
+  // Pastas já no canvas (como folderKey): aparecem marcadas e, escolhidas, levam até a que existe
+  // em vez de entrar de novo.
   onCanvas: Set<string>
   // Caminho absoluto da pasta escolhida.
   onPick: (folder: string) => void
@@ -174,7 +175,7 @@ const FolderRow = memo(function FolderRow({
         <Folder size={14} className="shrink-0 text-muted" />
         <span className="shrink-0 font-medium text-text">{path.slice(lastSep(path) + 1)}</span>
         <span className="min-w-0 truncate text-faint">{parent}</span>
-        {onCanvas.has(path) && (
+        {onCanvas.has(folderKey(folder.path)) && (
           <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] text-faint">{tr('no canvas', 'on canvas')}</span>
         )}
         {folder.updatedAt && <TimeAgo iso={folder.updatedAt} className="pl-2" />}

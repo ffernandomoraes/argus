@@ -13,13 +13,14 @@ export function RemoteLostModal() {
   const state = useRemoteState()
   const name = REMOTE_HOST?.name ?? ''
   const reconnecting = state === 'reconnecting'
+  const kicked = state === 'kicked'
   return (
     <Presence kind="modal">
       {state !== 'connected' && (
         <Modal variant="blocking" size="xs" labelledBy="remote-lost-title" onClose={() => window.close()} onRequestClose={keepOpen}>
           <div className="px-6 pt-6 pb-5">
             <h1 id="remote-lost-title" className="text-lg font-semibold text-text">
-              {reconnecting ? tr('Reconectando…', 'Reconnecting…') : tr('A ligação acabou', 'The connection ended')}
+              {reconnecting ? tr('Reconectando…', 'Reconnecting…') : kicked ? tr('Desconectado pelo outro computador', 'Disconnected by the other computer') : tr('A ligação acabou', 'The connection ended')}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               {reconnecting
@@ -27,7 +28,12 @@ export function RemoteLostModal() {
                     `A ligação com ${name} caiu. Tentando de novo; o que estava rodando lá continua rodando.`,
                     `The connection to ${name} dropped. Trying again; what was running there keeps running.`
                   )
-                : tr(
+                : kicked
+                  ? tr(
+                      `Alguém em ${name} desconectou esta janela. Para voltar, abra de novo em Configurações > Acesso remoto.`,
+                      `Someone on ${name} disconnected this window. To come back, open it again in Settings > Remote access.`
+                    )
+                  : tr(
                     `Esta janela não está mais ligada ao Argus de ${name}. O que estava rodando lá continua rodando. Para voltar, abra de novo em Configurações > Acesso remoto.`,
                     `This window is no longer connected to Argus on ${name}. What was running there keeps running. To come back, open it again in Settings > Remote access.`
                   )}

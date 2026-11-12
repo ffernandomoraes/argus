@@ -162,6 +162,25 @@ describe('acesso remoto', () => {
   })
 })
 
+describe('desconectar pelo computador de casa', () => {
+  it('a janela fica sabendo e o notebook não tenta religar', async () => {
+    const [hostSide, clientSide] = memoryLinks()
+    const session = new RemoteHost(() => INFO).accept(hostSide)
+    const reconnect = vi.fn(async () => memoryLinks()[1])
+    const client = new RemoteClient(clientSide, VERSION, 'notebook', reconnect)
+    await client.connect()
+    const { win, wc } = fakeWindow(9)
+    client.attach(win)
+    await settle()
+    session.kick()
+    await settle()
+    expect(client.state).toBe('kicked')
+    expect(wc.sent).toContainEqual(['remote:state', 'kicked'])
+    await new Promise((r) => setTimeout(r, 1200))
+    expect(reconnect).not.toHaveBeenCalled()
+  })
+})
+
 describe('mensagens do notebook', () => {
   it('passa só o formato esperado', () => {
     const ok: ClientMessage = { t: 'call', w: 1, id: 2, kind: 'invoke', ch: 'sessions:list', args: ['/x'] }

@@ -51,6 +51,8 @@ export type Api = {
     setHosting: (on: boolean) => Promise<RemoteAccessState>
     startPairing: () => Promise<RemoteAccessState>
     cancelPairing: () => void
+    // Derruba a sessão de um aparelho (sem id, de todos), sem desfazer o pareamento.
+    disconnect: (id?: string) => void
     removeDevice: (id: string) => void
     // Notebook: pareia com o código do outro computador.
     pair: (code: string) => Promise<RemotePairResult>

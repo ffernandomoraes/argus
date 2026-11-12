@@ -10,6 +10,7 @@ export function registerRemoteAccessIpc(): void {
   handle('remoteAccess:pair', (_e, code) => remoteAccess().pair(code))
   handle('remoteAccess:open', (_e, hostId) => remoteAccess().open(hostId))
   on('remoteAccess:cancelPairing', () => remoteAccess().cancelPairing())
+  on('remoteAccess:disconnect', (_e, id) => remoteAccess().disconnect(id))
   on('remoteAccess:removeDevice', (_e, id) => remoteAccess().removeDevice(id))
   on('remoteAccess:forgetHost', (_e, hostId) => remoteAccess().forgetHost(hostId))
 }

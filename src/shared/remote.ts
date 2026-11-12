@@ -12,7 +12,8 @@ export type RemoteHostInfo = {
 }
 
 // Situação da ligação de uma janela remota: ligada, tentando de novo ou encerrada.
-export type RemoteConnectionState = 'connected' | 'reconnecting' | 'closed'
+// kicked: o outro computador desconectou esta janela de propósito.
+export type RemoteConnectionState = 'connected' | 'reconnecting' | 'closed' | 'kicked'
 
 // Argumento da linha de comando com que a janela remota abre: o preload lê antes do primeiro
 // desenho (o window.api já nasce com o sistema e a pasta pessoal de lá).

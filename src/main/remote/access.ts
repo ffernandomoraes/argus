@@ -5,7 +5,7 @@ import { tr } from '../i18n'
 import { formatPairCode, newPairCode, parsePairCode, type PairCode } from './crypto'
 import { acceptSession, HandshakeError, openSession, pairAsClient, pairAsHost, PAIR_WAIT_MS } from './handshake'
 import { RemoteClient } from './client'
-import { RemoteHost } from './host'
+import { RemoteHost, type HostSession } from './host'
 import type { Link } from './link'
 import { connectPairing, connectToHost, HostRelay, RelayError } from './relay'
 import { loadRemoteStore, newDeviceId, saveRemoteStore, type RemoteStore } from './store'
@@ -35,8 +35,8 @@ export class RemoteAccess {
   private store: RemoteStore = loadRemoteStore()
   private host: RemoteHost
   private relay: HostRelay | null = null
-  // Aparelho → ligações abertas agora.
-  private live = new Map<string, Set<Link>>()
+  // Aparelho → sessões abertas agora.
+  private live = new Map<string, Set<HostSession>>()
   private pairing: { code: PairCode; expiresAt: number; link: Link | null; timer: NodeJS.Timeout } | null = null
   private pairingResult: RemoteAccessState['pairingResult'] = null
   private clients = new Map<string, RemoteClient>()
@@ -116,19 +116,19 @@ export class RemoteAccess {
     const device = this.store.devices.find((d) => d.id === session.deviceId)
     if (!device) return session.link.close()
     const quiet = !!device.lastSeen && Date.now() - device.lastSeen < QUIET_RECONNECT_MS
-    const links = this.live.get(device.id) ?? new Set<Link>()
-    links.add(session.link)
-    this.live.set(device.id, links)
+    const hostSession = this.host.accept(session.link)
+    const sessions = this.live.get(device.id) ?? new Set<HostSession>()
+    sessions.add(hostSession)
+    this.live.set(device.id, sessions)
     device.lastSeen = Date.now()
     this.save()
     session.link.onClose(() => {
-      links.delete(session.link)
+      sessions.delete(hostSession)
       // A hora em que saiu conta para o aviso da próxima entrada.
       device.lastSeen = Date.now()
       this.save()
       this.changed()
     })
-    this.host.accept(session.link)
     if (!quiet) this.notifyConnected(device.name)
     this.changed()
   }
@@ -205,10 +205,19 @@ export class RemoteAccess {
     this.changed()
   }
 
+  // Derruba a sessão do aparelho (ou de todos) sem desfazer o pareamento: ele pode entrar de novo.
+  disconnect(id?: string): void {
+    for (const [device, sessions] of this.live) {
+      if (id && device !== id) continue
+      for (const s of [...sessions]) s.kick()
+    }
+    this.changed()
+  }
+
   removeDevice(id: string): void {
     this.store.devices = this.store.devices.filter((d) => d.id !== id)
     this.save()
-    for (const link of this.live.get(id) ?? []) link.close()
+    for (const s of [...(this.live.get(id) ?? [])]) s.kick()
     this.live.delete(id)
     this.changed()
   }

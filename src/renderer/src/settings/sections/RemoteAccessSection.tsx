@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useRemoteAccess } from '../../remote'
 import type { RemoteAccessState } from '../../../../shared/remote'
 import { LOCALE, tr } from '../../i18n'
 import { Button } from '../../ui/Button'
@@ -17,20 +18,6 @@ function Title({ children, hint }: { children: ReactNode; hint: string }) {
       <p className="text-[15px] leading-relaxed text-faint">{hint}</p>
     </div>
   )
-}
-
-function useRemoteAccess(): RemoteAccessState | null {
-  const [state, setState] = useState<RemoteAccessState | null>(null)
-  useEffect(() => {
-    let alive = true
-    void window.api.remoteAccess.state().then((s) => alive && setState(s))
-    const off = window.api.remoteAccess.onState(setState)
-    return () => {
-      alive = false
-      off()
-    }
-  }, [])
-  return state
 }
 
 // Segundos até o código vencer, contando na tela.

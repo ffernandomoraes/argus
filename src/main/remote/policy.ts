@@ -18,7 +18,8 @@ const LOCAL = new Set<string>([
   'clipboard:command',
   'accent:get',
   'language:get',
-  'auth:open'
+  'auth:open',
+  'remote:info'
 ] satisfies (keyof InvokeChannels | keyof SendChannels | keyof SendSyncChannels)[])
 
 const unavailable = (): string => tr('Indisponível no acesso remoto.', 'Unavailable over remote access.')
@@ -61,7 +62,6 @@ const BLOCKED_SEND = new Set<string>([
   'speech:stop',
   'speech:audio',
   'speech:openSettings',
-  'updates:install',
   'cli:ready',
   'files:reveal',
   'files:openFolder',

@@ -32,6 +32,13 @@ function installRouting(): void {
   setRemoteBlocked((wc, channel) => sendTo(wc, 'remote:blocked', channel))
 }
 
+// O computador que a janela daqui mostra, como está agora (depois de religar, a versão de lá pode ter
+// mudado), com a versão deste. Nulo para as janelas comuns.
+export function remoteInfoFor(wcId: number): RemoteHostInfo | null {
+  const client = windowClients.get(wcId)
+  return client?.info ? { ...client.info, clientVersion: client.clientVersion } : null
+}
+
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void; timer?: NodeJS.Timeout; sync: boolean }
 
 const noConnection = () => new Error(tr('Sem ligação com o outro computador.', 'No connection to the other computer.'))
@@ -60,6 +67,10 @@ export class RemoteClient {
 
   get state(): RemoteConnectionState {
     return this._state
+  }
+
+  get clientVersion(): string {
+    return this.version
   }
 
   get windowCount(): number {

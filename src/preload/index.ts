@@ -36,7 +36,9 @@ function remoteHost(): RemoteHostInfo | null {
     return null
   }
 }
-const remote = remoteHost()
+// O de agora vem do processo principal (depois de religar, a versão de lá pode ser outra); o da linha
+// de comando fica de reserva.
+const remote = remoteHost() && (sendSync('remote:info') ?? remoteHost())
 
 const api: Api = {
   platform: process.platform,
@@ -50,6 +52,7 @@ const api: Api = {
   remoteAccess: {
     state: () => invoke('remoteAccess:state'),
     setHosting: (on) => invoke('remoteAccess:setHosting', on),
+    setKeepAwake: (on) => invoke('remoteAccess:setKeepAwake', on),
     startPairing: () => invoke('remoteAccess:startPairing'),
     cancelPairing: () => send('remoteAccess:cancelPairing'),
     disconnect: (id) => send('remoteAccess:disconnect', id),

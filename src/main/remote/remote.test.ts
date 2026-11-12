@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { serialize } from 'node:v8'
+import { deserialize, serialize } from 'node:v8'
 import type { BrowserWindow } from 'electron'
 import { describe, expect, it, vi } from 'vitest'
 import { broadcast } from '../ipc/events'
@@ -78,9 +78,19 @@ describe('acesso remoto', () => {
     await expect(client.connect()).resolves.toEqual(INFO)
   })
 
-  it('recusa versão diferente, com o motivo para mostrar', async () => {
+  it('versão diferente do Argus entra (recusar trancaria a pessoa do lado de fora)', async () => {
     const { client } = await connect('9.9.9')
-    await expect(client.connect()).rejects.toThrow(/Versões diferentes.*1\.2\.3.*9\.9\.9/)
+    await expect(client.connect()).resolves.toEqual(INFO)
+  })
+
+  it('formato de mensagens diferente é recusado, com o motivo para mostrar', async () => {
+    const [hostSide, clientSide] = memoryLinks()
+    new RemoteHost(() => INFO).accept(hostSide)
+    const replies: unknown[] = []
+    clientSide.onMessage((d) => replies.push(deserialize(d)))
+    clientSide.send(encode({ t: 'hello', protocol: 999, version: '9.9.9', name: 'notebook' }))
+    await settle()
+    expect(replies[0]).toMatchObject({ t: 'reject', reason: expect.stringMatching(/1\.2\.3.*9\.9\.9/) })
   })
 
   it('responde o pedido pelo handler de casa, com a janela de lá como quem chamou', async () => {

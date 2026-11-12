@@ -4,6 +4,7 @@ import { useUpdates } from '../../updates/useUpdates'
 import { Row } from '../controls'
 import { tr } from '../../i18n'
 import { IS_WIN } from '../../platform'
+import { installUpdate } from '../../updates/installUpdate'
 
 function statusText(state: UpdateState): string {
   switch (state.status) {
@@ -45,7 +46,7 @@ export function UpdatesRow() {
   return (
     <Row label="Argus" description={tr(`Versão ${version}. ${statusText(state)}`, `Version ${version}. ${statusText(state)}`)}>
       {state.status === 'ready' ? (
-        <Button onClick={() => window.api.updates.install()}>{tr('Reiniciar e atualizar', 'Restart and update')}</Button>
+        <Button onClick={() => installUpdate()}>{tr('Reiniciar e atualizar', 'Restart and update')}</Button>
       ) : (
         <Button disabled={busy} onClick={() => void window.api.updates.check()}>
           {tr('Procurar', 'Check')}

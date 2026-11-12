@@ -9,6 +9,9 @@ export type RemoteHostInfo = {
   homeDir: string
   windowsBuild: number | null
   version: string
+  // Versão do Argus de quem mostra (o notebook), posta por ele ao abrir a janela: diferente da de lá,
+  // a barra avisa.
+  clientVersion?: string
 }
 
 // Situação da ligação de uma janela remota: ligada, tentando de novo ou encerrada.
@@ -27,6 +30,8 @@ export type RemoteKnownHost = { hostId: string; name: string; pairedAt: number; 
 export type RemoteAccessState = {
   // Este computador aceita aparelhos pareados (o "de casa").
   hosting: boolean
+  // O sistema não dorme enquanto hospeda.
+  keepAwake: boolean
   relay: RemoteRelayStatus
   // Nome deste computador, como os outros o veem.
   name: string

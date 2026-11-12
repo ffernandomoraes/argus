@@ -10,7 +10,7 @@ import { shutdown } from './shutdown'
 // desenvolvimento, o desligamento do Windows e o que acontece quando as janelas fecham.
 
 export type Lifecycle = {
-  restartToUpdate: () => Promise<void>
+  restartToUpdate: (opts?: { ask?: boolean }) => Promise<void>
   // Fecha sem perguntar (teste de fumaça).
   confirmAndQuit: () => void
 }
@@ -74,5 +74,5 @@ export function setupLifecycle(s: Services): Lifecycle {
 
   app.on('window-all-closed', allClosed)
 
-  return { restartToUpdate: () => flow.restartToUpdate(), confirmAndQuit: () => flow.confirmAndQuit() }
+  return { restartToUpdate: (opts) => flow.restartToUpdate(opts), confirmAndQuit: () => flow.confirmAndQuit() }
 }

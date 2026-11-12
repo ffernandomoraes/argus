@@ -13,7 +13,7 @@ import { wslDiagnostics } from '../wsl/diagnostics'
 import { parseAgentRef } from '../../shared/providers'
 import { agentInfo } from '../agentChats/models'
 import { handle, on, onSync } from './register'
-import { contentsOf } from './page'
+import { contentsOf, isRemotePage } from './page'
 import { syncWorkspace } from '../workspaces'
 import { IS_MAC } from '../platform'
 import { isInterfaceZoom } from '../../shared/interfaceZoom'
@@ -83,7 +83,9 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }))
   handle('updates:check', () => s.updater.check())
   handle('updates:notes', () => fetchReleaseNotes())
-  on('updates:install', () => life.restartToUpdate())
+  // De outro computador (acesso remoto): a confirmação já foi feita na janela de lá; perguntar aqui
+  // deixaria a atualização esperando alguém na frente deste computador.
+  on('updates:install', (e) => life.restartToUpdate({ ask: !isRemotePage(e.sender) }))
   on('popout:open', (_e, id, payload) => s.popouts.show(id, payload))
   // Mascote solto na tela. Ligar, "escrevendo" e voltar ao canto vêm das janelas do app; o resto,
   // só da janela dele.

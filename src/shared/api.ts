@@ -455,6 +455,8 @@ export type Api = {
     setNotificationSound: (on: boolean) => Promise<AppSettings>
     // Dados de uso anônimos (ver main/telemetry).
     setUsageStats: (on: boolean) => Promise<AppSettings>
+    // Windows com pastas no WSL: um login só por conta, ou um por distro como antes.
+    setWslSharedLogin: (on: boolean) => Promise<AppSettings>
     setLanguage: (pref: LangPreference) => Promise<AppSettings>
   }
   // Atualização do app pelos releases do GitHub.

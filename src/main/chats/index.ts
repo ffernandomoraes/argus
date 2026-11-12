@@ -14,7 +14,7 @@ import { memoryTight } from '../systemHealth/memory'
 import { resolveAccount } from '../accounts'
 import { telemetry } from '../telemetry'
 import { tr } from '../i18n'
-import { sharesAppLogin } from '../wsl'
+import { sharesAppLogin } from '../wsl/sharedLogin'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
 // as mesmas operações.

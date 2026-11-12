@@ -4,6 +4,7 @@ import { errorReportsStatus, SMOKE_REPORTS_PORT } from '../errorReports'
 import { registerIpc } from '../ipc'
 import { IS_LINUX, IS_WIN } from '../platform'
 import { warmUp } from '../wsl'
+import { checkWindowsStore } from '../wsl/sharedLogin'
 import { runSmokeTest, SMOKE_TEST } from '../smokeTest'
 import { watchAppearance } from './appearance'
 import { activeCanvas, canvasWindowList, isCanvasReady } from './canvasRegistry'
@@ -36,7 +37,8 @@ export function startApp(s: Services, life: Lifecycle): void {
   // a máquina virtual). Com a resposta, o login é conferido de novo: sem o `claude` do Windows, é o
   // do WSL que vale.
   if (IS_LINUX) step('atalho no menu de apps', installDesktopEntry)
-  if (IS_WIN) step('WSL', () => warmUp().then(() => s.auth.refresh()))
+  // Antes de conferir: com os discos do Windows montados na distro, o login de lá é o do Windows.
+  if (IS_WIN) step('WSL', () => Promise.all([warmUp(), checkWindowsStore()]).then(() => s.auth.refresh()))
   step('comando argus', () => s.cli.start())
   step('atualizações', () => s.updater.start())
   step('versão do Claude Code', () => s.claudeVersion.start())

@@ -12,9 +12,11 @@ import { toUnc } from './path'
 // Contas do Claude num projeto do WSL. A principal é a do ~/.claude do Linux, a mesma do terminal
 // de lá. As outras ganham uma pasta própria no Linux (~/.argus/accounts/<id>), com os mesmos
 // links para a principal que o app cria no Mac e no Windows (ver accounts/links.ts), mas para a
-// principal do Linux. O login de cada conta é separado do Windows: o Claude Code de lá guarda o
-// dele no .credentials.json da pasta, e dividir o mesmo arquivo com o do Windows faria um derrubar
-// o outro a cada renovação.
+// principal do Linux. O login de cada conta é o mesmo do Windows quando os discos dele estão
+// montados na distro: o Claude Code de lá recebe à parte a pasta do login, que é a da conta no
+// Windows (ver sharedLogin.ts). Senão, é separado: o Claude Code de lá guarda o dele no
+// .credentials.json da pasta do Linux (copiar o arquivo de um lado para o outro faria um derrubar o
+// outro a cada renovação; o que funciona é os dois usarem o mesmo arquivo, com a mesma trava).
 
 const ROOT = app.isPackaged ? '.argus/accounts' : '.argus-dev/accounts'
 

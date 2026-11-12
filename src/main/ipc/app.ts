@@ -10,6 +10,7 @@ import { lang, setLang, tr } from '../i18n'
 import { broadcast } from './events'
 import { ensureDistro, homeUnc, listDistros } from '../wsl'
 import { wslDiagnostics } from '../wsl/diagnostics'
+import { setSharedLoginEnabled } from '../wsl/sharedLogin'
 import { parseAgentRef } from '../../shared/providers'
 import { agentInfo } from '../agentChats/models'
 import { handle, on, onSync } from './register'
@@ -76,6 +77,15 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   handle('settings:usageStats', (_e, enabled) => {
     telemetry.setEnabled(enabled, telemetrySources(s))
     return loadAppSettings()
+  })
+  // O login das pastas do WSL mudou de lugar: as contas são conferidas de novo (as linhas do WSL
+  // aparecem ou somem) e as conversas paradas reabrem com o login certo na próxima mensagem.
+  handle('settings:wslSharedLogin', (_e, enabled) => {
+    const saved = saveAppSettings({ wslSharedLogin: enabled })
+    setSharedLoginEnabled(enabled)
+    s.chats.releaseAll()
+    void s.auth.refresh()
+    return saved
   })
   // Idioma trocado: menu e ícone do sistema refeitos aqui; as janelas recarregam (renderer/i18n).
   handle('settings:language', (_e, pref) => {

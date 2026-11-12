@@ -14,7 +14,8 @@ import { Modal } from '../../../ui/Modal'
 const NEEDS_LOGIN = /not logged in|please run \/login/i
 
 // Erro que encerrou o pedido. Quando é falta de login, vem com o botão de entrar na conta da
-// conversa, no lugar onde ela roda: numa pasta do WSL, o login é o de lá, separado do do Windows.
+// conversa, no lugar onde ela roda: numa pasta do WSL cuja distro tem login próprio (a conta traz
+// essa distro em `wsl`), o login é o de lá; nas outras, é o login comum da conta.
 export function ErrorRow({ error }: { error: string }) {
   const auth = useAuth()
   const accountId = useConversationAccount()
@@ -22,7 +23,8 @@ export function ErrorRow({ error }: { error: string }) {
   const [open, setOpen] = useState(false)
   // Conta de outro agente (Codex, Gemini, Cursor) entra pela tela de contas.
   const account = NEEDS_LOGIN.test(error) && !parseAgentRef(accountId) ? findAccount(auth, accountId) : undefined
-  const distro = folder ? wslDistroOf(folder) : undefined
+  const folderDistro = folder ? wslDistroOf(folder) : undefined
+  const distro = folderDistro && account?.wsl?.some((w) => w.distro.toLowerCase() === folderDistro.toLowerCase()) ? folderDistro : undefined
   const login = auth?.login
 
   // Login terminou: o aviso fecha, e a próxima mensagem já vai com o login novo.

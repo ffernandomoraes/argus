@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { MAIN_ACCOUNT } from '../../shared/auth'
 import { erase } from './erase'
 import { link } from './links'
+import { dropLoginOverrides } from './loginOverrides'
 import { accountDir, ROOT } from './paths'
 import { forgetAccount, pending, resolveAccount } from './registry'
 import { seed } from './seed'
@@ -29,12 +30,15 @@ export {
   setDefaultAccount
 } from './registry'
 
+export { dropLoginOverrides, overridesLogin } from './loginOverrides'
+
 // Põe a conta no ambiente do `claude` e devolve a que ficou valendo. A principal vai sem a
 // variável, mesmo se o app foi aberto com ela: o resto do app lê ~/.claude.
 export function applyAccount(env: Record<string, string>, id?: string): string {
   const account = resolveAccount(id)
   delete env.CLAUDE_CONFIG_DIR
   delete env.CLAUDE_SECURESTORAGE_CONFIG_DIR
+  dropLoginOverrides(env, account)
   const dir = accountDir(account)
   if (dir) {
     link(dir)

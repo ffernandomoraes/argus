@@ -19,6 +19,9 @@ export type AppSettings = {
   installId?: string
   // Dados de uso anônimos (ver main/telemetry). Ausente vale ligado: quem atualiza também começa ligado.
   usageStats?: boolean
+  // Windows com pastas no WSL: o `claude` de lá usa o mesmo login do Windows (ver
+  // main/wsl/sharedLogin.ts). Ausente vale ligado; desligado, cada distro volta a ter login próprio.
+  wslSharedLogin?: boolean
   // Prazos da limpeza do disco (aba Armazenamento) e o que a última liberou (ver main/storage).
   // O prazo das conversas não fica aqui: é o do settings.json do Claude Code (ver main/storage/retention.ts).
   storage?: Partial<Omit<StorageSettings, 'conversationDays'>>

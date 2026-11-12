@@ -349,6 +349,7 @@ const api: Api = {
     setNotifications: (on) => invoke('settings:notifications', on),
     setNotificationSound: (on) => invoke('settings:notificationSound', on),
     setUsageStats: (on) => invoke('settings:usageStats', on),
+    setWslSharedLogin: (on) => invoke('settings:wslSharedLogin', on),
     setLanguage: (pref) => invoke('settings:language', pref)
   },
   updates: {

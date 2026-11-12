@@ -1,5 +1,6 @@
 import { execFile, spawn } from 'node:child_process'
 import { access } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app } from 'electron'
 import { writeStdin } from '../lib/childProcess'
@@ -22,6 +23,11 @@ export type DistroInfo = {
   path: string
   // Caminho do `claude` no Linux; nulo se não está instalado nessa distro.
   claude: string | null
+  // A pasta do usuário do Windows vista de dentro da distro (/mnt/c/Users/ana), se dá para gravar
+  // nela de lá. É onde fica o login de cada conta do app: com ela, o `claude` de lá usa o mesmo
+  // login do Windows (ver sharedLogin.ts). Nulo: os discos do Windows não estão montados na distro.
+  // Ausente: guardado por uma versão anterior do app, ainda sem a pergunta.
+  winHome?: string | null
 }
 
 const cache = new Map<string, DistroInfo>()
@@ -132,7 +138,9 @@ export function distroInfo(distro: string): DistroInfo | null {
 // Roda pelo stdin do `sh`, e não como argumento: nada de aspas passando pelo wsl.exe. O shell de
 // login da pessoa (bash, zsh, fish) carrega o PATH como o terminal dela; o `env` imprime do mesmo
 // jeito em qualquer um deles. Pastas do Windows (/mnt/...) não contam na procura do `claude`: lá
-// estaria o do Windows, que não roda no Linux.
+// estaria o do Windows, que não roda no Linux. A pasta do usuário do Windows vem na variável
+// ARGUS_WIN_HOME (ver probeScript): o wslpath diz onde a distro monta o disco (/mnt/c por padrão,
+// outro lugar com a montagem mudada no wsl.conf).
 const PROBE = `
 s=$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7)
 [ -x "$s" ] || s=/bin/bash
@@ -150,7 +158,15 @@ if [ -z "$c" ]; then
   done
 fi
 printf '__ARGUS_CLAUDE__%s\\n' "$c"
+w=$(wslpath -u "$ARGUS_WIN_HOME" 2>/dev/null)
+case "$w" in /*) [ -d "$w" ] && [ -w "$w" ] || w= ;; *) w= ;; esac
+printf '__ARGUS_WINHOME__%s\\n' "$w"
 `
+
+// Aspas simples do shell: a pasta do Windows pode ter espaço, acento ou aspas.
+const sq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
+
+export const probeScript = (winHome: string): string => `ARGUS_WIN_HOME=${sq(winHome)}\n${PROBE}`
 
 function field(out: string, mark: string): string {
   const line = out.split('\n').find((l) => l.startsWith(mark))
@@ -177,9 +193,14 @@ function probe(distro: string): Promise<DistroInfo | null> {
         log(`wsl -d ${distro}: resposta sem a pasta do usuário (código ${code})`, err.slice(0, 500))
         return resolve(null)
       }
-      resolve({ home, path: field(out, '__ARGUS_PATH__'), claude: field(out, '__ARGUS_CLAUDE__') || null })
+      resolve({
+        home,
+        path: field(out, '__ARGUS_PATH__'),
+        claude: field(out, '__ARGUS_CLAUDE__') || null,
+        winHome: field(out, '__ARGUS_WINHOME__') || null
+      })
     })
-    writeStdin(child, PROBE)
+    writeStdin(child, probeScript(homedir()))
   })
 }
 
@@ -203,7 +224,7 @@ export function loadDistro(distro: string): Promise<DistroInfo | null> {
         // Windows 10 antigo só conhece o \\wsl$. Conferido sem segurar o app: é pela rede.
         if (!(await exists(`\\\\wsl.localhost\\${distro}\\`)) && (await exists(`\\\\wsl$\\${distro}\\`))) setUncPrefix('\\\\wsl$')
         persist()
-        log(`wsl -d ${distro}`, JSON.stringify({ home: info.home, claude: info.claude }))
+        log(`wsl -d ${distro}`, JSON.stringify({ home: info.home, claude: info.claude, winHome: info.winHome }))
       }
       return info ?? distroInfo(distro)
     })

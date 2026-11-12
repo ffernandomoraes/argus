@@ -63,7 +63,7 @@ vi.mock('./outputStyle', () => ({ readOutputStyle: vi.fn(), writeOutputStyle: vi
 vi.mock('./env', () => ({ claudeEnv: vi.fn(), claudeLaunch: vi.fn(), claudeProcess: vi.fn() }))
 vi.mock('../accounts', () => ({ resolveAccount: (id?: string) => id || 'main' }))
 // Pasta do WSL com o `claude` do app no Windows: o login da conversa é outro.
-vi.mock('../wsl', () => ({ sharesAppLogin: (cwd: string) => !cwd.startsWith('\\\\wsl.localhost\\') }))
+vi.mock('../wsl/sharedLogin', () => ({ sharesAppLogin: (cwd: string) => !cwd.startsWith('\\\\wsl.localhost\\') }))
 
 const MINUTE = 60_000
 const settings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: 'manual' }

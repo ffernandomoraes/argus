@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { resolveAccount } from '../accounts'
+import { dropLoginOverrides, overridesLogin, resolveAccount } from '../accounts'
 import { tr } from '../i18n'
 import { childEnv } from '../platform'
 import { prepareWslAccount, wslAccountDir } from './accounts'
@@ -8,17 +8,47 @@ import { installInWsl, watchInstall, WSL_INSTALL } from './install'
 import { log } from './log'
 import { toLinux } from './path'
 import { deferredWslProcess, linuxEnv, wslCommand } from './run'
+import { alignWslIdentity, sharedLoginDir, sharedLoginReady } from './sharedLogin'
 
 // Como abrir o `claude` (ou um shell) dentro de uma distro: para o terminal, as conferências de
 // login e uso, e o SDK.
 
 export type WslLaunch = { ok: true; file: string; args: string[]; env: Record<string, string>; cwd: string; account: string } | { ok: false; error: string }
 
-// Pasta da conta, no formato do Linux; a principal vai sem a variável.
+// Pasta da conta, no formato do Linux; a principal vai sem a variável. Com o login compartilhado, o
+// lugar do login vai à parte: a pasta da conta no Windows, vista de lá (ver sharedLogin.ts).
 async function accountEnv(distro: string, info: DistroInfo, account: string): Promise<Record<string, string>> {
   await prepareWslAccount(distro, info, account)
   const dir = wslAccountDir(info, account)
-  return dir ? { CLAUDE_CONFIG_DIR: dir } : {}
+  await sharedLoginReady(distro)
+  const login = sharedLoginDir(distro, account)
+  if (login) await alignWslIdentity(distro, info, account)
+  return { ...(dir && { CLAUDE_CONFIG_DIR: dir }), ...(login && { CLAUDE_SECURESTORAGE_CONFIG_DIR: login }) }
+}
+
+// Variáveis da conta, que só valem dentro do Linux (ver accountEnv).
+const isAccountVar = (name: string) => /^(CLAUDE_CONFIG_DIR|CLAUDE_SECURESTORAGE_CONFIG_DIR)$/i.test(name)
+
+// Ambiente do wsl.exe que abre o shell de uma pasta do WSL. O wsl.exe só passa para o Linux as
+// variáveis listadas em WSLENV: as da conta vão com /u (só do Windows para o Linux; um programa do
+// Windows aberto desse shell não recebe um caminho do Linux) e sem /p (o caminho já é o de lá).
+// Assim o `claude` digitado nele entra com a conta do grupo, como no shell do Windows (ver
+// nativeTerminal). Até a 0.1.124 ia sem nada, e ele usava o login próprio do Linux, que podia ser
+// de outra conta. Da lista que a pessoa já tenha em WSLENV, saem as variáveis da conta (a principal
+// vai sem elas, como no Windows) e, numa conta extra, as que trocariam o login dela.
+export function wslShellEnv(base: Record<string, string>, account: string, vars: Record<string, string>): Record<string, string> {
+  const env: Record<string, string> = {}
+  let listed: string[] = []
+  for (const [key, value] of Object.entries(base)) {
+    if (/^wslenv$/i.test(key)) listed = value.split(':')
+    else if (!isAccountVar(key) && !overridesLogin(key, account)) env[key] = value
+  }
+  const kept = listed.filter((entry) => {
+    const name = entry.split('/')[0]
+    return !!name && !isAccountVar(name) && !overridesLogin(name, account)
+  })
+  const all = [...kept, ...Object.keys(vars).map((name) => `${name}/u`)]
+  return { ...env, ...vars, ...(all.length > 0 && { WSLENV: all.join(':') }) }
 }
 
 // Pasta de trabalho no Linux; sem pasta (login, uso), a do usuário.
@@ -44,8 +74,20 @@ export async function wslLaunch(
   // O processo do Windows (o wsl.exe) fica na pasta do usuário do Windows: o cmd e o node-pty não
   // aceitam pasta de rede como pasta de trabalho. A do Linux vai pelo --cd.
   const base = { env: childEnv(), cwd: homedir(), account }
-  // Shell: o padrão da pessoa no Linux, de login, como o terminal do Ubuntu abre.
-  if (req.shell) return { ok: true, file: WSL_EXE, args: ['-d', distro, '--cd', cwd], ...base }
+  // Shell: o padrão da pessoa no Linux, de login, como o terminal do Ubuntu abre, com a conta do
+  // grupo (ver wslShellEnv).
+  if (req.shell) {
+    try {
+      const env = wslShellEnv(base.env, account, await accountEnv(distro, info, account))
+      return { ok: true, file: WSL_EXE, args: ['-d', distro, '--cd', cwd], ...base, env }
+    } catch (err) {
+      log(`não deu para preparar o shell no WSL (${distro})`, (err as Error).message)
+      return {
+        ok: false,
+        error: tr(`Não deu para preparar o WSL (${distro}): ${(err as Error).message}`, `Couldn’t prepare WSL (${distro}): ${(err as Error).message}`)
+      }
+    }
+  }
   if (!info.claude && !req.visibleInstall) info = (await installInWsl(distro)) ?? info
   try {
     const env = { ...linuxEnv(req.env ?? {}), ...(await accountEnv(distro, info, account)) }
@@ -82,9 +124,11 @@ export function wslSdkProcess(
   o: { args: string[]; env: Record<string, string | undefined>; cwd?: string },
   account: string | undefined
 ) {
+  const id = resolveAccount(account)
   return deferredWslProcess(distro, async (info) => ({
     argv: [info.claude ?? 'claude', ...o.args],
-    env: { ...linuxEnv(o.env), ...(await accountEnv(distro, info, resolveAccount(account))) },
+    // O ambiente do Windows chega até aqui: o que trocaria o login da conta não passa (ver dropLoginOverrides).
+    env: { ...dropLoginOverrides(linuxEnv(o.env), id), ...(await accountEnv(distro, info, id)) },
     cwd: linuxCwd(info, o.cwd)
   }))
 }

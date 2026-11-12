@@ -7,6 +7,7 @@ import { IS_WIN } from '../platform'
 import { distroFor } from './index'
 import { distroInfo, listDistros, loadDistro, WSL_EXE } from './distros'
 import { logLines } from './log'
+import { sharedLoginBlocker } from './sharedLogin'
 
 // Texto para a pessoa copiar e mandar quando algo do WSL não funciona: versões, distros, o que o
 // app achou em cada uma e o registro do que pediu ao WSL (ver log.ts).
@@ -19,6 +20,21 @@ function wslVersion(): Promise<string> {
       resolve((utf16 ? stdout.toString('utf16le') : stdout.toString('utf8')).replace(/\0/g, '').trim())
     })
   })
+}
+
+// Onde o `claude` da distro acha o login das contas (ver sharedLogin.ts).
+function loginLine(distro: string, winHome: string | null | undefined): string {
+  const blocker = sharedLoginBlocker(distro)
+  const label = tr('Login das contas', 'Account sign-in')
+  if (!blocker) return `${label}: ${tr('o mesmo do Windows, em', 'same as Windows, at')} ${winHome}`
+  const why = {
+    own: tr('o Claude do app roda no WSL', 'the app’s Claude runs in WSL'),
+    off: tr('desligado nas configurações', 'turned off in settings'),
+    vault: tr('o Windows guarda o login no cofre de credenciais', 'Windows keeps the sign-in in the credential vault'),
+    unmounted: tr('a pasta do usuário do Windows não está acessível de dentro da distro', 'the Windows user folder is not reachable from inside the distro'),
+    unknown: tr('a distro ainda não respondeu onde fica a pasta do Windows', 'the distro has not answered where the Windows folder is yet')
+  }[blocker]
+  return `${label}: ${tr('separado', 'separate')} (${why})`
 }
 
 export async function wslDiagnostics(): Promise<string> {
@@ -37,7 +53,8 @@ export async function wslDiagnostics(): Promise<string> {
     '== Distros',
     ...(distros.length ? distros : [tr('(nenhuma)', '(none)')]).map((d) => {
       const info = distroInfo(d)
-      return info ? `${d}: home=${info.home} claude=${info.claude ?? missing}\n  PATH=${info.path}` : `${d}: ${tr('sem resposta', 'no response')}`
+      if (!info) return `${d}: ${tr('sem resposta', 'no response')}`
+      return `${d}: home=${info.home} claude=${info.claude ?? missing}\n  PATH=${info.path}\n  ${loginLine(d, info.winHome)}`
     }),
     '',
     tr('== Registro', '== Log'),

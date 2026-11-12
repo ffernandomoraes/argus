@@ -18,3 +18,9 @@ overrides:
   undici@7: ^7.30.1
   qs: ^6.16.1
   fast-uri: ^3.1.9
+  # Alertas do Dependabot de 2026-11-12 (GHSA-g3hv-75wg-m249 e GHSA-3g3m-2fjr-6pw4): a correção só
+  # existe na versão maior seguinte. minimatch vem do electron-builder (@electron/universal,
+  # app-builder-lib) e glob do @sentry/bundler-plugins; os dois usam só minimatch/Minimatch e glob,
+  # iguais nas versões novas. Versões fixas, de duas semanas atrás (não as publicadas ontem). Remover quando os pais já trouxerem minimatch >=11.0.1 e glob >=14.0.2.
+  'minimatch@>=7.0.0 <12.0.0': 11.0.3
+  'glob@>=9.0.0 <14.0.2': 14.0.3

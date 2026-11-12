@@ -7,31 +7,33 @@
 <style>
 :root {
   color-scheme: light;
-  --bg: #f5f5f4;
+  --bg: #f4f4f3;
   --surface: #ffffff;
-  --border: #e5e5e3;
-  --grid: #ececea;
+  --border: #e6e6e3;
+  --grid: #efefec;
   --text: #0b0b0b;
   --text-2: #52514e;
-  --text-3: #8a8985;
-  --fill: #f0f0ee;
+  --text-3: #85847f;
+  --fill: #f1f1ef;
   --accent: #2a78d6;
+  --accent-soft: rgba(42, 120, 214, .12);
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
-  --bar: #2a78d6;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #121211; --surface: #1a1a19; --border: #2c2c2a; --grid: #262624;
+    --bg: #111110; --surface: #1a1a19; --border: #2b2b29; --grid: #242422;
     --text: #f0efec; --text-2: #c3c2b7; --text-3: #8d8c85; --fill: #232321;
-    --accent: #3987e5; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --bar: #3987e5;
+    --accent: #3987e5; --accent-soft: rgba(57, 135, 229, .18);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #121211; --surface: #1a1a19; --border: #2c2c2a; --grid: #262624;
+  --bg: #111110; --surface: #1a1a19; --border: #2b2b29; --grid: #242422;
   --text: #f0efec; --text-2: #c3c2b7; --text-3: #8d8c85; --fill: #232321;
-  --accent: #3987e5; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --bar: #3987e5;
+  --accent: #3987e5; --accent-soft: rgba(57, 135, 229, .18);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
 }
 * { box-sizing: border-box; }
 body {
@@ -39,37 +41,68 @@ body {
   font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
-header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 20px; }
-h1 { font-size: 22px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+.wrap { max-width: 1480px; margin: 0 auto; padding: 20px 24px 56px; }
+
+/* Cabeçalho */
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 18px; }
+h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
 .sub { color: var(--text-3); font-size: 13px; }
 .spacer { flex: 1; }
 .seg { display: inline-flex; background: var(--fill); border-radius: 10px; padding: 3px; gap: 2px; }
 .seg button {
   border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
-  padding: 5px 12px; border-radius: 8px; cursor: pointer;
+  padding: 5px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap;
 }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 28px 0 10px; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
-.kpi .label { color: var(--text-2); font-size: 13px; }
-.kpi .value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.kpi .note { color: var(--text-3); font-size: 12px; margin-top: 2px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px 16px; min-width: 0; }
-.card.wide { grid-column: 1 / -1; }
-.card h3 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
-.card .desc { color: var(--text-3); font-size: 12.5px; margin-bottom: 12px; }
+
+/* Grade de 12 colunas */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.span-3 { grid-column: span 3; } .span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; }
+.span-6 { grid-column: span 6; } .span-7 { grid-column: span 7; } .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.section-title { grid-column: span 12; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin: 14px 0 -4px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.card h3 { font-size: 15px; font-weight: 600; margin: 0; }
+.card .desc { color: var(--text-3); font-size: 12.5px; margin-top: 2px; }
+.empty { color: var(--text-3); font-size: 13px; padding: 6px 0; }
+
+/* Números principais */
+.hero { padding: 16px 18px 12px; display: flex; flex-direction: column; }
+.hero .label { color: var(--text-2); font-size: 13.5px; font-weight: 500; }
+.hero .value-row { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+.hero .value { font-size: 34px; font-weight: 680; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.delta { font-size: 12.5px; font-weight: 550; padding: 2px 7px; border-radius: 6px; background: var(--fill); color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hero .note { color: var(--text-3); font-size: 12.5px; margin-top: 4px; }
+.spark { margin-top: auto; padding-top: 10px; }
+.spark svg { display: block; width: 100%; height: 40px; overflow: visible; }
+
+/* Faixa de números secundários */
+.strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 0; }
+.strip > div { padding: 12px 18px; border-left: 1px solid var(--border); min-width: 0; }
+.strip > div:first-child { border-left: 0; }
+.strip .label { color: var(--text-3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip .value { font-size: 20px; font-weight: 640; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.strip .value small { font-size: 12.5px; font-weight: 500; color: var(--text-3); margin-left: 4px; letter-spacing: 0; }
+
+/* Gráficos */
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--text-2); margin-bottom: 8px; }
-.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend i, .key i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .chart { position: relative; }
-.chart svg { display: block; width: 100%; height: 200px; overflow: visible; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+/* Bloco com gráfico que ocupa a altura que sobrar (a da coluna ao lado). O desenho fica por cima, sem
+   empurrar a altura: assim encolhe junto ao redimensionar. */
+.card.fill { display: flex; flex-direction: column; }
+.card.fill .chart { flex: 1; }
+.card.fill .chart svg { position: absolute; inset: 0; }
+#tabs { max-width: 100%; overflow-x: auto; }
+.tools .bars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 32px; }
 .axis { fill: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
 .gridline { stroke: var(--grid); stroke-width: 1; }
-.hit { fill: transparent; cursor: default; }
-.hit:hover + .col-hover, .col-hover.on { opacity: 1; }
+.hit { fill: transparent; }
 .col-hover { fill: var(--fill); opacity: 0; pointer-events: none; }
+.col-hover.on { opacity: 1; }
 .tip {
   position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 6px 20px rgba(0,0,0,.14);
@@ -77,29 +110,95 @@ h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 }
 .tip b { font-weight: 600; }
 .tip .row { display: flex; align-items: center; gap: 6px; color: var(--text-2); }
-.tip .row span:last-child { margin-left: auto; padding-left: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+.tip .row span:last-child { margin-left: auto; padding-left: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
 .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-.bars { display: flex; flex-direction: column; gap: 7px; }
-.bar-row { display: grid; grid-template-columns: minmax(0, 38%) 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+
+/* Listas com barra */
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(50px, 38%) auto; align-items: center; gap: 10px; font-size: 13px; }
 .bar-row .name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-row .track { height: 10px; background: var(--fill); border-radius: 4px; overflow: hidden; }
-.bar-row .fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
-.bar-row .val { color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
-.badge { display: inline-block; font-size: 11px; color: var(--accent); border: 1px solid currentColor; border-radius: 6px; padding: 0 5px; margin-left: 6px; vertical-align: 1px; }
-.empty { color: var(--text-3); font-size: 13px; padding: 8px 0; }
+.bar-row .track { height: 8px; background: var(--fill); border-radius: 4px; overflow: hidden; }
+.bar-row .fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; min-width: 2px; }
+.bar-row .val { color: var(--text-2); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.bar-row .val small { color: var(--text-3); margin-left: 4px; }
+.badge { display: inline-block; font-size: 11px; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 0 5px; margin-left: 6px; vertical-align: 1px; }
+
+/* Divisão em uma barra só */
+.share { display: flex; height: 12px; gap: 2px; border-radius: 4px; overflow: hidden; margin: 4px 0 12px; }
+.share span { height: 100%; min-width: 3px; }
+.keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 16px; }
+.key { font-size: 13px; color: var(--text-2); }
+.key b { display: block; color: var(--text); font-size: 18px; font-weight: 640; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.key b small { font-size: 12px; font-weight: 500; color: var(--text-3); margin-left: 4px; }
+
+/* Retenção */
+.ret { display: flex; flex-direction: column; gap: 12px; }
+.ret-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+.ret-row .label { color: var(--text-2); font-size: 13px; }
+.ret-row .value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.ret-row .track { grid-column: span 2; height: 6px; background: var(--fill); border-radius: 3px; overflow: hidden; }
+.ret-row .track div { height: 100%; background: var(--accent); border-radius: 0 3px 3px 0; }
+.ret-row .note { grid-column: span 2; color: var(--text-3); font-size: 12px; }
+
+/* Tabela de modelos */
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
-th { text-align: right; font-weight: 500; color: var(--text-3); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
-td:first-child { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+th { text-align: right; font-weight: 500; color: var(--text-3); font-size: 12px; padding: 0 10px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+td.model { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+td.model .agent { color: var(--text-3); font-size: 12px; margin-left: 6px; }
+td.turns { width: 26%; }
+.turns-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.turns-cell .track { flex: 1; max-width: 140px; height: 6px; background: var(--fill); border-radius: 3px; overflow: hidden; }
+.turns-cell .track div { height: 100%; border-radius: 0 3px 3px 0; }
 .table-scroll { overflow-x: auto; }
-.agent-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: 0; }
-details { margin-top: 10px; font-size: 13px; color: var(--text-2); }
-details summary { cursor: pointer; color: var(--text-3); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; }
+
+/* Blocos compactos em colunas (o Argus como um todo, instalações) */
+.facts { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+.facts > div { padding: 2px 16px; border-left: 1px solid var(--border); min-width: 0; }
+.facts > div:first-child { border-left: 0; padding-left: 0; }
+.facts .label { color: var(--text-3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.facts .value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.facts .note { color: var(--text-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.cols > section { padding: 0 20px; border-left: 1px solid var(--border); min-width: 0; }
+.cols > section:first-child { border-left: 0; padding-left: 0; }
+.cols > section:last-child { padding-right: 0; }
+.cols h4 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--text); }
+.cols h4 + .bars + h4 { margin-top: 16px; }
+
 .error { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--text-2); }
-@media (max-width: 520px) {
-  .grid { grid-template-columns: 1fr; }
-  .kpi .value { font-size: 22px; }
+
+/* Telas menores */
+@media (max-width: 1180px) {
+  .span-3 { grid-column: span 6; }
+  .span-4, .span-5, .span-7, .span-8 { grid-column: span 12; }
+  .strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .strip > div:nth-child(4) { border-left: 0; }
+  .strip > div:nth-child(n+4) { border-top: 1px solid var(--border); }
+  .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 16px; }
+  .facts > div:nth-child(5) { border-left: 0; padding-left: 0; }
+  .side-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+}
+@media (max-width: 760px) {
+  .wrap { padding: 16px 16px 48px; }
+  .span-3, .span-6 { grid-column: span 12; }
+  .grid { gap: 12px; }
+  .hero .value { font-size: 30px; }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .strip > div { border-left: 0; border-top: 1px solid var(--border); }
+  .strip > div:nth-child(even) { border-left: 1px solid var(--border); }
+  .strip > div:nth-child(-n+2) { border-top: 0; }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts > div { border-left: 0; padding-left: 0; }
+  .facts > div:nth-child(even) { border-left: 1px solid var(--border); padding-left: 16px; }
+  .cols { grid-template-columns: 1fr; gap: 20px; }
+  .tools .bars { grid-template-columns: 1fr; }
+  .cols > section { border-left: 0; padding: 0; }
+  .side-pair { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -107,7 +206,7 @@ details summary { cursor: pointer; color: var(--text-3); }
 <div class="wrap">
   <header>
     <div>
-      <h1>Argus - uso</h1>
+      <h1>Argus</h1>
       <div class="sub" id="updated">Carregando...</div>
     </div>
     <div class="spacer"></div>
@@ -141,11 +240,18 @@ details summary { cursor: pointer; color: var(--text-3); }
     var h = Math.floor(m / 60), r = Math.round(m % 60)
     return h + ' h' + (r ? ' ' + r + ' min' : '')
   }
+  function hours(m) { return m >= 600 ? cf.format(m / 60) + ' h' : minutes(m) }
   function shortDay(d) { var p = d.split('-'); return p[2] + '/' + p[1] }
+  function sum(list, f) { return list.reduce(function (a, x) { return a + f(x) }, 0) }
 
   var days = 30
-  try { days = Number(localStorage.getItem('argus-usage-days')) || 30 } catch (e) {}
+  var tab = 'installs'
+  try {
+    days = Number(localStorage.getItem('argus-usage-days')) || 30
+    tab = localStorage.getItem('argus-usage-tab') || 'installs'
+  } catch (e) {}
   if ([7, 30, 90].indexOf(days) < 0) days = 30
+  var data = null
 
   var seg = document.getElementById('period')
   seg.addEventListener('click', function (e) {
@@ -162,7 +268,7 @@ details summary { cursor: pointer; color: var(--text-3); }
     })
     fetch('/api/summary?days=' + days, { credentials: 'same-origin' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() })
-      .then(render)
+      .then(function (s) { data = s; render(s) })
       .catch(function (err) {
         document.getElementById('main').innerHTML = '<div class="error">Não deu para carregar os números (' + esc(err.message) + ').</div>'
       })
@@ -170,43 +276,57 @@ details summary { cursor: pointer; color: var(--text-3); }
 
   // --- Peças ---
 
-  function kpi(label, value, note) {
-    return '<div class="kpi"><div class="label">' + esc(label) + '</div><div class="value">' + esc(value) + '</div>' +
-      (note ? '<div class="note">' + esc(note) + '</div>' : '') + '</div>'
+  // Variação contra o período anterior, do mesmo tamanho.
+  function delta(now, before) {
+    if (!before) return now ? '<span class="delta">novo</span>' : ''
+    var d = (now - before) / before
+    var arrow = d > 0.005 ? '↑' : d < -0.005 ? '↓' : '→'
+    return '<span class="delta" title="Período anterior: ' + esc(nf.format(Math.round(before))) + '">' + arrow + ' ' + pct.format(Math.abs(d)) + '</span>'
   }
 
-  function card(title, desc, body, wide) {
-    return '<section class="card' + (wide ? ' wide' : '') + '"><h3>' + esc(title) + '</h3>' +
-      (desc ? '<div class="desc">' + esc(desc) + '</div>' : '') + body + '</section>'
+  function hero(label, value, deltaHtml, note, series) {
+    return '<div class="card hero span-3"><div class="label">' + esc(label) + '</div>' +
+      '<div class="value-row"><div class="value">' + esc(value) + '</div>' + deltaHtml + '</div>' +
+      '<div class="note">' + esc(note) + '</div>' +
+      '<div class="spark">' + sparkline(series) + '</div></div>'
   }
 
-  // Ranking em barras horizontais, com o número escrito ao lado (não depende da cor).
+  // Linha fina do período, sem eixo: só a forma da curva.
+  function sparkline(values) {
+    var W = 300, H = 40
+    var max = Math.max.apply(null, values) || 1
+    var step = values.length > 1 ? W / (values.length - 1) : W
+    var pts = values.map(function (v, i) { return [i * step, H - 3 - (v / max) * (H - 6)] })
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1) }).join('')
+    var area = line + 'L' + W + ',' + H + 'L0,' + H + 'Z'
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<path d="' + area + '" fill="var(--accent-soft)"/>' +
+      '<path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>'
+  }
+
+  // Ranking com o número escrito ao lado (não depende da cor).
   function bars(items, fmt, opts) {
     opts = opts || {}
     if (!items.length) return '<div class="empty">Sem dados no período.</div>'
     var max = Math.max.apply(null, items.map(function (i) { return i.value })) || 1
-    var total = items.reduce(function (a, i) { return a + i.value }, 0) || 1
+    var total = sum(items, function (i) { return i.value }) || 1
+    fmt = fmt || nf.format
     return '<div class="bars">' + items.map(function (i) {
       var name = opts.name ? opts.name(i.key) : i.key
       var color = opts.color ? opts.color(i.key) : null
-      var share = opts.share ? ' (' + pct.format(i.value / total) + ')' : ''
-      return '<div class="bar-row" title="' + esc(name + ': ' + (fmt || nf.format)(i.value) + share) + '">' +
-        '<div class="name">' + esc(name) + (opts.badge && opts.badge(i.key) ? '<span class="badge">' + esc(opts.badge(i.key)) + '</span>' : '') + '</div>' +
+      var share = opts.share ? '<small>' + pct.format(i.value / total) + '</small>' : ''
+      var badge = opts.badge && opts.badge(i.key)
+      return '<div class="bar-row" title="' + esc(name + ': ' + fmt(i.value)) + '">' +
+        '<div class="name">' + esc(name) + (badge ? '<span class="badge">' + esc(badge) + '</span>' : '') + '</div>' +
         '<div class="track"><div class="fill" style="width:' + (i.value / max * 100).toFixed(1) + '%' + (color ? ';background:' + color : '') + '"></div></div>' +
-        '<div class="val">' + esc((fmt || nf.format)(i.value) + share) + '</div></div>'
+        '<div class="val">' + esc(fmt(i.value)) + share + '</div></div>'
     }).join('') + '</div>'
   }
 
-  // Colunas por dia, empilhadas por série. series: [{ key, name, color, get(day) }]
+  // Colunas por dia, empilhadas por série. series: [{ name, color, get(day) }]
   var charts = []
-  function columns(data, series, fmt) {
-    var id = 'c' + charts.length
-    charts.push({ id: id, data: data, series: series, fmt: fmt || nf.format })
-    var legend = series.length > 1
-      ? '<div class="legend">' + series.map(function (s) { return '<span><i style="background:' + s.color + '"></i>' + esc(s.name) + '</span>' }).join('') + '</div>'
-      : ''
-    return legend + '<div class="chart" id="' + id + '"></div>'
-  }
+  // height: a altura mínima; dentro de um bloco .fill, cresce até a altura que sobrar.
+  function chartBox(id, height) { return '<div class="chart" id="' + id + '" data-h="' + height + '" style="min-height:' + height + 'px"></div>' }
 
   function niceMax(v) {
     if (v <= 0) return 1
@@ -219,36 +339,33 @@ details summary { cursor: pointer; color: var(--text-3); }
   function drawColumns(c) {
     var el = document.getElementById(c.id)
     if (!el) return
-    var W = el.clientWidth || 600, H = 200, padL = 44, padB = 22, padT = 8
+    var W = el.clientWidth || 600, H = Math.max(Number(el.getAttribute('data-h')) || 220, el.clientHeight), padL = 44, padB = 22, padT = 8
     var n = c.data.length
-    var totals = c.data.map(function (d) { return c.series.reduce(function (a, s) { return a + s.get(d) }, 0) })
+    var totals = c.data.map(function (d) { return sum(c.series, function (s) { return s.get(d) }) })
     var max = niceMax(Math.max.apply(null, totals))
     var plotW = W - padL, plotH = H - padB - padT
     var slot = plotW / n
-    var gap = 2
-    var bw = Math.max(2, Math.min(28, slot - Math.max(2, slot * 0.25)))
+    var bw = Math.max(2, Math.min(26, slot - Math.max(2, slot * 0.3)))
     var y = function (v) { return padT + plotH - (v / max) * plotH }
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img">'
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="height:' + H + 'px" role="img">'
     for (var g = 0; g <= 4; g++) {
       var gv = max * g / 4, gy = y(gv)
       svg += '<line class="gridline" x1="' + padL + '" x2="' + W + '" y1="' + gy + '" y2="' + gy + '"/>'
-      svg += '<text class="axis" x="' + (padL - 8) + '" y="' + (gy + 4) + '" text-anchor="end">' + esc(cf.format(gv)) + '</text>'
+      svg += '<text class="axis" x="' + (padL - 8) + '" y="' + (gy + 4) + '" text-anchor="end">' + esc(c.axis ? c.axis(gv) : cf.format(gv)) + '</text>'
     }
-    var labelEvery = Math.ceil(n / Math.max(1, Math.floor(plotW / 48)))
+    var labelEvery = Math.ceil(n / Math.max(1, Math.floor(plotW / 52)))
     c.data.forEach(function (d, i) {
       var x0 = padL + i * slot
       var x = x0 + (slot - bw) / 2
-      svg += '<rect class="hit" data-i="' + i + '" x="' + x0 + '" y="' + padT + '" width="' + slot + '" height="' + plotH + '"/>'
-      svg += '<rect class="col-hover" x="' + x0 + '" y="' + padT + '" width="' + slot + '" height="' + plotH + '" rx="4"/>'
+      svg += '<rect class="col-hover" data-i="' + i + '" x="' + x0 + '" y="' + padT + '" width="' + slot + '" height="' + plotH + '" rx="4"/>'
       var base = 0
       var visible = c.series.filter(function (s) { return s.get(d) > 0 })
       visible.forEach(function (s, k) {
         var v = s.get(d)
         var top = y(base + v), bottom = y(base)
-        var h = Math.max(0, bottom - top - (base > 0 ? gap : 0))
-        var last = k === visible.length - 1
+        var h = Math.max(0, bottom - top - (base > 0 ? 2 : 0))
         if (h > 0) {
-          if (last) {
+          if (k === visible.length - 1) {
             var r = Math.min(4, h, bw / 2)
             svg += '<path pointer-events="none" fill="' + s.color + '" d="M' + x + ',' + (top + h) + 'V' + (top + r) + 'Q' + x + ',' + top + ' ' + (x + r) + ',' + top +
               'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + top + ' ' + (x + bw) + ',' + (top + r) + 'V' + (top + h) + 'Z"/>'
@@ -260,17 +377,28 @@ details summary { cursor: pointer; color: var(--text-3); }
       })
       if (i % labelEvery === 0) svg += '<text class="axis" x="' + (x0 + slot / 2) + '" y="' + (H - 4) + '" text-anchor="middle">' + esc(shortDay(d.day)) + '</text>'
     })
+    // Áreas de toque por cima de tudo: o dia inteiro, não só a coluna.
+    c.data.forEach(function (d, i) {
+      svg += '<rect class="hit" data-i="' + i + '" x="' + (padL + i * slot) + '" y="' + padT + '" width="' + slot + '" height="' + plotH + '"/>'
+    })
     svg += '</svg><div class="tip"></div>'
     el.innerHTML = svg
     var tip = el.querySelector('.tip')
     var svgEl = el.querySelector('svg')
+    var lit = null
+    function off() { tip.style.display = 'none'; if (lit) lit.classList.remove('on'); lit = null }
     svgEl.addEventListener('mousemove', function (e) {
       var t = e.target
-      if (!t.classList.contains('hit')) { tip.style.display = 'none'; return }
-      var d = c.data[Number(t.getAttribute('data-i'))]
+      if (!t.classList.contains('hit')) return off()
+      var i = Number(t.getAttribute('data-i'))
+      var d = c.data[i]
+      if (lit) lit.classList.remove('on')
+      lit = svgEl.querySelector('.col-hover[data-i="' + i + '"]')
+      if (lit) lit.classList.add('on')
       var rows = c.series.map(function (s) {
         return '<div class="row">' + (c.series.length > 1 ? '<i style="background:' + s.color + '"></i>' : '') + '<span>' + esc(s.name) + '</span><span>' + esc(c.fmt(s.get(d))) + '</span></div>'
       }).join('')
+      if (c.series.length > 1) rows += '<div class="row"><span>Total</span><span>' + esc(c.fmt(sum(c.series, function (s) { return s.get(d) }))) + '</span></div>'
       tip.innerHTML = '<b>' + esc(shortDay(d.day)) + '</b>' + rows
       tip.style.display = 'block'
       var box = el.getBoundingClientRect()
@@ -279,105 +407,168 @@ details summary { cursor: pointer; color: var(--text-3); }
       tip.style.left = Math.max(0, left) + 'px'
       tip.style.top = Math.max(0, e.clientY - box.top - tip.offsetHeight / 2) + 'px'
     })
-    svgEl.addEventListener('mouseleave', function () { tip.style.display = 'none' })
+    svgEl.addEventListener('mouseleave', off)
+  }
+
+  // --- Gráfico principal, com abas ---
+
+  function mainSeries(s) {
+    var used = AGENTS.filter(function (a) { return s.daily.some(function (d) { return (d.tokens[a] || 0) > 0 }) })
+    return {
+      installs: { label: 'Instalações', desc: 'Instalações que usaram o Argus em cada dia.', fmt: nf.format,
+        series: [{ name: 'Instalações ativas', color: 'var(--s1)', get: function (d) { return d.installs } }] },
+      minutes: { label: 'Tempo de uso', desc: 'Soma de todas as instalações: janela em foco ou alguma conversa rodando.', fmt: minutes, axis: hours,
+        series: [{ name: 'Tempo de uso', color: 'var(--s1)', get: function (d) { return d.minutes } }] },
+      chats: { label: 'Conversas', desc: 'Conversas novas criadas em cada dia, todos os agentes.', fmt: nf.format,
+        series: [{ name: 'Conversas criadas', color: 'var(--s1)', get: function (d) { return d.chats } }] },
+      tokens: { label: 'Tokens', desc: 'Entrada, saída e cache somados, por agente. Gemini e Cursor não informam tokens.', fmt: cf.format,
+        series: (used.length ? used : ['claude']).map(function (a) { return { name: AGENT_NAME[a], color: AGENT_COLOR[a], get: function (d) { return d.tokens[a] || 0 } } }) }
+    }
+  }
+
+  function mainCard(s) {
+    var all = mainSeries(s)
+    if (!all[tab]) tab = 'installs'
+    var cur = all[tab]
+    var tabs = '<div class="seg" role="group" aria-label="Gráfico" id="tabs">' + Object.keys(all).map(function (k) {
+      return '<button data-tab="' + k + '" aria-pressed="' + (k === tab) + '">' + esc(all[k].label) + '</button>'
+    }).join('') + '</div>'
+    var legend = cur.series.length > 1
+      ? '<div class="legend">' + cur.series.map(function (x) { return '<span><i style="background:' + x.color + '"></i>' + esc(x.name) + '</span>' }).join('') + '</div>'
+      : ''
+    charts.push({ id: 'main-chart', data: s.daily, series: cur.series, fmt: cur.fmt, axis: cur.axis })
+    return '<div class="card fill span-8"><div class="card-head"><div><h3>Por dia</h3><div class="desc">' + esc(cur.desc) + '</div></div>' + tabs + '</div>' +
+      legend + chartBox('main-chart', 290) + '</div>'
   }
 
   // --- Página ---
 
   function render(s) {
     charts = []
-    var t = s.totals
+    var t = s.totals, p = s.previous
     document.getElementById('updated').textContent =
-      'Desde ' + shortDay(s.since) + ' - ' + nf.format(t.installsAllTime) + ' instalações desde o começo - atualizado ' +
+      'Uso dos últimos ' + s.days + ' dias - ' + nf.format(t.installsAllTime) + ' instalações desde o começo - atualizado às ' +
       new Date(s.generatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
     var latestShare = 0
     if (s.latestVersion) {
       var onLatest = (s.versions.filter(function (v) { return v.key === s.latestVersion })[0] || { value: 0 }).value
-      var all = s.versions.reduce(function (a, v) { return a + v.value }, 0)
+      var all = sum(s.versions, function (v) { return v.value })
       latestShare = all ? onLatest / all : 0
     }
+    var tokensPerDay = s.daily.map(function (d) { return sum(Object.keys(d.tokens), function (k) { return d.tokens[k] }) })
 
-    var h = ''
-    h += '<div class="kpis">' +
-      kpi('Instalações ativas', nf.format(t.installs), nf.format(t.newInstalls) + ' novas no período') +
-      kpi('Tempo médio por dia', minutes(t.avgMinutesPerDay), 'por instalação, nos dias com uso') +
-      kpi('Tempo total de uso', minutes(t.activeMinutes), 'janela em foco ou conversa rodando') +
-      kpi('Conversas criadas', nf.format(t.chats), nf.format(t.messages) + ' mensagens enviadas') +
-      kpi('Tokens', cf.format(t.tokens), nf.format(t.turns) + ' pedidos aos agentes') +
-      kpi('Custo estimado', usd.format(t.costUsd), 'só Claude, preço de tabela') +
-      kpi('Na última versão', pct.format(latestShare), s.latestVersion ? 'v' + s.latestVersion : '') +
+    var h = '<div class="grid">'
+
+    // 1. O principal
+    h += hero('Instalações ativas', nf.format(t.installs), delta(t.installs, p.installs), nf.format(t.newInstalls) + ' novas no período',
+      s.daily.map(function (d) { return d.installs }))
+    h += hero('Tempo médio por dia', minutes(t.avgMinutesPerDay), delta(t.avgMinutesPerDay, p.avgMinutesPerDay), 'por instalação, nos dias com uso',
+      s.daily.map(function (d) { return d.installs ? d.minutes / d.installs : 0 }))
+    h += hero('Conversas criadas', nf.format(t.chats), delta(t.chats, p.chats), nf.format(t.messages) + ' mensagens enviadas',
+      s.daily.map(function (d) { return d.chats }))
+    h += hero('Tokens', cf.format(t.tokens), delta(t.tokens, p.tokens), nf.format(t.turns) + ' pedidos aos agentes', tokensPerDay)
+
+    h += '<div class="card strip span-12">' +
+      '<div><div class="label">Novas instalações</div><div class="value">' + nf.format(t.newInstalls) + '</div></div>' +
+      '<div><div class="label">Mensagens enviadas</div><div class="value">' + nf.format(t.messages) + '</div></div>' +
+      '<div><div class="label">Tempo total de uso</div><div class="value">' + esc(hours(t.activeMinutes)) + '</div></div>' +
+      '<div><div class="label">Custo estimado (Claude)</div><div class="value">' + esc(usd.format(t.costUsd)) + '</div></div>' +
+      '<div><div class="label">Aberturas do app</div><div class="value">' + nf.format(t.appOpens) + '</div></div>' +
+      '<div><div class="label">Na última versão</div><div class="value">' + pct.format(latestShare) + (s.latestVersion ? '<small>v' + esc(s.latestVersion) + '</small>' : '') + '</div></div>' +
       '</div>'
 
-    h += '<h2>Atividade</h2><div class="grid">'
-    h += card('Instalações ativas por dia', 'Quantas instalações usaram o Argus em cada dia.',
-      columns(s.daily, [{ key: 'i', name: 'Instalações', color: 'var(--s1)', get: function (d) { return d.installs } }]), true)
-    h += card('Tempo de uso por dia', 'Soma de todas as instalações: janela em foco ou alguma conversa rodando.',
-      columns(s.daily, [{ key: 'm', name: 'Tempo de uso', color: 'var(--s1)', get: function (d) { return d.minutes } }], minutes))
-    h += card('Instalações novas por dia', 'Primeiro dia em que cada instalação mandou dados.',
-      columns(s.daily, [{ key: 'n', name: 'Novas', color: 'var(--s1)', get: function (d) { return d.newInstalls } }]))
-    h += '</div>'
+    // 2. Atividade
+    h += '<div class="section-title">Atividade</div>'
+    h += mainCard(s)
+    var ret = s.retention.map(function (r) {
+      var share = r.eligible ? r.returned / r.eligible : 0
+      var label = r.day === 1 ? 'Voltaram no dia seguinte' : 'Voltaram depois de ' + r.day + ' dias'
+      return '<div class="ret-row"><div class="label">' + esc(label) + '</div><div class="value">' + (r.eligible ? pct.format(share) : '-') + '</div>' +
+        '<div class="track"><div style="width:' + (share * 100).toFixed(1) + '%"></div></div>' +
+        '<div class="note">' + (r.eligible ? nf.format(r.returned) + ' de ' + nf.format(r.eligible) + ' instalações' : 'Ainda sem instalações com ' + r.day + ' dias') + '</div></div>'
+    }).join('')
+    charts.push({ id: 'new-chart', data: s.daily, series: [{ name: 'Novas', color: 'var(--s1)', get: function (d) { return d.newInstalls } }], fmt: nf.format })
+    h += '<div class="stack span-4 side-pair">' +
+      '<div class="card"><div class="card-head"><div><h3>Retenção</h3><div class="desc">Desde o começo, das instalações com idade suficiente.</div></div></div><div class="ret">' + ret + '</div></div>' +
+      '<div class="card fill"><div class="card-head"><div><h3>Novas instalações</h3><div class="desc">Primeiro dia em que cada uma mandou dados.</div></div></div>' + chartBox('new-chart', 110) + '</div>' +
+      '</div>'
 
-    var usedAgents = AGENTS.filter(function (a) { return s.daily.some(function (d) { return (d.tokens[a] || 0) > 0 }) })
-    h += '<h2>Agentes e modelos</h2><div class="grid">'
-    h += card('Tokens por dia', 'Entrada, saída e cache somados, por agente. Gemini e Cursor não informam tokens.',
-      usedAgents.length
-        ? columns(s.daily, usedAgents.map(function (a) { return { key: a, name: AGENT_NAME[a], color: AGENT_COLOR[a], get: function (d) { return d.tokens[a] || 0 } } }), cf.format)
-        : '<div class="empty">Sem tokens no período.</div>', true)
-    h += card('Conversas criadas por agente', '', bars(s.chatsByAgent, nf.format, { name: function (k) { return AGENT_NAME[k] || k }, color: function (k) { return AGENT_COLOR[k] }, share: true }))
-    h += card('Mensagens enviadas por agente', '', bars(s.messagesByAgent, nf.format, { name: function (k) { return AGENT_NAME[k] || k }, color: function (k) { return AGENT_COLOR[k] }, share: true }))
-
-    var modelRows = s.models.length
+    // 3. Agentes e modelos
+    h += '<div class="section-title">Agentes e modelos</div>'
+    var maxTurns = Math.max.apply(null, s.models.map(function (m) { return m.turns }).concat([1]))
+    var models = s.models.length
       ? '<div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Pedidos</th><th>Entrada</th><th>Saída</th><th>Cache lido</th><th>Cache gravado</th><th>Custo</th></tr></thead><tbody>' +
-        s.models.map(function (m) {
-          return '<tr><td title="' + esc(m.key) + '"><span class="agent-dot" style="background:' + (AGENT_COLOR[m.agent] || 'var(--text-3)') + '"></span>' + esc(m.model) +
-            ' <span class="sub">' + esc(AGENT_NAME[m.agent] || m.agent) + '</span></td>' +
-            '<td>' + nf.format(m.turns) + '</td><td>' + cf.format(m.input) + '</td><td>' + cf.format(m.output) + '</td><td>' + cf.format(m.cacheRead) +
+        s.models.slice(0, 12).map(function (m) {
+          var color = AGENT_COLOR[m.agent] || 'var(--text-3)'
+          return '<tr><td class="model" title="' + esc(m.key) + '"><span class="dot" style="background:' + color + '"></span>' + esc(m.model) +
+            '<span class="agent">' + esc(AGENT_NAME[m.agent] || m.agent) + '</span></td>' +
+            '<td class="turns"><div class="turns-cell"><div class="track"><div style="width:' + (m.turns / maxTurns * 100).toFixed(1) + '%;background:' + color + '"></div></div>' + nf.format(m.turns) + '</div></td>' +
+            '<td>' + cf.format(m.input) + '</td><td>' + cf.format(m.output) + '</td><td>' + cf.format(m.cacheRead) +
             '</td><td>' + cf.format(m.cacheWrite) + '</td><td>' + (m.agent === 'claude' ? usd.format(m.costUsd) : '-') + '</td></tr>'
         }).join('') + '</tbody></table></div>'
       : '<div class="empty">Sem pedidos no período.</div>'
-    h += card('Modelos mais usados', 'Ordenados por pedidos.', modelRows, true)
-    h += card('Ferramentas mais chamadas', 'Pelo Claude. As de MCP contam juntas, sem o nome do servidor.', bars(s.tools, nf.format))
-    h += card('Agentes conectados', 'Instalações com alguma conta de cada agente além do Claude.', bars(s.providers, nf.format, { name: function (k) { return AGENT_NAME[k] || k }, color: function (k) { return AGENT_COLOR[k] } }))
-    h += card('Plano do Claude', 'Contas logadas, pelo tipo de assinatura.', bars(s.plans, nf.format, { share: true }))
-    h += '</div>'
+    var modelsCard = '<div class="card span-8"><div class="card-head"><div><h3>Modelos mais usados</h3><div class="desc">Por número de pedidos.</div></div></div>' + models + '</div>'
+    var chatTotal = sum(s.chatsByAgent, function (c) { return c.value }) || 1
+    var msgOf = {}
+    s.messagesByAgent.forEach(function (m) { msgOf[m.key] = m.value })
+    var share = s.chatsByAgent.length
+      ? '<div class="share">' + s.chatsByAgent.map(function (c) {
+          return '<span title="' + esc((AGENT_NAME[c.key] || c.key) + ': ' + pct.format(c.value / chatTotal)) + '" style="flex:' + c.value + ';background:' + (AGENT_COLOR[c.key] || 'var(--text-3)') + '"></span>'
+        }).join('') + '</div><div class="keys">' + s.chatsByAgent.map(function (c) {
+          return '<div class="key"><i style="background:' + (AGENT_COLOR[c.key] || 'var(--text-3)') + '"></i>' + esc(AGENT_NAME[c.key] || c.key) +
+            '<b>' + pct.format(c.value / chatTotal) + '<small>' + nf.format(c.value) + ' conversas - ' + nf.format(msgOf[c.key] || 0) + ' mensagens</small></b></div>'
+        }).join('') + '</div>'
+      : '<div class="empty">Sem conversas no período.</div>'
+    h += '<div class="card span-4"><div class="card-head"><div><h3>Conversas por agente</h3><div class="desc">Parte de cada agente nas conversas criadas.</div></div></div>' + share + '</div>'
+    h += modelsCard
+    h += '<div class="card tools span-12"><div class="card-head"><div><h3>Ferramentas mais chamadas</h3><div class="desc">Pelo Claude. As de MCP contam juntas, sem o nome do servidor.</div></div></div>' + bars(s.tools.slice(0, 10)) + '</div>'
 
+    // 4. O Argus como um todo
     var sn = s.snapshot
-    h += '<h2>O Argus como um todo</h2>'
-    h += '<div class="kpis">' +
-      kpi('Workspaces', nf.format(sn.workspaces), nf.format(t.workspacesCreated) + ' criados no período') +
-      kpi('Pastas importadas', nf.format(sn.folders), sn.installs ? cf.format(sn.folders / sn.installs) + ' por instalação' : '') +
-      kpi('Worktrees', nf.format(sn.worktrees), nf.format(t.worktreesCreated) + ' criadas no período') +
-      kpi('Grupos', nf.format(sn.groups), '') +
-      kpi('Cards de conversa', nf.format(sn.chatCards), 'soltos no canvas') +
-      kpi('Terminais', nf.format(sn.terminals), '') +
-      kpi('Notas', nf.format(sn.notes), '') +
-      kpi('Aberturas do app', nf.format(t.appOpens), 'no período') +
-      kpi('Acesso remoto', nf.format(s.remoteAccess), 'instalações hospedando') +
-      '</div>'
-    h += '<div class="desc" style="margin-top:8px;color:var(--text-3);font-size:12.5px">O que cada instalação ativa no período tinha no último dia em que mandou dados.</div>'
+    var per = function (v) { return sn.installs ? cf.format(v / sn.installs) + ' por instalação' : '' }
+    h += '<div class="section-title">O Argus como um todo</div>'
+    h += '<div class="card span-12"><div class="card-head"><div><h3>O que as instalações têm hoje</h3><div class="desc">Soma do último dia de cada instalação ativa no período.</div></div></div>' +
+      '<div class="facts">' +
+      fact('Pastas importadas', sn.folders, per(sn.folders)) +
+      fact('Workspaces', sn.workspaces, nf.format(t.workspacesCreated) + ' criados no período') +
+      fact('Worktrees', sn.worktrees, nf.format(t.worktreesCreated) + ' criadas no período') +
+      fact('Grupos', sn.groups, per(sn.groups)) +
+      fact('Cards de conversa', sn.chatCards, 'soltos no canvas') +
+      fact('Terminais', sn.terminals, per(sn.terminals)) +
+      fact('Notas', sn.notes, per(sn.notes)) +
+      fact('Acesso remoto', s.remoteAccess, 'instalações hospedando') +
+      '</div></div>'
 
-    h += '<h2>Instalações</h2><div class="grid">'
-    h += card('Sistema operacional', '', bars(s.os, nf.format, { name: function (k) { return OS_NAME[k] || k }, share: true }) +
-      (s.wsl ? '<details><summary>WSL</summary>' + nf.format(s.wsl) + ' instalações no Windows com WSL.</details>' : ''))
-    h += card('Versão do sistema', '', bars(s.osVersions.slice(0, 10), nf.format, { name: function (k) { var p = k.split(' '); return (OS_NAME[p[0]] || p[0]) + ' ' + p.slice(1).join(' ') }, share: true }))
-    h += card('Versão do Argus', 'Pela versão mais recente de cada instalação.', bars(s.versions.slice(0, 10), nf.format, {
-      name: function (k) { return 'v' + k }, share: true, badge: function (k) { return k === s.latestVersion ? 'última' : '' }
-    }))
-    h += card('Versão do Claude Code', '', bars(s.claudeCode, nf.format, { share: true }))
-    h += card('Idioma do app', '', bars(s.languages, nf.format, { name: function (k) { return { pt: 'Português', en: 'Inglês' }[k] || k }, share: true }))
-    h += card('Arquitetura', '', bars(s.arch, nf.format, { share: true }))
-    var ret = s.retention.map(function (r) {
-      return { key: r.day === 1 ? 'Voltou no dia seguinte' : 'Voltou depois de ' + r.day + ' dias', value: r.eligible ? r.returned / r.eligible : 0, eligible: r.eligible }
-    })
-    h += card('Retenção', 'Desde sempre: das instalações com idade suficiente, quantas usaram de novo depois de N dias.',
-      ret.every(function (r) { return !r.eligible }) ? '<div class="empty">Ainda sem instalações com idade suficiente.</div>'
-        : bars(ret, function (v) { return pct.format(v) }))
+    // 5. Instalações
+    h += '<div class="section-title">Instalações</div>'
+    h += '<div class="card span-12"><div class="card-head"><div><h3>Quem usa</h3><div class="desc">Pela versão mais recente de cada instalação ativa no período.</div></div></div><div class="cols">' +
+      '<section><h4>Sistema</h4>' + bars(s.os, nf.format, { name: function (k) { return OS_NAME[k] || k }, share: true }) +
+      '<h4>Versão do sistema</h4>' + bars(s.osVersions.slice(0, 6), nf.format, { name: function (k) { var x = k.split(' '); return (OS_NAME[x[0]] || x[0]) + ' ' + x.slice(1).join(' ') }, share: true }) +
+      (s.wsl ? '<div class="sub" style="margin-top:10px">' + nf.format(s.wsl) + ' no Windows com WSL</div>' : '') + '</section>' +
+      '<section><h4>Versão do Argus</h4>' + bars(s.versions.slice(0, 6), nf.format, { name: function (k) { return 'v' + k }, share: true, badge: function (k) { return k === s.latestVersion ? 'última' : '' } }) +
+      '<h4>Versão do Claude Code</h4>' + bars(s.claudeCode.slice(0, 5), nf.format, { share: true }) + '</section>' +
+      '<section><h4>Plano do Claude</h4>' + bars(s.plans, nf.format, { share: true }) +
+      '<h4>Agentes conectados</h4>' + bars(s.providers, nf.format, { name: function (k) { return AGENT_NAME[k] || k }, color: function (k) { return AGENT_COLOR[k] } }) +
+      '<h4>Idioma e arquitetura</h4>' + bars(s.languages.concat(s.arch), nf.format, { name: function (k) { return { pt: 'Português', en: 'Inglês', arm64: 'ARM (arm64)', x64: 'Intel/AMD (x64)' }[k] || k } }) +
+      '</section></div></div>'
+
     h += '</div>'
-
     document.getElementById('main').innerHTML = h
     charts.forEach(drawColumns)
   }
+
+  function fact(label, value, note) {
+    return '<div><div class="label">' + esc(label) + '</div><div class="value">' + nf.format(value) + '</div><div class="note">' + esc(note || '') + '</div></div>'
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#tabs button')
+    if (!b || !data) return
+    tab = b.getAttribute('data-tab')
+    try { localStorage.setItem('argus-usage-tab', tab) } catch (err) {}
+    render(data)
+  })
 
   var resizeTimer
   window.addEventListener('resize', function () {

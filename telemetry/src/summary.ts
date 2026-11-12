@@ -23,7 +23,9 @@ export type Summary = {
     worktreesCreated: number
     installsAllTime: number
   }
-  daily: { day: string; installs: number; newInstalls: number; minutes: number; tokens: Record<string, number> }[]
+  // Os mesmos números no período anterior, do mesmo tamanho (para a variação).
+  previous: { installs: number; newInstalls: number; avgMinutesPerDay: number; chats: number; messages: number; tokens: number; costUsd: number }
+  daily: { day: string; installs: number; newInstalls: number; minutes: number; chats: number; tokens: Record<string, number> }[]
   chatsByAgent: Count[]
   messagesByAgent: Count[]
   models: { key: string; agent: string; model: string; turns: number; input: number; output: number; cacheRead: number; cacheWrite: number; costUsd: number }[]
@@ -63,6 +65,7 @@ const LATEST = `WITH latest AS (
 
 export async function buildSummary(db: D1Database, days: number, today = new Date()): Promise<Summary> {
   const since = new Date(today.getTime() - (days - 1) * 86_400_000).toISOString().slice(0, 10)
+  const prevSince = new Date(today.getTime() - (2 * days - 1) * 86_400_000).toISOString().slice(0, 10)
   const q = (sql: string, ...binds: unknown[]) => db.prepare(sql).bind(...binds)
   const mapSum = (path: string) =>
     q(`SELECT j.key AS key, SUM(j.value) AS value FROM reports r, json_each(r.payload, '${path}') j WHERE r.day >= ?1 GROUP BY j.key`, since)
@@ -137,10 +140,37 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
     // 19-21: retenção
     retention(1),
     retention(7),
-    retention(30)
+    retention(30),
+    // 22: conversas por dia
+    q(`SELECT r.day AS day, SUM(j.value) AS value FROM reports r, json_each(r.payload, '$.counts.chatsCreated') j WHERE r.day >= ?1 GROUP BY r.day`, since),
+    // 23-26: período anterior
+    q(
+      `SELECT COUNT(DISTINCT install_id) AS installs, AVG(CASE WHEN active_minutes > 0 THEN active_minutes END) AS avgMinutes
+       FROM reports WHERE day >= ?1 AND day < ?2`,
+      prevSince,
+      since
+    ),
+    q(
+      `SELECT j.key AS key, SUM(j.value) AS value FROM reports r, json_each(r.payload, '$.counts.chatsCreated') j
+       WHERE r.day >= ?1 AND r.day < ?2 GROUP BY j.key
+       UNION ALL
+       SELECT 'messages:' || j.key AS key, SUM(j.value) AS value FROM reports r, json_each(r.payload, '$.counts.messagesSent') j
+       WHERE r.day >= ?1 AND r.day < ?2 GROUP BY j.key`,
+      prevSince,
+      since
+    ),
+    q(
+      `SELECT SUM(json_extract(j.value, '$.input') + json_extract(j.value, '$.output') + json_extract(j.value, '$.cacheRead') + json_extract(j.value, '$.cacheWrite')) AS tokens,
+              SUM(json_extract(j.value, '$.costUsd')) AS costUsd
+       FROM reports r, json_each(r.payload, '$.models') j WHERE r.day >= ?1 AND r.day < ?2`,
+      prevSince,
+      since
+    ),
+    q(`SELECT COUNT(*) AS value FROM (SELECT MIN(day) AS d0 FROM reports GROUP BY install_id) WHERE d0 >= ?1 AND d0 < ?2`, prevSince, since)
   ])
   const rows = (i: number) => (results[i].results ?? []) as Row[]
 
+  const chatsByDay = new Map(rows(22).map((r) => [String(r.day), n(r.value)]))
   const newByDay = new Map(rows(1).map((r) => [String(r.day), n(r.value)]))
   const tokensByDay = new Map<string, Record<string, number>>()
   for (const r of rows(6)) {
@@ -156,7 +186,7 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
   for (let i = days - 1; i >= 0; i--) {
     const day = new Date(today.getTime() - i * 86_400_000).toISOString().slice(0, 10)
     const r = perDay.get(day)
-    daily.push({ day, installs: n(r?.installs), newInstalls: newByDay.get(day) ?? 0, minutes: n(r?.minutes), tokens: tokensByDay.get(day) ?? {} })
+    daily.push({ day, installs: n(r?.installs), newInstalls: newByDay.get(day) ?? 0, minutes: n(r?.minutes), chats: chatsByDay.get(day) ?? 0, tokens: tokensByDay.get(day) ?? {} })
   }
 
   const models = rows(5)
@@ -183,9 +213,22 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
   const messagesByAgent = counts(rows(4))
   const versions = rows(17).map((r) => String(r.v)).filter((v) => v !== 'unknown')
 
+  const prev = rows(23)[0] ?? {}
+  const prevCounts = rows(24)
+  const prevTokens = rows(25)[0] ?? {}
+
   return {
     days,
     since,
+    previous: {
+      installs: n(prev.installs),
+      newInstalls: n(rows(26)[0]?.value),
+      avgMinutesPerDay: n(prev.avgMinutes),
+      chats: prevCounts.filter((r) => !String(r.key).startsWith('messages:')).reduce((a, r) => a + n(r.value), 0),
+      messages: prevCounts.filter((r) => String(r.key).startsWith('messages:')).reduce((a, r) => a + n(r.value), 0),
+      tokens: n(prevTokens.tokens),
+      costUsd: n(prevTokens.costUsd)
+    },
     generatedAt: new Date().toISOString(),
     totals: {
       installs: n(t.installs),

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
-import { IS_REMOTE, REMOTE_HOST } from '../remote'
+import { IS_REMOTE, REMOTE_HOST, useRemoteAccess } from '../remote'
 import { Presence } from '../motion'
 import { HealthAlert } from '../systemHealth/HealthAlert'
 import { ReleaseNotesModal } from '../updates/ReleaseNotesModal'
@@ -44,6 +44,10 @@ export const TitleBar = memo(function TitleBar({
   const status = updateProgress(updates?.state)
   const [notesOpen, setNotesOpen] = useState(false)
   useNewWindowShortcut()
+  // Azul nos dois lados do acesso remoto: na janela que mostra outro computador e no computador que
+  // está sendo usado de outro (com algum aparelho conectado agora).
+  const access = useRemoteAccess()
+  const beingAccessed = !!access?.devices.some((d) => d.connected)
 
   // Aparece no menu Janela e no Mission Control.
   useEffect(() => {
@@ -59,7 +63,7 @@ export const TitleBar = memo(function TitleBar({
     // título segue no centro sem encostar nele. Os limites e o player ficam na barra de baixo (BottomBar).
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line ${IS_REMOTE ? 'bg-remote-bar' : 'bg-surface'} hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
+      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line ${IS_REMOTE || beingAccessed ? 'bg-remote-bar' : 'bg-surface'} hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
     >
       <div className="absolute inset-y-0 flex items-center" style={{ left: 12 + controls.left }}>
         <BoardSwitcher confirm={confirm} align="start" />

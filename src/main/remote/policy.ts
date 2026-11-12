@@ -22,6 +22,11 @@ const LOCAL = new Set<string>([
 ] satisfies (keyof InvokeChannels | keyof SendChannels | keyof SendSyncChannels)[])
 
 const unavailable = (): string => tr('Indisponível no acesso remoto.', 'Unavailable over remote access.')
+const authElsewhere = (): string =>
+  tr(
+    'A autorização abre no navegador do outro computador. Pelo acesso remoto ainda não dá: autorize por lá.',
+    'Authorization opens in the other computer’s browser. Not possible over remote access yet: authorize there.'
+  )
 
 // Pedidos com resposta bloqueados e o que a janela recebe no lugar.
 const BLOCKED_INVOKE: { [C in keyof InvokeChannels]?: () => Awaited<ReturnType<InvokeChannels[C]>> } = {
@@ -36,7 +41,10 @@ const BLOCKED_INVOKE: { [C in keyof InvokeChannels]?: () => Awaited<ReturnType<I
   'media:volume': () => undefined,
   'providers:clipboardKey': () => null,
   'files:copy': () => undefined,
-  'files:paste': () => ({ ok: false, error: unavailable() })
+  'files:paste': () => ({ ok: false, error: unavailable() }),
+  // A autorização abre o navegador: abriria no outro computador, onde não tem ninguém.
+  'mcp:authenticate': () => ({ ok: false, error: authElsewhere() }),
+  'mcp:account:authenticate': () => ({ ok: false, error: authElsewhere() })
 }
 
 const BLOCKED_SEND = new Set<string>([
@@ -60,10 +68,6 @@ const BLOCKED_SEND = new Set<string>([
   'files:view',
   'files:openInBrowser',
   'sessions:openRepo',
-  'auth:install',
-  'auth:login',
-  'auth:add',
-  'auth:code',
   'providers:install',
   'providers:add',
   'providers:login',

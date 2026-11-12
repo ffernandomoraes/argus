@@ -202,6 +202,8 @@ describe('política dos canais', () => {
     expect(channelPolicy('files:reveal')).toBe('blocked')
     expect(channelPolicy('chat:send')).toBe('remote')
     expect(channelPolicy('terminal:write')).toBe('remote')
+    // Entrar na conta do Claude de longe tem que funcionar: sem login lá, não há o que fazer daqui.
+    for (const ch of ['auth:login', 'auth:add', 'auth:code', 'auth:install', 'auth:logout']) expect(channelPolicy(ch)).toBe('remote')
   })
 
   it('pedido bloqueado recebe a resposta vazia do tipo dele', () => {

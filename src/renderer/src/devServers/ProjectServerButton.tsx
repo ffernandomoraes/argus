@@ -8,6 +8,8 @@ import { Tooltip } from '../ui/Tooltip'
 import { useAnchoredMenu } from '../ui/useAnchoredMenu'
 import { startProjectServer, stopProjectServer, useProjectServer } from './projectServers'
 import { tr } from '../i18n'
+import { IS_REMOTE } from '../remote'
+import { localhostNotice } from '../RemoteNotice'
 
 const appNameOf = (app?: { name?: string }) => (app?.name ? `${app.name} - ` : '')
 
@@ -27,7 +29,8 @@ export function serverMenuItems(server: ProjectServer, stop: () => void): MenuIt
           `Open ${appNameOf(server.apps?.find((a) => a.port === port))}localhost:${port}`
         ),
         icon: ExternalLink,
-        onSelect: () => window.open(`http://localhost:${port}`)
+        // Na janela remota o servidor roda no outro computador: o localhost daqui é outro.
+        onSelect: () => (IS_REMOTE ? localhostNotice() : void window.open(`http://localhost:${port}`))
       })
     ),
     ...(server.ports.length > 0 ? [{ type: 'separator' } as const] : []),

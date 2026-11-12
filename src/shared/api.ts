@@ -44,6 +44,8 @@ export type Api = {
   remote: {
     host: RemoteHostInfo | null
     onState: (cb: (state: RemoteConnectionState) => void) => Off
+    // Pediu algo que não funciona pelo acesso remoto (o canal), para a tela explicar.
+    onBlocked: (cb: (channel: string) => void) => Off
   }
   // Configurações > Acesso remoto: hospedar este computador, parear e abrir outro Argus.
   remoteAccess: {

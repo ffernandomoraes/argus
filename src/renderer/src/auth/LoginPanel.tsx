@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import type { LoginMethod, LoginState } from '../../../shared/auth'
 import { tr } from '../i18n'
+import { IS_REMOTE, REMOTE_HOST } from '../remote'
 
 // Instruções da Anthropic para chave de API, Bedrock, Foundry e Vertex (o mesmo link da extensão do VS Code).
 const THIRD_PARTY_URL = 'https://code.claude.com/docs/en/vs-code#use-third-party-providers'
@@ -37,9 +38,38 @@ function Option({
 
 // Login como na extensão do VS Code: o navegador abre e volta sozinho para o app. Se não
 // voltar, a pessoa entra por uma página que mostra um código e cola aqui.
+// Na janela de acesso remoto, a volta automática iria para o outro computador: a página do código
+// abre direto no navegador deste, e o código colado vai para lá (o Argus de lá não abre navegador).
 function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl: string }) {
   const [code, setCode] = useState('')
   const submit = () => code.trim() && window.api.auth.submitCode(code)
+  const opened = useRef<string | null>(null)
+  useEffect(() => {
+    if (!IS_REMOTE || opened.current === manualUrl) return
+    opened.current = manualUrl
+    window.api.auth.open(manualUrl)
+  }, [manualUrl])
+
+  if (IS_REMOTE) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 text-sm text-text">
+          <Loader2 size={14} className="animate-spin text-muted" />
+          {tr('Entre no navegador deste computador.', 'Sign in in this computer’s browser.')}
+        </div>
+        <p className="text-xs leading-relaxed text-faint">
+          {tr(
+            `No fim, a página mostra um código: copie e cole aqui. O login vale no Argus de ${REMOTE_HOST?.name ?? ''}.`,
+            `At the end, the page shows a code: copy it and paste it here. The sign-in applies to Argus on ${REMOTE_HOST?.name ?? ''}.`
+          )}{' '}
+          <button onClick={() => window.api.auth.open(manualUrl)} className="text-muted underline hover:text-text">
+            {tr('Abrir a página de novo', 'Open the page again')}
+          </button>
+        </p>
+        <CodeInput code={code} setCode={setCode} submit={submit} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,24 +88,30 @@ function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl:
         </button>{' '}
         {tr('e cole aqui:', 'and paste it here:')}
       </p>
-      <div className="flex gap-2">
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder={tr('Código de autorização', 'Authorization code')}
-          aria-label={tr('Código de autorização', 'Authorization code')}
-          spellCheck={false}
-          className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none placeholder:font-sans placeholder:text-faint focus:border-line-strong"
-        />
-        <button
-          disabled={!code.trim()}
-          onClick={submit}
-          className="rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
-        >
-          {tr('Enviar', 'Submit')}
-        </button>
-      </div>
+      <CodeInput code={code} setCode={setCode} submit={submit} />
+    </div>
+  )
+}
+
+function CodeInput({ code, setCode, submit }: { code: string; setCode: (v: string) => void; submit: () => void }) {
+  return (
+    <div className="flex gap-2">
+      <input
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && submit()}
+        placeholder={tr('Código de autorização', 'Authorization code')}
+        aria-label={tr('Código de autorização', 'Authorization code')}
+        spellCheck={false}
+        className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2.5 py-1.5 font-mono text-xs text-text outline-none placeholder:font-sans placeholder:text-faint focus:border-line-strong"
+      />
+      <button
+        disabled={!code.trim()}
+        onClick={submit}
+        className="rounded-md border border-line px-3 py-1.5 text-xs text-text hover:bg-surface-2 disabled:opacity-50"
+      >
+        {tr('Enviar', 'Submit')}
+      </button>
     </div>
   )
 }

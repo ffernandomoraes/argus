@@ -367,6 +367,8 @@ export type EventChannels = {
   'transcription:model': (state: TranscriptionModel) => void
   // Janela de acesso remoto: a ligação com o outro computador caiu, voltou ou acabou.
   'remote:state': (state: RemoteConnectionState) => void
+  // Janela de acesso remoto: pediu algo que não funciona de longe (a tela explica o porquê).
+  'remote:blocked': (channel: string) => void
   'remoteAccess:state': (state: RemoteAccessState) => void
 }
 

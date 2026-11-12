@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { isAudioFile } from '../../../shared/transcription'
 import { forgetTranscripts, watchAudio } from './audio/transcripts'
+import { isSendableImage } from './chatImages'
+import { IS_REMOTE } from '../remote'
+import { localFilesNotice } from '../RemoteNotice'
 
 export type Attachment = {
   id: string
@@ -38,7 +42,15 @@ export function useAttachments(key: string) {
   }, [key, items])
 
   const add = useCallback((files: FileList | File[]) => {
-    const next = Array.from(files).map((file) => withPreview({ id: crypto.randomUUID(), file }, urls.current))
+    // Janela de acesso remoto: o caminho de um arquivo é deste computador e não existe no outro. Só
+    // imagens (vão como dados) e áudios (a transcrição vai como texto) passam; o resto é explicado.
+    let list = Array.from(files)
+    if (IS_REMOTE) {
+      const local = list.filter((f) => !isSendableImage(f) && !isAudioFile(f.name, f.type))
+      if (local.length) localFilesNotice(local.length)
+      list = list.filter((f) => !local.includes(f))
+    }
+    const next = list.map((file) => withPreview({ id: crypto.randomUUID(), file }, urls.current))
     if (next.length) setItems((all) => [...all, ...next])
     // Áudio começa a ser transcrito já ao anexar.
     for (const a of next) void watchAudio(a.file)

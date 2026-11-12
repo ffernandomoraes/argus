@@ -199,18 +199,20 @@ export class Auth {
 
   // Entra de novo numa conta da lista, ou em outra no lugar dela. distro: o login da conta dentro
   // daquela distro do WSL (o das pastas de lá); a do próprio `claude` do app é o login comum.
-  login(accountId: string, method: LoginMethod, distro?: string): void {
+  // openBrowser falso: o pedido veio de outro computador (acesso remoto), que entra pela página do
+  // código; o navegador daqui abriria sem ninguém para ver.
+  login(accountId: string, method: LoginMethod, distro?: string, { openBrowser = true } = {}): void {
     if (!accountIds().includes(accountId)) return
-    void this.start(accountId, false, method, loginDistro(distro))
+    void this.start(accountId, false, method, loginDistro(distro), openBrowser)
   }
 
   // Conta nova: ganha a pasta agora e só entra na lista quando o login termina.
-  add(method: LoginMethod): void {
+  add(method: LoginMethod, { openBrowser = true } = {}): void {
     this.stop()
-    void this.start(createPendingAccount(), true, method)
+    void this.start(createPendingAccount(), true, method, undefined, openBrowser)
   }
 
-  private async start(accountId: string, adding: boolean, method: LoginMethod, distro?: string): Promise<void> {
+  private async start(accountId: string, adding: boolean, method: LoginMethod, distro?: string, openBrowser = true): Promise<void> {
     this.stop()
     const { q, inbox } = openLoginQuery(accountId, distro && wslPlace(distro))
     const session: LoginSession = { q, inbox, accountId, adding }
@@ -225,7 +227,7 @@ export class Auth {
       // Pede antes de abrir o navegador, para não perder um retorno rápido.
       const done = q.claudeOAuthWaitForCompletion()
       this.setLogin({ status: 'waiting', method, automaticUrl, manualUrl, ...target })
-      void shell.openExternal(automaticUrl)
+      if (openBrowser) void shell.openExternal(automaticUrl)
       await done
       if (!current()) return
       if (distro) {

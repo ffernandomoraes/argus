@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { IS_WIN } from '../../platform'
+import { HOST_IS_WIN } from '../../platform'
 import { usePreference } from '../../settings/preferences'
 import { useActiveChats } from '../activeChats'
 import type { CanvasNode } from '../types'
@@ -50,7 +50,7 @@ function useStrikeTargets(on: boolean, nodesRef?: RefObject<CanvasNode[]>) {
 export function samePath(a: string, b: string): boolean {
   const norm = (p: string) => {
     const path = p.replace(/\\/g, '/').replace(/\/+$/, '')
-    return IS_WIN ? path.toLowerCase() : path
+    return HOST_IS_WIN ? path.toLowerCase() : path
   }
   return norm(a) === norm(b)
 }

@@ -5,7 +5,7 @@ import type { ProvidersState } from '../../../shared/providers'
 import { claudeReady, fallbackAgent } from '../auth/accounts'
 import { LoginPanel } from '../auth/LoginPanel'
 import { useCopied } from '../lib/useCopied'
-import { IS_LINUX, IS_WIN } from '../platform'
+import { HOST_IS_WIN, IS_LINUX, IS_WIN } from '../platform'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { tr } from '../i18n'
@@ -89,7 +89,7 @@ function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
       {failed && (
         <div className="mt-3 flex flex-col gap-2">
           <p className="text-xs text-faint">
-            {tr(`Ou rode no ${IS_WIN ? 'PowerShell' : 'Terminal'} e confira de novo:`, `Or run this in ${IS_WIN ? 'PowerShell' : 'Terminal'} and check again:`)}
+            {tr(`Ou rode no ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'} e confira de novo:`, `Or run this in ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'} and check again:`)}
           </p>
           <Command command={claude.command} />
         </div>

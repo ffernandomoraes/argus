@@ -8,6 +8,15 @@ export const IS_WIN = window.api.platform === 'win32'
 export const IS_MAC = window.api.platform === 'darwin'
 export const IS_LINUX = window.api.platform === 'linux'
 
+// Onde ficam os arquivos, os terminais e o Claude: este computador ou, na janela de acesso remoto, o
+// outro (o "de casa"). A interface (atalhos, barra de título, botões da janela) segue IS_MAC/IS_WIN,
+// que são sempre deste computador; caminhos, Lixeira e shell seguem estes. `?.`: o window.api falso
+// dos testes não tem o campo.
+const HOST_PLATFORM = window.api.remote?.host?.platform ?? window.api.platform
+export const HOST_IS_WIN = HOST_PLATFORM === 'win32'
+export const HOST_IS_MAC = HOST_PLATFORM === 'darwin'
+export const HOST_IS_LINUX = HOST_PLATFORM === 'linux'
+
 export const SYSTEM_NAME = IS_WIN ? 'Windows' : IS_LINUX ? 'Linux' : 'macOS'
 export const FILE_MANAGER = IS_WIN
   ? tr('Explorador de Arquivos', 'File Explorer')
@@ -41,17 +50,17 @@ export function keys(mac: string): string {
 
 // --- Caminhos ---
 
-export const SEP = IS_WIN ? '\\' : '/'
-const SEPARATORS = IS_WIN ? /[\\/]/ : /\//
+export const SEP = HOST_IS_WIN ? '\\' : '/'
+const SEPARATORS = HOST_IS_WIN ? /[\\/]/ : /\//
 
 // O Claude no Windows às vezes escreve no formato do Git Bash ("/c/Users/ana"): volta para "C:\Users\ana".
 function fromGitBash(path: string): string {
-  const m = IS_WIN ? /^\/([a-zA-Z])(\/.*)?$/.exec(path) : null
+  const m = HOST_IS_WIN ? /^\/([a-zA-Z])(\/.*)?$/.exec(path) : null
   return m ? `${m[1].toUpperCase()}:${(m[2] ?? '/').replace(/\//g, '\\')}` : path
 }
 
 export function isAbsolutePath(path: string): boolean {
-  if (!IS_WIN) return path.startsWith('/')
+  if (!HOST_IS_WIN) return path.startsWith('/')
   return /^([a-zA-Z]:[\\/]|[\\/]{2})/.test(path) || /^\/[a-zA-Z](\/|$)/.test(path)
 }
 
@@ -62,7 +71,7 @@ export function baseName(path: string): string {
 
 // Posição do último separador (-1 sem nenhum).
 export function lastSep(path: string): number {
-  return IS_WIN ? Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')) : path.lastIndexOf('/')
+  return HOST_IS_WIN ? Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')) : path.lastIndexOf('/')
 }
 
 // Pasta de cima ("" sem nenhuma).
@@ -72,24 +81,24 @@ export function parentDir(path: string): string {
 }
 
 // No Windows, com uma barra só ("C:/proj" e "C:\proj" são o mesmo caminho).
-const normalize = (path: string) => (IS_WIN ? fromGitBash(path).replace(/\//g, '\\') : path)
+const normalize = (path: string) => (HOST_IS_WIN ? fromGitBash(path).replace(/\//g, '\\') : path)
 
 // Pasta do Linux do WSL vista pelo Windows: o começo "\\wsl.localhost\Ubuntu" (ou "\\wsl$\Ubuntu").
 const WSL_ROOT = /^[\\/]{2}(?:wsl\.localhost|wsl\$)[\\/][^\\/]+(?=[\\/]|$)/i
 
 // Pasta do WSL: o que vai para a Lixeira vai para a do Linux, não para a do Windows.
-export const isWslFolder = (path: string) => IS_WIN && WSL_ROOT.test(path)
+export const isWslFolder = (path: string) => HOST_IS_WIN && WSL_ROOT.test(path)
 
 // Distro de uma pasta do WSL ("Ubuntu"); nada se a pasta não é de lá.
 export function wslDistroOf(path: string): string | undefined {
-  const root = IS_WIN ? WSL_ROOT.exec(path) : null
+  const root = HOST_IS_WIN ? WSL_ROOT.exec(path) : null
   return root ? root[0].split(/[\\/]/).pop() : undefined
 }
 
 // O Claude que roda no WSL escreve caminhos do Linux ("/home/ana/proj/x.ts"). Numa pasta do WSL,
 // viram o caminho que o Windows enxerga; "/mnt/c/x" é o disco C: do Windows.
 function fromLinux(path: string, dir: string): string {
-  const root = IS_WIN && path.startsWith('/') ? WSL_ROOT.exec(dir) : null
+  const root = HOST_IS_WIN && path.startsWith('/') ? WSL_ROOT.exec(dir) : null
   if (!root) return path
   const mnt = /^\/mnt\/([a-z])(\/.*)?$/.exec(path)
   if (mnt) return `${mnt[1].toUpperCase()}:${(mnt[2] ?? '/').replace(/\//g, '\\')}`
@@ -109,7 +118,7 @@ export function relativeTo(path: string, dir: string): string | null {
 
 function sameName(a: string, b: string): boolean {
   const [x, y] = [a.normalize('NFC'), b.normalize('NFC')]
-  return IS_WIN ? x.toLowerCase() === y.toLowerCase() : x === y
+  return HOST_IS_WIN ? x.toLowerCase() === y.toLowerCase() : x === y
 }
 
 // "~/proj" no lugar de "/Users/ana/proj" (no Windows, "~\proj").
@@ -117,7 +126,7 @@ export function tildify(path: string): string {
   const home = window.api.homeDir
   const rel = relativeTo(path, home)
   if (rel === null) return path
-  return rel ? `~${SEP}${IS_WIN ? rel.replace(/\//g, '\\') : rel}` : '~'
+  return rel ? `~${SEP}${HOST_IS_WIN ? rel.replace(/\//g, '\\') : rel}` : '~'
 }
 
 // A mesma pasta, escrita de qualquer jeito: com "~", do Linux do WSL, com o acento composto ou não.
@@ -127,6 +136,6 @@ export const sameFolder = (a: string, b: string): boolean => relativeTo(untildif
 export function untildify(path: string): string {
   const home = window.api.homeDir
   if (path === '~') return home
-  if (path.startsWith('~/') || (IS_WIN && path.startsWith('~\\'))) return normalize(home + SEP + path.slice(2))
+  if (path.startsWith('~/') || (HOST_IS_WIN && path.startsWith('~\\'))) return normalize(home + SEP + path.slice(2))
   return normalize(path)
 }

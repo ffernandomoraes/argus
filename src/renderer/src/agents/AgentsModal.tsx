@@ -4,7 +4,7 @@ import { AGENT_PROVIDERS, agentProviderName, type AgentProvider } from '../../..
 import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
 import { useSaveShortcut } from '../lib/useSaveShortcut'
 import { Presence } from '../motion'
-import { IS_WIN, tildify } from '../platform'
+import { HOST_IS_WIN, tildify } from '../platform'
 import { useProviders } from '../providers/useProviders'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
@@ -20,7 +20,7 @@ import { tr } from '../i18n'
 // Pasta de cada biblioteca, como aparece no cabeçalho (main/agents/folder.ts).
 function libraryPath(provider: AgentProvider): string {
   if (provider === 'cursor') return tr('Guardados pelo Argus: o Cursor não tem agentes globais', 'Kept by Argus: Cursor has no global agents')
-  return IS_WIN ? `~\\.${provider}\\agents\\` : `~/.${provider}/agents/`
+  return HOST_IS_WIN ? `~\\.${provider}\\agents\\` : `~/.${provider}/agents/`
 }
 
 // Biblioteca de agentes globais de cada provedor: arquivos que valem em todo projeto (aqui, no

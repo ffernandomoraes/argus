@@ -63,6 +63,8 @@
   /* Etiqueta "Desenvolvimento" na barra de título do pnpm dev, para não confundir com o Argus
      instalado aberto ao lado. */
   --color-dev: #f59e0b;
+  /* Etiqueta com o nome do computador na janela de acesso remoto: mesmo formato da de cima, em azul. */
+  --color-remote: #3b82f6;
 
   /* Fonte do sistema: SF Pro no Mac, Segoe UI no Windows (a Variable no Windows 11). */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
@@ -113,6 +115,7 @@
   --color-guide: #db2777;
 
   --color-dev: #b45309;
+  --color-remote: #1d4ed8;
 }
 
 /* As sombras (shadow-black/50 e afins) foram dosadas para o fundo escuro; no claro gritam.

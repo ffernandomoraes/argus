@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useCopied } from '../../lib/useCopied'
-import { IS_WIN } from '../../platform'
+import { HOST_IS_WIN } from '../../platform'
 import { Button } from '../../ui/Button'
 import { Row } from '../controls'
 import { tr } from '../../i18n'
@@ -12,7 +12,7 @@ export function WslRow() {
   const [busy, setBusy] = useState(false)
   const { copied, copy } = useCopied()
   useEffect(() => {
-    if (!IS_WIN) return
+    if (!HOST_IS_WIN) return
     let alive = true
     window.api.wsl.distros().then(
       (d) => alive && setDistros(d),

@@ -3,7 +3,7 @@ import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { focusWhenVisible } from '../../canvas/blocks/useFocusWhenVisible'
-import { IS_LINUX, IS_WIN } from '../../platform'
+import { HOST_IS_WIN, IS_LINUX, IS_WIN } from '../../platform'
 import { TERMINAL_FONT, TERMINAL_THEME } from './theme'
 import { fixMouseForZoom } from './zoomCorrection'
 
@@ -50,7 +50,7 @@ function linuxClipboard(term: Terminal): void {
 // Windows: o xterm precisa saber que do outro lado está o ConPTY (o node-pty 1.x só usa ele) e o
 // build do sistema. Sem isso, aumentar o número de linhas podia sobrescrever ou perder linhas, porque
 // o ConPTY redesenha a tela do jeito dele (ver windowsPty em @xterm/xterm/typings/xterm.d.ts).
-const windowsPty = IS_WIN ? { backend: 'conpty' as const, buildNumber: window.api.windowsBuild ?? undefined } : undefined
+const windowsPty = HOST_IS_WIN ? { backend: 'conpty' as const, buildNumber: window.api.windowsBuild ?? undefined } : undefined
 
 // Desenho pela placa de vídeo (WebGL), bem mais leve que o padrão (o texto em HTML) com muita
 // saída. Só fora do canvas: lá o zoom escala o bloco, e o WebGL desenha numa imagem que borra ao

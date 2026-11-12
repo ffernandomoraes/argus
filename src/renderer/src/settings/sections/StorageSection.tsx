@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { withMediaCap, type CleanResult, type StorageSettings, type StorageUsage } from '../../../../shared/storage'
 import { LOCALE, tr } from '../../i18n'
-import { IS_MAC } from '../../platform'
+import { HOST_IS_MAC } from '../../platform'
 import { formatBytes } from '../../systemHealth/texts'
 import { Button } from '../../ui/Button'
 import { Group, Row, Segmented } from '../controls'
@@ -12,7 +12,7 @@ import { Group, Row, Segmented } from '../controls'
 
 const POLL_MS = 2_000
 // O disco na base do sistema: o Finder conta de 1000 em 1000; o Windows, de 1024.
-const BASE = IS_MAC ? 1000 : 1024
+const BASE = HOST_IS_MAC ? 1000 : 1024
 
 const CONVERSATION_DAYS = [30, 60, 90, 180, 365]
 const SCRATCH_DAYS = [1, 3, 7, 14]

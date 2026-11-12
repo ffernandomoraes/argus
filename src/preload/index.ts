@@ -23,7 +23,9 @@ function windowsBuild(): number | null {
 }
 
 // Janela de acesso remoto (src/main/remote): abre com o computador que mostra na linha de comando.
-// O sistema, a pasta pessoal e o build do Windows passam a ser os de lá, porque os caminhos são.
+// A pasta pessoal e o build do Windows passam a ser os de lá (caminhos e terminais são de lá); o
+// sistema (`platform`) segue o daqui, porque a moldura e as teclas são daqui. O de lá fica em
+// remote.host.platform (ver HOST_IS_WIN em renderer/src/platform.ts).
 function remoteHost(): RemoteHostInfo | null {
   const arg = process.argv.find((a) => a.startsWith(REMOTE_ARG))
   if (!arg) return null
@@ -37,7 +39,7 @@ function remoteHost(): RemoteHostInfo | null {
 const remote = remoteHost()
 
 const api: Api = {
-  platform: remote?.platform ?? process.platform,
+  platform: process.platform,
   homeDir: remote?.homeDir ?? homeDir,
   windowsBuild: remote ? remote.windowsBuild : windowsBuild(),
   remote: {

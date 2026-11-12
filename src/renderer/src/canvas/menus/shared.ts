@@ -9,13 +9,13 @@ import type { MenuItem } from '../ContextMenu'
 import { moveToGroup } from '../operations'
 import type { AreaNode, CanvasNode, ConversationSummary, TerminalKind } from '../types'
 import type { Deps } from './types'
-import { IS_WIN } from '../../platform'
+import { HOST_IS_WIN } from '../../platform'
 import { tr } from '../../i18n'
 
 // Peças repetidas nos menus do canvas.
 
 // A Lixeira em inglês: no Windows, Recycle Bin.
-export const TRASH_EN = IS_WIN ? 'Recycle Bin' : 'Trash'
+export const TRASH_EN = HOST_IS_WIN ? 'Recycle Bin' : 'Trash'
 
 // Rodando ou esperando resposta: tirar do canvas ou apagar agora atropelaria a sessão.
 export const isBusy = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you'

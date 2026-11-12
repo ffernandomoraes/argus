@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { AuthState, ClaudeAccount } from '../../../../shared/auth'
 import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
-import { IS_WIN, THIS_COMPUTER } from '../../platform'
+import { HOST_IS_WIN, THIS_COMPUTER } from '../../platform'
 import { Button } from '../../ui/Button'
 import { AccountName } from './AccountName'
 import { accountSummary } from './accountSummary'
@@ -140,8 +140,8 @@ export function AccountCard({
         {logoutFailed && (
           <p role="alert" className="mt-2 text-right text-[15px] text-red-400">
             {tr(
-              `Não deu para sair. Tente de novo ou rode "claude auth logout" no ${IS_WIN ? 'PowerShell' : 'Terminal'}.`,
-              `Could not sign out. Try again or run "claude auth logout" in ${IS_WIN ? 'PowerShell' : 'Terminal'}.`
+              `Não deu para sair. Tente de novo ou rode "claude auth logout" no ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}.`,
+              `Could not sign out. Try again or run "claude auth logout" in ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}.`
             )}
           </p>
         )}

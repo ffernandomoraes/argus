@@ -11,6 +11,7 @@ import { useUpdates } from '../updates/useUpdates'
 import { IS_MAC } from '../platform'
 import { useWindowControls } from '../useWindowControls'
 import { BoardSwitcher } from './bars/BoardSwitcher'
+import { RemoteConnections } from './bars/RemoteConnections'
 import { UpdateStatus } from './bars/UpdateStatus'
 import { updateProgress } from './bars/updateProgress'
 import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
@@ -73,6 +74,8 @@ export const TitleBar = memo(function TitleBar({
           {REMOTE_HOST.name}
         </span>
       )}
+      {/* Este computador com aparelhos conectados pelo acesso remoto: quantos (clique desconecta). */}
+      <RemoteConnections />
       {/* Memória ou disco do computador chegando no limite (ou algo já encerrado por isso). */}
       <HealthAlert />
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}

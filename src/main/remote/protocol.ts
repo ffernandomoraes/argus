@@ -25,6 +25,8 @@ export type HostMessage =
   | { t: 'reply'; id: number; ok: true; value: unknown }
   | { t: 'reply'; id: number; ok: false; error: string }
   | { t: 'event'; w: number; ch: string; args: unknown[] }
+  // O de casa desconectou este aparelho de propósito: não adianta religar.
+  | { t: 'bye' }
 
 export function encode(message: ClientMessage | HostMessage): Buffer {
   return serialize(message)
@@ -69,6 +71,7 @@ export function decodeHost(data: Buffer): HostMessage | null {
     if (m.t === 'reject' && isText(m.reason)) return m as HostMessage
     if (m.t === 'reply' && isInt(m.id) && typeof m.ok === 'boolean') return m as HostMessage
     if (m.t === 'event' && isInt(m.w) && isText(m.ch) && Array.isArray(m.args)) return m as HostMessage
+    if (m.t === 'bye') return { t: 'bye' }
     return null
   } catch {
     return null

@@ -51,6 +51,7 @@ const api: Api = {
     setHosting: (on) => invoke('remoteAccess:setHosting', on),
     startPairing: () => invoke('remoteAccess:startPairing'),
     cancelPairing: () => send('remoteAccess:cancelPairing'),
+    disconnect: (id) => send('remoteAccess:disconnect', id),
     removeDevice: (id) => send('remoteAccess:removeDevice', id),
     pair: (code) => invoke('remoteAccess:pair', code),
     open: (hostId) => invoke('remoteAccess:open', hostId),

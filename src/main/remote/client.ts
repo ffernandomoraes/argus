@@ -180,6 +180,11 @@ export class RemoteClient {
         return
       case 'reply':
         return this.settle(message)
+      case 'bye':
+        // Desconectado pelo de casa: acaba sem religar.
+        this.ended = true
+        this.link.close()
+        return this.finish('kicked')
       case 'event': {
         const wc = this.windows.get(message.w)
         if (wc && !wc.isDestroyed()) wc.send(message.ch, ...message.args)
@@ -257,10 +262,10 @@ export class RemoteClient {
     this.finish()
   }
 
-  private finish(): void {
+  private finish(state: 'closed' | 'kicked' = 'closed'): void {
     this.ended = true
     this.failPending()
-    if (this._state !== 'closed') this.setState('closed')
+    if (this._state !== 'closed' && this._state !== 'kicked') this.setState(state)
     // As janelas seguem ligadas a esta ligação (encerrada) até fechar: o pedido delas nunca pode cair
     // nos handlers daqui, que mostrariam o Argus deste computador.
     this.onEnd?.()

@@ -16,9 +16,10 @@ export class RemoteHost {
 
   constructor(private info: () => RemoteHostInfo) {}
 
-  accept(link: Link): void {
+  accept(link: Link): HostSession {
     const session = new HostSession(link, this.info, () => this.sessions.delete(session))
     this.sessions.add(session)
+    return session
   }
 
   get connections(): number {
@@ -30,7 +31,7 @@ export class RemoteHost {
   }
 }
 
-class HostSession {
+export class HostSession {
   private pages = new Map<number, RemotePage>()
   private greeted = false
   private ended = false
@@ -47,6 +48,12 @@ class HostSession {
   close(): void {
     this.link.close()
     this.end()
+  }
+
+  // Desconectado daqui (Desconectar, Remover): o aparelho fica sabendo e não tenta religar.
+  kick(): void {
+    this.send({ t: 'bye' })
+    this.close()
   }
 
   private send(message: HostMessage): void {

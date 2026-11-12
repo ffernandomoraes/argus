@@ -292,6 +292,8 @@ export type SendChannels = {
   'terminal:link': (key: string, conversations: string[]) => void
   'terminal:unlink': (key: string) => void
   'remoteAccess:cancelPairing': () => void
+  // Derruba a sessão de um aparelho (sem id, de todos); o pareamento continua.
+  'remoteAccess:disconnect': (id?: string) => void
   'remoteAccess:removeDevice': (id: string) => void
   'remoteAccess:forgetHost': (hostId: string) => void
 }

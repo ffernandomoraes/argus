@@ -25,6 +25,7 @@ import type { TranscriptionModel } from './transcription'
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
+import type { RemoteAccessState, RemoteConnectionState, RemotePairResult } from './remote'
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -174,6 +175,13 @@ export type InvokeChannels = {
   // Transcrição de áudio anexado: situação do modelo e o texto de um áudio (mono, 16 kHz).
   'transcription:model': () => TranscriptionModel
   'transcription:transcribe': (samples: Float32Array) => string
+  // Acesso remoto (Configurações): hospedar, parear, abrir outro computador.
+  'remoteAccess:state': () => RemoteAccessState
+  'remoteAccess:setHosting': (on: boolean) => RemoteAccessState
+  'remoteAccess:startPairing': () => RemoteAccessState
+  'remoteAccess:pair': (code: string) => RemotePairResult
+  // Erro em texto, ou nulo quando abriu.
+  'remoteAccess:open': (hostId: string) => string | null
 }
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
@@ -281,6 +289,9 @@ export type SendChannels = {
   // Shell do drawer à vista embaixo das conversas `conversations` (o id no app e o da sessão).
   'terminal:link': (key: string, conversations: string[]) => void
   'terminal:unlink': (key: string) => void
+  'remoteAccess:cancelPairing': () => void
+  'remoteAccess:removeDevice': (id: string) => void
+  'remoteAccess:forgetHost': (hostId: string) => void
 }
 
 // Síncronas, para o que a janela precisa antes do primeiro desenho: ipcRenderer.sendSync ↔
@@ -348,6 +359,9 @@ export type EventChannels = {
   'speech:micStop': () => void
   // Situação do modelo de transcrição mudou (download andando, pronto, erro).
   'transcription:model': (state: TranscriptionModel) => void
+  // Janela de acesso remoto: a ligação com o outro computador caiu, voltou ou acabou.
+  'remote:state': (state: RemoteConnectionState) => void
+  'remoteAccess:state': (state: RemoteAccessState) => void
 }
 
 type InvokeChannel = keyof InvokeChannels

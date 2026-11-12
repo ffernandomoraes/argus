@@ -9,6 +9,7 @@ import { baseName, FILE_MANAGER } from '../../platform'
 import { boardSubmenu, isBusy, moveSubmenu, terminalSubmenu } from './shared'
 import type { Deps } from './types'
 import { tr } from '../../i18n'
+import { IS_REMOTE } from '../../remote'
 
 type ProjectDeps = Pick<
   Deps,
@@ -36,7 +37,7 @@ const titles = (cs: ConversationSummary[]) => cs.map((c) => `"${c.title}"`).join
 function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
   if (!repoUrl) return []
   const label = new URL(repoUrl).hostname === 'github.com' ? tr('Abrir no GitHub', 'Open on GitHub') : tr('Abrir repositório', 'Open repository')
-  return [{ type: 'action', label, icon: ExternalLink, onSelect: () => window.api.sessions.openRepo(node.data.path) }]
+  return [{ type: 'action', label, icon: ExternalLink, onSelect: () => (IS_REMOTE ? void window.open(repoUrl, '_blank') : window.api.sessions.openRepo(node.data.path)) }]
 }
 
 // Workspace: pôr e tirar pastas e abrir cada uma no Finder. Sem repositório: cada
@@ -49,9 +50,10 @@ function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[])
     icon: FolderOpen,
     items: folders.map((f) => ({ type: 'action' as const, label: baseName(f), onSelect: () => window.api.files.openFolder(f) }))
   }
-  if (node.data.groupWide) return folders.length ? [open] : []
+  if (node.data.groupWide) return folders.length && !IS_REMOTE ? [open] : []
+  // Na janela remota não há seletor de pastas de lá: pôr pasta e abrir no Finder ficam de fora.
   return [
-    { type: 'action', label: tr('Adicionar pasta', 'Add folder'), icon: FolderPlus, onSelect: () => deps.addWorkspaceFolder(node.id) },
+    ...(IS_REMOTE ? [] : [{ type: 'action', label: tr('Adicionar pasta', 'Add folder'), icon: FolderPlus, onSelect: () => deps.addWorkspaceFolder(node.id) } as const]),
     {
       type: 'submenu',
       label: tr('Tirar pasta', 'Remove folder'),
@@ -64,7 +66,7 @@ function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[])
         onSelect: () => deps.removeWorkspaceFolder(node.id, f)
       }))
     },
-    open
+    ...(IS_REMOTE ? [] : [open])
   ]
 }
 
@@ -88,7 +90,7 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
     { type: 'separator' },
     ...(workspace
       ? workspaceItems(deps, node, workspace)
-      : [{ type: 'action', label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`), icon: FolderOpen, onSelect: () => window.api.files.openFolder(node.data.path) } as const, ...repo]),
+      : [...(IS_REMOTE ? [] : [{ type: 'action', label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`), icon: FolderOpen, onSelect: () => window.api.files.openFolder(node.data.path) } as const]), ...repo]),
     { type: 'separator' },
     // Conversas do grupo são daquele grupo: não mudam de grupo nem de workspace. A tarefa isolada
     // muda de workspace junto com a pasta dela.

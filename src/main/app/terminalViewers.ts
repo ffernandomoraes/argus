@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from '../ipc/page'
 import { sendTo } from '../ipc/events'
 import { PageMap } from './pages'
 
@@ -9,7 +9,7 @@ export class TerminalViewers {
   // página → chaves dos terminais que ela abriu
   private pages = new PageMap<Set<string>>()
 
-  add(wc: WebContents, key: string): void {
+  add(wc: Page, key: string): void {
     const keys = this.pages.get(wc) ?? new Set<string>()
     keys.add(key)
     this.pages.set(wc, keys)

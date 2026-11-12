@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from '../ipc/page'
 import { PageMap } from './pages'
 
 // Pastas vigiadas por página: cada janela manda as dela (o canvas, as pastas na tela; a janela de
@@ -12,7 +12,7 @@ export class WatchedFolders {
     this.pages = new PageMap<string[]>(() => this.update())
   }
 
-  set(wc: WebContents, paths: string[]): void {
+  set(wc: Page, paths: string[]): void {
     this.pages.set(wc, paths)
     this.update()
   }

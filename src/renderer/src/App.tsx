@@ -10,6 +10,7 @@ import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { RequiredUpdateModal } from './updates/RequiredUpdateModal'
+import { RemoteLostModal } from './RemoteLostModal'
 import { WelcomeModal } from './welcome/WelcomeModal'
 import { setupReady } from './welcome/SetupStep'
 import { useProviders } from './providers/useProviders'
@@ -70,6 +71,7 @@ export function App() {
       </Presence>
       {/* Por último: cobre também as boas-vindas e as configurações. */}
       <RequiredUpdateModal />
+      <RemoteLostModal />
     </main>
   )
 }

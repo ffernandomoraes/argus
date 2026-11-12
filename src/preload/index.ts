@@ -1,5 +1,6 @@
 import { contextBridge, webUtils } from 'electron'
 import type { Api } from '../shared/api'
+import { REMOTE_ARG, type RemoteHostInfo } from '../shared/remote'
 import { invoke, listen, listenKey, send, sendSync } from './ipc'
 import { onEdit, onReloadKey } from './keys'
 import { winMic } from './winMic'
@@ -21,10 +22,39 @@ function windowsBuild(): number | null {
   return Number.isInteger(build) && build > 0 ? build : null
 }
 
+// Janela de acesso remoto (src/main/remote): abre com o computador que mostra na linha de comando.
+// O sistema, a pasta pessoal e o build do Windows passam a ser os de lá, porque os caminhos são.
+function remoteHost(): RemoteHostInfo | null {
+  const arg = process.argv.find((a) => a.startsWith(REMOTE_ARG))
+  if (!arg) return null
+  try {
+    const bytes = Uint8Array.from(atob(arg.slice(REMOTE_ARG.length)), (c) => c.charCodeAt(0))
+    return JSON.parse(new TextDecoder().decode(bytes)) as RemoteHostInfo
+  } catch {
+    return null
+  }
+}
+const remote = remoteHost()
+
 const api: Api = {
-  platform: process.platform,
-  homeDir,
-  windowsBuild: windowsBuild(),
+  platform: remote?.platform ?? process.platform,
+  homeDir: remote?.homeDir ?? homeDir,
+  windowsBuild: remote ? remote.windowsBuild : windowsBuild(),
+  remote: {
+    host: remote,
+    onState: (cb) => listen('remote:state', cb)
+  },
+  remoteAccess: {
+    state: () => invoke('remoteAccess:state'),
+    setHosting: (on) => invoke('remoteAccess:setHosting', on),
+    startPairing: () => invoke('remoteAccess:startPairing'),
+    cancelPairing: () => send('remoteAccess:cancelPairing'),
+    removeDevice: (id) => send('remoteAccess:removeDevice', id),
+    pair: (code) => invoke('remoteAccess:pair', code),
+    open: (hostId) => invoke('remoteAccess:open', hostId),
+    forgetHost: (hostId) => send('remoteAccess:forgetHost', hostId),
+    onState: (cb) => listen('remoteAccess:state', cb)
+  },
   setTheme: (theme) => send('theme:set', theme),
   setInterfaceZoom: (factor) => send('interface:zoom', factor),
   clipboardCommand: (command) => send('clipboard:command', command),
@@ -130,7 +160,8 @@ const api: Api = {
     setDefault: (provider, accountId) => send('providers:setDefault', provider, accountId),
     onState: (cb) => listen('providers:state', cb)
   },
-  filePath: (file) => webUtils.getPathForFile(file),
+  // O arquivo arrastado é deste computador: na janela remota o caminho não serve lá (vazio).
+  filePath: (file) => (remote ? '' : webUtils.getPathForFile(file)),
   accountMcp: {
     status: (account, wait) => invoke('mcp:account:status', account, wait),
     reconnect: (account, name) => invoke('mcp:account:reconnect', account, name),

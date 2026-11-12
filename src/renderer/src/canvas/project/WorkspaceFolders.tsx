@@ -10,6 +10,7 @@ import { serverMenuItems } from '../../devServers/ProjectServerButton'
 import { startProjectServer, stopProjectServer, useProjectServer } from '../../devServers/projectServers'
 import { BranchSwitcher } from './BranchSwitcher'
 import { tr } from '../../i18n'
+import { IS_REMOTE } from '../../remote'
 
 // As pastas do workspace, no pé do card: o que as conversas dele enxergam, cada uma com a branch em
 // que está (como a lista de repositórios do VS Code), para ver de cara uma na main e outra numa
@@ -22,18 +23,21 @@ export const WorkspaceFolders = memo(function WorkspaceFolders({ nodeId, folders
       {folders.map((f) => (
         <FolderRow key={f} folder={f} />
       ))}
-      <li>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            addWorkspaceFolder(nodeId)
-          }}
-          className="nodrag flex h-7 w-full items-center gap-2 rounded-md px-1.5 text-left text-[12px] text-muted hover:bg-surface-2 hover:text-text"
-        >
-          <Plus size={13} className="shrink-0" />
-          {tr('Adicionar pasta', 'Add folder')}
-        </button>
-      </li>
+      {/* Na janela remota não há seletor de pastas de lá. */}
+      {!IS_REMOTE && (
+        <li>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              addWorkspaceFolder(nodeId)
+            }}
+            className="nodrag flex h-7 w-full items-center gap-2 rounded-md px-1.5 text-left text-[12px] text-muted hover:bg-surface-2 hover:text-text"
+          >
+            <Plus size={13} className="shrink-0" />
+            {tr('Adicionar pasta', 'Add folder')}
+          </button>
+        </li>
+      )}
     </ul>
   )
 })
@@ -101,11 +105,15 @@ function useFolderMenu(folder: string): MenuItem[] {
       icon: Code2,
       onSelect: () => toggleProjectCode(project, codeOpen)
     },
-    {
-      type: 'action',
-      label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
-      icon: FolderOpen,
-      onSelect: () => window.api.files.openFolder(folder)
-    }
+    ...(IS_REMOTE
+      ? []
+      : [
+          {
+            type: 'action',
+            label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
+            icon: FolderOpen,
+            onSelect: () => window.api.files.openFolder(folder)
+          } as const
+        ])
   ]
 }

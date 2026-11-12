@@ -26,6 +26,7 @@ import type { TranscriptionModel } from './transcription'
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
+import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemotePairResult } from './remote'
 
 // Formato de `window.api`, a ponte entre a interface e o processo principal. Escrito só aqui: o
 // preload implementa (`const api: Api`) e a interface usa (preload/index.d.ts). Os `on...` devolvem
@@ -38,6 +39,26 @@ export type Api = {
   // Windows: número do build do sistema (o terceiro de "10.0.22631"), para o terminal saber como o
   // ConPTY redesenha; nulo no Mac ou se o sistema não informar.
   windowsBuild: number | null
+  // Janela de acesso remoto: o computador que ela mostra (nulo numa janela comum) e a situação da
+  // ligação. Nela, platform, homeDir e windowsBuild são os de lá.
+  remote: {
+    host: RemoteHostInfo | null
+    onState: (cb: (state: RemoteConnectionState) => void) => Off
+  }
+  // Configurações > Acesso remoto: hospedar este computador, parear e abrir outro Argus.
+  remoteAccess: {
+    state: () => Promise<RemoteAccessState>
+    setHosting: (on: boolean) => Promise<RemoteAccessState>
+    startPairing: () => Promise<RemoteAccessState>
+    cancelPairing: () => void
+    removeDevice: (id: string) => void
+    // Notebook: pareia com o código do outro computador.
+    pair: (code: string) => Promise<RemotePairResult>
+    // Erro em texto, ou nulo quando abriu.
+    open: (hostId: string) => Promise<string | null>
+    forgetHost: (hostId: string) => void
+    onState: (cb: (state: RemoteAccessState) => void) => Off
+  }
   setTheme: (theme: ThemeSource) => void
   // Tamanho da interface desta janela (ver shared/interfaceZoom.ts).
   setInterfaceZoom: (factor: number) => void

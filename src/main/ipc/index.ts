@@ -17,6 +17,7 @@ import { registerStorageIpc } from './storage'
 import { registerTerminalIpc } from './terminal'
 import { registerTranscriptionIpc } from './transcription'
 import { registerWorktreesIpc } from './worktrees'
+import { registerRemoteAccessIpc } from './remoteAccess'
 
 // Todos os canais que a janela usa, por assunto. O contrato (nomes, argumentos e respostas) está em
 // src/shared/ipc.ts; cada registro recebe só os serviços de que precisa.
@@ -38,4 +39,5 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerStorageIpc(s.storage)
   registerTerminalIpc(s.terminals, s.chats, s.terminalViewers)
   registerCliIpc()
+  registerRemoteAccessIpc()
 }

@@ -1,4 +1,4 @@
-import { Bell, Coffee, FlaskConical, HardDrive, MessagesSquare, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
+import { Bell, Coffee, FlaskConical, Globe, HardDrive, MessagesSquare, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react'
 import { tr } from '../../i18n'
 
 export type Section =
@@ -11,6 +11,7 @@ export type Section =
   | 'mascot'
   | 'accounts'
   | 'mcp'
+  | 'remote'
   | 'experiments'
   | 'coffee'
 
@@ -104,6 +105,17 @@ export const SECTIONS: {
     description: tr(
       'Os servidores MCP de cada conta: autorize, reconecte ou desconecte sem abrir uma conversa.',
       'Each account’s MCP servers: authorize, reconnect or sign out without opening a chat.'
+    )
+  },
+  {
+    id: 'remote',
+    group: 'agents',
+    label: tr('Acesso remoto', 'Remote access'),
+    icon: Globe,
+    experimental: true,
+    description: tr(
+      'Use o Argus deste computador de outro, ou abra aqui o de outro computador. Tudo vai cifrado de ponta a ponta.',
+      'Use this computer’s Argus from another one, or open another computer’s Argus here. Everything is end-to-end encrypted.'
     )
   },
   {

@@ -4,6 +4,7 @@ import type { MenuItem } from '../../canvas/ContextMenu'
 import { FILE_MANAGER } from '../../platform'
 import { parentOf } from './treePaths'
 import { tr } from '../../i18n'
+import { IS_REMOTE } from '../../remote'
 
 export type TreeMenuActions = {
   create: (dir: string, isDir: boolean) => void
@@ -39,9 +40,12 @@ export function treeMenu(entry: FileEntry | null, a: TreeMenuActions): MenuItem[
       { type: 'action', label: tr('Renomear', 'Rename'), icon: Pencil, onSelect: () => a.rename(entry.path) }
     )
   }
-  if (entry && !entry.isDir && BROWSER_FILE.test(entry.path))
-    items.push({ type: 'action', label: tr('Abrir no navegador', 'Open in browser'), icon: Globe, onSelect: () => a.openInBrowser(entry.path) })
-  items.push({ type: 'action', label: tr(`Mostrar no ${FILE_MANAGER}`, `Show in ${FILE_MANAGER}`), icon: FolderSearch, onSelect: () => a.reveal(entry?.path ?? '') })
+  // Abrir no navegador e mostrar no Finder abririam no outro computador: fora da janela remota.
+  if (!IS_REMOTE) {
+    if (entry && !entry.isDir && BROWSER_FILE.test(entry.path))
+      items.push({ type: 'action', label: tr('Abrir no navegador', 'Open in browser'), icon: Globe, onSelect: () => a.openInBrowser(entry.path) })
+    items.push({ type: 'action', label: tr(`Mostrar no ${FILE_MANAGER}`, `Show in ${FILE_MANAGER}`), icon: FolderSearch, onSelect: () => a.reveal(entry?.path ?? '') })
+  }
   if (entry) items.push({ type: 'separator' }, { type: 'action', label: tr('Excluir', 'Delete'), icon: Trash2, danger: true, onSelect: () => a.remove(entry) })
   return items
 }

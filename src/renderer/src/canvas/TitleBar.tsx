@@ -1,8 +1,10 @@
 import { memo, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react'
+import { AppWindow, Eye, EyeOff, Globe, ScrollText } from 'lucide-react'
 import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
 import { NavButton } from '../ui/NavButton'
+import { Tag } from '../ui/Tag'
+import { IS_REMOTE, REMOTE_HOST } from '../remote'
 import { Presence } from '../motion'
 import { HealthAlert } from '../systemHealth/HealthAlert'
 import { ReleaseNotesModal } from '../updates/ReleaseNotesModal'
@@ -63,6 +65,14 @@ export const TitleBar = memo(function TitleBar({
         <BoardSwitcher confirm={confirm} align="start" />
       </div>
       <span className="text-[13px] font-semibold text-muted">Argus</span>
+      {/* Janela de acesso remoto: o computador que ela mostra. */}
+      {REMOTE_HOST && (
+        <span title={tr('Acesso remoto', 'Remote access')}>
+          <Tag icon={Globe} tone="info">
+            {REMOTE_HOST.name}
+          </Tag>
+        </span>
+      )}
       {/* Memória ou disco do computador chegando no limite (ou algo já encerrado por isso). */}
       <HealthAlert />
       {/* No pnpm dev, para distinguir do app instalado aberto ao mesmo tempo. */}
@@ -86,9 +96,11 @@ export const TitleBar = memo(function TitleBar({
               >
                 {uiHidden ? <Eye size={14} /> : <EyeOff size={14} />}
               </NavButton>
-              <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
+              {!IS_REMOTE && (
+                <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
                 <AppWindow size={14} />
               </NavButton>
+              )}
             </span>
             <Divider />
             <UpdateStatus version={updates.version} {...status} />

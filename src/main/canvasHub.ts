@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from './ipc/page'
 import { loadCanvas, saveCanvas, saveCanvasNow } from './canvasStore'
 
 const HISTORY_LIMIT = 100
@@ -25,7 +25,7 @@ export class CanvasHub {
   // except: a janela que mandou a mudança (ela já está com ela).
   constructor(
     private file: string,
-    private send: (nodes: unknown, except: WebContents | null) => void
+    private send: (nodes: unknown, except: Page | null) => void
   ) {
     const loaded = loadCanvas(file)
     this.nodes = loaded.nodes
@@ -37,7 +37,7 @@ export class CanvasHub {
     return this.nodes
   }
 
-  sync(nodes: unknown, from: WebContents | null): void {
+  sync(nodes: unknown, from: Page | null): void {
     this.nodes = nodes
     if (this.hold && this.startedEmpty && !isEmpty(nodes)) this.hold = false
     this.scheduleSave()

@@ -70,6 +70,25 @@ export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
   return win
 }
 
+// Janela de acesso remoto: o canvas do Argus de outro computador (ver src/main/remote). A moldura e
+// as travas são as do canvas, mas ela fica fora da lista dos canvas daqui: não recebe o `argus .`,
+// não é guardada ao fechar o app e os pedidos dela vão para lá. `remoteArg` diz ao preload qual
+// computador ela mostra.
+export function createRemoteWindow(remoteArg: string): BrowserWindow {
+  const place = placeCanvas(undefined)
+  const win = new BrowserWindow({
+    ...place.bounds,
+    minWidth: 900,
+    minHeight: 600,
+    ...frame('canvas'),
+    backgroundColor: '#1c1c1c',
+    webPreferences: { ...webPreferences, additionalArguments: [remoteArg] }
+  })
+  if (place.maximize) win.maximize()
+  prepare(win, 'canvas')
+  return win
+}
+
 // Janela de uma conversa só, para levar a outro monitor.
 export function createConversationWindow(hash: string): BrowserWindow {
   const win = new BrowserWindow({

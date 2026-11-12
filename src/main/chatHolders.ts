@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from './ipc/page'
 
 // Quem está com cada conversa aberta na tela. A mesma conversa pode aparecer em mais de uma janela
 // (o canvas espelhado em outro monitor): a sessão só é solta quando a última janela solta.
@@ -14,7 +14,7 @@ export class ChatHolders {
     private release: (key: string) => void
   ) {}
 
-  hold(key: string, wc: WebContents): void {
+  hold(key: string, wc: Page): void {
     const byWindow = this.holds.get(key) ?? new Map<number, number>()
     byWindow.set(wc.id, (byWindow.get(wc.id) ?? 0) + 1)
     this.holds.set(key, byWindow)
@@ -33,7 +33,7 @@ export class ChatHolders {
     this.release(key)
   }
 
-  private watch(wc: WebContents): void {
+  private watch(wc: Page): void {
     if (this.watched.has(wc.id)) return
     const id = wc.id
     this.watched.add(id)

@@ -1,4 +1,4 @@
-import type { WebContents } from 'electron'
+import type { Page } from '../ipc/page'
 
 // O que uma página pediu (pastas vigiadas, terminais abertos, "canvas pronto") vale até ela acabar:
 // a janela fechar, recarregar (o quadro principal abre outro documento) ou a página cair. A página
@@ -6,7 +6,7 @@ import type { WebContents } from 'electron'
 //
 // Recarregar é medido no did-navigate (só o quadro principal, só documento novo, já confirmado): um
 // iframe carregando não conta, nem uma navegação barrada pelas travas de segurança.
-function onPageGone(wc: WebContents, cb: () => void): () => void {
+function onPageGone(wc: Page, cb: () => void): () => void {
   const gone = (): void => {
     stop()
     cb()
@@ -24,19 +24,19 @@ function onPageGone(wc: WebContents, cb: () => void): () => void {
 
 // Um valor por página, que some sozinho quando ela acaba (onDrop avisa).
 export class PageMap<T> {
-  private items = new Map<WebContents, { value: T; stop: () => void }>()
+  private items = new Map<Page, { value: T; stop: () => void }>()
 
-  constructor(private onDrop?: (wc: WebContents) => void) {}
+  constructor(private onDrop?: (wc: Page) => void) {}
 
-  get(wc: WebContents): T | undefined {
+  get(wc: Page): T | undefined {
     return this.items.get(wc)?.value
   }
 
-  has(wc: WebContents): boolean {
+  has(wc: Page): boolean {
     return this.items.has(wc)
   }
 
-  set(wc: WebContents, value: T): void {
+  set(wc: Page, value: T): void {
     const item = this.items.get(wc)
     if (item) {
       item.value = value
@@ -49,14 +49,14 @@ export class PageMap<T> {
     this.items.set(wc, { value, stop })
   }
 
-  delete(wc: WebContents): void {
+  delete(wc: Page): void {
     const item = this.items.get(wc)
     if (!item) return
     item.stop()
     this.items.delete(wc)
   }
 
-  entries(): [WebContents, T][] {
+  entries(): [Page, T][] {
     return [...this.items].map(([wc, item]) => [wc, item.value])
   }
 

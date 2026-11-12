@@ -33,11 +33,14 @@ export function wslStatusDirs(distro: string, info: DistroInfo, ids: string[]): 
 const sq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
 
 // Links pelo próprio Linux (ln -s): criados do Windows, pela pasta de rede, não se sabe se viram
-// links de verdade lá dentro.
-function linkScript(dir: string, main: string): string {
-  const lines = SHARED.map(
-    (name) => `[ -e ${sq(`${main}/${name}`)} ] && [ ! -e ${sq(`${dir}/${name}`)} ] && [ ! -L ${sq(`${dir}/${name}`)} ] && ln -s ${sq(`${main}/${name}`)} ${sq(`${dir}/${name}`)}`
-  )
+// links de verdade lá dentro. Uma pasta vazia da conta, com o item na principal, sai para virar o
+// link: a principal pode ter ganhado o item depois (as configurações do Windows, ver
+// windowsConfig.ts), e o rmdir não apaga pasta com coisas.
+export function linkScript(dir: string, main: string): string {
+  const lines = SHARED.flatMap((name) => {
+    const [m, d] = [sq(`${main}/${name}`), sq(`${dir}/${name}`)]
+    return [`if [ -e ${m} ] && [ -d ${d} ] && [ ! -L ${d} ]; then rmdir ${d} 2>/dev/null; fi`, `[ -e ${m} ] && [ ! -e ${d} ] && [ ! -L ${d} ] && ln -s ${m} ${d}`]
+  })
   return [`mkdir -p ${sq(`${dir}/sessions`)} ${sq(`${main}/projects`)}`, ...lines, 'exit 0', ''].join('\n')
 }
 

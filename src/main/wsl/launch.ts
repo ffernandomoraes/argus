@@ -8,7 +8,8 @@ import { installInWsl, watchInstall, WSL_INSTALL } from './install'
 import { log } from './log'
 import { toLinux } from './path'
 import { deferredWslProcess, linuxEnv, wslCommand } from './run'
-import { alignWslIdentity, sharedLoginDir, sharedLoginReady } from './sharedLogin'
+import { alignWslIdentity, sharedLoginDir, windowsHomeReady } from './sharedLogin'
+import { prepareWslConfig } from './windowsConfig'
 
 // Como abrir o `claude` (ou um shell) dentro de uma distro: para o terminal, as conferências de
 // login e uso, e o SDK.
@@ -16,11 +17,14 @@ import { alignWslIdentity, sharedLoginDir, sharedLoginReady } from './sharedLogi
 export type WslLaunch = { ok: true; file: string; args: string[]; env: Record<string, string>; cwd: string; account: string } | { ok: false; error: string }
 
 // Pasta da conta, no formato do Linux; a principal vai sem a variável. Com o login compartilhado, o
-// lugar do login vai à parte: a pasta da conta no Windows, vista de lá (ver sharedLogin.ts).
+// lugar do login vai à parte: a pasta da conta no Windows, vista de lá (ver sharedLogin.ts). Antes,
+// as configurações do Windows entram no ~/.claude de lá (ver windowsConfig.ts): a pasta de uma conta
+// extra liga as suas às da principal.
 async function accountEnv(distro: string, info: DistroInfo, account: string): Promise<Record<string, string>> {
+  await windowsHomeReady(distro)
+  await prepareWslConfig(distro)
   await prepareWslAccount(distro, info, account)
   const dir = wslAccountDir(info, account)
-  await sharedLoginReady(distro)
   const login = sharedLoginDir(distro, account)
   if (login) await alignWslIdentity(distro, info, account)
   return { ...(dir && { CLAUDE_CONFIG_DIR: dir }), ...(login && { CLAUDE_SECURESTORAGE_CONFIG_DIR: login }) }

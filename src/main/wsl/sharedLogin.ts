@@ -61,18 +61,25 @@ export async function checkWindowsStore(): Promise<void> {
   loginInFile = !vault
 }
 
+// A pasta do usuário do Windows vista de dentro da distro, quando o `claude` do app é o do Windows
+// (é lá que a pessoa configura tudo). Nulo: sem o claude.exe, o `claude` do app já roda numa distro
+// (a configuração dele é a de lá), ou a distro não enxerga a pasta do Windows.
+export function windowsHome(distro: string): string | null {
+  if (distroFor()) return null
+  return distroInfo(distro)?.winHome ?? null
+}
+
 // A pasta do usuário do Windows vista de dentro da distro, se o login das contas é compartilhado
 // com ela; nulo se o login de lá é separado.
 export function sharedLoginHome(distro: string): string | null {
-  // Sem o claude.exe, o `claude` do app já roda numa distro: o login dele é o de lá.
-  if (distroFor() || !loginInFile || !isEnabled()) return null
-  return distroInfo(distro)?.winHome ?? null
+  if (!loginInFile || !isEnabled()) return null
+  return windowsHome(distro)
 }
 
 // O que o app sabe da distro foi guardado por uma versão anterior, sem a pasta do Windows: pergunta
 // de novo antes de decidir. Sem isso, a primeira conversa depois de atualizar o app abria com o login
 // separado de antes.
-export async function sharedLoginReady(distro: string): Promise<void> {
+export async function windowsHomeReady(distro: string): Promise<void> {
   if (distroInfo(distro)?.winHome === undefined) await loadDistro(distro)
 }
 

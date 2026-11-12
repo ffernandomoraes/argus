@@ -26,10 +26,11 @@ vi.mock('./run', () => ({
   linuxEnv: (env: Record<string, string>) => ({ ...env }),
   wslCommand: async () => ({ file: 'wsl.exe', args: [] })
 }))
+vi.mock('./windowsConfig', () => ({ prepareWslConfig: async () => null }))
 vi.mock('./sharedLogin', () => ({
   sharedLoginDir: (_distro: string, account: string) =>
     fake.shared ? (account === 'main' ? '/mnt/c/Users/ana/.claude' : `/mnt/c/Users/ana/.argus/accounts/${account}`) : null,
-  sharedLoginReady: async () => {},
+  windowsHomeReady: async () => {},
   alignWslIdentity: async (_distro: string, _info: unknown, account: string) => {
     fake.aligned.push(account)
   }

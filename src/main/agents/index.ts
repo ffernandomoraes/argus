@@ -6,6 +6,7 @@ import { isReservedOnWindows } from '../files/names'
 import { writeTextFile } from '../files/textFile'
 import { tr } from '../i18n'
 import { errorMessage } from '../lib/errors'
+import { forgetWslConfig, usesWindowsItem } from '../wsl/windowsConfig'
 import { agentExt, findByName, globalDir, projectDir, readDir } from './folder'
 import { serializeAgent, serializeCodexAgent } from './format'
 
@@ -15,11 +16,18 @@ const NAME = /^[a-z0-9][a-z0-9-]{0,63}$/
 // Mesmo arquivo no disco do macOS e do Windows, que não diferenciam maiúsculas.
 const sameFile = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
 
+// Pasta global que vale para a pasta do projeto. Num projeto do WSL que usa os agents do Windows
+// (ver wsl/windowsConfig.ts), a mesma do app, onde o Argus grava.
+async function globalDirFor(provider: AgentProvider, projectPath?: string): Promise<string> {
+  if (provider === 'claude' && projectPath && (await usesWindowsItem(projectPath, 'agents'))) return globalDir(provider)
+  return globalDir(provider, projectPath)
+}
+
 // Globais e, com uma pasta, também os do projeto. Mesmo nome nos dois: vale o do projeto,
 // como no Claude Code.
 export async function listAgents(provider: AgentProvider, projectPath?: string): Promise<AgentDef[]> {
   if (!isAgentProvider(provider)) return []
-  const global = await readDir(provider, globalDir(provider, projectPath), 'global')
+  const global = await readDir(provider, await globalDirFor(provider, projectPath), 'global')
   if (!projectPath) return global
   const local = await readDir(provider, projectDir(provider, projectPath), 'project')
   const names = new Set(local.map((a) => a.name))
@@ -80,6 +88,8 @@ export async function saveAgent(provider: AgentProvider, req: AgentSaveRequest):
   } catch (err) {
     return { ok: false, error: tr(`Não consegui salvar: ${errorMessage(err)}`, `Couldn’t save: ${errorMessage(err)}`) }
   }
+  // A pasta de agentes pode ter acabado de nascer: as pastas do WSL ligam a dela na próxima conversa.
+  if (provider === 'claude') forgetWslConfig()
   return { ok: true, agent: { ...data, description: data.description.trim(), prompt: data.prompt.trim(), scope: 'global', path } }
 }
 

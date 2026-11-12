@@ -51,6 +51,7 @@ export type Api = {
   remoteAccess: {
     state: () => Promise<RemoteAccessState>
     setHosting: (on: boolean) => Promise<RemoteAccessState>
+    setKeepAwake: (on: boolean) => Promise<RemoteAccessState>
     startPairing: () => Promise<RemoteAccessState>
     cancelPairing: () => void
     // Derruba a sessão de um aparelho (sem id, de todos), sem desfazer o pareamento.

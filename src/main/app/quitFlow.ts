@@ -73,9 +73,11 @@ export class QuitFlow {
   }
 
   // Só troca o app depois do sim: o script da troca reabre o Argus assim que o processo sai.
-  async restartToUpdate(): Promise<void> {
-    const items = [...this.host.inProgress(), ...(await this.host.busyShells())]
-    if (!this.host.updatePending() || (items.length && !(await this.confirm(true, items)))) return
+  // ask falso: já perguntaram (na janela de outro computador, pelo acesso remoto).
+  async restartToUpdate({ ask = true }: { ask?: boolean } = {}): Promise<void> {
+    if (!this.host.updatePending()) return
+    const items = ask ? [...this.host.inProgress(), ...(await this.host.busyShells())] : []
+    if (items.length && !(await this.confirm(true, items))) return
     this.confirmed()
     // Não deu para começar a troca (nem depois de abrir: o instalador do Windows apagado por um
     // antivírus, por exemplo): o app não fecha, e a próxima saída pergunta de novo.

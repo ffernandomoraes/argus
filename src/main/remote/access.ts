@@ -1,4 +1,4 @@
-import { app, Notification } from 'electron'
+import { app, Notification, powerSaveBlocker } from 'electron'
 import type { RemoteAccessState, RemotePairResult } from '../../shared/remote'
 import { loadAppSettings } from '../appSettings'
 import { tr } from '../i18n'
@@ -40,6 +40,9 @@ export class RemoteAccess {
   private pairing: { code: PairCode; expiresAt: number; link: Link | null; timer: NodeJS.Timeout } | null = null
   private pairingResult: RemoteAccessState['pairingResult'] = null
   private clients = new Map<string, RemoteClient>()
+  // Bloqueio do sono do sistema enquanto hospeda (ver keepAwake); separado do app/keepAwake.ts, que
+  // segura enquanto alguma conversa trabalha.
+  private awake: number | null = null
 
   constructor(private deps: Deps) {
     this.host = new RemoteHost(deps.hostInfo)
@@ -52,6 +55,7 @@ export class RemoteAccess {
   state(): RemoteAccessState {
     return {
       hosting: this.store.hosting,
+      keepAwake: this.store.keepAwake,
       relay: this.relay?.status ?? 'offline',
       name: this.deps.hostName(),
       devices: this.store.devices.map((d) => ({
@@ -87,15 +91,36 @@ export class RemoteAccess {
     return this.state()
   }
 
+  setKeepAwake(on: boolean): RemoteAccessState {
+    this.store.keepAwake = on
+    this.save()
+    this.syncAwake()
+    this.changed()
+    return this.state()
+  }
+
+  // A tela pode apagar ('prevent-app-suspension'); só o sistema não dorme.
+  private syncAwake(): void {
+    const want = !!this.relay && this.store.keepAwake
+    const holding = this.awake !== null && powerSaveBlocker.isStarted(this.awake)
+    if (want && !holding) this.awake = powerSaveBlocker.start('prevent-app-suspension')
+    else if (!want && holding) {
+      powerSaveBlocker.stop(this.awake!)
+      this.awake = null
+    }
+  }
+
   private startHosting(): void {
     if (this.relay) return
     this.relay = new HostRelay(this.store.hostId, this.store.hostKey, (link, authenticated) => void this.incoming(link, authenticated), () => this.changed())
     this.relay.start()
+    this.syncAwake()
   }
 
   private stopHosting(): void {
     this.relay?.stop()
     this.relay = null
+    this.syncAwake()
     this.host.closeAll()
     this.cancelPairing()
   }

@@ -94,13 +94,15 @@ export class HostSession {
 
   private hello(protocol: number, version: string): void {
     const info = this.info()
-    // As duas pontas precisam da mesma versão: os canais (src/shared/ipc.ts) mudam entre versões.
-    if (protocol !== PROTOCOL_VERSION || version !== info.version) {
+    // Versão do Argus diferente entra (com aviso na janela de lá): recusar trancaria a pessoa do lado
+    // de fora até voltar para casa, e de dentro ela pode atualizar este. Só o formato das mensagens
+    // precisa ser o mesmo; um canal que um dos lados não conhece falha sozinho.
+    if (protocol !== PROTOCOL_VERSION) {
       this.send({
         t: 'reject',
         reason: tr(
-          `Versões diferentes: este Argus está na ${info.version} e o seu na ${version}. Atualize os dois para a mesma versão.`,
-          `Different versions: this Argus is on ${info.version} and yours on ${version}. Update both to the same version.`
+          `Este Argus (${info.version}) e o seu (${version}) não conversam mais entre si. Atualize os dois para a versão mais recente.`,
+          `This Argus (${info.version}) and yours (${version}) can no longer talk to each other. Update both to the latest version.`
         )
       })
       return this.close()

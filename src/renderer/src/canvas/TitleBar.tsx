@@ -78,6 +78,18 @@ export const TitleBar = memo(function TitleBar({
           {REMOTE_HOST.name}
         </span>
       )}
+      {/* Versões diferentes do Argus aqui e lá: funciona, mas o que um dos lados não conhece falha. */}
+      {REMOTE_HOST?.clientVersion && REMOTE_HOST.clientVersion !== REMOTE_HOST.version && (
+        <span
+          title={tr(
+            `Este Argus está na ${REMOTE_HOST.clientVersion} e o de ${REMOTE_HOST.name} na ${REMOTE_HOST.version}. Atualize os dois para a mesma versão; o de lá dá para atualizar daqui.`,
+            `This Argus is on ${REMOTE_HOST.clientVersion} and the one on ${REMOTE_HOST.name} on ${REMOTE_HOST.version}. Update both to the same version; you can update the other one from here.`
+          )}
+          className="rounded-full border border-dev/40 bg-dev/10 px-2 py-px text-[11px] font-medium tracking-wide text-dev uppercase"
+        >
+          {tr('Versões diferentes', 'Different versions')}
+        </span>
+      )}
       {/* Este computador com aparelhos conectados pelo acesso remoto: quantos (clique desconecta). */}
       <RemoteConnections />
       {/* Memória ou disco do computador chegando no limite (ou algo já encerrado por isso). */}

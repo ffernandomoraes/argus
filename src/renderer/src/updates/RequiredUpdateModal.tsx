@@ -5,6 +5,7 @@ import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { useUpdates } from './useUpdates'
 import { tr } from '../i18n'
+import { installUpdate } from './installUpdate'
 
 const keepOpen = () => false
 
@@ -80,7 +81,7 @@ function RequiredUpdateCard({ updates, onContinue }: { updates: UpdateInfo; onCo
             variant="primary"
             disabled={state.status !== 'ready'}
             title={state.status === 'ready' ? undefined : tr('Espere o download terminar', 'Wait for the download to finish')}
-            onClick={() => window.api.updates.install()}
+            onClick={() => installUpdate()}
           >
             {tr('Atualizar agora', 'Update now')}
           </Button>

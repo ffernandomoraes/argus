@@ -25,7 +25,7 @@ import type { TranscriptionModel } from './transcription'
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
 import type { Usage } from './usage'
 import type { WorktreeReserved, WorktreeStatus } from './worktrees'
-import type { RemoteAccessState, RemoteConnectionState, RemotePairResult } from './remote'
+import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemotePairResult } from './remote'
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -178,6 +178,7 @@ export type InvokeChannels = {
   // Acesso remoto (Configurações): hospedar, parear, abrir outro computador.
   'remoteAccess:state': () => RemoteAccessState
   'remoteAccess:setHosting': (on: boolean) => RemoteAccessState
+  'remoteAccess:setKeepAwake': (on: boolean) => RemoteAccessState
   'remoteAccess:startPairing': () => RemoteAccessState
   'remoteAccess:pair': (code: string) => RemotePairResult
   // Erro em texto, ou nulo quando abriu.
@@ -308,6 +309,8 @@ export type SendSyncChannels = {
   'canvas:viewport': (board: string) => CanvasViewport | null
   'boards:state': () => BoardsState
   'boards:create': (name: string) => string
+  // Janela de acesso remoto: o computador que ela mostra, como está agora (nulo nas comuns).
+  'remote:info': () => RemoteHostInfo | null
 }
 
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.

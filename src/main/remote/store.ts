@@ -15,6 +15,9 @@ export type KnownHost = { hostId: string; name: string; deviceId: string; psk: s
 export type RemoteStore = {
   // Este computador aceita conexões de aparelhos pareados.
   hosting: boolean
+  // Com o acesso remoto ligado, o sistema não dorme (a tela pode apagar): dormindo, a ligação com a
+  // ponte cai e ninguém de longe consegue acordá-lo.
+  keepAwake: boolean
   hostId: string
   hostKey: string
   devices: PairedDevice[]
@@ -33,7 +36,7 @@ const path = (name: string) => join(app.getPath('userData'), name)
 const randomId = (bytes: number) => randomBytes(bytes).toString('base64url')
 
 function fresh(): RemoteStore {
-  return { hosting: false, hostId: randomId(24), hostKey: randomId(32), devices: [], hosts: [] }
+  return { hosting: false, keepAwake: true, hostId: randomId(24), hostKey: randomId(32), devices: [], hosts: [] }
 }
 
 function parse(text: string): RemoteStore {
@@ -41,6 +44,7 @@ function parse(text: string): RemoteStore {
   const base = fresh()
   return {
     hosting: raw.hosting === true,
+    keepAwake: raw.keepAwake !== false,
     hostId: typeof raw.hostId === 'string' && raw.hostId ? raw.hostId : base.hostId,
     hostKey: typeof raw.hostKey === 'string' && raw.hostKey ? raw.hostKey : base.hostKey,
     devices: Array.isArray(raw.devices) ? raw.devices.filter((d) => d && typeof d.id === 'string' && typeof d.psk === 'string') : [],

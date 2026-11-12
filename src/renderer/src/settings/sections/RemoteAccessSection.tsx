@@ -63,6 +63,16 @@ function ThisComputer({ state }: { state: RemoteAccessState }) {
           <Switch label={tr('Permitir acesso', 'Allow access')} checked={state.hosting} onChange={(on) => void window.api.remoteAccess.setHosting(on)} />
         </Row>
         <Row
+          label={tr('Manter este computador acordado', 'Keep this computer awake')}
+          description={tr('Com o acesso ligado, o sistema não dorme; a tela pode apagar.', 'With access on, the system doesn’t sleep; the screen can turn off.')}
+          info={tr(
+            'Dormindo, o computador sai da internet e ninguém de longe consegue acordá-lo. Num notebook, fechar a tampa ainda faz ele dormir, a menos que esteja na tomada com um monitor externo.',
+            'Asleep, the computer drops off the internet and no one can wake it from afar. On a laptop, closing the lid still puts it to sleep, unless it is plugged in with an external display.'
+          )}
+        >
+          <Switch label={tr('Manter acordado', 'Keep awake')} checked={state.keepAwake} onChange={(on) => void window.api.remoteAccess.setKeepAwake(on)} />
+        </Row>
+        <Row
           label={tr('Parear um aparelho', 'Pair a device')}
           description={tr('Gera um código para digitar no outro computador, em Acesso remoto.', 'Generates a code to type on the other computer, under Remote access.')}
           info={tr(

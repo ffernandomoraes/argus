@@ -50,7 +50,7 @@ export async function openLoopbackWindow(): Promise<void> {
   remoteHost().accept(hostSide)
   const client = new RemoteClient(clientSide, app.getVersion(), hostName())
   const info = await client.connect()
-  client.attach(createRemoteWindow(encodeRemoteArg({ ...info, name: `${info.name} (teste)` })))
+  client.attach(createRemoteWindow(encodeRemoteArg({ ...info, name: `${info.name} (teste)`, clientVersion: app.getVersion() })))
 }
 
 let access: RemoteAccess | null = null
@@ -62,7 +62,7 @@ export function remoteAccess(): RemoteAccess {
     hostInfo,
     openWindow: async (client) => {
       if (!client.info) return
-      client.attach(createRemoteWindow(encodeRemoteArg(client.info)))
+      client.attach(createRemoteWindow(encodeRemoteArg({ ...client.info, clientVersion: app.getVersion() })))
     },
     focus: (client) => {
       const wc = client.firstWindow()

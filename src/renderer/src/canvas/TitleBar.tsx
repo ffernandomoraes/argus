@@ -58,7 +58,7 @@ export const TitleBar = memo(function TitleBar({
     // título segue no centro sem encostar nele. Os limites e o player ficam na barra de baixo (BottomBar).
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line bg-surface hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
+      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line ${IS_REMOTE ? 'bg-remote-bar' : 'bg-surface'} hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
     >
       <div className="absolute inset-y-0 flex items-center" style={{ left: 12 + controls.left }}>
         <BoardSwitcher confirm={confirm} align="start" />

@@ -213,6 +213,12 @@ export class Terminals {
     return s && !IS_WIN ? s.pty.process : null
   }
 
+  // Colunas e linhas do processo agora.
+  sizeOf(key: string): { cols: number; rows: number } | null {
+    const s = this.sessions.get(key)
+    return s ? { cols: s.pty.cols, rows: s.pty.rows } : null
+  }
+
   resize(key: string, cols: number, rows: number): void {
     const session = this.sessions.get(key)
     if (session && cols > 0 && rows > 0) this.resizePty(session, cols, rows)

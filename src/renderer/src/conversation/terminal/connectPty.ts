@@ -1,5 +1,5 @@
-import type { Terminal } from '@xterm/xterm'
 import type { TerminalOpenRequest } from '../../../../shared/terminal'
+import type { Xterm } from './createXterm'
 import { createPtySize } from './ptySize'
 
 export type PtyRequest = Omit<TerminalOpenRequest, 'cols' | 'rows' | 'keepSize'>
@@ -8,11 +8,12 @@ export type PtyRequest = Omit<TerminalOpenRequest, 'cols' | 'rows' | 'keepSize'>
 // reconecta) o processo, escreve a saída, manda o que se digita e acompanha o tamanho. Devolve
 // como desligar; o processo continua vivo.
 export function connectPty(
-  term: Terminal,
+  xterm: Pick<Xterm, 'term' | 'follow'>,
   req: PtyRequest,
   events: { onError: (error: string) => void; onExit: (code: number) => void }
 ): () => void {
   const api = window.api.terminal
+  const { term } = xterm
   const { key } = req
   let disposed = false
   // Até a resposta do open, o que chega já está no buffer que ela devolve (o processo guarda a
@@ -28,8 +29,24 @@ export function connectPty(
   })
   const input = term.onData((data) => api.write(key, data))
 
-  // Só a janela em uso muda o tamanho do processo (ver takeSize).
+  // O processo tem um tamanho só, e o mesmo terminal pode estar em mais de uma página (o canvas em
+  // dois monitores, o notebook pelo acesso remoto). Manda quem clicou ou digitou por último (ver
+  // TerminalSizes no processo principal); as outras desenham no tamanho dele, sem se encaixar, até
+  // a pessoa clicar nelas. Sem isso, a outra recebia um desenho de outra largura e embaralhava.
   const size = createPtySize((cols, rows) => api.resize(key, cols, rows))
+  let following = false
+  const offSize = api.onSize(key, (cols, rows, mine) => {
+    if (mine) {
+      if (!following) return
+      following = false
+      xterm.follow(null)
+      size.now(term.cols, term.rows)
+    } else {
+      following = true
+      size.mark(cols, rows)
+      xterm.follow({ cols, rows })
+    }
+  })
   const focused = document.hasFocus()
   if (focused) size.mark(term.cols, term.rows)
   api
@@ -48,19 +65,27 @@ export function connectPty(
       }
     )
 
-  // Colunas e linhas mudaram (borda do bloco, fonte): manda depois que pararem de mudar.
+  // Colunas e linhas mudaram (borda do bloco, fonte): manda depois que pararem de mudar. Seguindo
+  // outra página, a mudança veio do tamanho dela: não manda.
   const resized = term.onResize(({ cols, rows }) => {
-    if (document.hasFocus()) size.schedule(cols, rows)
+    if (!following) size.schedule(cols, rows)
   })
 
-  // O mesmo terminal pode estar no canvas de duas janelas, mas o processo tem um tamanho só: fica
-  // com o da janela em que se está digitando.
-  const takeSize = () => size.now(term.cols, term.rows)
+  // Clicou no terminal: esta página volta a se encaixar e passa a mandar no tamanho.
+  const takeSize = () => {
+    if (following) {
+      following = false
+      xterm.follow(null)
+    }
+    size.mark(term.cols, term.rows)
+    api.claim(key, term.cols, term.rows)
+  }
   term.textarea?.addEventListener('focus', takeSize)
 
   return () => {
     disposed = true
     size.dispose()
+    offSize()
     term.textarea?.removeEventListener('focus', takeSize)
     resized.dispose()
     input.dispose()

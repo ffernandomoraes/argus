@@ -32,6 +32,7 @@ import { KeepAwake } from './keepAwake'
 import { openFolder } from './folderOpener'
 import { MascotOverlay } from './mascotOverlay'
 import { MenuBarIcon } from './menuBarIcon'
+import { TerminalSizes } from './terminalSizes'
 import { TerminalViewers } from './terminalViewers'
 import { UnreadChats } from './unreadChats'
 import { UnsavedFiles } from './unsavedFiles'
@@ -49,6 +50,12 @@ export function createServices() {
     (key, data) => terminalViewers.data(key, data),
     (key, code) => terminalViewers.exit(key, code),
     (key, sessionId) => broadcast('terminal:session', key, sessionId)
+  )
+  // Terminal em mais de uma página: o tamanho é o de quem clicou ou digitou por último.
+  const terminalSizes = new TerminalSizes(
+    (key, cols, rows) => terminals.resize(key, cols, rows),
+    (key) => terminals.sizeOf(key),
+    (key, size, owner) => terminalViewers.size(key, size.cols, size.rows, owner)
   )
 
   const sessionWatch = new SessionWatch((path, change) => broadcast('sessions:changed', path, change))
@@ -227,6 +234,7 @@ export function createServices() {
   return {
     terminals,
     terminalViewers,
+    terminalSizes,
     sessionWatch,
     tray,
     unread,

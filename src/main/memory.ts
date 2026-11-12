@@ -7,18 +7,21 @@ import { claudeDir } from './claudeHome'
 import { expandHome } from './paths'
 import { sessionsDir } from './sessions'
 import { distroFor } from './wsl'
+import { forgetWslConfig, usesWindowsItem } from './wsl/windowsConfig'
 
 // CLAUDE.md global de quem roda o Claude Code de `path` (sem ela, o do app).
 const globalInstructions = (path?: string) => join(claudeDir(path), 'CLAUDE.md')
 
 // Os CLAUDE.md globais em jogo: o do app e, para projetos do WSL que rodam em outro lugar, o de
-// cada distro.
-function globals(projects: MemoryProject[]): { id: string; label: string; path: string }[] {
+// cada distro. Uma distro que usa o CLAUDE.md do Windows (ver wsl/windowsConfig.ts) não tem um à
+// parte: o Global é o dela também.
+async function globals(projects: MemoryProject[]): Promise<{ id: string; label: string; path: string }[]> {
   const out = [{ id: 'global', label: 'Global', path: globalInstructions() }]
   const app = distroFor()
   for (const p of projects) {
     const distro = distroFor(expandHome(p.path))
     if (!distro || distro === app) continue
+    if (await usesWindowsItem(p.path, 'CLAUDE.md')) continue
     const path = globalInstructions(expandHome(p.path))
     if (!out.some((g) => g.path === path)) out.push({ id: `global:${distro}`, label: `Global (WSL: ${distro})`, path })
   }
@@ -69,7 +72,7 @@ async function memoryFiles(projectPath: string): Promise<MemoryFile[]> {
 
 export async function listMemory(projects: MemoryProject[]): Promise<MemoryGroup[]> {
   const global = await Promise.all(
-    globals(projects).map(
+    (await globals(projects)).map(
       async (g): Promise<MemoryGroup> => ({
         id: g.id,
         label: g.label,
@@ -96,9 +99,9 @@ export async function listMemory(projects: MemoryProject[]): Promise<MemoryGroup
 
 // Só lê e grava arquivos de memória: CLAUDE.md global, de projetos do canvas, ou a pasta
 // de memória automática deles. Nada fora disso, mesmo que o pedido venha da interface.
-function allowed(path: string, projects: MemoryProject[]): boolean {
+async function allowed(path: string, projects: MemoryProject[]): Promise<boolean> {
   const full = resolve(path)
-  if (globals(projects).some((g) => full === resolve(g.path))) return true
+  if ((await globals(projects)).some((g) => full === resolve(g.path))) return true
   return projects.some((p) => {
     const root = resolve(expandHome(p.path))
     if (PROJECT_INSTRUCTIONS.some((rel) => full === join(root, rel))) return true
@@ -107,7 +110,7 @@ function allowed(path: string, projects: MemoryProject[]): boolean {
 }
 
 export async function readMemory(path: string, projects: MemoryProject[]): Promise<string | null> {
-  if (!allowed(path, projects)) return null
+  if (!(await allowed(path, projects))) return null
   return readFile(path, 'utf8').catch(() => '')
 }
 
@@ -115,10 +118,12 @@ export async function readMemory(path: string, projects: MemoryProject[]): Promi
 // achar que salvou. base: o texto lido quando a edição começou; se o disco mudou desde então (o
 // Claude anotou algo), responde 'conflict' sem gravar.
 export async function writeMemory(path: string, text: string, projects: MemoryProject[], base?: string): Promise<MemoryWriteResult> {
-  if (!allowed(path, projects)) return false
+  if (!(await allowed(path, projects))) return false
   try {
     if (await changedOnDisk(path, base)) return 'conflict'
     await writeTextFile(path, text)
+    // O Global pode ter acabado de nascer: as pastas do WSL ligam o dele na próxima conversa.
+    if (resolve(path) === resolve(globalInstructions())) forgetWslConfig()
     return true
   } catch (err) {
     console.error('[memória] não consegui gravar', path, err)

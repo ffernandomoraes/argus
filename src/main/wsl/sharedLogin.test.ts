@@ -55,7 +55,7 @@ import {
   sharedLoginBlocker,
   sharedLoginDir,
   sharedLoginHome,
-  sharedLoginReady,
+  windowsHomeReady,
   sharesAppLogin
 } from './sharedLogin'
 
@@ -105,10 +105,10 @@ describe('sharedLoginDir', () => {
   it('distro conferida por uma versão anterior do app (sem a pasta do Windows): pergunta de novo antes de decidir', async () => {
     fake.winHome = undefined
     fake.probed = 0
-    await sharedLoginReady('Ubuntu')
+    await windowsHomeReady('Ubuntu')
     expect(fake.probed).toBe(1)
     expect(sharedLoginDir('Ubuntu', 'main')).toBe('/mnt/c/Users/ana/.claude')
-    await sharedLoginReady('Ubuntu')
+    await windowsHomeReady('Ubuntu')
     expect(fake.probed).toBe(1)
   })
 

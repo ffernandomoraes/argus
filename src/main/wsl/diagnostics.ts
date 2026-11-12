@@ -8,6 +8,7 @@ import { distroFor } from './index'
 import { distroInfo, listDistros, loadDistro, WSL_EXE } from './distros'
 import { logLines } from './log'
 import { sharedLoginBlocker } from './sharedLogin'
+import { prepareWslConfig, PORTABLE, type PortableState } from './windowsConfig'
 
 // Texto para a pessoa copiar e mandar quando algo do WSL não funciona: versões, distros, o que o
 // app achou em cada uma e o registro do que pediu ao WSL (ver log.ts).
@@ -37,10 +38,26 @@ function loginLine(distro: string, winHome: string | null | undefined): string {
   return `${label}: ${tr('separado', 'separate')} (${why})`
 }
 
+// De onde vêm as instruções globais, skills, agents, comandos e estilos nas pastas da distro (ver
+// windowsConfig.ts). Confere como a próxima conversa conferiria: os links que faltarem entram.
+async function configLine(distro: string): Promise<string> {
+  const label = tr('Configurações', 'Settings')
+  const config = await prepareWslConfig(distro)
+  if (!config) return `${label}: ${tr('as do Linux (sem as do Windows nesta distro)', 'the Linux ones (no Windows settings in this distro)')}`
+  const name: Record<PortableState, string> = {
+    windows: tr('do Windows', 'from Windows'),
+    own: tr('do Linux', 'from Linux'),
+    none: tr('nenhum', 'none'),
+    failed: tr('falhou', 'failed')
+  }
+  return `${label}: ${PORTABLE.map((p) => `${p} ${name[config[p]]}`).join(', ')}`
+}
+
 export async function wslDiagnostics(): Promise<string> {
   if (!IS_WIN) return tr('O WSL só existe no Windows.', 'WSL is only available on Windows.')
   const distros = await listDistros()
   await Promise.all(distros.map((d) => loadDistro(d)))
+  const configs = new Map(await Promise.all(distros.map(async (d) => [d, await configLine(d)] as const)))
   const missing = tr('não instalado', 'not installed')
   const lines = [
     `Argus ${app.getVersion()} - Windows ${release()}`,
@@ -54,7 +71,7 @@ export async function wslDiagnostics(): Promise<string> {
     ...(distros.length ? distros : [tr('(nenhuma)', '(none)')]).map((d) => {
       const info = distroInfo(d)
       if (!info) return `${d}: ${tr('sem resposta', 'no response')}`
-      return `${d}: home=${info.home} claude=${info.claude ?? missing}\n  PATH=${info.path}\n  ${loginLine(d, info.winHome)}`
+      return `${d}: home=${info.home} claude=${info.claude ?? missing}\n  PATH=${info.path}\n  ${loginLine(d, info.winHome)}\n  ${configs.get(d)}`
     }),
     '',
     tr('== Registro', '== Log'),

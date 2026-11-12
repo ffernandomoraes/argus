@@ -5,6 +5,7 @@ import { useStableCallback } from '../../lib/useStableCallback'
 import { fieldAt, textMenuItems } from '../../ui/selectionMenu'
 import type { NodesApi } from '../actions/types'
 import type { MenuState } from '../ContextMenu'
+import type { RenamePlace } from '../conversationRename'
 import type { CanvasNode, ConversationSummary, ProjectNode } from '../types'
 import {
   chatMenu,
@@ -89,13 +90,13 @@ export function useMenuHandlers({ nodesRef, setMenu, deps }: Options) {
 
   // Botão direito numa conversa da lista da pasta: menu dela, não o da pasta.
   const openConversationMenu = useCallback(
-    (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => {
+    (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary, place: RenamePlace) => {
       e.preventDefault()
       // Sem isso, o botão direito sobe até a pasta e abre o menu dela.
       e.stopPropagation()
       const node = nodesRef.current.find((n) => n.id === nodeId)
       if (node?.type !== 'project') return
-      setMenu({ x: e.clientX, y: e.clientY, items: conversationMenu(currentDeps(), node, conversation) })
+      setMenu({ x: e.clientX, y: e.clientY, items: conversationMenu(currentDeps(), node, conversation, place) })
     },
     [nodesRef, setMenu, currentDeps]
   )

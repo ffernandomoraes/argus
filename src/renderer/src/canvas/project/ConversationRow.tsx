@@ -31,7 +31,7 @@ export const ConversationRow = memo(function ConversationRow({
         active ? 'bg-accent/15' : 'bg-fill hover:bg-text/10'
       }`}
     >
-      <ConversationLabel conversation={c} poppedOut={poppedOut} />
+      <ConversationLabel conversation={c} poppedOut={poppedOut} place="stack" />
       {c.status === 'needs-you' ? (
         <span className="ml-auto shrink-0 pl-2 text-[11px] font-semibold text-needs-you">{tr('esperando você', 'waiting for you')}</span>
       ) : (

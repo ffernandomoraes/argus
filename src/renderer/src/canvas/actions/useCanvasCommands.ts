@@ -1,3 +1,4 @@
+import type { RenamePlace } from '../conversationRename'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useStableCommands } from '../../lib/useStableCommands'
 import type { CanvasActions } from '../CanvasContext'
@@ -12,7 +13,7 @@ type Parts = {
   conversations: ReturnType<typeof useConversationActions>
   worktrees: ReturnType<typeof useWorktreeActions>
   overlays: OverlayCommands
-  openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => void
+  openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary, place: RenamePlace) => void
   openSettings: () => void
   newGroupConversation: (groupId: string) => void
 }

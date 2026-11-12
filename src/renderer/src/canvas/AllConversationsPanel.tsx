@@ -71,7 +71,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
   // Botão direito: o mesmo menu da lista na pasta (abrir, mover para a Lixeira).
   const { openConversationMenu } = useCanvasActions()
   const openMenu = useCallback(
-    (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c),
+    (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c, 'panel'),
     [openConversationMenu, nodeId]
   )
 

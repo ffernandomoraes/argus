@@ -49,7 +49,7 @@ export const ConversationStack = memo(function ConversationStack({
     [openTasks, nodeId]
   )
   const openMenu = useCallback(
-    (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c),
+    (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c, 'stack'),
     [openConversationMenu, nodeId]
   )
   if (rows.length === 0 && collapsed) return null

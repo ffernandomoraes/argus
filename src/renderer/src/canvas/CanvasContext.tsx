@@ -1,3 +1,4 @@
+import type { RenamePlace } from './conversationRename'
 import { createContext, useContext, type MouseEvent as ReactMouseEvent } from 'react'
 import type { XYPosition } from '@xyflow/react'
 import type { LineRange } from '../conversation/fileLinks'
@@ -87,7 +88,7 @@ export type CanvasActions = {
   // Sem posição, o card procura sozinho um lugar livre.
   newLooseConversation: (position?: XYPosition) => void
   // Botão direito numa conversa da lista da pasta: menu dela, não o da pasta.
-  openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary) => void
+  openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary, place: RenamePlace) => void
   // Painel flutuante com todas as conversas da pasta.
   openAllConversations: (nodeId: string) => void
   openSettings: () => void

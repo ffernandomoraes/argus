@@ -1,6 +1,7 @@
-import { Mail, MailOpen, MessageCircle, Star, StarOff, Trash2 } from 'lucide-react'
+import { Mail, MailOpen, MessageCircle, Pencil, Star, StarOff, Trash2 } from 'lucide-react'
 import { isWslFolder, SYSTEM_NAME } from '../../platform'
 import type { MenuItem } from '../ContextMenu'
+import { startConversationRename, type RenamePlace } from '../conversationRename'
 import { isFavorite, setFavorite } from '../favorites'
 import { isUnread, markAsRead, markUnread } from '../sessionsStore'
 import type { ConversationSummary, ProjectNode } from '../types'
@@ -12,7 +13,7 @@ type ConversationDeps = Pick<Deps, 'openConversation' | 'confirm' | 'isPoppedOut
 
 // Conversa na lista de uma pasta. A Lixeira leva o arquivo do Claude Code: some também do
 // `claude --resume` e só volta restaurando pela Lixeira do sistema.
-export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conversation: ConversationSummary): MenuItem[] {
+export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conversation: ConversationSummary, place: RenamePlace): MenuItem[] {
   return [
     {
       type: 'action',
@@ -20,6 +21,7 @@ export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conv
       icon: MessageCircle,
       onSelect: () => deps.openConversation(node.id, conversation.id)
     },
+    renameItem(deps, node.data.path, conversation, place),
     favoriteItem(conversation),
     unreadItem(conversation),
     { type: 'separator' },
@@ -67,6 +69,24 @@ export function conversationMenu(deps: ConversationDeps, node: ProjectNode, conv
       }
     }
   ]
+}
+
+// O título da linha vira campo (ver conversationRename). Também no card da conversa solta.
+export function renameItem(
+  deps: Pick<Deps, 'confirm'>,
+  cwd: string,
+  conversation: Pick<ConversationSummary, 'id' | 'sessionId'>,
+  place: RenamePlace
+): MenuItem {
+  return {
+    type: 'action',
+    label: tr('Renomear', 'Rename'),
+    icon: Pencil,
+    onSelect: () =>
+      startConversationRename(cwd, conversation, place, (error) =>
+        deps.confirm({ title: tr('Não deu para renomear a conversa', "Couldn't rename the chat"), description: error })
+      )
+  }
 }
 
 function favoriteItem(conversation: ConversationSummary): MenuItem {

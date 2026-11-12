@@ -2,6 +2,7 @@ import { ExternalLink, MessageCircle, PanelRight, Pencil, Trash2, X } from 'luci
 import type { MenuItem } from '../ContextMenu'
 import { removeNode, setNoteColor } from '../operations'
 import type { ChatNode, ChatPanelNode, NoteNode, TerminalNode } from '../types'
+import { renameItem } from './conversation'
 import { boardSubmenu, moveSubmenu, type MoveDeps } from './shared'
 import type { Deps } from './types'
 import { tr } from '../../i18n'
@@ -34,6 +35,7 @@ export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confi
       icon: MessageCircle,
       onSelect: () => deps.openConversation(node.id, node.data.sessionId)
     },
+    renameItem(deps, node.data.path, { id: node.data.sessionId, sessionId: node.data.sessionId }, 'card'),
     { type: 'separator' },
     moveSubmenu(deps, node),
     boardSubmenu(deps, node),

@@ -34,7 +34,7 @@ export const ConversationItem = memo(function ConversationItem({
 }) {
   const row = (
     <>
-      <ConversationLabel conversation={c} poppedOut={poppedOut} query={query} />
+      <ConversationLabel conversation={c} poppedOut={poppedOut} query={query} place={card ? 'card' : 'panel'} />
       <TimeAgo iso={c.repliedAt} className="pl-1" />
     </>
   )

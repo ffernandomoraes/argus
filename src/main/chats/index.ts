@@ -12,6 +12,7 @@ import { withTimeout } from '../lib/timeout'
 import { ChatSession, type OpenRequest } from './session'
 import { memoryTight } from '../systemHealth/memory'
 import { resolveAccount } from '../accounts'
+import { telemetry } from '../telemetry'
 import { tr } from '../i18n'
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
@@ -244,7 +245,12 @@ export class Chats {
   }
 
   send(req: ChatSendRequest): void {
-    this.open(req).send(req)
+    const fresh = !req.sessionId && !this.find(req)
+    const session = this.open(req)
+    const agent = session instanceof AgentChatSession ? session.account.split(':')[0] : 'claude'
+    if (fresh) telemetry.chatCreated(agent)
+    telemetry.messageSent(agent)
+    session.send(req)
   }
 
   remoteControl(req: ChatRemoteRequest): void {

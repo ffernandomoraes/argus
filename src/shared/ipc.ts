@@ -63,6 +63,7 @@ export type InvokeChannels = {
   'settings:menuBarIcon': (on: boolean) => AppSettings
   'settings:notifications': (on: boolean) => AppSettings
   'settings:notificationSound': (on: boolean) => AppSettings
+  'settings:usageStats': (on: boolean) => AppSettings
   'settings:language': (pref: LangPreference) => AppSettings
   'updates:get': () => UpdateInfo
   'updates:check': () => UpdateState

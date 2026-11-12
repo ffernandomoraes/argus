@@ -1,5 +1,6 @@
 import { IS_WIN } from '../platform'
 import { stopStartedServers } from '../projectServers'
+import { telemetry } from '../telemetry'
 import type { Services } from './services'
 import { step } from './step'
 import { saveCanvasWindowLayout } from './windows'
@@ -17,6 +18,7 @@ export function shutdown(s: Services, install: boolean): void {
   step('guardar as janelas', saveCanvasWindowLayout)
   step('gravar o canvas', () => s.boards.flush())
   step('monitores de uso', () => s.usage.stop())
+  step('dados de uso', () => telemetry.stop())
   step('memória e disco', () => s.health.stop())
   step('limpeza do disco', () => s.storage.stop())
   step('login em andamento', () => s.auth.close())

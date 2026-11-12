@@ -17,6 +17,8 @@ import type { Services } from './services'
 import { step } from './step'
 import { createCanvasWindow, restoreCanvasWindows } from './windows'
 import { openLoopbackWindow, remoteAccess } from '../remote'
+import { telemetry } from '../telemetry'
+import { telemetrySources } from '../telemetry/sources'
 
 // Abertura, com o app pronto. Cada etapa é protegida (ver step.ts): uma que falha fica no console
 // e não impede a janela de abrir.
@@ -38,6 +40,8 @@ export function startApp(s: Services, life: Lifecycle): void {
   step('comando argus', () => s.cli.start())
   step('atualizações', () => s.updater.start())
   step('versão do Claude Code', () => s.claudeVersion.start())
+  // Dados de uso anônimos (Configurações > Geral); só no app instalado.
+  step('dados de uso', () => telemetry.start(telemetrySources(s)))
   // Ícone da barra de menus desligado por ora, mesmo para quem ligou: com conversa rodando, o
   // spinner trocava a imagem a cada 90 ms e mantinha o WindowServer ocupado. A barra de baixo mostra
   // o mesmo. Para voltar: s.tray.set(loadAppSettings().menuBarIcon) e o MenuBarIconRow nos ajustes.

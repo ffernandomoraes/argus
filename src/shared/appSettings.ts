@@ -17,6 +17,8 @@ export type AppSettings = {
   mascotSpot: { x: number; y: number } | null
   // Número aleatório desta instalação: conta quantas máquinas tiveram cada erro, sem dizer de quem.
   installId?: string
+  // Dados de uso anônimos (ver main/telemetry). Ausente vale ligado: quem atualiza também começa ligado.
+  usageStats?: boolean
   // Prazos da limpeza do disco (aba Armazenamento) e o que a última liberou (ver main/storage).
   // O prazo das conversas não fica aqui: é o do settings.json do Claude Code (ver main/storage/retention.ts).
   storage?: Partial<Omit<StorageSettings, 'conversationDays'>>

@@ -7,3 +7,8 @@ native/speech/build
 # Tipos gerados pelo wrangler (cd relay && wrangler types)
 relay/worker-configuration.d.ts
 relay/.wrangler/
+
+# Tipos gerados pelo wrangler (cd telemetry && wrangler types)
+telemetry/worker-configuration.d.ts
+telemetry/.wrangler/
+telemetry/.dev.vars

@@ -16,6 +16,7 @@ import { QueuedSends } from './queuedSends'
 import { setRemoteControl } from './remote'
 import { flagChanges, mergeSettings, openingFlags, toPermissionMode } from './settings'
 import { newReader, readMessage, type Reader, type SessionState } from './stream'
+import { telemetry } from '../telemetry'
 
 // Pedido de renomear do SDK que não está nos tipos (ver rename).
 type RenamableQuery = Query & { renameSession(title: string, sessionId?: string): Promise<void> }
@@ -73,6 +74,8 @@ export class ChatSession {
   private closing = false
   // Parada com mensagem sua que continua na fila do Claude: o fim do pedido parado emenda no seguinte.
   private resumes = false
+  // Aberta retomando uma conversa que já existia (ver countUsage).
+  private resumed = false
   // Configurações em vigor, para mandar o ultracode junto quando o esforço muda (ver flagChanges).
   private settings: ChatSettings
   private inbox = new Inbox()
@@ -100,6 +103,7 @@ export class ChatSession {
   ) {
     this.keys.add(key)
     this.cwd = req.cwd
+    this.resumed = !!req.sessionId
     this.account = resolveAccount(req.account)
     this.settings = req.settings
     const s = req.settings
@@ -407,6 +411,7 @@ export class ChatSession {
 
   private read(m: SDKMessage): void {
     this.queued.touch()
+    countUsage(m, this.resumed)
     const step = readMessage(m, this.state, this.reader, {
       now: Date.now(),
       waiting: this.permissions.size,
@@ -449,4 +454,26 @@ export class ChatSession {
       this.dropPartialSoon()
     }
   }
+}
+
+// Dados de uso (ver main/telemetry): o nome das ferramentas chamadas e os tokens de cada pedido.
+function countUsage(m: SDKMessage, resumed: boolean): void {
+  if (m.type === 'assistant') {
+    for (const c of (m.message.content ?? []) as { type?: string; name?: string }[]) {
+      if (c?.type === 'tool_use' && typeof c.name === 'string') telemetry.toolUsed(c.name)
+    }
+    return
+  }
+  if (m.type !== 'result') return
+  const totals = Object.fromEntries(
+    Object.entries(m.modelUsage ?? {}).map(([model, u]) => [
+      model,
+      { input: u.inputTokens, output: u.outputTokens, cacheRead: u.cacheReadInputTokens, cacheWrite: u.cacheCreationInputTokens, costUsd: u.costUSD }
+    ])
+  )
+  const u = m.usage
+  const turn = u
+    ? { input: u.input_tokens ?? 0, output: u.output_tokens ?? 0, cacheRead: u.cache_read_input_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0, costUsd: 0 }
+    : null
+  telemetry.claudeResult(m.session_id, totals, resumed, turn)
 }

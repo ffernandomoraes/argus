@@ -3,6 +3,7 @@ import { Group, Row, Segmented, Switch } from '../controls'
 import { setPreferences, usePreference } from '../preferences'
 import { CliRow } from './CliRow'
 import { LanguageRow } from './LanguageRow'
+import { UsageStatsRow } from './UsageStatsRow'
 import { WslRow } from './WslRow'
 import { tr } from '../../i18n'
 
@@ -34,6 +35,7 @@ export function GeneralSection() {
       </Row>
       <CliRow />
       <WslRow />
+      <UsageStatsRow />
     </Group>
   )
 }

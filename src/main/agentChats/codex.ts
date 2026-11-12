@@ -9,6 +9,7 @@ import { reportCodexRateLimits } from '../usageMonitor/codex'
 import type { CodexSnapshot } from '../usageMonitor/codexParse'
 import { fromUnified } from './diff'
 import type { Driver, DriverEvents, PromptInput, ToolEvent } from './driver'
+import { telemetry } from '../telemetry'
 
 // Codex pelo app-server (JSON-RPC na entrada e saída padrão), o mesmo caminho da extensão do VS
 // Code. Uma conversa do Argus = uma thread do Codex; cada envio = um turn. Os eventos chegam como
@@ -29,6 +30,14 @@ function policies(mode: string, writableRoots: string[] = []): { approvalPolicy:
   }
 }
 
+// Total de tokens da conversa, como o Codex manda (inputTokens já inclui os do cache).
+type CodexTokens = { inputTokens?: number; cachedInputTokens?: number; outputTokens?: number }
+
+const codexTotals = (t: CodexTokens) => {
+  const cached = t.cachedInputTokens ?? 0
+  return { input: Math.max(0, (t.inputTokens ?? 0) - cached), output: t.outputTokens ?? 0, cacheRead: cached, cacheWrite: 0, costUsd: 0 }
+}
+
 const clip = (s: string, n = 120) => (s.length > n ? s.slice(0, n) + '…' : s)
 
 export class CodexDriver implements Driver {
@@ -41,6 +50,8 @@ export class CodexDriver implements Driver {
   private changes = new Map<string, ToolEvent>()
   // Conta que abriu de fato (a padrão, quando a conversa não diz qual): os limites vão para ela.
   private accountId = ''
+  // Modelo que o Codex diz estar usando (para os dados de uso).
+  private model = 'default'
 
   constructor(
     private account: string,
@@ -67,9 +78,11 @@ export class CodexDriver implements Driver {
     // permissão de escrever nelas (no turn/start).
     const common = { cwd: this.cwd, approvalPolicy: p.approvalPolicy, sandbox: p.sandbox, ...(this.settings.model && { model: this.settings.model }) }
     const res = nativeId
-      ? await rpc.request<{ thread: { id: string } }>('thread/resume', { threadId: nativeId, excludeTurns: true, ...common })
-      : await rpc.request<{ thread: { id: string } }>('thread/start', common)
+      ? await rpc.request<{ thread: { id: string }; model?: string }>('thread/resume', { threadId: nativeId, excludeTurns: true, ...common })
+      : await rpc.request<{ thread: { id: string }; model?: string }>('thread/start', common)
     this.threadId = res.thread.id
+    this.model = res.model || this.settings.model || 'default'
+    if (nativeId) telemetry.resumedCodex.add(this.threadId)
     return this.threadId
   }
 
@@ -77,6 +90,7 @@ export class CodexDriver implements Driver {
     const rpc = this.rpc
     if (!rpc) throw new Error(tr('O Codex não abriu.', 'Codex didn’t open.'))
     this.lastError = null
+    telemetry.agentTurn('codex', this.settings.model || this.model)
     const p = policies(this.settings.permissionMode, this.folders.map(expandHome))
     const done = new Promise<Turn>((resolve) => (this.turnDone = resolve))
     const res = await rpc.request<{ turn: Turn }>('turn/start', {
@@ -123,7 +137,8 @@ export class CodexDriver implements Driver {
       case 'item/completed':
         return this.itemCompleted(p.item as Item)
       case 'thread/tokenUsage/updated': {
-        const u = p.tokenUsage as { last?: { totalTokens: number; outputTokens: number }; modelContextWindow?: number | null }
+        const u = p.tokenUsage as { last?: { totalTokens: number; outputTokens: number }; total?: CodexTokens; modelContextWindow?: number | null }
+        if (u.total) telemetry.codexUsage(this.threadId, this.settings.model || this.model, codexTotals(u.total))
         const window = u.modelContextWindow
         return this.events.usage({
           contextPercent: window && u.last ? Math.min(100, Math.round((u.last.totalTokens / window) * 100)) : undefined,

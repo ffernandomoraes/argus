@@ -1,0 +1,19 @@
+# Dados de uso anônimos do Argus (ver src/index.ts e src/main/telemetry no app).
+# Publicar: cf-pessoal wrangler deploy (nesta pasta). Banco: cf-pessoal wrangler d1 migrations apply argus-telemetry --remote
+# Senha do painel: cf-pessoal wrangler secret put DASHBOARD_PASSWORD
+name = "argus-telemetry"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "argus-telemetry"
+database_id = "e02ad04b-0e4c-4cab-bc0c-9b0ffb1e9061"
+migrations_dir = "migrations"
+
+# O painel (src/dashboard.html) entra no Worker como texto.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true

@@ -5,8 +5,10 @@ import { canvasPages, setWindowBoard, windowBoard } from './app/canvasRegistry'
 import { CanvasHub } from './canvasHub'
 import { trashCanvasFile } from './canvasStore'
 import { boardFile, loadBoards, saveBoards } from './boardsStore'
+import { telemetry } from './telemetry'
 
 type SavedNode = { id?: unknown; type?: unknown; data?: { path?: unknown; sessionId?: unknown } }
+type StatsNode = { type?: unknown; data?: { path?: unknown; worktree?: unknown; folders?: unknown } }
 
 // Pastas e conversas soltas de um canvas, para o menu dizer se alguma está trabalhando.
 function summarize(entry: BoardEntry, nodes: unknown): BoardSummary {
@@ -110,7 +112,30 @@ export class Boards {
     this.persist()
   }
 
+  // Só números, para os dados de uso (ver telemetry): workspaces e quantos blocos de cada tipo há
+  // em todos. Pasta conta uma vez por workspace, mesmo repetida no canvas; tarefa isolada (worktree)
+  // e card de várias pastas não contam como pasta.
+  stats(): { workspaces: number; folders: number; worktrees: number; nodes: Record<string, number> } {
+    const nodes: Record<string, number> = {}
+    let folders = 0
+    let worktrees = 0
+    for (const entry of this.entries) {
+      const paths = new Set<string>()
+      const saved = this.hubs.get(entry.id)?.load()
+      for (const n of Array.isArray(saved) ? (saved as StatsNode[]) : []) {
+        if (typeof n?.type !== 'string') continue
+        nodes[n.type] = (nodes[n.type] ?? 0) + 1
+        if (n.type !== 'project') continue
+        if (n.data?.worktree) worktrees++
+        else if (!n.data?.folders && typeof n.data?.path === 'string') paths.add(n.data.path)
+      }
+      folders += paths.size
+    }
+    return { workspaces: this.entries.length, folders, worktrees, nodes }
+  }
+
   create(name: string): string {
+    telemetry.workspaceCreated()
     const entry = { id: randomUUID(), name: name.trim() }
     this.entries.push(entry)
     this.open(entry)

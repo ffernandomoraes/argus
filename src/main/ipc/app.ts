@@ -20,6 +20,8 @@ import { isInterfaceZoom } from '../../shared/interfaceZoom'
 import { CLIPBOARD_COMMANDS } from '../../shared/ipc'
 import { setInterfaceZoom } from '../app/windowChrome'
 import { fetchReleaseNotes } from '../updater/notes'
+import { telemetry } from '../telemetry'
+import { telemetrySources } from '../telemetry/sources'
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
 export function registerAppIpc(s: Services, life: Lifecycle): void {
@@ -71,6 +73,10 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   })
   handle('settings:notifications', (_e, enabled) => saveAppSettings({ notifications: enabled }))
   handle('settings:notificationSound', (_e, enabled) => saveAppSettings({ notificationSound: enabled }))
+  handle('settings:usageStats', (_e, enabled) => {
+    telemetry.setEnabled(enabled, telemetrySources(s))
+    return loadAppSettings()
+  })
   // Idioma trocado: menu e ícone do sistema refeitos aqui; as janelas recarregam (renderer/i18n).
   handle('settings:language', (_e, pref) => {
     const saved = saveAppSettings({ language: pref })

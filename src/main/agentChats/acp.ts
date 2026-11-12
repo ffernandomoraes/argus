@@ -9,6 +9,7 @@ import { trustGemini } from '../workspaces'
 import { JsonRpcProcess, RpcError } from '../providers/rpc'
 import { fromTexts } from './diff'
 import type { Driver, DriverEvents, PermissionReply, PromptInput, ToolEvent } from './driver'
+import { telemetry } from '../telemetry'
 
 // Gemini (`gemini --acp`) e Cursor (`agent acp`) pelo Agent Client Protocol, o protocolo aberto do
 // Zed para editores falarem com agentes (agentclientprotocol.com). JSON-RPC na entrada e saída
@@ -122,6 +123,8 @@ export class AcpDriver implements Driver {
   async prompt(input: PromptInput): Promise<void> {
     const rpc = this.rpc
     if (!rpc) throw new Error(tr('O agente não abriu.', 'The agent didn’t open.'))
+    // Dados de uso: o Gemini e o Cursor não dizem quantos tokens gastaram, só o pedido conta.
+    telemetry.agentTurn(this.provider, this.settings.model || this.fallbackModel() || this.info?.models?.currentModelId || '')
     try {
       const res = await rpc.request<{ stopReason: string }>(
         'session/prompt',

@@ -348,6 +348,7 @@ const api: Api = {
     setMenuBarIcon: (on) => invoke('settings:menuBarIcon', on),
     setNotifications: (on) => invoke('settings:notifications', on),
     setNotificationSound: (on) => invoke('settings:notificationSound', on),
+    setUsageStats: (on) => invoke('settings:usageStats', on),
     setLanguage: (pref) => invoke('settings:language', pref)
   },
   updates: {

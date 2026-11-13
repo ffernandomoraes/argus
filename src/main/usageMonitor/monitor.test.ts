@@ -497,6 +497,28 @@ describe('UsageMonitor', () => {
     })
   })
 
+  // O login se perde sem nenhuma conversa rodando: quem cuida das contas fica sabendo pela leitura do
+  // uso, uma vez por parada (não a cada leitura), e a conta deixa de aparecer como conectada.
+  it('login apagado pelo Claude Code: avisa quem cuida das contas, uma vez só', async () => {
+    const signedOut = vi.fn()
+    monitor = new UsageMonitor('main', (u) => updates.push(u), undefined, { onSignedOut: signedOut })
+    fake.reads.push(login(60 * MIN))
+    fake.fetch.mockImplementationOnce(async () => ok())
+    await startWithRead()
+    expect(signedOut).not.toHaveBeenCalled()
+
+    fake.fetch.mockImplementation(async () => new Response('', { status: 401 }))
+    fake.reads.push(login(60 * MIN), ended(), ended(), ended(), ended())
+    fake.launches = true
+    fake.answer = noLimitsAnswer
+    await vi.advanceTimersByTimeAsync(17 * MIN)
+    expect(updates.at(-1)?.failure?.reason).toBe('signed_out')
+    expect(signedOut).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(15 * MIN)
+    expect(signedOut).toHaveBeenCalledTimes(1)
+  })
+
   // ARGUS-A, 2026-11: uma conta recebia 403 em toda tentativa; o monitor insistia, ia para o `claude`
   // de reserva e avisava o Sentry em toda abertura.
   it('recusa da conta (403) espera 1 hora, sem claude de reserva e sem aviso ao Sentry', async () => {

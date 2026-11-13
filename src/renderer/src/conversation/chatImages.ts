@@ -7,6 +7,18 @@ const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
 
 export const isSendableImage = (file: File) => IMAGE_TYPES.includes(file.type)
 
+// Imagens de uma mensagem já gravada (data URLs, como sessions.images devolve) de volta a arquivos,
+// para irem de novo como as coladas na caixa de escrever (o "Reenviar"; ver ChatView). Decodificadas
+// aqui mesmo, sem fetch: a política de conteúdo da janela não precisa liberar data: para isso.
+export function imageFiles(urls: string[]): File[] {
+  return urls.flatMap((url, i) => {
+    const m = /^data:([^;,]+);base64,(.*)$/s.exec(url)
+    if (!m) return []
+    const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0))
+    return [new File([bytes], `imagem-${i + 1}.${m[1].split('/')[1] ?? 'png'}`, { type: m[1] })]
+  })
+}
+
 function toBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

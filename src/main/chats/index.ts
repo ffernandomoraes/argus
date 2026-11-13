@@ -26,6 +26,7 @@ type Events = {
   ended: (s: AnySession) => void
   limit: (s: AnySession, limit: 'memory' | 'disk', busy: boolean) => void
   rateLimits: (s: ChatSession, info: unknown) => void
+  loginLost: (s: ChatSession) => void
 }
 
 // O que o registro conta para fora quando um limite do computador encerra algo (o aviso da barra de
@@ -37,6 +38,9 @@ export type ChatHooks = {
   limit?: (cwd: string, sessionId: string | undefined, limit: 'memory' | 'disk', busy: boolean) => void
   // Limites da conta do Claude que vieram numa resposta da conversa (para a barra de uso).
   rateLimits?: (account: string, info: unknown) => void
+  // O Claude Code recusou um pedido da conta por falta de login: o login dela se perdeu (apagado,
+  // recusado pelo servidor, vencido). O resto do app (cartão da conta, barra, menus) fica sabendo.
+  loginLost?: (account: string) => void
 }
 
 // Quem roda a conversa: uma já gravada continua com o agente dela, seja qual for o do grupo agora;
@@ -112,6 +116,10 @@ export class Chats {
     // o login de agora (ver loginChanged).
     rateLimits: (s, info) => {
       if (sharesAppLogin(s.cwd) && !this.oldLogin.has(s)) this.hooks.rateLimits?.(s.account, info)
+    },
+    // A conversa aberta com um login já trocado (ver loginChanged) não diz nada do login de agora.
+    loginLost: (s) => {
+      if (!this.oldLogin.has(s)) this.hooks.loginLost?.(s.account)
     }
   }
 

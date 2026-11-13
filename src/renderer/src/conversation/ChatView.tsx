@@ -1,6 +1,7 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { AgentDef } from '../../../shared/agents'
+import type { AttachedFile } from '../../../shared/attachedFiles'
 import type { ChatState, InterruptReason, PermissionAnswer } from '../../../shared/chat'
 import type { SessionStatus } from '../canvas/types'
 import { useStableCallback } from '../lib/useStableCallback'
@@ -12,6 +13,7 @@ import { usePreference } from '../settings/preferences'
 import { SuggestionChip } from './composer/SuggestionChip'
 import { ChatSearchBox } from './search/ChatSearchBox'
 import { useChatSearch } from './search/useChatSearch'
+import { imageFiles } from './chatImages'
 import { CONTINUE_TEXT, FreedNotice, InterruptedNotice } from './composer/InterruptedNotice'
 import type { SessionSettings } from './SessionSettings'
 import { ChatPlaceholder } from './timeline/ChatPlaceholder'
@@ -42,7 +44,8 @@ export type ChatViewProps = {
   live: ChatState | null
   // Envia a mensagem. Se devolver uma promessa que falha, o balão sai e o texto e os anexos
   // voltam para o campo, com o aviso.
-  onSend: (text: string, files: File[]) => void | Promise<void>
+  // attached: arquivos já no disco, pelo caminho (o "Reenviar" de uma mensagem com anexos).
+  onSend: (text: string, files: File[], attached?: AttachedFile[]) => void | Promise<void>
   // Imagens de uma mensagem já gravada no histórico, para o preview.
   loadImages?: (messageId: string) => Promise<string[]>
   // /mcp abre a lista de servidores aqui no app, em vez de ir para o Claude.
@@ -146,6 +149,17 @@ export const ChatView = memo(function ChatView({
     if (status === 'running' || status === 'needs-you') onInterrupt()
     submit({ text, typed: text, files: [] }).catch(() => composer.current?.restore(text, [], LOST))
   })
+  // O "Reenviar" da linha do erro, depois de entrar de novo na conta (ver ErrorRow): a última
+  // mensagem sua vai de novo, inteira. As imagens são lidas do histórico; os outros arquivos vão pelo
+  // mesmo caminho no disco. Envio que falha devolve o texto e as imagens ao campo.
+  const resend = useStableCallback(async () => {
+    const last = [...messages].reverse().find((m) => m.role === 'user')
+    if (!last || last.role !== 'user') return
+    const pictures = last.images && loadImages ? await loadImages(last.id).then(imageFiles, () => []) : []
+    submit({ text: last.text, typed: last.text, files: pictures, attached: last.files }).catch(() =>
+      composer.current?.restore(last.text, pictures, LOST)
+    )
+  })
   const items = useTimeline({
     messages,
     waiting: sends.waiting,
@@ -155,6 +169,7 @@ export const ChatView = memo(function ChatView({
     viewFor: images.viewFor,
     readsImages: !!loadImages,
     onAnswer: answer,
+    onResend: readOnly ? undefined : resend,
     onEdit: edit
   })
 
@@ -195,7 +210,7 @@ export const ChatView = memo(function ChatView({
     const id = sends.add(message)
     follow()
     try {
-      await onSend(message.text, message.files)
+      await onSend(message.text, message.files, message.attached)
     } catch (err) {
       sends.drop(id)
       throw err

@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { AttachedFile } from '../../../../shared/attachedFiles'
 import type { ChatState } from '../../../../shared/chat'
 import { isSendableImage } from '../chatImages'
 import type { Message } from '../types'
@@ -9,7 +10,9 @@ import { inQueue, isDelivered, queuedSends, type PendingSend } from './optimisti
 const DEADLINE_MS = 15_000
 const NONE: PendingSend[] = []
 
-export type OutgoingMessage = { text: string; typed: string; files: File[] }
+// attached: arquivos que já estão no disco, pelo caminho (o "Reenviar" de uma mensagem que tinha
+// anexos; ver ChatView).
+export type OutgoingMessage = { text: string; typed: string; files: File[]; attached?: AttachedFile[] }
 
 // Balões provisórios das mensagens enviadas. Saem quando a mensagem chega ao histórico, quando o
 // pedido termina sem ela na fila do Claude (comando de barra não volta como mensagem sua), quando o envio falha (drop) ou

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { MAIN_ACCOUNT } from '../../../../shared/auth'
+import { MAIN_ACCOUNT, reloginMethod } from '../../../../shared/auth'
+import { startRelogin } from '../../auth/LoginModal'
 import { LoginPanel } from '../../auth/LoginPanel'
 import { useAuth } from '../../auth/useAuth'
 import { ConfirmDialog, type ConfirmRequest } from '../../canvas/ConfirmDialog'
@@ -69,8 +70,10 @@ export function AccountsSection() {
                   `Sign in with the account that will replace ${account.name}, or with the same one to renew access.`
                 )}
         </p>
+        {/* Numa conta da lista, o login já começou pelo jeito de sempre (ver relogin); conta nova escolhe. */}
         <LoginPanel
           login={login}
+          direct={account ? reloginMethod(account) : undefined}
           onStart={(method) => (account ? window.api.auth.login(account.id, method, active.distro) : window.api.auth.add(method))}
           onCancel={() => setTarget(null)}
         />
@@ -98,7 +101,7 @@ export function AccountsSection() {
             key={account.id}
             account={account}
             auth={auth}
-            onLogin={(distro) => setTarget({ accountId: account.id, distro })}
+            onLogin={(distro) => setTarget(startRelogin(auth, account, distro))}
             onConfirm={setConfirm}
           />
         ))}

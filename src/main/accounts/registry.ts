@@ -1,10 +1,10 @@
-import { MAIN_ACCOUNT } from '../../shared/auth'
+import { MAIN_ACCOUNT, type LoginMethod } from '../../shared/auth'
 import { errorMessage } from '../lib/errors'
 import { quarantine, readJsonFile, writeJsonAtomicSync } from '../lib/jsonFile'
 import { ID, registryFile } from './paths'
 
 // A lista de contas do app (accounts.json, na pasta de dados): quais existem além da principal, os
-// apelidos e a padrão.
+// apelidos, a padrão e como cada uma entrou da última vez.
 
 type Registry = {
   // Só as que não são a principal, na ordem em que entraram.
@@ -12,6 +12,10 @@ type Registry = {
   // Apelidos escolhidos, inclusive o da principal.
   names: Record<string, string>
   defaultId: string
+  // Como cada conta entrou da última vez (assinatura do Claude ou Console), inclusive a principal:
+  // com o login perdido, o "Entrar" abre o navegador direto nesse jeito, sem perguntar. Sai quando a
+  // pessoa sai da conta pelo app: aí o login não se perdeu, e a conta não aparece como sem login.
+  methods: Record<string, LoginMethod>
 }
 
 let registry: Registry | null = null
@@ -21,7 +25,9 @@ let readable = true
 // Contas novas esperando o login terminar: já têm pasta, mas ainda não entram na lista.
 export const pending = new Set<string>()
 
-const empty = (): Registry => ({ accounts: [], names: {}, defaultId: MAIN_ACCOUNT })
+const empty = (): Registry => ({ accounts: [], names: {}, defaultId: MAIN_ACCOUNT, methods: {} })
+
+const isMethod = (v: unknown): v is LoginMethod => v === 'claudeai' || v === 'console'
 
 // Só o formato esperado: ids de 8 caracteres e apelidos em texto. O resto é ignorado.
 function validate(saved: unknown): Registry {
@@ -33,7 +39,11 @@ function validate(saved: unknown): Registry {
     s.names && typeof s.names === 'object'
       ? Object.fromEntries(Object.entries(s.names).filter((e): e is [string, string] => typeof e[1] === 'string'))
       : {}
-  return { accounts, names, defaultId: typeof s.defaultId === 'string' ? s.defaultId : MAIN_ACCOUNT }
+  const methods =
+    s.methods && typeof s.methods === 'object'
+      ? Object.fromEntries(Object.entries(s.methods).filter((e): e is [string, LoginMethod] => isMethod(e[1])))
+      : {}
+  return { accounts, names, defaultId: typeof s.defaultId === 'string' ? s.defaultId : MAIN_ACCOUNT, methods }
 }
 
 export function reg(): Registry {
@@ -101,7 +111,29 @@ export function forgetAccount(id: string): void {
   const r = reg()
   r.accounts = r.accounts.filter((a) => a !== id)
   delete r.names[id]
+  delete r.methods[id]
   if (r.defaultId === id) r.defaultId = MAIN_ACCOUNT
+  save()
+}
+
+// Como a conta entrou da última vez (ver Registry.methods); nada se o app ainda não viu ela logada.
+export function loginMethod(id: string): LoginMethod | undefined {
+  return reg().methods[id]
+}
+
+// Grava só o que mudou: chamado a cada conferência de login.
+export function rememberLoginMethod(id: string, method: LoginMethod): void {
+  const r = reg()
+  if (r.methods[id] === method) return
+  r.methods[id] = method
+  save()
+}
+
+// A pessoa saiu da conta pelo app (ver Registry.methods).
+export function forgetLoginMethod(id: string): void {
+  const r = reg()
+  if (!(id in r.methods)) return
+  delete r.methods[id]
   save()
 }
 

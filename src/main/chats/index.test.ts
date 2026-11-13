@@ -12,6 +12,7 @@ const fake = vi.hoisted(() => {
     identified: (s: FakeSession, id: string) => void
     ended: (s: FakeSession) => void
     rateLimits: (s: FakeSession, info: unknown) => void
+    loginLost: (s: FakeSession) => void
   }
   class FakeSession {
     readonly keys = new Set<string>()
@@ -322,5 +323,28 @@ describe('Chats: limites que chegam nas respostas', () => {
     const other = openChat('b', { account: 'ab12cd34' })
     other.events.rateLimits(other, { status: 'allowed' })
     expect(rateLimits).toHaveBeenCalledTimes(1)
+  })
+})
+
+// O login se perde com o app aberto (apagado pelo Claude Code, recusado pelo servidor, vencido): a
+// conversa recusada avisa, e a conta é conferida na hora.
+describe('Chats: conversa recusada por falta de login', () => {
+  it('avisa qual conta perdeu o login', () => {
+    const loginLost = vi.fn()
+    const { openChat } = setup({ loginLost })
+    const s = openChat('a', { account: 'ab12cd34' })
+    s.events.loginLost(s)
+    expect(loginLost).toHaveBeenCalledWith('ab12cd34')
+  })
+
+  // Login trocado com a conversa trabalhando: a recusa é do login antigo, não do de agora.
+  it('de uma conversa aberta antes de o login da conta trocar não avisa', () => {
+    const loginLost = vi.fn()
+    const { chats, openChat } = setup({ loginLost })
+    const old = openChat('a')
+    old.busy = true
+    chats.loginChanged('main')
+    old.events.loginLost(old)
+    expect(loginLost).not.toHaveBeenCalled()
   })
 })

@@ -24,6 +24,8 @@ export type LiveOptions = {
   // Mesmo objeto por mensagem; a que está a caminho traz a leitura das próprias imagens.
   viewFor: (id: string, read?: () => Promise<string[]>) => ImageView
   onAnswer: (id: string, answer: PermissionAnswer) => void
+  // Manda de novo a mensagem que falhou (o "Reenviar" depois de entrar de novo; ver ErrorRow).
+  onResend?: () => void
 }
 
 type LiveItemsOptions = LiveOptions & {
@@ -80,7 +82,7 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
     )
     items.push(stepItem('working', 'bg-running animate-pulse', row))
   }
-  if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <ErrorRow error={o.live.error} />))
+  if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <ErrorRow error={o.live.error} loginNeeded={o.live.loginNeeded} onResend={o.onResend} />))
   if (o.status === 'needs-you' && !o.live?.permissions.length) {
     const notice = (
       <div className="rounded-lg border border-ask/40 bg-ask/10 px-3 py-2 text-[13px] text-text">

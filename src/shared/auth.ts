@@ -13,6 +13,18 @@ export type Account = {
   userName?: string
   organization?: string
   subscriptionType?: string
+  // Até quando o login vale (ms), como o `auth status` informa (loginExpiresAt): nos planos com prazo
+  // de sessão, renovar não adia essa data, e passada ela o Claude Code apaga o login ("this login
+  // reached its time limit"; conferido na 2.1.322). Ausente: sem prazo conhecido.
+  loginEndsAt?: number
+}
+
+// Faltando menos que isso para o login terminar, o app avisa (cartão da conta e painel dos limites).
+export const LOGIN_WARN_MS = 2 * 24 * 60 * 60_000
+
+// O login da conta termina logo (ou já passou do prazo)? Só com login e prazo conhecido.
+export function loginEndingSoon(status: Account | null | undefined, now: number): boolean {
+  return !!status?.loggedIn && !!status.loginEndsAt && status.loginEndsAt - now < LOGIN_WARN_MS
 }
 
 // A principal é a conta do ~/.claude, a mesma do terminal e do VS Code. As outras moram cada uma
@@ -35,6 +47,20 @@ export type ClaudeAccount = {
   status: Account | null
   // Só no Windows com o Claude Code instalado também numa distro do WSL que não é a do app.
   wsl?: WslLogin[]
+  // Como a conta entrou da última vez; ausente se o app ainda não a viu logada, ou se a pessoa saiu
+  // dela pelo app (ver lostLogin).
+  loginMethod?: LoginMethod
+}
+
+// Como entrar de novo numa conta: do mesmo jeito da última vez; sem saber, pela assinatura do Claude.
+export const reloginMethod = (account: Pick<ClaudeAccount, 'loginMethod'>): LoginMethod => account.loginMethod ?? 'claudeai'
+
+// A conta perdeu o login: está sem login e ninguém saiu dela pelo app. As extras só existem para
+// serem usadas (entram na lista já logadas), então sem login é login perdido. A principal, só se o
+// app já a viu logada: sair pelo app tira a marca, e a conta não fica cobrando um login que a
+// pessoa não quer.
+export function lostLogin(account: Pick<ClaudeAccount, 'id' | 'status' | 'loginMethod'>): boolean {
+  return account.status?.loggedIn === false && (account.id !== MAIN_ACCOUNT || !!account.loginMethod)
 }
 
 // starting: pedindo o link ao `claude`. waiting: navegador aberto, esperando a pessoa terminar.

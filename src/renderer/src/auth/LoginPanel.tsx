@@ -15,7 +15,7 @@ function Option({
   onClick
 }: {
   title: ReactNode
-  note: string
+  note?: string
   primary?: boolean
   disabled?: boolean
   onClick: () => void
@@ -31,7 +31,7 @@ function Option({
       >
         {title}
       </button>
-      <p className="mt-1.5 text-center text-xs text-faint">{note}</p>
+      {note && <p className="mt-1.5 text-center text-xs text-faint">{note}</p>}
     </div>
   )
 }
@@ -118,33 +118,81 @@ function CodeInput({ code, setCode, submit }: { code: string; setCode: (v: strin
 
 // Escolha da forma de entrar e acompanhamento do login. Usado na tela de boas-vindas e em Contas;
 // onStart diz em qual conta entrar (ou se é uma nova).
+// direct: entrar de novo numa conta que já se sabe como entra (ver reloginMethod). Quem mostra o
+// painel já começou o login desse jeito: o navegador abriu, e o painel só acompanha, com as outras
+// formas num link ("Entrar de outro jeito"). Sem direct, as formas aparecem para escolher.
 export function LoginPanel({
   login,
   onStart,
-  onCancel
+  onCancel,
+  direct
 }: {
   login: LoginState
   onStart: (method: LoginMethod) => void
   onCancel?: () => void
+  direct?: LoginMethod
 }) {
+  // A pessoa pediu as outras formas de entrar (ver direct).
+  const [choosing, setChoosing] = useState(false)
+  // O jeito do login em andamento, para o "Tentar de novo" (o estado de erro não traz).
+  const [method, setMethod] = useState(direct)
   const busy = login.status === 'starting' || login.status === 'waiting'
   const cancel = () => {
     if (login.status !== 'idle') window.api.auth.cancel()
     onCancel?.()
   }
+  const start = (m: LoginMethod) => {
+    setMethod(m)
+    setChoosing(false)
+    onStart(m)
+  }
 
+  if (direct && !choosing && login.status !== 'idle') {
+    const other = (
+      <button onClick={() => setChoosing(true)} className="self-center text-xs text-muted underline hover:text-text">
+        {tr('Entrar de outro jeito', 'Sign in another way')}
+      </button>
+    )
+    return (
+      <div className="flex flex-col gap-4">
+        {login.status === 'waiting' ? (
+          <Waiting automaticUrl={login.automaticUrl} manualUrl={login.manualUrl} />
+        ) : login.status === 'starting' ? (
+          <div className="flex items-center gap-2 text-sm text-text">
+            <Loader2 size={14} className="animate-spin text-muted" />
+            {tr('Abrindo o navegador…', 'Opening the browser…')}
+          </div>
+        ) : (
+          <>
+            <p role="alert" className="text-xs leading-relaxed text-red-400">
+              {tr('Não deu para entrar:', 'Could not sign in:')} {login.message}
+            </p>
+            <Option primary onClick={() => start(method ?? direct)} title={tr('Tentar de novo', 'Try again')} />
+          </>
+        )}
+        {other}
+        <button onClick={cancel} className="self-center rounded-md px-3 py-1 text-xs text-muted hover:bg-surface-2 hover:text-text">
+          {tr('Cancelar', 'Cancel')}
+        </button>
+      </div>
+    )
+  }
+
+  // Escolhendo outra forma com o login anterior ainda aberto: as opções ficam liberadas, e a escolhida
+  // toma o lugar dele.
+  const locked = busy && !choosing
   return (
     <div className="flex flex-col gap-4">
-      {login.status === 'waiting' ? (
+      {login.status === 'waiting' && !choosing ? (
         <Waiting automaticUrl={login.automaticUrl} manualUrl={login.manualUrl} />
       ) : (
         <>
           <Option
             primary
-            disabled={busy}
-            onClick={() => onStart('claudeai')}
+            disabled={locked}
+            onClick={() => start('claudeai')}
             title={
-              login.status === 'starting' && login.method === 'claudeai' ? (
+              !choosing && login.status === 'starting' && login.method === 'claudeai' ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
                 tr('Assinatura do Claude', 'Claude subscription')
@@ -153,10 +201,10 @@ export function LoginPanel({
             note={tr('Use seu plano Pro, Max, Team ou Enterprise.', 'Use your Pro, Max, Team or Enterprise plan.')}
           />
           <Option
-            disabled={busy}
-            onClick={() => onStart('console')}
+            disabled={locked}
+            onClick={() => start('console')}
             title={
-              login.status === 'starting' && login.method === 'console' ? (
+              !choosing && login.status === 'starting' && login.method === 'console' ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
                 'Anthropic Console'
@@ -165,7 +213,7 @@ export function LoginPanel({
             note={tr('Pague pelo uso da API com sua conta do Console.', 'Pay for API usage with your Console account.')}
           />
           <Option
-            disabled={busy}
+            disabled={locked}
             onClick={() => window.api.auth.open(THIRD_PARTY_URL)}
             title={
               <>

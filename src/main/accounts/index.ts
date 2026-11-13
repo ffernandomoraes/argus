@@ -25,6 +25,9 @@ export {
   addAccount,
   customName,
   defaultAccount,
+  forgetLoginMethod,
+  loginMethod,
+  rememberLoginMethod,
   renameAccount,
   resolveAccount,
   setDefaultAccount

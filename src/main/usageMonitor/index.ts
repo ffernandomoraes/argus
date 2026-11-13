@@ -33,7 +33,9 @@ export class UsageMonitors {
     private onInfo: (account: string, info: ClaudeInfo) => void,
     // O login de uma conta foi trocado por fora (ver loginWatch.ts): o app confere a conta de novo.
     // inWsl: só o login dela dentro de uma distro do WSL.
-    onLoginChanged: (account: string, inWsl: boolean) => void = () => {}
+    onLoginChanged: (account: string, inWsl: boolean) => void = () => {},
+    // A leitura do uso achou o login de uma conta apagado (ver MonitorOptions.onSignedOut).
+    private onSignedOut: (account: string) => void = () => {}
   ) {
     this.logins = new LoginWatch(onLoginChanged)
     this.codex = new CodexUsageMonitors(onUpdate, this.saved)
@@ -88,7 +90,7 @@ export class UsageMonitors {
           this.onUpdate(account, usage)
         },
         (info) => this.onInfo(account, info),
-        { sameLogin: () => this.logins.same(account, account, this.emails.get(account)) }
+        { sameLogin: () => this.logins.same(account, account, this.emails.get(account)), onSignedOut: () => this.onSignedOut(account) }
       )
       this.monitors.set(account, monitor)
       monitor.start()

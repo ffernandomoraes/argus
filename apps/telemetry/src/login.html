@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argus - entrar</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f3; --surface: #ffffff; --border: #e6e6e3; --text: #0b0b0b; --text-2: #52514e; --text-3: #85847f;
+  --field: #ffffff; --field-border: #d6d6d2; --accent: #2a78d6; --accent-ring: rgba(42, 120, 214, .25); --danger: #c93a3a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111110; --surface: #1a1a19; --border: #2b2b29; --text: #f0efec; --text-2: #c3c2b7; --text-3: #8d8c85;
+    --field: #232321; --field-border: #383836; --accent: #3987e5; --accent-ring: rgba(57, 135, 229, .3); --danger: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --surface: #1a1a19; --border: #2b2b29; --text: #f0efec; --text-2: #c3c2b7; --text-3: #8d8c85;
+  --field: #232321; --field-border: #383836; --accent: #3987e5; --accent-ring: rgba(57, 135, 229, .3); --danger: #e66767;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+  background: var(--bg); color: var(--text);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+main { width: 100%; max-width: 360px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px 24px; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+h1 { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; margin: 0; }
+.sub { color: var(--text-3); font-size: 14px; margin: 4px 0 22px; }
+label { display: block; font-size: 14px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+input[type="password"] {
+  width: 100%; font: inherit; color: var(--text); background: var(--field);
+  border: 1px solid var(--field-border); border-radius: 8px; padding: 10px 12px; outline: none;
+}
+input[type="password"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.hidden-user { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.error { color: var(--danger); font-size: 14px; margin-top: 10px; }
+button {
+  width: 100%; margin-top: 18px; font: inherit; font-weight: 600; color: #fff; background: var(--accent);
+  border: 0; border-radius: 8px; padding: 10px 14px; cursor: pointer;
+}
+button:hover { filter: brightness(1.06); }
+button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+</style>
+</head>
+<body>
+<main>
+  <form class="card" method="post" action="/login">
+    <h1>Argus</h1>
+    <p class="sub">Painel de uso</p>
+    <!-- Usuário fixo e escondido: o gerenciador de senhas precisa de um para guardar a senha. -->
+    <input class="hidden-user" type="text" name="username" autocomplete="username" value="argus" tabindex="-1" aria-hidden="true">
+    <label for="password">Senha</label>
+    <input id="password" type="password" name="password" autocomplete="current-password" required autofocus>
+    <!--ERROR-->
+    <button type="submit">Entrar</button>
+  </form>
+</main>
+</body>
+</html>

@@ -62,7 +62,7 @@ jobs:
         id: version
         run: |
           next=$(node -e '
-            const [major, minor, patch] = require("./package.json").version.split(".").map(Number)
+            const [major, minor, patch] = require("./apps/desktop/package.json").version.split(".").map(Number)
             const bump = process.argv[1]
             console.log(bump === "major" ? `${major + 1}.0.0` : bump === "minor" ? `${major}.${minor + 1}.0` : `${major}.${minor}.${patch + 1}`)
           ' "$BUMP")
@@ -112,6 +112,10 @@ jobs:
   release:
     needs: [versao, testes]
     runs-on: macos-15
+    # O app do desktop mora em apps/desktop (monorepo): os comandos rodam de lá.
+    defaults:
+      run:
+        working-directory: apps/desktop
     env:
       # No push não há as opções do disparo manual: publica sempre.
       PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
@@ -149,21 +153,22 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Conferir os tipos
+        working-directory: .
         run: pnpm typecheck
 
-      # O postinstall compila o programa do ditado (native/speech) e só avisa se falhar: sem ele,
+      # O postinstall compila o programa do ditado (apps/desktop/native/speech) e só avisa se falhar: sem ele,
       # o app sairia sem ditado no Mac.
       - name: Conferir o programa do ditado
         run: test -x native/speech/build/speech-helper
 
       # Detector de travamento do Sentry: o binário dele é compilado para o Electron deste projeto
-      # (o pacote só traz o do Node). Ver scripts/sentryNative.mjs.
+      # (o pacote só traz o do Node). Ver apps/desktop/scripts/sentryNative.mjs.
       - name: Compilar o detector de travamento
         run: node scripts/sentryNative.mjs
 
       # Com os secrets do certificado, o app sai assinado sempre com a mesma identidade e o macOS
       # não pede de novo microfone e ditado a cada versão. Sem eles, a montagem para (ver
-      # scripts/sign.mjs): um release ad-hoc seria recusado pelo atualizador de todos os Macs.
+      # apps/desktop/scripts/sign.mjs): um release ad-hoc seria recusado pelo atualizador de todos os Macs.
       - name: Importar certificado de assinatura
         env:
           MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
@@ -171,7 +176,7 @@ jobs:
           MAC_SIGN_IDENTITY: ${{ secrets.MAC_SIGN_IDENTITY }}
         run: |
           if [ -z "$MAC_CERT_P12" ]; then
-            echo "Sem certificado: a montagem vai parar na assinatura (scripts/sign.mjs)."
+            echo "Sem certificado: a montagem vai parar na assinatura (apps/desktop/scripts/sign.mjs)."
             exit 0
           fi
           keychain="$RUNNER_TEMP/argus.keychain-db"
@@ -192,7 +197,7 @@ jobs:
 
       - name: Montar o app
         # Sobe os mapas de código para o Sentry e os apaga antes do instalador (ver
-        # electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
+        # apps/desktop/electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm exec electron-vite build && pnpm exec electron-builder --mac --arm64 --publish never
@@ -203,7 +208,7 @@ jobs:
           codesign --verify --deep --strict dist/mac-arm64/Argus.app
           codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -qE 'certificate (leaf|root)'
 
-      # Mesmo teste do job do Windows (--smoke-test, ver src/main/smokeTest.ts): abre o app, espera o
+      # Mesmo teste do job do Windows (--smoke-test, ver apps/desktop/src/main/smokeTest.ts): abre o app, espera o
       # canvas, abre um terminal e fecha. Se não passar, não há tag nem release. O macOS não tem o
       # `timeout`: a espera de 3 minutos é feita aqui.
       - name: Testar se o app abre
@@ -233,7 +238,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Argus-${{ env.VERSION }}
-          path: dist/*.dmg
+          path: apps/desktop/dist/*.dmg
 
       # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois. O token vai só neste push
       # (o checkout não o guardou): no endereço, sem ficar gravado no repositório.
@@ -268,16 +273,18 @@ jobs:
             --notes-file "$notas"
 
   # Instalador do Windows (.exe), numa máquina Windows do GitHub, ao mesmo tempo que o do Mac.
-  # Antes de guardar, abre o app em modo de teste (--smoke-test, ver src/main/smokeTest.ts): se ele
+  # Antes de guardar, abre o app em modo de teste (--smoke-test, ver apps/desktop/src/main/smokeTest.ts): se ele
   # nem abrir, o instalador não vai, e quem usa no Windows continua na versão anterior.
   windows:
     needs: [versao, testes]
     runs-on: windows-latest
     # Ocupa a mesma fila dos releases (concurrency): travado, não pode segurar o próximo do Mac.
     timeout-minutes: 30
+    # O app do desktop mora em apps/desktop (monorepo): os comandos rodam de lá.
     defaults:
       run:
         shell: bash
+        working-directory: apps/desktop
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
@@ -304,14 +311,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Detector de travamento do Sentry: o binário dele é compilado para o Electron deste projeto
-      # (o pacote só traz o do Node). Ver scripts/sentryNative.mjs.
+      # (o pacote só traz o do Node). Ver apps/desktop/scripts/sentryNative.mjs.
       - name: Compilar o detector de travamento
         run: node scripts/sentryNative.mjs
 
-      # Sem certificado de assinatura: o Windows avisa na primeira instalação (ver electron-builder.yml).
+      # Sem certificado de assinatura: o Windows avisa na primeira instalação (ver apps/desktop/electron-builder.yml).
       - name: Montar o instalador
         # Sobe os mapas de código para o Sentry e os apaga antes do instalador (ver
-        # electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
+        # apps/desktop/electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm exec electron-vite build && pnpm exec electron-builder --win --x64 --publish never
@@ -333,7 +340,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Argus-Setup-${{ env.VERSION }}
-          path: dist/Argus-Setup-*.exe
+          path: apps/desktop/dist/Argus-Setup-*.exe
           retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
 
   # Anexa o .exe ao release que o job do Mac criou. Só roda se os dois deram certo: com o Mac
@@ -360,6 +367,10 @@ jobs:
     needs: [versao, testes]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # O app do desktop mora em apps/desktop (monorepo): os comandos rodam de lá.
+    defaults:
+      run:
+        working-directory: apps/desktop
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
@@ -388,13 +399,13 @@ jobs:
         run: test -f node_modules/node-pty/build/Release/pty.node
 
       # Detector de travamento do Sentry: o binário dele é compilado para o Electron deste projeto
-      # (o pacote só traz o do Node). Ver scripts/sentryNative.mjs.
+      # (o pacote só traz o do Node). Ver apps/desktop/scripts/sentryNative.mjs.
       - name: Compilar o detector de travamento
         run: node scripts/sentryNative.mjs
 
       - name: Montar o AppImage
         # Sobe os mapas de código para o Sentry e os apaga antes do instalador (ver
-        # electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
+        # apps/desktop/electron.vite.config.ts). Sem o secret, monta igual, sem os mapas.
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm exec electron-vite build && pnpm exec electron-builder --linux --x64 --publish never
@@ -413,7 +424,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Argus-Linux-${{ env.VERSION }}
-          path: dist/Argus-*.AppImage
+          path: apps/desktop/dist/Argus-*.AppImage
           retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
 
   # Anexa o AppImage ao release que o job do Mac criou (mesma regra do Windows).

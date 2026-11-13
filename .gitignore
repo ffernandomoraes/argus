@@ -2,15 +2,15 @@ node_modules
 out
 dist
 .DS_Store
-native/speech/build
+apps/desktop/native/speech/build
 
-# Tipos gerados pelo wrangler (cd relay && wrangler types)
-relay/worker-configuration.d.ts
-relay/.wrangler/
+# Tipos gerados pelo wrangler (cd apps/relay && wrangler types)
+apps/relay/worker-configuration.d.ts
+apps/relay/.wrangler/
 # App do celular montado (pnpm mobile:build), publicado junto com a ponte.
-relay/public/
+apps/relay/public/
 
-# Tipos gerados pelo wrangler (cd telemetry && wrangler types)
-telemetry/worker-configuration.d.ts
-telemetry/.wrangler/
-telemetry/.dev.vars
+# Tipos gerados pelo wrangler (cd apps/telemetry && wrangler types)
+apps/telemetry/worker-configuration.d.ts
+apps/telemetry/.wrangler/
+apps/telemetry/.dev.vars

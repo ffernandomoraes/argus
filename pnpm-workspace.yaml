@@ -1,5 +1,10 @@
+# Monorepo: os apps (desktop, mobile, relay, telemetry) e o código compartilhado entre eles.
+packages:
+  - apps/*
+  - packages/*
+
 allowBuilds:
-  # Compilado para o Electron por scripts/sentryNative.mjs; o script do pacote compilaria para o Node.
+  # Compilado para o Electron por apps/desktop/scripts/sentryNative.mjs; o script do pacote compilaria para o Node.
   '@sentry/node-native-stacktrace': false
   electron-winstaller: false
   esbuild: true

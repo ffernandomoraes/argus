@@ -1,0 +1,57 @@
+import type { UpdateState } from '@argus/shared/updates'
+import { Button } from '../../ui/Button'
+import { useUpdates } from '../../updates/useUpdates'
+import { Row } from '../controls'
+import { tr } from '../../i18n'
+import { IS_WIN } from '../../platform'
+import { installUpdate } from '../../updates/installUpdate'
+
+function statusText(state: UpdateState): string {
+  switch (state.status) {
+    case 'checking':
+      return tr('Procurando versão nova…', 'Checking for a new version…')
+    case 'latest':
+      return tr('Você está na versão mais recente.', 'You are on the latest version.')
+    case 'downloading':
+      return tr(
+        `Baixando a versão ${state.version} - ${Math.round(state.progress * 100)}%.`,
+        `Downloading version ${state.version} - ${Math.round(state.progress * 100)}%.`
+      )
+    // No Windows, fechar o app não instala (ver shutdown.ts no processo principal).
+    case 'ready':
+      return IS_WIN
+        ? tr(`A versão ${state.version} está pronta: entra ao reiniciar.`, `Version ${state.version} is ready: it installs when you restart.`)
+        : tr(
+            `A versão ${state.version} está pronta: entra ao reiniciar ou quando o app fechar.`,
+            `Version ${state.version} is ready: it installs when you restart or when the app quits.`
+          )
+    // Windows: a versão nova saiu, mas o instalador ainda não subiu (não é erro).
+    case 'waiting':
+    case 'error':
+      return state.message
+    case 'unsupported':
+      return state.reason
+    default:
+      return tr('Procura versão nova ao abrir o app e a cada 5 horas.', 'Checks for a new version when the app opens and every 5 hours.')
+  }
+}
+
+// A conferência automática roda sozinha (ao abrir e a cada 5 horas); aqui dá para forçar.
+export function UpdatesRow() {
+  const updates = useUpdates()
+  if (!updates) return null
+  const { version, state } = updates
+  const busy = state.status === 'checking' || state.status === 'downloading' || state.status === 'unsupported'
+
+  return (
+    <Row label="Argus" description={tr(`Versão ${version}. ${statusText(state)}`, `Version ${version}. ${statusText(state)}`)}>
+      {state.status === 'ready' ? (
+        <Button onClick={() => installUpdate()}>{tr('Reiniciar e atualizar', 'Restart and update')}</Button>
+      ) : (
+        <Button disabled={busy} onClick={() => void window.api.updates.check()}>
+          {tr('Procurar', 'Check')}
+        </Button>
+      )}
+    </Row>
+  )
+}

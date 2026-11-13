@@ -1,0 +1,98 @@
+import { memo, useContext, type MouseEvent } from 'react'
+import { Bot, MessageSquareText } from 'lucide-react'
+import type { RunningAgent } from '@argus/shared/agents'
+import { agentActivity, useRunningAgent } from '../../../canvas/runningAgents'
+import { Elapsed } from '../../Elapsed'
+import { Markdown } from '../../Markdown'
+import { SubagentOpenContext } from '../../subagentOpen'
+import type { Message } from '../../types'
+import { LazyDetails } from './LazyDetails'
+import { tr } from '../../../i18n'
+
+const SECTION_TITLE = 'mb-1 px-1 text-[13px] uppercase tracking-wide text-faint'
+
+// Subagente chamado pela conversa: qual agente, o pedido que recebeu, o que está fazendo
+// (enquanto roda) e o que entregou. O relatório só é formatado ao abrir a linha. "Ver conversa"
+// abre tudo o que ele fez num drawer só para ler (só os do Claude).
+export const AgentToolRow = memo(function AgentToolRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
+  const running = useRunningAgent(message.toolUseId)
+  const openSubagent = useContext(SubagentOpenContext)
+  const { toolUseId, agent = '' } = message
+  const canOpen = !!openSubagent && !!toolUseId && (message.name === 'Agent' || message.name === 'Task')
+  // Dentro do <summary>: o clique não abre nem fecha a linha.
+  const open = (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (toolUseId) openSubagent?.(toolUseId, agent, message.input)
+  }
+  return (
+    <LazyDetails
+      className="group rounded-md border border-line bg-surface-2 px-2 py-1.5 text-[13px]"
+      summary={
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded px-1 py-0.5 leading-5 text-muted hover:bg-line/50">
+          <Bot size={13} className={`shrink-0 ${running ? 'text-running' : message.error ? 'text-red-400' : 'text-text'}`} />
+          <span className={`shrink-0 font-medium ${message.error ? 'text-red-400' : 'text-text'}`}>{message.agent}</span>
+          <span className="truncate text-muted">{running ? agentActivity(running) : message.input}</span>
+          {running && (
+            <span className="ml-auto shrink-0 pl-1 tabular-nums text-faint">
+              <Elapsed since={running.startedAt} />
+            </span>
+          )}
+          {canOpen && (
+            <button
+              type="button"
+              onClick={open}
+              title={tr('Ver tudo o que o subagente fez', 'See everything the subagent did')}
+              className={`flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-faint hover:bg-line hover:text-text ${running ? '' : 'ml-auto'}`}
+            >
+              <MessageSquareText size={12} />
+              {tr('Ver conversa', 'View chat')}
+            </button>
+          )}
+        </summary>
+      }
+    >
+      <AgentReport message={message} running={running} />
+    </LazyDetails>
+  )
+})
+
+// O corpo da linha aberta: pedido, atividade (enquanto roda) e o que entregou.
+function AgentReport({ message, running }: { message: Extract<Message, { role: 'tool' }>; running?: RunningAgent }) {
+  const steps = running?.steps ?? []
+  return (
+    <>
+      {message.detail && (
+        <div className="mt-1.5">
+          <div className={SECTION_TITLE}>{tr('Pedido', 'Request')}</div>
+          <div className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-bg px-2 py-1.5 text-[13px] text-muted">
+            {message.detail}
+          </div>
+        </div>
+      )}
+      {steps.length > 0 && (
+        <div className="mt-1.5">
+          <div className={SECTION_TITLE}>
+            {tr(`Atividade - ${running?.toolUses || steps.length} ferramentas`, `Activity - ${running?.toolUses || steps.length} tools`)}
+          </div>
+          <ul className="max-h-48 overflow-auto rounded-md bg-bg px-2 py-1.5 text-[13px]">
+            {steps.map((s, i) => (
+              <li key={i} className="flex gap-2 py-0.5">
+                <span className="shrink-0 text-text">{s.label}</span>
+                <span className="truncate text-faint">{s.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {message.result && (
+        <div className="mt-1.5">
+          <div className={SECTION_TITLE}>{tr('Entregou', 'Result')}</div>
+          <div className="max-h-96 overflow-auto rounded-md bg-bg px-3 py-2 text-[13px] leading-relaxed text-text">
+            <Markdown text={message.result} />
+          </div>
+        </div>
+      )}
+    </>
+  )
+}

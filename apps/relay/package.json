@@ -1,0 +1,5 @@
+{
+  "name": "@argus/relay",
+  "private": true,
+  "description": "Ponte do acesso remoto (Cloudflare Worker + Durable Object); serve também o app do celular"
+}

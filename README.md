@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="build/icon.png" width="128" alt="Ícone do Argus">
+  <img src="apps/desktop/build/icon.png" width="128" alt="Ícone do Argus">
 </p>
 
 <h1 align="center">Argus</h1>
@@ -235,13 +235,31 @@ No Windows ele funciona no PowerShell e no Prompt de Comando. Se a pasta
 
 ## Desenvolvimento
 
+Monorepo com pnpm workspaces:
+
+| Pasta | O que tem |
+|---|---|
+| `apps/desktop` | O Argus (Electron): processo principal, preload, janela, ícones, ditado nativo e testes |
+| `apps/mobile` | App do celular (PWA) do acesso remoto |
+| `apps/relay` | Ponte do acesso remoto (Cloudflare Worker), que também serve o app do celular |
+| `apps/telemetry` | Dados de uso anônimos (Cloudflare Worker + D1) e o painel |
+| `packages/shared` | Tipos e lógica usados pelo desktop e pelo celular (`@argus/shared`) |
+| `packages/ui` | Componentes React usados pelos dois (`@argus/ui`) |
+
+Os comandos rodam da raiz:
+
 ```bash
-pnpm install   # também compila o ditado (precisa das Command Line Tools da Apple)
-pnpm dev       # abre o app com recarga automática
-pnpm typecheck
-pnpm dist      # gera o .dmg e o .zip em dist/
-pnpm dist:win  # gera o instalador do Windows em dist/ (rode num Windows: no Mac falta o ícone do .exe)
+pnpm install       # também compila o ditado (precisa das Command Line Tools da Apple)
+pnpm dev           # abre o app com recarga automática
+pnpm typecheck     # todos os apps e pacotes
+pnpm test          # todos os apps e pacotes
+pnpm dist          # gera o .dmg e o .zip em apps/desktop/dist/
+pnpm dist:win      # gera o instalador do Windows em apps/desktop/dist/ (rode num Windows: no Mac falta o ícone do .exe)
+pnpm mobile:dev    # abre o app do celular no navegador
+pnpm mobile:build  # monta o app do celular em apps/relay/public
 ```
+
+Para mexer num só: `pnpm --filter argus <script>` (desktop), `pnpm --filter @argus/mobile <script>`.
 
 A versão de desenvolvimento usa uma pasta de dados própria (`Argus Dev`) e um comando
 `argus` próprio, então roda ao lado da instalada sem mexer nela.
@@ -267,7 +285,7 @@ python3 scripts/gerar-ilustracoes.py
 
 ### Gerar uma versão
 
-Todo push na `main` vira uma versão: o workflow **Release** sobe o patch no `package.json`,
+Todo push na `main` vira uma versão: o workflow **Release** sobe o patch no `apps/desktop/package.json`,
 cria a tag, monta o `.dmg` e o `.zip`, publica o release e usa os títulos dos commits desde
 a última versão como notas. Em seguida, numa máquina Windows do GitHub, monta o instalador
 `.exe`, abre o app em modo de teste (`--smoke-test`) e, se ele subir, anexa o instalador ao

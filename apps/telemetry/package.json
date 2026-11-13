@@ -1,0 +1,5 @@
+{
+  "name": "@argus/telemetry",
+  "private": true,
+  "description": "Dados de uso anônimos (Cloudflare Worker + D1) e o painel"
+}

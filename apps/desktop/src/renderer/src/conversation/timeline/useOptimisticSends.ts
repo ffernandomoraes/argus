@@ -1,0 +1,129 @@
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { AttachedFile } from '@argus/shared/attachedFiles'
+import type { ChatState } from '@argus/shared/chat'
+import { isSendableImage } from '../chatImages'
+import type { Message } from '../types'
+import { inQueue, isDelivered, queuedSends, type PendingSend } from './optimisticSends'
+
+// Sem nenhum estado do chat depois do envio por este tempo, o envio não chegou ao Claude (o
+// processo principal responde na hora: o "Trabalhando…" sai junto com o envio).
+const DEADLINE_MS = 15_000
+const NONE: PendingSend[] = []
+
+// attached: arquivos que já estão no disco, pelo caminho (o "Reenviar" de uma mensagem que tinha
+// anexos; ver ChatView).
+export type OutgoingMessage = { text: string; typed: string; files: File[]; attached?: AttachedFile[] }
+
+// Balões provisórios das mensagens enviadas. Saem quando a mensagem chega ao histórico, quando o
+// pedido termina sem ela na fila do Claude (comando de barra não volta como mensagem sua), quando o envio falha (drop) ou
+// quando passa o prazo sem resposta (onLost: o texto volta para o campo). Mensagem ainda na fila
+// do Claude continua com balão mesmo assim, e também ao abrir a conversa de novo (ver queuedSends). `previewOpen`: o preview
+// grande de imagem está aberto, talvez numa imagem de um balão que já saiu.
+export function useOptimisticSends(
+  messages: Message[],
+  live: ChatState | null,
+  previewOpen: boolean,
+  onLost: (sends: PendingSend[]) => void
+) {
+  const [sent, setSent] = useState<PendingSend[]>(NONE)
+
+  // Chegou no histórico: sai no mesmo desenho em que a mensagem aparece (sem os dois juntos). A
+  // mensagem nova sempre muda o fim da lista; comparar pelo fim (e não pela lista em si) não entra
+  // em laço se alguém passar uma lista nova a cada desenho.
+  const tip = `${messages.length}|${messages.at(-1)?.id ?? ''}`
+  const [seenTip, setSeenTip] = useState(tip)
+  let next = sent
+  if (seenTip !== tip) {
+    setSeenTip(tip)
+    next = next.filter((s) => !isDelivered(s, messages))
+  }
+
+  // Terminou o pedido: limpa o que sobrou, menos o que continua na fila do Claude. Com ela ele
+  // começa outro pedido logo em seguida, e a fila esvazia nesse começo, antes de a mensagem estar no
+  // histórico: limpar aqui fazia o balão sumir por segundos com o "Pensando…" na tela. Essa sai
+  // quando chegar ao histórico, no fim do pedido seguinte ou se deixar a fila sem pedido novo.
+  const active = live?.status === 'running' || live?.status === 'needs-you'
+  const queued = live?.queued
+  const [wasActive, setWasActive] = useState(active)
+  if (wasActive !== active) {
+    setWasActive(active)
+    if (wasActive) next = next.filter((s) => inQueue(s, queued)).map((s) => (s.held ? s : { ...s, held: true }))
+  } else if (!active) {
+    next = next.filter((s) => !s.held || inQueue(s, queued))
+  }
+  if (next.length !== sent.length || next.some((s, i) => s !== sent[i])) setSent(next.length ? next : NONE)
+
+  // Endereços das miniaturas de cada balão: liberados quando ele sai, e todos ao sair da conversa.
+  // Com o preview aberto, esperam ele fechar: liberar no meio quebraria a imagem à vista.
+  const owned = useRef(new Map<string, string[]>())
+  useEffect(() => {
+    if (previewOpen) return
+    const ids = new Set(sent.map((s) => s.id))
+    for (const [id, urls] of owned.current) {
+      if (ids.has(id)) continue
+      urls.forEach((u) => URL.revokeObjectURL(u))
+      owned.current.delete(id)
+    }
+  }, [sent, previewOpen])
+  useEffect(() => {
+    const map = owned.current
+    return () => {
+      for (const urls of map.values()) urls.forEach((u) => URL.revokeObjectURL(u))
+      map.clear()
+    }
+  }, [])
+
+  // Prazo: confere na hora em que o envio mais antigo vence. Algum estado do chat chegou depois do
+  // envio (outro objeto em `live`): o processo principal recebeu, e o balão segue esperando.
+  const latestLive = useRef(live)
+  useLayoutEffect(() => {
+    latestLive.current = live
+  })
+  const expire = useEffectEvent((gone: PendingSend[]) => {
+    setSent((all) => {
+      const next = all.filter((s) => !gone.includes(s))
+      return next.length ? next : NONE
+    })
+    onLost(gone)
+  })
+  useEffect(() => {
+    if (!sent.length) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const schedule = (list: PendingSend[]) => {
+      const due = Math.min(...list.map((s) => s.sentAt)) + DEADLINE_MS
+      timer = setTimeout(() => check(list), Math.max(0, due - Date.now()))
+    }
+    const check = (list: PendingSend[]) => {
+      const unanswered = list.filter((s) => latestLive.current === s.live)
+      const now = Date.now()
+      const gone = unanswered.filter((s) => now - s.sentAt >= DEADLINE_MS)
+      if (gone.length) expire(gone)
+      else if (unanswered.length) schedule(unanswered)
+    }
+    schedule(sent)
+    return () => clearTimeout(timer)
+  }, [sent])
+
+  const add = (m: OutgoingMessage): string => {
+    const id = crypto.randomUUID()
+    const urls = m.files.filter(isSendableImage).map((f) => URL.createObjectURL(f))
+    owned.current.set(id, urls)
+    const read = () => Promise.resolve(urls)
+    const entry: PendingSend = { ...m, id, images: urls.length, read, sentAt: Date.now(), after: messages.at(-1)?.id, live }
+    setSent((all) => [...all, entry])
+    return id
+  }
+
+  const drop = (id: string) =>
+    setSent((all) => {
+      const next = all.filter((s) => s.id !== id)
+      return next.length ? next : NONE
+    })
+
+  const waiting = useMemo(() => {
+    const restored = queuedSends(queued, sent, messages)
+    return restored.length ? [...restored, ...sent] : sent
+  }, [queued, sent, messages])
+
+  return { waiting, add, drop }
+}

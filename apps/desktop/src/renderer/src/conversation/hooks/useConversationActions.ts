@@ -1,0 +1,120 @@
+import { agentProviderOf, type AgentDef } from '@argus/shared/agents'
+import type { AttachedFile } from '@argus/shared/attachedFiles'
+import { isAudioFile } from '@argus/shared/transcription'
+import { IS_REMOTE } from '../../remote'
+import type { PermissionAnswer } from '@argus/shared/chat'
+import { parseAgentRef } from '@argus/shared/providers'
+import { getAuth, resolveAccount } from '../../auth/useAuth'
+import type { ConversationSummary } from '../../canvas/types'
+import { useStableCallback } from '../../lib/useStableCallback'
+import { agentHint, mentionedAgents } from '../agentMentions'
+import { forgetTranscripts, transcriptsText } from '../audio/transcripts'
+import { imagesForSend, isSendableImage } from '../chatImages'
+import { freezeConversationAccount } from '../conversationAccount'
+import { freezeConversationSettings, setConversationSettings } from '../conversationSettings'
+import { addLocalEvent } from '../localEvents'
+import { liveCommands, type SessionSettings } from '../SessionSettings'
+import { settingChangeEvents } from '../settingChangeEvents'
+import { useClaudeInfo } from '../useModels'
+
+// Janela de acesso remoto: o arquivo está neste computador e a conversa roda no outro. O conteúdo vai
+// pela ligação e fica numa pasta temporária de lá (ver main/files/upload.ts); a mensagem leva o
+// caminho de lá. Imagens já vão como dados e áudios, como texto transcrito. Falha rejeita: o texto
+// volta ao campo com o erro.
+async function uploadForRemote(files: File[]): Promise<AttachedFile[]> {
+  const out: AttachedFile[] = []
+  for (const f of files) {
+    if (isSendableImage(f) || isAudioFile(f.name, f.type)) continue
+    const res = await window.api.files.upload(f.name, new Uint8Array(await f.arrayBuffer()))
+    if (!res.ok) throw new Error(res.error)
+    out.push({ path: res.path, size: f.size })
+  }
+  return out
+}
+
+// Agentes chamados com @. Vão em toda mensagem: sobrevivem à compactação.
+function hintFor(text: string, agents: AgentDef[], account?: string): string | undefined {
+  return agentHint(mentionedAgents(text, agents), agentProviderOf(account)) || undefined
+}
+
+type Options = {
+  // Chave do chat da conversa na tela (ver useViewKey).
+  chatKey: string
+  conversation: ConversationSummary
+  cwd: string
+  // Workspace: as pastas dele, que o agente recebe como pastas adicionais.
+  folders?: string[]
+  account?: string
+  settings: SessionSettings
+  agents: AgentDef[]
+}
+
+// O que a conversa pede ao Claude: enviar, trocar modelo/esforço/modo, remote control, parar,
+// responder permissões e ler as imagens de uma mensagem. Todas com identidade fixa (vão para o
+// chat memorizado) e lendo os valores do último desenho.
+export function useConversationActions({ chatKey, conversation, cwd, folders, account, settings, agents }: Options) {
+  // Conversa nova ainda sem sessão guarda as trocas pelo id provisório.
+  const settingsId = conversation.sessionId ?? conversation.id
+  const info = useClaudeInfo(account)
+
+  // Imagens vão junto da mensagem (reduzidas se passarem do limite); outros arquivos, pelo caminho
+  // no disco, num bloco fora do balão (ver attachedFiles); e o texto dos áudios transcritos no fim,
+  // à vista no balão da mensagem. Falha ao preparar as imagens rejeita a promessa: o chat devolve o
+  // texto ao campo.
+  // already: arquivos que já estão no disco de quem roda a conversa, pelo caminho (o "Reenviar" de
+  // uma mensagem com anexos): vão como estão.
+  const send = useStableCallback(async (text: string, files: File[], already: AttachedFile[] = []) => {
+    const images = await imagesForSend(files)
+    const picked = IS_REMOTE
+      ? await uploadForRemote(files)
+      : files
+          .filter((f) => !isSendableImage(f))
+          .map((f) => ({ path: window.api.filePath(f), size: f.size }))
+          .filter((f) => f.path)
+    const attached = [...picked, ...already]
+    const transcripts = transcriptsText(files)
+    const full = transcripts ? `${text}\n\n${transcripts}`.trim() : text
+    forgetTranscripts(files)
+    freezeConversationSettings(settingsId, settings)
+    // A conta fica fixa no primeiro envio; a de outro agente já fica guardada com a conversa.
+    if (!parseAgentRef(account)) freezeConversationAccount(settingsId, resolveAccount(getAuth(), account))
+    window.api.chat.send({
+      key: chatKey,
+      cwd,
+      folders,
+      account,
+      sessionId: conversation.sessionId,
+      settings,
+      text: full,
+      images,
+      files: attached,
+      hint: hintFor(text, agents, account)
+    })
+  })
+
+  // Numa sessão de terminal já aberta, a troca vai como comando do próprio Claude Code.
+  // Sem sessão aberta, o write é ignorado e a escolha vale ao abrir o terminal.
+  // Divisor no chat para cada troca feita aqui, como na extensão do VS Code.
+  const change = useStableCallback((patch: Partial<SessionSettings>) => {
+    const sid = conversation.sessionId
+    if (sid) for (const e of settingChangeEvents(patch, info?.models ?? [])) addLocalEvent(sid, e.kind, e.text)
+    setConversationSettings(settingsId, patch)
+    for (const command of liveCommands(patch)) window.api.terminal.write(conversation.id, `${command}\r`)
+    window.api.chat.configure(chatKey, patch)
+  })
+
+  const remoteControl = useStableCallback((enabled: boolean) =>
+    window.api.chat.remoteControl({ key: chatKey, cwd, folders, account, sessionId: conversation.sessionId, settings, enabled })
+  )
+  // Erro em texto, ou nulo. Sem sessão ainda (conversa nova), não há o que renomear: quem chama confere.
+  const rename = useStableCallback((sessionId: string, title: string) =>
+    window.api.chat.rename({ key: chatKey, cwd, sessionId, title })
+  )
+  const interrupt = useStableCallback(() => window.api.chat.interrupt(chatKey))
+  const answer = useStableCallback((id: string, a: PermissionAnswer) => window.api.chat.answer(chatKey, id, a))
+  const loadImages = useStableCallback((messageId: string) =>
+    conversation.sessionId ? window.api.sessions.images(cwd, conversation.sessionId, messageId) : Promise.resolve([])
+  )
+
+  return { send, change, remoteControl, rename, interrupt, answer, loadImages }
+}

@@ -16,8 +16,8 @@ técnico do projeto; a análise original está no fim deste arquivo, como histó
 ### Conversas: Claude Agent SDK rodando o `claude` da máquina
 
 Cada conversa é um `query()` do [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview)
-(`src/main/chats/`) com `pathToClaudeCodeExecutable` apontando para o `claude` instalado
-(`src/main/claudePath/`). O SDK não chama a API direto: abre esse `claude` e conversa com
+(`apps/desktop/src/main/chats/`) com `pathToClaudeCodeExecutable` apontando para o `claude` instalado
+(`apps/desktop/src/main/claudePath/`). O SDK não chama a API direto: abre esse `claude` e conversa com
 ele. Por isso a conversa usa o login e a assinatura que já existem na máquina (R2), e se
 comporta como o Claude Code no terminal: `systemPrompt: { preset: 'claude_code' }` carrega
 o mesmo prompt, `CLAUDE.md`, configurações e MCPs.
@@ -26,24 +26,24 @@ o mesmo prompt, `CLAUDE.md`, configurações e MCPs.
 |---|---|
 | R1 Chat e prints | Texto e imagens vão como blocos de conteúdo na entrada da conversa; as respostas chegam aos poucos (`includePartialMessages`) |
 | R2 Assinatura | O `claude` da máquina, com o login dele. O binário que vem com o SDK (~200 MB) fica fora do app (`electron-builder.yml`) |
-| R3 Subagentes | `agentProgressSummaries` faz cada subagente mandar uma frase do que está fazendo; a lista de quem está rodando vem junto do estado do chat (`src/renderer/src/canvas/runningAgents.ts`) |
+| R3 Subagentes | `agentProgressSummaries` faz cada subagente mandar uma frase do que está fazendo; a lista de quem está rodando vem junto do estado do chat (`apps/desktop/src/renderer/src/canvas/runningAgents.ts`) |
 | Permissões e perguntas | `canUseTool` devolve cada pedido para o chat, onde a pessoa aprova, nega ou responde |
 | Continuar conversa | `resume` com o id da sessão |
 | Modelo, esforço, modo | Opções do `query()`, por conversa; trocadas com a conversa aberta pelos controles do SDK |
 
 O mesmo caminho serve para outras duas partes do app:
 
-- **Barra de comando do canvas** (`src/main/canvasAgent/`): conversa com o Haiku, que
+- **Barra de comando do canvas** (`apps/desktop/src/main/canvasAgent/`): conversa com o Haiku, que
   recebe as ações do canvas como ferramentas de um MCP do próprio app
   (`createSdkMcpServer`) e organiza grupos e pastas pelo pedido.
-- **Login** (`src/main/auth/`): um `claude` aberto só para o login gera o link, recebe o
+- **Login** (`apps/desktop/src/main/auth/`): um `claude` aberto só para o login gera o link, recebe o
   retorno do navegador e grava o login nas Chaves do macOS, como a extensão do VS Code. No
   Windows, o Claude Code guarda o login num arquivo, `~/.claude/.credentials.json`.
 
 ### Contas
 
 Cada conta adicionada mora numa pasta própria, passada ao `claude` em `CLAUDE_CONFIG_DIR`
-(`src/main/accounts/`). O login dela fica num item separado das Chaves do macOS (no
+(`apps/desktop/src/main/accounts/`). O login dela fica num item separado das Chaves do macOS (no
 Windows, num arquivo dentro da pasta da conta), então as contas rodam ao mesmo tempo. Histórico, `CLAUDE.md`, agentes, skills, comandos,
 plugins e configurações ficam ligados aos da conta principal por link simbólico; login e
 MCPs são de cada conta (D18).
@@ -61,12 +61,12 @@ Sem passar pelo SDK, só leitura:
 
 ### Outros
 
-- **Terminais** (`src/main/terminals/`): terminal real com node-pty, rodando o `claude`
+- **Terminais** (`apps/desktop/src/main/terminals/`): terminal real com node-pty, rodando o `claude`
   ou o shell, com a conta do grupo.
-- **Ditado** (`src/main/speech/`): o microfone (`native/speech`) grava e o áudio vai em
+- **Ditado** (`apps/desktop/src/main/speech/`): o microfone (`apps/desktop/native/speech`) grava e o áudio vai em
   tempo real para o serviço de voz do Claude, com o login do Claude Code
   (`claudeAuth/`). Sem login ou sem conexão, usa o reconhecimento de fala do macOS. No
-  Windows, quem grava o microfone é a própria janela (`src/preload/winMic/`), e não há
+  Windows, quem grava o microfone é a própria janela (`apps/desktop/src/preload/winMic/`), e não há
   essa reserva: sem o serviço do Claude, o ditado avisa e para.
 
 ## Riscos

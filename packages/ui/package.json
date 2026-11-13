@@ -1,0 +1,22 @@
+{
+  "name": "@argus/ui",
+  "private": true,
+  "description": "Componentes React usados pelo desktop e pelo app do celular",
+  "exports": {
+    "./icons/*": "./src/icons/*.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@argus/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "typescript": "7.0.2"
+  }
+}

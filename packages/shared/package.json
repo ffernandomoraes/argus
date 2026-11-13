@@ -1,0 +1,16 @@
+{
+  "name": "@argus/shared",
+  "private": true,
+  "description": "Tipos e lógica sem dependências usados pelo desktop e pelo app do celular",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

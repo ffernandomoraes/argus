@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Novidades · Argus</title>
+  <meta name="description" content="O que mudou em cada versão do Argus.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">≡</span>Novidades</p>
+      <h1>O que há de novo.</h1>
+      <p class="lede">Sai versão nova quase todo dia. Aqui estão as mudanças mais recentes, direto dos releases.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container rel-wrap">
+      <div class="rel-list" data-releases><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.103" target="_blank" rel="noopener" class="rel__tag mono">v0.1.103</a><time>31/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>Windows: a atualização não deixa mais o Argus desinstalado; fechar o app não instala, só o &quot;Atualizar para&quot;</li><li><span class="rel-tag rel-tag--imp">Melhoria</span>Aba Armazenamento: o &quot;Limpar agora&quot; mostra só quanto dá para liberar e a última limpeza; o detalhe fica no ícone de info</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.102" target="_blank" rel="noopener" class="rel__tag mono">v0.1.102</a><time>30/10/2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Melhoria</span>Excluir uma conversa apaga também os rascunhos do agente, os pontos de restauração dos arquivos e o ambiente do terminal dela</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.101" target="_blank" rel="noopener" class="rel__tag mono">v0.1.101</a><time>30/10/2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Melhoria</span>Aba Armazenamento mostra separado o que ocupa e o que passou dos prazos, e o &quot;Limpar agora&quot; diz quanto vai liberar e o que liberou</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.100" target="_blank" rel="noopener" class="rel__tag mono">v0.1.100</a><time>30/10/2026</time></div><ul><li><span class="rel-tag rel-tag--new">Novo</span>Aviso de memória e disco ao lado do nome Argus (com o que parou por falta deles) e aba Armazenamento com limpeza automática de conversas, prints e rascunhos do agente</li><li><span class="rel-tag rel-tag--fix">Correção</span>Atualizar ou fechar o Argus não apaga mais o que estava concluído, e o que estava trabalhando volta marcado como interrompido (bolinha vermelha) com o botão &quot;Continuar de onde parou&quot;</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.99" target="_blank" rel="noopener" class="rel__tag mono">v0.1.99</a><time>30/10/2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Melhoria</span>Dependências com falhas de segurança apontadas pelo Dependabot atualizadas (undici, qs e fast-uri)</li><li><span class="rel-tag rel-tag--new">Novo</span>Marcar conversa como não lida (botão direito na lista ou três pontinhos da conversa): a bolinha volta a ficar verde até abrir de novo</li><li><span class="rel-tag rel-tag--new">Novo</span>Clicar numa imagem colada na caixa de mensagem abre ela grande antes de enviar</li><li><span class="rel-tag rel-tag--new">Novo</span>Clicar nas tarefas em segundo plano (no canvas ou em &quot;Ver saída&quot; no chat) abre a saída de cada uma num drawer só para ler, ao vivo</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.98" target="_blank" rel="noopener" class="rel__tag mono">v0.1.98</a><time>29/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>Janela minimizada, atrás de outras ou com a tela bloqueada não vira mais travamento no Sentry ao acordar o computador ou desbloquear a tela</li><li><span class="rel-tag rel-tag--fix">Correção</span>No Mac, uma caixa de aviso do Argus aberta sem janela em foco (como a pergunta ao fechar) não vira mais travamento no Sentry</li><li><span class="rel-tag rel-tag--fix">Correção</span>O aviso de &quot;Uso do Claude sem atualizar&quot; não vai mais ao Sentry no fim da espera pedida pela API de uso, antes da nova tentativa</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.97" target="_blank" rel="noopener" class="rel__tag mono">v0.1.97</a><time>28/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>Janela parada à toa com a CPU segurada pelo sistema (economia de energia no Windows, temperatura no Mac) não vira mais travamento no Sentry</li><li><span class="rel-tag rel-tag--fix">Correção</span>O aviso de &quot;Uso do Claude sem atualizar&quot; não vai mais ao Sentry enquanto o Argus só espera o prazo pedido pela API de uso</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.96" target="_blank" rel="noopener" class="rel__tag mono">v0.1.96</a><time>28/10/2026</time></div><ul><li><span class="rel-tag rel-tag--new">Novo</span>Clicar num subagente (no canvas ou em &quot;Ver conversa&quot; no chat) abre tudo o que ele fez num drawer só para ler</li><li><span class="rel-tag rel-tag--fix">Correção</span>No modo foco, os grupos do canvas não aparecem mais por alguns quadros ao rolar a conversa</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.95" target="_blank" rel="noopener" class="rel__tag mono">v0.1.95</a><time>28/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>No Windows, o Claude lê a saída do terminal certa mesmo com o painel redimensionado, fechado e aberto, e recebe o código de saída certo do PowerShell</li><li><span class="rel-tag rel-tag--fix">Correção</span>Valores que não são segredo (&quot;private&quot;: true, keywords, sessionTimeout) não viram mais *** na saída do terminal lida pelo Claude</li><li><span class="rel-tag rel-tag--new">Novo</span>O Claude roda comandos no terminal da conversa e lê a saída; segredos chegam a ele como ***</li><li><span class="rel-tag rel-tag--new">Novo</span>Arquivo .md criado pelo Claude aparece formatado na conversa, com o caminho, &quot;Mostrar tudo&quot; e &quot;Abrir ao lado&quot;</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.94" target="_blank" rel="noopener" class="rel__tag mono">v0.1.94</a><time>27/10/2026</time></div><ul><li><span class="rel-tag rel-tag--new">Novo</span>Mensagem já enviada pode ser editada no próprio balão e reenviada no fim da conversa; com o Claude respondendo, ele para e a versão nova roda em seguida</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.93" target="_blank" rel="noopener" class="rel__tag mono">v0.1.93</a><time>27/10/2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Melhoria</span>Relatórios de travamento não acusam mais a janela escondida (coberta por outra, minimizada ou com a tela bloqueada), e um travamento de verdade com ela escondida continua indo</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.92" target="_blank" rel="noopener" class="rel__tag mono">v0.1.92</a><time>27/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>Tarefa em segundo plano ou subagente terminando não dispara mais notificação de &quot;Concluído&quot;</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.91" target="_blank" rel="noopener" class="rel__tag mono">v0.1.91</a><time>27/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>No Windows e no Linux, a lista aberta dos seletores fica legível no tema escuro</li><li><span class="rel-tag rel-tag--fix">Correção</span>No Windows, o botão de fechar a imagem ampliada não fica mais embaixo dos botões da janela</li><li><span class="rel-tag rel-tag--imp">Melhoria</span>No Windows e no Linux, o seletor de workspace fica na ponta esquerda da barra de título</li><li><span class="rel-tag rel-tag--fix">Correção</span>O código volta a abrir com coloração no painel de código, inclusive Dockerfile e Makefile no Windows</li><li><span class="rel-tag rel-tag--fix">Correção</span>Com ferramentas em paralelo, a etapa da conversa não aparece mais como &quot;Executando: undefined&quot;</li><li><span class="rel-tag rel-tag--new">Novo</span>No Windows, o painel Servidores rodando aparece e mostra o que roda nas pastas do canvas; o menu não quebra mais o nome dos itens</li><li><span class="rel-tag rel-tag--new">Novo</span>Nova seção Notificações nos ajustes: liga e desliga as notificações do sistema e o som delas</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.90" target="_blank" rel="noopener" class="rel__tag mono">v0.1.90</a><time>26/10/2026</time></div><ul><li><span class="rel-tag rel-tag--new">Novo</span>Arquivo .md no painel de código tem prévia formatada; ⌘⇧V (Ctrl+Shift+V) alterna com o texto</li><li><span class="rel-tag rel-tag--new">Novo</span>O plano do Claude aparece formatado na conversa, com &quot;Mostrar tudo&quot; e &quot;Abrir ao lado&quot; numa janela maior</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.89" target="_blank" rel="noopener" class="rel__tag mono">v0.1.89</a><time>26/10/2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Correção</span>Uso do Claude não fica mais parado sem aviso: a leitura tem prazo, o painel lê de novo ao abrir e mostra o motivo quando não atualiza</li><li><span class="rel-tag rel-tag--fix">Correção</span>A conversa não some mais ao redimensionar a janela, o painel ou o zoom do drawer</li><li><span class="rel-tag rel-tag--fix">Correção</span>Os botões de fechar, minimizar e maximizar do Mac ficam no meio da barra de título, alinhados com o seletor de workspace</li></ul></article>
+      </div>
+      <p class="pnote center">Todas as versões em <a class="dl-link" href="https://github.com/ffernandomoraes/argus/releases" target="_blank" rel="noopener">github.com/ffernandomoraes/argus/releases</a>.</p>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

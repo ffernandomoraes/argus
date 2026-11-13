@@ -11,8 +11,8 @@ name: Release
 on:
   push:
     branches: [main]
-    # Só texto (README, anotações): não vira versão.
-    paths-ignore: ['**.md']
+    # Só texto (README, anotações) e o site: não vira versão.
+    paths-ignore: ['**.md', 'apps/website/**']
   workflow_dispatch:
     inputs:
       bump:

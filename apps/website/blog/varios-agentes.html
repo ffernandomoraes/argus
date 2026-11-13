@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude, Codex, Gemini e Cursor no mesmo canvas · Argus</title>
+  <meta name="description" content="O agente certo para cada tarefa, lado a lado no mesmo canvas.">
+  <link rel="icon" href="../assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="../acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="../index.html#"><img src="../assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="../canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="../conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="../acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="../terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="../times.html">Para times</a>
+      <a href="../download.html">Download</a>
+      <a href="../comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="../ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="../blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="../docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="../novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="../atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="../sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="../contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="../index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="../index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">✎</span>Blog</p>
+      <h1>Claude, Codex, Gemini e Cursor no mesmo canvas</h1>
+      <p class="lede">O agente certo para cada tarefa, lado a lado no mesmo canvas.</p>
+      <p class="art-meta"><span>Novidade</span><span>João Andrade</span><span>31 de outubro de 2026</span></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container article prose">
+      <p class="crumbs"><a href="../blog.html">Blog</a> › Novidade</p>
+      <figure class="pshot article__img"><img src="../assets/produto/terminais.webp" alt="" loading="lazy"></figure>
+      <p>Cada agente de código tem seus pontos fortes. Em vez de escolher um só, o Argus deixa usar vários lado a lado.</p>
+<h2>Vários agentes, uma interface</h2>
+<p>Além do Claude Code, o Argus conecta o Codex, o Gemini CLI e o Cursor CLI. A conta principal de cada um é a do terminal; outras contas entram em Configurações › Contas.</p>
+<h2>Lado a lado</h2>
+<p>Abra uma conversa do Claude ao lado de uma do Codex na mesma pasta e compare o que cada um entrega. Cada conversa usa o agente e a conta que você escolher.</p>
+<h2>Tudo visível</h2>
+<p>Cada conversa mostra o que o agente fez, as permissões que pediu e o diff dos arquivos. Nada fica escondido, que é um dos princípios do projeto desde o começo.</p>
+    </div>
+  </section>
+  <section class="section section--tight">
+    <div class="container">
+      <p class="eyebrow">Continue lendo</p>
+      <div class="post-grid"><a class="post" href="por-que-um-canvas.html"><img src="../assets/produto/canvas.webp" alt="" loading="lazy"><span class="post__tag">Produto</span><h3>Por que um canvas para acompanhar agentes de código</h3><p>Dez abas de terminal não escalam. O que muda quando cada projeto vira um bloco.</p><span class="post__meta">31 de outubro de 2026</span></a><a class="post" href="na-sua-assinatura.html"><img src="../assets/produto/conversas.webp" alt="" loading="lazy"><span class="post__tag">Bastidores</span><h3>Como o Argus usa a sua assinatura do Claude, sem chave de API</h3><p>O Argus não fala com a API: ele roda o claude que já está na sua máquina.</p><span class="post__meta">31 de outubro de 2026</span></a><a class="post" href="acesso-remoto.html"><img src="../assets/produto/acesso-remoto.svg" alt="" loading="lazy"><span class="post__tag">Novidade</span><h3>Use o Argus de casa pelo notebook e pelo celular</h3><p>O acesso remoto liga dois computadores, e o celular vira um controle das conversas.</p><span class="post__meta">13 de novembro de 2026</span></a></div>
+    </div>
+  </section>
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Construindo o jeito aberto de acompanhar agentes de código.</p>
+      <p class="lede">O Argus é a base para trabalhar com vários agentes ao mesmo tempo, com tudo à vista e na sua máquina.</p>
+      <a class="btn btn--primary" href="../index.html#planos">Baixar o Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="../assets/icone-argus-laranja.svg" role="img" aria-label="Ícone do Argus feito de partículas"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="../privacidade.html">Privacidade</a><a href="../contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="../script.js"></script>
+</body>
+</html>

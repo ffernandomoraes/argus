@@ -1,0 +1,3 @@
+Logos da faixa "Usado por quem trabalha na". Um SVG por empresa, com estes nomes:
+eduzz.svg, flui.svg, hayah.svg, wegou.svg, daya.svg, z2pay.svg, sicredi.svg, renner.svg, globo.svg
+O site deixa todos em cinza sozinho. Sem o arquivo, aparece o nome da empresa em texto.

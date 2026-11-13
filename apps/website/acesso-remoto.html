@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acesso remoto · Argus</title>
+  <meta name="description" content="Deixe o Argus ligado num computador e use de outro, com os mesmos projetos, conversas e terminais. Pelo celular, acompanhe o uso e as conversas e mande pedidos por texto, voz ou foto.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="index.html#"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="index.html#"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="index.html#"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="index.html#"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="index.html#"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Hero do produto: nome, título e uma ilustração (não há gravação do app para este recurso) -->
+  <section class="phero">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">⇄</span>Acesso remoto</p>
+      <h1>O Argus de casa, no notebook e no celular.</h1>
+      <p class="lede">Deixe o Argus ligado num computador e use de outro, com os mesmos projetos, conversas e terminais. Pelo celular, acompanhe o uso e as conversas e mande pedidos por texto, voz ou foto.</p>
+      <div class="hero__btns center-row">
+        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar grátis</a>
+        <a class="btn btn--outline" href="index.html">Conhecer o Argus</a>
+      </div>
+      <figure class="rscene" role="img" aria-label="Ilustração: o Argus do computador de casa aberto no notebook e no celular, ligados por uma conexão criptografada">
+        <div class="rscene__win">
+          <div class="rwin">
+            <div class="rwin__bar"><span class="rwin__dots"><i></i><i></i><i></i></span><span class="rwin__host">Mac de casa</span><span class="rwin__count">2 conectados</span></div>
+            <div class="rwin__canvas">
+              <div class="rgroup">
+                <p class="rgroup__name">Trabalho</p>
+                <div class="rfolder"><b>loja-web</b><span class="rchat"><i class="rdot rdot--run"></i>Escrever os testes</span><span class="rchat"><i class="rdot rdot--done"></i>Ajustar o checkout</span></div>
+                <div class="rfolder"><b>api</b><span class="rchat"><i class="rdot rdot--wait"></i>Rodar as migrações</span></div>
+              </div>
+              <div class="rterm"><p>$ pnpm dev</p><p class="rterm__ok">➜ Local: http://localhost:5173</p></div>
+            </div>
+          </div>
+          <p class="rscene__label">Notebook do trabalho</p>
+        </div>
+        <div class="rlink"><span class="rlink__lock"><svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></span>Criptografado<br>de ponta a ponta</div>
+        <div>
+        <div class="rphone"><div class="rphone__screen">
+          <p class="rphone__title">Conversas</p>
+          <div class="rusage"><div class="rusage__row"><span>Claude - limite de 5 h</span><span>42%</span></div><div class="rusage__bar"><i></i></div></div>
+          <div class="rtoast"><b>Argus</b>“Ajustar o checkout” terminou</div>
+          <ul class="rlist">
+            <li><i class="rdot rdot--wait"></i><span>Rodar as migrações<small>api - precisa de você</small></span></li>
+            <li><i class="rdot rdot--run"></i><span>Escrever os testes<small>loja-web - trabalhando</small></span></li>
+            <li><i class="rdot rdot--done"></i><span>Ajustar o checkout<small>loja-web - concluída</small></span></li>
+          </ul>
+          <div class="rinput"><span>Pedir algo…</span><svg viewBox="0 0 16 16"><rect x="5.5" y="1.5" width="5" height="8.5" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg></div>
+        </div></div>
+          <p class="rscene__label">Celular</p>
+        </div>
+      </figure>
+      <p class="pnote">Ilustração. Os projetos, as conversas e os terminais continuam no computador de casa.</p>
+    </div>
+  </section>
+
+  <!-- Recursos -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">De outro computador</p>
+      <div class="pgrid">
+        <article class="pfeat"><h3>Tudo do computador de casa</h3><p>Canvas, conversas, terminais e arquivos dos projetos, como se você estivesse na frente dele.</p></article>
+        <article class="pfeat"><h3>Os dois ao mesmo tempo</h3><p>Quem está em casa continua usando. Enquanto a janela mostra outro computador, a barra de cima fica azul.</p></article>
+        <article class="pfeat"><h3>Ditado e anexos</h3><p>Dite pelo microfone do notebook e anexe qualquer arquivo de até 50 MB.</p></article>
+        <article class="pfeat"><h3>O localhost do outro lado</h3><p>Abra no navegador do notebook o servidor do projeto que está rodando no computador de casa.</p></article>
+        <article class="pfeat"><h3>Login do Claude de longe</h3><p>A página de login abre no navegador de quem está usando, e o login vale no computador de casa.</p></article>
+        <article class="pfeat"><h3>Atualize e mantenha acordado</h3><p>Atualize o Argus de casa pelo notebook. Com o acesso ligado, o computador não dorme (dá para desligar).</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Celular -->
+  <section class="section">
+    <div class="container psplit">
+      <div>
+        <p class="eyebrow">Celular</p>
+        <h2>Acompanhe de qualquer lugar.</h2>
+        <p class="lede">Aponte a câmera para o QR code e o Argus abre no navegador do celular, sem instalar nada da loja. Veja o uso de cada conta, as conversas em andamento e os projetos, e mande pedidos.</p>
+        <ul class="pchecks"><li>Pedido por texto, voz, foto ou arquivo</li><li>Aviso quando uma conversa termina ou pede permissão</li><li>Uso do Claude de cada conta</li><li>Dá para adicionar à tela inicial, como um app</li></ul>
+      </div>
+      <figure class="rsolo" role="img" aria-label="Ilustração do Argus no celular, com o uso do Claude, um aviso de conversa concluída e a lista de conversas">
+        <div class="rphone"><div class="rphone__screen">
+          <p class="rphone__title">Conversas</p>
+          <div class="rusage"><div class="rusage__row"><span>Claude - limite de 5 h</span><span>42%</span></div><div class="rusage__bar"><i></i></div></div>
+          <div class="rtoast"><b>Argus</b>“Ajustar o checkout” terminou</div>
+          <ul class="rlist">
+            <li><i class="rdot rdot--wait"></i><span>Rodar as migrações<small>api - precisa de você</small></span></li>
+            <li><i class="rdot rdot--run"></i><span>Escrever os testes<small>loja-web - trabalhando</small></span></li>
+            <li><i class="rdot rdot--done"></i><span>Ajustar o checkout<small>loja-web - concluída</small></span></li>
+          </ul>
+          <div class="rinput"><span>Pedir algo…</span><svg viewBox="0 0 16 16"><rect x="5.5" y="1.5" width="5" height="8.5" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg></div>
+        </div></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Segurança -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Segurança</p>
+      <h2>Só entra quem você pareou.</h2>
+      <div class="pgrid">
+        <article class="pfeat"><h3>Código de uso único</h3><p>Vale por 10 minutos e para um aparelho só. Errou uma vez, ele deixa de valer.</p></article>
+        <article class="pfeat"><h3>Criptografia de ponta a ponta</h3><p>A ponte que liga os aparelhos só repassa dados cifrados. Ela não lê as conversas nem os arquivos.</p></article>
+        <article class="pfeat"><h3>Você vê quem está dentro</h3><p>A barra de cima mostra quantos aparelhos estão conectados. Um clique desconecta um ou todos.</p></article>
+        <article class="pfeat"><h3>Desligado por padrão</h3><p>Ninguém entra até você ligar “Permitir acesso”. Remova os aparelhos que não usa mais.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Começar -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Como ligar</p>
+      <h2>Pareado em um minuto.</h2>
+      <p class="lede">Os computadores usam o Argus instalado (macOS, Windows ou Linux, até misturados). O celular usa o navegador.</p>
+      <ol class="psteps">
+        <li><span>1</span><h3>Ligue no computador de casa</h3><p>Configurações › Acesso remoto › Permitir acesso.</p></li>
+        <li><span>2</span><h3>Gere o código</h3><p>Em Parear um aparelho, clique em Gerar código. Aparecem o código e o QR code.</p></li>
+        <li><span>3</span><h3>Conecte</h3><p>No notebook, em Conectar a outro Argus, digite o código. No celular, aponte a câmera para o QR code.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Outros recursos -->
+  <section class="section section--tight">
+    <div class="container">
+      <p class="eyebrow">Veja também</p>
+      <div class="pnexts"><a class="pnext" href="canvas.html"><span class="dd__ic">▦</span><strong>Canvas</strong><span class="pnext__go">→</span></a><a class="pnext" href="conversas.html"><span class="dd__ic">◌</span><strong>Conversas</strong><span class="pnext__go">→</span></a><a class="pnext" href="terminais.html"><span class="dd__ic">{ }</span><strong>Terminais</strong><span class="pnext__go">→</span></a></div>
+    </div>
+  </section>
+
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Construindo o jeito aberto de acompanhar agentes de código.</p>
+      <p class="lede">O Argus é a base para trabalhar com vários agentes ao mesmo tempo, com tudo à vista e na sua máquina.</p>
+      <a class="btn btn--primary" href="index.html#planos">Baixar o Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Ícone do Argus feito de partículas"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

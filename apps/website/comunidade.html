@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comunidade · Argus</title>
+  <meta name="description" content="Quem usa, quem contribui e como participar do Argus.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">♥</span>Comunidade</p>
+      <h1>Construído junto com quem usa.</h1>
+      <p class="lede">O Argus nasce do uso de todo dia e melhora com cada problema reportado, ideia sugerida e linha de código enviada.</p>
+      <div class="hero__btns center-row">
+        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">Dar uma estrela no GitHub</a>
+        <a class="btn btn--outline" href="#participar">Como participar</a>
+      </div>
+      <!-- Números do repositório, atualizados pela API do GitHub (script.js) -->
+      <div class="stats" data-repo-stats>
+        <div><strong data-stat="stars">8</strong><span>Estrelas</span></div>
+        <div><strong data-stat="releases">100+</strong><span>Versões publicadas</span></div>
+        <div><strong data-stat="forks">1</strong><span>Forks</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section love">
+    <div class="container center">
+      <p class="eyebrow">Quem usa</p>
+      <h2>O que a comunidade diz</h2>
+      <p class="lede">Usa o Argus? <a class="dl-link" href="contato.html">Conte como</a> e apareça aqui.</p>
+    </div>
+    <div class="love__rows">
+      <div class="love__row"><div class="love__track" data-marquee>
+          <article><header><img class="avatar" src="assets/joao-andrade.webp" alt="João Andrade" width="48" height="48"><div><strong><a href="https://www.linkedin.com/in/joandrade/" target="_blank" rel="noopener">João Andrade</a></strong><small>AI Product Engineer, HAYAH</small></div></header><p>O Argus aumentou minha produtividade. Consigo gerir vários projetos ao mesmo tempo e não perco a memória de nenhum deles.</p><p>Ele agiliza muito o meu dia a dia, e ficou muito mais fácil integrar com outras ferramentas, manter o histórico e trocar de IA quando preciso.</p></article>
+          <article><header><img class="avatar" src="assets/henrique-lati.webp" alt="Henrique Lati" width="48" height="48"><div><strong>Henrique Lati</strong><small>Tech Lead, Z2Pay</small></div></header><p>Estamos usando o Argus nos nossos projetos e conseguimos melhorar muito a contextualização e a memória da IA, que antes eram uma dificuldade por serem inconstantes.</p><p>Agora a IA performa muito mais, com agentes especialistas para cada frente.</p></article>
+          <article><header><img class="avatar" src="assets/sarah-albino.webp" alt="Sarah Albino" width="48" height="48"><div><strong><a href="https://www.linkedin.com/in/sarah-albino/" target="_blank" rel="noopener">Sarah Albino</a></strong><small>Design Engineer</small></div></header><p>Uso no desenvolvimento de protótipos para validar experiências junto ao time de PM.</p><p>Tem sido uma ferramenta essencial para os projetos que estou liderando.</p></article>
+          <article><header><img class="avatar" src="assets/murilo-lamarca.webp" alt="Murilo Lamarca" width="48" height="48"><div><strong><a href="https://www.linkedin.com/in/murilolamarca/" target="_blank" rel="noopener">Murilo Lamarca</a></strong><small>Specialist Product Designer, Locaweb</small></div></header><p>Estamos testando com o nosso time e temos percebido que, para trabalhar com workspaces e vários desenvolvedores, ele tem nos ajudado muito.</p></article>
+          <article><header><img class="avatar" src="assets/fernando-moraes.webp" alt="Fernando Moraes" width="48" height="48"><div><strong><a href="https://www.linkedin.com/in/feermooraes/" target="_blank" rel="noopener">Fernando Moraes</a></strong><small>Criador do Argus, Head of Design Engineering</small></div></header><p>Sou o criador do Argus e uso todos os dias, melhorando cada vez mais. Ele tem me ajudado muito a desenvolver inúmeros projetos.</p><p>Hoje faço 100% do meu desenvolvimento nele, e o nível de produtividade e de entregas mudou de patamar.</p></article>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="section" id="participar">
+    <div class="container">
+      <p class="eyebrow">Participe</p>
+      <h2>Quatro jeitos de ajudar.</h2>
+      <div class="contact-grid contact-grid--4">
+        <a class="contact" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener"><span class="contact__ic">★</span><h3>Dê uma estrela</h3><p>Ajuda mais gente a encontrar o projeto no GitHub.</p><span class="contact__go">Repositório →</span></a>
+        <a class="contact" href="https://github.com/ffernandomoraes/argus/issues/new" target="_blank" rel="noopener"><span class="contact__ic">!</span><h3>Reporte problemas</h3><p>Conte o que aconteceu, o sistema e a versão. Sai correção quase todo dia.</p><span class="contact__go">Abrir issue →</span></a>
+        <a class="contact" href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener"><span class="contact__ic">+</span><h3>Sugira ideias</h3><p>Veja o que já foi pedido e deixe a sua sugestão para as próximas versões.</p><span class="contact__go">Ver issues →</span></a>
+        <a class="contact" href="https://github.com/ffernandomoraes/argus/pulls" target="_blank" rel="noopener"><span class="contact__ic">{ }</span><h3>Mande código</h3><p>Leia as decisões em docs/, faça um fork e abra um pull request.</p><span class="contact__go">Pull requests →</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Quem contribui</p>
+      <h2>As pessoas por trás do Argus.</h2>
+      <div class="people" data-contributors>
+        <a class="person" href="https://github.com/ffernandomoraes" target="_blank" rel="noopener"><img src="assets/fernando-moraes.webp" alt=""><strong>Fernando Moraes</strong><span>Criador · código</span></a>
+        <a class="person" href="https://www.linkedin.com/in/joandrade/" target="_blank" rel="noopener"><img src="assets/joao-andrade.webp" alt=""><strong>João Andrade</strong><span>Contribuidor · site</span></a>
+      </div>
+      <p class="pnote">Quem contribui com código no repositório aparece aqui sozinho.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container psplit">
+      <div>
+        <p class="eyebrow">Apoie</p>
+        <h2>Me pague um café.</h2>
+        <p class="lede">O Argus é grátis. Se ele ajuda no seu dia a dia, dá para apoiar o projeto pela aba <strong>Me pague um café</strong>, nas configurações do app, com QR Code e chave Pix.</p>
+      </div>
+      <div class="coffee"><span>☕</span><p>Configurações › Me pague um café</p></div>
+    </div>
+  </section>
+
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Construindo o jeito aberto de acompanhar agentes de código.</p>
+      <p class="lede">O Argus é a base para trabalhar com vários agentes ao mesmo tempo, com tudo à vista e na sua máquina.</p>
+      <a class="btn btn--primary" href="index.html#planos">Baixar o Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Ícone do Argus feito de partículas"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

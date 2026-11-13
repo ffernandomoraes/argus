@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacidade · Argus</title>
+  <meta name="description" content="O que o Argus envia para fora da sua máquina, e o que não envia.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">◍</span>Privacidade</p>
+      <h1>Privacidade.</h1>
+      <p class="lede">O que o Argus envia para fora da sua máquina, e o que não envia.</p>
+      <p class="pnote">Atualizada em 13 de novembro de 2026.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container doc">
+      <nav class="doc-side" aria-label="Privacidade"><a href="#resumo">Resumo</a><a href="#conversas">Suas conversas e seus projetos</a><a href="#erros">Relatórios de erro</a><a href="#uso">Dados de uso</a><a href="#remoto">Acesso remoto</a><a href="#consultas">Consultas que o app faz</a><a href="#site">Este site</a><a href="#codigo">Código aberto</a><a href="#contato">Dúvidas</a></nav>
+      <div class="doc-body">
+        <section class="doc-sec" id="resumo"><h2>Resumo</h2><p>O Argus é um app que roda na sua máquina. Não existe conta no Argus, não há servidor do Argus no meio das suas conversas e o app não coleta o conteúdo dos seus projetos nem das suas conversas.</p>
+<p>O que sai da sua máquina são as conversas com os agentes (como já sairiam pelo terminal), algumas consultas técnicas, relatórios de erro e números de uso anônimos, sem dados pessoais. Se você ligar o acesso remoto, o que passa entre os seus aparelhos vai criptografado de ponta a ponta. Os detalhes estão abaixo.</p></section>
+        <section class="doc-sec" id="conversas"><h2>Suas conversas e seus projetos</h2><p>O Argus roda o Claude Code (e, se você conectar, o Codex, o Gemini CLI ou o Cursor CLI) instalado na sua máquina, com o seu login. O que você manda numa conversa vai para o provedor do agente do mesmo jeito que iria pelo terminal, e segue a política de privacidade dele: a da <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic</a>, no caso do Claude.</p>
+<p>Projetos, histórico das conversas, canvas e configurações ficam nos arquivos da sua máquina. O Argus lê o histórico que o próprio Claude Code grava em <code>~/.claude</code>.</p></section>
+        <section class="doc-sec" id="erros"><h2>Relatórios de erro</h2><p>No app instalado, erros, quedas e travamentos são enviados ao <a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Sentry</a> para que possam ser corrigidos. Eles são enviados sempre, sem uma opção para desligar.</p>
+<table class="doc-table"><tr><th>O que vai</th><th>O que não vai</th></tr>
+<tr><td>Onde o erro aconteceu (a pilha de funções e as últimas ações no app)</td><td>Conversas e conteúdo de arquivos</td></tr>
+<tr><td>Versão do Argus, sistema operacional e se há WSL</td><td>Chaves, tokens e e-mails (são apagados)</td></tr>
+<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário (saem até dos caminhos de pasta)</td></tr></table>
+<p>Também ficam desligadas a coleta das variáveis das funções e as fotos da memória das quedas, que poderiam conter trechos de conversa.</p></section>
+        <section class="doc-sec" id="uso"><h2>Dados de uso</h2><p>No app instalado, o Argus manda uma vez por dia um resumo anônimo de como ele é usado, para saber o que melhorar. O envio vem ligado e desliga em <strong>Configurações › Geral</strong>.</p>
+<table class="doc-table"><tr><th>O que vai</th><th>O que não vai</th></tr>
+<tr><td>Tempo de uso e quantas conversas, mensagens, pastas, workspaces e terminais</td><td>Conversas, prompts e conteúdo de arquivos</td></tr>
+<tr><td>Tokens e pedidos por agente e modelo, e o nome das ferramentas usadas (Bash, Edit…)</td><td>Nomes de pastas, projetos, conversas, MCPs e skills</td></tr>
+<tr><td>Versão do Argus e do Claude Code, sistema, idioma, se há WSL e o plano de cada conta</td><td>E-mails e logins</td></tr>
+<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário</td></tr></table></section>
+        <section class="doc-sec" id="remoto"><h2>Acesso remoto</h2><p>O acesso remoto vem desligado. Quando você liga e pareia um aparelho, os dois conversam por uma ponte hospedada na Cloudflare. A conexão é criptografada de ponta a ponta: a ponte só repassa dados cifrados e não consegue ler as conversas, os terminais nem os arquivos.</p>
+<p>O app do celular é uma página servida por essa mesma ponte. Os avisos do celular saem do computador de casa, criptografados, pelo serviço de notificações do sistema do celular (Apple ou Google).</p></section>
+        <section class="doc-sec" id="consultas"><h2>Consultas que o app faz</h2><table class="doc-table"><tr><th>Para quê</th><th>Para onde</th></tr>
+<tr><td>Procurar e baixar atualizações (ao abrir e a cada 5 horas)</td><td>GitHub</td></tr>
+<tr><td>Saber se há versão nova do Claude Code</td><td>npm</td></tr>
+<tr><td>Mostrar o limite de uso de cada conta</td><td>Anthropic, com o seu login</td></tr>
+<tr><td>Instalar o Claude Code, quando você pede nas boas-vindas</td><td>claude.ai (instalador oficial)</td></tr>
+<tr><td>Ditado: o áudio vai em tempo real para o serviço de voz do Claude</td><td>Anthropic, com o seu login</td></tr>
+<tr><td>Transcrição de áudio local: baixar o modelo uma vez</td><td>Hugging Face</td></tr></table>
+<p>Nenhuma dessas consultas leva o conteúdo das suas conversas, exceto o ditado, que leva o áudio que você grava.</p></section>
+        <section class="doc-sec" id="site"><h2>Este site</h2><p>O site é estático e hospedado no GitHub Pages. Ele não usa cookies e não tem ferramentas de análise ou de anúncios.</p>
+<p>Ao abrir uma página, o seu navegador conversa só com o GitHub, que hospeda o site e fornece os números do repositório e os links de download. O GitHub pode registrar o seu endereço IP, conforme a <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">política de privacidade do GitHub</a>. As fontes ficam hospedadas junto com o site.</p></section>
+        <section class="doc-sec" id="codigo"><h2>Código aberto</h2><p>Tudo o que está nesta página pode ser conferido no código do Argus, que é aberto no <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a>.</p></section>
+        <section class="doc-sec" id="contato"><h2>Dúvidas</h2><p>Se tiver dúvidas sobre privacidade, fale com a gente pela <a href="contato.html">página de contato</a>. Quando o app passar a enviar algo novo, esta página muda junto.</p></section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

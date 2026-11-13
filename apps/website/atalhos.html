@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atalhos · Argus</title>
+  <meta name="description" content="Atalhos de teclado do Argus no Windows, Linux e macOS.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">▥</span>Atalhos</p>
+      <h1>Atalhos de teclado.</h1>
+      <p class="lede">Faça mais sem tirar a mão do teclado.</p>
+    </div>
+  </section>
+
+  <section class="section" data-keys>
+    <div class="container">
+      <div class="dl-tabs keys-os" role="tablist"><button role="tab" data-os="win">Windows e Linux</button><button role="tab" data-os="mac">macOS</button></div>
+      <div class="keys-grid">
+      <section class="keys-group"><h2>Canvas</h2><table class="keys"><tr><td>Nova pasta</td><td class='k-win'><kbd>Ctrl</kbd><kbd>P</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>P</kbd></td></tr><tr><td>Novo grupo</td><td class='k-win'><kbd>Ctrl</kbd><kbd>G</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>G</kbd></td></tr><tr><td>Nova conversa</td><td class='k-win'><kbd>Ctrl</kbd><kbd>N</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>N</kbd></td></tr><tr><td>Nota no canvas</td><td class='k-win'><kbd>C</kbd></td><td class='k-mac'><kbd>C</kbd></td></tr><tr><td>Desfazer o layout</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Z</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>Z</kbd></td></tr><tr><td>Refazer o layout</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd></td></tr><tr><td>Ver tudo</td><td class='k-win'><kbd>Shift</kbd><kbd>1</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>1</kbd></td></tr><tr><td>Zoom em 100%</td><td class='k-win'><kbd>Shift</kbd><kbd>0</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>0</kbd></td></tr><tr><td>Esconder as barras</td><td class='k-win'><kbd>Ctrl</kbd><kbd>\</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>\</kbd></td></tr><tr><td>Nova janela do canvas</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd></td></tr><tr><td>Apagar o selecionado</td><td class='k-win'><kbd>Delete</kbd></td><td class='k-mac'><kbd>⌫</kbd></td></tr></table></section>
+      <section class="keys-group"><h2>Painéis</h2><table class="keys"><tr><td>Agentes</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>A</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd></td></tr><tr><td>Servidores rodando</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd></td></tr><tr><td>Memória do Claude</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>M</kbd></td></tr><tr><td>Configurações</td><td class='k-win'><kbd>Ctrl</kbd><kbd>,</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>,</kbd></td></tr><tr><td>Aumentar ou diminuir a interface (com as Configurações abertas)</td><td class='k-win'><kbd>Ctrl</kbd><kbd>+</kbd> / <kbd>Ctrl</kbd><kbd>-</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>+</kbd> / <kbd>⌘</kbd><kbd>-</kbd></td></tr><tr><td>Interface em 100% (com as Configurações abertas)</td><td class='k-win'><kbd>Ctrl</kbd><kbd>0</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>0</kbd></td></tr></table></section>
+      <section class="keys-group"><h2>Conversas e código</h2><table class="keys"><tr><td>Buscar na conversa</td><td class='k-win'><kbd>Ctrl</kbd><kbd>F</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>F</kbd></td></tr><tr><td>Colar print</td><td class='k-win'><kbd>Ctrl</kbd><kbd>V</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>V</kbd></td></tr><tr><td>Comandos de barra</td><td class='k-win'><kbd>/</kbd></td><td class='k-mac'><kbd>/</kbd></td></tr><tr><td>Chamar um agente</td><td class='k-win'><kbd>@</kbd></td><td class='k-mac'><kbd>@</kbd></td></tr><tr><td>Salvar arquivo no editor</td><td class='k-win'><kbd>Ctrl</kbd><kbd>S</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>S</kbd></td></tr></table></section>
+      <section class="keys-group"><h2>Terminais</h2><table class="keys"><tr><td>Aumentar a fonte do terminal</td><td class='k-win'><kbd>Ctrl</kbd><kbd>+</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>+</kbd></td></tr><tr><td>Diminuir a fonte do terminal</td><td class='k-win'><kbd>Ctrl</kbd><kbd>-</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>-</kbd></td></tr></table></section>
+      </div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

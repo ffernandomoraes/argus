@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Download · Argus</title>
+  <meta name="description" content="Baixe o Argus para macOS, Windows ou Linux. Grátis, roda na sua máquina com a sua assinatura do Claude.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="index.html#"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="index.html#"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="index.html#"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="index.html#"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="index.html#"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Hero: o sistema de quem visita vem destacado (script.js) -->
+  <section class="phero" data-download>
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">↓</span>Download <span class="dl-version" data-dl-version></span></p>
+      <h1>Baixe o Argus.</h1>
+      <p class="lede">Grátis. Roda na sua máquina, com o Claude Code e a assinatura que você já tem.</p>
+      <div class="hero__btns center-row">
+        <a class="btn btn--primary btn--lg" data-dl-main href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar para o seu sistema</a>
+      </div>
+      <p class="pnote" data-dl-main-note>Atualiza sozinho depois de instalado.</p>
+
+      <div class="dl-cards">
+        <article class="dl-card" data-os="mac">
+          <img class="dl-card__ic" src="assets/os/apple.svg" alt="">
+          <h3>macOS</h3>
+          <p>Apple Silicon (M1 ou mais novo)</p>
+          <a class="btn btn--outline" data-dl="dmg" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar .dmg</a>
+          <a class="dl-alt" data-dl="zip" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">ou o .zip</a>
+        </article>
+        <article class="dl-card" data-os="win">
+          <img class="dl-card__ic" src="assets/os/windows.svg" alt="">
+          <h3>Windows</h3>
+          <p>Windows 10 e 11, 64 bits</p>
+          <a class="btn btn--outline" data-dl="exe" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar instalador</a>
+          <span class="dl-alt">Sem pedir administrador</span>
+        </article>
+        <article class="dl-card" data-os="linux">
+          <img class="dl-card__ic" src="assets/os/linux.svg" alt="">
+          <h3>Linux</h3>
+          <p>64 bits (Intel e AMD)</p>
+          <a class="btn btn--outline" data-dl="appimage" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar AppImage</a>
+          <span class="dl-alt">Um arquivo só</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pelo terminal -->
+  <section class="section">
+    <div class="container psplit">
+      <div>
+        <p class="eyebrow">Mac e Linux</p>
+        <h2>Ou instale pelo terminal.</h2>
+        <p class="lede">Baixa a última versão, coloca no lugar certo e abre. Rodar de novo atualiza. No Mac, assim o app abre sem o aviso de desenvolvedor não identificado.</p>
+      </div>
+      <div class="terminal dl-term">
+        <div class="terminal__bar"><i></i><i></i><i></i><span class="mono">Terminal</span>
+          <button class="dl-copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.sh | sh">Copiar</button></div>
+        <pre class="mono"><span class="accent">$</span> curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.sh | sh</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passo a passo por sistema -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Instalação</p>
+      <h2>Passo a passo.</h2>
+      <div class="dl-tabs" role="tablist">
+        <button role="tab" data-tab="mac">macOS</button>
+        <button role="tab" data-tab="win">Windows</button>
+        <button role="tab" data-tab="linux">Linux</button>
+      </div>
+      <ol class="psteps" data-panel="mac">
+        <li><span>1</span><h3>Baixe o .dmg</h3><p>O arquivo Argus-versão-arm64.dmg, no botão acima.</p></li>
+        <li><span>2</span><h3>Arraste para Aplicativos</h3><p>Abra o .dmg e arraste o Argus para a pasta Aplicativos.</p></li>
+        <li><span>3</span><h3>Libere na primeira vez</h3><p>O app não é notarizado pela Apple. Em Ajustes do Sistema › Privacidade e Segurança, clique em Abrir Mesmo Assim.</p></li>
+      </ol>
+      <ol class="psteps" data-panel="win" hidden>
+        <li><span>1</span><h3>Baixe o instalador</h3><p>O arquivo Argus-Setup-versão.exe, no botão acima.</p></li>
+        <li><span>2</span><h3>Abra o arquivo</h3><p>Na primeira vez, o Windows mostra “O Windows protegeu o computador”. Clique em Mais informações › Executar assim mesmo.</p></li>
+        <li><span>3</span><h3>Instale o Git</h3><p>O Git for Windows mostra os arquivos alterados e o diff. As boas-vindas do app conferem para você.</p></li>
+      </ol>
+      <ol class="psteps" data-panel="linux" hidden>
+        <li><span>1</span><h3>Baixe o AppImage</h3><p>O arquivo Argus-versão-x86_64.AppImage, ou use o comando do terminal acima.</p></li>
+        <li><span>2</span><h3>Dê permissão</h3><p>Rode chmod +x no arquivo e abra. Na primeira abertura o Argus entra no menu de apps.</p></li>
+        <li><span>3</span><h3>Tenha o git</h3><p>O git da distribuição mostra os arquivos alterados: sudo apt install git.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Requisitos -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Antes de começar</p>
+      <h2>O que você precisa.</h2>
+      <div class="pgrid">
+        <article class="pfeat"><h3>Claude Code</h3><p>O Argus usa o claude da sua máquina e a sua assinatura. Se ainda não tiver, as boas-vindas instalam com um clique e fazem o login.</p></article>
+        <article class="pfeat"><h3>Git</h3><p>Para a branch, os arquivos não comitados e o diff. No Windows, o Git for Windows; no Linux, o da distribuição.</p></article>
+        <article class="pfeat"><h3>Outros agentes, se quiser</h3><p>Codex, Gemini CLI e Cursor CLI também funcionam. Conecte em Configurações › Contas.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Atualizações e linha de comando -->
+  <section class="section">
+    <div class="container psplit">
+      <div>
+        <p class="eyebrow">Depois de instalar</p>
+        <h2>Atualiza sozinho.</h2>
+        <p class="lede">O Argus procura versão nova ao abrir e a cada 5 horas. Quando ela fica pronta, aparece “Atualizar para” no canto da barra de título: um clique e o app reinicia atualizado.</p>
+        <ul class="pchecks"><li>As permissões do Mac continuam valendo entre versões</li><li>No Windows, o instalador novo roda em modo silencioso</li><li>Notas de cada versão no GitHub</li></ul>
+      </div>
+      <div class="terminal dl-term">
+        <div class="terminal__bar"><i></i><i></i><i></i><span class="mono">Terminal</span></div>
+        <pre class="mono"><span class="muted"># abra a pasta atual no canvas, como o code . do VS Code</span>
+<span class="accent">$</span> cd ~/projetos/meu-app
+<span class="accent">$</span> argus .</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tight">
+    <div class="container center">
+      <p class="pnote">Todas as versões e as notas de cada uma ficam em <a class="dl-link" href="https://github.com/ffernandomoraes/argus/releases" target="_blank" rel="noopener">github.com/ffernandomoraes/argus/releases</a>.</p>
+    </div>
+  </section>
+
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Construindo o jeito aberto de acompanhar agentes de código.</p>
+      <p class="lede">O Argus é a base para trabalhar com vários agentes ao mesmo tempo, com tudo à vista e na sua máquina.</p>
+      <a class="btn btn--primary" href="index.html#planos">Baixar o Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Ícone do Argus feito de partículas"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

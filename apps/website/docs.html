@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentação · Argus</title>
+  <meta name="description" content="Como instalar, usar e configurar o Argus.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
+  <a href="acesso-remoto.html">Ver como funciona</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Principal">
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">▤</span>Documentação</p>
+      <h1>Documentação</h1>
+      <p class="lede">Tudo para instalar, entender e tirar o máximo do Argus.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container doc">
+      <nav class="doc-side" aria-label="Documentação"><a href="#comecar">Primeiros passos</a><a href="#conceitos">Conceitos</a><a href="#conversas">Conversas</a><a href="#contas">Contas</a><a href="#remoto">Acesso remoto</a><a href="#terminais">Terminais e código</a><a href="#dados">Onde ficam os dados</a><a class="doc-side__ext" href="https://github.com/ffernandomoraes/argus/tree/main/docs" target="_blank" rel="noopener">Docs técnicos no GitHub ↗</a></nav>
+      <div class="doc-body">
+        <section class="doc-sec" id="comecar">
+          <h2>Primeiros passos</h2><h3>Instale</h3><p>Baixe a versão do seu sistema na <a href="download.html">página de download</a>. No Mac e no Linux também dá para instalar pelo terminal com o <code>install.sh</code>.</p><h3>Primeira abertura</h3><p>As boas-vindas explicam o app em 5 etapas. A última configura tudo: instala o Claude Code com um clique (o instalador oficial da Anthropic), confere o Git no Windows e faz o login na sua conta do Claude.</p><h3>Abra uma pasta</h3><p>Use <strong>Nova pasta</strong> no menu do canvas (<kbd>Ctrl</kbd> <kbd>P</kbd>, ou <kbd>⌘</kbd> <kbd>P</kbd> no Mac), arraste uma pasta para a janela ou rode <code>argus .</code> no terminal, dentro do projeto. A pasta vira um bloco no canvas com a branch do git e as conversas mais recentes.</p><h3>Comece uma conversa</h3><p>Clique no <strong>+</strong> acima da pasta. O chat abre no painel lateral, com o mesmo <code>CLAUDE.md</code>, configurações e MCPs do Claude Code no terminal.</p>
+        </section>
+        <section class="doc-sec" id="conceitos">
+          <h2>Conceitos</h2><h3>Canvas</h3><p>Área de trabalho infinita, com pan e zoom. Guarda a posição, o tamanho e a cor de tudo o que está nela.</p><h3>Grupo</h3><p>Região colorida que junta pastas, terminais e conversas: Trabalho, Freela, Pessoal ou o que você quiser. Cada grupo usa uma conta do Claude.</p><h3>Pasta</h3><p>Uma pasta do disco representada por um bloco. Mostra o nome, o caminho, a branch e as conversas mais recentes; as demais ficam em <strong>Ver todas as conversas</strong>.</p><h3>Conversa</h3><p>Chat com o Claude Code rodando na pasta. Aceita texto, prints, arquivos e ditado. Status: rodando, esperando você ou concluída.</p><h3>Sessão externa</h3><p>Conversa aberta fora do app (terminal, VS Code). O Argus mostra o histórico e o status dela na pasta.</p><h3>Agente e subagente</h3><p>Agentes são os subagentes do Claude Code, em <code>~/.claude/agents</code>, chamados com <code>@nome</code>. Enquanto um subagente roda, ele aparece embaixo da conversa que o lançou.</p><h3>Terminal</h3><p>Bloco com um terminal real numa pasta, rodando o <code>claude</code> ou o shell do sistema.</p><h3>Conta</h3><p>Login do Claude. A principal é a do <code>~/.claude</code>, a mesma do terminal; as outras são adicionadas em <strong>Configurações › Contas</strong>.</p>
+        </section>
+        <section class="doc-sec" id="conversas">
+          <h2>Conversas</h2><h3>Onde abrem</h3><p>No painel lateral, numa janela própria ou num bloco dentro do canvas, conforme <strong>Configurações › Geral › Abrir conversas em</strong>. Uma conversa fica em um lugar só de cada vez.</p><h3>Permissões</h3><p>Os pedidos de permissão chegam no chat, com o comando completo e o diff da edição. Escolha o modo de permissão de cada conversa no rodapé da caixa de mensagem.</p><h3>Modelo e esforço</h3><p>Troque modelo, nível de esforço, thinking e Ultracode por conversa. Cada conversa guarda os dela.</p><h3>Comandos e agentes</h3><p>Digite <code>/</code> para os comandos de barra e <code>@nome</code> para chamar um agente da biblioteca.</p>
+        </section>
+        <section class="doc-sec" id="contas">
+          <h2>Contas</h2><h3>Uma conta por grupo</h3><p>Clique com o botão direito no grupo e escolha a conta. Pastas, terminais e conversas do grupo usam ela; fora de grupo vale a conta padrão.</p><h3>Adicionar contas</h3><p>Em <strong>Configurações › Contas</strong>: adicionar, entrar de novo, apelido, padrão e remover. Histórico, <code>CLAUDE.md</code>, agentes e skills ficam ligados aos da conta principal.</p><h3>Limite de uso</h3><p>O indicador na barra de título mostra o limite de cada conta, sem gastar uso para conferir.</p>
+        </section>
+        <section class="doc-sec" id="remoto">
+          <h2>Acesso remoto</h2><h3>Ligar</h3><p>No computador que fica ligado, abra <strong>Configurações › Acesso remoto</strong> e ligue <strong>Permitir acesso</strong>. Com o acesso ligado, o computador não dorme; dá para desligar em <strong>Manter este computador acordado</strong>.</p><h3>Parear</h3><p>Em <strong>Parear um aparelho</strong>, clique em <strong>Gerar código</strong>. No outro computador, use <strong>Conectar a outro Argus</strong> e digite o código; no celular, aponte a câmera para o QR code. O código vale por 10 minutos, para um aparelho só.</p><h3>Usar</h3><p>No notebook, o Argus de casa abre numa janela com a barra de cima azul: canvas, conversas, terminais e arquivos. No celular: uso das contas, conversas e projetos, pedidos por texto, voz, foto ou arquivo e avisos quando uma conversa termina ou pede permissão.</p><h3>Segurança</h3><p>A conexão é criptografada de ponta a ponta. A barra de cima mostra quantos aparelhos estão conectados; em <strong>Aparelhos pareados</strong>, remova os que não usa mais.</p>
+        </section>
+        <section class="doc-sec" id="terminais">
+          <h2>Terminais e código</h2><h3>Terminais</h3><p>Botão direito na pasta › <strong>Novo terminal aqui</strong> › Claude Code ou Shell. Use o modo foco para ampliar e <kbd>Ctrl</kbd> <kbd>+</kbd> / <kbd>Ctrl</kbd> <kbd>-</kbd> para a fonte.</p><h3>Servidor do projeto</h3><p>O botão acima da pasta roda o script <code>dev</code> ou <code>start</code> do <code>package.json</code>. A lista <strong>Servidores rodando</strong> mostra também os que os agentes deixaram no ar.</p><h3>Painel de código</h3><p>Árvore de arquivos e editor com as cores do git. Crie, renomeie, exclua e salve com <kbd>Ctrl</kbd> <kbd>S</kbd>.</p>
+        </section>
+        <section class="doc-sec" id="dados">
+          <h2>Onde ficam os dados</h2><h3>Arquivos do Claude Code</h3><table class="doc-table"><tr><th>O quê</th><th>Onde</th></tr><tr><td>Conversa</td><td><code>~/.claude/projects/&lt;projeto&gt;/&lt;sessão&gt;.jsonl</code></td></tr><tr><td>Status das sessões abertas</td><td><code>~/.claude/sessions/&lt;pid&gt;.json</code></td></tr><tr><td>Agentes globais</td><td><code>~/.claude/agents/*.md</code></td></tr><tr><td>Contas adicionadas</td><td><code>~/.argus/accounts/&lt;id&gt;</code></td></tr></table><p>O Argus lê esses arquivos do Claude Code; não são API pública e podem mudar entre versões.</p><h3>Atualizações</h3><p>O app procura versão nova ao abrir e a cada 5 horas. Quando ela fica pronta, aparece <strong>Atualizar para</strong> na barra de título.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

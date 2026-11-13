@@ -10,6 +10,8 @@ import { DurableObject } from 'cloudflare:workers'
 // - /client/<hostId>: um aparelho. Recebe um número; o de casa recebe `{t:'open', c}` e as
 //   mensagens dele com o número na frente (4 bytes).
 // - /pair/<nameplate>?role=host|client: o pareamento, uma dupla por vez, por até 10 minutos.
+//
+// Os arquivos de public/ (o app do celular, montado de mobile/) são servidos antes de chegar aqui.
 
 interface Env {
   ROOM: DurableObjectNamespace<Room>
@@ -42,6 +44,34 @@ function upgrade(accept: (server: WebSocket) => void): Response {
 const byteLength = (m: ArrayBuffer | string) => (typeof m === 'string' ? m.length : m.byteLength)
 
 export class Room extends DurableObject<Env> {
+  // As conexões do de casa, da mais nova para a mais antiga. A de antes, fechada daqui quando ele
+  // religou, continua na lista (e "aberta") até o outro lado confirmar o fechamento, o que não
+  // acontece se o processo morreu (o Argus reiniciado): mandar nela quebra com "send() after close()".
+  private hosts(): WebSocket[] {
+    const at = (ws: WebSocket) => (ws.deserializeAttachment() as { at?: number } | null)?.at ?? 0
+    return this.ctx
+      .getWebSockets('host')
+      .filter((ws) => ws.readyState === OPEN)
+      .sort((a, b) => at(b) - at(a))
+  }
+
+  private host(): WebSocket | undefined {
+    return this.hosts()[0]
+  }
+
+  // Manda ao de casa pela conexão mais nova que aceitar; nenhuma: falso.
+  private sendToHost(data: string | ArrayBuffer | Uint8Array): boolean {
+    for (const ws of this.hosts()) {
+      try {
+        ws.send(data)
+        return true
+      } catch {
+        closeQuietly(ws, 4000, 'replaced')
+      }
+    }
+    return false
+  }
+
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return text('expected websocket', 426)
     const url = new URL(request.url)
@@ -60,13 +90,16 @@ export class Room extends DurableObject<Env> {
     if (stored && stored !== hash) return text('forbidden', 403)
     if (!stored) await this.ctx.storage.put('keyHash', hash)
     // A conexão nova do de casa vale; as de antes (e os aparelhos ligados a ela) saem.
-    for (const old of this.ctx.getWebSockets('host')) old.close(4000, 'replaced')
-    for (const c of this.ctx.getWebSockets('client')) c.close(4001, 'host-gone')
-    return upgrade((server) => this.ctx.acceptWebSocket(server, ['host']))
+    for (const old of this.ctx.getWebSockets('host')) closeQuietly(old, 4000, 'replaced')
+    for (const c of this.ctx.getWebSockets('client')) closeQuietly(c, 4001, 'host-gone')
+    return upgrade((server) => {
+      this.ctx.acceptWebSocket(server, ['host'])
+      server.serializeAttachment({ at: Date.now() })
+    })
   }
 
   private acceptClient(): Response {
-    const host = this.ctx.getWebSockets('host')[0]
+    const host = this.host()
     if (!host) return text('host offline', 404)
     const now = Date.now()
     const pending = (ws: WebSocket) => !(ws.deserializeAttachment() as ClientState | null)?.authed
@@ -89,7 +122,10 @@ export class Room extends DurableObject<Env> {
       this.ctx.acceptWebSocket(server, ['client', `c:${id}`])
       server.serializeAttachment({ at: now, authed: false } satisfies ClientState)
     })
-    host.send(JSON.stringify({ t: 'open', c: id }))
+    if (!this.sendToHost(JSON.stringify({ t: 'open', c: id }))) {
+      for (const ws of this.ctx.getWebSockets(`c:${id}`)) closeQuietly(ws, 4001, 'host-gone')
+      return text('host offline', 404)
+    }
     return response
   }
 
@@ -129,12 +165,10 @@ export class Room extends DurableObject<Env> {
 
     if (tags.includes('client')) {
       if (typeof message === 'string') return ws.close(1003, 'binary only')
-      const host = this.ctx.getWebSockets('host')[0]
-      if (!host) return ws.close(4001, 'host-gone')
       const frame = new Uint8Array(4 + message.byteLength)
       new DataView(frame.buffer).setUint32(0, clientId(tags))
       frame.set(new Uint8Array(message), 4)
-      host.send(frame)
+      if (!this.sendToHost(frame)) ws.close(4001, 'host-gone')
       return
     }
 
@@ -158,9 +192,10 @@ export class Room extends DurableObject<Env> {
       // já fechado
     }
     if (tags.includes('host')) {
-      for (const c of this.ctx.getWebSockets('client')) c.close(4001, 'host-gone')
+      // A antiga saindo depois de o de casa já ter religado: os aparelhos são da nova, ficam.
+      if (!this.host()) for (const c of this.ctx.getWebSockets('client')) closeQuietly(c, 4001, 'host-gone')
     } else if (tags.includes('client')) {
-      this.ctx.getWebSockets('host')[0]?.send(JSON.stringify({ t: 'close', c: clientId(tags) }))
+      this.sendToHost(JSON.stringify({ t: 'close', c: clientId(tags) }))
     } else {
       // Pareamento: acabou para os dois.
       for (const t of ['pair-host', 'pair-client']) for (const s of this.ctx.getWebSockets(t)) if (s !== ws) s.close(1000, 'pair-over')
@@ -169,6 +204,14 @@ export class Room extends DurableObject<Env> {
 
   async alarm(): Promise<void> {
     for (const t of ['pair-host', 'pair-client']) for (const s of this.ctx.getWebSockets(t)) s.close(4002, 'expired')
+  }
+}
+
+function closeQuietly(ws: WebSocket, code: number, reason: string): void {
+  try {
+    ws.close(code, reason)
+  } catch {
+    // já fechada
   }
 }
 

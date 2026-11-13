@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import WebSocket from 'ws'
 import { afterAll, describe, expect, it } from 'vitest'
 import { handle } from '../ipc/register'
 import { RemoteClient } from './client'
@@ -151,4 +152,30 @@ describe.skipIf(!RELAY)('serviço do acesso remoto pela ponte', () => {
     expect(access.state().devices).toHaveLength(0)
     access.shutdown()
   }, 60_000)
+
+  // 2026-11-12: o Argus reiniciado religa na sala; a conexão antiga, de um processo que morreu, não
+  // confirma o fechamento e ficava na lista. A ponte mandava o aviso do aparelho nela e quebrava
+  // ("send() after close()", erro 500): ninguém entrava até ela sair sozinha.
+  it('aparelho entra depois de o de casa religar sem a conexão antiga ter fechado', async () => {
+    const hostId = randomBytes(24).toString('base64url')
+    const auth = { headers: { Authorization: `Bearer ${randomBytes(32).toString('base64url')}` } }
+    const open = (path: string, opts?: WebSocket.ClientOptions) =>
+      new Promise<WebSocket>((resolve, reject) => {
+        const ws = new WebSocket(`${RELAY}${path}`, opts)
+        ws.once('open', () => resolve(ws))
+        ws.once('unexpected-response', (_req, res) => reject(new Error(`status ${res.statusCode}`)))
+        ws.once('error', reject)
+      })
+    const dead = await open(`/host/${hostId}`, auth)
+    // Não lê mais nada: o fechamento mandado pela ponte nunca é confirmado (como um processo morto).
+    ;(dead as unknown as { _socket: { pause(): void } })._socket.pause()
+    const host = await open(`/host/${hostId}`, auth)
+    const got: string[] = []
+    host.on('message', (m: Buffer) => got.push(m.toString()))
+    const device = await open(`/client/${hostId}`)
+    await until(() => got.some((m) => m.includes('"open"')))
+    device.close()
+    host.close()
+    dead.terminate()
+  })
 })

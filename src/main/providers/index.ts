@@ -23,7 +23,7 @@ import { errorMessage } from '../lib/errors'
 import { findCommand, lookupShellPath } from './bins'
 import { providerLaunch } from './env'
 import { INSTALL_COMMANDS, runInstaller } from './install'
-import { KEY_PATTERNS, keyHint, saveKey } from './keys'
+import { deleteKey, KEY_PATTERNS, keyHint, saveKey } from './keys'
 import { ID, providerAccountDir } from './paths'
 import {
   addEntry,
@@ -400,6 +400,7 @@ export class Providers {
 function removeDir(provider: ProviderId, id: string): void {
   const dir = providerAccountDir(provider, id)
   if (!dir || !ID.test(id)) return
+  deleteKey(provider, id)
   unlinkAgentsDir(provider, dir)
   try {
     rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 })

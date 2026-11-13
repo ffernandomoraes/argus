@@ -20,7 +20,7 @@ import { addUsage, bump, emptyDay, localDay, toolName, usageDelta, type DayStats
 // juntado é apagado e nada sai. Só no app instalado: no pnpm dev, só com ARGUS_TELEMETRY_URL (a
 // Worker rodando local, `cd telemetry && wrangler dev`).
 
-const DEFAULT_URL = 'https://argus-telemetry.fernando-moraes-10e.workers.dev/v1/report'
+const DEFAULT_URL = 'https://telemetry.argusterm.com/v1/report'
 const endpoint = () => process.env.ARGUS_TELEMETRY_URL || (app.isPackaged ? DEFAULT_URL : '')
 
 // O relógio do tempo de uso: a cada minuto conta o tempo desde a última volta, se a janela estava em

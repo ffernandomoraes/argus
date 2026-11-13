@@ -52,7 +52,7 @@ function savePairedHost(host: PairedHost | null): void {
 
 // A ponte publicada; no pnpm mobile:dev a página roda no localhost e fala com ela (ou com a de
 // VITE_RELAY_URL, como a do `wrangler dev`).
-const PUBLISHED_RELAY = 'wss://argus-relay.fernando-moraes-10e.workers.dev'
+const PUBLISHED_RELAY = 'wss://remote.argusterm.com'
 
 // A ponte: a mesma origem da página (ela serve o app).
 export function relayBase(): string {

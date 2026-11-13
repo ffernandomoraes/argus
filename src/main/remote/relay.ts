@@ -6,7 +6,7 @@ import type { Link } from './link'
 // aqui vai cifrado por crypto.ts. ARGUS_RELAY_URL troca o endereço (a ponte rodando no
 // `wrangler dev`, por exemplo).
 
-const DEFAULT_RELAY = 'wss://argus-relay.fernando-moraes-10e.workers.dev'
+const DEFAULT_RELAY = 'wss://remote.argusterm.com'
 
 export function relayUrl(): string {
   return (process.env.ARGUS_RELAY_URL || DEFAULT_RELAY).replace(/\/+$/, '')

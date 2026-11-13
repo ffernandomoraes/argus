@@ -3,7 +3,10 @@
 name = "argus-relay"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
+# Endereço público: remote.argusterm.com. O *.workers.dev segue ligado para as versões do Argus (e os
+# celulares pareados) de antes do domínio próprio.
 workers_dev = true
+routes = [{ pattern = "remote.argusterm.com", custom_domain = true }]
 
 [[durable_objects.bindings]]
 name = "ROOM"

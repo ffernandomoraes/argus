@@ -4,7 +4,10 @@
 name = "argus-telemetry"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
+# Endereço público: telemetry.argusterm.com. O *.workers.dev segue ligado para as versões do Argus de
+# antes do domínio próprio.
 workers_dev = true
+routes = [{ pattern = "telemetry.argusterm.com", custom_domain = true }]
 
 [[d1_databases]]
 binding = "DB"

@@ -167,6 +167,8 @@ export type Api = {
     // Apelido vazio volta para o nome sugerido.
     rename: (accountId: string, name: string) => void
     setDefault: (accountId: string) => void
+    // Fecha o aviso de contas juntadas (AuthState.mergeNotice).
+    dismissMergeNotice: () => void
     open: (url: string) => void
     onState: (cb: (state: AuthState) => void) => Off
   }

@@ -1,5 +1,14 @@
-import { MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '@argus/shared/auth'
+import { followMerged, MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '@argus/shared/auth'
 import { agentRef, parseAgentRef, PROVIDERS, type ProvidersState } from '@argus/shared/providers'
+
+// A conta do Claude guardada, se ela está na lista; se saiu por ter o mesmo login de outra (ver
+// AuthState.mergedInto), a que ficou no lugar dela. Nada se não existe mais.
+function listedAccount(auth: AuthState, id: string): string | undefined {
+  const listed = (a: string) => auth.accounts.some((x) => x.id === a)
+  if (listed(id)) return id
+  const kept = followMerged(auth.mergedInto, id)
+  return listed(kept) ? kept : undefined
+}
 
 // A conta pedida, se ela ainda existe; senão (vazia ou removida), a padrão. É o que o processo
 // principal faz ao abrir a conversa, então a tela mostra a mesma conta que vai rodar.
@@ -7,16 +16,17 @@ import { agentRef, parseAgentRef, PROVIDERS, type ProvidersState } from '@argus/
 export function resolveAccount(auth: AuthState | null, id?: string): string {
   if (parseAgentRef(id)) return id!
   if (!auth) return id ?? MAIN_ACCOUNT
-  return id && auth.accounts.some((a) => a.id === id) ? id : auth.defaultId
+  return (id && listedAccount(auth, id)) || auth.defaultId
 }
 
 // Conta guardada no grupo, se ela ainda está no app (de qualquer agente). Removida, o grupo volta a
-// não ter escolha e vale a padrão. Enquanto a lista não chegou (null), passa como veio.
+// não ter escolha e vale a padrão; juntada a outra com o mesmo login, vale a que ficou. Enquanto a
+// lista não chegou (null), passa como veio.
 export function liveAccount(auth: AuthState | null, providers: ProvidersState | null, id?: string): string | undefined {
   if (!id) return undefined
   const ref = parseAgentRef(id)
   if (ref) return !providers || providers.providers[ref.provider].accounts.some((a) => a.id === ref.account) ? id : undefined
-  return !auth || auth.accounts.some((a) => a.id === id) ? id : undefined
+  return auth ? listedAccount(auth, id) : id
 }
 
 // Contas de todos os agentes. Com uma só, não há o que escolher: o grupo não mostra qual roda.

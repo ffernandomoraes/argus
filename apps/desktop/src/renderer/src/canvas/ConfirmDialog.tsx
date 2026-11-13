@@ -10,6 +10,8 @@ export type ConfirmRequest = {
   onConfirm?: () => void
   // Sem "action", o botão de confirmar é vermelho (apagar, descartar); com ele, azul de ação.
   tone?: 'action'
+  // Outro caminho além de confirmar e cancelar, num botão comum entre os dois.
+  secondary?: { label: string; onClick: () => void }
 }
 
 // Confirmação pequena no meio da tela. Esc e clique fora cancelam; o foco começa no Cancelar,
@@ -25,6 +27,16 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
         <Button autoFocus onClick={onClose}>
           {request.onConfirm ? tr('Cancelar', 'Cancel') : tr('Entendi', 'OK')}
         </Button>
+        {request.secondary && (
+          <Button
+            onClick={() => {
+              request.secondary?.onClick()
+              onClose()
+            }}
+          >
+            {request.secondary.label}
+          </Button>
+        )}
         {request.onConfirm && (
           <Button
             variant="primary"

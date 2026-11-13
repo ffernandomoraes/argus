@@ -18,6 +18,7 @@ export function registerAuthIpc(auth: Auth): void {
   handle('auth:remove', (_e, accountId) => auth.remove(accountId))
   on('auth:rename', (_e, accountId, name) => auth.rename(accountId, name))
   on('auth:setDefault', (_e, accountId) => auth.setDefault(accountId))
+  on('auth:dismissMergeNotice', () => auth.dismissMergeNotice())
   // Página de login no navegador: só endereço seguro.
   on('auth:open', (_e, url) => (/^https:/.test(url) ? shell.openExternal(url) : undefined))
 }

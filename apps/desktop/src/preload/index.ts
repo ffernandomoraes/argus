@@ -151,6 +151,7 @@ const api: Api = {
     remove: (accountId) => invoke('auth:remove', accountId),
     rename: (accountId, name) => send('auth:rename', accountId, name),
     setDefault: (accountId) => send('auth:setDefault', accountId),
+    dismissMergeNotice: () => send('auth:dismissMergeNotice'),
     open: (url) => send('auth:open', url),
     onState: (cb) => listen('auth:state', cb)
   },

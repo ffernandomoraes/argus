@@ -13,6 +13,7 @@ import { ErrorBoundary } from './ui/ErrorBoundary'
 import { RequiredUpdateModal } from './updates/RequiredUpdateModal'
 import { RemoteLostModal } from './RemoteLostModal'
 import { RemoteNotice } from './RemoteNotice'
+import { MergedAccountsNotice } from './auth/MergedAccountsNotice'
 import { WelcomeModal } from './welcome/WelcomeModal'
 import { setupReady } from './welcome/SetupStep'
 import { useProviders } from './providers/useProviders'
@@ -81,6 +82,7 @@ export function App() {
       <RequiredUpdateModal />
       <RemoteLostModal />
       <RemoteNotice />
+      <MergedAccountsNotice />
     </main>
   )
 }

@@ -7,7 +7,7 @@ import { claudeJsonDir } from '../claudeHome'
 import { distroFor } from '../wsl'
 import { readStoredState } from '../claudeAuth/store'
 import { withTimeout } from '../lib/timeout'
-import { emailFrom, parseAuthStatus, parseFailedStatus, storedHint, userNameFrom, type StoredHint } from './parseStatus'
+import { emailFrom, parseAuthStatus, parseFailedStatus, profileFrom, storedHint, type StoredHint } from './parseStatus'
 
 // Comando do `claude` fora do SDK, sem janela de terminal no Windows. No WSL o prazo é maior: o
 // primeiro wsl.exe liga a máquina virtual. Passado o prazo, para de esperar mas não mata na hora: um
@@ -41,9 +41,10 @@ export type AccountRead = { ok: true; account: Account; renewing?: boolean } | {
 // Uma pergunta ao `claude auth status`. Sem login ele sai com erro (ver parseFailedStatus).
 async function askStatus(id: string, place?: string): Promise<Account> {
   const { stdout } = await runClaude(['auth', 'status', '--json'], id, place)
-  // Nome da pessoa, guardado pelo Claude Code no .claude.json dela (ver userNameFrom).
+  // Nome da pessoa e identificador da conta, guardados pelo Claude Code no .claude.json dela (ver
+  // profileFrom).
   const config = await readConfig(id, place)
-  return parseAuthStatus(stdout, (email) => (config.status === 'ok' ? userNameFrom(config.data, email) : undefined))
+  return parseAuthStatus(stdout, (email) => (config.status === 'ok' ? profileFrom(config.data, email) : {}))
 }
 
 // A pista do login guardado (ver storedHint). Sem resposta a tempo (no WSL, o arquivo atrás do

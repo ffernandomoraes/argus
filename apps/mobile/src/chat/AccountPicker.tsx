@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
-import type { AuthState } from '@argus/shared/auth'
+import { followMerged, type AuthState } from '@argus/shared/auth'
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS, type ProviderId, type ProvidersState } from '@argus/shared/providers'
 import { AgentIcon } from '@argus/ui/icons/AgentIcon'
 import { tr } from '../i18n'
@@ -36,7 +36,13 @@ export function resolveAccount(account: string | undefined, auth: AuthState | un
     return { id: chosen ? agentRef(agent.provider, chosen.id) : account!, name: chosen?.name ?? PROVIDER_NAMES[agent.provider], provider: agent.provider }
   }
   if (!auth) return null
-  const chosen = auth.accounts.find((a) => a.id === account) ?? auth.accounts.find((a) => a.id === auth.defaultId) ?? auth.accounts[0]
+  // Conta que saiu da lista por ter o mesmo login de outra: vale a que ficou no lugar dela.
+  const wanted = account && followMerged(auth.mergedInto, account)
+  const chosen =
+    auth.accounts.find((a) => a.id === account) ??
+    auth.accounts.find((a) => a.id === wanted) ??
+    auth.accounts.find((a) => a.id === auth.defaultId) ??
+    auth.accounts[0]
   return chosen ? { id: chosen.id, name: chosen.name } : null
 }
 

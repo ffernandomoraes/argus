@@ -7,7 +7,7 @@ import { IS_MAC } from '../platform'
 import { keychainService } from './keychain'
 import { unlinkShared } from './links'
 import { accountDir, ID, ROOT } from './paths'
-import { pending, reg, registryReadable } from './registry'
+import { clearTrashedAccounts, pending, reg, registryReadable, trashedAccounts } from './registry'
 
 // Apaga a pasta da conta e o login guardado dela.
 export function erase(id: string): void {
@@ -45,8 +45,12 @@ function hasLogin(dir: string): boolean {
 // Só as que nunca chegaram a entrar: uma pasta com login fora da lista é de uma conta que o
 // accounts.json perdeu, e apagar levaria o login junto. Com o accounts.json ilegível nesta
 // abertura, não apaga nada.
+// Antes delas, as pastas das contas juntadas a outra desde a última abertura (ver mergeAccount): com
+// o app recém-aberto, nada roda mais com o login de lá. Uma que tenha voltado à lista fica.
 export function cleanupAccounts(): void {
   if (!registryReadable()) return
+  for (const id of trashedAccounts()) if (!reg().accounts.includes(id) && !pending.has(id)) erase(id)
+  clearTrashedAccounts()
   let names: string[]
   try {
     names = readdirSync(ROOT)

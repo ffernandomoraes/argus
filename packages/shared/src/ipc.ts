@@ -244,6 +244,7 @@ export type SendChannels = {
   'auth:cancel': () => void
   'auth:rename': (accountId: string, name: string) => void
   'auth:setDefault': (accountId: string) => void
+  'auth:dismissMergeNotice': () => void
   'auth:open': (url: string) => void
   'providers:refresh': (provider?: ProviderId) => void
   'providers:install': (provider: ProviderId) => void

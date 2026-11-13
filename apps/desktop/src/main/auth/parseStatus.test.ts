@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Account } from '@argus/shared/auth'
 import { loginState, type Stored } from '../claudeAuth/store'
-import { parseAuthStatus, storedHint } from './parseStatus'
+import { parseAuthStatus, profileFrom, storedHint } from './parseStatus'
 
 const now = 1_794_520_000_000
 const status: Account = { loggedIn: true, method: 'claude.ai', provider: 'firstParty', email: 'ana@exemplo.com', subscriptionType: 'team' }
@@ -44,7 +44,7 @@ describe('storedHint', () => {
 })
 
 describe('parseAuthStatus', () => {
-  const name = () => undefined
+  const name = () => ({})
 
   // Resposta real da 2.1.322 num plano com prazo de sessão.
   it('traz até quando o login vale', () => {
@@ -55,5 +55,26 @@ describe('parseAuthStatus', () => {
   it('login sem prazo (loginExpiresAt nulo) ou sem login: sem a data', () => {
     expect(parseAuthStatus(JSON.stringify({ loggedIn: true, authMethod: 'claude.ai', loginExpiresAt: null }), name)).not.toHaveProperty('loginEndsAt')
     expect(parseAuthStatus(JSON.stringify({ loggedIn: false, authMethod: 'none', loginExpiresAt: '2026-11-14T05:03:58.535Z' }), name)).not.toHaveProperty('loginEndsAt')
+  })
+
+  // Campos conferidos na 2.1.323: orgId no `auth status`; accountUuid só no .claude.json (oauthAccount).
+  it('traz os identificadores fixos da conta e da organização', () => {
+    const out = JSON.stringify({ loggedIn: true, authMethod: 'claude.ai', email: 'ana@exemplo.com', orgId: 'org-1', orgName: 'Org' })
+    const config = { oauthAccount: { emailAddress: 'ana@exemplo.com', accountUuid: 'acc-1', displayName: 'Ana' } }
+    expect(parseAuthStatus(out, (email) => profileFrom(config, email))).toMatchObject({ accountUuid: 'acc-1', organizationId: 'org-1', userName: 'Ana' })
+  })
+
+  it('o .claude.json é de outro login (e-mail diferente): sem o identificador de lá', () => {
+    const out = JSON.stringify({ loggedIn: true, authMethod: 'claude.ai', email: 'ana@exemplo.com', orgId: 'org-1' })
+    const config = { oauthAccount: { emailAddress: 'bia@exemplo.com', accountUuid: 'acc-2' } }
+    const account = parseAuthStatus(out, (email) => profileFrom(config, email))
+    expect(account).not.toHaveProperty('accountUuid')
+    expect(account.organizationId).toBe('org-1')
+  })
+
+  it('sem login: sem identificadores', () => {
+    const account = parseAuthStatus(JSON.stringify({ loggedIn: false, orgId: 'org-1' }), () => ({ accountUuid: 'acc-1' }))
+    expect(account).not.toHaveProperty('accountUuid')
+    expect(account).not.toHaveProperty('organizationId')
   })
 })

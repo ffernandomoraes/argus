@@ -5,10 +5,14 @@ import type { Stored, StoredState } from '../claudeAuth/store'
 
 const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined)
 
-// O que `claude auth status --json` responde. Lança se não for JSON. userName: o nome da pessoa
-// para o e-mail da conta (o comando não traz; ver status.ts).
-export function parseAuthStatus(stdout: string, userName: (email: string | undefined) => string | undefined): Account {
+// O que o .claude.json da conta sabe do login e o `auth status` não traz (ver profileFrom).
+export type Profile = { userName?: string; accountUuid?: string }
+
+// O que `claude auth status --json` responde. Lança se não for JSON. profile: o nome da pessoa e o
+// identificador da conta para o e-mail dela (o comando não traz; ver status.ts).
+export function parseAuthStatus(stdout: string, profile: (email: string | undefined) => Profile): Account {
   const s = JSON.parse(stdout) as Record<string, unknown>
+  const { userName, accountUuid } = s.loggedIn === true ? profile(str(s.email)) : ({} as Profile)
   // Até quando o login vale (loginExpiresAt, uma data ISO; nulo nos logins sem prazo).
   const endsAt = s.loggedIn === true ? Date.parse(str(s.loginExpiresAt) ?? '') : NaN
   return {
@@ -16,8 +20,10 @@ export function parseAuthStatus(stdout: string, userName: (email: string | undef
     method: str(s.authMethod),
     provider: str(s.apiProvider),
     email: str(s.email),
-    userName: s.loggedIn === true ? userName(str(s.email)) : undefined,
+    userName,
     organization: str(s.orgName),
+    ...(accountUuid && { accountUuid }),
+    ...(s.loggedIn === true && str(s.orgId) && { organizationId: str(s.orgId) }),
     subscriptionType: str(s.subscriptionType),
     ...(Number.isFinite(endsAt) && { loginEndsAt: endsAt })
   }
@@ -65,6 +71,16 @@ export function userNameFrom(config: unknown, email: string | undefined): string
   if (!a || !email || a.emailAddress !== email) return undefined
   const name = [a.displayName, a.fullName].find((v): v is string => typeof v === 'string' && !!v.trim())
   return name?.trim()
+}
+
+// Nome da pessoa e identificador fixo da conta do Claude (accountUuid) no .claude.json, com a mesma
+// regra do e-mail de userNameFrom: de um login anterior, nenhum dos dois vale.
+export function profileFrom(config: unknown, email: string | undefined): Profile {
+  const a = (config as { oauthAccount?: Record<string, unknown> } | null)?.oauthAccount
+  if (!a || !email || a.emailAddress !== email) return {}
+  const userName = userNameFrom(config, email)
+  const accountUuid = str(a.accountUuid)
+  return { ...(userName && { userName }), ...(accountUuid && { accountUuid }) }
 }
 
 // E-mail do login no .claude.json da conta (o mesmo oauthAccount de userNameFrom), sem rodar o

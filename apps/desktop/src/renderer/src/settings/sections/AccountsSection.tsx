@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { MAIN_ACCOUNT, reloginMethod } from '@argus/shared/auth'
+import { lostLogin, MAIN_ACCOUNT, reloginMethod } from '@argus/shared/auth'
 import { startRelogin } from '../../auth/LoginModal'
 import { LoginPanel } from '../../auth/LoginPanel'
 import { useAuth } from '../../auth/useAuth'
@@ -81,6 +81,25 @@ export function AccountsSection() {
     )
   }
 
+  // Com uma conta sem login, quem clica em adicionar costuma querer só entrar de novo nela: a conta
+  // nova com o mesmo login ficava repetida na lista (as duas são juntadas depois, ver mergeTwins em
+  // main/auth). A pergunta vem antes, com os dois caminhos.
+  const addAccount = () => {
+    const lost = auth.accounts.find(lostLogin)
+    if (!lost) return setTarget({})
+    setConfirm({
+      title: tr(`${lost.name} está sem login`, `${lost.name} is signed out`),
+      description: tr(
+        'Se é essa a conta que você quer usar, entre de novo nela. Adicione outra só se for uma conta diferente do Claude.',
+        'If this is the account you want to use, sign in to it again. Add another only if it is a different Claude account.'
+      ),
+      confirmLabel: tr(`Entrar em ${lost.name}`, `Sign in to ${lost.name}`),
+      tone: 'action',
+      onConfirm: () => setTarget(startRelogin(auth, lost)),
+      secondary: { label: tr('Adicionar outra', 'Add another'), onClick: () => setTarget({}) }
+    })
+  }
+
   const multiple = auth.accounts.length > 1
   return (
     <>
@@ -107,7 +126,7 @@ export function AccountsSection() {
         ))}
       </div>
       <button
-        onClick={() => setTarget({})}
+        onClick={addAccount}
         className="mt-3 flex items-center gap-1.5 rounded-md border border-dashed border-line px-3 py-1.5 text-[15px] text-muted hover:bg-surface-2 hover:text-text"
       >
         <Plus size={13} />

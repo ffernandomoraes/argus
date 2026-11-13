@@ -12,6 +12,12 @@ export type Account = {
   // Nome da pessoa na conta da Anthropic. Não vem do `auth status`: o Argus lê do .claude.json.
   userName?: string
   organization?: string
+  // Identificadores fixos da conta do Claude e da organização: o e-mail e o nome da organização podem
+  // mudar, eles não. accountUuid não vem do `auth status`: o Argus lê do .claude.json (oauthAccount);
+  // organizationId é o orgId do `auth status`. É por eles que o app sabe que dois logins são a mesma
+  // conta (ver sameIdentity).
+  accountUuid?: string
+  organizationId?: string
   subscriptionType?: string
   // Até quando o login vale (ms), como o `auth status` informa (loginExpiresAt): nos planos com prazo
   // de sessão, renovar não adia essa data, e passada ela o Claude Code apaga o login ("this login
@@ -63,6 +69,45 @@ export function lostLogin(account: Pick<ClaudeAccount, 'id' | 'status' | 'loginM
   return account.status?.loggedIn === false && (account.id !== MAIN_ACCOUNT || !!account.loginMethod)
 }
 
+// De quem é um login: o que o app guarda de cada conta (accounts.json) para reconhecê-la mesmo
+// depois de o login cair.
+export type LoginIdentity = Pick<Account, 'accountUuid' | 'organizationId' | 'email' | 'organization'>
+
+// A identidade do login da conta; nada sem login ou sem nada que identifique (chave de API e afins).
+export function loginIdentity(account: Account | null | undefined): LoginIdentity | undefined {
+  if (!account?.loggedIn || (!account.accountUuid && !account.email)) return undefined
+  const { accountUuid, organizationId, email, organization } = account
+  return { ...(accountUuid && { accountUuid }), ...(organizationId && { organizationId }), ...(email && { email }), ...(organization && { organization }) }
+}
+
+// Os dois logins são da mesma conta do Claude? Pelos identificadores fixos quando os dois têm; o
+// e-mail e o nome da organização só valem na falta deles (versão antiga do Claude Code, .claude.json
+// ilegível). A organização entra: a mesma pessoa pode ter o plano pessoal e o da empresa.
+export function sameIdentity(a: LoginIdentity | null | undefined, b: LoginIdentity | null | undefined): boolean {
+  if (!a || !b) return false
+  const sameOrg = a.organizationId && b.organizationId ? a.organizationId === b.organizationId : a.organization === b.organization
+  if (a.accountUuid && b.accountUuid) return a.accountUuid === b.accountUuid && sameOrg
+  return !!a.email && a.email === b.email && sameOrg
+}
+
+// As duas contas do app estão com o mesmo login do Claude? Só com login nas duas.
+export function sameLogin(a: Account | null | undefined, b: Account | null | undefined): boolean {
+  return !!a?.loggedIn && !!b?.loggedIn && sameIdentity(loginIdentity(a), loginIdentity(b))
+}
+
+// Conta que saiu da lista por ter o mesmo login de outra (ver AuthState.mergedInto): devolve a que
+// ficou no lugar dela, seguindo a cadeia (a que ficou pode ter sido juntada depois). Sem troca, o id
+// como veio.
+export function followMerged(mergedInto: Record<string, string> | undefined, id: string): string {
+  let current = id
+  // O limite só protege de um arquivo com volta (a -> b -> a).
+  for (let i = 0; i < 8 && mergedInto && current in mergedInto; i++) current = mergedInto[current]
+  return current
+}
+
+// Aviso de contas juntadas, até a pessoa fechar: os nomes como apareciam na lista.
+export type MergeNotice = { kept: string; removed: string[] }
+
 // starting: pedindo o link ao `claude`. waiting: navegador aberto, esperando a pessoa terminar.
 // adding: conta nova, que só entra na lista quando o login termina.
 // distro: o login é o da conta dentro daquela distro do WSL (ver WslLogin).
@@ -92,4 +137,8 @@ export type AuthState = {
   // Usada fora de grupo e nos grupos sem conta escolhida.
   defaultId: string
   login: LoginState
+  // Contas que saíram da lista por terem o mesmo login de outra, e a que ficou no lugar de cada uma:
+  // o grupo que guardava a conta removida passa a usar a que ficou (ver followMerged).
+  mergedInto?: Record<string, string>
+  mergeNotice?: MergeNotice
 }

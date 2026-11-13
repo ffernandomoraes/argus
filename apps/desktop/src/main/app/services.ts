@@ -8,6 +8,7 @@ import { CanvasAgent } from '../canvasAgent'
 import { Boards } from '../boards'
 import { ChatHolders } from '../chatHolders'
 import { ClaudeVersion } from '../claudeVersion'
+import { reportWarning } from '../errorReports'
 import { Chats } from '../chats'
 import { activeChats, activeSignature } from '../chats/entries'
 import { Cli } from '../cli'
@@ -134,7 +135,7 @@ export function createServices() {
       rateLimits: (account, info) => usage.fromChat(account, info),
       // O login da conta se perdeu no meio do uso: ela é conferida já, sem esperar a próxima abertura
       // do app ou das Configurações.
-      loginLost: (account) => auth.loginLost(account)
+      loginLost: (account) => auth.loginLost(account, 'chat')
     }
   )
 
@@ -168,11 +169,11 @@ export function createServices() {
     // as conversas da conta abrem de novo com ele (as do WSL já não informam os limites à barra).
     (account, inWsl) => {
       if (!inWsl) chats.loginChanged(account)
-      void auth.refresh(account)
+      void auth.refresh(account, 'external')
     },
     // O login da conta foi apagado (pelo Claude Code, com a renovação recusada) sem nenhuma conversa
     // rodando: a conta é conferida já, e aparece sem login em vez de seguir como conectada.
-    (account) => auth.loginLost(account)
+    (account) => auth.loginLost(account, 'usage')
   )
 
   // Contas do Claude Code. O login de uma conta trocou: o monitor de uso e as conversas paradas
@@ -198,7 +199,15 @@ export function createServices() {
       usage.remove(id)
       chats.closeAccount(id)
       terminals.killAccount(id)
-    }
+    },
+    // Conta juntada a outra com o mesmo login: o uso dela sai da barra e as conversas paradas fecham
+    // (a próxima mensagem abre com a conta que ficou). O que está trabalhando, e os terminais, seguem
+    // até o fim com o login de lá, que só é apagado na próxima abertura do app.
+    (removed) => {
+      usage.remove(removed)
+      chats.releaseAll(removed)
+    },
+    (extra) => reportWarning('Conta do Claude perdeu o login', { ...extra, claudeCode: claudeVersion.state.current?.version ?? null })
   )
 
   // Contas dos outros agentes (Codex, Gemini, Cursor; ver src/main/providers/). Login trocado: as

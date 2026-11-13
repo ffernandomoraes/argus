@@ -1,7 +1,10 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
+import { lostLogin } from '../../../shared/auth'
 import { agentRef, type ProviderId } from '../../../shared/providers'
 import { barWindow, expiredUsage, showsUsage, usableUsage } from '../../../shared/usage'
-import { wslUsage } from '../../../shared/wslUsage'
+import { wslUsage, wslUsageKey } from '../../../shared/wslUsage'
+import { loginEndWarning } from '../auth/loginEnd'
+import { LoginModal, startRelogin, type ReloginTarget } from '../auth/LoginModal'
 import { useAuth } from '../auth/useAuth'
 import { AgentIcon } from '../icons/AgentIcon'
 import { useNow } from '../lib/clock'
@@ -10,7 +13,7 @@ import { useProviders } from '../providers/useProviders'
 import { useEscape } from '../useEscape'
 import { useOutsideClick } from '../useOutsideClick'
 import { UsageBar } from './bars/UsageBar'
-import { UsagePanel, type ShownUsage } from './bars/UsagePanel'
+import { UsagePanel, type LoginEnding, type ShownUsage, type SignedOutLogin } from './bars/UsagePanel'
 import { useUsages } from './bars/useUsages'
 import { tr } from '../i18n'
 
@@ -39,6 +42,9 @@ export const UsageIndicator = memo(function UsageIndicator({
   const now = useNow(30_000)
   const auth = useAuth()
   const providers = useProviders()
+  // Login começado pelo painel (conta sem login ou perto do prazo): o aviso fica aqui, e não no
+  // painel, que fecha ao abrir o navegador.
+  const [relogin, setRelogin] = useState<ReloginTarget | null>(null)
   // Botão e painel num elemento só: o clique no botão não conta como fora.
   const ref = useRef<HTMLDivElement>(null)
   useOutsideClick(ref, () => onOpenChange(false), open)
@@ -62,11 +68,20 @@ export const UsageIndicator = memo(function UsageIndicator({
             `In WSL, this account is signed in as ${nameOf(lent.from)}: usage from there shows under ${nameOf(lent.from)}.`
           )
         : undefined
-      const own = a.status?.loggedIn !== false ? [{ key: a.id, name: a.name, note }] : []
+      // Login perto do prazo final: o aviso vai junto da conta, com o botão de entrar de novo. O de uma
+      // distro com login próprio vai na linha dela ou, quando ela não tem linha (o login de lá é o desta
+      // mesma conta), aqui.
+      const ending = (status: typeof a.status, distro?: string): LoginEnding[] => {
+        const text = loginEndWarning(status, now, distro && `WSL (${distro})`)
+        return text ? [{ text, account: a.id, ...(distro && { distro }) }] : []
+      }
+      const placeOf = (distro: string) => ((a.wsl?.length ?? 0) > 1 ? `WSL (${distro})` : 'WSL')
       // Com mais de uma distro, o nome diz qual.
       const there = wsl.logins
         .filter((l) => l.account === a.id)
-        .map((l) => ({ key: l.key, name: a.name, place: (a.wsl?.length ?? 0) > 1 ? `WSL (${l.distro})` : 'WSL' }))
+        .map((l) => ({ key: l.key, name: a.name, place: placeOf(l.distro), endings: ending(a.wsl?.find((w) => w.distro === l.distro)?.status ?? null, l.distro) }))
+      const unlisted = (a.wsl ?? []).filter((w) => !there.some((t) => t.key === wslUsageKey(w.distro, a.id))).flatMap((w) => ending(w.status, w.distro))
+      const own = a.status?.loggedIn !== false ? [{ key: a.id, name: a.name, note, endings: [...ending(a.status), ...unlisted] }] : []
       return [...own, ...there]
     }),
     ...(providers?.providers.codex.accounts ?? []).filter((a) => a.status?.signedIn !== false).map((a) => ({
@@ -82,7 +97,12 @@ export const UsageIndicator = memo(function UsageIndicator({
     return usage && showsUsage(usage) ? [{ ...c, usage }] : []
   })
   const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn))
-  if (!shown.length) return null
+  // Contas do Claude que perderam o login (ver lostLogin): ficam na barra, em destaque, com o botão
+  // de entrar no painel, em vez de sumir junto com os números.
+  const signedOut: SignedOutLogin[] = accounts.filter(lostLogin).map((a) => ({ key: `lost:${a.id}`, name: a.name, account: a.id }))
+  if (!shown.length && !signedOut.length) return (
+    <LoginModal target={relogin} onClose={() => setRelogin(null)} />
+  )
   const mixed = shown.some((x) => x.provider)
   // Contas por agente: o nome só aparece quando o mesmo agente tem mais de uma (o logo já diz qual é).
   const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
@@ -90,8 +110,12 @@ export const UsageIndicator = memo(function UsageIndicator({
   const stale = shown.some((x) => x.usage.failure || expiredUsage(x.usage, now))
   // Sem número e sem falha: a janela recomeçou e a leitura nova ainda não chegou.
   const waiting = shown.some((x) => !barWindow(x.usage))
+  // Login de alguma conta perto do prazo final: bolinha no botão, e o aviso no painel.
+  const warned = shown.some((x) => x.endings?.length)
   // Barra mais larga com uma conta só; encolhe conforme entram outras, para o botão não crescer demais.
   const barWidth = shown.length === 1 ? 'w-20' : shown.length === 2 ? 'w-14' : 'w-10'
+  // Com mais de uma conta à vista, a sem login leva o nome.
+  const signedOutNamed = shown.length + signedOut.length > 1
 
   return (
     <div ref={ref} className="relative flex items-center self-stretch">
@@ -99,7 +123,11 @@ export const UsageIndicator = memo(function UsageIndicator({
         aria-label={mixed ? tr('Ver limites de uso', 'View usage limits') : tr('Ver limites do Claude', 'View Claude limits')}
         aria-expanded={open}
         title={
-          stale
+          signedOut.length
+            ? tr('Uma conta está sem login, entre de novo pelos limites', 'An account is signed out, sign in again from the limits')
+            : warned
+            ? tr('O login de uma conta está perto do fim, veja nos limites', 'An account’s sign-in is about to end, see the limits')
+            : stale
             ? tr('O uso não atualizou, veja o motivo nos limites', 'Usage didn’t update, see why in the limits')
             : saved
               ? tr('Último uso guardado, conferindo de novo', 'Last saved usage, checking again')
@@ -139,8 +167,32 @@ export const UsageIndicator = memo(function UsageIndicator({
             </span>
           )
         })}
+        {signedOut.map(({ key, name }, i) => (
+          <span key={key} className="flex items-center gap-2 text-needs-you">
+            {(shown.length > 0 || i > 0) && <span className="text-faint">-</span>}
+            {shown.length === 0 && i === 0 && <AgentIcon size={12} />}
+            {signedOutNamed && <span className="max-w-24 truncate">{name}</span>}
+            <span className="whitespace-nowrap">{tr('sem login', 'signed out')}</span>
+          </span>
+        ))}
+        {warned && !signedOut.length && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-needs-you" />}
       </button>
-      <Presence kind="menu">{open && <UsagePanel shown={shown} silent={silent} />}</Presence>
+      <Presence kind="menu">
+        {open && (
+          <UsagePanel
+            shown={shown}
+            silent={silent}
+            signedOut={signedOut}
+            onLogin={(accountId, distro) => {
+              const account = accounts.find((a) => a.id === accountId)
+              if (!account) return
+              setRelogin(startRelogin(auth, account, distro))
+              onOpenChange(false)
+            }}
+          />
+        )}
+      </Presence>
+      <LoginModal target={relogin} onClose={() => setRelogin(null)} />
     </div>
   )
 })

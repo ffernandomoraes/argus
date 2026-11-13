@@ -61,14 +61,17 @@ export function useConversationActions({ chatKey, conversation, cwd, folders, ac
   // no disco, num bloco fora do balão (ver attachedFiles); e o texto dos áudios transcritos no fim,
   // à vista no balão da mensagem. Falha ao preparar as imagens rejeita a promessa: o chat devolve o
   // texto ao campo.
-  const send = useStableCallback(async (text: string, files: File[]) => {
+  // already: arquivos que já estão no disco de quem roda a conversa, pelo caminho (o "Reenviar" de
+  // uma mensagem com anexos): vão como estão.
+  const send = useStableCallback(async (text: string, files: File[], already: AttachedFile[] = []) => {
     const images = await imagesForSend(files)
-    const attached = IS_REMOTE
+    const picked = IS_REMOTE
       ? await uploadForRemote(files)
       : files
           .filter((f) => !isSendableImage(f))
           .map((f) => ({ path: window.api.filePath(f), size: f.size }))
           .filter((f) => f.path)
+    const attached = [...picked, ...already]
     const transcripts = transcriptsText(files)
     const full = transcripts ? `${text}\n\n${transcripts}`.trim() : text
     forgetTranscripts(files)

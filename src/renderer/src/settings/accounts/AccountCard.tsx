@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import type { AuthState, ClaudeAccount } from '../../../../shared/auth'
 import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
+import { loginEndLine } from '../../auth/loginEnd'
+import { useNow } from '../../lib/clock'
 import { HOST_IS_WIN, THIS_COMPUTER } from '../../platform'
 import { Button } from '../../ui/Button'
 import { AccountName } from './AccountName'
@@ -27,6 +29,9 @@ export function AccountCard({
   const [logoutFailed, setLogoutFailed] = useState(false)
   const { multiple, main, isDefault, loggedIn, external, who, footer, fallback } = accountSummary(account, auth)
   const s = account.status
+  const now = useNow(60_000)
+  // Até quando vale o login (nos planos com prazo de sessão); perto do fim, em destaque.
+  const ends = loginEndLine(s, now)
 
   return (
     <div className="overflow-hidden rounded-xl bg-fill">
@@ -51,6 +56,7 @@ export function AccountCard({
                 ? who
                 : tr('Entre para usar esta conta.', 'Sign in to use this account.')}
           </div>
+          {ends && <div className={`mt-0.5 text-[15px] ${ends.soon ? 'text-needs-you' : 'text-faint'}`}>{ends.text}</div>}
         </div>
         {/* À direita, no meio da altura do cartão. */}
         {s && (
@@ -81,8 +87,15 @@ export function AccountCard({
             {loggedIn && account.dir && <CopyTerminalCommand dir={account.dir} />}
             {loggedIn && multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
             {/* Conectada, o login serve para pôr outra conta no lugar desta (ou renovar o acesso). */}
+            {/* Perto do prazo final, o mesmo login vira "Entrar de novo": entrar começa um login com prazo novo. */}
             <Button onClick={() => onLogin()} title={loggedIn ? tr('Entra com outra conta no lugar desta, ou renova o acesso', 'Sign in with another account in place of this one, or renew access') : undefined}>
-              {loggedIn ? tr('Trocar conta', 'Switch account') : main ? tr('Entrar', 'Sign in') : tr('Reconectar', 'Reconnect')}
+              {loggedIn
+                ? ends?.soon
+                  ? tr('Entrar de novo', 'Sign in again')
+                  : tr('Trocar conta', 'Switch account')
+                : main
+                  ? tr('Entrar', 'Sign in')
+                  : tr('Reconectar', 'Reconnect')}
             </Button>
             {main
               ? loggedIn && (
@@ -124,19 +137,27 @@ export function AccountCard({
           </div>
         )}
         {/* O login da mesma conta dentro do WSL, separado do de cima: é o que as pastas de lá usam. */}
-        {account.wsl?.map(({ distro, status }) => (
-          <div key={distro} className="mt-2.5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-2.5">
-            <span className="mr-auto min-w-0 truncate text-[15px] text-faint">
-              {`WSL (${distro}) - `}
-              {status === null
-                ? tr('conferindo…', 'checking…')
-                : status.loggedIn
-                  ? (status.email ?? tr('conectada', 'connected'))
-                  : tr('sem login: as conversas das pastas de lá não respondem', 'signed out: chats in its folders don’t respond')}
-            </span>
-            <Button onClick={() => onLogin(distro)}>{status?.loggedIn ? tr('Trocar conta', 'Switch account') : tr('Entrar', 'Sign in')}</Button>
-          </div>
-        ))}
+        {account.wsl?.map(({ distro, status }) => {
+          // O login de lá tem prazo próprio: perto do fim, aparece no lugar do e-mail.
+          const there = loginEndLine(status, now)
+          return (
+            <div key={distro} className="mt-2.5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-2.5">
+              <span className={`mr-auto min-w-0 truncate text-[15px] ${there?.soon ? 'text-needs-you' : 'text-faint'}`} title={there?.text}>
+                {`WSL (${distro}) - `}
+                {status === null
+                  ? tr('conferindo…', 'checking…')
+                  : status.loggedIn
+                    ? there?.soon
+                      ? there.text
+                      : (status.email ?? tr('conectada', 'connected'))
+                    : tr('sem login: as conversas das pastas de lá não respondem', 'signed out: chats in its folders don’t respond')}
+              </span>
+              <Button onClick={() => onLogin(distro)}>
+                {status?.loggedIn ? (there?.soon ? tr('Entrar de novo', 'Sign in again') : tr('Trocar conta', 'Switch account')) : tr('Entrar', 'Sign in')}
+              </Button>
+            </div>
+          )
+        })}
         {logoutFailed && (
           <p role="alert" className="mt-2 text-right text-[15px] text-red-400">
             {tr(

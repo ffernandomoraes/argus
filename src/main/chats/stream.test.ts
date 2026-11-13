@@ -264,3 +264,34 @@ describe('tarefas em segundo plano: descrição e arquivo da saída', () => {
     expect(backgroundInfo(listed, [])).toEqual({})
   })
 })
+
+// Medido na 2.1.322 com logins falsos: sem login guardado, com o login apagado, recusado pelo
+// servidor ou no prazo final, o Claude Code escreve a resposta no lugar do Claude, cada caso com um
+// texto ("Not logged in · Please run /login", "Failed to authenticate: OAuth session expired and
+// could not be refreshed"...), e todos com a mesma marca: error "authentication_failed".
+describe('readMessage: pedido recusado por falta de login', () => {
+  const refused = (text: string, parent: string | null = null) =>
+    sdk({ type: 'assistant', error: 'authentication_failed', parent_tool_use_id: parent, message: { content: [{ type: 'text', text }] } })
+
+  it('marca a conversa e avisa que o login da conta se perdeu, qualquer que seja o texto', () => {
+    const { chat, steps } = play([
+      refused('Failed to authenticate: OAuth session expired and could not be refreshed'),
+      sdk({ type: 'result', subtype: 'success', is_error: true, result: 'Failed to authenticate: OAuth session expired and could not be refreshed' })
+    ])
+    expect(steps[0].loginLost).toBe(true)
+    expect(chat.loginNeeded).toBe(true)
+    expect(chat.error).toBe('Failed to authenticate: OAuth session expired and could not be refreshed')
+  })
+
+  it('resposta normal, ou erro de outro tipo, não marca', () => {
+    const ok = play([sdk({ type: 'assistant', parent_tool_use_id: null, message: { content: [{ type: 'text', text: 'oi' }] } })])
+    expect(ok.steps[0].loginLost).toBeUndefined()
+    expect(ok.chat.loginNeeded).toBeUndefined()
+    const other = play([sdk({ type: 'assistant', error: 'rate_limit', parent_tool_use_id: null, message: { content: [{ type: 'text', text: 'limite' }] } })])
+    expect(other.steps[0].loginLost).toBeUndefined()
+  })
+
+  it('por dentro de um subagente não é desta conversa', () => {
+    expect(play([refused('Not logged in · Please run /login', 'toolu_1')]).steps[0].loginLost).toBeUndefined()
+  })
+})

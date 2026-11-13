@@ -130,7 +130,10 @@ export function createServices() {
       },
       // Cada resposta traz a sessão e o semanal da conta: a barra anda mesmo com a leitura direta
       // esperando o prazo de uma recusa (429).
-      rateLimits: (account, info) => usage.fromChat(account, info)
+      rateLimits: (account, info) => usage.fromChat(account, info),
+      // O login da conta se perdeu no meio do uso: ela é conferida já, sem esperar a próxima abertura
+      // do app ou das Configurações.
+      loginLost: (account) => auth.loginLost(account)
     }
   )
 
@@ -154,7 +157,10 @@ export function createServices() {
     (account, inWsl) => {
       if (!inWsl) chats.loginChanged(account)
       void auth.refresh(account)
-    }
+    },
+    // O login da conta foi apagado (pelo Claude Code, com a renovação recusada) sem nenhuma conversa
+    // rodando: a conta é conferida já, e aparece sem login em vez de seguir como conectada.
+    (account) => auth.loginLost(account)
   )
 
   // Contas do Claude Code. O login de uma conta trocou: o monitor de uso e as conversas paradas

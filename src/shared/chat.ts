@@ -41,6 +41,9 @@ export type ChatState = {
   partial: string
   permissions: PermissionRequest[]
   error?: string
+  // O pedido foi recusado por falta de login (o Claude Code marca a resposta com o erro
+  // "authentication_failed"): a linha do erro ganha o botão de entrar, qualquer que seja o texto.
+  loginNeeded?: boolean
   // Sobe quando a sessão grava algo: o chat relê o histórico.
   revision: number
   // Pedido em andamento: quando começou (ms) e quantos tokens o Claude já gerou nele.

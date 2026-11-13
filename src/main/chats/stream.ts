@@ -57,7 +57,16 @@ export type Step = {
   sessionState?: SessionState
   // Limites da conta que vieram com a resposta (rate_limit_event): vão para a barra de uso.
   rateLimits?: unknown
+  // O Claude Code recusou o pedido por falta de login (ver authFailed): a conta é conferida de novo.
+  loginLost?: boolean
 }
+
+// A resposta que o Claude Code escreve no lugar do Claude quando não consegue se autenticar. O texto
+// muda com o motivo ("Not logged in · Please run /login" sem login guardado, "Failed to authenticate:
+// OAuth session expired and could not be refreshed" quando o servidor recusa o login ou a renovação,
+// "...this login reached its time limit..." no prazo final), mas a marca é a mesma nos cinco casos
+// medidos na 2.1.322: error "authentication_failed" na mensagem.
+const authFailed = (m: Transcript): boolean => m.type === 'assistant' && (m as Line).error === 'authentication_failed'
 
 export type SessionState = 'idle' | 'running' | 'requires_action'
 
@@ -226,6 +235,7 @@ function readTranscript(m: Transcript, chat: ChatState, reader: Reader, { now, c
   }
   // Já gravado no arquivo: o chat relê o histórico.
   patch.revision = chat.revision + 1
+  if (authFailed(m)) return { reader, patch: { ...patch, loginNeeded: true }, urgent: true, loginLost: true }
   return { reader, patch, urgent: true }
 }
 

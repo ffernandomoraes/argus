@@ -33,6 +33,8 @@ export type SessionEvents = {
   limit?: (session: ChatSession, limit: 'memory' | 'disk', busy: boolean) => void
   // Limites da conta que vieram numa resposta (rate_limit_event).
   rateLimits?: (session: ChatSession, info: unknown) => void
+  // O Claude Code recusou o pedido por falta de login (ver authFailed em stream.ts).
+  loginLost?: (session: ChatSession) => void
 }
 
 export type OpenRequest = Omit<ChatSendRequest, 'text' | 'images'>
@@ -180,6 +182,7 @@ export class ChatSession {
       // Permissão esperando resposta continua precisando de você.
       status: this.permissions.size ? 'needs-you' : 'running',
       error: undefined,
+      loginNeeded: undefined,
       suggestion: undefined,
       ...(fresh && { turnStartedAt: Date.now(), turnTokens: 0 })
     })
@@ -263,7 +266,7 @@ export class ChatSession {
     // Mensagem sua na fila pode sobreviver à parada e rodar em seguida, e quem diz é o recibo do
     // Claude (still_queued). Sem nenhuma, a tela reage na hora, sem esperar o Claude confirmar.
     const askReceipt = this.interrupted && this.queued.size > 0
-    this.update({ partial: '', error: undefined, activity: undefined, retry: undefined, compactingSince: undefined, ...(!askReceipt && STOPPED) })
+    this.update({ partial: '', error: undefined, loginNeeded: undefined, activity: undefined, retry: undefined, compactingSince: undefined, ...(!askReceipt && STOPPED) })
     let receipt: Awaited<ReturnType<Query['interrupt']>>
     try {
       receipt = await this.q.interrupt()
@@ -423,6 +426,7 @@ export class ChatSession {
     this.reader = step.reader
     if (step.sessionId) this.events.identified(this, step.sessionId)
     if (step.rateLimits) this.events.rateLimits?.(this, step.rateLimits)
+    if (step.loginLost) this.events.loginLost?.(this)
     step.contextWindows?.forEach(([model, tokens]) => learnContextWindow(model, tokens))
     // Antes do update: com a tarefa saindo da lista a sessão já pareceria livre e fecharia ali.
     const finished = !!step.patch && backgroundWork({ ...this.state, ...step.patch }) < backgroundWork(this.state)

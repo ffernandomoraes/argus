@@ -96,6 +96,9 @@ export type MonitorOptions = {
   // O login guardado ainda é o da conta que o app conferiu? Falso: trocaram por fora (no terminal), e
   // quem confere avisa o app para conferir de novo (ver loginWatch.ts); esta leitura não acontece.
   sameLogin?: () => Promise<boolean>
+  // A leitura achou o login da conta apagado (ver fail): quem cuida das contas confere de novo, para
+  // o resto do app saber sem esperar uma conversa falhar. Uma vez por parada, não a cada leitura.
+  onSignedOut?: () => void
 }
 
 export class UsageMonitor {
@@ -450,7 +453,9 @@ export class UsageMonitor {
   // A leitura não deu certo: a tela segue com os últimos números, marcados com o motivo.
   private fail(reason: UsageFailure, retryAt?: number): void {
     if (this.stopped) return
+    const signedOutNow = reason === 'signed_out' && this.failure?.reason !== 'signed_out'
     this.failure = retryAt ? { reason, retryAt } : { reason }
+    if (signedOutNow) this.options.onSignedOut?.()
     this.failingSince ||= Date.now()
     if (this.last) this.onUpdate(this.current!)
   }

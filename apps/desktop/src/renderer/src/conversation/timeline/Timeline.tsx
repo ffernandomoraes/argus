@@ -1,12 +1,12 @@
-import { memo, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
-import { Step } from './rows/Step'
-import type { TimelineItem } from './timelineItem'
-import { useTimelineVirtualizer } from './useTimelineVirtualizer'
+import { memo, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react';
+import { Step } from './rows/Step';
+import type { TimelineItem } from './timelineItem';
+import { useTimelineVirtualizer } from './useTimelineVirtualizer';
 
 export type TimelineHandle = {
   // Rola até o item, mesmo fora da tela (e por isso sem estar montado).
   scrollToKey(key: string): void
-}
+};
 
 // A conversa desenhada: balões e divisores soltos, passos do Claude com a bolinha e a linha que
 // desce até o próximo passo (mensagem sua interrompe a linha do tempo). Virtualizada: só os itens
@@ -22,7 +22,7 @@ export const Timeline = memo(function Timeline({
   scroller,
   placeholder,
   handle,
-  onShift
+  onShift,
 }: {
   rows: TimelineItem[]
   // A área de rolagem da conversa; nula até ela montar.
@@ -33,40 +33,40 @@ export const Timeline = memo(function Timeline({
   // Quanto a lista moveu a rolagem sozinha, para não contar como rolagem sua (useStickyScroll).
   onShift: (px: number) => void
 }) {
-  const list = useRef<HTMLDivElement>(null)
-  const virtualizer = useTimelineVirtualizer(scroller, list, rows, placeholder, onShift)
+  const list = useRef<HTMLDivElement>(null);
+  const virtualizer = useTimelineVirtualizer(scroller, list, rows, placeholder, onShift);
   useImperativeHandle(
     handle,
     () => ({
       scrollToKey(key) {
-        const index = rows.findIndex((row) => row.key === key)
-        if (index >= 0) virtualizer.scrollToIndex(index, { align: 'start' })
-      }
+        const index = rows.findIndex((row) => row.key === key);
+        if (index >= 0) virtualizer.scrollToIndex(index, { align: 'start' });
+      },
     }),
-    [rows, virtualizer]
-  )
+    [rows, virtualizer],
+  );
 
-  const initial = useRef<Set<string> | null>(null)
+  const initial = useRef<Set<string> | null>(null);
   // A mensagem recém-enviada nunca conta como já estando: na conversa nova ela é a primeira linha.
-  if (!initial.current && rows.length) initial.current = new Set(rows.filter((row) => !(row.kind === 'user' && row.fresh)).map((row) => row.key))
-  let lastInitial = rows.length - 1
-  while (lastInitial >= 0 && !initial.current?.has(rows[lastInitial].key)) lastInitial--
+  if (!initial.current && rows.length) initial.current = new Set(rows.filter((row) => !(row.kind === 'user' && row.fresh)).map((row) => row.key));
+  let lastInitial = rows.length - 1;
+  while (lastInitial >= 0 && !initial.current?.has(rows[lastInitial].key)) lastInitial--;
   // Os que já chegaram, na tela ou fora dela (você tinha subido para ler).
-  const entered = useRef(new Set<string>())
+  const entered = useRef(new Set<string>());
   useEffect(() => {
-    for (let i = lastInitial + 1; i < rows.length; i++) entered.current.add(rows[i].key)
-  })
+    for (let i = lastInitial + 1; i < rows.length; i++) entered.current.add(rows[i].key);
+  });
 
-  const items = virtualizer.getVirtualItems()
-  const margin = virtualizer.options.scrollMargin
-  const before = items.length ? items[0].start - margin : 0
-  const after = items.length ? Math.max(0, virtualizer.getTotalSize() - (items[items.length - 1].end - margin)) : 0
+  const items = virtualizer.getVirtualItems();
+  const margin = virtualizer.options.scrollMargin;
+  const before = items.length ? items[0].start - margin : 0;
+  const after = items.length ? Math.max(0, virtualizer.getTotalSize() - (items[items.length - 1].end - margin)) : 0;
   return (
     <div ref={list} style={{ paddingTop: before, paddingBottom: after }}>
       {items.map((vi) => {
-        const i = vi.index
-        const item = rows[i]
-        if (!item) return null
+        const i = vi.index;
+        const item = rows[i];
+        if (!item) return null;
         return (
           // O espaço entre os itens fica dentro de cada um (pb-3), para entrar na medida.
           <div key={vi.key} data-index={i} ref={virtualizer.measureElement} className={i < rows.length - 1 ? 'pb-3' : undefined}>
@@ -80,20 +80,20 @@ export const Timeline = memo(function Timeline({
               </Loose>
             )}
           </div>
-        )
+        );
       })}
     </div>
-  )
-})
+  );
+});
 
 // Balão ou divisor (fora da linha dos passos). data-prompt: o balão, para o prompt preso no topo e
 // para a piscada ao pular até ele (jump-flash). `enter`: a mensagem que você acabou de enviar entra
 // crescendo de leve (bubble-in); como no Step, vale o da montagem.
 function Loose({ prompt, enter, children }: { prompt?: string; enter: boolean; children: ReactNode }) {
-  const [entering] = useState(enter)
+  const [entering] = useState(enter);
   return (
     <div data-prompt={prompt} className={`timeline-item relative ${entering ? 'bubble-in' : ''}`}>
       {children}
     </div>
-  )
+  );
 }

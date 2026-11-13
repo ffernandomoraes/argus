@@ -1,24 +1,24 @@
-import { useMemo, useRef, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
-import { FilePlus, Folder, FolderPlus, RefreshCw } from 'lucide-react'
-import { ConfirmDialog } from '../canvas/ConfirmDialog'
-import { ContextMenu } from '../canvas/ContextMenu'
-import { useUncommitted } from '../canvas/sessionsStore'
-import { PANEL_BOTTOM, PANEL_TOP } from '../conversation/FloatingPanel'
-import { Presence } from '../motion'
-import { IconButton } from '../ui/IconButton'
-import { useEscape } from '../useEscape'
-import { CloseCodeButton } from './CloseCodeButton'
-import { useDraftPaths } from './drafts'
-import { FileEscapeContext } from './fileEscape'
-import { TreeList } from './tree/FileTree'
-import { changesInTree } from './tree/treePaths'
-import { useFileTree } from './tree/useFileTree'
-import { useTreeActions } from './tree/useTreeActions'
-import { WidthResizer } from '../ui/WidthResizer'
-import { useWidth } from '../ui/widthStore'
-import { treeWidth } from './treeWidth'
-import { tr } from '../i18n'
+import { useMemo, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { FilePlus, Folder, FolderPlus, RefreshCw } from 'lucide-react';
+import { ConfirmDialog } from '../canvas/ConfirmDialog';
+import { ContextMenu } from '../canvas/ContextMenu';
+import { useUncommitted } from '../canvas/sessionsStore';
+import { PANEL_BOTTOM, PANEL_TOP } from '../conversation/FloatingPanel';
+import { Presence } from '../motion';
+import { IconButton } from '../ui/IconButton';
+import { useEscape } from '../useEscape';
+import { CloseCodeButton } from './CloseCodeButton';
+import { useDraftPaths } from './drafts';
+import { FileEscapeContext } from './fileEscape';
+import { TreeList } from './tree/FileTree';
+import { changesInTree } from './tree/treePaths';
+import { useFileTree } from './tree/useFileTree';
+import { useTreeActions } from './tree/useTreeActions';
+import { WidthResizer } from '../ui/WidthResizer';
+import { useWidth } from '../ui/widthStore';
+import { treeWidth } from './treeWidth';
+import { tr } from '../i18n';
 
 // Painel de código: árvore de pastas e arquivos do projeto (carregada sob demanda) e, com um
 // arquivo aberto, o conteúdo dele ao lado, no mesmo painel, que então se estica até a conversa.
@@ -33,7 +33,7 @@ export function CodeExplorer({
   onRenamed,
   onDeleted,
   onClose,
-  children
+  children,
 }: {
   root: string
   name: string
@@ -48,19 +48,19 @@ export function CodeExplorer({
   // Arquivo aberto (FileViewer), mostrado à direita da árvore.
   children?: ReactNode
 }) {
-  const treeRef = useRef<HTMLDivElement>(null)
-  const width = useWidth(treeWidth)
-  const tree = useFileTree(root)
-  const actions = useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRenamed, onDeleted })
-  const drafts = useDraftPaths(root)
-  const uncommitted = useUncommitted(root)
-  const changes = useMemo(() => changesInTree(root, uncommitted), [root, uncommitted])
+  const treeRef = useRef<HTMLDivElement>(null);
+  const width = useWidth(treeWidth);
+  const tree = useFileTree(root);
+  const actions = useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRenamed, onDeleted });
+  const drafts = useDraftPaths(root);
+  const uncommitted = useUncommitted(root);
+  const changes = useMemo(() => changesInTree(root, uncommitted), [root, uncommitted]);
   // Com arquivo aberto, o Esc fecha só ele (o FileViewer entrega como, ver fileEscape.ts).
-  const closeFileRef = useRef<(() => void) | null>(null)
-  useEscape(() => (closeFileRef.current ? closeFileRef.current() : onClose()))
+  const closeFileRef = useRef<(() => void) | null>(null);
+  useEscape(() => (closeFileRef.current ? closeFileRef.current() : onClose()));
 
-  const { focused, editing } = actions
-  const rootEntries = tree.listings['']
+  const { focused, editing } = actions;
+  const rootEntries = tree.listings[''];
 
   return (
     <aside
@@ -124,12 +124,12 @@ export function CodeExplorer({
       {/* No body: o painel da conversa, na mesma camada e depois no DOM, cobriria os dois. */}
       {createPortal(
         <Presence kind="menu">{actions.menu && <ContextMenu menu={actions.menu} onClose={actions.closeMenu} />}</Presence>,
-        document.body
+        document.body,
       )}
       {createPortal(
         <Presence kind="modal">{actions.confirm && <ConfirmDialog request={actions.confirm} onClose={actions.closeConfirm} />}</Presence>,
-        document.body
+        document.body,
       )}
     </aside>
-  )
+  );
 }

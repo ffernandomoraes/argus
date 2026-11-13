@@ -1,22 +1,22 @@
-import { EFFORTS, groupByFamily } from '../../conversation/ModelEffortPicker'
-import { EffortSlider } from '../../conversation/composer/EffortSlider'
-import { PermissionModePicker } from '../../conversation/PermissionModePicker'
-import type { SessionSettings } from '../../conversation/SessionSettings'
-import { useClaudeInfo } from '../../conversation/useModels'
-import { Group, Row, Select, Switch } from '../controls'
-import { setPreferences, usePreference } from '../preferences'
-import { tr } from '../../i18n'
+import { EFFORTS, groupByFamily } from '../../conversation/ModelEffortPicker';
+import { EffortSlider } from '../../conversation/composer/EffortSlider';
+import { PermissionModePicker } from '../../conversation/PermissionModePicker';
+import type { SessionSettings } from '../../conversation/SessionSettings';
+import { useClaudeInfo } from '../../conversation/useModels';
+import { Group, Row, Select, Switch } from '../controls';
+import { setPreferences, usePreference } from '../preferences';
+import { tr } from '../../i18n';
 
 export function ConversationsSection() {
-  const s = usePreference('conversation')
-  const suggestions = usePreference('promptSuggestions')
-  const info = useClaudeInfo()
-  const models = info?.models ?? []
-  const set = (patch: Partial<SessionSettings>) => setPreferences({ conversation: { ...s, ...patch } })
+  const s = usePreference('conversation');
+  const suggestions = usePreference('promptSuggestions');
+  const info = useClaudeInfo();
+  const models = info?.models ?? [];
+  const set = (patch: Partial<SessionSettings>) => setPreferences({ conversation: { ...s, ...patch } });
 
-  const defaultModel = models.find((m) => m.value === '')
-  const current = models.find((m) => m.value === s.model)
-  const efforts = current ? EFFORTS.filter((e) => current.efforts.includes(e.value)) : EFFORTS
+  const defaultModel = models.find((m) => m.value === '');
+  const current = models.find((m) => m.value === s.model);
+  const efforts = current ? EFFORTS.filter((e) => current.efforts.includes(e.value)) : EFFORTS;
 
   return (
     <>
@@ -64,7 +64,7 @@ export function ConversationsSection() {
       <Group>
         <Row label="Thinking" description={tr(
             'Pensa antes de responder. Respostas melhores em tarefas difíceis, um pouco mais lentas.',
-            'Thinks before answering. Better answers on hard tasks, a bit slower.'
+            'Thinks before answering. Better answers on hard tasks, a bit slower.',
           )}>
           <Switch label="Thinking" checked={s.thinking} onChange={(thinking) => set({ thinking })} />
         </Row>
@@ -80,7 +80,7 @@ export function ConversationsSection() {
           description={tr('Sugere a próxima mensagem; um clique envia.', 'Suggests the next message; one click sends it.')}
           info={tr(
             'Ao fim de cada resposta, mostra a próxima mensagem provável em cima da caixa de escrever. Um clique envia.',
-            'After each reply, shows the likely next message above the input box. One click sends it.'
+            'After each reply, shows the likely next message above the input box. One click sends it.',
           )}
         >
           <Switch
@@ -91,5 +91,5 @@ export function ConversationsSection() {
         </Row>
       </Group>
     </>
-  )
+  );
 }

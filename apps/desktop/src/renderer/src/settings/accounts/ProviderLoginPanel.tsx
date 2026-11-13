@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react'
-import { ClipboardCheck, Loader2 } from 'lucide-react'
-import { KEY_PAGES, PROVIDER_NAMES, type ClipboardKey, type ProviderLogin } from '@argus/shared/providers'
-import { Button } from '../../ui/Button'
-import { tr } from '../../i18n'
+import { useEffect, useState } from 'react';
+import { ClipboardCheck, Loader2 } from 'lucide-react';
+import { KEY_PAGES, PROVIDER_NAMES, type ClipboardKey, type ProviderLogin } from '@argus/shared/providers';
+import { Button } from '../../ui/Button';
+import { tr } from '../../i18n';
 
-type Active = Exclude<ProviderLogin, { status: 'idle' }>
+type Active = Exclude<ProviderLogin, { status: 'idle' }>;
 
 // Onde cada chave é criada, para o passo a passo.
 const KEY_PLACE = {
   gemini: 'Google AI Studio',
-  cursor: tr('painel do Cursor (Integrations > API Keys)', 'Cursor dashboard (Integrations > API Keys)')
-} as const
+  cursor: tr('painel do Cursor (Integrations > API Keys)', 'Cursor dashboard (Integrations > API Keys)'),
+} as const;
 
 // O login em andamento de um agente: navegador (Codex, a principal do Cursor) ou chave (Gemini, as
 // outras do Cursor). Na chave, o app procura a chave copiada sozinho: a pessoa cria, copia, volta
 // e confirma, sem colar nada.
 export function ProviderLoginPanel({ login }: { login: Active }) {
-  const name = PROVIDER_NAMES[login.provider]
+  const name = PROVIDER_NAMES[login.provider];
   if (login.status === 'waiting') {
     return (
       <Panel>
@@ -38,13 +38,13 @@ export function ProviderLoginPanel({ login }: { login: Active }) {
         </p>
         <Actions />
       </Panel>
-    )
+    );
   }
-  return <KeyStep login={login} />
+  return <KeyStep login={login} />;
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-3 rounded-xl bg-fill p-4">{children}</div>
+  return <div className="flex flex-col gap-3 rounded-xl bg-fill p-4">{children}</div>;
 }
 
 function Actions({ children }: { children?: React.ReactNode }) {
@@ -53,36 +53,36 @@ function Actions({ children }: { children?: React.ReactNode }) {
       {children}
       <Button onClick={() => window.api.providers.cancel()}>{tr('Cancelar', 'Cancel')}</Button>
     </div>
-  )
+  );
 }
 
 // Chave copiada: confere ao voltar para o app e, enquanto o passo está aberto, a cada instante
 // (a pessoa pode copiar com a janela do app ao lado). Só o final da chave chega aqui.
 function useClipboardKey(active: boolean): ClipboardKey {
-  const [found, setFound] = useState<ClipboardKey>(null)
+  const [found, setFound] = useState<ClipboardKey>(null);
   useEffect(() => {
-    if (!active) return
-    let alive = true
-    const look = () => void window.api.providers.clipboardKey().then((k) => alive && setFound(k))
-    look()
-    const timer = setInterval(look, 1500)
-    window.addEventListener('focus', look)
+    if (!active) return;
+    let alive = true;
+    const look = () => void window.api.providers.clipboardKey().then((k) => alive && setFound(k));
+    look();
+    const timer = setInterval(look, 1500);
+    window.addEventListener('focus', look);
     return () => {
-      alive = false
-      clearInterval(timer)
-      window.removeEventListener('focus', look)
-    }
-  }, [active])
-  return found
+      alive = false;
+      clearInterval(timer);
+      window.removeEventListener('focus', look);
+    };
+  }, [active]);
+  return found;
 }
 
 function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
-  const provider = login.provider as 'gemini' | 'cursor'
-  const name = PROVIDER_NAMES[provider]
-  const checking = login.status === 'checking'
-  const found = useClipboardKey(!checking)
-  const [typing, setTyping] = useState(false)
-  const [typed, setTyped] = useState('')
+  const provider = login.provider as 'gemini' | 'cursor';
+  const name = PROVIDER_NAMES[provider];
+  const checking = login.status === 'checking';
+  const found = useClipboardKey(!checking);
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState('');
 
   if (checking) {
     return (
@@ -92,7 +92,7 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
           {tr('Testando a chave…', 'Testing the key…')}
         </div>
       </Panel>
-    )
+    );
   }
 
   return (
@@ -136,8 +136,8 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
         <form
           className="flex gap-2"
           onSubmit={(e) => {
-            e.preventDefault()
-            if (typed.trim()) window.api.providers.submitKey(typed.trim())
+            e.preventDefault();
+            if (typed.trim()) window.api.providers.submitKey(typed.trim());
           }}
         >
           <input
@@ -162,10 +162,10 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
       <p className="text-[15px] leading-relaxed text-faint">
         {tr(
           'A chave fica guardada no cofre do sistema e não aparece de novo na tela.',
-          'The key is stored in the system keychain and never shown again.'
+          'The key is stored in the system keychain and never shown again.',
         )}
       </p>
       <Actions />
     </Panel>
-  )
+  );
 }

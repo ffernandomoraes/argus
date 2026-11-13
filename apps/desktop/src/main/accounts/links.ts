@@ -1,7 +1,7 @@
-import { existsSync, linkSync, lstatSync, mkdirSync, statSync, symlinkSync, unlinkSync } from 'node:fs'
-import { join } from 'node:path'
-import { IS_WIN } from '../platform'
-import { MAIN_DIR } from './paths'
+import { existsSync, linkSync, lstatSync, mkdirSync, statSync, symlinkSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
+import { IS_WIN } from '../platform';
+import { MAIN_DIR } from './paths';
 
 // Ligados à principal: o histórico das conversas (com a memória automática, que mora nele), as
 // instruções, agentes, skills, comandos, plugins e configurações. O Claude Code grava as
@@ -17,24 +17,24 @@ export const SHARED = [
   'skills',
   'commands',
   'plugins',
-  'output-styles'
-]
+  'output-styles',
+];
 
 // Também enxerga link quebrado, que o existsSync não vê.
 function exists(path: string): boolean {
   try {
-    lstatSync(path)
-    return true
+    lstatSync(path);
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
 function isLink(path: string): boolean {
   try {
-    return lstatSync(path).isSymbolicLink()
+    return lstatSync(path).isSymbolicLink();
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -43,12 +43,12 @@ function isLink(path: string): boolean {
 // mesmo arquivo no disco com dois nomes. O físico se desfaz se um programa trocar o arquivo da
 // principal por outro (gravar numa cópia e renomear), e aí cada conta fica com a sua versão.
 function linkItem(target: string, path: string): void {
-  if (!IS_WIN) return symlinkSync(target, path)
-  if (statSync(target).isDirectory()) return symlinkSync(target, path, 'junction')
+  if (!IS_WIN) return symlinkSync(target, path);
+  if (statSync(target).isDirectory()) return symlinkSync(target, path, 'junction');
   try {
-    symlinkSync(target, path, 'file')
+    symlinkSync(target, path, 'file');
   } catch {
-    linkSync(target, path)
+    linkSync(target, path);
   }
 }
 
@@ -56,14 +56,14 @@ function linkItem(target: string, path: string): void {
 // principal (uma pasta de comandos nova, por exemplo) passa a valer aqui também. O que o Claude
 // Code já tiver criado como item de verdade fica como está, para nada se perder.
 export function link(dir: string): void {
-  mkdirSync(join(dir, 'sessions'), { recursive: true })
-  mkdirSync(join(MAIN_DIR, 'projects'), { recursive: true })
+  mkdirSync(join(dir, 'sessions'), { recursive: true });
+  mkdirSync(join(MAIN_DIR, 'projects'), { recursive: true });
   for (const name of SHARED) {
-    const target = join(MAIN_DIR, name)
-    const path = join(dir, name)
-    if (!existsSync(target) || exists(path)) continue
+    const target = join(MAIN_DIR, name);
+    const path = join(dir, name);
+    if (!existsSync(target) || exists(path)) continue;
     try {
-      linkItem(target, path)
+      linkItem(target, path);
     } catch {
       // o próprio `claude` criou o item no mesmo instante
     }
@@ -75,16 +75,16 @@ export function link(dir: string): void {
 // ela sem tocar no original).
 export function unlinkShared(dir: string): boolean {
   for (const name of SHARED) {
-    const path = join(dir, name)
+    const path = join(dir, name);
     try {
-      if (isLink(path)) unlinkSync(path)
+      if (isLink(path)) unlinkSync(path);
     } catch {
       // segue para a conferência abaixo
     }
     if (isLink(path)) {
-      console.warn('[accounts] link não saiu; a pasta da conta fica:', path)
-      return false
+      console.warn('[accounts] link não saiu; a pasta da conta fica:', path);
+      return false;
     }
   }
-  return true
+  return true;
 }

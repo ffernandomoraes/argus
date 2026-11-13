@@ -1,32 +1,32 @@
-import { join, resolve } from 'node:path'
-import type { UncommittedFile } from '@argus/shared/sessions'
-import { expandHome } from '../paths'
-import { git } from './git'
-import { findRepo } from './repo'
+import { join, resolve } from 'node:path';
+import type { UncommittedFile } from '@argus/shared/sessions';
+import { expandHome } from '../paths';
+import { git } from './git';
+import { findRepo } from './repo';
 
 // Letra do VS Code para o par XY do `git status --porcelain` (X: preparado, Y: na pasta).
 function changeKind(xy: string): UncommittedFile['kind'] {
-  if (xy === '??') return 'U'
-  if (/U|AA|DD/.test(xy)) return '!'
-  if (xy.includes('D')) return 'D'
-  if (xy.includes('R') || xy.includes('C')) return 'R'
-  if (xy.includes('A')) return 'A'
-  return 'M'
+  if (xy === '??') return 'U';
+  if (/U|AA|DD/.test(xy)) return '!';
+  if (xy.includes('D')) return 'D';
+  if (xy.includes('R') || xy.includes('C')) return 'R';
+  if (xy.includes('A')) return 'A';
+  return 'M';
 }
 
 // Saída do `git status --porcelain -z`: cada entrada é "XY caminho", relativo à raiz; renomeado
 // ou copiado traz o caminho antigo na entrada seguinte.
 function parseStatus(root: string, stdout: string): UncommittedFile[] {
-  const entries = stdout.split('\0')
-  const files: UncommittedFile[] = []
+  const entries = stdout.split('\0');
+  const files: UncommittedFile[] = [];
   for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i]
-    if (entry.length < 4) continue
-    const xy = entry.slice(0, 2)
-    files.push({ path: join(root, entry.slice(3)), kind: changeKind(xy) })
-    if (/[RC]/.test(xy)) i++
+    const entry = entries[i];
+    if (entry.length < 4) continue;
+    const xy = entry.slice(0, 2);
+    files.push({ path: join(root, entry.slice(3)), kind: changeKind(xy) });
+    if (/[RC]/.test(xy)) i++;
   }
-  return files
+  return files;
 }
 
 async function readStatus(root: string): Promise<UncommittedFile[] | null> {
@@ -34,49 +34,49 @@ async function readStatus(root: string): Promise<UncommittedFile[] | null> {
     // --no-optional-locks: o status não regrava o index; senão o aviso de mudança no .git
     // dispararia outra leitura, e assim por diante.
     const stdout = await git(root, ['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'], {
-      maxBuffer: 16 * 1024 * 1024
-    })
-    return parseStatus(root, stdout)
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    return parseStatus(root, stdout);
   } catch {
-    return null
+    return null;
   }
 }
 
 // Cada aviso de mudança chega a todas as janelas, e cada uma pergunta: uma leitura só por
 // repositório em andamento, e a última vale por um instante.
-const TTL = 1000
-const recent = new Map<string, { at: number; files: UncommittedFile[] | null }>()
-const running = new Map<string, Promise<UncommittedFile[] | null>>()
+const TTL = 1000;
+const recent = new Map<string, { at: number; files: UncommittedFile[] | null }>();
+const running = new Map<string, Promise<UncommittedFile[] | null>>();
 // Raiz do repositório de cada pasta já perguntada: esquecer a leitura não procura o .git de novo.
-const roots = new Map<string, string>()
+const roots = new Map<string, string>();
 
-const keyOf = (folder: string) => resolve(expandHome(folder))
+const keyOf = (folder: string) => resolve(expandHome(folder));
 
 // O .git da pasta mudou (commit, add, checkout): a próxima pergunta lê de novo, sem esperar a
 // guardada vencer. A pasta pode ser a própria raiz do repositório.
 export function forgetStatus(folder: string): void {
-  const key = keyOf(folder)
-  recent.delete(roots.get(key) ?? key)
+  const key = keyOf(folder);
+  recent.delete(roots.get(key) ?? key);
 }
 
 // Arquivos não comitados do repositório inteiro, como o contador do VS Code: alterados,
 // preparados e novos (cada arquivo novo conta, mesmo dentro de pasta nova).
 // Pasta fora de repositório ou git com erro: nulo.
 export async function uncommittedFiles(folder: string): Promise<UncommittedFile[] | null> {
-  const repo = await findRepo(folder)
-  if (!repo) return null
-  roots.set(keyOf(folder), repo.root)
-  const hit = recent.get(repo.root)
-  if (hit && Date.now() - hit.at < TTL) return hit.files
-  let job = running.get(repo.root)
+  const repo = await findRepo(folder);
+  if (!repo) return null;
+  roots.set(keyOf(folder), repo.root);
+  const hit = recent.get(repo.root);
+  if (hit && Date.now() - hit.at < TTL) return hit.files;
+  let job = running.get(repo.root);
   if (!job) {
     job = readStatus(repo.root)
       .then((files) => {
-        recent.set(repo.root, { at: Date.now(), files })
-        return files
+        recent.set(repo.root, { at: Date.now(), files });
+        return files;
       })
-      .finally(() => running.delete(repo.root))
-    running.set(repo.root, job)
+      .finally(() => running.delete(repo.root));
+    running.set(repo.root, job);
   }
-  return job
+  return job;
 }

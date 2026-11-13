@@ -1,23 +1,23 @@
-import { memo, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { Code2, Folder, FolderOpen, Loader2, Play, Plus } from 'lucide-react'
-import { baseName, FILE_MANAGER, parentDir } from '../../platform'
-import { useCanvasActions } from '../CanvasContext'
-import { ContextMenu, type MenuItem } from '../ContextMenu'
-import { useBranch, useUncommitted } from '../sessionsStore'
-import { useIsCodeOpen } from '../useCanvasView'
-import { serverMenuItems } from '../../devServers/ProjectServerButton'
-import { startProjectServer, stopProjectServer, useProjectServer } from '../../devServers/projectServers'
-import { BranchSwitcher } from './BranchSwitcher'
-import { tr } from '../../i18n'
-import { IS_REMOTE } from '../../remote'
+import { memo, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Code2, Folder, FolderOpen, Loader2, Play, Plus } from 'lucide-react';
+import { baseName, FILE_MANAGER, parentDir } from '../../platform';
+import { useCanvasActions } from '../CanvasContext';
+import { ContextMenu, type MenuItem } from '../ContextMenu';
+import { useBranch, useUncommitted } from '../sessionsStore';
+import { useIsCodeOpen } from '../useCanvasView';
+import { serverMenuItems } from '../../devServers/ProjectServerButton';
+import { startProjectServer, stopProjectServer, useProjectServer } from '../../devServers/projectServers';
+import { BranchSwitcher } from './BranchSwitcher';
+import { tr } from '../../i18n';
+import { IS_REMOTE } from '../../remote';
 
 // As pastas do workspace, no pé do card: o que as conversas dele enxergam, cada uma com a branch em
 // que está (como a lista de repositórios do VS Code), para ver de cara uma na main e outra numa
 // branch de funcionalidade. Servidor e código de cada pasta ficam no botão direito dela, para a
 // linha não encher de botões. "Adicionar pasta" abre o seletor do sistema.
 export const WorkspaceFolders = memo(function WorkspaceFolders({ nodeId, folders }: { nodeId: string; folders: string[] }) {
-  const { addWorkspaceFolder } = useCanvasActions()
+  const { addWorkspaceFolder } = useCanvasActions();
   return (
     <ul className="border-t border-line px-1.5 py-1">
       {folders.map((f) => (
@@ -28,8 +28,8 @@ export const WorkspaceFolders = memo(function WorkspaceFolders({ nodeId, folders
         <li>
           <button
             onClick={(e) => {
-              e.stopPropagation()
-              addWorkspaceFolder(nodeId)
+              e.stopPropagation();
+              addWorkspaceFolder(nodeId);
             }}
             className="nodrag flex h-7 w-full items-center gap-2 rounded-md px-1.5 text-left text-[12px] text-muted hover:bg-surface-2 hover:text-text"
           >
@@ -39,23 +39,23 @@ export const WorkspaceFolders = memo(function WorkspaceFolders({ nodeId, folders
         </li>
       )}
     </ul>
-  )
-})
+  );
+});
 
 // Uma pasta: nome e, embaixo, a pasta de cima; à direita, a branch (clicar troca, como o selo acima
 // da pasta comum; fora de repositório, sem). O botão direito abre o menu da pasta, não o do card.
 function FolderRow({ folder }: { folder: string }) {
-  const branch = useBranch(folder)
-  const uncommitted = useUncommitted(folder)
-  const items = useFolderMenu(folder)
-  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null)
+  const branch = useBranch(folder);
+  const uncommitted = useUncommitted(folder);
+  const items = useFolderMenu(folder);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   return (
     <li
       title={folder}
       onContextMenu={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        setMenuAt({ x: e.clientX, y: e.clientY })
+        e.preventDefault();
+        e.stopPropagation();
+        setMenuAt({ x: e.clientX, y: e.clientY });
       }}
       className={`group flex items-center gap-2 rounded-md px-1.5 py-1 ${menuAt ? 'bg-surface-2' : ''}`}
     >
@@ -75,17 +75,17 @@ function FolderRow({ folder }: { folder: string }) {
       {/* No body: dentro do canvas o `fixed` seguiria o zoom e o deslocamento dele. */}
       {menuAt && createPortal(<ContextMenu menu={{ ...menuAt, items }} onClose={() => setMenuAt(null)} />, document.body)}
     </li>
-  )
+  );
 }
 
 // Menu de uma pasta do workspace: o servidor (iniciar; rodando, abrir no navegador e encerrar), o
 // código e o gerenciador de arquivos. Os itens acompanham o estado: aberto, o menu mostra a porta
 // que subir depois.
 function useFolderMenu(folder: string): MenuItem[] {
-  const { toggleProjectCode } = useCanvasActions()
-  const codeOpen = useIsCodeOpen(folder)
-  const server = useProjectServer(folder)
-  const project = useMemo(() => ({ name: baseName(folder), path: folder, color: '#71717a' }), [folder])
+  const { toggleProjectCode } = useCanvasActions();
+  const codeOpen = useIsCodeOpen(folder);
+  const server = useProjectServer(folder);
+  const project = useMemo(() => ({ name: baseName(folder), path: folder, color: '#71717a' }), [folder]);
 
   // Sem script para rodar e nada de pé na pasta, o servidor não entra no menu.
   const serverItems: MenuItem[] = !server || (server.state === 'stopped' && !server.script)
@@ -94,7 +94,7 @@ function useFolderMenu(folder: string): MenuItem[] {
       ? [{ type: 'action', label: tr(`Iniciar servidor - ${server.command}`, `Start server - ${server.command}`), icon: Play, onSelect: () => void startProjectServer(folder) }]
       : server.state === 'starting'
         ? [{ type: 'action', label: tr('Iniciando servidor', 'Starting server'), icon: Loader2, disabled: true, onSelect: () => {} }]
-        : serverMenuItems(server, () => void stopProjectServer(folder))
+        : serverMenuItems(server, () => void stopProjectServer(folder));
 
   return [
     ...serverItems,
@@ -103,7 +103,7 @@ function useFolderMenu(folder: string): MenuItem[] {
       type: 'action',
       label: codeOpen ? tr('Fechar código', 'Close code') : tr('Ver código', 'View code'),
       icon: Code2,
-      onSelect: () => toggleProjectCode(project, codeOpen)
+      onSelect: () => toggleProjectCode(project, codeOpen),
     },
     ...(IS_REMOTE
       ? []
@@ -112,8 +112,8 @@ function useFolderMenu(folder: string): MenuItem[] {
             type: 'action',
             label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
             icon: FolderOpen,
-            onSelect: () => window.api.files.openFolder(folder)
-          } as const
-        ])
-  ]
+            onSelect: () => window.api.files.openFolder(folder),
+          } as const,
+        ]),
+  ];
 }

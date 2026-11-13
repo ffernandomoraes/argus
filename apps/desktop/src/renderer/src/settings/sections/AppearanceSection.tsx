@@ -1,13 +1,13 @@
-import { Monitor, Moon, Sun } from 'lucide-react'
-import { SYSTEM_NAME } from '../../platform'
-import type { ThemePreference } from '../../theme/useTheme'
-import { INTERFACE_ZOOMS } from '@argus/shared/interfaceZoom'
-import { Group, Row, Segmented, Select } from '../controls'
-import { setPreferences, usePreference } from '../preferences'
-import { tr } from '../../i18n'
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { SYSTEM_NAME } from '../../platform';
+import type { ThemePreference } from '../../theme/useTheme';
+import { INTERFACE_ZOOMS } from '@argus/shared/interfaceZoom';
+import { Group, Row, Segmented, Select } from '../controls';
+import { setPreferences, usePreference } from '../preferences';
+import { tr } from '../../i18n';
 
 export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePreference; onThemeChange: (t: ThemePreference) => void }) {
-  const zoom = usePreference('interfaceZoom')
+  const zoom = usePreference('interfaceZoom');
   return (
     <Group>
       <Row
@@ -21,7 +21,7 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
           options={[
             { value: 'dark', label: tr('Escuro', 'Dark'), icon: <Moon size={13} /> },
             { value: 'light', label: tr('Claro', 'Light'), icon: <Sun size={13} /> },
-            { value: 'system', label: tr('Sistema', 'System'), icon: <Monitor size={13} /> }
+            { value: 'system', label: tr('Sistema', 'System'), icon: <Monitor size={13} /> },
           ]}
         />
       </Row>
@@ -30,7 +30,7 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
         description={tr('Aumenta ou diminui a janela inteira.', 'Scales the whole window up or down.')}
         info={tr(
           'Aumenta ou diminui a janela inteira, para monitores maiores ou menores. O zoom do canvas e da conversa continua valendo por cima.',
-          'Scales the whole window up or down for larger or smaller displays. Canvas and conversation zoom still apply on top.'
+          'Scales the whole window up or down for larger or smaller displays. Canvas and conversation zoom still apply on top.',
         )}
       >
         <Select value={String(zoom)} onChange={(v) => setPreferences({ interfaceZoom: Number(v) })} label={tr('Tamanho da interface', 'Interface size')}>
@@ -42,5 +42,5 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
         </Select>
       </Row>
     </Group>
-  )
+  );
 }

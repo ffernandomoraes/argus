@@ -1,14 +1,14 @@
-import { ShieldQuestion } from 'lucide-react'
-import type { PermissionAnswer, PermissionRequest } from '@argus/shared/chat'
-import { DiffView } from './DiffView'
-import { PlanCard } from './PlanCard'
-import { QuestionCard } from './QuestionCard'
-import { tr } from '../i18n'
+import { ShieldQuestion } from 'lucide-react';
+import type { PermissionAnswer, PermissionRequest } from '@argus/shared/chat';
+import { DiffView } from './DiffView';
+import { PlanCard } from './PlanCard';
+import { QuestionCard } from './QuestionCard';
+import { tr } from '../i18n';
 
 // O Claude quer usar uma ferramenta (editar, rodar comando...) e espera a resposta.
 export function PermissionCard({
   request,
-  onAnswer
+  onAnswer,
 }: {
   request: PermissionRequest
   onAnswer: (answer: PermissionAnswer) => void
@@ -20,7 +20,7 @@ export function PermissionCard({
         onSubmit={(answers) => onAnswer({ answers })}
         onDismiss={() => onAnswer('deny')}
       />
-    )
+    );
   }
 
   // Plano pronto esperando aprovação: o plano formatado, com os botões embaixo.
@@ -36,7 +36,7 @@ export function PermissionCard({
           </button>
         </div>
       </PlanCard>
-    )
+    );
   }
 
   return (
@@ -82,5 +82,5 @@ export function PermissionCard({
         </button>
       </div>
     </div>
-  )
+  );
 }

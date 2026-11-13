@@ -1,34 +1,34 @@
-import { Folder as FolderIcon, GitBranch, Settings } from 'lucide-react'
-import { barWindow, showsUsage, usableUsage } from '@argus/shared/usage'
-import type { ActiveChat, ChatActivity } from '@argus/shared/chat'
-import { tr } from '../i18n'
-import { useActiveChats, useInterrupted, useTitles, useUsage, useWorkspaces, type AccountUsage } from '../lib/data'
-import { useHost, useStatus } from '../lib/host'
-import { go } from '../lib/router'
-import { baseName } from '../ui/format'
-import { UsageBar } from '../ui/UsageBar'
-import { GroupLabel } from '../ui/GroupLabel'
-import { ROUND_BUTTON } from '../ui/FloatingHeader'
-import { AgentIcon } from '@argus/ui/icons/AgentIcon'
-import { Empty, Row, Section } from '../ui/List'
-import { StatusDot } from '../ui/StatusDot'
+import { Folder as FolderIcon, GitBranch, Settings } from 'lucide-react';
+import { barWindow, showsUsage, usableUsage } from '@argus/shared/usage';
+import type { ActiveChat, ChatActivity } from '@argus/shared/chat';
+import { tr } from '../i18n';
+import { useActiveChats, useInterrupted, useTitles, useUsage, useWorkspaces, type AccountUsage } from '../lib/data';
+import { useHost, useStatus } from '../lib/host';
+import { go } from '../lib/router';
+import { baseName } from '../ui/format';
+import { UsageBar } from '../ui/UsageBar';
+import { GroupLabel } from '../ui/GroupLabel';
+import { ROUND_BUTTON } from '../ui/FloatingHeader';
+import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { Empty, Row, Section } from '../ui/List';
+import { StatusDot } from '../ui/StatusDot';
 
 export function activityText(a: ChatActivity | undefined, status: string): string {
-  if (status === 'needs-you') return tr('Precisa de você', 'Needs you')
-  if (!a) return tr('Trabalhando…', 'Working…')
-  if (a.kind === 'thinking') return tr('Pensando…', 'Thinking…')
-  if (a.kind === 'writing') return tr('Escrevendo…', 'Writing…')
-  const what = [a.tool, a.summary].filter(Boolean).join(' - ')
-  return what || tr('Executando…', 'Running…')
+  if (status === 'needs-you') return tr('Precisa de você', 'Needs you');
+  if (!a) return tr('Trabalhando…', 'Working…');
+  if (a.kind === 'thinking') return tr('Pensando…', 'Thinking…');
+  if (a.kind === 'writing') return tr('Escrevendo…', 'Writing…');
+  const what = [a.tool, a.summary].filter(Boolean).join(' - ');
+  return what || tr('Executando…', 'Running…');
 }
 
 // Como a barra de baixo do Argus: por conta, só a janela que vale agora (a sessão de 5 h, ou o
 // semanal na conta sem sessão), com a barrinha e a porcentagem. O detalhe fica na página de uso.
 function UsageSummaryRow({ row, single }: { row: AccountUsage; single: boolean }) {
-  const u = row.usage ? usableUsage(row.usage, Date.now()) : null
-  const w = u ? barWindow(u) : null
-  const pct = w ? Math.max(0, Math.min(100, Math.round(w.percent))) : null
-  const dimmed = !!(u?.saved || u?.failure)
+  const u = row.usage ? usableUsage(row.usage, Date.now()) : null;
+  const w = u ? barWindow(u) : null;
+  const pct = w ? Math.max(0, Math.min(100, Math.round(w.percent))) : null;
+  const dimmed = !!(u?.saved || u?.failure);
   return (
     <Row
       icon={<AgentIcon provider={row.provider} size={20} />}
@@ -41,12 +41,12 @@ function UsageSummaryRow({ row, single }: { row: AccountUsage; single: boolean }
         </span>
       }
     />
-  )
+  );
 }
 
 function ActiveRow({ chat, title }: { chat: ActiveChat; title?: string }) {
-  const id = chat.sessionId ?? chat.key
-  const waiting = !chat.turnStartedAt && chat.status === 'running' && chat.background > 0
+  const id = chat.sessionId ?? chat.key;
+  const waiting = !chat.turnStartedAt && chat.status === 'running' && chat.background > 0;
   return (
     <Row
       icon={<StatusDot status={chat.status} />}
@@ -54,24 +54,24 @@ function ActiveRow({ chat, title }: { chat: ActiveChat; title?: string }) {
       subtitle={`${baseName(chat.cwd)} - ${waiting ? tr('Tarefas em segundo plano', 'Background tasks') : activityText(chat.activity, chat.status)}`}
       onClick={() => go({ name: 'chat', cwd: chat.cwd, id })}
     />
-  )
+  );
 }
 
 export function HomeScreen() {
-  const { conn } = useHost()
-  const status = useStatus()
-  const usage = useUsage()
-  const active = useActiveChats()
-  const interrupted = useInterrupted()
-  const titles = useTitles([...active.map((c) => c.cwd), ...interrupted.list.map((c) => c.cwd)])
-  const { workspaces, loaded } = useWorkspaces()
+  const { conn } = useHost();
+  const status = useStatus();
+  const usage = useUsage();
+  const active = useActiveChats();
+  const interrupted = useInterrupted();
+  const titles = useTitles([...active.map((c) => c.cwd), ...interrupted.list.map((c) => c.cwd)]);
+  const { workspaces, loaded } = useWorkspaces();
   // Só as contas com algo que valha mostrar (como no Argus): leitura parada ou antiga demais sai.
   const usageRows = usage.filter((r) => {
-    const u = r.usage && usableUsage(r.usage, Date.now())
-    return u && showsUsage(u)
-  })
-  const needs = active.filter((c) => c.status === 'needs-you')
-  const running = active.filter((c) => c.status !== 'needs-you')
+    const u = r.usage && usableUsage(r.usage, Date.now());
+    return u && showsUsage(u);
+  });
+  const needs = active.filter((c) => c.status === 'needs-you');
+  const running = active.filter((c) => c.status !== 'needs-you');
 
   return (
     <div className="pt-safe px-safe pb-end min-h-full">
@@ -109,8 +109,8 @@ export function HomeScreen() {
                   role="button"
                   className="px-1 text-accent"
                   onClick={(e) => {
-                    e.stopPropagation()
-                    interrupted.dismiss(c.sessionId)
+                    e.stopPropagation();
+                    interrupted.dismiss(c.sessionId);
                   }}
                 >
                   {tr('Dispensar', 'Dismiss')}
@@ -144,7 +144,7 @@ export function HomeScreen() {
               />
             ))}
           </Section>
-        ))
+        )),
       )}
       {loaded && workspaces.length === 0 && (
         <Section>
@@ -153,5 +153,5 @@ export function HomeScreen() {
       )}
       <p className="mt-10 text-center text-[13px] text-faint">{tr(`Versão ${__APP_VERSION__}`, `Version ${__APP_VERSION__}`)}</p>
     </div>
-  )
+  );
 }

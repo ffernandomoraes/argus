@@ -1,9 +1,9 @@
-import { memo } from 'react'
-import { Elapsed } from '../../conversation/turnInfo'
-import { agentActivity } from '../runningAgents'
-import type { RunningAgent } from '@argus/shared/agents'
-import type { ConversationSummary } from '../types'
-import { agentPath } from './geometry'
+import { memo } from 'react';
+import { Elapsed } from '../../conversation/turnInfo';
+import { agentActivity } from '../runningAgents';
+import type { RunningAgent } from '@argus/shared/agents';
+import type { ConversationSummary } from '../types';
+import { agentPath } from './geometry';
 
 // Subagente rodando, pendurado embaixo da conversa que o lançou: qual agente, o que está
 // fazendo agora e há quanto tempo. Some quando ele termina. Clicar abre o histórico dele, só para ler.
@@ -12,7 +12,7 @@ export const AgentRow = memo(function AgentRow({
   conversation,
   first,
   color,
-  onOpen
+  onOpen,
 }: {
   agent: RunningAgent
   conversation: ConversationSummary
@@ -39,5 +39,5 @@ export const AgentRow = memo(function AgentRow({
         <Elapsed since={a.startedAt} />
       </span>
     </li>
-  )
-})
+  );
+});

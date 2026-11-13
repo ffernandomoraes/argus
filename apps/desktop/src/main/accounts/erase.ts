@@ -1,22 +1,22 @@
-import { execFile } from 'node:child_process'
-import { existsSync, readdirSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { errorMessage } from '../lib/errors'
-import { readJsonFile } from '../lib/jsonFile'
-import { IS_MAC } from '../platform'
-import { keychainService } from './keychain'
-import { unlinkShared } from './links'
-import { accountDir, ID, ROOT } from './paths'
-import { clearTrashedAccounts, pending, reg, registryReadable, trashedAccounts } from './registry'
+import { execFile } from 'node:child_process';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { errorMessage } from '../lib/errors';
+import { readJsonFile } from '../lib/jsonFile';
+import { IS_MAC } from '../platform';
+import { keychainService } from './keychain';
+import { unlinkShared } from './links';
+import { accountDir, ID, ROOT } from './paths';
+import { clearTrashedAccounts, pending, reg, registryReadable, trashedAccounts } from './registry';
 
 // Apaga a pasta da conta e o login guardado dela.
 export function erase(id: string): void {
-  const dir = accountDir(id)
-  if (!dir || !ID.test(id)) return
+  const dir = accountDir(id);
+  if (!dir || !ID.test(id)) return;
   // No Mac o login fica nas Chaves, fora da pasta. Cobre o caso de o `claude auth logout` ter
   // falhado ou nem ter rodado. No Windows ele mora num arquivo da pasta e sai junto com ela.
-  if (IS_MAC) execFile('security', ['delete-generic-password', '-s', keychainService(dir)], () => {})
-  if (unlinkShared(dir)) removeDir(dir)
+  if (IS_MAC) execFile('security', ['delete-generic-password', '-s', keychainService(dir)], () => {});
+  if (unlinkShared(dir)) removeDir(dir);
 }
 
 // O `force` do rmSync só ignora a pasta que não existe. No Windows, um arquivo ainda aberto (o
@@ -24,9 +24,9 @@ export function erase(id: string): void {
 // sair, a pasta fica, sem derrubar quem chamou (a abertura do app, o cancelar do login).
 function removeDir(dir: string): void {
   try {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   } catch (err) {
-    console.warn('[accounts] não deu para apagar a pasta da conta:', dir, errorMessage(err))
+    console.warn('[accounts] não deu para apagar a pasta da conta:', dir, errorMessage(err));
   }
 }
 
@@ -34,11 +34,11 @@ function removeDir(dir: string): void {
 // pasta (oauthAccount, ou primaryApiKey no login por chave); no Windows, o login fica no
 // .credentials.json. Na dúvida (arquivo ilegível), conta como sim.
 function hasLogin(dir: string): boolean {
-  if (existsSync(join(dir, '.credentials.json'))) return true
-  const config = readJsonFile(join(dir, '.claude.json'))
-  if (config.status === 'corrupt') return true
-  if (config.status !== 'ok' || !config.data || typeof config.data !== 'object') return false
-  return 'oauthAccount' in config.data || 'primaryApiKey' in config.data
+  if (existsSync(join(dir, '.credentials.json'))) return true;
+  const config = readJsonFile(join(dir, '.claude.json'));
+  if (config.status === 'corrupt') return true;
+  if (config.status !== 'ok' || !config.data || typeof config.data !== 'object') return false;
+  return 'oauthAccount' in config.data || 'primaryApiKey' in config.data;
 }
 
 // Pastas que sobraram de um login de conta nova interrompido (o app fechou no meio, por exemplo).
@@ -48,20 +48,20 @@ function hasLogin(dir: string): boolean {
 // Antes delas, as pastas das contas juntadas a outra desde a última abertura (ver mergeAccount): com
 // o app recém-aberto, nada roda mais com o login de lá. Uma que tenha voltado à lista fica.
 export function cleanupAccounts(): void {
-  if (!registryReadable()) return
-  for (const id of trashedAccounts()) if (!reg().accounts.includes(id) && !pending.has(id)) erase(id)
-  clearTrashedAccounts()
-  let names: string[]
+  if (!registryReadable()) return;
+  for (const id of trashedAccounts()) if (!reg().accounts.includes(id) && !pending.has(id)) erase(id);
+  clearTrashedAccounts();
+  let names: string[];
   try {
-    names = readdirSync(ROOT)
+    names = readdirSync(ROOT);
   } catch {
-    return
+    return;
   }
-  const known = new Set(reg().accounts)
+  const known = new Set(reg().accounts);
   for (const id of names) {
-    if (!ID.test(id) || known.has(id) || pending.has(id)) continue
-    const dir = join(ROOT, id)
-    if (hasLogin(dir)) console.warn('[accounts] pasta de conta fora da lista, com login; fica:', dir)
-    else erase(id)
+    if (!ID.test(id) || known.has(id) || pending.has(id)) continue;
+    const dir = join(ROOT, id);
+    if (hasLogin(dir)) console.warn('[accounts] pasta de conta fora da lista, com login; fica:', dir);
+    else erase(id);
   }
 }

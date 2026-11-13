@@ -1,15 +1,15 @@
-import { homedir } from 'node:os'
-import { join, relative } from 'node:path'
-import { accountDir } from '../accounts/paths'
-import { loadAppSettings } from '../appSettings'
-import { accountIds } from '../accounts/registry'
-import { emailFrom } from '../auth/parseStatus'
-import { readJsonFileAsync, writeJsonAtomic } from '../lib/jsonFile'
-import { distroInfo, loadDistro, type DistroInfo } from './distros'
-import { distroFor } from './index'
-import { wslAccountDir } from './accounts'
-import { log } from './log'
-import { parseWslPath, sameDistro, toUnc } from './path'
+import { homedir } from 'node:os';
+import { join, relative } from 'node:path';
+import { accountDir } from '../accounts/paths';
+import { loadAppSettings } from '../appSettings';
+import { accountIds } from '../accounts/registry';
+import { emailFrom } from '../auth/parseStatus';
+import { readJsonFileAsync, writeJsonAtomic } from '../lib/jsonFile';
+import { distroInfo, loadDistro, type DistroInfo } from './distros';
+import { distroFor } from './index';
+import { wslAccountDir } from './accounts';
+import { log } from './log';
+import { parseWslPath, sameDistro, toUnc } from './path';
 
 // Um login só por conta, no Windows e no WSL (Argus no Windows com o claude.exe e pastas no WSL).
 // Até a 0.1.124, a conversa de uma pasta do WSL usava um login guardado dentro do Linux, separado
@@ -32,75 +32,75 @@ import { parseWslPath, sameDistro, toUnc } from './path'
 // O Claude Code do Windows pode guardar o login no cofre de credenciais do Windows em vez do
 // arquivo (em teste, atrás de uma opção do servidor; conferido na 2.1.322): aí não há arquivo para
 // o Linux ler. Conferido na abertura (ver checkWindowsStore).
-let loginInFile = true
+let loginInFile = true;
 // A opção das Configurações (AppSettings.wslSharedLogin); lida do arquivo uma vez.
-let enabled: boolean | null = null
-const isEnabled = (): boolean => (enabled ??= loadAppSettings().wslSharedLogin !== false)
+let enabled: boolean | null = null;
+const isEnabled = (): boolean => (enabled ??= loadAppSettings().wslSharedLogin !== false);
 
 export function setSharedLoginEnabled(on: boolean): void {
-  enabled = on
+  enabled = on;
 }
 
-const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
 // Pasta de configuração da conta no Windows: a dela, ou o ~/.claude na principal.
-const windowsConfigDir = (account: string) => accountDir(account) ?? join(homedir(), '.claude')
+const windowsConfigDir = (account: string) => accountDir(account) ?? join(homedir(), '.claude');
 // O .claude.json da conta no Windows: o da principal fica na pasta do usuário.
-const windowsConfigFile = (account: string) => join(accountDir(account) ?? homedir(), '.claude.json')
+const windowsConfigFile = (account: string) => join(accountDir(account) ?? homedir(), '.claude.json');
 
 // Na abertura: alguma conta com o login no cofre do Windows? A mesma pergunta que o Claude Code faz
 // (a opção fica no .claude.json da conta).
 export async function checkWindowsStore(): Promise<void> {
   if (process.env.CLAUDE_CODE_FORCE_WINDOWS_CREDMAN === '1') {
-    loginInFile = false
-    return
+    loginInFile = false;
+    return;
   }
-  const reads = await Promise.all(accountIds().map((id) => readJsonFileAsync(windowsConfigFile(id))))
-  const vault = reads.some((r) => r.status === 'ok' && isObject(r.data) && isObject(r.data.cachedGrowthBookFeatures) && r.data.cachedGrowthBookFeatures.tengu_windows_credman === true)
-  if (vault && loginInFile) log('login compartilhado com o WSL desligado: o Claude Code do Windows guarda o login no cofre de credenciais')
-  loginInFile = !vault
+  const reads = await Promise.all(accountIds().map((id) => readJsonFileAsync(windowsConfigFile(id))));
+  const vault = reads.some((r) => r.status === 'ok' && isObject(r.data) && isObject(r.data.cachedGrowthBookFeatures) && r.data.cachedGrowthBookFeatures.tengu_windows_credman === true);
+  if (vault && loginInFile) log('login compartilhado com o WSL desligado: o Claude Code do Windows guarda o login no cofre de credenciais');
+  loginInFile = !vault;
 }
 
 // A pasta do usuário do Windows vista de dentro da distro, quando o `claude` do app é o do Windows
 // (é lá que a pessoa configura tudo). Nulo: sem o claude.exe, o `claude` do app já roda numa distro
 // (a configuração dele é a de lá), ou a distro não enxerga a pasta do Windows.
 export function windowsHome(distro: string): string | null {
-  if (distroFor()) return null
-  return distroInfo(distro)?.winHome ?? null
+  if (distroFor()) return null;
+  return distroInfo(distro)?.winHome ?? null;
 }
 
 // A pasta do usuário do Windows vista de dentro da distro, se o login das contas é compartilhado
 // com ela; nulo se o login de lá é separado.
 export function sharedLoginHome(distro: string): string | null {
-  if (!loginInFile || !isEnabled()) return null
-  return windowsHome(distro)
+  if (!loginInFile || !isEnabled()) return null;
+  return windowsHome(distro);
 }
 
 // O que o app sabe da distro foi guardado por uma versão anterior, sem a pasta do Windows: pergunta
 // de novo antes de decidir. Sem isso, a primeira conversa depois de atualizar o app abria com o login
 // separado de antes.
 export async function windowsHomeReady(distro: string): Promise<void> {
-  if (distroInfo(distro)?.winHome === undefined) await loadDistro(distro)
+  if (distroInfo(distro)?.winHome === undefined) await loadDistro(distro);
 }
 
 // Por que o login não é compartilhado com a distro, para o diagnóstico; nulo se é.
 export function sharedLoginBlocker(distro: string): 'own' | 'off' | 'vault' | 'unmounted' | 'unknown' | null {
-  if (distroFor()) return 'own'
-  if (!isEnabled()) return 'off'
-  if (!loginInFile) return 'vault'
-  const winHome = distroInfo(distro)?.winHome
-  return winHome ? null : winHome === null ? 'unmounted' : 'unknown'
+  if (distroFor()) return 'own';
+  if (!isEnabled()) return 'off';
+  if (!loginInFile) return 'vault';
+  const winHome = distroInfo(distro)?.winHome;
+  return winHome ? null : winHome === null ? 'unmounted' : 'unknown';
 }
 
 // Onde o `claude` daquela distro acha o login da conta: a pasta dela no Windows, no caminho do
 // Linux. Nulo: login separado.
 export function sharedLoginDir(distro: string, account: string): string | null {
-  const home = sharedLoginHome(distro)
-  if (!home) return null
-  const rest = relative(homedir(), windowsConfigDir(account)).split(/[\\/]+/).filter(Boolean)
+  const home = sharedLoginHome(distro);
+  if (!home) return null;
+  const rest = relative(homedir(), windowsConfigDir(account)).split(/[\\/]+/).filter(Boolean);
   // Pasta da conta fora da pasta do usuário (não acontece hoje): sem caminho certo lá dentro.
-  if (rest[0] === '..' || /^[a-zA-Z]:$/.test(rest[0] ?? '')) return null
-  return [home.replace(/\/+$/, ''), ...rest].join('/')
+  if (rest[0] === '..' || /^[a-zA-Z]:$/.test(rest[0] ?? '')) return null;
+  return [home.replace(/\/+$/, ''), ...rest].join('/');
 }
 
 // A conversa desta pasta roda com o mesmo login do `claude` do app (o que a barra de uso lê)? Com o
@@ -108,12 +108,12 @@ export function sharedLoginDir(distro: string, account: string): string | null {
 // de outra conta do Claude: os limites que ela informa não são os da conta que o app mostra (relato
 // de 2026-11-12: a barra trocava o semanal de uma conta pelo de outra a cada resposta).
 export function sharesAppLogin(cwd: string): boolean {
-  const own = distroFor()
-  const distro = distroFor(cwd)
-  if (own && distro) return sameDistro(own, distro)
-  if (own === distro) return true
+  const own = distroFor();
+  const distro = distroFor(cwd);
+  if (own && distro) return sameDistro(own, distro);
+  if (own === distro) return true;
   // Pasta do WSL com o `claude` do app no Windows: só com o login compartilhado.
-  return !!distro && !!parseWslPath(cwd) && !!sharedLoginHome(distro)
+  return !!distro && !!parseWslPath(cwd) && !!sharedLoginHome(distro);
 }
 
 // O .claude.json da conta no Linux guarda de quem era o último login usado lá (oauthAccount: e-mail,
@@ -122,25 +122,25 @@ export function sharesAppLogin(cwd: string): boolean {
 // compartilhado, a conversa gastaria o limite da conta certa dizendo ser a outra. Quando o e-mail de
 // lá não é o da conta no Windows, o bloco sai, e o Claude Code o preenche de novo pelo login em uso.
 // Uma vez por conta, distro e e-mail em cada abertura do app; nada disso segura a conversa.
-const aligned = new Set<string>()
+const aligned = new Set<string>();
 
 export async function alignWslIdentity(distro: string, info: DistroInfo, account: string): Promise<void> {
   try {
-    const app = await readJsonFileAsync(windowsConfigFile(account))
-    const email = app.status === 'ok' ? emailFrom(app.data) : undefined
-    if (!email) return
-    const key = `${distro.toLowerCase()}\0${account}\0${email.toLowerCase()}`
-    if (aligned.has(key)) return
-    aligned.add(key)
-    const file = toUnc(distro, `${wslAccountDir(info, account) ?? info.home}/.claude.json`)
-    const there = await readJsonFileAsync(file)
-    if (there.status !== 'ok' || !isObject(there.data)) return
-    const other = emailFrom(there.data)
-    if (!other || other.toLowerCase() === email.toLowerCase()) return
-    const { oauthAccount: _stale, ...rest } = there.data
-    await writeJsonAtomic(file, rest, { indent: 2, mode: 0o600 })
-    log(`conta ${account} no WSL (${distro}): os dados do login anterior saíram do .claude.json de lá`)
+    const app = await readJsonFileAsync(windowsConfigFile(account));
+    const email = app.status === 'ok' ? emailFrom(app.data) : undefined;
+    if (!email) return;
+    const key = `${distro.toLowerCase()}\0${account}\0${email.toLowerCase()}`;
+    if (aligned.has(key)) return;
+    aligned.add(key);
+    const file = toUnc(distro, `${wslAccountDir(info, account) ?? info.home}/.claude.json`);
+    const there = await readJsonFileAsync(file);
+    if (there.status !== 'ok' || !isObject(there.data)) return;
+    const other = emailFrom(there.data);
+    if (!other || other.toLowerCase() === email.toLowerCase()) return;
+    const { oauthAccount: _stale, ...rest } = there.data;
+    await writeJsonAtomic(file, rest, { indent: 2, mode: 0o600 });
+    log(`conta ${account} no WSL (${distro}): os dados do login anterior saíram do .claude.json de lá`);
   } catch (err) {
-    log(`conta ${account} no WSL (${distro}): não deu para conferir o .claude.json de lá`, (err as Error).message)
+    log(`conta ${account} no WSL (${distro}): não deu para conferir o .claude.json de lá`, (err as Error).message);
   }
 }

@@ -1,49 +1,49 @@
-import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
-import { agentProviderOf } from '@argus/shared/agents'
-import { cleanTitle } from '@argus/shared/chat'
-import { tr } from '../i18n'
-import { parseAgentRef } from '@argus/shared/providers'
-import { AccountContext, ConversationFolderContext } from '../auth/useAuth'
-import { dismissInterrupted, useInterrupted } from '../canvas/interruptedChats'
-import { useWasFreed } from '../systemHealth/store'
-import { useViewing } from '../canvas/sessionsStore'
-import type { SubagentRef, TaskRef, TasksRef } from '../canvas/CanvasContext'
-import type { ConversationSummary } from '../canvas/types'
-import { useStableCallback } from '../lib/useStableCallback'
-import { Presence } from '../motion'
-import { ChatView } from './ChatView'
-import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount'
-import { moveConversationSettings, useConversationSettings } from './conversationSettings'
-import { fileInFolder, ownFolder } from '../canvas/drawers/fileInFolder'
-import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks'
-import { isAbsolutePath } from '../platform'
-import { useIsFavorite } from '../canvas/favorites'
-import { ConversationHeader } from './header/ConversationHeader'
-import { ConversationBranch } from './header/ConversationBranch'
-import { RemoteControlTag } from './RemoteControlTag'
-import { useAgentList } from './hooks/useAgentList'
-import { useConversationActions } from './hooks/useConversationActions'
-import { useLiveChat } from './hooks/useLiveChat'
-import { useViewKey } from './hooks/useViewKey'
-import { useLocalEvents } from './localEvents'
-import { McpPanel } from './McpPanel'
-import { OutputStylePanel } from './OutputStylePanel'
-import { PlanOpenContext } from './PlanCard'
-import { SubagentOpenContext, type OpenSubagent } from './subagentOpen'
-import { TaskOpenContext } from './taskOpen'
-import { mergeEvents } from './mergeEvents'
-import { onRevealEnd } from './revealEnd'
-import { useConversationHistory } from './useConversationHistory'
+import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import { agentProviderOf } from '@argus/shared/agents';
+import { cleanTitle } from '@argus/shared/chat';
+import { tr } from '../i18n';
+import { parseAgentRef } from '@argus/shared/providers';
+import { AccountContext, ConversationFolderContext } from '../auth/useAuth';
+import { dismissInterrupted, useInterrupted } from '../canvas/interruptedChats';
+import { useWasFreed } from '../systemHealth/store';
+import { useViewing } from '../canvas/sessionsStore';
+import type { SubagentRef, TaskRef, TasksRef } from '../canvas/CanvasContext';
+import type { ConversationSummary } from '../canvas/types';
+import { useStableCallback } from '../lib/useStableCallback';
+import { Presence } from '../motion';
+import { ChatView } from './ChatView';
+import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount';
+import { moveConversationSettings, useConversationSettings } from './conversationSettings';
+import { fileInFolder, ownFolder } from '../canvas/drawers/fileInFolder';
+import { FileLinkContext, FileRevealContext, type LineRange } from './fileLinks';
+import { isAbsolutePath } from '../platform';
+import { useIsFavorite } from '../canvas/favorites';
+import { ConversationHeader } from './header/ConversationHeader';
+import { ConversationBranch } from './header/ConversationBranch';
+import { RemoteControlTag } from './RemoteControlTag';
+import { useAgentList } from './hooks/useAgentList';
+import { useConversationActions } from './hooks/useConversationActions';
+import { useLiveChat } from './hooks/useLiveChat';
+import { useViewKey } from './hooks/useViewKey';
+import { useLocalEvents } from './localEvents';
+import { McpPanel } from './McpPanel';
+import { OutputStylePanel } from './OutputStylePanel';
+import { PlanOpenContext } from './PlanCard';
+import { SubagentOpenContext, type OpenSubagent } from './subagentOpen';
+import { TaskOpenContext } from './taskOpen';
+import { mergeEvents } from './mergeEvents';
+import { onRevealEnd } from './revealEnd';
+import { useConversationHistory } from './useConversationHistory';
 
 // O botão do cabeçalho e as cores das mudanças moram em header/; saem daqui também, como antes,
 // para o canvas e o código.
-export { HeaderButton } from './header/HeaderButton'
-export { KIND_COLOR, KIND_LABEL } from './header/changeKinds'
+export { HeaderButton } from './header/HeaderButton';
+export { KIND_COLOR, KIND_LABEL } from './header/changeKinds';
 
 // Quanto o nome novo fica na tela esperando a lista trazer o gravado.
-const RENAME_SETTLE_MS = 10_000
+const RENAME_SETTLE_MS = 10_000;
 // Quanto o aviso de que não deu para renomear fica ao lado do título.
-const RENAME_ERROR_MS = 8_000
+const RENAME_ERROR_MS = 8_000;
 
 type Props = {
   // Pasta onde o Claude roda.
@@ -88,7 +88,7 @@ type Props = {
   // Caixa de escrever com o foco ao abrir (padrão). O bloco no canvas só pede quando é novo.
   autoFocus?: boolean
   onClose: () => void
-}
+};
 
 // Cabeçalho e chat de uma conversa, sem decidir onde eles moram: servem ao painel lateral
 // (ConversationDrawer), à janela separada (ConversationWindow) e ao bloco no canvas (ChatPanelNode).
@@ -115,147 +115,147 @@ export const ConversationView = memo(function ConversationView({
   bodyClassName = '',
   minimalHeader = false,
   autoFocus = true,
-  onClose
+  onClose,
 }: Props) {
-  const viewKey = useViewKey(conversation)
-  const live = useLiveChat(viewKey)
+  const viewKey = useViewKey(conversation);
+  const live = useLiveChat(viewKey);
   // Na tela: a resposta que chegar aqui já foi vista (a bolinha da lista não fica verde).
-  useViewing(conversation.sessionId ?? live?.sessionId ?? conversation.id)
-  const history = useConversationHistory(cwd, conversation.sessionId, conversation.updatedAt, live?.revision)
-  const localEvents = useLocalEvents(conversation.sessionId)
-  const messages = useMemo(() => mergeEvents(history.messages, localEvents), [history.messages, localEvents])
+  useViewing(conversation.sessionId ?? live?.sessionId ?? conversation.id);
+  const history = useConversationHistory(cwd, conversation.sessionId, conversation.updatedAt, live?.revision);
+  const localEvents = useLocalEvents(conversation.sessionId);
+  const messages = useMemo(() => mergeEvents(history.messages, localEvents), [history.messages, localEvents]);
   // Com o chat ligado aqui, o status dele manda: o registro do Claude Code demora a dizer
   // que parou, e isso deixava a conversa como "trabalhando" depois de você mandar parar.
-  const status = live ? live.status : conversation.status
+  const status = live ? live.status : conversation.status;
   // Parou no meio sem você pedir (o Argus fechou, faltou memória): o aviso para continuar de onde
   // parou. Fechada para liberar memória: a linha que explica a primeira resposta mais lenta.
-  const markId = conversation.sessionId ?? live?.sessionId
-  const stopped = useInterrupted(markId)
+  const markId = conversation.sessionId ?? live?.sessionId;
+  const stopped = useInterrupted(markId);
   const interrupted = useMemo(
     () => (stopped ? { reason: stopped.reason, onDismiss: () => dismissInterrupted(stopped.sessionId) } : undefined),
-    [stopped]
-  )
-  const freed = useWasFreed(markId)
+    [stopped],
+  );
+  const freed = useWasFreed(markId);
   // Conversa nova ainda sem sessão guarda as trocas (e a conta) pelo id provisório.
-  const settingsId = conversation.sessionId ?? conversation.id
-  const chosen = useConversationAccountChoice(settingsId)
-  const account = conversationAccount(conversation, chosen ?? groupAccount, live?.agent)
-  const favorite = useIsFavorite(conversation)
-  const agents = useAgentList(cwd, viewKey, agentProviderOf(account))
+  const settingsId = conversation.sessionId ?? conversation.id;
+  const chosen = useConversationAccountChoice(settingsId);
+  const account = conversationAccount(conversation, chosen ?? groupAccount, live?.agent);
+  const favorite = useIsFavorite(conversation);
+  const agents = useAgentList(cwd, viewKey, agentProviderOf(account));
   // Conversa vazia (nada enviado e nenhuma sessão aberta) troca para qualquer conta. Depois, só entre
   // as do Claude e com ela parada: a próxima mensagem reabre a sessão com a nova, na mesma conversa
   // (as conversas ficam numa pasta só para todas as contas; ver Chats.open).
-  const empty = !!conversation.draft && !live && !messages.length
-  const canSwitchClaude = !empty && !parseAgentRef(account) && status !== 'running' && status !== 'needs-you'
-  const canChangeAccount = empty || canSwitchClaude
-  const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId])
-  const settings = useConversationSettings(settingsId)
-  const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents })
-  const { remoteControl } = actionsFor
+  const empty = !!conversation.draft && !live && !messages.length;
+  const canSwitchClaude = !empty && !parseAgentRef(account) && status !== 'running' && status !== 'needs-you';
+  const canChangeAccount = empty || canSwitchClaude;
+  const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId]);
+  const settings = useConversationSettings(settingsId);
+  const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents });
+  const { remoteControl } = actionsFor;
 
   // Renomear: o nome novo aparece na hora e fica até a lista trazer o gravado (o arquivo da
   // conversa muda e a lista relê). Sem sessão ainda, não há o que renomear.
-  const renameId = conversation.sessionId ?? live?.sessionId
-  const [renaming, setRenaming] = useState(false)
-  const [pendingTitle, setPendingTitle] = useState<string | null>(null)
-  const [renameError, setRenameError] = useState<string | null>(null)
-  const savedTitle = conversation.title
+  const renameId = conversation.sessionId ?? live?.sessionId;
+  const [renaming, setRenaming] = useState(false);
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const savedTitle = conversation.title;
   // Outra conversa no mesmo lugar (o drawer troca sem recriar): nada do renomear da anterior fica.
-  const conversationId = conversation.id
+  const conversationId = conversation.id;
   useEffect(() => {
-    setRenaming(false)
-    setPendingTitle(null)
-    setRenameError(null)
-  }, [conversationId])
+    setRenaming(false);
+    setPendingTitle(null);
+    setRenameError(null);
+  }, [conversationId]);
   // O aviso de erro some sozinho, como os outros do cabeçalho.
   useEffect(() => {
-    if (!renameError) return
-    const timer = setTimeout(() => setRenameError(null), RENAME_ERROR_MS)
-    return () => clearTimeout(timer)
-  }, [renameError])
+    if (!renameError) return;
+    const timer = setTimeout(() => setRenameError(null), RENAME_ERROR_MS);
+    return () => clearTimeout(timer);
+  }, [renameError]);
   useEffect(() => {
-    if (pendingTitle === null) return
-    if (savedTitle === pendingTitle) return setPendingTitle(null)
+    if (pendingTitle === null) return;
+    if (savedTitle === pendingTitle) return setPendingTitle(null);
     // A lista não trouxe (vigia atrasada): volta ao que ela diz, sem ficar preso no provisório.
-    const timer = setTimeout(() => setPendingTitle(null), RENAME_SETTLE_MS)
-    return () => clearTimeout(timer)
-  }, [pendingTitle, savedTitle])
+    const timer = setTimeout(() => setPendingTitle(null), RENAME_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [pendingTitle, savedTitle]);
   const rename = useStableCallback((raw: string) => {
-    const title = cleanTitle(raw)
-    if (!renameId || !title) return
-    setRenameError(null)
-    setPendingTitle(title)
+    const title = cleanTitle(raw);
+    if (!renameId || !title) return;
+    setRenameError(null);
+    setPendingTitle(title);
     void actionsFor.rename(renameId, title).then((error) => {
-      if (!error) return
-      setPendingTitle(null)
-      setRenameError(error)
-    })
-  })
+      if (!error) return;
+      setPendingTitle(null);
+      setRenameError(error);
+    });
+  });
   // /rename: com o nome, renomeia; sozinho, abre o título para editar.
   const renameCommand = useStableCallback((raw: string): string | null => {
-    if (!renameId) return tr('Envie a primeira mensagem antes de dar nome à conversa.', 'Send the first message before naming the chat.')
-    if (cleanTitle(raw)) rename(raw)
-    else setRenaming(true)
-    return null
-  })
-  const turnOffRemote = useCallback(() => remoteControl(false), [remoteControl])
+    if (!renameId) return tr('Envie a primeira mensagem antes de dar nome à conversa.', 'Send the first message before naming the chat.');
+    if (cleanTitle(raw)) rename(raw);
+    else setRenaming(true);
+    return null;
+  });
+  const turnOffRemote = useCallback(() => remoteControl(false), [remoteControl]);
 
   // Conversa nova recebeu o id da sessão: as trocas feitas antes vão junto, e quem mostra fica sabendo.
-  const sessionId = live?.sessionId
+  const sessionId = live?.sessionId;
   const started = useEffectEvent((sid: string) => {
-    if (!conversation.draft) return
-    moveConversationSettings(conversation.id, sid)
-    moveConversationAccount(conversation.id, sid)
-    onSessionStarted?.(sid)
-  })
+    if (!conversation.draft) return;
+    moveConversationSettings(conversation.id, sid);
+    moveConversationAccount(conversation.id, sid);
+    onSessionStarted?.(sid);
+  });
   useEffect(() => {
-    if (sessionId) started(sessionId)
-  }, [sessionId])
+    if (sessionId) started(sessionId);
+  }, [sessionId]);
 
   // Aberta de novo já estando à vista: a conversa vai para o fim (revealEnd).
-  const [endSignal, setEndSignal] = useState(0)
-  const ids = [conversation.id, conversation.sessionId, sessionId]
-  const isThis = useEffectEvent((id: string) => ids.includes(id))
+  const [endSignal, setEndSignal] = useState(0);
+  const ids = [conversation.id, conversation.sessionId, sessionId];
+  const isThis = useEffectEvent((id: string) => ids.includes(id));
   useEffect(
     () =>
       onRevealEnd((id) => {
-        if (isThis(id)) setEndSignal((n) => n + 1)
+        if (isThis(id)) setEndSignal((n) => n + 1);
       }),
-    []
-  )
+    [],
+  );
 
   // O valor do contexto é fixo: com uma função nova a cada desenho, todo link de toda mensagem
   // redesenhava (o drawer mandava uma nova a cada arraste no canvas).
   // No workspace o arquivo é procurado em cada pasta dele: a da conversa só tem o aviso para os agentes.
-  const roots = folders ?? [cwd]
+  const roots = folders ?? [cwd];
   const openFile = useStableCallback((path: string, lines?: LineRange) => {
-    void locate(roots, path).then((found) => onOpenFile?.(found, lines))
-  })
+    void locate(roots, path).then((found) => onOpenFile?.(found, lines));
+  });
   const revealFile = useStableCallback((path: string) => {
     void locate(roots, path).then((found) => {
-      const root = roots.find((r) => fileInFolder(r, found) !== null && isAbsolutePath(found))
-      const rel = root ? fileInFolder(root, found) : fileInFolder(cwd, found)
+      const root = roots.find((r) => fileInFolder(r, found) !== null && isAbsolutePath(found));
+      const rel = root ? fileInFolder(root, found) : fileInFolder(cwd, found);
       // Fora das pastas da conversa (a temporária do Claude, a da memória): pela pasta do arquivo.
-      const at = rel ? { root: root ?? cwd, rel } : ownFolder(found)
-      if (at) window.api.files.reveal(at.root, at.rel)
-    })
-  })
+      const at = rel ? { root: root ?? cwd, rel } : ownFolder(found);
+      if (at) window.api.files.reveal(at.root, at.rel);
+    });
+  });
   // Subagente desta conversa: o histórico dele fica ao lado do da conversa, pela sessão dela.
-  const parentSession = conversation.sessionId ?? sessionId
+  const parentSession = conversation.sessionId ?? sessionId;
   const openSubagent = useStableCallback((toolUseId: string, agent: string, description: string) => {
-    if (parentSession) onOpenSubagent?.({ sessionId: parentSession, toolUseId, agent, description })
-  })
-  const subagentOpen: OpenSubagent | null = onOpenSubagent ? openSubagent : null
+    if (parentSession) onOpenSubagent?.({ sessionId: parentSession, toolUseId, agent, description });
+  });
+  const subagentOpen: OpenSubagent | null = onOpenSubagent ? openSubagent : null;
   const openTask = useStableCallback((task: TaskRef) => {
-    if (parentSession) onOpenTasks?.({ sessionId: parentSession, selected: task.id, extra: task })
-  })
-  const taskOpen = onOpenTasks ? openTask : null
-  const [mcpOpen, setMcpOpen] = useState(false)
-  const openMcp = useCallback(() => setMcpOpen(true), [])
-  const closeMcp = useCallback(() => setMcpOpen(false), [])
-  const [styleOpen, setStyleOpen] = useState(false)
-  const openStyle = useCallback(() => setStyleOpen(true), [])
-  const closeStyle = useCallback(() => setStyleOpen(false), [])
+    if (parentSession) onOpenTasks?.({ sessionId: parentSession, selected: task.id, extra: task });
+  });
+  const taskOpen = onOpenTasks ? openTask : null;
+  const [mcpOpen, setMcpOpen] = useState(false);
+  const openMcp = useCallback(() => setMcpOpen(true), []);
+  const closeMcp = useCallback(() => setMcpOpen(false), []);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const openStyle = useCallback(() => setStyleOpen(true), []);
+  const closeStyle = useCallback(() => setStyleOpen(false), []);
 
   return (
     <AccountContext.Provider value={account}>
@@ -337,24 +337,24 @@ export const ConversationView = memo(function ConversationView({
       </Presence>
       </ConversationFolderContext.Provider>
     </AccountContext.Provider>
-  )
-})
+  );
+});
 
 // Agente e conta que rodam a conversa: a que já existe continua com o dela (outro agente, ou o
 // Claude mesmo num grupo que agora é de outro agente); a nova usa o do grupo.
 function conversationAccount(conversation: ConversationSummary, group?: string, running?: string): string | undefined {
-  if (conversation.agent ?? running) return conversation.agent ?? running
-  const started = !conversation.draft && !!conversation.sessionId
-  return started && parseAgentRef(group) ? undefined : group
+  if (conversation.agent ?? running) return conversation.agent ?? running;
+  const started = !conversation.draft && !!conversation.sessionId;
+  return started && parseAgentRef(group) ? undefined : group;
 }
 
 // Caminho relativo do link: o Claude às vezes corta o começo ("conversation/X.tsx" dentro de
 // src/renderer/src). O principal acha o arquivo; sem achar, segue o original e o erro aparece.
 export async function locate(roots: string[], path: string): Promise<string> {
-  if (isAbsolutePath(path) || path.startsWith('~')) return path
+  if (isAbsolutePath(path) || path.startsWith('~')) return path;
   for (const root of roots) {
-    const found = await window.api.files.locate(root, path).catch(() => null)
-    if (found) return found
+    const found = await window.api.files.locate(root, path).catch(() => null);
+    if (found) return found;
   }
-  return path
+  return path;
 }

@@ -1,7 +1,7 @@
-import type { Node } from '@xyflow/react'
+import type { Node } from '@xyflow/react';
 
 // done e interrupted só aparecem na tela: resposta não vista e conversa que o Argus fechou no meio.
-export type SessionStatus = 'idle' | 'running' | 'needs-you' | 'done' | 'interrupted'
+export type SessionStatus = 'idle' | 'running' | 'needs-you' | 'done' | 'interrupted';
 
 export type AreaData = {
   label: string
@@ -16,7 +16,7 @@ export type AreaData = {
   // Tamanho de antes de o grupo crescer sozinho (conversas e agentes novos dentro). Com ele o grupo
   // volta a encolher até ali quando o conteúdo diminui. Redimensionar na mão apaga.
   autoGrownFrom?: { width: number; height: number }
-}
+};
 
 export type ConversationSummary = {
   id: string
@@ -36,7 +36,7 @@ export type ConversationSummary = {
   // Conversa com outro agente: agente e conta dela ("codex:main"). Continua com ele mesmo se o
   // grupo trocar de agente.
   agent?: string
-}
+};
 
 export type ProjectData = {
   name: string
@@ -55,7 +55,7 @@ export type ProjectData = {
   // Tarefa isolada (git worktree): card filho da pasta `of`, abaixo dela e ligado por uma linha.
   // Anda e recolhe junto com ela. `path` é a pasta da cópia (~/.argus/worktrees/<repo>/<tarefa>).
   worktree?: WorktreeLink
-}
+};
 
 export type WorktreeLink = {
   // Id do card da pasta de onde a tarefa saiu.
@@ -63,10 +63,10 @@ export type WorktreeLink = {
   // Branch em que a pasta estava ao pedir a tarefa: é dela que a tarefa sai. A branch da própria
   // tarefa é lida do git (o agente renomeia a provisória).
   base: string
-}
+};
 
 // Terminal solto no canvas: o `claude` ou o shell do sistema, numa pasta.
-export type TerminalKind = 'claude' | 'shell'
+export type TerminalKind = 'claude' | 'shell';
 
 type TerminalData = {
   name: string
@@ -80,7 +80,7 @@ type TerminalData = {
   // Agente e conta escolhidos no "Novo terminal" ("codex:main", ou uma conta do Claude). Sem ela,
   // vale a do grupo.
   account?: string
-}
+};
 
 // Conversa sem projeto: roda na pasta do usuário e entra no canvas no primeiro envio,
 // como um card que reabre a conversa no painel lateral.
@@ -89,7 +89,7 @@ type ChatData = {
   name: string
   path: string
   sessionId: string
-}
+};
 
 // Conversa aberta dentro do canvas, como o terminal: o mesmo chat do painel lateral, num bloco
 // que acompanha o zoom e fica onde foi posto. Nasce ao lado da pasta (ou do card da conversa solta).
@@ -102,7 +102,7 @@ type ChatPanelData = {
   // Conversa de workspace: as pastas dele (ver ProjectData.folders).
   folders?: string[]
   sessionId: string
-}
+};
 
 // Nota solta no canvas: um lembrete em texto ("testar o login depois"), sem pasta nem sessão.
 // Posta em cima de um grupo, entra nele e anda junto; em cima de uma pasta, só fica ali.
@@ -114,14 +114,14 @@ type NoteData = {
   color: string
   width?: number
   collapsed?: boolean
-}
+};
 
-export type AreaNode = Node<AreaData, 'area'>
-export type ProjectNode = Node<ProjectData, 'project'>
-export type TerminalNode = Node<TerminalData, 'terminal'>
-export type ChatNode = Node<ChatData, 'chat'>
+export type AreaNode = Node<AreaData, 'area'>;
+export type ProjectNode = Node<ProjectData, 'project'>;
+export type TerminalNode = Node<TerminalData, 'terminal'>;
+export type ChatNode = Node<ChatData, 'chat'>;
 // 'chatPanel', e não 'conversation': esse nome ficou com um teste antigo que não volta (o filtro
 // dos tipos antigos fica em flow/savedNodes.ts).
-export type ChatPanelNode = Node<ChatPanelData, 'chatPanel'>
-export type NoteNode = Node<NoteData, 'note'>
-export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode | ChatPanelNode | NoteNode
+export type ChatPanelNode = Node<ChatPanelData, 'chatPanel'>;
+export type NoteNode = Node<NoteData, 'note'>;
+export type CanvasNode = AreaNode | ProjectNode | TerminalNode | ChatNode | ChatPanelNode | NoteNode;

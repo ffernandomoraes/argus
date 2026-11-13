@@ -1,10 +1,10 @@
-import type { ReactNode, Ref } from 'react'
-import { createPortal } from 'react-dom'
-import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../../conversation/FloatingPanel'
-import { drawerZoomKey } from '../../conversation/useDrawerZoom'
-import { IS_MAC } from '../../platform'
+import type { ReactNode, Ref } from 'react';
+import { createPortal } from 'react-dom';
+import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../../conversation/FloatingPanel';
+import { drawerZoomKey } from '../../conversation/useDrawerZoom';
+import { IS_MAC } from '../../platform';
 
-const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
+const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
 // Modo foco: o terminal cobre a área toda entre a barra de título e a de baixo, como a conversa no drawer.
 // O bloco não sai do lugar no canvas; enquanto isso, o terminal mora só nesta camada. Trocar de
@@ -27,6 +27,6 @@ export function TerminalFocusLayer({ panelRef, children }: { panelRef: Ref<HTMLD
     >
       {children}
     </div>,
-    document.body
-  )
+    document.body,
+  );
 }

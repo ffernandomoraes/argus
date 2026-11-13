@@ -1,8 +1,8 @@
-import type { Dispatch, SetStateAction } from 'react'
-import type { XYPosition } from '@xyflow/react'
-import type { AuthState } from '@argus/shared/auth'
-import type { ConfirmRequest } from '../ConfirmDialog'
-import type { CanvasNode, TerminalKind } from '../types'
+import type { Dispatch, SetStateAction } from 'react';
+import type { XYPosition } from '@xyflow/react';
+import type { AuthState } from '@argus/shared/auth';
+import type { ConfirmRequest } from '../ConfirmDialog';
+import type { CanvasNode, TerminalKind } from '../types';
 
 // O que os menus do canvas podem fazer, vindo do Canvas. Cada menu declara só a parte que usa
 // (Pick<Deps, ...>), e o Canvas passa o objeto inteiro.
@@ -43,4 +43,4 @@ export type Deps = {
   removeWorktree: (nodeId: string) => void
   organizeBoard: () => void
   organizeGroup: (id: string) => void
-}
+};

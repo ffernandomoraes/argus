@@ -8,22 +8,22 @@ export type ScrollMoves = {
   shift: (px: number) => void
   // Evento de rolagem com a área em `top`: quanto andou por você e se foi só a lista.
   read: (top: number) => { delta: number; listOnly: boolean }
-}
+};
 
 export function createScrollMoves(): ScrollMoves {
-  let last = 0
-  let shifted = 0
+  let last = 0;
+  let shifted = 0;
   return {
     shift(px) {
-      shifted += px
+      shifted += px;
     },
     read(top) {
-      const delta = top - last - shifted
+      const delta = top - last - shifted;
       // Meio pixel de folga: com o zoom do drawer, a posição da rolagem tem casas decimais.
-      const listOnly = shifted !== 0 && Math.abs(delta) < 0.5
-      last = top
-      shifted = 0
-      return { delta, listOnly }
-    }
-  }
+      const listOnly = shifted !== 0 && Math.abs(delta) < 0.5;
+      last = top;
+      shifted = 0;
+      return { delta, listOnly };
+    },
+  };
 }

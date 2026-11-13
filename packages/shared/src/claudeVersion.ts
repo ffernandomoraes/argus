@@ -1,7 +1,7 @@
 // Um `claude` achado na máquina e a versão que ele informa (nula se não respondeu). system: o
 // instalado (instalador oficial, npm, Homebrew); editor: o que vem dentro da extensão do VS Code
 // (ou do Cursor), que se atualiza sozinha com o editor.
-export type ClaudeBinary = { path: string; version: string | null; source: 'system' | 'editor' }
+export type ClaudeBinary = { path: string; version: string | null; source: 'system' | 'editor' };
 
 // Qual `claude` o app usa e se ele está atrás da versão publicada.
 export type ClaudeVersionState = {
@@ -19,4 +19,4 @@ export type ClaudeVersionState = {
   farBehind: boolean
   // A última atualização falhou: o fim da saída do `claude update`.
   error: string | null
-}
+};

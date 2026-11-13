@@ -7,8 +7,8 @@
 // Por isso o executável vira argus-bin e, no lugar dele, entra um script que confere o kernel e só
 // desliga o isolamento quando ele não funcionaria. O AppImage, o atalho do menu e o atualizador
 // abrem pelo nome original, e passam pelo script.
-import { chmodSync, renameSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { chmodSync, renameSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const script = (bin) => `#!/bin/sh
 dir=$(dirname "$(readlink -f "$0")")
@@ -21,14 +21,14 @@ if [ "$blocked" = 1 ] && ! { [ -u "$sandbox" ] && [ "$(stat -c %u "$sandbox" 2>/
   exec "$dir/${bin}" --no-sandbox "$@"
 fi
 exec "$dir/${bin}" "$@"
-`
+`;
 
 export default async function linuxLauncher(context) {
-  if (context.electronPlatformName !== 'linux') return
-  const name = context.packager.executableName
-  const exe = join(context.appOutDir, name)
-  renameSync(exe, `${exe}-bin`)
-  writeFileSync(exe, script(`${name}-bin`))
-  chmodSync(exe, 0o755)
-  console.log(`  • lançador ${name} -> ${name}-bin (desliga o sandbox só onde o kernel bloqueia)`)
+  if (context.electronPlatformName !== 'linux') return;
+  const name = context.packager.executableName;
+  const exe = join(context.appOutDir, name);
+  renameSync(exe, `${exe}-bin`);
+  writeFileSync(exe, script(`${name}-bin`));
+  chmodSync(exe, 0o755);
+  console.log(`  • lançador ${name} -> ${name}-bin (desliga o sandbox só onde o kernel bloqueia)`);
 }

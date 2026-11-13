@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { tr } from '../../../i18n'
+import { useEffect, useRef, useState } from 'react';
+import { tr } from '../../../i18n';
 
 // Miniaturas das imagens de uma mensagem. Só carregam quando o balão aparece na tela: conversa
 // longa com muitos prints não lê todos de uma vez. Antes disso, quadros vazios do mesmo tamanho.
@@ -8,7 +8,7 @@ export function ImageThumbs({
   count,
   load,
   ready,
-  onOpen
+  onOpen,
 }: {
   count: number
   // Função fixa por mensagem (ver timeline/imageViews): uma nova refaria o observador.
@@ -16,33 +16,33 @@ export function ImageThumbs({
   ready?: () => string[] | undefined
   onOpen: (index: number) => void
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [urls, setUrls] = useState<string[] | null>(() => ready?.() ?? null)
+  const ref = useRef<HTMLDivElement>(null);
+  const [urls, setUrls] = useState<string[] | null>(() => ready?.() ?? null);
 
   useEffect(() => {
-    const el = ref.current
-    if (!el || urls) return
-    let alive = true
+    const el = ref.current;
+    if (!el || urls) return;
+    let alive = true;
     const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((e) => e.isIntersecting)) return
-      observer.disconnect()
+      if (!entries.some((e) => e.isIntersecting)) return;
+      observer.disconnect();
       load()
         .catch(() => [])
         .then((list) => {
-          if (alive) setUrls(list)
+          if (alive) setUrls(list);
         })
-        .catch(() => {})
-    })
-    observer.observe(el)
+        .catch(() => {});
+    });
+    observer.observe(el);
     return () => {
-      alive = false
-      observer.disconnect()
-    }
-  }, [load, urls])
+      alive = false;
+      observer.disconnect();
+    };
+  }, [load, urls]);
 
   // Imagem que não deu para ler (formato desconhecido) não vira quadro vazio para sempre.
-  if (urls && urls.length === 0) return null
-  const slots = urls ?? Array.from({ length: count }, () => null)
+  if (urls && urls.length === 0) return null;
+  const slots = urls ?? Array.from({ length: count }, () => null);
 
   return (
     <div ref={ref} className="flex flex-wrap gap-1.5">
@@ -58,8 +58,8 @@ export function ImageThumbs({
           </button>
         ) : (
           <div key={i} className="size-14 rounded-md border border-line bg-surface" />
-        )
+        ),
       )}
     </div>
-  )
+  );
 }

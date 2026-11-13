@@ -1,8 +1,8 @@
-import { memo } from 'react'
-import { Elapsed } from '../../conversation/Elapsed'
-import type { ConversationSummary } from '../types'
-import { agentPath } from './geometry'
-import { tr } from '../../i18n'
+import { memo } from 'react';
+import { Elapsed } from '../../conversation/Elapsed';
+import type { ConversationSummary } from '../types';
+import { agentPath } from './geometry';
+import { tr } from '../../i18n';
 
 // Comandos que o Claude deixou rodando em segundo plano, numa linha só com a quantidade, pendurada
 // embaixo da conversa como os subagentes, com há quanto tempo roda a mais antiga. Some quando todos
@@ -13,7 +13,7 @@ export const TasksRow = memo(function TasksRow({
   conversation,
   first,
   color,
-  onOpen
+  onOpen,
 }: {
   count: number
   // Início da tarefa mais antiga (ms).
@@ -45,5 +45,5 @@ export const TasksRow = memo(function TasksRow({
         </span>
       )}
     </li>
-  )
-})
+  );
+});

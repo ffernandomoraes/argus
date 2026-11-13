@@ -1,19 +1,19 @@
-import { memo, useMemo, type MouseEvent as ReactMouseEvent } from 'react'
-import { Background, BackgroundVariant, ReactFlow, type NodeMouseHandler, type OnNodeDrag } from '@xyflow/react'
-import type { CanvasViewport } from '@argus/shared/canvas'
-import type { ResolvedTheme } from '../../theme/useTheme'
-import type { NodesApi } from '../actions/types'
-import { AlignmentGuides } from '../AlignmentGuides'
-import { EdgeFade } from '../EdgeFade'
-import { NavBar } from '../NavBar'
-import type { CanvasNode } from '../types'
-import { ViewBar } from '../ViewBar'
-import { worktreeEdges } from '../worktrees/edges'
-import { edgeTypes } from '../worktrees/WorktreeEdge'
-import { displayNodes } from './displayNodes'
-import { FIT_VIEW_OPTIONS, keepPointerEvents, nodeTypes, PAN_ON_DRAG, PRO_OPTIONS, saveViewport } from './flowConfig'
-import { useNodeMotion } from './useNodeMotion'
-import { useNodesChange } from './useNodesChange'
+import { memo, useMemo, type MouseEvent as ReactMouseEvent } from 'react';
+import { Background, BackgroundVariant, ReactFlow, type NodeMouseHandler, type OnNodeDrag } from '@xyflow/react';
+import type { CanvasViewport } from '@argus/shared/canvas';
+import type { ResolvedTheme } from '../../theme/useTheme';
+import type { NodesApi } from '../actions/types';
+import { AlignmentGuides } from '../AlignmentGuides';
+import { EdgeFade } from '../EdgeFade';
+import { NavBar } from '../NavBar';
+import type { CanvasNode } from '../types';
+import { ViewBar } from '../ViewBar';
+import { worktreeEdges } from '../worktrees/edges';
+import { edgeTypes } from '../worktrees/WorktreeEdge';
+import { displayNodes } from './displayNodes';
+import { FIT_VIEW_OPTIONS, keepPointerEvents, nodeTypes, PAN_ON_DRAG, PRO_OPTIONS, saveViewport } from './flowConfig';
+import { useNodeMotion } from './useNodeMotion';
+import { useNodesChange } from './useNodesChange';
 
 type Props = {
   nodes: CanvasNode[]
@@ -34,25 +34,25 @@ type Props = {
   arranging: boolean
   // Com o drawer aberto, ⌘+ / ⌘- escalam o drawer em vez do canvas.
   zoomShortcuts: boolean
-}
+};
 
 // O React Flow com os blocos, o fundo de pontos, as linhas-guia e as barras flutuantes. Só
 // redesenha quando muda o que é dele: drawer, modal ou menu abrindo no Canvas não chega aqui.
 function CanvasFlowView(props: Props) {
-  const { nodes, nodesRef, setNodes, trackGesture, spaceHeld, uiHidden, arranging, savedViewport } = props
-  const flowNodes = useMemo(() => displayNodes(nodes), [nodes])
+  const { nodes, nodesRef, setNodes, trackGesture, spaceHeld, uiHidden, arranging, savedViewport } = props;
+  const flowNodes = useMemo(() => displayNodes(nodes), [nodes]);
   // Linhas das tarefas isoladas (a mesma lista enquanto nenhuma entra, sai ou muda de pasta).
-  const edges = worktreeEdges(nodes)
-  const motion = useNodeMotion(flowNodes)
-  const { onNodesChange, guides } = useNodesChange({ nodesRef, setNodes, trackGesture, leaving: motion.leaving })
+  const edges = worktreeEdges(nodes);
+  const motion = useNodeMotion(flowNodes);
+  const { onNodesChange, guides } = useNodesChange({ nodesRef, setNodes, trackGesture, leaving: motion.leaving });
   const className = [
     spaceHeld && 'camera-mode',
     motion.booting && 'canvas-booting',
     uiHidden && 'ui-hidden',
-    arranging && 'arranging'
+    arranging && 'arranging',
   ]
     .filter(Boolean)
-    .join(' ')
+    .join(' ');
 
   return (
     <ReactFlow
@@ -91,7 +91,7 @@ function CanvasFlowView(props: Props) {
       <ViewBar />
       <NavBar zoomShortcuts={props.zoomShortcuts} />
     </ReactFlow>
-  )
+  );
 }
 
-export const CanvasFlow = memo(CanvasFlowView)
+export const CanvasFlow = memo(CanvasFlowView);

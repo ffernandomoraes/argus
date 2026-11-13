@@ -1,12 +1,12 @@
-import { useMemo } from 'react'
-import { useReactFlow, type XYPosition } from '@xyflow/react'
-import { patchView, type CanvasViewStore } from '../canvasView'
-import type { ConfirmRequest } from '../ConfirmDialog'
-import { createGroup, createNote, createTerminal, displayPath } from '../factory'
-import { forSync } from '../flow/syncNodes'
-import { nodesFromSaved } from '../flow/savedNodes'
-import { hidingGroup } from '../focus/reveal'
-import { selectOnly } from '../focus/selectOnly'
+import { useMemo } from 'react';
+import { useReactFlow, type XYPosition } from '@xyflow/react';
+import { patchView, type CanvasViewStore } from '../canvasView';
+import type { ConfirmRequest } from '../ConfirmDialog';
+import { createGroup, createNote, createTerminal, displayPath } from '../factory';
+import { forSync } from '../flow/syncNodes';
+import { nodesFromSaved } from '../flow/savedNodes';
+import { hidingGroup } from '../focus/reveal';
+import { selectOnly } from '../focus/selectOnly';
 import {
   addNode,
   bringIn,
@@ -22,11 +22,11 @@ import {
   toggleCollapse,
   toggleNoteCollapse,
   toggleObscure,
-  toggleProjectCollapse
-} from '../operations'
-import type { TerminalKind } from '../types'
-import type { FocusNode, NodesApi } from './types'
-import { tr } from '../../i18n'
+  toggleProjectCollapse,
+} from '../operations';
+import type { TerminalKind } from '../types';
+import type { FocusNode, NodesApi } from './types';
+import { tr } from '../../i18n';
 
 // Criar, renomear e mexer nos blocos (grupo, nota, terminal) a partir dos menus e dos próprios
 // blocos. Bloco novo nunca entra por cima de outro (addNode). O bloco em renomeação fica no
@@ -35,48 +35,48 @@ export function useNodeActions(
   { board, nodesRef, setNodes, change }: NodesApi,
   view: CanvasViewStore,
   confirm: (request: ConfirmRequest) => void,
-  focusNode: FocusNode
+  focusNode: FocusNode,
 ) {
-  const { setCenter, getZoom } = useReactFlow()
+  const { setCenter, getZoom } = useReactFlow();
 
   return useMemo(() => {
-    const setRenamingId = (renamingId: string | null) => patchView(view, { renamingId })
+    const setRenamingId = (renamingId: string | null) => patchView(view, { renamingId });
     // Sai da renomeação só se ainda for a deste bloco.
-    const stopRenaming = (id: string) => view.set((s) => (s.renamingId === id ? { ...s, renamingId: null } : s))
+    const stopRenaming = (id: string) => view.set((s) => (s.renamingId === id ? { ...s, renamingId: null } : s));
     return {
       startRename: (id: string) => setRenamingId(id),
       finishRename: (id: string, value: string | null) => {
-        stopRenaming(id)
-        const name = value?.trim()
-        const node = nodesRef.current.find((n) => n.id === id)
+        stopRenaming(id);
+        const name = value?.trim();
+        const node = nodesRef.current.find((n) => n.id === id);
         // A nota não passa por aqui: ela guarda o texto pelo finishNote.
-        if (node?.type === 'note') return
-        const current = node?.type === 'area' ? node.data.label : node?.data.name
-        if (name && name !== current) change((ns) => rename(ns, id, name))
+        if (node?.type === 'note') return;
+        const current = node?.type === 'area' ? node.data.label : node?.data.name;
+        if (name && name !== current) change((ns) => rename(ns, id, name));
       },
       // O grupo pode cair longe do ponto pedido (desce até achar lugar livre): a câmera vai até ele.
       addGroup: (position: XYPosition) => {
-        const group = createGroup(position)
-        change((ns) => addNode(ns, group))
-        setRenamingId(group.id)
-        focusNode(group.id)
+        const group = createGroup(position);
+        change((ns) => addNode(ns, group));
+        setRenamingId(group.id);
+        focusNode(group.id);
       },
       // Diferente dos outros blocos, a nota fica onde foi pedida, mesmo em cima de uma pasta:
       // ela é um lembrete sobre o que está embaixo. Em cima de um grupo, entra nele.
       // Nasce selecionada, sozinha: bloco selecionado sobe de camada no React Flow, e a pasta
       // selecionada embaixo cobriria a nota até perder a seleção.
       addNote: (position: XYPosition, groupId?: string) => {
-        const note = createNote(position)
-        change((ns) => (groupId ? addNode(ns, note, groupId) : dropIntoGroup([...ns, note], [note.id])))
-        setNodes((ns) => selectOnly(ns, note.id))
-        setRenamingId(note.id)
+        const note = createNote(position);
+        change((ns) => (groupId ? addNode(ns, note, groupId) : dropIntoGroup([...ns, note], [note.id])));
+        setNodes((ns) => selectOnly(ns, note.id));
+        setRenamingId(note.id);
       },
       finishNote: (id: string, text: string) => {
-        stopRenaming(id)
-        const node = nodesRef.current.find((n) => n.id === id)
+        stopRenaming(id);
+        const node = nodesRef.current.find((n) => n.id === id);
         // Só o fim do texto: quebras de linha no meio são da nota.
-        const value = text.trimEnd()
-        if (node?.type === 'note' && value !== node.data.text) change((ns) => setNoteText(ns, id, value))
+        const value = text.trimEnd();
+        if (node?.type === 'note' && value !== node.data.text) change((ns) => setNoteText(ns, id, value));
       },
       setNoteWidth: (id: string, width: number) => change((ns) => setNoteWidth(ns, id, width)),
       toggleNote: (id: string) => change((ns) => toggleNoteCollapse(ns, id)),
@@ -85,65 +85,65 @@ export function useNodeActions(
       // Novo: pega o foco ao aparecer (useIsNewBlock). Num grupo recolhido ou oculto ele nasce
       // escondido e não é marcado: senão roubaria o foco quando o grupo abrisse, bem depois.
       addTerminal: (position: XYPosition, groupId?: string, folder?: string, kind?: TerminalKind, account?: string, folders?: string[], name?: string) => {
-        const node = createTerminal(position, folder ?? window.api.homeDir, kind, account, folders, name)
-        const next = addNode(nodesRef.current, node, groupId)
-        if (!hidingGroup(next, node.id)) patchView(view, { newBlockId: node.id })
-        change(next)
+        const node = createTerminal(position, folder ?? window.api.homeDir, kind, account, folders, name);
+        const next = addNode(nodesRef.current, node, groupId);
+        if (!hidingGroup(next, node.id)) patchView(view, { newBlockId: node.id });
+        change(next);
       },
       // Workspace: pôr ou tirar pasta só muda a lista (o histórico fica na pasta do workspace, não
       // nas dele) e o aviso que os agentes leem. As sessões abertas do workspace reiniciam
       // (chat:restartIn): a próxima mensagem de cada conversa já vai com a lista nova.
       addWorkspaceFolder: async (id: string) => {
-        const chosen = await window.api.pickFolders()
-        const node = nodesRef.current.find((n) => n.id === id)
-        if (node?.type !== 'project' || !node.data.folders) return
-        const current = node.data.folders
-        const added = chosen.map(displayPath).filter((p, i, all) => !current.includes(p) && all.indexOf(p) === i)
-        if (!added.length) return
-        const folders = [...current, ...added]
+        const chosen = await window.api.pickFolders();
+        const node = nodesRef.current.find((n) => n.id === id);
+        if (node?.type !== 'project' || !node.data.folders) return;
+        const current = node.data.folders;
+        const added = chosen.map(displayPath).filter((p, i, all) => !current.includes(p) && all.indexOf(p) === i);
+        if (!added.length) return;
+        const folders = [...current, ...added];
         // Workspace criado antes da pasta própria (o caminho é a 1ª pasta dele): só a lista muda.
-        await window.api.syncWorkspace(folders, node.data.path).catch(() => {})
-        change((ns) => setWorkspaceFolders(ns, id, folders))
-        window.api.chat.restartIn(node.data.path)
+        await window.api.syncWorkspace(folders, node.data.path).catch(() => {});
+        change((ns) => setWorkspaceFolders(ns, id, folders));
+        window.api.chat.restartIn(node.data.path);
       },
       removeWorkspaceFolder: (id: string, folder: string) => {
-        const node = nodesRef.current.find((n) => n.id === id)
-        if (node?.type !== 'project' || !node.data.folders || node.data.folders.length < 2) return
-        const folders = node.data.folders.filter((f) => f !== folder)
-        void window.api.syncWorkspace(folders, node.data.path).catch(() => {})
-        change((ns) => setWorkspaceFolders(ns, id, folders))
-        window.api.chat.restartIn(node.data.path)
+        const node = nodesRef.current.find((n) => n.id === id);
+        if (node?.type !== 'project' || !node.data.folders || node.data.folders.length < 2) return;
+        const folders = node.data.folders.filter((f) => f !== folder);
+        void window.api.syncWorkspace(folders, node.data.path).catch(() => {});
+        change((ns) => setWorkspaceFolders(ns, id, folders));
+        window.api.chat.restartIn(node.data.path);
       },
       // Sai do canvas sem volta: nem o ⌘Z traz de novo (tarefa em paralelo com a pasta apagada,
       // espaço de trabalho removido). Some também de todo o histórico (main/canvasHub.ts).
       removeForever: (id: string) => {
-        setNodes((ns) => removeNode(ns, id))
-        window.api.canvas.forget(board, [id])
+        setNodes((ns) => removeNode(ns, id));
+        window.api.canvas.forget(board, [id]);
       },
       closeTerminal: (nodeId: string, name: string) => {
-        const node = nodesRef.current.find((n) => n.id === nodeId)
-        const shell = node?.type === 'terminal' && node.data.kind === 'shell'
+        const node = nodesRef.current.find((n) => n.id === nodeId);
+        const shell = node?.type === 'terminal' && node.data.kind === 'shell';
         confirm({
           title: tr(`Fechar o terminal "${name}"?`, `Close the terminal "${name}"?`),
           description: shell
             ? tr('O shell e o que estiver rodando nele são encerrados.', 'The shell and anything running in it will be stopped.')
             : tr(
                 'A sessão do Claude que roda nele é encerrada. A conversa continua salva.',
-                'The Claude session running in it will end. The chat stays saved.'
+                'The Claude session running in it will end. The chat stays saved.',
               ),
           confirmLabel: tr('Fechar terminal', 'Close terminal'),
           onConfirm: () => {
-            window.api.terminal.kill(nodeId)
-            change((ns) => removeNode(ns, nodeId))
-          }
-        })
+            window.api.terminal.kill(nodeId);
+            change((ns) => removeNode(ns, nodeId));
+          },
+        });
       },
       bindTerminalSession: (nodeId: string, sessionId: string) =>
         // Sem histórico: amarrar a conversa não é uma ação para desfazer.
         setNodes((ns) =>
           ns.map((n) =>
-            n.id === nodeId && n.type === 'terminal' && !n.data.sessionId ? { ...n, data: { ...n.data, sessionId } } : n
-          )
+            n.id === nodeId && n.type === 'terminal' && !n.data.sessionId ? { ...n, data: { ...n.data, sessionId } } : n,
+          ),
         ),
       // Também sem histórico: desfazer não reabriria o terminal com a conta de antes.
       setTerminalAccount: (nodeId: string, account: string) =>
@@ -153,27 +153,27 @@ export function useNodeActions(
       toggleProject: (id: string) => change((ns) => toggleProjectCollapse(ns, id)),
       // O bloco sai para fora do grupo e a câmera vai até ele, no zoom em que está.
       leaveGroup: (id: string) => {
-        const next = leaveGroup(nodesRef.current, id)
-        const node = next.find((n) => n.id === id)
-        if (!node || next === nodesRef.current) return
-        change(next)
-        const { width, height } = sizeOf(node)
-        void setCenter(node.position.x + width / 2, node.position.y + height / 2, { zoom: getZoom(), duration: 300 })
+        const next = leaveGroup(nodesRef.current, id);
+        const node = next.find((n) => n.id === id);
+        if (!node || next === nodesRef.current) return;
+        change(next);
+        const { width, height } = sizeOf(node);
+        void setCenter(node.position.x + width / 2, node.position.y + height / 2, { zoom: getZoom(), duration: 300 });
       },
       // O outro workspace recebe a lista dele com o bloco num lugar livre e este perde o bloco. Sem
       // desfazer nos dois lados: o ⌘Z de um traria de volta o bloco que já está no outro (o mesmo
       // terminal em dois workspaces, e fechar num encerraria o do outro). Terminais e conversas
       // seguem rodando: o processo é o mesmo, só a tela que mostra muda.
       moveToBoard: (id: string, to: string) => {
-        const { rest, moved } = takeOut(nodesRef.current, id)
-        if (!moved.length || to === board) return
-        const target = nodesFromSaved(window.api.canvas.load(to)).nodes
-        const next = bringIn(target, moved, id)
-        if (next === target) return
-        window.api.boards.put(to, forSync(next))
-        setNodes(rest)
-        window.api.canvas.forget(board, moved.map((n) => n.id))
-      }
-    }
-  }, [board, nodesRef, setNodes, change, view, confirm, focusNode, setCenter, getZoom])
+        const { rest, moved } = takeOut(nodesRef.current, id);
+        if (!moved.length || to === board) return;
+        const target = nodesFromSaved(window.api.canvas.load(to)).nodes;
+        const next = bringIn(target, moved, id);
+        if (next === target) return;
+        window.api.boards.put(to, forSync(next));
+        setNodes(rest);
+        window.api.canvas.forget(board, moved.map((n) => n.id));
+      },
+    };
+  }, [board, nodesRef, setNodes, change, view, confirm, focusNode, setCenter, getZoom]);
 }

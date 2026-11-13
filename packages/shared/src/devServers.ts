@@ -18,7 +18,7 @@ export type DevServer = {
   // Não dá para encerrar daqui: uma sessão do Claude Code abriu o processo no grupo dela (um
   // servidor MCP) e encerrar derrubaria a sessão. Instâncias do Argus, inclusive esta, podem.
   locked?: 'claude'
-}
+};
 
 // Servidor de uma pasta do canvas, para o botão de iniciar e encerrar acima dela. Conta
 // qualquer porta aberta por um processo dentro da pasta, venha de onde vier o comando.
@@ -38,4 +38,4 @@ export type ProjectServer = {
   locked?: DevServer['locked']
   // Iniciado daqui e saiu sem ninguém pedir: últimas linhas da saída, para dizer o motivo.
   error?: string
-}
+};

@@ -1,11 +1,11 @@
-import { useMemo, useReducer } from 'react'
-import { outsideEditor } from '@argus/shared/files'
-import type { PanelRect } from '../../conversation/FloatingPanel'
-import type { LineRange } from '../../conversation/fileLinks'
-import type { ActiveConversation } from '../CanvasContext'
-import type { ProjectData } from '../types'
-import { drawerReducer, INITIAL_DRAWERS, type DrawerState, type SlotId } from './drawerState'
-import { fileInFolder } from './fileInFolder'
+import { useMemo, useReducer } from 'react';
+import { outsideEditor } from '@argus/shared/files';
+import type { PanelRect } from '../../conversation/FloatingPanel';
+import type { LineRange } from '../../conversation/fileLinks';
+import type { ActiveConversation } from '../CanvasContext';
+import type { ProjectData } from '../types';
+import { drawerReducer, INITIAL_DRAWERS, type DrawerState, type SlotId } from './drawerState';
+import { fileInFolder } from './fileInFolder';
 
 // Comandos dos drawers, com identidade fixa: podem ir para o contexto, para os menus e para os
 // drawers sem fazer ninguém redesenhar. Leem o estado atual pelo reducer, nunca o de um render velho.
@@ -38,11 +38,11 @@ export type DrawerCommands = {
   // Plano do cartão "Abrir ao lado", ao lado do drawer `slot` (nulo: pedido por uma conversa do canvas).
   openPlan: (slot: SlotId | null, text: string, path?: string) => void
   closePlan: () => void
-}
+};
 
 // Drawers de conversa (os fixados e o solto) e o painel de código.
 export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
-  const [state, dispatch] = useReducer(drawerReducer, INITIAL_DRAWERS)
+  const [state, dispatch] = useReducer(drawerReducer, INITIAL_DRAWERS);
 
   const commands = useMemo<DrawerCommands>(
     () => ({
@@ -60,12 +60,12 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
       toggleCode: (slot) => dispatch({ type: 'toggleCode', slot }),
       openProjectCode: (project) => dispatch({ type: 'openProjectCode', project }),
       openFile: (from, root, path, lines, diff) => {
-        const rel = fileInFolder(root, path)
+        const rel = fileInFolder(root, path);
         // Vídeo, imagem, PDF vão para o visualizador do sistema; zip, executável, para o Finder.
         // O diff segue no painel: mostra que o arquivo mudou mesmo sem mostrar o conteúdo.
-        const outside = rel && !diff ? outsideEditor(rel) : null
-        if (rel && outside) return window.api.files[outside](root, rel)
-        dispatch({ type: 'openFile', ...from, file: rel ? { root, path: rel, lines, diff } : null })
+        const outside = rel && !diff ? outsideEditor(rel) : null;
+        if (rel && outside) return window.api.files[outside](root, rel);
+        dispatch({ type: 'openFile', ...from, file: rel ? { root, path: rel, lines, diff } : null });
       },
       selectFile: (root, path) => dispatch({ type: 'selectFile', root, path }),
       renamedFile: (root, from, to) => dispatch({ type: 'renamedFile', root, from, to }),
@@ -75,10 +75,10 @@ export function useDrawers(): { state: DrawerState; commands: DrawerCommands } {
       closeCode: () => dispatch({ type: 'closeCode' }),
       openPlan: (slot, text, path) =>
         dispatch({ type: 'openPlan', slot, text, path, area: { width: window.innerWidth, height: window.innerHeight } }),
-      closePlan: () => dispatch({ type: 'closePlan' })
+      closePlan: () => dispatch({ type: 'closePlan' }),
     }),
-    []
-  )
+    [],
+  );
 
-  return { state, commands }
+  return { state, commands };
 }

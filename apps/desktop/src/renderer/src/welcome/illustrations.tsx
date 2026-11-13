@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
-import { IS_MAC, IS_WIN, SYSTEM_NAME } from '../platform'
-import { LANG, tr } from '../i18n'
+import type { ReactNode } from 'react';
+import { IS_MAC, IS_WIN, SYSTEM_NAME } from '../platform';
+import { LANG, tr } from '../i18n';
 
 // Ilustrações das boas-vindas: esquemas do próprio app, nas cores do tema (claro ou escuro).
 // Todas no mesmo quadro, 360 x 160; os pontos do canvas são o fundo da moldura (WelcomeModal).
@@ -10,12 +10,12 @@ function Art({ children, label }: { children: ReactNode; label: string }) {
     <svg viewBox="0 0 360 160" role="img" aria-label={label} className="h-full w-full" fontFamily="inherit">
       {children}
     </svg>
-  )
+  );
 }
 
 // Bloco de pasta: cabeçalho com o nome e uma linha por conversa, com a bolinha do estado.
 function Card({ x, y, w, name, rows }: { x: number; y: number; w: number; name: string; rows: string[] }) {
-  const h = 30 + rows.length * 16
+  const h = 30 + rows.length * 16;
   return (
     <g transform={`translate(${x} ${y})`}>
       <rect width={w} height={h} rx="8" className="fill-surface stroke-line" strokeWidth="1" />
@@ -30,7 +30,7 @@ function Card({ x, y, w, name, rows }: { x: number; y: number; w: number; name: 
         </g>
       ))}
     </g>
-  )
+  );
 }
 
 export function CanvasArt() {
@@ -40,18 +40,18 @@ export function CanvasArt() {
       <Card x={182} y={16} w={150} name="api" rows={['fill-needs-you', 'fill-done']} />
       <Card x={182} y={92} w={150} name="app-mobile" rows={['fill-running']} />
     </Art>
-  )
+  );
 }
 
 // Moldura de grupo com a etiqueta colorida em cima. As classes vão por extenso: o Tailwind só gera
 // as que aparecem inteiras no código.
 const GROUP_COLORS = {
   trabalho: { frame: 'fill-area-trabalho/10 stroke-area-trabalho/60', pill: 'fill-area-trabalho' },
-  pessoal: { frame: 'fill-area-pessoal/10 stroke-area-pessoal/60', pill: 'fill-area-pessoal' }
-}
+  pessoal: { frame: 'fill-area-pessoal/10 stroke-area-pessoal/60', pill: 'fill-area-pessoal' },
+};
 
 function Group({ x, y, w, h, name, color }: { x: number; y: number; w: number; h: number; name: string; color: keyof typeof GROUP_COLORS }) {
-  const c = GROUP_COLORS[color]
+  const c = GROUP_COLORS[color];
   return (
     <g transform={`translate(${x} ${y})`}>
       <rect width={w} height={h} rx="10" className={c.frame} strokeWidth="1" />
@@ -60,7 +60,7 @@ function Group({ x, y, w, h, name, color }: { x: number; y: number; w: number; h
         {name}
       </text>
     </g>
-  )
+  );
 }
 
 export function OrganizeArt() {
@@ -78,11 +78,11 @@ export function OrganizeArt() {
       </g>
       <path d="M214 112 l0 15 l4 -4 l3 7 l3 -1.5 l-3 -7 l5.5 0 z" className="fill-text stroke-bg" strokeWidth="1" />
     </Art>
-  )
+  );
 }
 
 export function ChatArt() {
-  const prompt = IS_WIN ? 'PS C:\\proj>' : '~/proj ❯'
+  const prompt = IS_WIN ? 'PS C:\\proj>' : '~/proj ❯';
   return (
     <Art label={tr('Conversa com o Claude ao lado de um terminal', 'Chat with Claude next to a terminal')}>
       <g transform="translate(16 14)">
@@ -113,11 +113,11 @@ export function ChatArt() {
         <rect x="10" y="46" width="6" height="10" fill="#34d399" />
       </g>
     </Art>
-  )
+  );
 }
 
 export function AgentsArt() {
-  const projects = [16, 132, 248]
+  const projects = [16, 132, 248];
   return (
     <Art label={tr('Biblioteca de agentes ligada a vários projetos', 'Agent library linked to several projects')}>
       {projects.map((x) => (
@@ -153,14 +153,14 @@ export function AgentsArt() {
         </g>
       ))}
     </Art>
-  )
+  );
 }
 
 // Janela do sistema com a lista do que precisa estar pronto. Mac: os três círculos à esquerda;
 // Windows e Linux: os botões à direita e o Git na lista.
 export function SetupArt() {
-  const account = tr('Sua conta', 'Your account')
-  const items = IS_MAC ? ['Claude Code', account] : ['Claude Code', IS_WIN ? 'Git for Windows' : 'Git', account]
+  const account = tr('Sua conta', 'Your account');
+  const items = IS_MAC ? ['Claude Code', account] : ['Claude Code', IS_WIN ? 'Git for Windows' : 'Git', account];
   return (
     <Art label={tr(`Configuração do Claude Code no ${SYSTEM_NAME}`, `Claude Code setup on ${SYSTEM_NAME}`)}>
       <g transform="translate(70 14)">
@@ -196,5 +196,5 @@ export function SetupArt() {
         ))}
       </g>
     </Art>
-  )
+  );
 }

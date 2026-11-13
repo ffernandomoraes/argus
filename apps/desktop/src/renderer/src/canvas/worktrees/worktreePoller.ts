@@ -6,14 +6,14 @@
 // WSL, a digitação ficava lenta (2026-11-03).
 
 // Mudança avisada: espera este tanto sem outra antes de ler (o VS Code espera 1 s).
-export const SETTLE_MS = 1000
+export const SETTLE_MS = 1000;
 // Entre o fim de uma leitura e o começo da próxima (o VS Code espera 5 s).
-export const GAP_MS = 5000
+export const GAP_MS = 5000;
 // Sem aviso nenhum: push, fetch e a branch renomeada não mexem nos arquivos que avisam.
-export const SAFETY_MS = 60_000
+export const SAFETY_MS = 60_000;
 // Preparando (criando a pasta, instalando dependências) ou antes da primeira resposta: a leitura não
 // roda git, e a faixa precisa ver logo quando fica pronta.
-export const FAST_MS = 2000
+export const FAST_MS = 2000;
 
 export type PollerDeps = {
   read: () => Promise<unknown>
@@ -21,76 +21,76 @@ export type PollerDeps = {
   fast: () => boolean
   active: () => boolean
   onActive: (fn: () => void) => () => void
-}
+};
 
-export type WorktreePoller = { changed: () => void; stop: () => void }
+export type WorktreePoller = { changed: () => void; stop: () => void };
 
 export function createWorktreePoller(deps: PollerDeps): WorktreePoller {
-  let stopped = false
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let reading = false
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let reading = false;
   // Mudança avisada no meio de uma leitura: outra depois do intervalo.
-  let dirty = false
+  let dirty = false;
   // Hora de ler chegou com a janela sem foco: lê quando alguém voltar.
-  let waitingFocus = false
-  let lastEnd = Number.NEGATIVE_INFINITY
+  let waitingFocus = false;
+  let lastEnd = Number.NEGATIVE_INFINITY;
 
   const at = (ms: number) => {
-    clearTimeout(timer)
-    timer = setTimeout(run, Math.max(0, ms))
-  }
-  const sinceGap = () => lastEnd + GAP_MS - Date.now()
+    clearTimeout(timer);
+    timer = setTimeout(run, Math.max(0, ms));
+  };
+  const sinceGap = () => lastEnd + GAP_MS - Date.now();
 
-  const canRead = () => deps.fast() || deps.active()
+  const canRead = () => deps.fast() || deps.active();
 
   function run(): void {
-    timer = undefined
-    if (stopped || reading) return
+    timer = undefined;
+    if (stopped || reading) return;
     if (!canRead()) {
-      waitingFocus = true
-      return
+      waitingFocus = true;
+      return;
     }
-    reading = true
-    dirty = false
+    reading = true;
+    dirty = false;
     deps
       .read()
       .catch(() => {})
       .finally(() => {
-        reading = false
-        lastEnd = Date.now()
-        if (stopped) return
-        if (dirty) at(GAP_MS)
-        else at(deps.fast() ? FAST_MS : SAFETY_MS)
-      })
+        reading = false;
+        lastEnd = Date.now();
+        if (stopped) return;
+        if (dirty) at(GAP_MS);
+        else at(deps.fast() ? FAST_MS : SAFETY_MS);
+      });
   }
 
   const offActive = deps.onActive(() => {
-    if (stopped || !waitingFocus) return
-    waitingFocus = false
-    at(sinceGap())
-  })
+    if (stopped || !waitingFocus) return;
+    waitingFocus = false;
+    at(sinceGap());
+  });
 
-  run()
+  run();
 
   return {
     changed() {
-      if (stopped) return
+      if (stopped) return;
       if (reading) {
-        dirty = true
-        return
+        dirty = true;
+        return;
       }
       if (!canRead()) {
-        clearTimeout(timer)
-        timer = undefined
-        waitingFocus = true
-        return
+        clearTimeout(timer);
+        timer = undefined;
+        waitingFocus = true;
+        return;
       }
-      at(Math.max(SETTLE_MS, sinceGap()))
+      at(Math.max(SETTLE_MS, sinceGap()));
     },
     stop() {
-      stopped = true
-      clearTimeout(timer)
-      offActive()
-    }
-  }
+      stopped = true;
+      clearTimeout(timer);
+      offActive();
+    },
+  };
 }

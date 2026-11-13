@@ -1,12 +1,12 @@
-import { tr } from '../../i18n'
+import { tr } from '../../i18n';
 
 // Como o mascote é: corpo, cabelo, rosto, olhos, boca, pele, barba, roupa e o golpe que ele dá no
 // envio do pedido. Escolhido em Configurações > Mascote. A roupa padrão é a original, camiseta
 // amarela e calça preta; o corte de cada peça acompanha o sexo. As cores (pele, olhos, cabelo,
 // barba, roupa) são uma das prontas ou uma escolhida no seletor.
 
-export type MascotSex = 'male' | 'female'
-export type BodyBuild = 'skinny' | 'slim' | 'average' | 'strong' | 'chubby'
+export type MascotSex = 'male' | 'female';
+export type BodyBuild = 'skinny' | 'slim' | 'average' | 'strong' | 'chubby';
 export type HairStyle =
   | 'quiff'
   | 'buzz'
@@ -33,8 +33,8 @@ export type HairStyle =
   | 'ponytail'
   | 'pigtails'
   | 'braids'
-  | 'bun'
-export type HairColor = 'lightBrown' | 'darkBrown' | 'black' | 'blonde' | 'platinum' | 'red' | 'gray' | 'pink' | 'blue'
+  | 'bun';
+export type HairColor = 'lightBrown' | 'darkBrown' | 'black' | 'blonde' | 'platinum' | 'red' | 'gray' | 'pink' | 'blue';
 export type FaceShape =
   | 'oval'
   | 'round'
@@ -50,7 +50,7 @@ export type FaceShape =
   | 'pear'
   | 'rectangle'
   | 'baby'
-  | 'angular'
+  | 'angular';
 export type EyeShape =
   | 'almond'
   | 'round'
@@ -66,9 +66,9 @@ export type EyeShape =
   | 'dot'
   | 'happy'
   | 'wink'
-  | 'hearts'
-export type EyeColor = 'grayGreen' | 'brown' | 'darkBrown' | 'hazel' | 'green' | 'blue' | 'gray'
-export type SkinTone = 'fair' | 'light' | 'tan' | 'brown' | 'dark'
+  | 'hearts';
+export type EyeColor = 'grayGreen' | 'brown' | 'darkBrown' | 'hazel' | 'green' | 'blue' | 'gray';
+export type SkinTone = 'fair' | 'light' | 'tan' | 'brown' | 'dark';
 export type BeardStyle =
   | 'none'
   | 'stubble'
@@ -80,9 +80,9 @@ export type BeardStyle =
   | 'chinstrap'
   | 'muttonChops'
   | 'full'
-  | 'long'
+  | 'long';
 // 'hair': a mesma cor do cabelo.
-export type BeardColor = 'hair' | HairColor
+export type BeardColor = 'hair' | HairColor;
 export type MouthStyle =
   | 'classic'
   | 'smile'
@@ -98,22 +98,22 @@ export type MouthStyle =
   | 'buck'
   | 'fangs'
   | 'serious'
-  | 'frown'
-export type Strike = 'whip' | 'slap' | 'punch' | 'kick' | 'hadouken'
+  | 'frown';
+export type Strike = 'whip' | 'slap' | 'punch' | 'kick' | 'hadouken';
 // Parte de cima: camiseta, regata, blusinha, camisa (de botão) e jaqueta (aberta, por cima de uma
 // camiseta branca). Parte de baixo: calça, bermuda, shorts e saia.
-export type TopStyle = 'tee' | 'tank' | 'blouse' | 'shirt' | 'jacket'
-export type BottomStyle = 'pants' | 'bermuda' | 'shorts' | 'skirt'
+export type TopStyle = 'tee' | 'tank' | 'blouse' | 'shirt' | 'jacket';
+export type BottomStyle = 'pants' | 'bermuda' | 'shorts' | 'skirt';
 // Acessórios: dá para usar vários juntos, menos dois no mesmo lugar (um óculos e um chapéu por vez,
 // ver ACCESSORY_SLOT).
-export type Accessory = 'glasses' | 'aviators' | 'sunglasses' | 'cap' | 'beanie' | 'bow' | 'earrings' | 'necklace' | 'bracelet' | 'watch'
-export type ClothColor = 'yellow' | 'black' | 'white' | 'gray' | 'navy' | 'denim' | 'red' | 'green' | 'pink' | 'purple' | 'beige'
+export type Accessory = 'glasses' | 'aviators' | 'sunglasses' | 'cap' | 'beanie' | 'bow' | 'earrings' | 'necklace' | 'bracelet' | 'watch';
+export type ClothColor = 'yellow' | 'black' | 'white' | 'gray' | 'navy' | 'denim' | 'red' | 'green' | 'pink' | 'purple' | 'beige';
 // Golpes de perto, de frente, em que a mão ou o pé encosta na pasta.
-export type MeleeStrike = 'slap' | 'punch' | 'kick'
+export type MeleeStrike = 'slap' | 'punch' | 'kick';
 // Cor escolhida no seletor (#rrggbb), no lugar de uma das prontas.
-export type CustomColor = `#${string}`
+export type CustomColor = `#${string}`;
 
-export const isCustomColor = (value: unknown): value is CustomColor => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+export const isCustomColor = (value: unknown): value is CustomColor => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
 
 export type MascotLook = {
   sex: MascotSex
@@ -133,7 +133,7 @@ export type MascotLook = {
   bottomColor: ClothColor | CustomColor
   accessories: Accessory[]
   strike: Strike
-}
+};
 
 // O mascote de antes da personalização.
 export const DEFAULT_LOOK: MascotLook = {
@@ -153,26 +153,26 @@ export const DEFAULT_LOOK: MascotLook = {
   bottom: 'pants',
   bottomColor: 'black',
   accessories: [],
-  strike: 'whip'
-}
+  strike: 'whip',
+};
 
 export const SEXES: { value: MascotSex; label: string }[] = [
   { value: 'male', label: tr('Masculino', 'Male') },
-  { value: 'female', label: tr('Feminino', 'Female') }
-]
+  { value: 'female', label: tr('Feminino', 'Female') },
+];
 
 // torso: largura da camiseta (e da calça em cima); shoulder: quanto cada ombro sai para fora (negativo
 // entra); arm: grossura do braço; hip: quanto cada perna sai para fora; leg: grossura da perna;
 // belly: barriga.
-export type BuildShape = { label: string; torso: number; shoulder: number; arm: number; hip: number; leg: number; belly?: boolean; chest?: boolean }
+export type BuildShape = { label: string; torso: number; shoulder: number; arm: number; hip: number; leg: number; belly?: boolean; chest?: boolean };
 
 export const BUILDS: Record<BodyBuild, BuildShape> = {
   skinny: { label: tr('Muito magro', 'Skinny'), torso: 0.86, shoulder: -1.4, arm: 0.8, hip: -0.5, leg: 0.8 },
   slim: { label: tr('Magro', 'Slim'), torso: 1, shoulder: 0, arm: 1, hip: 0, leg: 1 },
   average: { label: tr('Médio', 'Average'), torso: 1.1, shoulder: 1.5, arm: 1.12, hip: 0.6, leg: 1.1 },
   strong: { label: tr('Forte', 'Strong'), torso: 1.22, shoulder: 3.4, arm: 1.38, hip: 1, leg: 1.22, chest: true },
-  chubby: { label: tr('Gordinho', 'Chubby'), torso: 1.26, shoulder: 3.2, arm: 1.26, hip: 1.6, leg: 1.26, belly: true }
-}
+  chubby: { label: tr('Gordinho', 'Chubby'), torso: 1.26, shoulder: 3.2, arm: 1.26, hip: 1.6, leg: 1.26, belly: true },
+};
 
 export const HAIR_STYLES: { value: HairStyle; label: string }[] = [
   { value: 'quiff', label: tr('Topete', 'Quiff') },
@@ -200,8 +200,8 @@ export const HAIR_STYLES: { value: HairStyle; label: string }[] = [
   { value: 'ponytail', label: tr('Rabo de cavalo', 'Ponytail') },
   { value: 'pigtails', label: tr('Maria-chiquinha', 'Pigtails') },
   { value: 'braids', label: tr('Tranças', 'Braids') },
-  { value: 'bun', label: tr('Coque', 'Bun') }
-]
+  { value: 'bun', label: tr('Coque', 'Bun') },
+];
 
 // Cabelo que cobre as orelhas: elas não são desenhadas.
 export const COVERS_EARS: Partial<Record<HairStyle, boolean>> = {
@@ -213,10 +213,10 @@ export const COVERS_EARS: Partial<Record<HairStyle, boolean>> = {
   longCurly: true,
   long: true,
   afro: true,
-  dreads: true
-}
+  dreads: true,
+};
 
-export type HairPalette = { label: string; top: string; bottom: string; strand: string; brow: string; beard: string }
+export type HairPalette = { label: string; top: string; bottom: string; strand: string; brow: string; beard: string };
 
 // top/bottom: degradê do cabelo; strand: as mechas; brow: sobrancelha; beard: barba e bigode.
 export const HAIR_COLORS: Record<HairColor, HairPalette> = {
@@ -228,8 +228,8 @@ export const HAIR_COLORS: Record<HairColor, HairPalette> = {
   gray: { label: tr('Grisalho', 'Gray'), top: '#bab7b2', bottom: '#8f8c88', strand: '#dedbd6', brow: '#6f6b67', beard: '#85817c' },
   platinum: { label: tr('Platinado', 'Platinum'), top: '#ece6d6', bottom: '#cfc6b0', strand: '#fffaf0', brow: '#9a8f7a', beard: '#b5ab95' },
   pink: { label: tr('Rosa', 'Pink'), top: '#e58ab5', bottom: '#c46093', strand: '#f6b7d4', brow: '#7a3e5c', beard: '#b0507f' },
-  blue: { label: tr('Azul', 'Blue'), top: '#5b8fd6', bottom: '#3c66aa', strand: '#9cc0f0', brow: '#2f4a78', beard: '#3c66aa' }
-}
+  blue: { label: tr('Azul', 'Blue'), top: '#5b8fd6', bottom: '#3c66aa', strand: '#9cc0f0', brow: '#2f4a78', beard: '#3c66aa' },
+};
 
 // ---------- roupa ----------
 
@@ -238,19 +238,19 @@ export const TOP_STYLES: { value: TopStyle; label: string }[] = [
   { value: 'tank', label: tr('Regata', 'Tank top') },
   { value: 'blouse', label: tr('Blusinha', 'Blouse') },
   { value: 'shirt', label: tr('Camisa', 'Button-up shirt') },
-  { value: 'jacket', label: tr('Jaqueta', 'Jacket') }
-]
+  { value: 'jacket', label: tr('Jaqueta', 'Jacket') },
+];
 
 export const BOTTOM_STYLES: { value: BottomStyle; label: string }[] = [
   { value: 'pants', label: tr('Calça', 'Pants') },
   { value: 'bermuda', label: tr('Bermuda', 'Bermuda shorts') },
   { value: 'shorts', label: tr('Shorts', 'Shorts') },
-  { value: 'skirt', label: tr('Saia', 'Skirt') }
-]
+  { value: 'skirt', label: tr('Saia', 'Skirt') },
+];
 
 // Tons de uma peça. mid/edge: o degradê (meio claro, laterais mais escuras); collar: gola e barras;
 // fold: dobras e costuras; hem: a linha da barra. Nas cores escuras, os detalhes clareiam.
-export type ClothPalette = { label: string; mid: string; edge: string; collar: string; fold: string; hem: string }
+export type ClothPalette = { label: string; mid: string; edge: string; collar: string; fold: string; hem: string };
 
 export const CLOTH_COLORS: Record<ClothColor, { label: string; color: string }> = {
   yellow: { label: tr('Amarelo', 'Yellow'), color: '#fbd347' },
@@ -263,33 +263,33 @@ export const CLOTH_COLORS: Record<ClothColor, { label: string; color: string }> 
   green: { label: tr('Verde', 'Green'), color: '#4caf6e' },
   pink: { label: tr('Rosa', 'Pink'), color: '#f08cb4' },
   purple: { label: tr('Roxo', 'Purple'), color: '#8a63d2' },
-  beige: { label: tr('Bege', 'Beige'), color: '#d9c4a0' }
-}
+  beige: { label: tr('Bege', 'Beige'), color: '#d9c4a0' },
+};
 
 // A camiseta amarela e a calça preta guardam os tons exatos do desenho original.
 const ORIGINAL_CLOTH: Partial<Record<ClothColor, Omit<ClothPalette, 'label'>>> = {
   yellow: { mid: '#fbd347', edge: '#dca61c', collar: '#c9930f', fold: '#a87a0c', hem: '#b8860d' },
-  black: { mid: '#2c2d33', edge: '#16161a', collar: '#3c3d44', fold: '#45464e', hem: '#45464e' }
-}
+  black: { mid: '#2c2d33', edge: '#16161a', collar: '#3c3d44', fold: '#45464e', hem: '#45464e' },
+};
 
-const ORIGINAL_SLEEVE = { mid: '#f8cf42', edge: '#e0aa22', cuff: '#c08c10' }
+const ORIGINAL_SLEEVE = { mid: '#f8cf42', edge: '#e0aa22', cuff: '#c08c10' };
 
 export function clothPalette(color: MascotLook['topColor']): ClothPalette {
-  const preset = isCustomColor(color) ? undefined : CLOTH_COLORS[color]
-  const label = preset?.label ?? CUSTOM_LABEL
-  const original = isCustomColor(color) ? undefined : ORIGINAL_CLOTH[color]
-  if (original) return { label, ...original }
-  const base = preset?.color ?? color
-  const dark = luminance(base) < 0.3
-  const detail = (t: number) => (dark ? lighten(base, t) : darken(base, t))
-  return { label, mid: base, edge: darken(base, dark ? 0.35 : 0.13), collar: detail(0.2), fold: detail(0.32), hem: detail(0.26) }
+  const preset = isCustomColor(color) ? undefined : CLOTH_COLORS[color];
+  const label = preset?.label ?? CUSTOM_LABEL;
+  const original = isCustomColor(color) ? undefined : ORIGINAL_CLOTH[color];
+  if (original) return { label, ...original };
+  const base = preset?.color ?? color;
+  const dark = luminance(base) < 0.3;
+  const detail = (t: number) => (dark ? lighten(base, t) : darken(base, t));
+  return { label, mid: base, edge: darken(base, dark ? 0.35 : 0.13), collar: detail(0.2), fold: detail(0.32), hem: detail(0.26) };
 }
 
 // Manga: um tom acima da peça, com a barra. Na camiseta amarela, o original.
 export function sleevePalette(color: MascotLook['topColor']): { mid: string; edge: string; cuff: string } {
-  if (color === 'yellow') return ORIGINAL_SLEEVE
-  const c = clothPalette(color)
-  return { mid: c.mid, edge: mix(c.edge, c.mid, 0.2), cuff: c.collar }
+  if (color === 'yellow') return ORIGINAL_SLEEVE;
+  const c = clothPalette(color);
+  return { mid: c.mid, edge: mix(c.edge, c.mid, 0.2), cuff: c.collar };
 }
 
 // ---------- acessórios ----------
@@ -304,8 +304,8 @@ export const ACCESSORIES: { value: Accessory; label: string }[] = [
   { value: 'earrings', label: tr('Brincos', 'Earrings') },
   { value: 'necklace', label: tr('Colar', 'Necklace') },
   { value: 'bracelet', label: tr('Pulseira', 'Bracelet') },
-  { value: 'watch', label: tr('Relógio', 'Watch') }
-]
+  { value: 'watch', label: tr('Relógio', 'Watch') },
+];
 
 // Acessórios que ocupam o mesmo lugar: escolher um tira o outro.
 export const ACCESSORY_SLOT: Partial<Record<Accessory, 'eyes' | 'head'>> = {
@@ -314,14 +314,14 @@ export const ACCESSORY_SLOT: Partial<Record<Accessory, 'eyes' | 'head'>> = {
   sunglasses: 'eyes',
   cap: 'head',
   beanie: 'head',
-  bow: 'head'
-}
+  bow: 'head',
+};
 
 // Liga ou desliga um acessório, tirando o que estiver no mesmo lugar.
 export function toggleAccessory(list: Accessory[], item: Accessory): Accessory[] {
-  if (list.includes(item)) return list.filter((a) => a !== item)
-  const slot = ACCESSORY_SLOT[item]
-  return [...list.filter((a) => !slot || ACCESSORY_SLOT[a] !== slot), item]
+  if (list.includes(item)) return list.filter((a) => a !== item);
+  const slot = ACCESSORY_SLOT[item];
+  return [...list.filter((a) => !slot || ACCESSORY_SLOT[a] !== slot), item];
 }
 
 export const FACE_SHAPES: { value: FaceShape; label: string }[] = [
@@ -339,8 +339,8 @@ export const FACE_SHAPES: { value: FaceShape; label: string }[] = [
   { value: 'pear', label: tr('Pera', 'Pear') },
   { value: 'rectangle', label: tr('Retangular', 'Rectangle') },
   { value: 'baby', label: tr('Rosto de bebê', 'Baby face') },
-  { value: 'angular', label: tr('Anguloso', 'Angular') }
-]
+  { value: 'angular', label: tr('Anguloso', 'Angular') },
+];
 
 export const EYE_SHAPES: { value: EyeShape; label: string }[] = [
   { value: 'almond', label: tr('Amendoado', 'Almond') },
@@ -357,8 +357,8 @@ export const EYE_SHAPES: { value: EyeShape; label: string }[] = [
   { value: 'dot', label: tr('Bolinha', 'Dots') },
   { value: 'happy', label: tr('Sorrindo', 'Happy') },
   { value: 'wink', label: tr('Piscadinha', 'Wink') },
-  { value: 'hearts', label: tr('Apaixonados', 'Heart eyes') }
-]
+  { value: 'hearts', label: tr('Apaixonados', 'Heart eyes') },
+];
 
 // fill: íris; ring: contorno dela.
 export const EYE_COLORS: Record<EyeColor, { label: string; fill: string; ring: string }> = {
@@ -368,8 +368,8 @@ export const EYE_COLORS: Record<EyeColor, { label: string; fill: string; ring: s
   hazel: { label: tr('Mel', 'Hazel'), fill: '#a87f3e', ring: '#6a4f22' },
   green: { label: tr('Verde', 'Green'), fill: '#5f9a5a', ring: '#3a6236' },
   blue: { label: tr('Azul', 'Blue'), fill: '#5d8fc4', ring: '#345c88' },
-  gray: { label: tr('Cinza', 'Gray'), fill: '#8e979e', ring: '#5a6268' }
-}
+  gray: { label: tr('Cinza', 'Gray'), fill: '#8e979e', ring: '#5a6268' },
+};
 
 export const MOUTH_STYLES: { value: MouthStyle; label: string }[] = [
   { value: 'classic', label: tr('Clássica', 'Classic') },
@@ -386,8 +386,8 @@ export const MOUTH_STYLES: { value: MouthStyle; label: string }[] = [
   { value: 'buck', label: tr('Dentuça', 'Buck teeth') },
   { value: 'fangs', label: tr('Presinhas', 'Fangs') },
   { value: 'serious', label: tr('Séria', 'Serious') },
-  { value: 'frown', label: tr('Emburrada', 'Frown') }
-]
+  { value: 'frown', label: tr('Emburrada', 'Frown') },
+];
 
 export const BEARD_STYLES: { value: BeardStyle; label: string }[] = [
   { value: 'none', label: tr('Sem barba', 'None') },
@@ -400,8 +400,8 @@ export const BEARD_STYLES: { value: BeardStyle; label: string }[] = [
   { value: 'chinstrap', label: tr('Contorno', 'Chinstrap') },
   { value: 'muttonChops', label: tr('Costeletas', 'Mutton chops') },
   { value: 'full', label: tr('Cheia', 'Full') },
-  { value: 'long', label: tr('Longa', 'Long') }
-]
+  { value: 'long', label: tr('Longa', 'Long') },
+];
 
 // skin: degradê do rosto (claro, meio, sombra); limb: braços e mãos (borda, meio, borda);
 // line: traços finos (orelha, pálpebra, nariz); soft: brilho da mão e da ponta do nariz;
@@ -419,7 +419,7 @@ export type SkinPalette = {
   lipTop: string
   lipLine: string
   nail: string
-}
+};
 
 export const SKIN_TONES: Record<SkinTone, SkinPalette> = {
   fair: {
@@ -433,7 +433,7 @@ export const SKIN_TONES: Record<SkinTone, SkinPalette> = {
     lip: ['#d8949a', '#bb7378'],
     lipTop: '#c27f84',
     lipLine: '#844a4d',
-    nail: '#fae2d6'
+    nail: '#fae2d6',
   },
   light: {
     label: tr('Clara', 'Light'),
@@ -446,7 +446,7 @@ export const SKIN_TONES: Record<SkinTone, SkinPalette> = {
     lip: ['#cf8a7f', '#b26c63'],
     lipTop: '#b8746a',
     lipLine: '#7a433c',
-    nail: '#f5d3c2'
+    nail: '#f5d3c2',
   },
   tan: {
     label: tr('Média', 'Medium'),
@@ -459,7 +459,7 @@ export const SKIN_TONES: Record<SkinTone, SkinPalette> = {
     lip: ['#bd7a6a', '#9e5f52'],
     lipTop: '#a8695b',
     lipLine: '#6a3a30',
-    nail: '#efcaa8'
+    nail: '#efcaa8',
   },
   brown: {
     label: tr('Escura', 'Dark'),
@@ -472,7 +472,7 @@ export const SKIN_TONES: Record<SkinTone, SkinPalette> = {
     lip: ['#9a5c4c', '#7d4639'],
     lipTop: '#874e40',
     lipLine: '#4e2a20',
-    nail: '#d9b08e'
+    nail: '#d9b08e',
   },
   dark: {
     label: tr('Muito escura', 'Very dark'),
@@ -485,56 +485,56 @@ export const SKIN_TONES: Record<SkinTone, SkinPalette> = {
     lip: ['#7a4638', '#5f3329'],
     lipTop: '#6a3b2f',
     lipLine: '#3a1d14',
-    nail: '#b68a6c'
-  }
-}
+    nail: '#b68a6c',
+  },
+};
 
 // ---------- cores escolhidas no seletor ----------
 // A partir da cor escolhida, os outros tons (sombra, mechas, sobrancelha, lábios) saem por conta,
 // do mesmo jeito que nas cores prontas.
 
-export const CUSTOM_LABEL = tr('Personalizada', 'Custom')
+export const CUSTOM_LABEL = tr('Personalizada', 'Custom');
 
-const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const toHex = (channels: number[]) =>
-  `#${channels.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`
+  `#${channels.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`;
 
 // a + (b - a) * t, canal a canal.
 export function mix(a: string, b: string, t: number): string {
-  const x = rgb(a)
-  const y = rgb(b)
-  return toHex(x.map((v, i) => v + (y[i] - v) * t))
+  const x = rgb(a);
+  const y = rgb(b);
+  return toHex(x.map((v, i) => v + (y[i] - v) * t));
 }
-const lighten = (c: string, t: number) => mix(c, '#ffffff', t)
-const darken = (c: string, t: number) => mix(c, '#000000', t)
+const lighten = (c: string, t: number) => mix(c, '#ffffff', t);
+const darken = (c: string, t: number) => mix(c, '#000000', t);
 // Claridade percebida, de 0 (preto) a 1 (branco).
 function luminance(c: string): number {
-  const [r, g, b] = rgb(c)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  const [r, g, b] = rgb(c);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 // Sombra de pele: escurece mais o verde e o azul que o vermelho, como nos tons prontos (t 0.2 dá a
 // linha fina da pele clara a partir do tom do meio).
 function warmShade(c: string, t: number): string {
-  const [r, g, b] = rgb(c)
-  return toHex([r * (1 - 0.6 * t), g * (1 - t), b * (1 - 1.2 * t)])
+  const [r, g, b] = rgb(c);
+  return toHex([r * (1 - 0.6 * t), g * (1 - t), b * (1 - 1.2 * t)]);
 }
 
 export function hairPalette(color: MascotLook['hairColor']): HairPalette {
-  if (!isCustomColor(color)) return HAIR_COLORS[color]
-  return { label: CUSTOM_LABEL, top: color, bottom: darken(color, 0.25), strand: lighten(color, 0.22), brow: darken(color, 0.45), beard: darken(color, 0.13) }
+  if (!isCustomColor(color)) return HAIR_COLORS[color];
+  return { label: CUSTOM_LABEL, top: color, bottom: darken(color, 0.25), strand: lighten(color, 0.22), brow: darken(color, 0.45), beard: darken(color, 0.13) };
 }
 
 // Barba: a do cabelo, uma das prontas ou a escolhida (essa, exatamente na cor escolhida).
 export function beardPalette(look: MascotLook): HairPalette {
-  const color = look.beardColor
-  if (color === 'hair') return hairPalette(look.hairColor)
-  if (!isCustomColor(color)) return HAIR_COLORS[color]
-  return { ...hairPalette(color), beard: color }
+  const color = look.beardColor;
+  if (color === 'hair') return hairPalette(look.hairColor);
+  if (!isCustomColor(color)) return HAIR_COLORS[color];
+  return { ...hairPalette(color), beard: color };
 }
 
 // O tom escolhido vira o tom do meio do rosto.
 export function skinPalette(tone: MascotLook['skin']): SkinPalette {
-  if (!isCustomColor(tone)) return SKIN_TONES[tone]
+  if (!isCustomColor(tone)) return SKIN_TONES[tone];
   return {
     label: CUSTOM_LABEL,
     skin: [lighten(tone, 0.3), tone, warmShade(tone, 0.16)],
@@ -546,13 +546,13 @@ export function skinPalette(tone: MascotLook['skin']): SkinPalette {
     lip: [mix(warmShade(tone, 0.1), '#c0505a', 0.3), mix(warmShade(tone, 0.2), '#9a3a44', 0.35)],
     lipTop: mix(warmShade(tone, 0.15), '#a8424c', 0.32),
     lipLine: warmShade(mix(tone, '#7a2a22', 0.2), 0.55),
-    nail: lighten(tone, 0.35)
-  }
+    nail: lighten(tone, 0.35),
+  };
 }
 
 export function eyePalette(color: MascotLook['eyeColor']): { label: string; fill: string; ring: string } {
-  if (!isCustomColor(color)) return EYE_COLORS[color]
-  return { label: CUSTOM_LABEL, fill: color, ring: darken(color, 0.4) }
+  if (!isCustomColor(color)) return EYE_COLORS[color];
+  return { label: CUSTOM_LABEL, fill: color, ring: darken(color, 0.4) };
 }
 
 // ms: duração do golpe. tip: ponto do desenho que encosta na pasta no impacto (a ponta do chicote,
@@ -562,39 +562,39 @@ export const STRIKES: Record<Strike, { label: string; ms: number; tip: { x: numb
   slap: { label: tr('Tapa', 'Slap'), ms: 900, tip: { x: 107.5, y: 96 } },
   punch: { label: tr('Soco', 'Punch'), ms: 900, tip: { x: 109, y: 96.5 } },
   kick: { label: tr('Chute', 'Kick'), ms: 1000, tip: { x: 91, y: 121 } },
-  hadouken: { label: 'Hadouken', ms: 1100, tip: { x: 188, y: 96 } }
-}
+  hadouken: { label: 'Hadouken', ms: 1100, tip: { x: 188, y: 96 } },
+};
 
 // O corpo como é desenhado: o tipo escolhido e, no feminino, ombros mais para dentro, braços mais
 // finos e o quadril mais para fora.
 export function bodyShape(look: MascotLook): BuildShape {
-  const build = BUILDS[look.build]
-  if (look.sex !== 'female') return build
-  return { ...build, shoulder: build.shoulder - 1.2, arm: build.arm * 0.88, hip: build.hip + 0.8 }
+  const build = BUILDS[look.build];
+  if (look.sex !== 'female') return build;
+  return { ...build, shoulder: build.shoulder - 1.2, arm: build.arm * 0.88, hip: build.hip + 0.8 };
 }
 
 // Ponta do golpe com o corpo escolhido: o ombro (ou o quadril, no chute) mais largo leva a mão (ou
 // o pé) junto. A bola do hadouken voa solta, não depende do corpo.
 export function strikeTip(look: MascotLook): { x: number; y: number } {
-  const { tip } = STRIKES[look.strike]
-  const build = bodyShape(look)
-  const shift = look.strike === 'hadouken' ? 0 : look.strike === 'kick' ? build.hip : build.shoulder
-  return { x: tip.x + shift, y: tip.y }
+  const { tip } = STRIKES[look.strike];
+  const build = bodyShape(look);
+  const shift = look.strike === 'hadouken' ? 0 : look.strike === 'kick' ? build.hip : build.shoulder;
+  return { x: tip.x + shift, y: tip.y };
 }
 
 const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
-  allowed.includes(value as T) ? (value as T) : fallback
+  allowed.includes(value as T) ? (value as T) : fallback;
 // Uma das cores prontas ou uma escolhida no seletor.
 const pickColor = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T | CustomColor =>
-  isCustomColor(value) ? (value.toLowerCase() as CustomColor) : pick(value, allowed, fallback)
+  isCustomColor(value) ? (value.toLowerCase() as CustomColor) : pick(value, allowed, fallback);
 
 // Visual salvo, com o padrão no que faltar ou não existir mais.
 export function normalizeLook(saved: unknown): MascotLook {
-  const s = (saved && typeof saved === 'object' ? saved : {}) as Partial<Record<keyof MascotLook, unknown>>
-  const hairColors = Object.keys(HAIR_COLORS) as HairColor[]
-  const clothColors = Object.keys(CLOTH_COLORS) as ClothColor[]
+  const s = (saved && typeof saved === 'object' ? saved : {}) as Partial<Record<keyof MascotLook, unknown>>;
+  const hairColors = Object.keys(HAIR_COLORS) as HairColor[];
+  const clothColors = Object.keys(CLOTH_COLORS) as ClothColor[];
   // A barba era ligada ou desligada até ganhar estilos.
-  const beard = s.beard === true ? 'stubble' : s.beard === false ? 'none' : s.beard
+  const beard = s.beard === true ? 'stubble' : s.beard === false ? 'none' : s.beard;
   return {
     sex: pick(s.sex, ['male', 'female'], DEFAULT_LOOK.sex),
     build: pick(s.build, Object.keys(BUILDS) as BodyBuild[], DEFAULT_LOOK.build),
@@ -614,17 +614,17 @@ export function normalizeLook(saved: unknown): MascotLook {
     accessories: Array.isArray(s.accessories)
       ? s.accessories.reduce<Accessory[]>(
           (list, a) => (ACCESSORIES.some((x) => x.value === a) && !list.includes(a) ? toggleAccessory(list, a) : list),
-          []
+          [],
         )
       : [],
-    strike: pick(s.strike, Object.keys(STRIKES) as Strike[], DEFAULT_LOOK.strike)
-  }
+    strike: pick(s.strike, Object.keys(STRIKES) as Strike[], DEFAULT_LOOK.strike),
+  };
 }
 
 // Visual sorteado, para quem quer começar de algum lugar.
 export function randomLook(): MascotLook {
-  const any = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]
-  const sex = any<MascotSex>(['male', 'female'])
+  const any = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)];
+  const sex = any<MascotSex>(['male', 'female']);
   return {
     sex,
     build: any(Object.keys(BUILDS) as BodyBuild[]),
@@ -644,8 +644,8 @@ export function randomLook(): MascotLook {
     // Uns dois acessórios, ou nenhum.
     accessories: Array.from({ length: Math.floor(Math.random() * 3) }, () => any(ACCESSORIES.map((a) => a.value))).reduce<Accessory[]>(
       (list, a) => (list.includes(a) ? list : toggleAccessory(list, a)),
-      []
+      [],
     ),
-    strike: any(Object.keys(STRIKES) as Strike[])
-  }
+    strike: any(Object.keys(STRIKES) as Strike[]),
+  };
 }

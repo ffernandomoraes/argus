@@ -7,13 +7,13 @@ export const TERMINAL_THEME = {
   // O xterm 6 desenha a própria barra de rolagem; cores iguais às do resto do app.
   scrollbarSliderBackground: 'rgba(124, 124, 135, 0.35)',
   scrollbarSliderHoverBackground: 'rgba(124, 124, 135, 0.6)',
-  scrollbarSliderActiveBackground: 'rgba(168, 168, 178, 0.7)'
-}
+  scrollbarSliderActiveBackground: 'rgba(168, 168, 178, 0.7)',
+};
 
-export const TERMINAL_FONT = "'JetBrains Mono', 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace"
+export const TERMINAL_FONT = "'JetBrains Mono', 'SF Mono', Menlo, 'Cascadia Mono', Consolas, monospace";
 
-const FONT_SIZE = 12
+const FONT_SIZE = 12;
 
 // Escala do drawer (⌘+ e ⌘- no modo foco): o xterm desenha o próprio texto, então ela vira
 // tamanho de fonte.
-export const fontSizeFor = (scale: number) => Math.round(FONT_SIZE * scale)
+export const fontSizeFor = (scale: number) => Math.round(FONT_SIZE * scale);

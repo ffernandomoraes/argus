@@ -1,66 +1,66 @@
-import { memo, useRef, useState } from 'react'
-import { parseAgentRef } from '@argus/shared/providers'
-import type { NodeProps } from '@xyflow/react'
-import { Maximize2, Minimize2, X } from 'lucide-react'
-import { useAuth } from '../auth/useAuth'
-import { AccountTag } from '../conversation/header/AccountTag'
-import { TerminalView } from '../conversation/TerminalView'
-import { usePreferences } from '../settings/preferences'
-import { Button } from '../ui/Button'
-import { IconButton } from '../ui/IconButton'
-import { BlockFrame } from './blocks/BlockFrame'
-import { sameNodeProps } from './blocks/sameNodeProps'
-import { useGroupOf } from './blocks/useGroupOf'
-import { useCanvasActions } from './CanvasContext'
-import { TerminalBinding } from './terminal/TerminalBinding'
-import { TerminalFocusLayer } from './terminal/TerminalFocusLayer'
-import { TerminalHeader } from './terminal/TerminalHeader'
-import { useFocusMode } from './terminal/useFocusMode'
-import type { TerminalNode as TerminalNodeType } from './types'
-import { useIsNewBlock } from './useCanvasView'
-import { baseName } from '../platform'
-import { tr } from '../i18n'
+import { memo, useRef, useState } from 'react';
+import { parseAgentRef } from '@argus/shared/providers';
+import type { NodeProps } from '@xyflow/react';
+import { Maximize2, Minimize2, X } from 'lucide-react';
+import { useAuth } from '../auth/useAuth';
+import { AccountTag } from '../conversation/header/AccountTag';
+import { TerminalView } from '../conversation/TerminalView';
+import { usePreferences } from '../settings/preferences';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { BlockFrame } from './blocks/BlockFrame';
+import { sameNodeProps } from './blocks/sameNodeProps';
+import { useGroupOf } from './blocks/useGroupOf';
+import { useCanvasActions } from './CanvasContext';
+import { TerminalBinding } from './terminal/TerminalBinding';
+import { TerminalFocusLayer } from './terminal/TerminalFocusLayer';
+import { TerminalHeader } from './terminal/TerminalHeader';
+import { useFocusMode } from './terminal/useFocusMode';
+import type { TerminalNode as TerminalNodeType } from './types';
+import { useIsNewBlock } from './useCanvasView';
+import { baseName } from '../platform';
+import { tr } from '../i18n';
 
 // Botões do cabeçalho: o último encosta na borda direita, como nos outros blocos.
-const HEADER_BUTTON = 'nodrag last:-mr-1'
+const HEADER_BUTTON = 'nodrag last:-mr-1';
 
 // Terminal de verdade morando no canvas, ao lado das pastas: o `claude` ou o shell do sistema.
 // O processo vive no processo principal: mover, recolher o grupo ou fechar o app não derruba a sessão.
 function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNodeType>) {
-  const shell = data.kind === 'shell'
+  const shell = data.kind === 'shell';
   // Conta do grupo onde o terminal está. Vale ao abrir: o terminal aberto segue na dele.
-  const group = useGroupOf(parentId)
-  const groupAccount = data.account ?? group.account
+  const group = useGroupOf(parentId);
+  const groupAccount = data.account ?? group.account;
   // Trocar a conta encerra o `claude` e abre de novo com ela, na mesma conversa (as conversas
   // ficam numa pasta só para todas as contas). Só no do Claude, com mais de uma conta dele. A
   // escolhida vale já aqui: o `data` do nó só chega no render seguinte, e o terminal reabria
   // antes disso, com a conta antiga.
-  const [switched, setSwitched] = useState<{ account: string; n: number }>()
-  const account = switched?.account ?? groupAccount
-  const agent = parseAgentRef(account)?.provider
-  const { closeTerminal, setTerminalAccount } = useCanvasActions()
-  const claudeAccounts = useAuth()?.accounts.length ?? 0
+  const [switched, setSwitched] = useState<{ account: string; n: number }>();
+  const account = switched?.account ?? groupAccount;
+  const agent = parseAgentRef(account)?.provider;
+  const { closeTerminal, setTerminalAccount } = useCanvasActions();
+  const claudeAccounts = useAuth()?.accounts.length ?? 0;
   const accountTag =
     !shell && !agent && claudeAccounts > 1 ? (
       <AccountTag
         account={account}
         claudeOnly
         onChange={(next) => {
-          if (next === account) return
-          window.api.terminal.kill(id)
-          setTerminalAccount(id, next)
-          setSwitched((s) => ({ account: next, n: (s?.n ?? 0) + 1 }))
+          if (next === account) return;
+          window.api.terminal.kill(id);
+          setTerminalAccount(id, next);
+          setSwitched((s) => ({ account: next, n: (s?.n ?? 0) + 1 }));
         }}
       />
-    ) : undefined
-  const focusRef = useRef<HTMLDivElement>(null)
-  const focus = useFocusMode(focusRef)
+    ) : undefined;
+  const focusRef = useRef<HTMLDivElement>(null);
+  const focus = useFocusMode(focusRef);
   // No foco, ⌘+ e ⌘- mudam a fonte, na mesma escala do drawer.
-  const zoom = usePreferences().drawerZoom
+  const zoom = usePreferences().drawerZoom;
   // Só o terminal recém-criado pega o foco no canvas; o do modo foco sempre (a pessoa pediu).
-  const isNew = useIsNewBlock(id)
+  const isNew = useIsNewBlock(id);
   // Workspace: as pastas dele no lugar do caminho (a pasta do workspace em si é só um id).
-  const pathLabel = data.folders ? data.folders.map(baseName).join(', ') : data.path
+  const pathLabel = data.folders ? data.folders.map(baseName).join(', ') : data.path;
 
   const terminal = (inFocusMode: boolean) => (
     <TerminalView
@@ -75,7 +75,7 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
       gpu={inFocusMode}
       relaunch={switched?.n}
     />
-  )
+  );
 
   return (
     <>
@@ -123,8 +123,8 @@ function TerminalNodeView({ id, data, selected, parentId }: NodeProps<TerminalNo
         </TerminalFocusLayer>
       )}
     </>
-  )
+  );
 }
 
 // Arrastar o terminal não redesenha o conteúdo dele (ver sameNodeProps).
-export const TerminalNode = memo(TerminalNodeView, sameNodeProps)
+export const TerminalNode = memo(TerminalNodeView, sameNodeProps);

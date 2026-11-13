@@ -1,52 +1,52 @@
-import { app, BrowserWindow, dialog } from 'electron'
-import { resolveAccount } from '../accounts'
-import { accentColor, setTheme } from '../app/appearance'
-import type { Lifecycle } from '../app/lifecycle'
-import type { Services } from '../app/services'
-import { refreshAppMenu } from '../app/menu'
-import { mediaCommand, nowPlaying, setVolume } from '../media'
-import { loadAppSettings, saveAppSettings } from '../appSettings'
-import { lang, setLang, tr } from '../i18n'
-import { broadcast } from './events'
-import { ensureDistro, homeUnc, listDistros } from '../wsl'
-import { wslDiagnostics } from '../wsl/diagnostics'
-import { setSharedLoginEnabled } from '../wsl/sharedLogin'
-import { parseAgentRef } from '@argus/shared/providers'
-import { agentInfo } from '../agentChats/models'
-import { handle, on, onSync } from './register'
-import { contentsOf, isRemotePage } from './page'
-import { syncWorkspace } from '../workspaces'
-import { IS_MAC } from '../platform'
-import { isInterfaceZoom } from '@argus/shared/interfaceZoom'
-import { CLIPBOARD_COMMANDS } from '@argus/shared/ipc'
-import { setInterfaceZoom } from '../app/windowChrome'
-import { fetchReleaseNotes } from '../updater/notes'
-import { telemetry } from '../telemetry'
-import { telemetrySources } from '../telemetry/sources'
+import { app, BrowserWindow, dialog } from 'electron';
+import { resolveAccount } from '../accounts';
+import { accentColor, setTheme } from '../app/appearance';
+import type { Lifecycle } from '../app/lifecycle';
+import type { Services } from '../app/services';
+import { refreshAppMenu } from '../app/menu';
+import { mediaCommand, nowPlaying, setVolume } from '../media';
+import { loadAppSettings, saveAppSettings } from '../appSettings';
+import { lang, setLang, tr } from '../i18n';
+import { broadcast } from './events';
+import { ensureDistro, homeUnc, listDistros } from '../wsl';
+import { wslDiagnostics } from '../wsl/diagnostics';
+import { setSharedLoginEnabled } from '../wsl/sharedLogin';
+import { parseAgentRef } from '@argus/shared/providers';
+import { agentInfo } from '../agentChats/models';
+import { handle, on, onSync } from './register';
+import { contentsOf, isRemotePage } from './page';
+import { syncWorkspace } from '../workspaces';
+import { IS_MAC } from '../platform';
+import { isInterfaceZoom } from '@argus/shared/interfaceZoom';
+import { CLIPBOARD_COMMANDS } from '@argus/shared/ipc';
+import { setInterfaceZoom } from '../app/windowChrome';
+import { fetchReleaseNotes } from '../updater/notes';
+import { telemetry } from '../telemetry';
+import { telemetrySources } from '../telemetry/sources';
 
 // O app em si: aparência, preferências, atualização, janelas de conversa avulsas e limites de uso.
 export function registerAppIpc(s: Services, life: Lifecycle): void {
-  on('theme:set', (_e, theme) => setTheme(theme))
+  on('theme:set', (_e, theme) => setTheme(theme));
   on('interface:zoom', (e, factor) => {
-    const wc = contentsOf(e.sender)
-    const win = wc && BrowserWindow.fromWebContents(wc)
-    if (win && isInterfaceZoom(factor)) setInterfaceZoom(win, factor)
-  })
+    const wc = contentsOf(e.sender);
+    const win = wc && BrowserWindow.fromWebContents(wc);
+    if (win && isInterfaceZoom(factor)) setInterfaceZoom(win, factor);
+  });
   // Vem da tela: só os três comandos conhecidos.
   on('clipboard:command', (e, command) => {
-    if (CLIPBOARD_COMMANDS.includes(command)) contentsOf(e.sender)?.[command]()
-  })
-  onSync('accent:get', () => accentColor())
-  onSync('language:get', () => lang())
-  handle('dialog:pickFolder', async (e, distro) => (await pickFolders(contentsOf(e.sender), distro, false))[0] ?? null)
-  handle('dialog:pickFolders', (e, distro) => pickFolders(contentsOf(e.sender), distro, true))
+    if (CLIPBOARD_COMMANDS.includes(command)) contentsOf(e.sender)?.[command]();
+  });
+  onSync('accent:get', () => accentColor());
+  onSync('language:get', () => lang());
+  handle('dialog:pickFolder', async (e, distro) => (await pickFolders(contentsOf(e.sender), distro, false))[0] ?? null);
+  handle('dialog:pickFolders', (e, distro) => pickFolders(contentsOf(e.sender), distro, true));
   // Uma pasta, ou várias de uma vez (workspace: sem abrir o seletor uma vez por pasta). O seletor do
   // Mac, do Windows e do GTK no Linux aceitam marcar várias pastas.
-  const MOD = IS_MAC ? '⌘' : 'Ctrl'
+  const MOD = IS_MAC ? '⌘' : 'Ctrl';
   async function pickFolders(sender: Electron.WebContents | null, distro: string | undefined, multiple: boolean): Promise<string[]> {
-    const win = sender && BrowserWindow.fromWebContents(sender)
+    const win = sender && BrowserWindow.fromWebContents(sender);
     // Pasta do WSL: abre na pasta do usuário no Linux (\\wsl.localhost\<distro>\home\<usuário>).
-    const wslHome = typeof distro === 'string' && distro ? (await ensureDistro(distro), homeUnc(distro)) : null
+    const wslHome = typeof distro === 'string' && distro ? (await ensureDistro(distro), homeUnc(distro)) : null;
     const options: Electron.OpenDialogOptions = {
       title: multiple
         ? wslHome
@@ -59,76 +59,76 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
       ...(multiple && { message: tr(`Marque várias pastas com ${MOD} ou Shift`, `Select several folders with ${MOD} or Shift`) }),
       buttonLabel: tr('Adicionar', 'Add'),
       defaultPath: wslHome ?? app.getPath('desktop'),
-      properties: ['openDirectory', 'createDirectory', ...(multiple ? (['multiSelections'] as const) : [])]
-    }
-    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
-    return result.canceled ? [] : result.filePaths
+      properties: ['openDirectory', 'createDirectory', ...(multiple ? (['multiSelections'] as const) : [])],
+    };
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+    return result.canceled ? [] : result.filePaths;
   }
-  handle('workspace:sync', (_e, folders, dir) => syncWorkspace(folders, dir))
-  handle('wsl:distros', () => listDistros())
-  handle('wsl:diagnostics', () => wslDiagnostics())
-  handle('settings:get', () => loadAppSettings())
+  handle('workspace:sync', (_e, folders, dir) => syncWorkspace(folders, dir));
+  handle('wsl:distros', () => listDistros());
+  handle('wsl:diagnostics', () => wslDiagnostics());
+  handle('settings:get', () => loadAppSettings());
   handle('settings:menuBarIcon', (_e, enabled) => {
-    s.tray.set(enabled)
-    return saveAppSettings({ menuBarIcon: enabled })
-  })
-  handle('settings:notifications', (_e, enabled) => saveAppSettings({ notifications: enabled }))
-  handle('settings:notificationSound', (_e, enabled) => saveAppSettings({ notificationSound: enabled }))
+    s.tray.set(enabled);
+    return saveAppSettings({ menuBarIcon: enabled });
+  });
+  handle('settings:notifications', (_e, enabled) => saveAppSettings({ notifications: enabled }));
+  handle('settings:notificationSound', (_e, enabled) => saveAppSettings({ notificationSound: enabled }));
   handle('settings:usageStats', (_e, enabled) => {
-    telemetry.setEnabled(enabled, telemetrySources(s))
-    return loadAppSettings()
-  })
+    telemetry.setEnabled(enabled, telemetrySources(s));
+    return loadAppSettings();
+  });
   // O login das pastas do WSL mudou de lugar: as contas são conferidas de novo (as linhas do WSL
   // aparecem ou somem) e as conversas paradas reabrem com o login certo na próxima mensagem.
   handle('settings:wslSharedLogin', (_e, enabled) => {
-    const saved = saveAppSettings({ wslSharedLogin: enabled })
-    setSharedLoginEnabled(enabled)
-    s.chats.releaseAll()
-    void s.auth.refresh()
-    return saved
-  })
+    const saved = saveAppSettings({ wslSharedLogin: enabled });
+    setSharedLoginEnabled(enabled);
+    s.chats.releaseAll();
+    void s.auth.refresh();
+    return saved;
+  });
   // Idioma trocado: menu e ícone do sistema refeitos aqui; as janelas recarregam (renderer/i18n).
   handle('settings:language', (_e, pref) => {
-    const saved = saveAppSettings({ language: pref })
-    setLang(pref)
-    refreshAppMenu()
-    s.tray.refresh()
-    broadcast('language:changed')
-    return saved
-  })
-  handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }))
-  handle('updates:check', () => s.updater.check())
-  handle('updates:notes', () => fetchReleaseNotes())
+    const saved = saveAppSettings({ language: pref });
+    setLang(pref);
+    refreshAppMenu();
+    s.tray.refresh();
+    broadcast('language:changed');
+    return saved;
+  });
+  handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }));
+  handle('updates:check', () => s.updater.check());
+  handle('updates:notes', () => fetchReleaseNotes());
   // De outro computador (acesso remoto): a confirmação já foi feita na janela de lá; perguntar aqui
   // deixaria a atualização esperando alguém na frente deste computador.
-  on('updates:install', (e) => life.restartToUpdate({ ask: !isRemotePage(e.sender) }))
-  on('popout:open', (_e, id, payload) => s.popouts.show(id, payload))
+  on('updates:install', (e) => life.restartToUpdate({ ask: !isRemotePage(e.sender) }));
+  on('popout:open', (_e, id, payload) => s.popouts.show(id, payload));
   // Mascote solto na tela. Ligar, "escrevendo" e voltar ao canto vêm das janelas do app; o resto,
   // só da janela dele.
-  on('mascot:enabled', (_e, enabled) => s.mascot.setEnabled(enabled))
-  on('mascot:typing', (_e, typing) => s.mascot.setTyping(typing))
-  on('mascot:interactive', (e, interactive) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.setInteractive(interactive))
-  on('mascot:drag', (e, x, y) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.dragTo(x, y))
-  on('mascot:dragEnd', (e) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.dragEnd())
+  on('mascot:enabled', (_e, enabled) => s.mascot.setEnabled(enabled));
+  on('mascot:typing', (_e, typing) => s.mascot.setTyping(typing));
+  on('mascot:interactive', (e, interactive) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.setInteractive(interactive));
+  on('mascot:drag', (e, x, y) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.dragTo(x, y));
+  on('mascot:dragEnd', (e) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.dragEnd());
   // Voltar ao canto: dois cliques no boneco ou o botão das configurações.
-  on('mascot:home', () => s.mascot.home())
-  handle('mascot:alerts', () => s.mascot.alerts())
-  on('mascot:target', (e, key, turn, rect) => s.mascot.reportTarget(contentsOf(e.sender), key, turn, rect))
-  handle('mascot:findTarget', (_e, key, turn) => s.mascot.findTarget(key, turn))
-  handle('mascot:walk', (e, x, y) => (s.mascot.owns(contentsOf(e.sender)) ? s.mascot.walk(x, y) : undefined))
-  handle('mascot:homeSpot', () => s.mascot.homeSpot())
-  handle('popout:payload', (_e, id) => s.popouts.payload(id))
-  handle('usage:get', () => s.usage.all())
-  on('usage:refresh', () => s.usage.refresh(true))
-  handle('media:get', () => nowPlaying())
-  handle('media:command', (_e, command) => mediaCommand(command))
-  handle('media:volume', (_e, volume) => setVolume(volume))
+  on('mascot:home', () => s.mascot.home());
+  handle('mascot:alerts', () => s.mascot.alerts());
+  on('mascot:target', (e, key, turn, rect) => s.mascot.reportTarget(contentsOf(e.sender), key, turn, rect));
+  handle('mascot:findTarget', (_e, key, turn) => s.mascot.findTarget(key, turn));
+  handle('mascot:walk', (e, x, y) => (s.mascot.owns(contentsOf(e.sender)) ? s.mascot.walk(x, y) : undefined));
+  handle('mascot:homeSpot', () => s.mascot.homeSpot());
+  handle('popout:payload', (_e, id) => s.popouts.payload(id));
+  handle('usage:get', () => s.usage.all());
+  on('usage:refresh', () => s.usage.refresh(true));
+  handle('media:get', () => nowPlaying());
+  handle('media:command', (_e, command) => mediaCommand(command));
+  handle('media:volume', (_e, volume) => setVolume(volume));
   handle('claude:info', (_e, account) => {
     // Conta de outro agente ("codex:main"): os modelos que ela oferece, no mesmo formato.
-    const agent = parseAgentRef(account)
-    return agent ? agentInfo(agent) : s.usage.info(resolveAccount(account))
-  })
-  handle('claudeVersion:get', () => s.claudeVersion.state)
-  handle('claudeVersion:check', () => s.claudeVersion.check())
-  handle('claudeVersion:update', () => s.claudeVersion.update())
+    const agent = parseAgentRef(account);
+    return agent ? agentInfo(agent) : s.usage.info(resolveAccount(account));
+  });
+  handle('claudeVersion:get', () => s.claudeVersion.state);
+  handle('claudeVersion:check', () => s.claudeVersion.check());
+  handle('claudeVersion:update', () => s.claudeVersion.update());
 }

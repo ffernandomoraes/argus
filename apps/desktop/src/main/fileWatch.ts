@@ -1,90 +1,90 @@
-import { unwatchFile as stopPolling, watch, watchFile as poll, type Stats } from 'node:fs'
-import type { Page } from './ipc/page'
-import { sendTo } from './ipc/events'
-import { insideRoot } from './paths'
+import { unwatchFile as stopPolling, watch, watchFile as poll, type Stats } from 'node:fs';
+import type { Page } from './ipc/page';
+import { sendTo } from './ipc/events';
+import { insideRoot } from './paths';
 
 // Um arquivo vigiado por janela: o que está aberto no visualizador de código.
 // Mudou no disco (o Claude editou, por exemplo), a janela é avisada para recarregar.
-type Entry = { root: string; rel: string; full: string; watcher?: { close(): void }; timer?: NodeJS.Timeout; retries: number }
+type Entry = { root: string; rel: string; full: string; watcher?: { close(): void }; timer?: NodeJS.Timeout; retries: number };
 
-const watchers = new Map<number, Entry>()
+const watchers = new Map<number, Entry>();
 // Janelas com o aviso de fechada já registrado: um por janela, não um a cada arquivo aberto.
-const tracked = new WeakSet<Page>()
+const tracked = new WeakSet<Page>();
 
 // Editores gravam em vários passos: espera assentar antes de avisar.
-const SETTLE_MS = 150
+const SETTLE_MS = 150;
 // Na gravação atômica o arquivo some por um instante (o editor grava um temporário e troca):
 // tenta religar algumas vezes antes de desistir.
-const RETRY_MS = 200
-const RETRIES = 10
+const RETRY_MS = 200;
+const RETRIES = 10;
 // Pasta de rede (as do WSL: \\wsl.localhost\...): o Windows não avisa quando o arquivo muda lá. A
 // data e o tamanho são conferidos a cada POLL_MS.
-const POLL_MS = 1000
-const isNetworkPath = (path: string) => /^[\\/]{2}[^\\/]/.test(path)
+const POLL_MS = 1000;
+const isNetworkPath = (path: string) => /^[\\/]{2}[^\\/]/.test(path);
 
 function pollFile(full: string, onChange: () => void): { close(): void } {
   const listener = (now: Stats, before: Stats) => {
-    if (now.mtimeMs !== before.mtimeMs || now.size !== before.size) onChange()
-  }
-  poll(full, { interval: POLL_MS }, listener)
-  return { close: () => stopPolling(full, listener) }
+    if (now.mtimeMs !== before.mtimeMs || now.size !== before.size) onChange();
+  };
+  poll(full, { interval: POLL_MS }, listener);
+  return { close: () => stopPolling(full, listener) };
 }
 
 export function unwatchFile(sender: Page): void {
-  const current = watchers.get(sender.id)
-  if (!current) return
-  clearTimeout(current.timer)
-  current.watcher?.close()
-  watchers.delete(sender.id)
+  const current = watchers.get(sender.id);
+  if (!current) return;
+  clearTimeout(current.timer);
+  current.watcher?.close();
+  watchers.delete(sender.id);
 }
 
 export function watchFile(sender: Page, root: string, rel: string): void {
-  unwatchFile(sender)
-  const full = insideRoot(root, rel)
-  if (!full) return
+  unwatchFile(sender);
+  const full = insideRoot(root, rel);
+  if (!full) return;
   if (!tracked.has(sender)) {
-    tracked.add(sender)
-    sender.once('destroyed', () => unwatchFile(sender))
+    tracked.add(sender);
+    sender.once('destroyed', () => unwatchFile(sender));
   }
-  const entry: Entry = { root, rel, full, retries: 0 }
-  watchers.set(sender.id, entry)
-  arm(sender, entry, false)
+  const entry: Entry = { root, rel, full, retries: 0 };
+  watchers.set(sender.id, entry);
+  arm(sender, entry, false);
 }
 
 // Liga o vigia. `changed`: o arquivo voltou depois de sumir, com outro conteúdo.
 function arm(sender: Page, entry: Entry, changed: boolean): void {
-  if (watchers.get(sender.id) !== entry || sender.isDestroyed()) return
-  entry.watcher?.close()
-  entry.watcher = undefined
+  if (watchers.get(sender.id) !== entry || sender.isDestroyed()) return;
+  entry.watcher?.close();
+  entry.watcher = undefined;
   try {
     if (isNetworkPath(entry.full)) {
-      entry.watcher = pollFile(entry.full, () => settle(sender, entry))
-      if (changed) sendTo(sender, 'files:changed', entry.root, entry.rel)
-      return
+      entry.watcher = pollFile(entry.full, () => settle(sender, entry));
+      if (changed) sendTo(sender, 'files:changed', entry.root, entry.rel);
+      return;
     }
-    const w = watch(entry.full, () => settle(sender, entry))
-    entry.watcher = w
-    w.on('error', () => retry(sender, entry))
-    entry.retries = 0
-    if (changed) sendTo(sender, 'files:changed', entry.root, entry.rel)
+    const w = watch(entry.full, () => settle(sender, entry));
+    entry.watcher = w;
+    w.on('error', () => retry(sender, entry));
+    entry.retries = 0;
+    if (changed) sendTo(sender, 'files:changed', entry.root, entry.rel);
   } catch {
-    retry(sender, entry)
+    retry(sender, entry);
   }
 }
 
 function retry(sender: Page, entry: Entry): void {
-  entry.watcher?.close()
-  entry.watcher = undefined
-  clearTimeout(entry.timer)
-  if (entry.retries++ < RETRIES) entry.timer = setTimeout(() => arm(sender, entry, true), RETRY_MS)
+  entry.watcher?.close();
+  entry.watcher = undefined;
+  clearTimeout(entry.timer);
+  if (entry.retries++ < RETRIES) entry.timer = setTimeout(() => arm(sender, entry, true), RETRY_MS);
 }
 
 function settle(sender: Page, entry: Entry): void {
-  clearTimeout(entry.timer)
+  clearTimeout(entry.timer);
   entry.timer = setTimeout(() => {
-    if (watchers.get(sender.id) !== entry || sender.isDestroyed()) return
-    sendTo(sender, 'files:changed', entry.root, entry.rel)
+    if (watchers.get(sender.id) !== entry || sender.isDestroyed()) return;
+    sendTo(sender, 'files:changed', entry.root, entry.rel);
     // Quem grava num temporário e troca o arquivo deixa a vigia presa ao antigo: recomeça.
-    arm(sender, entry, false)
-  }, SETTLE_MS)
+    arm(sender, entry, false);
+  }, SETTLE_MS);
 }

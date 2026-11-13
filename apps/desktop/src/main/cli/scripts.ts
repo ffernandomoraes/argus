@@ -1,21 +1,21 @@
-import { app } from 'electron'
-import { tr } from '../i18n'
-import { MARK, SOCKET } from './locations'
-import { OPEN_FLAG } from './openArg'
+import { app } from 'electron';
+import { tr } from '../i18n';
+import { MARK, SOCKET } from './locations';
+import { OPEN_FLAG } from './openArg';
 
 // O texto dos scripts do `argus`, gravados a cada vez que o app abre.
 
-const quote = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
+const quote = (s: string) => `'${s.replace(/'/g, '\'\\\'\'')}'`;
 // Mensagens no terminal, no idioma do app quando o script foi gravado (a cada abertura).
-const notFound = () => tr('argus: pasta não encontrada:', 'argus: folder not found:')
+const notFound = () => tr('argus: pasta não encontrada:', 'argus: folder not found:');
 
 // Mac: o script manda o caminho pelo socket local; o app escuta enquanto está aberto.
 export function macScript(): string {
   // Empacotado, o comando abre o app se ele estiver fechado. Em desenvolvimento não há .app para abrir.
-  const bundle = app.isPackaged ? process.execPath.replace(/\.app\/.*$/, '.app') : null
+  const bundle = app.isPackaged ? process.execPath.replace(/\.app\/.*$/, '.app') : null;
   const launch = bundle
     ? `open -a ${quote(bundle)} && for _ in $(seq 1 50); do sleep 0.2; send && exit 0; done\n`
-    : ''
+    : '';
   return `#!/bin/sh
 # Gerado pelo Argus a cada vez que o app abre; mudanças aqui se perdem.
 target="\${1:-.}"
@@ -24,7 +24,7 @@ send() { curl -sf --unix-socket ${quote(SOCKET)} --data-binary "$dir" http://arg
 send && exit 0
 ${launch}echo "${tr('argus: o app não está aberto.', "argus: the app isn't open.")}" >&2
 exit 1
-`
+`;
 }
 
 // O cmd lê o .bat linha a linha na página de código do console, que não é UTF-8: o script troca
@@ -37,7 +37,7 @@ export function windowsScript(): string {
     MARK,
     'rem Gerado pelo Argus a cada vez que o app abre; mudanças aqui se perdem.',
     'setlocal',
-    `for /f "tokens=2 delims=:." %%a in ('chcp') do set /a "argus_cp=%%a"`,
+    'for /f "tokens=2 delims=:." %%a in (\'chcp\') do set /a "argus_cp=%%a"',
     'chcp 65001 >nul',
     'set "target=%~1"',
     'if "%target%"=="" set "target=."',
@@ -52,13 +52,13 @@ export function windowsScript(): string {
     `echo ${notFound()} %target% 1>&2`,
     'chcp %argus_cp% >nul',
     'exit /b 1',
-    ''
-  ].join('\r\n')
+    '',
+  ].join('\r\n');
 }
 
 // Empacotado: o Argus.exe. No pnpm dev: o electron.exe com a pasta do projeto.
 function launchCommand(): string {
-  return app.isPackaged ? `"${process.execPath}"` : `"${process.execPath}" "${app.getAppPath()}"`
+  return app.isPackaged ? `"${process.execPath}"` : `"${process.execPath}" "${app.getAppPath()}"`;
 }
 
 // Linux: como no Windows, o script abre o app com a pasta, e o app já aberto recebe dela o pedido
@@ -66,7 +66,7 @@ function launchCommand(): string {
 // arquivo .AppImage (APPIMAGE): o do executável muda a cada abertura (/tmp/.mount_...). setsid: o
 // app não fecha junto com o terminal que rodou o comando.
 export function linuxScript(): string {
-  const exe = app.isPackaged ? quote(process.env.APPIMAGE || process.execPath) : `${quote(process.execPath)} ${quote(app.getAppPath())}`
+  const exe = app.isPackaged ? quote(process.env.APPIMAGE || process.execPath) : `${quote(process.execPath)} ${quote(app.getAppPath())}`;
   return `#!/bin/sh
 # Gerado pelo Argus a cada vez que o app abre; mudanças aqui se perdem.
 target="\${1:-.}"
@@ -77,5 +77,5 @@ else
   nohup ${exe} "${OPEN_FLAG}$dir" >/dev/null 2>&1 &
 fi
 exit 0
-`
+`;
 }

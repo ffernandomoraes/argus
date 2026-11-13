@@ -1,9 +1,9 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { createInterface } from 'node:readline'
-import type { MediaCommand, NowPlaying } from '@argus/shared/media'
-import { guardStdin } from '../lib/childProcess'
-import { POWERSHELL } from '../winProcesses/system'
-import type { MediaSource } from '.'
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createInterface } from 'node:readline';
+import type { MediaCommand, NowPlaying } from '@argus/shared/media';
+import { guardStdin } from '../lib/childProcess';
+import { POWERSHELL } from '../winProcesses/system';
+import type { MediaSource } from '.';
 
 // Windows: a mídia do sistema (a que aparece junto do controle de volume), pela API
 // GlobalSystemMediaTransportControls, e o volume da saída padrão, pelo Core Audio (trecho em C#,
@@ -66,62 +66,62 @@ while ($null -ne ($line = [Console]::In.ReadLine())) {
     }
   } catch { 'null' }
 }
-`
+`;
 
-let shell: ChildProcessWithoutNullStreams | null = null
+let shell: ChildProcessWithoutNullStreams | null = null;
 // Pedidos esperando resposta, na ordem em que foram mandados: o PowerShell responde um por vez.
-const waiting: ((line: string) => void)[] = []
+const waiting: ((line: string) => void)[] = [];
 // Depois de falhar algumas vezes seguidas (Windows sem a API, PowerShell bloqueado), desiste.
-let failures = 0
+let failures = 0;
 
 function start(): ChildProcessWithoutNullStreams | null {
-  if (shell) return shell
-  if (failures >= 3) return null
-  const encoded = Buffer.from(SCRIPT, 'utf16le').toString('base64')
-  const child = spawn(POWERSHELL, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { windowsHide: true })
+  if (shell) return shell;
+  if (failures >= 3) return null;
+  const encoded = Buffer.from(SCRIPT, 'utf16le').toString('base64');
+  const child = spawn(POWERSHELL, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { windowsHide: true });
   // O pedido pode cair num PowerShell que acabou de sair: sem ouvinte, o EPIPE abriria a caixa de
   // erro do processo principal.
-  guardStdin(child)
-  child.stdout.setEncoding('utf8')
-  createInterface({ input: child.stdout }).on('line', (line) => waiting.shift()?.(line.trim()))
+  guardStdin(child);
+  child.stdout.setEncoding('utf8');
+  createInterface({ input: child.stdout }).on('line', (line) => waiting.shift()?.(line.trim()));
   const end = () => {
-    if (shell !== child) return
-    shell = null
-    failures++
-    for (const resolve of waiting.splice(0)) resolve('null')
-  }
-  child.on('exit', end)
-  child.on('error', end)
-  shell = child
-  return child
+    if (shell !== child) return;
+    shell = null;
+    failures++;
+    for (const resolve of waiting.splice(0)) resolve('null');
+  };
+  child.on('exit', end);
+  child.on('error', end);
+  shell = child;
+  return child;
 }
 
 function ask(line: string): Promise<string> {
-  const child = start()
-  if (!child) return Promise.resolve('null')
+  const child = start();
+  if (!child) return Promise.resolve('null');
   return new Promise((resolve) => {
     // A primeira resposta demora mais: o PowerShell ainda compila o trecho em C#.
     const timer = setTimeout(() => {
       // Sem resposta: o PowerShell travou. Fecha; o próximo pedido abre outro.
-      child.kill()
-    }, 15_000)
+      child.kill();
+    }, 15_000);
     waiting.push((answer) => {
-      clearTimeout(timer)
-      if (answer !== 'null') failures = 0
-      resolve(answer)
-    })
-    child.stdin.write(`${line}\n`)
-  })
+      clearTimeout(timer);
+      if (answer !== 'null') failures = 0;
+      resolve(answer);
+    });
+    child.stdin.write(`${line}\n`);
+  });
 }
 
 export const windowsMedia: MediaSource = {
   async read() {
-    return JSON.parse(await ask('get')) as NowPlaying | null
+    return JSON.parse(await ask('get')) as NowPlaying | null;
   },
   async command(command: MediaCommand) {
-    await ask(command)
+    await ask(command);
   },
   async setVolume(volume) {
-    await ask(`volume ${volume}`)
-  }
-}
+    await ask(`volume ${volume}`);
+  },
+};

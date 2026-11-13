@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { ArrowUp, FileText, Mic, Plus, Square, X } from 'lucide-react'
-import type { ChatSettings } from '@argus/shared/chat'
-import type { ClaudeInfo } from '@argus/shared/models'
-import { tr } from '../i18n'
-import { isImage } from '../lib/images'
-import { ComposerOptions, ContextRing, modelSummary, type OptionsSheet } from './ComposerBar'
-import type { COMMANDS } from './options'
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUp, FileText, Mic, Plus, Square, X } from 'lucide-react';
+import type { ChatSettings } from '@argus/shared/chat';
+import type { ClaudeInfo } from '@argus/shared/models';
+import { tr } from '../i18n';
+import { isImage } from '../lib/images';
+import { ComposerOptions, ContextRing, modelSummary, type OptionsSheet } from './ComposerBar';
+import type { COMMANDS } from './options';
 
 // A caixa de escrever, flutuando embaixo como uma pílula: o + (fotos e arquivos, modelo, modo,
 // comandos e contexto, ver ComposerBar.tsx), o texto (o microfone do teclado do celular já dita),
@@ -20,52 +20,52 @@ type SpeechRecognitionLike = {
   onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null
   onend: (() => void) | null
   onerror: (() => void) | null
-}
+};
 
 const Recognition =
   (globalThis as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition ??
-  (globalThis as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition
+  (globalThis as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
 
 function useDictation(onText: (text: string) => void) {
-  const [on, setOn] = useState(false)
-  const rec = useRef<SpeechRecognitionLike | null>(null)
-  const onTextRef = useRef(onText)
-  onTextRef.current = onText
-  useEffect(() => () => rec.current?.stop(), [])
-  if (!Recognition) return null
+  const [on, setOn] = useState(false);
+  const rec = useRef<SpeechRecognitionLike | null>(null);
+  const onTextRef = useRef(onText);
+  onTextRef.current = onText;
+  useEffect(() => () => rec.current?.stop(), []);
+  if (!Recognition) return null;
   const toggle = () => {
-    if (on) return rec.current?.stop()
-    const r = new Recognition()
-    r.lang = navigator.language
-    r.continuous = true
-    r.interimResults = false
+    if (on) return rec.current?.stop();
+    const r = new Recognition();
+    r.lang = navigator.language;
+    r.continuous = true;
+    r.interimResults = false;
     r.onresult = (e) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onTextRef.current(e.results[i][0].transcript)
-    }
-    r.onend = () => setOn(false)
-    r.onerror = () => setOn(false)
-    rec.current = r
+      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onTextRef.current(e.results[i][0].transcript);
+    };
+    r.onend = () => setOn(false);
+    r.onerror = () => setOn(false);
+    rec.current = r;
     try {
-      r.start()
-      setOn(true)
+      r.start();
+      setOn(true);
     } catch {
-      setOn(false)
+      setOn(false);
     }
-  }
-  return { on, toggle }
+  };
+  return { on, toggle };
 }
 
-export type Draft = { text: string; files: File[] }
+export type Draft = { text: string; files: File[] };
 
 // Miniatura do anexo; o endereço temporário é liberado ao sair.
 function Thumb({ file }: { file: File }) {
-  const [url, setUrl] = useState<string | null>(null)
+  const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
-    const u = URL.createObjectURL(file)
-    setUrl(u)
-    return () => URL.revokeObjectURL(u)
-  }, [file])
-  return url ? <img src={url} alt="" className="size-14 rounded-xl object-cover" /> : <div className="size-14 rounded-xl bg-code" />
+    const u = URL.createObjectURL(file);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  return url ? <img src={url} alt="" className="size-14 rounded-xl object-cover" /> : <div className="size-14 rounded-xl bg-code" />;
 }
 
 export function Composer({
@@ -78,7 +78,7 @@ export function Composer({
   agentChat,
   contextPercent,
   onSettingsChange,
-  onCommand
+  onCommand,
 }: {
   busy: boolean
   onSend: (d: Draft) => Promise<void>
@@ -92,39 +92,39 @@ export function Composer({
   onSettingsChange: (patch: Partial<ChatSettings>) => void
   onCommand: (name: (typeof COMMANDS)[number]['name']) => void
 }) {
-  const [text, setText] = useState('')
-  const [files, setFiles] = useState<File[]>([])
-  const [sending, setSending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [sheet, setSheet] = useState<OptionsSheet>(null)
-  const area = useRef<HTMLTextAreaElement>(null)
-  const picker = useRef<HTMLInputElement>(null)
-  const dictation = useDictation((t) => setText((prev) => (prev && !prev.endsWith(' ') ? `${prev} ${t.trim()}` : prev + t.trim())))
+  const [text, setText] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<OptionsSheet>(null);
+  const area = useRef<HTMLTextAreaElement>(null);
+  const picker = useRef<HTMLInputElement>(null);
+  const dictation = useDictation((t) => setText((prev) => (prev && !prev.endsWith(' ') ? `${prev} ${t.trim()}` : prev + t.trim())));
 
   useEffect(() => {
-    const el = area.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, window.innerHeight * 0.35)}px`
-  }, [text])
+    const el = area.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, window.innerHeight * 0.35)}px`;
+  }, [text]);
 
-  const canSend = (text.trim() || files.length > 0) && !sending && !disabled
+  const canSend = (text.trim() || files.length > 0) && !sending && !disabled;
   const send = async () => {
-    if (!canSend) return
-    setSending(true)
-    setError(null)
+    if (!canSend) return;
+    setSending(true);
+    setError(null);
     try {
-      await onSend({ text: text.trim(), files })
-      setText('')
-      setFiles([])
+      await onSend({ text: text.trim(), files });
+      setText('');
+      setFiles([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
-  const round = 'flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-60'
+  const round = 'flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-60';
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20">
@@ -210,9 +210,9 @@ export function Composer({
         multiple
         hidden
         onChange={(e) => {
-          const list = [...(e.target.files ?? [])]
-          if (list.length) setFiles((prev) => [...prev, ...list])
-          e.target.value = ''
+          const list = [...(e.target.files ?? [])];
+          if (list.length) setFiles((prev) => [...prev, ...list]);
+          e.target.value = '';
         }}
       />
       <ComposerOptions
@@ -226,5 +226,5 @@ export function Composer({
         onCommand={onCommand}
       />
     </div>
-  )
+  );
 }

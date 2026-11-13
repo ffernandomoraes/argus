@@ -1,32 +1,32 @@
-import { useEffect, useRef } from 'react'
-import { Bot, FolderOpen } from 'lucide-react'
-import type { AgentDef } from '@argus/shared/agents'
-import { MENU_ACTIVE } from '../ui/menuStyles'
-import { POPOVER } from './popover'
-import { tr } from '../i18n'
+import { useEffect, useRef } from 'react';
+import { Bot, FolderOpen } from 'lucide-react';
+import type { AgentDef } from '@argus/shared/agents';
+import { MENU_ACTIVE } from '../ui/menuStyles';
+import { POPOVER } from './popover';
+import { tr } from '../i18n';
 
 // Lista dos agentes acima do campo, enquanto o texto termina em "@" + palavra.
 export function AgentMenu({
   items,
   active,
   onHover,
-  onSelect
+  onSelect,
 }: {
   items: AgentDef[]
   active: number
   onHover: (index: number) => void
   onSelect: (agent: AgentDef) => void
 }) {
-  const list = useRef<HTMLDivElement>(null)
+  const list = useRef<HTMLDivElement>(null);
 
   // Muitos agentes (plugins somam dezenas): a lista rola, e o item marcado pelas setas fica à vista.
   useEffect(() => {
-    const box = list.current
-    const row = box?.children[active] as HTMLElement | undefined
-    if (!box || !row) return
-    if (row.offsetTop < box.scrollTop) box.scrollTop = row.offsetTop
-    else if (row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = row.offsetTop + row.offsetHeight - box.clientHeight
-  }, [active])
+    const box = list.current;
+    const row = box?.children[active] as HTMLElement | undefined;
+    if (!box || !row) return;
+    if (row.offsetTop < box.scrollTop) box.scrollTop = row.offsetTop;
+    else if (row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = row.offsetTop + row.offsetHeight - box.clientHeight;
+  }, [active]);
 
   return (
     // Grade com subgrid, como o SlashMenu: a coluna do nome cresce até o maior nome
@@ -40,8 +40,8 @@ export function AgentMenu({
           key={a.path}
           // mousedown: escolher sem tirar o foco do campo de texto
           onMouseDown={(e) => {
-            e.preventDefault()
-            onSelect(a)
+            e.preventDefault();
+            onSelect(a);
           }}
           onMouseEnter={() => onHover(i)}
           className={`col-span-2 grid grid-cols-subgrid items-baseline gap-x-3 rounded-md px-2 py-1.5 text-left ${i === active ? MENU_ACTIVE : ''}`}
@@ -57,5 +57,5 @@ export function AgentMenu({
         </button>
       ))}
     </div>
-  )
+  );
 }

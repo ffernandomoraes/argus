@@ -1,42 +1,42 @@
-import { useState } from 'react'
-import { Check, MessageCircleQuestion } from 'lucide-react'
-import type { Question } from '@argus/shared/chat'
-import { tr } from '../i18n'
+import { useState } from 'react';
+import { Check, MessageCircleQuestion } from 'lucide-react';
+import type { Question } from '@argus/shared/chat';
+import { tr } from '../i18n';
 
 // Perguntas do Claude com opções. "Outra" deixa escrever a resposta. Várias perguntas viram abas,
 // uma por vez, no mesmo cartão.
 export function QuestionCard({
   questions,
   onSubmit,
-  onDismiss
+  onDismiss,
 }: {
   questions: Question[]
   onSubmit: (answers: Record<string, string>) => void
   onDismiss: () => void
 }) {
   // Por pergunta: opções marcadas e texto livre.
-  const [picked, setPicked] = useState<Record<string, string[]>>({})
-  const [other, setOther] = useState<Record<string, string>>({})
-  const [step, setStep] = useState(0)
-  const last = step === questions.length - 1
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [other, setOther] = useState<Record<string, string>>({});
+  const [step, setStep] = useState(0);
+  const last = step === questions.length - 1;
 
   const toggle = (q: Question, label: string) => {
     setPicked((all) => {
-      const cur = all[q.question] ?? []
-      const next = q.multiSelect ? (cur.includes(label) ? cur.filter((l) => l !== label) : [...cur, label]) : [label]
-      return { ...all, [q.question]: next }
-    })
+      const cur = all[q.question] ?? [];
+      const next = q.multiSelect ? (cur.includes(label) ? cur.filter((l) => l !== label) : [...cur, label]) : [label];
+      return { ...all, [q.question]: next };
+    });
     // Escolha única já responde: passa para a próxima aba.
-    if (!q.multiSelect && label !== '__other' && !last) setStep(step + 1)
-  }
+    if (!q.multiSelect && label !== '__other' && !last) setStep(step + 1);
+  };
 
   const answerOf = (q: Question) => {
-    const labels = (picked[q.question] ?? []).filter((l) => l !== '__other')
-    const typed = picked[q.question]?.includes('__other') ? other[q.question]?.trim() : ''
-    return [...labels, ...(typed ? [typed] : [])].join(', ')
-  }
-  const complete = questions.every((q) => answerOf(q))
-  const submit = () => onSubmit(Object.fromEntries(questions.map((q) => [q.question, answerOf(q)])))
+    const labels = (picked[q.question] ?? []).filter((l) => l !== '__other');
+    const typed = picked[q.question]?.includes('__other') ? other[q.question]?.trim() : '';
+    return [...labels, ...(typed ? [typed] : [])].join(', ');
+  };
+  const complete = questions.every((q) => answerOf(q));
+  const submit = () => onSubmit(Object.fromEntries(questions.map((q) => [q.question, answerOf(q)])));
 
   return (
     <div className="rounded-lg border border-dashed border-ask/40 bg-ask/10 p-3 text-xs">
@@ -59,7 +59,7 @@ export function QuestionCard({
         </div>
       )}
       {[questions[step]].map((q) => {
-        const cur = picked[q.question] ?? []
+        const cur = picked[q.question] ?? [];
         return (
           <div key={q.question} className="mb-3">
             <div className="flex items-start gap-2">
@@ -72,7 +72,7 @@ export function QuestionCard({
             </div>
             <div role={q.multiSelect ? 'group' : 'radiogroup'} aria-label={q.question} className="mt-2 flex flex-col gap-1 pl-6">
               {[...q.options, { label: '__other', description: '' }].map((o) => {
-                const on = cur.includes(o.label)
+                const on = cur.includes(o.label);
                 return (
                   <button
                     key={o.label}
@@ -96,7 +96,7 @@ export function QuestionCard({
                       {o.description && <div className="mt-0.5 text-muted">{o.description}</div>}
                     </div>
                   </button>
-                )
+                );
               })}
               {cur.includes('__other') && (
                 <input
@@ -105,10 +105,10 @@ export function QuestionCard({
                   onChange={(e) => setOther((all) => ({ ...all, [q.question]: e.target.value }))}
                   // Enter responde (na última aba) ou passa para a próxima; ignora o Enter que fecha um acento/IME.
                   onKeyDown={(e) => {
-                    if (e.key !== 'Enter' || e.nativeEvent.isComposing || !answerOf(q)) return
-                    e.preventDefault()
-                    if (!last) setStep(step + 1)
-                    else if (complete) submit()
+                    if (e.key !== 'Enter' || e.nativeEvent.isComposing || !answerOf(q)) return;
+                    e.preventDefault();
+                    if (!last) setStep(step + 1);
+                    else if (complete) submit();
                   }}
                   placeholder={tr('Escreva sua resposta', 'Type your answer')}
                   className="rounded-md border border-line bg-bg px-2.5 py-1.5 text-text outline-none focus:border-line-strong"
@@ -116,7 +116,7 @@ export function QuestionCard({
               )}
             </div>
           </div>
-        )
+        );
       })}
       <div className="flex justify-end gap-1.5">
         <button onClick={onDismiss} className="mr-auto rounded-md border border-line-strong px-2.5 py-1 text-text hover:bg-bg">
@@ -145,5 +145,5 @@ export function QuestionCard({
         )}
       </div>
     </div>
-  )
+  );
 }

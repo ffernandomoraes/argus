@@ -1,22 +1,22 @@
-import type { ReactNode } from 'react'
-import { ChevronLeft } from 'lucide-react'
-import { tr } from '../i18n'
+import type { ReactNode } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { tr } from '../i18n';
 
 // Topo flutuante (o da conversa): voltar num botão redondo à esquerda, o título pequeno no meio,
 // uma ação à direita, e o conteúdo sumindo suave embaixo deles. A tela dá o espaço de cima com
 // FLOATING_HEADER_SPACE.
 
-export const FLOATING_HEADER_SPACE = 'pt-[calc(env(safe-area-inset-top)+76px)]'
+export const FLOATING_HEADER_SPACE = 'pt-[calc(env(safe-area-inset-top)+76px)]';
 
 // Botão redondo do topo (o de voltar, o do agente).
-export const ROUND_BUTTON = 'flex size-12 shrink-0 items-center justify-center rounded-full border border-line bg-card shadow-[0_4px_16px_rgba(0,0,0,0.08)] active:opacity-60'
+export const ROUND_BUTTON = 'flex size-12 shrink-0 items-center justify-center rounded-full border border-line bg-card shadow-[0_4px_16px_rgba(0,0,0,0.08)] active:opacity-60';
 
 export function FloatingHeader({
   title,
   subtitle,
   onBack,
   backLabel,
-  right
+  right,
 }: {
   title?: ReactNode
   subtitle?: ReactNode
@@ -45,5 +45,5 @@ export function FloatingHeader({
         </div>
       </div>
     </header>
-  )
+  );
 }

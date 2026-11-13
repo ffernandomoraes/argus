@@ -1,11 +1,11 @@
-import { IS_LINUX, IS_WIN } from '../platform'
+import { IS_LINUX, IS_WIN } from '../platform';
 
 // Comandos de canvas são simples: o Haiku responde rápido, o que conta muito na voz.
-export const MODEL = 'haiku'
+export const MODEL = 'haiku';
 
 // O que muda no texto entre os sistemas: o nome dele e a tecla de desfazer.
-export const SYSTEM_NAME = IS_WIN ? 'Windows' : IS_LINUX ? 'Linux' : 'macOS'
-const UNDO = IS_WIN || IS_LINUX ? 'Ctrl+Z' : '⌘Z'
+export const SYSTEM_NAME = IS_WIN ? 'Windows' : IS_LINUX ? 'Linux' : 'macOS';
+const UNDO = IS_WIN || IS_LINUX ? 'Ctrl+Z' : '⌘Z';
 
 export const SYSTEM_PROMPT = `Você é o assistente do canvas de um app de ${SYSTEM_NAME} que organiza projetos do Claude Code.
 O canvas tem blocos:
@@ -24,4 +24,4 @@ Como agir:
 - Nova pasta com nome falado: use procurar_pasta. Um resultado: use. Vários: pergunte qual. Nenhum, ou sem nome: chame adicionar_pasta sem caminho, que abre o seletor de pastas do ${SYSTEM_NAME}.
 - Você só mexe no canvas. Não lê arquivos, não roda comandos e não conversa com as sessões do Claude.
 
-Resposta: português do Brasil, uma frase curta dizendo o que fez (ou a pergunta). Sem markdown. Se excluiu algo, lembre que ${UNDO} desfaz.`
+Resposta: português do Brasil, uma frase curta dizendo o que fez (ou a pergunta). Sem markdown. Se excluiu algo, lembre que ${UNDO} desfaz.`;

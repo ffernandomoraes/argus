@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
-import { ChevronDown } from 'lucide-react'
-import { InfoTip } from '../ui/InfoTip'
+import type { ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { InfoTip } from '../ui/InfoTip';
 
 // Controles das configurações (e de quem segue o mesmo desenho, como a biblioteca de agentes). O
 // botão com borda daqui virou o Button da base (ui/Button, variante secondary).
@@ -11,7 +11,7 @@ export function IconTile({
   color,
   size = 20,
   soft,
-  children
+  children,
 }: {
   color: string
   size?: number
@@ -27,17 +27,17 @@ export function IconTile({
         borderRadius: Math.round(size * 0.26),
         ...(soft
           ? { color, background: `color-mix(in srgb, ${color} 16%, transparent)` }
-          : { background: `linear-gradient(180deg, color-mix(in srgb, ${color} 82%, white), ${color})` })
+          : { background: `linear-gradient(180deg, color-mix(in srgb, ${color} 82%, white), ${color})` }),
       }}
     >
       {children}
     </span>
-  )
+  );
 }
 
 // Lista agrupada: as linhas (Row) num cartão arredondado, separadas por uma linha fina.
 export function Group({ children }: { children: ReactNode }) {
-  return <div className="mb-4 rounded-xl bg-fill px-4 last:mb-0">{children}</div>
+  return <div className="mb-4 rounded-xl bg-fill px-4 last:mb-0">{children}</div>;
 }
 
 // Linha de configuração: rótulo e explicação à esquerda, controle à direita. below: o controle vai
@@ -50,7 +50,7 @@ export function Row({
   description,
   info,
   below,
-  children
+  children,
 }: {
   label: string
   description?: string
@@ -71,13 +71,13 @@ export function Row({
       </div>
       <div className={below ? 'flex' : 'shrink-0'}>{children}</div>
     </div>
-  )
+  );
 }
 
 export function Segmented<T extends string>({
   value,
   options,
-  onChange
+  onChange,
 }: {
   value: T
   // disabled: a opção fica à vista, apagada, com o motivo em `title`.
@@ -101,7 +101,7 @@ export function Segmented<T extends string>({
         </button>
       ))}
     </div>
-  )
+  );
 }
 
 export function Select({
@@ -109,7 +109,7 @@ export function Select({
   onChange,
   disabled,
   label,
-  children
+  children,
 }: {
   value: string
   onChange: (value: string) => void
@@ -125,7 +125,7 @@ export function Select({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         aria-label={label}
-        className={`min-w-44 cursor-pointer appearance-none disabled:cursor-default rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[15px] text-text outline-none enabled:hover:border-line-strong`}
+        className={'min-w-44 cursor-pointer appearance-none disabled:cursor-default rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[15px] text-text outline-none enabled:hover:border-line-strong'}
       >
         {children}
       </select>
@@ -134,7 +134,7 @@ export function Select({
         <ChevronDown size={11} />
       </span>
     </label>
-  )
+  );
 }
 
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -148,5 +148,5 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
     >
       <span className={`size-4 rounded-full bg-white shadow-sm shadow-black/30 transition-transform ${checked ? 'translate-x-4' : ''}`} />
     </button>
-  )
+  );
 }

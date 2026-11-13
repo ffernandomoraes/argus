@@ -1,12 +1,12 @@
-import { Pencil } from 'lucide-react'
-import type { MemoryFile } from '@argus/shared/memory'
-import { FileLinkContext } from '../conversation/fileLinks'
-import { Markdown } from '../conversation/Markdown'
-import { keys, tildify } from '../platform'
-import { Button } from '../ui/Button'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { fileLabel, linkMemories, splitFrontmatter, TYPE_LABEL } from './memoryText'
-import { tr } from '../i18n'
+import { Pencil } from 'lucide-react';
+import type { MemoryFile } from '@argus/shared/memory';
+import { FileLinkContext } from '../conversation/fileLinks';
+import { Markdown } from '../conversation/Markdown';
+import { keys, tildify } from '../platform';
+import { Button } from '../ui/Button';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { fileLabel, linkMemories, splitFrontmatter, TYPE_LABEL } from './memoryText';
+import { tr } from '../i18n';
 
 // Lado direito da Memória: o arquivo escolhido, lido como Markdown ou editado como texto.
 export function MemoryFileView({
@@ -19,7 +19,7 @@ export function MemoryFileView({
   onCancel,
   onDraftChange,
   onSave,
-  onOpenLink
+  onOpenLink,
 }: {
   current: MemoryFile | null
   // Nulo enquanto o texto do arquivo não chega.
@@ -35,8 +35,8 @@ export function MemoryFileView({
   // Link entre anotações ([[nome]] ou arquivo.md) clicado no texto.
   onOpenLink: (target: string) => void
 }) {
-  const editing = draft !== null
-  const meta = current?.kind === 'memory' ? current : null
+  const editing = draft !== null;
+  const meta = current?.kind === 'memory' ? current : null;
 
   return (
     <section className="flex min-w-0 flex-1 flex-col">
@@ -102,5 +102,5 @@ export function MemoryFileView({
         </div>
       )}
     </section>
-  )
+  );
 }

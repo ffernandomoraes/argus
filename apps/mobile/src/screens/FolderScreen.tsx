@@ -1,51 +1,51 @@
-import { useEffect, useState } from 'react'
-import { Plus, Search, Star, XCircle } from 'lucide-react'
-import type { SearchHit, SessionSummary } from '@argus/shared/sessions'
-import { tr } from '../i18n'
-import { useFavorites, useSessions, useWorkspaces } from '../lib/data'
-import { useHost } from '../lib/host'
-import { back, go } from '../lib/router'
-import { ago, baseName, dateGroup } from '../ui/format'
-import { Empty, Row, Section } from '../ui/List'
-import { FLOATING_HEADER_SPACE, FloatingHeader, ROUND_BUTTON } from '../ui/FloatingHeader'
-import { GroupLabel } from '../ui/GroupLabel'
-import { StatusDot } from '../ui/StatusDot'
+import { useEffect, useState } from 'react';
+import { Plus, Search, Star, XCircle } from 'lucide-react';
+import type { SearchHit, SessionSummary } from '@argus/shared/sessions';
+import { tr } from '../i18n';
+import { useFavorites, useSessions, useWorkspaces } from '../lib/data';
+import { useHost } from '../lib/host';
+import { back, go } from '../lib/router';
+import { ago, baseName, dateGroup } from '../ui/format';
+import { Empty, Row, Section } from '../ui/List';
+import { FLOATING_HEADER_SPACE, FloatingHeader, ROUND_BUTTON } from '../ui/FloatingHeader';
+import { GroupLabel } from '../ui/GroupLabel';
+import { StatusDot } from '../ui/StatusDot';
 
-const PAGE = 60
+const PAGE = 60;
 
-export const newChatId = () => `new-${crypto.randomUUID().slice(0, 8)}`
+export const newChatId = () => `new-${crypto.randomUUID().slice(0, 8)}`;
 
 // O caminho com a pasta pessoal do computador como "~" (mais curto no celular).
 function shortPath(path: string, home: string | undefined): string {
-  if (home && (path === home || path.startsWith(`${home}/`) || path.startsWith(`${home}\\`))) return `~${path.slice(home.length)}`
-  return path
+  if (home && (path === home || path.startsWith(`${home}/`) || path.startsWith(`${home}\\`))) return `~${path.slice(home.length)}`;
+  return path;
 }
 
 // Sem acento nem maiúscula, para comparar ("Gestão" acha "gestao").
-const fold = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const fold = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Busca nas conversas da pasta: pelo título na hora, e pelo conteúdo no Argus (a mesma busca da
 // lista de conversas de lá), um instante depois de parar de digitar.
 function useSearch(path: string, query: string): SearchHit[] | null {
-  const { conn } = useHost()
-  const [hits, setHits] = useState<SearchHit[] | null>(null)
+  const { conn } = useHost();
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
   useEffect(() => {
-    setHits(null)
-    const q = query.trim()
-    if (q.length < 2) return
-    let alive = true
+    setHits(null);
+    const q = query.trim();
+    if (q.length < 2) return;
+    let alive = true;
     const timer = setTimeout(() => {
       conn.call('sessions:search', path, q).then(
         (h) => alive && setHits(h),
-        () => alive && setHits([])
-      )
-    }, 300)
+        () => alive && setHits([]),
+      );
+    }, 300);
     return () => {
-      alive = false
-      clearTimeout(timer)
-    }
-  }, [conn, path, query])
-  return hits
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [conn, path, query]);
+  return hits;
 }
 
 function SessionRow({ s, path, favorite, snippet }: { s: SessionSummary; path: string; favorite?: boolean; snippet?: string }) {
@@ -58,42 +58,42 @@ function SessionRow({ s, path, favorite, snippet }: { s: SessionSummary; path: s
       subtitle={snippet}
       onClick={() => go({ name: 'chat', cwd: path, id: s.id })}
     />
-  )
+  );
 }
 
 // Uma pasta: título grande (nome, grupo e caminho), o botão de conversa nova e as conversas dela,
 // das mais recentes para as antigas.
 export function FolderScreen({ path }: { path: string }) {
-  const { conn } = useHost()
-  const { list } = useSessions(path)
-  const { workspaces } = useWorkspaces()
-  const folder = workspaces.flatMap((w) => w.groups.flatMap((g) => g.folders)).find((f) => f.path === path)
-  const name = folder?.name ?? baseName(path)
-  const newChat = () => go({ name: 'chat', cwd: path, id: newChatId() })
-  const favorites = useFavorites()
-  const [query, setQuery] = useState('')
-  const hits = useSearch(path, query)
-  const all = list ?? []
-  const favoriteList = all.filter((s) => favorites.has(s.id))
-  const others = all.filter((s) => !favorites.has(s.id))
+  const { conn } = useHost();
+  const { list } = useSessions(path);
+  const { workspaces } = useWorkspaces();
+  const folder = workspaces.flatMap((w) => w.groups.flatMap((g) => g.folders)).find((f) => f.path === path);
+  const name = folder?.name ?? baseName(path);
+  const newChat = () => go({ name: 'chat', cwd: path, id: newChatId() });
+  const favorites = useFavorites();
+  const [query, setQuery] = useState('');
+  const hits = useSearch(path, query);
+  const all = list ?? [];
+  const favoriteList = all.filter((s) => favorites.has(s.id));
+  const others = all.filter((s) => !favorites.has(s.id));
   // As outras em grupos de data (a lista já vem da mais recente para a mais antiga), PAGE por vez.
-  const [shown, setShown] = useState(PAGE)
-  const byDate: [string, SessionSummary[]][] = []
+  const [shown, setShown] = useState(PAGE);
+  const byDate: [string, SessionSummary[]][] = [];
   for (const s of others.slice(0, shown)) {
-    const label = dateGroup(s.repliedAt || s.updatedAt)
-    const last = byDate[byDate.length - 1]
-    if (last?.[0] === label) last[1].push(s)
-    else byDate.push([label, [s]])
+    const label = dateGroup(s.repliedAt || s.updatedAt);
+    const last = byDate[byDate.length - 1];
+    if (last?.[0] === label) last[1].push(s);
+    else byDate.push([label, [s]]);
   }
   // Resultados: primeiro os que batem no título, depois os achados pelo conteúdo (com o trecho).
-  const searching = query.trim().length > 0
-  const q = fold(query.trim())
-  const byTitle = searching ? all.filter((s) => fold(s.title).includes(q)) : []
-  const byId = new Map(all.map((s) => [s.id, s]))
+  const searching = query.trim().length > 0;
+  const q = fold(query.trim());
+  const byTitle = searching ? all.filter((s) => fold(s.title).includes(q)) : [];
+  const byId = new Map(all.map((s) => [s.id, s]));
   const results = [
     ...byTitle.map((s) => ({ s, snippet: undefined as string | undefined })),
-    ...(hits ?? []).filter((h) => byId.has(h.id) && !byTitle.some((s) => s.id === h.id)).map((h) => ({ s: byId.get(h.id)!, snippet: h.snippet }))
-  ]
+    ...(hits ?? []).filter((h) => byId.has(h.id) && !byTitle.some((s) => s.id === h.id)).map((h) => ({ s: byId.get(h.id)!, snippet: h.snippet })),
+  ];
   return (
     <div className="min-h-full">
       {/* Topo flutuante: voltar, o grupo da pasta na pílula colorida (como no canvas) e o + de
@@ -177,5 +177,5 @@ export function FolderScreen({ path }: { path: string }) {
       )}
       </div>
     </div>
-  )
+  );
 }

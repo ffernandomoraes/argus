@@ -1,23 +1,23 @@
-import { ClipboardList, FileText, X } from 'lucide-react'
-import { CopyButton } from '../../conversation/CopyButton'
-import { DocumentMarkdown } from '../../conversation/DocumentMarkdown'
-import { PathLine } from '../../conversation/PlanCard'
-import { baseName } from '../../platform'
-import { PANEL_BOTTOM, PANEL_MARGIN, PANEL_TOP } from '../../conversation/FloatingPanel'
-import { usePreference } from '../../settings/preferences'
-import { IconButton } from '../../ui/IconButton'
-import { useEscape } from '../../useEscape'
-import { tr } from '../../i18n'
+import { ClipboardList, FileText, X } from 'lucide-react';
+import { CopyButton } from '../../conversation/CopyButton';
+import { DocumentMarkdown } from '../../conversation/DocumentMarkdown';
+import { PathLine } from '../../conversation/PlanCard';
+import { baseName } from '../../platform';
+import { PANEL_BOTTOM, PANEL_MARGIN, PANEL_TOP } from '../../conversation/FloatingPanel';
+import { usePreference } from '../../settings/preferences';
+import { IconButton } from '../../ui/IconButton';
+import { useEscape } from '../../useEscape';
+import { tr } from '../../i18n';
 
 // Mais estreito que isso, o plano fica por baixo do drawer (que anda por cima) em vez de sumir.
-const MIN_WIDTH = 280
+const MIN_WIDTH = 280;
 
 // Plano inteiro (ou o .md criado, com `path`), formatado como documento, à esquerda do drawer da
 // conversa que o abriu: vai da borda da janela até a borda do drawer (`drawerX`), na altura toda.
 // ESC fecha. Segue o zoom do drawer (⌘+ / ⌘-).
 export function PlanPanel({ text, path, drawerX, onClose }: { text: string; path?: string; drawerX: number; onClose: () => void }) {
-  const zoom = usePreference('drawerZoom')
-  useEscape(onClose)
+  const zoom = usePreference('drawerZoom');
+  useEscape(onClose);
   return (
     <aside
       style={{ top: PANEL_TOP, bottom: PANEL_BOTTOM, left: PANEL_MARGIN, width: Math.max(MIN_WIDTH, drawerX - PANEL_MARGIN * 2) }}
@@ -45,5 +45,5 @@ export function PlanPanel({ text, path, drawerX, onClose }: { text: string; path
         </div>
       </div>
     </aside>
-  )
+  );
 }

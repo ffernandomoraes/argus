@@ -1,22 +1,22 @@
-import { createHash } from 'node:crypto'
-import { resolve } from 'node:path'
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import { sentryVitePlugin } from '@sentry/bundler-plugins/vite'
-import type { Plugin } from 'vite'
+import { createHash } from 'node:crypto';
+import { resolve } from 'node:path';
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { sentryVitePlugin } from '@sentry/bundler-plugins/vite';
+import type { Plugin } from 'vite';
 
-const BUNDLED = ['@anthropic-ai/claude-agent-sdk', 'zod']
+const BUNDLED = ['@anthropic-ai/claude-agent-sdk', 'zod'];
 
 // Mapas de código para o Sentry: com eles, a pilha de um erro mostra o arquivo e a linha do
 // código-fonte (src/renderer/...) em vez do arquivo montado. Só no GitHub Actions, com o secret
 // SENTRY_AUTH_TOKEN: cada parte do build sobe os mapas dela e os apaga em seguida, então nenhum vai
 // no instalador. Sem o token (pnpm dev, build local), nada muda.
-const SENTRY_TOKEN = process.env.SENTRY_AUTH_TOKEN
-const sourcemap = SENTRY_TOKEN ? 'hidden' : false
+const SENTRY_TOKEN = process.env.SENTRY_AUTH_TOKEN;
+const sourcemap = SENTRY_TOKEN ? 'hidden' : false;
 
 function sentryMaps(part: 'main' | 'preload' | 'renderer'): Plugin[] {
-  if (!SENTRY_TOKEN) return []
+  if (!SENTRY_TOKEN) return [];
   return sentryVitePlugin({
     org: 'fernando-moraes',
     project: 'argus',
@@ -24,8 +24,8 @@ function sentryMaps(part: 'main' | 'preload' | 'renderer'): Plugin[] {
     telemetry: false,
     // A versão já vai em cada relatório (o SDK manda Argus@versão): aqui só os mapas.
     release: { inject: false, create: false, finalize: false, setCommits: false, deploy: false },
-    sourcemaps: { filesToDeleteAfterUpload: [`out/${part}/**/*.map`] }
-  }) as unknown as Plugin[]
+    sourcemaps: { filesToDeleteAfterUpload: [`out/${part}/**/*.map`] },
+  }) as unknown as Plugin[];
 }
 
 // Content-Security-Policy da janela, só no build (o app instalado): no pnpm dev o preâmbulo
@@ -45,8 +45,8 @@ function contentSecurityPolicy(): Plugin {
         // O hash vale para o texto com as quebras de linha em "\n", como o navegador lê o HTML: no
         // Windows o checkout vem com "\r\n", e o hash daquele texto barrava o script de tema.
         const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
-          (m) => `'sha256-${createHash('sha256').update(m[1].replace(/\r\n?/g, '\n')).digest('base64')}'`
-        )
+          (m) => `'sha256-${createHash('sha256').update(m[1].replace(/\r\n?/g, '\n')).digest('base64')}'`,
+        );
         const policy = [
           "default-src 'self'",
           ["script-src 'self'", ...inline].join(' '),
@@ -57,16 +57,16 @@ function contentSecurityPolicy(): Plugin {
           "connect-src 'self'",
           "object-src 'none'",
           "base-uri 'none'",
-          "form-action 'none'"
-        ].join('; ')
+          "form-action 'none'",
+        ].join('; ');
         // Depois do charset (que precisa vir logo no começo do arquivo) e antes do script de tema.
-        const meta = `<meta http-equiv="Content-Security-Policy" content="${policy}" />`
+        const meta = `<meta http-equiv="Content-Security-Policy" content="${policy}" />`;
         return /<meta charset=[^>]*>/i.test(html)
           ? html.replace(/<meta charset=[^>]*>/i, (charset) => `${charset}\n    ${meta}`)
-          : html.replace('<head>', `<head>\n    ${meta}`)
-      }
-    }
-  }
+          : html.replace('<head>', `<head>\n    ${meta}`);
+      },
+    },
+  };
 }
 
 export default defineConfig({
@@ -79,21 +79,21 @@ export default defineConfig({
     // O transformers.js (devDependency) entra no código do processo da transcrição; o motor nativo
     // dele (onnxruntime-node) fica de fora, como o node-pty. O sharp vira um vazio (ver sharpStub.ts).
     resolve: {
-      alias: { sharp: resolve('src/main/transcription/sharpStub.ts') }
+      alias: { sharp: resolve('src/main/transcription/sharpStub.ts') },
     },
     build: {
       sourcemap,
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts'),
-          transcriber: resolve('src/main/transcription/worker.ts')
-        }
-      }
-    }
+          transcriber: resolve('src/main/transcription/worker.ts'),
+        },
+      },
+    },
   },
   preload: {
     plugins: [externalizeDepsPlugin(), ...sentryMaps('preload')],
-    build: { sourcemap }
+    build: { sourcemap },
   },
   renderer: {
     // Porta fora das comuns (3000, 5173...) para não brigar com outros projetos em dev
@@ -104,9 +104,9 @@ export default defineConfig({
       // @codemirror/view 6.43.15 do app e o 6.43.13 do @codemirror/language), o editor ignora o
       // que vem da outra cópia, e o código abria sem coloração nenhuma. Só pacotes que o app instala
       // direto: o dedupe resolve a partir da raiz, e o pnpm não põe as dependências deles lá.
-      dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language']
+      dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language'],
     },
     plugins: [react(), tailwindcss(), contentSecurityPolicy(), ...sentryMaps('renderer')],
-    build: { sourcemap }
-  }
-})
+    build: { sourcemap },
+  },
+});

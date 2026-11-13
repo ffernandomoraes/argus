@@ -1,21 +1,21 @@
-import { useLayoutEffect, useRef } from 'react'
-import { ChevronDown, ChevronUp, Search, X } from 'lucide-react'
-import { IconButton } from '../../ui/IconButton'
-import type { ChatSearch } from './useChatSearch'
-import { tr } from '../../i18n'
+import { useLayoutEffect, useRef } from 'react';
+import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { IconButton } from '../../ui/IconButton';
+import type { ChatSearch } from './useChatSearch';
+import { tr } from '../../i18n';
 
 // Caixa da busca na conversa, flutuando no canto de cima, à direita, como no VS Code e no
 // navegador: o termo, quantos resultados ("3 de 12"), anterior e próximo, e o X. Enter vai ao
 // próximo; Shift+Enter, ao anterior; ESC fecha (useChatSearch).
 export function ChatSearchBox({ search }: { search: ChatSearch }) {
-  const { query, setQuery, total, current, searching, step, close, focusSignal } = search
-  const field = useRef<HTMLInputElement>(null)
+  const { query, setQuery, total, current, searching, step, close, focusSignal } = search;
+  const field = useRef<HTMLInputElement>(null);
 
   // Aberta (ou ⌘F de novo com ela aberta): o foco volta para o campo, com o termo selecionado.
   useLayoutEffect(() => {
-    field.current?.focus({ preventScroll: true })
-    field.current?.select()
-  }, [focusSignal])
+    field.current?.focus({ preventScroll: true });
+    field.current?.select();
+  }, [focusSignal]);
 
   const count = !query.trim()
     ? ''
@@ -23,7 +23,7 @@ export function ChatSearchBox({ search }: { search: ChatSearch }) {
       ? tr(`${current + 1} de ${total}`, `${current + 1} of ${total}`)
       : searching
         ? tr('Buscando…', 'Searching…')
-        : tr('Nenhum', 'No results')
+        : tr('Nenhum', 'No results');
 
   return (
     // nodrag/nopan: no bloco do canvas, digitar e clicar aqui não arrastam nada.
@@ -38,9 +38,9 @@ export function ChatSearchBox({ search }: { search: ChatSearch }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
-          e.preventDefault()
-          step(e.shiftKey ? -1 : 1)
+          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+          e.preventDefault();
+          step(e.shiftKey ? -1 : 1);
         }}
         placeholder={tr('Buscar na conversa', 'Search in chat')}
         aria-label={tr('Buscar na conversa', 'Search in chat')}
@@ -60,5 +60,5 @@ export function ChatSearchBox({ search }: { search: ChatSearch }) {
         <X size={14} />
       </IconButton>
     </div>
-  )
+  );
 }

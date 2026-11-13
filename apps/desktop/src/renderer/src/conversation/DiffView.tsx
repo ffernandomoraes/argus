@@ -1,13 +1,13 @@
-import { memo } from 'react'
-import type { DiffHunk } from '@argus/shared/history'
-import { diffLines, type DiffSign } from './diffLines'
+import { memo } from 'react';
+import type { DiffHunk } from '@argus/shared/history';
+import { diffLines, type DiffSign } from './diffLines';
 
 
 const ROW: Record<DiffSign, string> = {
   '+': 'bg-emerald-500/12 text-emerald-300 [[data-theme=light]_&]:text-emerald-800',
   '-': 'bg-red-500/12 text-red-300 [[data-theme=light]_&]:text-red-800',
-  ' ': 'text-muted'
-}
+  ' ': 'text-muted',
+};
 
 // Linhas removidas e adicionadas numa edição. Sem número de linha quando é só a proposta.
 // full: ocupa o painel de código inteiro, sem caixa nem altura máxima; quem rola é o painel.
@@ -32,5 +32,5 @@ export const DiffView = memo(function DiffView({ hunks, full = false }: { hunks:
         </div>
       ))}
     </div>
-  )
-})
+  );
+});

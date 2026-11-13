@@ -1,24 +1,24 @@
-import { useEffect, useState } from 'react'
-import { ChevronRight } from 'lucide-react'
-import { PROVIDERS } from '@argus/shared/providers'
-import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
-import { AgentIcon } from '@argus/ui/icons/AgentIcon'
-import { Presence } from '../motion'
-import { useProviders } from '../providers/useProviders'
-import { ProviderSection } from '../settings/accounts/ProviderSection'
-import { tr } from '../i18n'
+import { useEffect, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { PROVIDERS } from '@argus/shared/providers';
+import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog';
+import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { Presence } from '../motion';
+import { useProviders } from '../providers/useProviders';
+import { ProviderSection } from '../settings/accounts/ProviderSection';
+import { tr } from '../i18n';
 
 // Na configuração das boas-vindas: entrar com o Codex, o Gemini ou o Cursor no lugar do Claude.
 // Fechado até a pessoa pedir; aberto, as mesmas seções de Configurações > Contas.
 export function OtherAgents() {
-  const [open, setOpen] = useState(false)
-  const providers = useProviders()
-  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+  const [open, setOpen] = useState(false);
+  const providers = useProviders();
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   // Aberto agora: confere instalação e contas de cada um.
   useEffect(() => {
-    if (open) window.api.providers.refresh()
-  }, [open])
+    if (open) window.api.providers.refresh();
+  }, [open]);
 
   if (!open) {
     return (
@@ -39,7 +39,7 @@ export function OtherAgents() {
         </span>
         <ChevronRight size={14} className="shrink-0 text-faint" />
       </button>
-    )
+    );
   }
 
   return (
@@ -47,7 +47,7 @@ export function OtherAgents() {
       <p className="mt-4 text-xs leading-relaxed text-faint">
         {tr(
           'Ou conecte outro agente. Com o Claude sem configurar, as pastas usam o primeiro conectado; cada grupo do canvas pode escolher o seu.',
-          'Or connect another agent. Without Claude set up, folders use the first one connected; each canvas group can choose its own.'
+          'Or connect another agent. Without Claude set up, folders use the first one connected; each canvas group can choose its own.',
         )}
       </p>
       {providers ? (
@@ -57,5 +57,5 @@ export function OtherAgents() {
       )}
       <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>
     </div>
-  )
+  );
 }

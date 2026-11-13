@@ -1,24 +1,24 @@
-import { useCallback, useMemo } from 'react'
-import type { XYPosition } from '@xyflow/react'
-import type { LineRange } from '../../conversation/fileLinks'
-import { revealEnd } from '../../conversation/revealEnd'
-import { useStableCallback } from '../../lib/useStableCallback'
-import { getPreferences } from '../../settings/preferences'
-import { patchView, type CanvasViewStore } from '../canvasView'
-import { subagentConversationId, tasksConversationId, type SubagentRef, type TasksRef } from '../CanvasContext'
-import type { ConfirmRequest } from '../ConfirmDialog'
-import { codeProject } from '../drawers/codeProject'
-import { projectOf } from '../drawers/drawerView'
-import type { DrawerCommands } from '../drawers/useDrawers'
-import { createChatPanel } from '../factory'
-import { revealNode } from '../focus/reveal'
-import { groupAccount, placeBeside, removeNode } from '../operations'
-import { getSessions, refreshNow } from '../sessionsStore'
-import type { ConversationSummary, ProjectData } from '../types'
-import { chatPanelOf, ownerOf } from './lookup'
-import type { FocusNode, NodesApi } from './types'
-import { tr } from '../../i18n'
-import { TRASH_EN } from '../menus/shared'
+import { useCallback, useMemo } from 'react';
+import type { XYPosition } from '@xyflow/react';
+import type { LineRange } from '../../conversation/fileLinks';
+import { revealEnd } from '../../conversation/revealEnd';
+import { useStableCallback } from '../../lib/useStableCallback';
+import { getPreferences } from '../../settings/preferences';
+import { patchView, type CanvasViewStore } from '../canvasView';
+import { subagentConversationId, tasksConversationId, type SubagentRef, type TasksRef } from '../CanvasContext';
+import type { ConfirmRequest } from '../ConfirmDialog';
+import { codeProject } from '../drawers/codeProject';
+import { projectOf } from '../drawers/drawerView';
+import type { DrawerCommands } from '../drawers/useDrawers';
+import { createChatPanel } from '../factory';
+import { revealNode } from '../focus/reveal';
+import { groupAccount, placeBeside, removeNode } from '../operations';
+import { getSessions, refreshNow } from '../sessionsStore';
+import type { ConversationSummary, ProjectData } from '../types';
+import { chatPanelOf, ownerOf } from './lookup';
+import type { FocusNode, NodesApi } from './types';
+import { tr } from '../../i18n';
+import { TRASH_EN } from '../menus/shared';
 
 type Options = {
   api: NodesApi
@@ -30,7 +30,7 @@ type Options = {
   // Conversa sem projeto aberta em branco: o Canvas cria o card quando a sessão começar (useLooseCards).
   watchLoose: (conversationId: string, at?: XYPosition) => void
   confirm: (request: ConfirmRequest) => void
-}
+};
 
 // Resumo de reserva da conversa, enquanto a lista da pasta não foi lida (pasta em grupo recolhido
 // desde a abertura, aberta pela notificação ou pela preferência). Quem mostra troca pelo da lista
@@ -43,12 +43,12 @@ const placeholder = (id: string): ConversationSummary => ({
   updatedAt: '',
   repliedAt: '',
   contextPercent: 0,
-  sessionId: id
-})
+  sessionId: id,
+});
 
 // Abrir, mover e apagar conversas: no drawer, num bloco do canvas ou numa janela própria.
 export function useConversationActions({ api, view, focusNode, drawers, markPoppedOut, watchLoose, confirm }: Options) {
-  const { nodesRef, change } = api
+  const { nodesRef, change } = api;
 
   // Põe a conversa no canvas, ao lado da pasta (ou do card) de onde ela abriu. Se já estiver lá,
   // só vai até ela: a mesma conversa em dois blocos brigaria pela mesma sessão. Com a pasta num
@@ -58,47 +58,47 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
   // foco ao aparecer (useIsNewBlock).
   const pinConversation = useCallback(
     (nodeId: string, conversationId: string) => {
-      const existing = chatPanelOf(nodesRef.current, conversationId)
-      if (existing) return focusNode(existing.id)
-      const anchor = nodesRef.current.find((n) => n.id === nodeId)
-      const project = projectOf(anchor)
-      if (!anchor || !project) return
-      const conversation = getSessions(project.path).find((c) => c.id === conversationId) ?? placeholder(conversationId)
-      const node = createChatPanel(project, anchor.type === 'chat', conversation)
-      patchView(view, { newBlockId: node.id })
-      change((ns) => placeBeside(revealNode(ns, nodeId), nodeId, node))
-      focusNode(node.id)
+      const existing = chatPanelOf(nodesRef.current, conversationId);
+      if (existing) return focusNode(existing.id);
+      const anchor = nodesRef.current.find((n) => n.id === nodeId);
+      const project = projectOf(anchor);
+      if (!anchor || !project) return;
+      const conversation = getSessions(project.path).find((c) => c.id === conversationId) ?? placeholder(conversationId);
+      const node = createChatPanel(project, anchor.type === 'chat', conversation);
+      patchView(view, { newBlockId: node.id });
+      change((ns) => placeBeside(revealNode(ns, nodeId), nodeId, node));
+      focusNode(node.id);
     },
-    [nodesRef, change, focusNode, view]
-  )
+    [nodesRef, change, focusNode, view],
+  );
 
   // Abre a conversa numa janela própria (ou foca a que já existe). Com a lista da pasta ainda não
   // lida, vai o resumo de reserva: a janela lê a lista sozinha e mostra o título quando chegar.
   const popoutConversation = useCallback(
     (nodeId: string, conversationId: string) => {
-      const node = nodesRef.current.find((n) => n.id === nodeId)
-      const project = projectOf(node)
-      if (!project) return
-      const conversation = getSessions(project.path).find((c) => c.id === conversationId) ?? placeholder(conversationId)
-      window.api.popout.open(conversationId, { project, conversation, account: groupAccount(nodesRef.current, node) })
-      markPoppedOut(conversationId)
+      const node = nodesRef.current.find((n) => n.id === nodeId);
+      const project = projectOf(node);
+      if (!project) return;
+      const conversation = getSessions(project.path).find((c) => c.id === conversationId) ?? placeholder(conversationId);
+      window.api.popout.open(conversationId, { project, conversation, account: groupAccount(nodesRef.current, node) });
+      markPoppedOut(conversationId);
     },
-    [nodesRef, markPoppedOut]
-  )
+    [nodesRef, markPoppedOut],
+  );
 
   // Lê as janelas separadas do store na hora do clique.
   const openConversation = useStableCallback((nodeId: string, conversationId: string) => {
     // Já à vista (no drawer ou no canvas), vai para o fim; senão, já abre lá.
-    revealEnd(conversationId)
-    const openIn = getPreferences().openIn
+    revealEnd(conversationId);
+    const openIn = getPreferences().openIn;
     // Já no canvas: a câmera vai até o bloco dela.
-    const panel = chatPanelOf(nodesRef.current, conversationId)
-    if (panel) focusNode(panel.id)
+    const panel = chatPanelOf(nodesRef.current, conversationId);
+    if (panel) focusNode(panel.id);
     // Em janela separada (já aberta, ou pela preferência): abre ou traz a janela para frente.
-    else if (view.get().poppedOut.has(conversationId) || openIn === 'window') popoutConversation(nodeId, conversationId)
-    else if (openIn === 'node') pinConversation(nodeId, conversationId)
-    else drawers.show({ nodeId, conversationId })
-  })
+    else if (view.get().poppedOut.has(conversationId) || openIn === 'window') popoutConversation(nodeId, conversationId);
+    else if (openIn === 'node') pinConversation(nodeId, conversationId);
+    else drawers.show({ nodeId, conversationId });
+  });
 
   // Conversa na Lixeira: some do painel lateral e do canvas, se estiver aberta neles.
   const trashConversation = useCallback(
@@ -106,65 +106,65 @@ export function useConversationActions({ api, view, focusNode, drawers, markPopp
       void window.api.sessions.trash(path, conversationId).then((error) => {
         if (error) return confirm({
             title: tr('Não deu para mover a conversa para a Lixeira', `Couldn't move the chat to ${TRASH_EN}`),
-            description: error
-          })
-        drawers.forget(conversationId)
-        const panel = chatPanelOf(nodesRef.current, conversationId)
-        if (panel) change((ns) => removeNode(ns, panel.id))
-        refreshNow(path)
-      })
+            description: error,
+          });
+        drawers.forget(conversationId);
+        const panel = chatPanelOf(nodesRef.current, conversationId);
+        if (panel) change((ns) => removeNode(ns, panel.id));
+        refreshNow(path);
+      });
     },
-    [nodesRef, change, drawers, confirm]
-  )
+    [nodesRef, change, drawers, confirm],
+  );
 
   const rest = useMemo(
     () => ({
       openSubagent: (nodeId: string | null, path: string, subagent: SubagentRef) => {
-        const owner = nodeId ?? ownerOf(nodesRef.current, path, subagent.sessionId)?.id
-        if (owner) drawers.show({ nodeId: owner, conversationId: subagentConversationId(subagent.toolUseId), subagent })
+        const owner = nodeId ?? ownerOf(nodesRef.current, path, subagent.sessionId)?.id;
+        if (owner) drawers.show({ nodeId: owner, conversationId: subagentConversationId(subagent.toolUseId), subagent });
       },
       openTasks: (nodeId: string | null, path: string, tasks: TasksRef) => {
-        const owner = nodeId ?? ownerOf(nodesRef.current, path, tasks.sessionId)?.id
-        if (owner) drawers.show({ nodeId: owner, conversationId: tasksConversationId(tasks.sessionId), tasks })
+        const owner = nodeId ?? ownerOf(nodesRef.current, path, tasks.sessionId)?.id;
+        if (owner) drawers.show({ nodeId: owner, conversationId: tasksConversationId(tasks.sessionId), tasks });
       },
       newConversation: (nodeId: string) =>
         drawers.show({ nodeId, conversationId: `new-${crypto.randomUUID()}`, draft: true }),
       newLooseConversation: (position?: XYPosition) => {
-        const conversationId = `new-${crypto.randomUUID()}`
-        watchLoose(conversationId, position)
-        drawers.show({ nodeId: null, conversationId, draft: true, at: position })
+        const conversationId = `new-${crypto.randomUUID()}`;
+        watchLoose(conversationId, position);
+        drawers.show({ nodeId: null, conversationId, draft: true, at: position });
       },
       // Conversa no canvas (ChatPanelNode): fechar tira o bloco (a conversa continua salva).
       closeChatPanel: (nodeId: string) => change((ns) => removeNode(ns, nodeId)),
       // O painel abre pela pasta (ou pelo card da conversa solta); sem ela no canvas, não tem por onde.
       chatPanelToDrawer: (nodeId: string) => {
-        const node = nodesRef.current.find((n) => n.id === nodeId)
-        if (node?.type !== 'chatPanel') return
-        const owner = ownerOf(nodesRef.current, node.data.path, node.data.sessionId)
-        if (!owner) return
-        change((ns) => removeNode(ns, nodeId))
-        drawers.show({ nodeId: owner.id, conversationId: node.data.sessionId })
+        const node = nodesRef.current.find((n) => n.id === nodeId);
+        if (node?.type !== 'chatPanel') return;
+        const owner = ownerOf(nodesRef.current, node.data.path, node.data.sessionId);
+        if (!owner) return;
+        change((ns) => removeNode(ns, nodeId));
+        drawers.show({ nodeId: owner.id, conversationId: node.data.sessionId });
       },
       chatPanelPopout: (nodeId: string) => {
-        const node = nodesRef.current.find((n) => n.id === nodeId)
-        if (node?.type !== 'chatPanel') return
-        popoutConversation(nodeId, node.data.sessionId)
-        change((ns) => removeNode(ns, nodeId))
+        const node = nodesRef.current.find((n) => n.id === nodeId);
+        if (node?.type !== 'chatPanel') return;
+        popoutConversation(nodeId, node.data.sessionId);
+        change((ns) => removeNode(ns, nodeId));
       },
       // Link de arquivo clicado numa conversa do canvas: abre o código daquela pasta.
       openFileFrom: (project: ProjectData, path: string, lines?: LineRange, diff?: boolean) => {
-        const code = codeProject(project, path)
-        drawers.openFile({ project: code }, code.path, path, lines, diff)
+        const code = codeProject(project, path);
+        drawers.openFile({ project: code }, code.path, path, lines, diff);
       },
       openPlanFrom: (text: string, path?: string) => drawers.openPlan(null, text, path),
       toggleProjectCode: (project: ProjectData, open: boolean) =>
-        open ? drawers.closeCode() : drawers.openProjectCode(project)
+        open ? drawers.closeCode() : drawers.openProjectCode(project),
     }),
-    [nodesRef, change, drawers, popoutConversation, watchLoose]
-  )
+    [nodesRef, change, drawers, popoutConversation, watchLoose],
+  );
 
   return useMemo(
     () => ({ ...rest, openConversation, pinConversation, popoutConversation, trashConversation }),
-    [rest, openConversation, pinConversation, popoutConversation, trashConversation]
-  )
+    [rest, openConversation, pinConversation, popoutConversation, trashConversation],
+  );
 }

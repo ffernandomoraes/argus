@@ -1,6 +1,6 @@
-import { Button } from '../ui/Button'
-import { Modal } from '../ui/Modal'
-import { tr } from '../i18n'
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { tr } from '../i18n';
 
 // Sem onConfirm, é um aviso de bloqueio: só o botão de fechar.
 export type ConfirmRequest = {
@@ -12,7 +12,7 @@ export type ConfirmRequest = {
   tone?: 'action'
   // Outro caminho além de confirmar e cancelar, num botão comum entre os dois.
   secondary?: { label: string; onClick: () => void }
-}
+};
 
 // Confirmação pequena no meio da tela. Esc e clique fora cancelam; o foco começa no Cancelar,
 // para um Enter apressado não apagar nada.
@@ -30,8 +30,8 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
         {request.secondary && (
           <Button
             onClick={() => {
-              request.secondary?.onClick()
-              onClose()
+              request.secondary?.onClick();
+              onClose();
             }}
           >
             {request.secondary.label}
@@ -42,8 +42,8 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
             variant="primary"
             danger={request.tone !== 'action'}
             onClick={() => {
-              request.onConfirm?.()
-              onClose()
+              request.onConfirm?.();
+              onClose();
             }}
           >
             {request.confirmLabel}
@@ -51,5 +51,5 @@ export function ConfirmDialog({ request, onClose }: { request: ConfirmRequest; o
         )}
       </div>
     </Modal>
-  )
+  );
 }

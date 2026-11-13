@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { IconButton } from '../../ui/IconButton'
+import type { ReactNode } from 'react';
+import { IconButton } from '../../ui/IconButton';
 
 // Botão de ícone dos cabeçalhos (conversa, bloco no canvas): o IconButton da base, com
 // `active` como estado ligado.
@@ -7,7 +7,7 @@ export function HeaderButton({
   label,
   onClick,
   active,
-  children
+  children,
 }: {
   label: string
   onClick: () => void
@@ -18,5 +18,5 @@ export function HeaderButton({
     <IconButton label={label} onClick={onClick} pressed={active}>
       {children}
     </IconButton>
-  )
+  );
 }

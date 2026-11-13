@@ -1,25 +1,25 @@
-import { contextBridge, webUtils } from 'electron'
-import type { Api } from '@argus/shared/api'
-import { REMOTE_ARG, type RemoteHostInfo } from '@argus/shared/remote'
-import { invoke, listen, listenKey, send, sendSync } from './ipc'
-import { onEdit, onReloadKey } from './keys'
-import { winMic } from './winMic'
+import { contextBridge, webUtils } from 'electron';
+import type { Api } from '@argus/shared/api';
+import { REMOTE_ARG, type RemoteHostInfo } from '@argus/shared/remote';
+import { invoke, listen, listenKey, send, sendSync } from './ipc';
+import { onEdit, onReloadKey } from './keys';
+import { winMic } from './winMic';
 
 // Monta o `window.api` (formato em packages/shared/src/api.ts; canais em packages/shared/src/ipc.ts). Sem módulos do
 // Node além do electron: o preload fica pronto para rodar com sandbox.
 
-const IS_WIN = process.platform === 'win32'
+const IS_WIN = process.platform === 'win32';
 // Onde a janela grava o microfone do ditado (preload/winMic): fora do Mac.
-const WINDOW_MIC = process.platform !== 'darwin'
+const WINDOW_MIC = process.platform !== 'darwin';
 
 // Pasta pessoal, como o os.homedir() do processo principal: USERPROFILE no Windows, HOME no Mac.
-const homeDir = (IS_WIN ? (process.env.USERPROFILE ?? process.env.HOME) : (process.env.HOME ?? process.env.USERPROFILE)) ?? ''
+const homeDir = (IS_WIN ? (process.env.USERPROFILE ?? process.env.HOME) : (process.env.HOME ?? process.env.USERPROFILE)) ?? '';
 
 // Windows: o build é o terceiro número da versão ("10.0.22631"). Disponível também com sandbox.
 function windowsBuild(): number | null {
-  if (!IS_WIN) return null
-  const build = Number(process.getSystemVersion().split('.')[2])
-  return Number.isInteger(build) && build > 0 ? build : null
+  if (!IS_WIN) return null;
+  const build = Number(process.getSystemVersion().split('.')[2]);
+  return Number.isInteger(build) && build > 0 ? build : null;
 }
 
 // Janela de acesso remoto (src/main/remote): abre com o computador que mostra na linha de comando.
@@ -27,18 +27,18 @@ function windowsBuild(): number | null {
 // sistema (`platform`) segue o daqui, porque a moldura e as teclas são daqui. O de lá fica em
 // remote.host.platform (ver HOST_IS_WIN em renderer/src/platform.ts).
 function remoteHost(): RemoteHostInfo | null {
-  const arg = process.argv.find((a) => a.startsWith(REMOTE_ARG))
-  if (!arg) return null
+  const arg = process.argv.find((a) => a.startsWith(REMOTE_ARG));
+  if (!arg) return null;
   try {
-    const bytes = Uint8Array.from(atob(arg.slice(REMOTE_ARG.length)), (c) => c.charCodeAt(0))
-    return JSON.parse(new TextDecoder().decode(bytes)) as RemoteHostInfo
+    const bytes = Uint8Array.from(atob(arg.slice(REMOTE_ARG.length)), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes)) as RemoteHostInfo;
   } catch {
-    return null
+    return null;
   }
 }
 // O de agora vem do processo principal (depois de religar, a versão de lá pode ser outra); o da linha
 // de comando fica de reserva.
-const remote = remoteHost() && (sendSync('remote:info') ?? remoteHost())
+const remote = remoteHost() && (sendSync('remote:info') ?? remoteHost());
 
 const api: Api = {
   platform: process.platform,
@@ -48,7 +48,7 @@ const api: Api = {
     host: remote,
     onState: (cb) => listen('remote:state', cb),
     onBlocked: (cb) => listen('remote:blocked', cb),
-    openLocalhost: (port) => invoke('remote:openLocalhost', port)
+    openLocalhost: (port) => invoke('remote:openLocalhost', port),
   },
   remoteAccess: {
     state: () => invoke('remoteAccess:state'),
@@ -61,25 +61,25 @@ const api: Api = {
     pair: (code) => invoke('remoteAccess:pair', code),
     open: (hostId) => invoke('remoteAccess:open', hostId),
     forgetHost: (hostId) => send('remoteAccess:forgetHost', hostId),
-    onState: (cb) => listen('remoteAccess:state', cb)
+    onState: (cb) => listen('remoteAccess:state', cb),
   },
   setTheme: (theme) => send('theme:set', theme),
   setInterfaceZoom: (factor) => send('interface:zoom', factor),
   clipboardCommand: (command) => send('clipboard:command', command),
   accent: {
     get: () => sendSync('accent:get'),
-    onChange: (cb) => listen('accent:changed', cb)
+    onChange: (cb) => listen('accent:changed', cb),
   },
   language: {
     get: () => sendSync('language:get') ?? 'pt',
-    onChange: (cb) => listen('language:changed', cb)
+    onChange: (cb) => listen('language:changed', cb),
   },
   pickFolder: (distro) => invoke('dialog:pickFolder', distro),
   pickFolders: (distro) => invoke('dialog:pickFolders', distro),
   syncWorkspace: (folders, dir) => invoke('workspace:sync', folders, dir),
   wsl: {
     distros: () => invoke('wsl:distros'),
-    diagnostics: () => invoke('wsl:diagnostics')
+    diagnostics: () => invoke('wsl:diagnostics'),
   },
   onReloadKey,
   onEdit,
@@ -88,30 +88,30 @@ const api: Api = {
   speech: {
     start: () => (WINDOW_MIC ? void winMic.start() : send('speech:start')),
     stop: () => {
-      if (WINDOW_MIC) winMic.stop()
-      send('speech:stop')
+      if (WINDOW_MIC) winMic.stop();
+      send('speech:stop');
     },
     openSettings: () => send('speech:openSettings'),
     onEvent: (cb) => {
-      const off = listen('speech:event', cb)
-      const offMic = WINDOW_MIC ? winMic.onEvent(cb) : () => {}
+      const off = listen('speech:event', cb);
+      const offMic = WINDOW_MIC ? winMic.onEvent(cb) : () => {};
       return () => {
-        off()
-        offMic()
-      }
-    }
+        off();
+        offMic();
+      };
+    },
   },
   transcription: {
     model: () => invoke('transcription:model'),
     download: () => send('transcription:download'),
     cancel: () => send('transcription:cancel'),
     onModel: (cb) => listen('transcription:model', cb),
-    transcribe: (samples) => invoke('transcription:transcribe', samples)
+    transcribe: (samples) => invoke('transcription:transcribe', samples),
   },
   popout: {
     open: (id, payload) => send('popout:open', id, payload),
     payload: (id) => invoke('popout:payload', id),
-    onClosed: (cb) => listen('popout:closed', cb)
+    onClosed: (cb) => listen('popout:closed', cb),
   },
   mascot: {
     setEnabled: (on) => send('mascot:enabled', on),
@@ -127,17 +127,17 @@ const api: Api = {
     alerts: () => invoke('mascot:alerts'),
     onAlerts: (cb) => listen('mascot:alerts', cb),
     onTyping: (cb) => listen('mascot:typing', cb),
-    onReleased: (cb) => listen('mascot:released', cb)
+    onReleased: (cb) => listen('mascot:released', cb),
   },
   claude: {
     info: (account) => invoke('claude:info', account),
-    onInfo: (cb) => listen('claude:info', cb)
+    onInfo: (cb) => listen('claude:info', cb),
   },
   claudeVersion: {
     get: () => invoke('claudeVersion:get'),
     check: () => invoke('claudeVersion:check'),
     update: () => invoke('claudeVersion:update'),
-    onState: (cb) => listen('claudeVersion:state', cb)
+    onState: (cb) => listen('claudeVersion:state', cb),
   },
   auth: {
     state: () => invoke('auth:state'),
@@ -153,7 +153,7 @@ const api: Api = {
     setDefault: (accountId) => send('auth:setDefault', accountId),
     dismissMergeNotice: () => send('auth:dismissMergeNotice'),
     open: (url) => send('auth:open', url),
-    onState: (cb) => listen('auth:state', cb)
+    onState: (cb) => listen('auth:state', cb),
   },
   providers: {
     state: () => invoke('providers:state'),
@@ -167,7 +167,7 @@ const api: Api = {
     remove: (provider, accountId) => send('providers:remove', provider, accountId),
     rename: (provider, accountId, name) => send('providers:rename', provider, accountId, name),
     setDefault: (provider, accountId) => send('providers:setDefault', provider, accountId),
-    onState: (cb) => listen('providers:state', cb)
+    onState: (cb) => listen('providers:state', cb),
   },
   // O arquivo arrastado é deste computador: na janela remota o caminho não serve lá (vazio).
   filePath: (file) => (remote ? '' : webUtils.getPathForFile(file)),
@@ -179,7 +179,7 @@ const api: Api = {
     submitCallback: (account, name, url) => invoke('mcp:account:submitCallback', account, name, url),
     clearAuth: (account, name) => invoke('mcp:account:clearAuth', account, name),
     remove: (account, name, scope) => invoke('mcp:account:remove', account, name, scope),
-    release: (account) => send('mcp:account:release', account)
+    release: (account) => send('mcp:account:release', account),
   },
   chat: {
     state: (key) => invoke('chat:state', key),
@@ -207,29 +207,29 @@ const api: Api = {
     setUnread: (chats) => send('chat:unread', chats),
     interrupted: () => invoke('chat:interrupted'),
     onInterrupted: (cb) => listen('chat:interrupted', cb),
-    dismissInterrupted: (sessionId) => send('chat:dismissInterrupted', sessionId)
+    dismissInterrupted: (sessionId) => send('chat:dismissInterrupted', sessionId),
   },
   health: {
     get: () => invoke('health:get'),
     read: () => invoke('health:read'),
     dismiss: () => send('health:dismiss'),
-    onState: (cb) => listen('health:state', cb)
+    onState: (cb) => listen('health:state', cb),
   },
   storage: {
     usage: () => invoke('storage:usage'),
     settings: () => invoke('storage:settings'),
     setSettings: (patch) => invoke('storage:setSettings', patch),
-    clean: () => invoke('storage:clean')
+    clean: () => invoke('storage:clean'),
   },
   agents: {
     list: (provider, projectPath) => invoke('agents:list', provider, projectPath),
     save: (provider, req) => invoke('agents:save', provider, req),
-    remove: (provider, name) => invoke('agents:remove', provider, name)
+    remove: (provider, name) => invoke('agents:remove', provider, name),
   },
   memory: {
     list: (projects) => invoke('memory:list', projects),
     read: (path, projects) => invoke('memory:read', path, projects),
-    write: (path, text, projects, base) => invoke('memory:write', path, text, projects, base)
+    write: (path, text, projects, base) => invoke('memory:write', path, text, projects, base),
   },
   canvas: {
     load: (board) => sendSync('canvas:load', board),
@@ -241,7 +241,7 @@ const api: Api = {
     redo: (board) => send('canvas:redo', board),
     viewport: (board) => sendSync('canvas:viewport', board),
     setViewport: (board, viewport) => send('canvas:setViewport', board, viewport),
-    newWindow: () => send('canvas:newWindow')
+    newWindow: () => send('canvas:newWindow'),
   },
   boards: {
     state: () => sendSync('boards:state'),
@@ -252,7 +252,7 @@ const api: Api = {
     close: (board) => send('boards:close', board),
     reopen: (board) => send('boards:reopen', board),
     remove: (board) => send('boards:remove', board),
-    put: (board, nodes) => send('boards:put', board, nodes)
+    put: (board, nodes) => send('boards:put', board, nodes),
   },
   canvasAgent: {
     state: () => invoke('canvasAgent:state'),
@@ -261,10 +261,10 @@ const api: Api = {
     onState: (cb) => listen('canvasAgent:state', cb),
     onCall: (cb) => listen('canvasAgent:call', cb),
     respond: (result) => send('canvasAgent:result', result),
-    onCancel: (cb) => listen('canvasAgent:cancel', cb)
+    onCancel: (cb) => listen('canvasAgent:cancel', cb),
   },
   favorites: {
-    set: (ids) => send('favorites:set', ids)
+    set: (ids) => send('favorites:set', ids),
   },
   sessions: {
     list: (path) => invoke('sessions:list', path),
@@ -284,22 +284,22 @@ const api: Api = {
     taskOutput: (ref, offset) => invoke('sessions:taskOutput', ref, offset),
     images: (path, id, messageId) => invoke('sessions:images', path, id, messageId),
     watch: (paths) => send('sessions:watch', paths),
-    onChanged: (cb) => listen('sessions:changed', cb)
+    onChanged: (cb) => listen('sessions:changed', cb),
   },
   worktrees: {
     reserve: (folder) => invoke('worktrees:reserve', folder),
     adopt: (path, from) => invoke('worktrees:adopt', path, from),
     status: (path) => invoke('worktrees:status', path),
-    remove: (path) => invoke('worktrees:remove', path)
+    remove: (path) => invoke('worktrees:remove', path),
   },
   devServers: {
     list: (paths) => invoke('devServers:list', paths),
-    kill: (pgid, paths) => invoke('devServers:kill', pgid, paths)
+    kill: (pgid, paths) => invoke('devServers:kill', pgid, paths),
   },
   projectServers: {
     status: (paths) => invoke('projectServers:status', paths),
     start: (path) => invoke('projectServers:start', path),
-    stop: (path) => invoke('projectServers:stop', path)
+    stop: (path) => invoke('projectServers:stop', path),
   },
   files: {
     list: (root, rel) => invoke('files:list', root, rel),
@@ -322,7 +322,7 @@ const api: Api = {
     watch: (root, rel) => send('files:watch', root, rel),
     unwatch: () => send('files:unwatch'),
     onChanged: (cb) => listen('files:changed', cb),
-    setUnsaved: (has) => send('files:unsaved', has)
+    setUnsaved: (has) => send('files:unsaved', has),
   },
   terminal: {
     open: (req) => invoke('terminal:open', req),
@@ -338,14 +338,14 @@ const api: Api = {
     link: (key, conversations) => send('terminal:link', key, conversations),
     unlink: (key) => send('terminal:unlink', key),
     onTyped: (key, cb) => listenKey('terminal:typed', key, cb),
-    onOpenFor: (cb) => listen('terminal:openFor', cb)
+    onOpenFor: (cb) => listen('terminal:openFor', cb),
   },
   cli: {
     ready: () => send('cli:ready'),
     onOpen: (cb) => listen('cli:open', cb),
     status: () => invoke('cli:status'),
     install: () => invoke('cli:install'),
-    uninstall: () => invoke('cli:uninstall')
+    uninstall: () => invoke('cli:uninstall'),
   },
   settings: {
     get: () => invoke('settings:get'),
@@ -354,25 +354,25 @@ const api: Api = {
     setNotificationSound: (on) => invoke('settings:notificationSound', on),
     setUsageStats: (on) => invoke('settings:usageStats', on),
     setWslSharedLogin: (on) => invoke('settings:wslSharedLogin', on),
-    setLanguage: (pref) => invoke('settings:language', pref)
+    setLanguage: (pref) => invoke('settings:language', pref),
   },
   updates: {
     get: () => invoke('updates:get'),
     check: () => invoke('updates:check'),
     notes: () => invoke('updates:notes'),
     install: () => send('updates:install'),
-    onState: (cb) => listen('updates:state', cb)
+    onState: (cb) => listen('updates:state', cb),
   },
   usage: {
     get: () => invoke('usage:get'),
     refresh: () => send('usage:refresh'),
-    onUpdate: (cb) => listen('usage:update', cb)
+    onUpdate: (cb) => listen('usage:update', cb),
   },
   media: {
     get: () => invoke('media:get'),
     command: (command) => invoke('media:command', command),
-    setVolume: (volume) => invoke('media:volume', volume)
-  }
-}
+    setVolume: (volume) => invoke('media:volume', volume),
+  },
+};
 
-contextBridge.exposeInMainWorld('api', api)
+contextBridge.exposeInMainWorld('api', api);

@@ -1,16 +1,16 @@
-import { X } from 'lucide-react'
-import type { InterruptReason } from '@argus/shared/chat'
-import { tr } from '../../i18n'
+import { X } from 'lucide-react';
+import type { InterruptReason } from '@argus/shared/chat';
+import { tr } from '../../i18n';
 
 // O que vai ao Claude no "Continuar de onde parou".
-export const CONTINUE_TEXT = tr('Continue de onde parou.', 'Continue where you left off.')
+export const CONTINUE_TEXT = tr('Continue de onde parou.', 'Continue where you left off.');
 
 // Por que parou: o Argus fechou no meio (atualização, ⌘Q, queda), ou o sistema encerrou o Claude
 // por falta de memória.
 const reasonText = (reason?: InterruptReason) =>
   reason === 'memory'
     ? tr('Parou por falta de memória.', 'Stopped for lack of memory.')
-    : tr('Interrompida quando o Argus fechou.', 'Interrupted when Argus quit.')
+    : tr('Interrompida quando o Argus fechou.', 'Interrupted when Argus quit.');
 
 // Conversa que parou no meio sem você pedir: no pé da conversa, em cima da caixa de escrever, o
 // aviso e o botão que manda o Claude continuar, como mensagem sua. O X só tira a marca; mandar
@@ -37,7 +37,7 @@ export function InterruptedNotice({ reason, onContinue, onDismiss }: { reason?: 
         <X size={13} />
       </button>
     </div>
-  )
+  );
 }
 
 // Conversa que o Argus fechou, parada e fora da tela, para liberar memória: explica por que a
@@ -49,9 +49,9 @@ export function FreedNotice() {
       <span className="min-w-0 text-xs text-muted">
         {tr(
           'Fechada para liberar memória. A primeira resposta demora uns segundos a mais.',
-          'Closed to free up memory. The first reply takes a few seconds longer.'
+          'Closed to free up memory. The first reply takes a few seconds longer.',
         )}
       </span>
     </div>
-  )
+  );
 }

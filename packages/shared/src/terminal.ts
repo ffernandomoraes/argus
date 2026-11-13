@@ -22,6 +22,6 @@ export type TerminalOpenRequest = {
   // Aberto numa janela que não está em uso (o mesmo canvas em outro monitor): se o processo já
   // existe, fica com o tamanho de quem está usando.
   keepSize?: boolean
-}
+};
 
-export type TerminalOpenResult = { ok: true; buffer: string } | { ok: false; error: string }
+export type TerminalOpenResult = { ok: true; buffer: string } | { ok: false; error: string };

@@ -1,56 +1,56 @@
-import { useEffect, useEffectEvent, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
-import { IconButton } from '../ui/IconButton'
-import { useEscape } from '../useEscape'
-import { TITLE_BAR_HEIGHT } from './panelGeometry'
-import { tr } from '../i18n'
+import { useEffect, useEffectEvent, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
+import { IconButton } from '../ui/IconButton';
+import { useEscape } from '../useEscape';
+import { TITLE_BAR_HEIGHT } from './panelGeometry';
+import { tr } from '../i18n';
 
 // Imagens enviadas numa mensagem, grandes, sobre o app. ESC ou clique fora fecha; ← → trocam.
 // Vai direto para o body: o chat tem zoom (⌘+ / ⌘-) e o modal não deve encolher junto.
 export function ImageViewer({
   load,
   start = 0,
-  onClose
+  onClose,
 }: {
   load: () => Promise<string[]>
   // Imagem que abre primeiro (a miniatura clicada).
   start?: number
   onClose: () => void
 }) {
-  const [urls, setUrls] = useState<string[] | null>(null)
-  const [index, setIndex] = useState(start)
-  useEscape(onClose)
+  const [urls, setUrls] = useState<string[] | null>(null);
+  const [index, setIndex] = useState(start);
+  useEscape(onClose);
 
   useEffect(() => {
-    let alive = true
+    let alive = true;
     load()
       .catch(() => [])
       .then((list) => {
-        if (alive) setUrls(list)
+        if (alive) setUrls(list);
       })
-      .catch(() => {})
+      .catch(() => {});
     return () => {
-      alive = false
-    }
-  }, [load])
+      alive = false;
+    };
+  }, [load]);
 
-  const count = urls?.length ?? 0
-  const go = (step: number) => setIndex((i) => (i + step + count) % count)
+  const count = urls?.length ?? 0;
+  const go = (step: number) => setIndex((i) => (i + step + count) % count);
 
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') go(-1)
-    else if (e.key === 'ArrowRight') go(1)
-    else return
-    e.preventDefault()
-    e.stopPropagation()
-  })
+    if (e.key === 'ArrowLeft') go(-1);
+    else if (e.key === 'ArrowRight') go(1);
+    else return;
+    e.preventDefault();
+    e.stopPropagation();
+  });
   useEffect(() => {
-    if (count < 2) return
-    const listener = (e: KeyboardEvent) => onKey(e)
-    window.addEventListener('keydown', listener, true)
-    return () => window.removeEventListener('keydown', listener, true)
-  }, [count])
+    if (count < 2) return;
+    const listener = (e: KeyboardEvent) => onKey(e);
+    window.addEventListener('keydown', listener, true);
+    return () => window.removeEventListener('keydown', listener, true);
+  }, [count]);
 
   return createPortal(
     <div
@@ -104,6 +104,6 @@ export function ImageViewer({
         </>
       )}
     </div>,
-    document.body
-  )
+    document.body,
+  );
 }

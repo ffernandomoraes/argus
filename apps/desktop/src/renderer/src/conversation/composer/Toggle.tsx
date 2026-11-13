@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 // Opção liga/desliga dentro de um menu: só o nome e o interruptor à direita (sem explicação: quem
 // liga já sabe o que é).
@@ -6,7 +6,7 @@ export function Toggle({
   label,
   checked,
   onChange,
-  icon
+  icon,
 }: {
   label: string
   checked: boolean
@@ -32,5 +32,5 @@ export function Toggle({
         <span className={`size-3 rounded-full bg-white shadow-sm shadow-black/30 transition-transform ${checked ? 'translate-x-3' : ''}`} />
       </span>
     </button>
-  )
+  );
 }

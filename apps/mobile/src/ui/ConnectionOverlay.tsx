@@ -1,38 +1,38 @@
-import { useEffect, useState } from 'react'
-import { Loader2, WifiOff } from 'lucide-react'
-import { tr } from '../i18n'
-import { forgetPairedHost, type HostConnection } from '../net/connection'
-import { useHost, useStatus } from '../lib/host'
-import { disablePush } from '../lib/push'
+import { useEffect, useState } from 'react';
+import { Loader2, WifiOff } from 'lucide-react';
+import { tr } from '../i18n';
+import { forgetPairedHost, type HostConnection } from '../net/connection';
+import { useHost, useStatus } from '../lib/host';
+import { disablePush } from '../lib/push';
 
 // Esquece o computador neste aparelho e volta para a tela de pareamento.
 function disconnect(conn: HostConnection, ask: boolean): void {
-  if (ask && !confirm(tr(`Desconectar de ${conn.host.hostName}? Para entrar de novo, será preciso parear com um código novo.`, `Disconnect from ${conn.host.hostName}? To connect again you will need a new pairing code.`))) return
-  void disablePush(conn).catch(() => {})
-  conn.stop()
-  forgetPairedHost()
-  location.hash = ''
-  location.reload()
+  if (ask && !confirm(tr(`Desconectar de ${conn.host.hostName}? Para entrar de novo, será preciso parear com um código novo.`, `Disconnect from ${conn.host.hostName}? To connect again you will need a new pairing code.`))) return;
+  void disablePush(conn).catch(() => {});
+  conn.stop();
+  forgetPairedHost();
+  location.hash = '';
+  location.reload();
 }
 
 // Sem ligação com o computador de casa, nada na tela funciona: uma camada por cima de tudo bloqueia
 // o app e diz o que está acontecendo. Religação rápida (a volta do fundo) não pisca: a camada só
 // aparece depois de SHOW_AFTER_MS sem ligação.
-const SHOW_AFTER_MS = 700
+const SHOW_AFTER_MS = 700;
 
 export function ConnectionOverlay() {
-  const { conn } = useHost()
-  const status = useStatus()
-  const [shown, setShown] = useState(false)
+  const { conn } = useHost();
+  const status = useStatus();
+  const [shown, setShown] = useState(false);
   useEffect(() => {
-    if (status === 'online') return setShown(false)
-    const timer = setTimeout(() => setShown(true), status === 'connecting' ? SHOW_AFTER_MS : 0)
-    return () => clearTimeout(timer)
-  }, [status])
-  if (status === 'online' || !shown) return null
+    if (status === 'online') return setShown(false);
+    const timer = setTimeout(() => setShown(true), status === 'connecting' ? SHOW_AFTER_MS : 0);
+    return () => clearTimeout(timer);
+  }, [status]);
+  if (status === 'online' || !shown) return null;
 
-  const name = conn.host.hostName
-  const busy = status === 'connecting' || status === 'offline'
+  const name = conn.host.hostName;
+  const busy = status === 'connecting' || status === 'offline';
   const title =
     status === 'connecting'
       ? tr(`Conectando a ${name}…`, `Connecting to ${name}…`)
@@ -42,12 +42,12 @@ export function ConnectionOverlay() {
           ? tr('Versões diferentes', 'Different versions')
           : status === 'kicked'
             ? tr('Desconectado', 'Disconnected')
-            : tr('Pareamento desfeito', 'Pairing removed')
+            : tr('Pareamento desfeito', 'Pairing removed');
   const detail =
     status === 'offline'
       ? tr(
           'Desligado, dormindo, sem internet ou com o acesso remoto desligado. Tentando de novo…',
-          'Off, asleep, offline or with remote access off. Retrying…'
+          'Off, asleep, offline or with remote access off. Retrying…',
         )
       : status === 'rejected'
         ? (conn.detail ?? tr('Esta versão do app não conversa com a do computador.', "This app version can't talk to the computer's."))
@@ -55,7 +55,7 @@ export function ConnectionOverlay() {
           ? tr(`${name} desconectou este aparelho.`, `${name} disconnected this device.`)
           : status === 'unpaired'
             ? tr(`${name} não reconhece mais este aparelho. Pareie de novo.`, `${name} no longer recognizes this device. Pair again.`)
-            : null
+            : null;
 
   return (
     <div role="alertdialog" aria-busy={busy} aria-label={title} className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 px-8 backdrop-blur-md">
@@ -85,5 +85,5 @@ export function ConnectionOverlay() {
         )}
       </div>
     </div>
-  )
+  );
 }

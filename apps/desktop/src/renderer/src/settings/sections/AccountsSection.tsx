@@ -1,73 +1,73 @@
-import { useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
-import { lostLogin, MAIN_ACCOUNT, reloginMethod } from '@argus/shared/auth'
-import { startRelogin } from '../../auth/LoginModal'
-import { LoginPanel } from '../../auth/LoginPanel'
-import { useAuth } from '../../auth/useAuth'
-import { ConfirmDialog, type ConfirmRequest } from '../../canvas/ConfirmDialog'
-import { Presence } from '../../motion'
-import { THIS_COMPUTER } from '../../platform'
-import { AccountCard } from '../accounts/AccountCard'
-import { ProviderSection } from '../accounts/ProviderSection'
-import { useProviders } from '../../providers/useProviders'
-import { PROVIDERS } from '@argus/shared/providers'
-import { tr } from '../../i18n'
+import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { lostLogin, MAIN_ACCOUNT, reloginMethod } from '@argus/shared/auth';
+import { startRelogin } from '../../auth/LoginModal';
+import { LoginPanel } from '../../auth/LoginPanel';
+import { useAuth } from '../../auth/useAuth';
+import { ConfirmDialog, type ConfirmRequest } from '../../canvas/ConfirmDialog';
+import { Presence } from '../../motion';
+import { THIS_COMPUTER } from '../../platform';
+import { AccountCard } from '../accounts/AccountCard';
+import { ProviderSection } from '../accounts/ProviderSection';
+import { useProviders } from '../../providers/useProviders';
+import { PROVIDERS } from '@argus/shared/providers';
+import { tr } from '../../i18n';
 
 // Contas do Claude Code. A principal é a do terminal e do VS Code: entrar e sair nela valem para o
 // Mac todo. As outras ficam só no Argus, cada uma com a pasta e o login dela, e cada grupo do
 // canvas escolhe a sua.
 export function AccountsSection() {
-  const auth = useAuth()
-  const providers = useProviders()
+  const auth = useAuth();
+  const providers = useProviders();
   // Login aberto aqui: numa conta da lista ou numa nova (adding).
-  const [target, setTarget] = useState<{ accountId?: string; distro?: string } | null>(null)
-  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
-  const login = auth?.login
+  const [target, setTarget] = useState<{ accountId?: string; distro?: string } | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  const login = auth?.login;
 
   // Abrir a seção confere de novo: o login pode ter mudado fora do app.
   useEffect(() => {
-    window.api.auth.refresh()
-  }, [])
+    window.api.auth.refresh();
+  }, []);
 
   useEffect(() => {
-    window.api.providers.refresh()
-  }, [])
+    window.api.providers.refresh();
+  }, []);
 
   // Login terminou ou foi cancelado: volta para a lista.
-  const status = login?.status
-  const [prevStatus, setPrevStatus] = useState(status)
+  const status = login?.status;
+  const [prevStatus, setPrevStatus] = useState(status);
   if (status !== prevStatus) {
-    setPrevStatus(status)
-    if ((prevStatus === 'starting' || prevStatus === 'waiting') && status === 'idle') setTarget(null)
+    setPrevStatus(status);
+    if ((prevStatus === 'starting' || prevStatus === 'waiting') && status === 'idle') setTarget(null);
   }
 
-  if (!auth || !login) return <p className="text-[15px] text-faint">{tr('Conferindo as contas…', 'Checking accounts…')}</p>
+  if (!auth || !login) return <p className="text-[15px] text-faint">{tr('Conferindo as contas…', 'Checking accounts…')}</p>;
 
   // Login em andamento, mesmo que tenha começado na tela de boas-vindas.
-  const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId, distro: login.distro } : target
+  const active = login.status !== 'idle' ? { accountId: login.adding ? undefined : login.accountId, distro: login.distro } : target;
   if (active) {
-    const account = active.accountId ? auth.accounts.find((a) => a.id === active.accountId) : undefined
+    const account = active.accountId ? auth.accounts.find((a) => a.id === active.accountId) : undefined;
     return (
       <div className="mx-auto max-w-sm">
         <p className="mb-4 text-center text-[15px] leading-relaxed text-faint">
           {!account
             ? tr(
                 'Entre com a outra conta. Ela fica só no Argus: o terminal e o VS Code continuam com a principal.',
-                'Sign in with the other account. It stays in Argus only: the terminal and VS Code keep the main one.'
+                'Sign in with the other account. It stays in Argus only: the terminal and VS Code keep the main one.',
               )
             : active.distro
               ? tr(
                   `Entre com a conta que ${account.name} vai usar nas pastas do WSL (${active.distro}). O login de lá é separado do login do Windows.`,
-                  `Sign in with the account ${account.name} will use in WSL (${active.distro}) folders. Its sign-in is separate from the Windows one.`
+                  `Sign in with the account ${account.name} will use in WSL (${active.distro}) folders. Its sign-in is separate from the Windows one.`,
                 )
               : account.id === MAIN_ACCOUNT
               ? tr(
                   `Entre com a conta que vai ficar no lugar da principal, ou com a mesma para renovar o acesso. Vale também para o terminal e o VS Code ${THIS_COMPUTER}.`,
-                  `Sign in with the account that will replace the main one, or with the same one to renew access. This also applies to the terminal and VS Code ${THIS_COMPUTER}.`
+                  `Sign in with the account that will replace the main one, or with the same one to renew access. This also applies to the terminal and VS Code ${THIS_COMPUTER}.`,
                 )
               : tr(
                   `Entre com a conta que vai ficar no lugar de ${account.name}, ou com a mesma para renovar o acesso.`,
-                  `Sign in with the account that will replace ${account.name}, or with the same one to renew access.`
+                  `Sign in with the account that will replace ${account.name}, or with the same one to renew access.`,
                 )}
         </p>
         {/* Numa conta da lista, o login já começou pelo jeito de sempre (ver relogin); conta nova escolhe. */}
@@ -78,40 +78,40 @@ export function AccountsSection() {
           onCancel={() => setTarget(null)}
         />
       </div>
-    )
+    );
   }
 
   // Com uma conta sem login, quem clica em adicionar costuma querer só entrar de novo nela: a conta
   // nova com o mesmo login ficava repetida na lista (as duas são juntadas depois, ver mergeTwins em
   // main/auth). A pergunta vem antes, com os dois caminhos.
   const addAccount = () => {
-    const lost = auth.accounts.find(lostLogin)
-    if (!lost) return setTarget({})
+    const lost = auth.accounts.find(lostLogin);
+    if (!lost) return setTarget({});
     setConfirm({
       title: tr(`${lost.name} está sem login`, `${lost.name} is signed out`),
       description: tr(
         'Se é essa a conta que você quer usar, entre de novo nela. Adicione outra só se for uma conta diferente do Claude.',
-        'If this is the account you want to use, sign in to it again. Add another only if it is a different Claude account.'
+        'If this is the account you want to use, sign in to it again. Add another only if it is a different Claude account.',
       ),
       confirmLabel: tr(`Entrar em ${lost.name}`, `Sign in to ${lost.name}`),
       tone: 'action',
       onConfirm: () => setTarget(startRelogin(auth, lost)),
-      secondary: { label: tr('Adicionar outra', 'Add another'), onClick: () => setTarget({}) }
-    })
-  }
+      secondary: { label: tr('Adicionar outra', 'Add another'), onClick: () => setTarget({}) },
+    });
+  };
 
-  const multiple = auth.accounts.length > 1
+  const multiple = auth.accounts.length > 1;
   return (
     <>
       <p className="mb-4 text-[15px] leading-relaxed text-faint">
         {multiple
           ? tr(
               'Cada grupo do canvas usa uma conta: botão direito no grupo > Conta do Claude. Fora de grupo vale a padrão. Histórico, CLAUDE.md, agentes, skills, plugins e configurações são os mesmos em todas; o login e os MCPs são de cada conta.',
-              'Each canvas group uses one account: right-click the group > Claude account. Outside groups, the default one is used. History, CLAUDE.md, agents, skills, plugins and settings are shared by all; login and MCPs belong to each account.'
+              'Each canvas group uses one account: right-click the group > Claude account. Outside groups, the default one is used. History, CLAUDE.md, agents, skills, plugins and settings are shared by all; login and MCPs belong to each account.',
             )
           : tr(
               'Para usar outra conta em alguns grupos (uma pessoal e uma da empresa, por exemplo), adicione aqui. A principal continua sendo a do terminal e do VS Code.',
-              'To use another account in some groups (a personal one and a work one, for example), add it here. The main one is still the one used by the terminal and VS Code.'
+              'To use another account in some groups (a personal one and a work one, for example), add it here. The main one is still the one used by the terminal and VS Code.',
             )}
       </p>
       <div className="flex flex-col gap-3">
@@ -135,5 +135,5 @@ export function AccountsSection() {
       {providers && PROVIDERS.map((p) => <ProviderSection key={p} provider={p} state={providers} onConfirm={setConfirm} />)}
       <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>
     </>
-  )
+  );
 }

@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { Brain, ChevronRight, FileText, Globe, ListTree } from 'lucide-react'
-import type { MemoryGroup } from '@argus/shared/memory'
-import { tildify } from '../platform'
-import { fileLabel } from './memoryText'
-import { tr } from '../i18n'
+import { useState } from 'react';
+import { Brain, ChevronRight, FileText, Globe, ListTree } from 'lucide-react';
+import type { MemoryGroup } from '@argus/shared/memory';
+import { tildify } from '../platform';
+import { fileLabel } from './memoryText';
+import { tr } from '../i18n';
 
 // Lista da esquerda: os arquivos de memória por pasta (o global primeiro).
 export function MemoryNav({
   groups,
   only,
   selected,
-  onSelect
+  onSelect,
 }: {
   groups: MemoryGroup[]
   // Uma pasta só: o nome dela vai no título e não há grupos para abrir e fechar.
@@ -19,14 +19,14 @@ export function MemoryNav({
   onSelect: (path: string) => void
 }) {
   // Grupos abertos (id do grupo): começa só com o global, projetos recolhidos.
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set(['global']))
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set(['global']));
   const toggleGroup = (id: string) =>
     setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   return (
     <nav className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-2/40 p-3">
@@ -69,5 +69,5 @@ export function MemoryNav({
         </div>
       ))}
     </nav>
-  )
+  );
 }

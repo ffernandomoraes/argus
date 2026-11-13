@@ -1,22 +1,22 @@
-import { useRef, useState, type ReactNode } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
-import type { AuthState } from '@argus/shared/auth'
-import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS, type ProvidersState } from '@argus/shared/providers'
-import { resolveAccount, useAuth } from '../../auth/useAuth'
-import { AgentIcon } from '@argus/ui/icons/AgentIcon'
-import { ClaudeIcon } from '@argus/ui/icons/ClaudeIcon'
-import { Presence } from '../../motion'
-import { useProviders } from '../../providers/useProviders'
-import { MenuArrow } from '../../ui/MenuArrow'
-import { MENU_HOVER } from '../../ui/menuStyles'
-import { useEscape } from '../../useEscape'
-import { useOutsideClick } from '../../useOutsideClick'
-import { POPOVER } from '../popover'
-import { TAG } from './BranchTag'
-import { tr } from '../../i18n'
+import { useRef, useState, type ReactNode } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
+import type { AuthState } from '@argus/shared/auth';
+import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS, type ProvidersState } from '@argus/shared/providers';
+import { resolveAccount, useAuth } from '../../auth/useAuth';
+import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { ClaudeIcon } from '@argus/ui/icons/ClaudeIcon';
+import { Presence } from '../../motion';
+import { useProviders } from '../../providers/useProviders';
+import { MenuArrow } from '../../ui/MenuArrow';
+import { MENU_HOVER } from '../../ui/menuStyles';
+import { useEscape } from '../../useEscape';
+import { useOutsideClick } from '../../useOutsideClick';
+import { POPOVER } from '../popover';
+import { TAG } from './BranchTag';
+import { tr } from '../../i18n';
 
-type Option = { id: string; name: string; signedOut: boolean }
-type Section = { label: string; icon: ReactNode; options: Option[] }
+type Option = { id: string; name: string; signedOut: boolean };
+type Section = { label: string; icon: ReactNode; options: Option[] };
 
 // Contas que dá para escolher, por agente: as do Claude e, com o experimento dos outros agentes
 // ligado, as de cada agente com conta conectada (como o menu "Agente" do grupo). Conta sem login
@@ -26,55 +26,55 @@ function sectionsFor(auth: AuthState | null, providers: ProvidersState | null, w
     {
       label: 'Claude',
       icon: <ClaudeIcon size={12} />,
-      options: (auth?.accounts ?? []).map((a) => ({ id: a.id, name: a.name, signedOut: a.status?.loggedIn === false }))
-    }
-  ]
-  if (withAgents) sections.push(...providerSections(providers))
+      options: (auth?.accounts ?? []).map((a) => ({ id: a.id, name: a.name, signedOut: a.status?.loggedIn === false })),
+    },
+  ];
+  if (withAgents) sections.push(...providerSections(providers));
   return sections
     .map((s) => ({ ...s, options: s.options.filter((o) => !o.signedOut || o.id === currentId) }))
-    .filter((s) => s.options.length)
+    .filter((s) => s.options.length);
 }
 
 // Uma seção por agente com alguma conta conectada.
 function providerSections(providers: ProvidersState | null): Section[] {
-  const sections: Section[] = []
+  const sections: Section[] = [];
   for (const provider of PROVIDERS) {
-    const accounts = providers?.providers[provider]?.accounts ?? []
-    if (!accounts.length) continue
+    const accounts = providers?.providers[provider]?.accounts ?? [];
+    if (!accounts.length) continue;
     sections.push({
       label: PROVIDER_NAMES[provider],
       icon: <AgentIcon provider={provider} size={12} />,
-      options: accounts.map((a) => ({ id: agentRef(provider, a.id), name: a.name, signedOut: a.status?.signedIn === false }))
-    })
+      options: accounts.map((a) => ({ id: agentRef(provider, a.id), name: a.name, signedOut: a.status?.signedIn === false })),
+    });
   }
-  return sections
+  return sections;
 }
 
-type Current = { id: string; icon: ReactNode; name: string; label: string }
+type Current = { id: string; icon: ReactNode; name: string; label: string };
 
 // A conta que vale agora: a pedida ou, sem ela (ou removida), a padrão do agente. Null enquanto as
 // contas não carregaram ou sem conta achada.
 // Exportado para o cabeçalho saber se a linha de baixo tem o selo.
 export function useCurrentAccount(account?: string): Current | null {
-  const auth = useAuth()
-  const providers = useProviders()
-  const agent = parseAgentRef(account)
+  const auth = useAuth();
+  const providers = useProviders();
+  const agent = parseAgentRef(account);
   if (agent) {
-    const { accounts, defaultId } = providers?.providers[agent.provider] ?? { accounts: [], defaultId: null }
-    const chosen = accounts.find((a) => a.id === agent.account) ?? accounts.find((a) => a.id === defaultId)
+    const { accounts, defaultId } = providers?.providers[agent.provider] ?? { accounts: [], defaultId: null };
+    const chosen = accounts.find((a) => a.id === agent.account) ?? accounts.find((a) => a.id === defaultId);
     return {
       id: chosen ? agentRef(agent.provider, chosen.id) : account!,
       icon: <AgentIcon provider={agent.provider} size={12} />,
       name: `${PROVIDER_NAMES[agent.provider]}${chosen && accounts.length > 1 ? ` - ${chosen.name}` : ''}`,
       // Sem conta achada, o nome do agente.
-      label: chosen?.name ?? PROVIDER_NAMES[agent.provider]
-    }
+      label: chosen?.name ?? PROVIDER_NAMES[agent.provider],
+    };
   }
-  if (!auth) return null
-  const id = resolveAccount(auth, account)
-  const chosen = auth.accounts.find((a) => a.id === id)
-  if (!chosen) return null
-  return { id, icon: <ClaudeIcon size={12} />, name: chosen.name, label: chosen.name }
+  if (!auth) return null;
+  const id = resolveAccount(auth, account);
+  const chosen = auth.accounts.find((a) => a.id === id);
+  if (!chosen) return null;
+  return { id, icon: <ClaudeIcon size={12} />, name: chosen.name, label: chosen.name };
 }
 
 // Conta que roda a conversa (logo do agente e nome), no cabeçalho, antes dos botões. Com `onChange`
@@ -84,31 +84,31 @@ export function useCurrentAccount(account?: string): Current | null {
 export function AccountTag({
   account,
   onChange,
-  claudeOnly
+  claudeOnly,
 }: {
   account?: string
   onChange?: (account: string) => void
   claudeOnly?: boolean
 }) {
-  const auth = useAuth()
-  const providers = useProviders()
-  const current = useCurrentAccount(account)
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useOutsideClick(ref, () => setOpen(false), open)
-  useEscape(() => setOpen(false), open)
+  const auth = useAuth();
+  const providers = useProviders();
+  const current = useCurrentAccount(account);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useOutsideClick(ref, () => setOpen(false), open);
+  useEscape(() => setOpen(false), open);
 
-  if (!current) return null
-  const currentId = current.id
-  const sections = sectionsFor(auth, providers, !claudeOnly, currentId)
-  const total = sections.reduce((n, s) => n + s.options.length, 0)
+  if (!current) return null;
+  const currentId = current.id;
+  const sections = sectionsFor(auth, providers, !claudeOnly, currentId);
+  const total = sections.reduce((n, s) => n + s.options.length, 0);
   const content = (
     <>
       <span className="flex shrink-0">{current.icon}</span>
       <span className="truncate">{current.label}</span>
     </>
-  )
-  const title = tr(`Conta desta conversa: ${current.name}`, `Account for this chat: ${current.name}`)
+  );
+  const title = tr(`Conta desta conversa: ${current.name}`, `Account for this chat: ${current.name}`);
 
   if (!onChange || total < 2)
     return (
@@ -118,7 +118,7 @@ export function AccountTag({
       >
         {content}
       </span>
-    )
+    );
 
   return (
     // Clicar no logo não arrasta a janela (no-drag), o bloco no canvas (nodrag) nem o painel
@@ -150,8 +150,8 @@ export function AccountTag({
                   <button
                     key={o.id}
                     onClick={() => {
-                      onChange(o.id)
-                      setOpen(false)
+                      onChange(o.id);
+                      setOpen(false);
                     }}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs ${MENU_HOVER}`}
                   >
@@ -168,5 +168,5 @@ export function AccountTag({
         )}
       </Presence>
     </div>
-  )
+  );
 }

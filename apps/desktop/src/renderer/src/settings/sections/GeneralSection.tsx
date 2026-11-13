@@ -1,15 +1,15 @@
-import { AppWindow, PanelRight, PictureInPicture2 } from 'lucide-react'
-import { Group, Row, Segmented, Switch } from '../controls'
-import { setPreferences, usePreference } from '../preferences'
-import { CliRow } from './CliRow'
-import { LanguageRow } from './LanguageRow'
-import { UsageStatsRow } from './UsageStatsRow'
-import { WslRow } from './WslRow'
-import { tr } from '../../i18n'
+import { AppWindow, PanelRight, PictureInPicture2 } from 'lucide-react';
+import { Group, Row, Segmented, Switch } from '../controls';
+import { setPreferences, usePreference } from '../preferences';
+import { CliRow } from './CliRow';
+import { LanguageRow } from './LanguageRow';
+import { UsageStatsRow } from './UsageStatsRow';
+import { WslRow } from './WslRow';
+import { tr } from '../../i18n';
 
 export function GeneralSection() {
-  const openIn = usePreference('openIn')
-  const mediaPlayer = usePreference('mediaPlayer')
+  const openIn = usePreference('openIn');
+  const mediaPlayer = usePreference('mediaPlayer');
   return (
     <Group>
       <LanguageRow />
@@ -20,7 +20,7 @@ export function GeneralSection() {
           options={[
             { value: 'panel', label: tr('Painel lateral', 'Side panel'), icon: <PanelRight size={13} /> },
             { value: 'window', label: tr('Janela separada', 'Separate window'), icon: <AppWindow size={13} /> },
-            { value: 'node', label: tr('No canvas', 'On the canvas'), icon: <PictureInPicture2 size={13} /> }
+            { value: 'node', label: tr('No canvas', 'On the canvas'), icon: <PictureInPicture2 size={13} /> },
           ]}
         />
       </Row>
@@ -28,7 +28,7 @@ export function GeneralSection() {
         label={tr('Player de música', 'Music player')}
         description={tr(
           'Mostra na barra de título o que toca no computador, com tocar/pausar e volume.',
-          'Shows what is playing on the computer in the title bar, with play/pause and volume.'
+          'Shows what is playing on the computer in the title bar, with play/pause and volume.',
         )}
       >
         <Switch label={tr('Player de música', 'Music player')} checked={mediaPlayer} onChange={(next) => setPreferences({ mediaPlayer: next })} />
@@ -37,5 +37,5 @@ export function GeneralSection() {
       <WslRow />
       <UsageStatsRow />
     </Group>
-  )
+  );
 }

@@ -1,18 +1,18 @@
-import { tr } from '../i18n'
+import { tr } from '../i18n';
 
 // Anel pequeno com a porcentagem da janela de contexto ocupada pela conversa.
 // A cor vai de um vermelho apagado (pouco contexto) a um vermelho forte (cheio), para avisar
 // que encher a janela atrapalha. O apagado sai da mistura com a cor do trilho: no tema claro
 // fica rosado e escurece até o fim; no escuro, um vermelho escuro de verdade sumiria no fundo.
 function ringColor(percent: number): string {
-  const strength = 30 + (percent / 100) * 70
-  return `color-mix(in oklab, #dc2626 ${strength}%, var(--color-line-strong))`
+  const strength = 30 + (percent / 100) * 70;
+  return `color-mix(in oklab, #dc2626 ${strength}%, var(--color-line-strong))`;
 }
 
 export function ContextRing({ percent }: { percent: number }) {
-  const r = 5
-  const circumference = 2 * Math.PI * r
-  const value = Math.min(100, Math.max(0, percent))
+  const r = 5;
+  const circumference = 2 * Math.PI * r;
+  const value = Math.min(100, Math.max(0, percent));
 
   return (
     <span title={tr(`Contexto: ${Math.round(value)}% usado`, `Context: ${Math.round(value)}% used`)} className="flex shrink-0 items-center gap-1">
@@ -32,5 +32,5 @@ export function ContextRing({ percent }: { percent: number }) {
       </svg>
       <span className="text-xs tabular-nums text-faint">{Math.round(value)}%</span>
     </span>
-  )
+  );
 }

@@ -1,25 +1,25 @@
-import { memo, useRef, useState, type ReactNode } from 'react'
-import { Check, ChevronDown, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react'
-import type { BoardSummary } from '@argus/shared/canvas'
-import { Presence } from '../../motion'
-import { IconButton } from '../../ui/IconButton'
-import { MenuArrow } from '../../ui/MenuArrow'
-import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles'
-import { useAnchoredMenu } from '../../ui/useAnchoredMenu'
-import { useActiveChats } from '../activeChats'
-import { createBoard, switchBoard, useBoards, useCurrentBoard } from '../boards'
-import type { ConfirmRequest } from '../ConfirmDialog'
-import { TRASH_EN } from '../menus/shared'
-import { StatusDot } from '../StatusBadge'
-import { useInterruptedChats } from '../interruptedChats'
-import { boardStatus, useDoneBoards, type BoardStatus } from './boardActivity'
-import { tr } from '../../i18n'
+import { memo, useRef, useState, type ReactNode } from 'react';
+import { Check, ChevronDown, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import type { BoardSummary } from '@argus/shared/canvas';
+import { Presence } from '../../motion';
+import { IconButton } from '../../ui/IconButton';
+import { MenuArrow } from '../../ui/MenuArrow';
+import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles';
+import { useAnchoredMenu } from '../../ui/useAnchoredMenu';
+import { useActiveChats } from '../activeChats';
+import { createBoard, switchBoard, useBoards, useCurrentBoard } from '../boards';
+import type { ConfirmRequest } from '../ConfirmDialog';
+import { TRASH_EN } from '../menus/shared';
+import { StatusDot } from '../StatusBadge';
+import { useInterruptedChats } from '../interruptedChats';
+import { boardStatus, useDoneBoards, type BoardStatus } from './boardActivity';
+import { tr } from '../../i18n';
 
-const PANEL_WIDTH = 256
+const PANEL_WIDTH = 256;
 
 // O mais urgente entre vários.
 const mostUrgent = (list: BoardStatus[]): BoardStatus =>
-  (['needs-you', 'running', 'interrupted', 'done'] as const).find((s) => list.includes(s)) ?? null
+  (['needs-you', 'running', 'interrupted', 'done'] as const).find((s) => list.includes(s)) ?? null;
 
 // Workspaces na barra de título, colados ao botão de fechar: o nome do atual abre a lista para
 // trocar, criar, renomear e fechar. `align`: a ponta da barra onde ele está (a lista abre para
@@ -28,60 +28,60 @@ const mostUrgent = (list: BoardStatus[]): BoardStatus =>
 // você, trabalhando ou concluída sem você ver; o botão também, quando é num workspace fora da tela.
 export const BoardSwitcher = memo(function BoardSwitcher({
   confirm,
-  align
+  align,
 }: {
   confirm: (request: ConfirmRequest) => void
   align: 'start' | 'end'
 }) {
-  const boards = useBoards()
-  const current = useCurrentBoard()
-  const chats = useActiveChats()
-  const done = useDoneBoards()
-  const interrupted = useInterruptedChats()
-  const anchor = useRef<HTMLButtonElement>(null)
-  const panel = useRef<HTMLDivElement>(null)
-  const menu = useAnchoredMenu(anchor, panel)
+  const boards = useBoards();
+  const current = useCurrentBoard();
+  const chats = useActiveChats();
+  const done = useDoneBoards();
+  const interrupted = useInterruptedChats();
+  const anchor = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const menu = useAnchoredMenu(anchor, panel);
   // Workspace com o nome em edição, ou 'new' para o campo do workspace novo.
-  const [editing, setEditing] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(null);
 
-  const status = new Map(boards.map((b) => [b.id, boardStatus(b, chats, done, interrupted)]))
-  const elsewhere = mostUrgent(boards.filter((b) => b.id !== current).map((b) => status.get(b.id) ?? null))
-  const name = boards.find((b) => b.id === current)?.name ?? ''
-  const open = boards.filter((b) => !b.closed)
-  const closed = boards.filter((b) => b.closed)
+  const status = new Map(boards.map((b) => [b.id, boardStatus(b, chats, done, interrupted)]));
+  const elsewhere = mostUrgent(boards.filter((b) => b.id !== current).map((b) => status.get(b.id) ?? null));
+  const name = boards.find((b) => b.id === current)?.name ?? '';
+  const open = boards.filter((b) => !b.closed);
+  const closed = boards.filter((b) => b.closed);
 
   const toggle = () => {
-    setEditing(null)
-    menu.toggle()
-  }
+    setEditing(null);
+    menu.toggle();
+  };
   // Fechado também: abre de novo e vai para ele.
   const pick = (id: string) => {
-    menu.close()
-    switchBoard(id)
-  }
+    menu.close();
+    switchBoard(id);
+  };
   // Enter sem nome cria com um nome de reserva; clicar fora sem nome desiste.
   const create = (typed: string | null, entered: boolean) => {
-    setEditing(null)
-    if (typed === null || (!typed.trim() && !entered)) return
-    menu.close()
-    createBoard(typed.trim() || tr(`Workspace ${boards.length + 1}`, `Workspace ${boards.length + 1}`))
-  }
+    setEditing(null);
+    if (typed === null || (!typed.trim() && !entered)) return;
+    menu.close();
+    createBoard(typed.trim() || tr(`Workspace ${boards.length + 1}`, `Workspace ${boards.length + 1}`));
+  };
   const rename = (id: string, typed: string | null) => {
-    setEditing(null)
-    if (typed?.trim()) window.api.boards.rename(id, typed)
-  }
+    setEditing(null);
+    if (typed?.trim()) window.api.boards.rename(id, typed);
+  };
   const remove = (board: BoardSummary) => {
-    menu.close()
+    menu.close();
     confirm({
       title: tr(`Excluir o workspace "${board.name}"?`, `Delete the workspace "${board.name}"?`),
       description: tr(
         'O canvas dele vai para a Lixeira e os terminais abertos nele são fechados. As pastas e as conversas continuam no computador.',
-        `Its canvas goes to the ${TRASH_EN} and the terminals open in it are closed. The folders and chats stay on your computer.`
+        `Its canvas goes to the ${TRASH_EN} and the terminals open in it are closed. The folders and chats stay on your computer.`,
       ),
       confirmLabel: tr('Excluir workspace', 'Delete workspace'),
-      onConfirm: () => window.api.boards.remove(board.id)
-    })
-  }
+      onConfirm: () => window.api.boards.remove(board.id),
+    });
+  };
 
   return (
     // Fora da área que arrasta a janela, senão o botão não recebe o mouse.
@@ -131,7 +131,7 @@ export const BoardSwitcher = memo(function BoardSwitcher({
                         </IconButton>
                       )}
                     </BoardRow>
-                  )
+                  ),
                 )}
               </ul>
               {closed.length > 0 && (
@@ -166,8 +166,8 @@ export const BoardSwitcher = memo(function BoardSwitcher({
         )}
       </Presence>
     </div>
-  )
-})
+  );
+});
 
 // Uma linha: status, nome e o visto no atual; com o mouse em cima, as ações (children).
 function BoardRow({
@@ -175,7 +175,7 @@ function BoardRow({
   status,
   selected,
   onPick,
-  children
+  children,
 }: {
   board: BoardSummary
   status: BoardStatus
@@ -194,7 +194,7 @@ function BoardRow({
       </button>
       <span className="hidden shrink-0 items-center pr-0.5 group-hover/board:flex">{children}</span>
     </li>
-  )
+  );
 }
 
 // Campo do nome (renomear ou criar): Enter guarda, Esc cancela, clicar fora guarda. `entered`: saiu
@@ -202,14 +202,14 @@ function BoardRow({
 function NameField({
   initial,
   placeholder,
-  onDone
+  onDone,
 }: {
   initial: string
   placeholder?: string
   onDone: (typed: string | null, entered: boolean) => void
 }) {
-  const cancelled = useRef(false)
-  const entered = useRef(false)
+  const cancelled = useRef(false);
+  const entered = useRef(false);
   return (
     <input
       autoFocus
@@ -218,20 +218,20 @@ function NameField({
       onFocus={(e) => e.currentTarget.select()}
       onKeyDown={(e) => {
         // Compondo um acento ou um ideograma (IME), Enter e Esc são da composição.
-        if (e.nativeEvent.isComposing) return
+        if (e.nativeEvent.isComposing) return;
         if (e.key === 'Enter') {
-          entered.current = true
-          e.currentTarget.blur()
+          entered.current = true;
+          e.currentTarget.blur();
         }
         if (e.key === 'Escape') {
           // Só cancela o nome; o menu continua aberto.
-          e.preventDefault()
-          cancelled.current = true
-          e.currentTarget.blur()
+          e.preventDefault();
+          cancelled.current = true;
+          e.currentTarget.blur();
         }
       }}
       onBlur={(e) => onDone(cancelled.current ? null : e.currentTarget.value, entered.current)}
       className="my-px w-full rounded-md border border-line-strong bg-bg px-2 py-1 text-xs text-text outline-none placeholder:text-faint"
     />
-  )
+  );
 }

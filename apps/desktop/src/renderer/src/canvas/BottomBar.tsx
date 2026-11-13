@@ -1,17 +1,17 @@
-import { memo, useState } from 'react'
-import { BOTTOM_BAR_HEIGHT } from '../conversation/FloatingPanel'
-import { usePreference } from '../settings/preferences'
-import { MediaControls } from './bars/MediaControls'
-import { IS_REMOTE } from '../remote'
-import { RunningIndicator } from './RunningIndicator'
-import { UsageIndicator } from './UsageIndicator'
+import { memo, useState } from 'react';
+import { BOTTOM_BAR_HEIGHT } from '../conversation/FloatingPanel';
+import { usePreference } from '../settings/preferences';
+import { MediaControls } from './bars/MediaControls';
+import { IS_REMOTE } from '../remote';
+import { RunningIndicator } from './RunningIndicator';
+import { UsageIndicator } from './UsageIndicator';
 
 // Barra de baixo, par da barra de título: à esquerda, as conversas trabalhando ou esperando você;
 // no meio, o player; à direita, os limites de uso. Os painéis param acima dela (PANEL_BOTTOM) e
 // tudo o que ela abre vai para cima. Fica à vista mesmo com a interface oculta (⌘\), como a de cima.
 export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (cwd: string, sessionId: string) => void }) {
-  const [usageOpen, setUsageOpen] = useState(false)
-  const mediaPlayer = usePreference('mediaPlayer')
+  const [usageOpen, setUsageOpen] = useState(false);
+  const mediaPlayer = usePreference('mediaPlayer');
 
   return (
     // Mesmas camadas da barra de título: com algo aberto (ou o mouse em cima) sobe acima dos drawers,
@@ -31,5 +31,5 @@ export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (
         <UsageIndicator open={usageOpen} onOpenChange={setUsageOpen} />
       </span>
     </div>
-  )
-})
+  );
+});

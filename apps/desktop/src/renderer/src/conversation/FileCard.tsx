@@ -1,9 +1,9 @@
-import { FileText } from 'lucide-react'
+import { FileText } from 'lucide-react';
 
 export function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 // Arquivo anexado que não é imagem: ícone, nome e tamanho. O mesmo cartão na caixa de escrever,
@@ -17,5 +17,5 @@ export function FileCard({ name, size, title, className = '' }: { name: string; 
         {size !== undefined && <div className="text-[11px] text-faint">{formatSize(size)}</div>}
       </div>
     </div>
-  )
+  );
 }

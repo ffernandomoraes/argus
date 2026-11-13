@@ -1,13 +1,14 @@
 // Registro do que o app pediu ao WSL e do que voltou. Sem um Windows com WSL para testar, é por
 // ele que dá para entender um problema: as configurações copiam o texto (ver diagnostics.ts).
-const MAX = 200
-const lines: string[] = []
+const MAX = 200;
+const lines: string[] = [];
 
 export function log(what: string, detail?: string): void {
-  const line = `${new Date().toISOString()} ${what}${detail ? `: ${detail}` : ''}`
-  lines.push(line)
-  if (lines.length > MAX) lines.shift()
-  console.log('[wsl]', line)
+  const line = `${new Date().toISOString()} ${what}${detail ? `: ${detail}` : ''}`;
+  lines.push(line);
+  if (lines.length > MAX) lines.shift();
+  // eslint-disable-next-line no-console -- registro de diagnóstico do WSL, lido no terminal do dev.
+  console.log('[wsl]', line);
 }
 
-export const logLines = (): string[] => [...lines]
+export const logLines = (): string[] => [...lines];

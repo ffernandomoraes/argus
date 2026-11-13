@@ -1,37 +1,37 @@
-import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents'
-import type { AppSettings } from './appSettings'
-import type { AuthState, LoginMethod } from './auth'
-import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
-import type { Lang, LangPreference } from './i18n'
-import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
-import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
-import type { SystemHealthState } from './systemHealth'
-import type { CleanResult, StorageSettings, StorageUsage } from './storage'
-import type { CliStatus } from './cli'
-import type { DevServer, ProjectServer } from './devServers'
-import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
-import type { HistoryPage, HistoryRequest, Message } from './history'
-import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
-import type { ClipboardCommand, EditAction, ThemeSource } from './ipc'
-import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp'
-import type { MediaCommand, NowPlaying } from './media'
-import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
-import type { ClaudeVersionState } from './claudeVersion'
-import type { ClaudeInfo } from './models'
-import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions'
-import type { SpeechEvent } from './speech'
-import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
-import type { TranscriptionModel } from './transcription'
-import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
-import type { Usage } from './usage'
-import type { WorktreeReserved, WorktreeStatus } from './worktrees'
-import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote'
+import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents';
+import type { AppSettings } from './appSettings';
+import type { AuthState, LoginMethod } from './auth';
+import type { ClipboardKey, ProviderId, ProvidersState } from './providers';
+import type { Lang, LangPreference } from './i18n';
+import type { BoardsState, BoardSummary, CanvasViewport } from './canvas';
+import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent';
+import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
+import type { SystemHealthState } from './systemHealth';
+import type { CleanResult, StorageSettings, StorageUsage } from './storage';
+import type { CliStatus } from './cli';
+import type { DevServer, ProjectServer } from './devServers';
+import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files';
+import type { HistoryPage, HistoryRequest, Message } from './history';
+import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
+import type { ClipboardCommand, EditAction, ThemeSource } from './ipc';
+import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
+import type { MediaCommand, NowPlaying } from './media';
+import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
+import type { ClaudeVersionState } from './claudeVersion';
+import type { ClaudeInfo } from './models';
+import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
+import type { SpeechEvent } from './speech';
+import type { TerminalOpenRequest, TerminalOpenResult } from './terminal';
+import type { TranscriptionModel } from './transcription';
+import type { ReleaseNote, UpdateInfo, UpdateState } from './updates';
+import type { Usage } from './usage';
+import type { WorktreeReserved, WorktreeStatus } from './worktrees';
+import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote';
 
 // Formato de `window.api`, a ponte entre a interface e o processo principal. Escrito só aqui: o
 // preload implementa (`const api: Api`) e a interface usa (preload/index.d.ts). Os `on...` devolvem
 // a função que para de escutar.
-type Off = () => void
+type Off = () => void;
 
 export type Api = {
   platform: string
@@ -487,4 +487,4 @@ export type Api = {
     command: (command: MediaCommand) => Promise<void>
     setVolume: (volume: number) => Promise<void>
   }
-}
+};

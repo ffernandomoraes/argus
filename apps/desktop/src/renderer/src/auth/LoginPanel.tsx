@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ExternalLink, Loader2 } from 'lucide-react'
-import type { LoginMethod, LoginState } from '@argus/shared/auth'
-import { tr } from '../i18n'
-import { IS_REMOTE, REMOTE_HOST } from '../remote'
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ExternalLink, Loader2 } from 'lucide-react';
+import type { LoginMethod, LoginState } from '@argus/shared/auth';
+import { tr } from '../i18n';
+import { IS_REMOTE, REMOTE_HOST } from '../remote';
 
 // Instruções da Anthropic para chave de API, Bedrock, Foundry e Vertex (o mesmo link da extensão do VS Code).
-const THIRD_PARTY_URL = 'https://code.claude.com/docs/en/vs-code#use-third-party-providers'
+const THIRD_PARTY_URL = 'https://code.claude.com/docs/en/vs-code#use-third-party-providers';
 
 function Option({
   title,
   note,
   primary,
   disabled,
-  onClick
+  onClick,
 }: {
   title: ReactNode
   note?: string
@@ -33,7 +33,7 @@ function Option({
       </button>
       {note && <p className="mt-1.5 text-center text-xs text-faint">{note}</p>}
     </div>
-  )
+  );
 }
 
 // Login como na extensão do VS Code: o navegador abre e volta sozinho para o app. Se não
@@ -41,14 +41,14 @@ function Option({
 // Na janela de acesso remoto, a volta automática iria para o outro computador: a página do código
 // abre direto no navegador deste, e o código colado vai para lá (o Argus de lá não abre navegador).
 function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl: string }) {
-  const [code, setCode] = useState('')
-  const submit = () => code.trim() && window.api.auth.submitCode(code)
-  const opened = useRef<string | null>(null)
+  const [code, setCode] = useState('');
+  const submit = () => code.trim() && window.api.auth.submitCode(code);
+  const opened = useRef<string | null>(null);
   useEffect(() => {
-    if (!IS_REMOTE || opened.current === manualUrl) return
-    opened.current = manualUrl
-    window.api.auth.open(manualUrl)
-  }, [manualUrl])
+    if (!IS_REMOTE || opened.current === manualUrl) return;
+    opened.current = manualUrl;
+    window.api.auth.open(manualUrl);
+  }, [manualUrl]);
 
   if (IS_REMOTE) {
     return (
@@ -60,7 +60,7 @@ function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl:
         <p className="text-xs leading-relaxed text-faint">
           {tr(
             `No fim, a página mostra um código: copie e cole aqui. O login vale no Argus de ${REMOTE_HOST?.name ?? ''}.`,
-            `At the end, the page shows a code: copy it and paste it here. The sign-in applies to Argus on ${REMOTE_HOST?.name ?? ''}.`
+            `At the end, the page shows a code: copy it and paste it here. The sign-in applies to Argus on ${REMOTE_HOST?.name ?? ''}.`,
           )}{' '}
           <button onClick={() => window.api.auth.open(manualUrl)} className="text-muted underline hover:text-text">
             {tr('Abrir a página de novo', 'Open the page again')}
@@ -68,7 +68,7 @@ function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl:
         </p>
         <CodeInput code={code} setCode={setCode} submit={submit} />
       </div>
-    )
+    );
   }
 
   return (
@@ -90,7 +90,7 @@ function Waiting({ automaticUrl, manualUrl }: { automaticUrl: string; manualUrl:
       </p>
       <CodeInput code={code} setCode={setCode} submit={submit} />
     </div>
-  )
+  );
 }
 
 function CodeInput({ code, setCode, submit }: { code: string; setCode: (v: string) => void; submit: () => void }) {
@@ -113,7 +113,7 @@ function CodeInput({ code, setCode, submit }: { code: string; setCode: (v: strin
         {tr('Enviar', 'Submit')}
       </button>
     </div>
-  )
+  );
 }
 
 // Escolha da forma de entrar e acompanhamento do login. Usado na tela de boas-vindas e em Contas;
@@ -125,7 +125,7 @@ export function LoginPanel({
   login,
   onStart,
   onCancel,
-  direct
+  direct,
 }: {
   login: LoginState
   onStart: (method: LoginMethod) => void
@@ -133,26 +133,26 @@ export function LoginPanel({
   direct?: LoginMethod
 }) {
   // A pessoa pediu as outras formas de entrar (ver direct).
-  const [choosing, setChoosing] = useState(false)
+  const [choosing, setChoosing] = useState(false);
   // O jeito do login em andamento, para o "Tentar de novo" (o estado de erro não traz).
-  const [method, setMethod] = useState(direct)
-  const busy = login.status === 'starting' || login.status === 'waiting'
+  const [method, setMethod] = useState(direct);
+  const busy = login.status === 'starting' || login.status === 'waiting';
   const cancel = () => {
-    if (login.status !== 'idle') window.api.auth.cancel()
-    onCancel?.()
-  }
+    if (login.status !== 'idle') window.api.auth.cancel();
+    onCancel?.();
+  };
   const start = (m: LoginMethod) => {
-    setMethod(m)
-    setChoosing(false)
-    onStart(m)
-  }
+    setMethod(m);
+    setChoosing(false);
+    onStart(m);
+  };
 
   if (direct && !choosing && login.status !== 'idle') {
     const other = (
       <button onClick={() => setChoosing(true)} className="self-center text-xs text-muted underline hover:text-text">
         {tr('Entrar de outro jeito', 'Sign in another way')}
       </button>
-    )
+    );
     return (
       <div className="flex flex-col gap-4">
         {login.status === 'waiting' ? (
@@ -175,12 +175,12 @@ export function LoginPanel({
           {tr('Cancelar', 'Cancel')}
         </button>
       </div>
-    )
+    );
   }
 
   // Escolhendo outra forma com o login anterior ainda aberto: as opções ficam liberadas, e a escolhida
   // toma o lugar dele.
-  const locked = busy && !choosing
+  const locked = busy && !choosing;
   return (
     <div className="flex flex-col gap-4">
       {login.status === 'waiting' && !choosing ? (
@@ -238,5 +238,5 @@ export function LoginPanel({
         </button>
       )}
     </div>
-  )
+  );
 }

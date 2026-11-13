@@ -1,24 +1,24 @@
-import { useState, type ReactNode } from 'react'
-import type { AuthState, ClaudeAccount } from '@argus/shared/auth'
-import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
-import { loginEndLine } from '../../auth/loginEnd'
-import { useNow } from '../../lib/clock'
-import { HOST_IS_WIN, THIS_COMPUTER } from '../../platform'
-import { Button } from '../../ui/Button'
-import { AccountName } from './AccountName'
-import { accountSummary } from './accountSummary'
-import { CopyTerminalCommand } from './CopyTerminalCommand'
-import { tr } from '../../i18n'
+import { useState, type ReactNode } from 'react';
+import type { AuthState, ClaudeAccount } from '@argus/shared/auth';
+import type { ConfirmRequest } from '../../canvas/ConfirmDialog';
+import { loginEndLine } from '../../auth/loginEnd';
+import { useNow } from '../../lib/clock';
+import { HOST_IS_WIN, THIS_COMPUTER } from '../../platform';
+import { Button } from '../../ui/Button';
+import { AccountName } from './AccountName';
+import { accountSummary } from './accountSummary';
+import { CopyTerminalCommand } from './CopyTerminalCommand';
+import { tr } from '../../i18n';
 
 function Badge({ children }: { children: ReactNode }) {
-  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[15px] text-faint">{children}</span>
+  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[15px] text-faint">{children}</span>;
 }
 
 export function AccountCard({
   account,
   auth,
   onLogin,
-  onConfirm
+  onConfirm,
 }: {
   account: ClaudeAccount
   auth: AuthState
@@ -26,12 +26,12 @@ export function AccountCard({
   onLogin: (distro?: string) => void
   onConfirm: (req: ConfirmRequest) => void
 }) {
-  const [logoutFailed, setLogoutFailed] = useState(false)
-  const { multiple, main, isDefault, loggedIn, external, who, footer, fallback } = accountSummary(account, auth)
-  const s = account.status
-  const now = useNow(60_000)
+  const [logoutFailed, setLogoutFailed] = useState(false);
+  const { multiple, main, isDefault, loggedIn, external, who, footer, fallback } = accountSummary(account, auth);
+  const s = account.status;
+  const now = useNow(60_000);
   // Até quando vale o login (nos planos com prazo de sessão); perto do fim, em destaque.
-  const ends = loginEndLine(s, now)
+  const ends = loginEndLine(s, now);
 
   return (
     <div className="overflow-hidden rounded-xl bg-fill">
@@ -77,7 +77,7 @@ export function AccountCard({
           <p className="text-[15px] leading-relaxed text-faint">
             {tr(
               'O acesso vem das variáveis de ambiente ou das configurações do Claude Code, não de um login. Para trocar, mude por lá.',
-              'Access comes from environment variables or Claude Code settings, not from a login. To switch, change it there.'
+              'Access comes from environment variables or Claude Code settings, not from a login. To switch, change it there.',
             )}
           </p>
         ) : (
@@ -106,10 +106,10 @@ export function AccountCard({
                         title: tr('Sair da conta?', 'Sign out?'),
                         description: tr(
                           `O Claude Code ${THIS_COMPUTER} sai de ${who}, inclusive no terminal e no VS Code. Conversas trabalhando agora terminam o pedido atual.`,
-                          `Claude Code ${THIS_COMPUTER} signs out of ${who}, including in the terminal and VS Code. Chats working right now finish their current request.`
+                          `Claude Code ${THIS_COMPUTER} signs out of ${who}, including in the terminal and VS Code. Chats working right now finish their current request.`,
                         ),
                         confirmLabel: tr('Sair', 'Sign out'),
-                        onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok))
+                        onConfirm: () => void window.api.auth.logout().then((ok) => setLogoutFailed(!ok)),
                       })
                     }
                   >
@@ -124,10 +124,10 @@ export function AccountCard({
                         title: tr(`Remover "${account.name}"?`, `Remove "${account.name}"?`),
                         description: tr(
                           `O Argus sai dessa conta e apaga a pasta dela. Conversas e terminais abertos com ela fecham agora, e os grupos que usavam ela passam a usar ${fallback ?? 'a padrão'}. O histórico das conversas continua.`,
-                          `Argus signs out of this account and deletes its folder. Chats and terminals open with it close now, and groups that used it switch to ${fallback ?? 'the default one'}. Chat history is kept.`
+                          `Argus signs out of this account and deletes its folder. Chats and terminals open with it close now, and groups that used it switch to ${fallback ?? 'the default one'}. Chat history is kept.`,
                         ),
                         confirmLabel: tr('Remover', 'Remove'),
-                        onConfirm: () => void window.api.auth.remove(account.id)
+                        onConfirm: () => void window.api.auth.remove(account.id),
                       })
                     }
                   >
@@ -139,7 +139,7 @@ export function AccountCard({
         {/* O login da mesma conta dentro do WSL, separado do de cima: é o que as pastas de lá usam. */}
         {account.wsl?.map(({ distro, status }) => {
           // O login de lá tem prazo próprio: perto do fim, aparece no lugar do e-mail.
-          const there = loginEndLine(status, now)
+          const there = loginEndLine(status, now);
           return (
             <div key={distro} className="mt-2.5 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-2.5">
               <span className={`mr-auto min-w-0 truncate text-[15px] ${there?.soon ? 'text-needs-you' : 'text-faint'}`} title={there?.text}>
@@ -156,17 +156,17 @@ export function AccountCard({
                 {status?.loggedIn ? (there?.soon ? tr('Entrar de novo', 'Sign in again') : tr('Trocar conta', 'Switch account')) : tr('Entrar', 'Sign in')}
               </Button>
             </div>
-          )
+          );
         })}
         {logoutFailed && (
           <p role="alert" className="mt-2 text-right text-[15px] text-red-400">
             {tr(
               `Não deu para sair. Tente de novo ou rode "claude auth logout" no ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}.`,
-              `Could not sign out. Try again or run "claude auth logout" in ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}.`
+              `Could not sign out. Try again or run "claude auth logout" in ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}.`,
             )}
           </p>
         )}
       </div>
     </div>
-  )
+  );
 }

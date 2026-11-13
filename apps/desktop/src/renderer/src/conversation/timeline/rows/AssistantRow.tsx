@@ -1,8 +1,8 @@
-import { memo } from 'react'
-import { CopyButton } from '../../CopyButton'
-import { formatClock, formatDuration, formatTokens } from '../../format'
-import { Markdown } from '../../Markdown'
-import { tr } from '../../../i18n'
+import { memo } from 'react';
+import { CopyButton } from '../../CopyButton';
+import { formatClock, formatDuration, formatTokens } from '../../format';
+import { Markdown } from '../../Markdown';
+import { tr } from '../../../i18n';
 
 // Resposta do Claude. A última de cada pedido ganha o rodapé: quando terminou, quanto levou,
 // quantos tokens gerou e o copiar. Tudo em valores simples, para o memo valer entre leituras.
@@ -10,7 +10,7 @@ export const AssistantRow = memo(function AssistantRow({
   text,
   footerAt,
   duration,
-  tokens = 0
+  tokens = 0,
 }: {
   // Já sem o que é recado para o app (ver cleanText no ChatView).
   text: string
@@ -35,5 +35,5 @@ export const AssistantRow = memo(function AssistantRow({
         </div>
       )}
     </div>
-  )
-})
+  );
+});

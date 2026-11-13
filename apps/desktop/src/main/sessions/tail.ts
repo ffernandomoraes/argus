@@ -1,11 +1,11 @@
-import { arr, num, obj, parseLine, str, type Line } from '../transcripts/line'
-import { readSlice } from '../transcripts/read'
-import { userText } from './prompt'
+import { arr, num, obj, parseLine, str, type Line } from '../transcripts/line';
+import { readSlice } from '../transcripts/read';
+import { userText } from './prompt';
 
 // Título e uso de contexto são regravados ao longo da conversa: basta ler o fim.
-export const TAIL_BYTES = 512 * 1024
+export const TAIL_BYTES = 512 * 1024;
 
-export type Usage = { tokens: number; model: string }
+export type Usage = { tokens: number; model: string };
 
 export type Tail = {
   // Da última linha de cada tipo; só vale texto não vazio (título vazio sumia com a conversa).
@@ -16,78 +16,78 @@ export type Tail = {
   repliedAt?: string
   // Primeira mensagem da pessoa no trecho: só procurada quando o começo do arquivo não tinha.
   firstPrompt?: string
-}
+};
 
 // Tudo que entrou na última resposta = o que a conversa ocupa da janela agora.
 function usageOf(l: Line): Usage | undefined {
-  const message = l.type === 'assistant' && !l.isSidechain ? obj(l.message) : undefined
-  const usage = obj(message?.usage)
-  const model = message?.model
+  const message = l.type === 'assistant' && !l.isSidechain ? obj(l.message) : undefined;
+  const usage = obj(message?.usage);
+  const model = message?.model;
   // "<synthetic>": aviso do próprio Claude Code (erro, interrupção), sem uso real.
-  if (!usage || typeof model !== 'string' || model === '<synthetic>') return undefined
+  if (!usage || typeof model !== 'string' || model === '<synthetic>') return undefined;
   const tokens =
-    (num(usage.input_tokens) ?? 0) + (num(usage.cache_creation_input_tokens) ?? 0) + (num(usage.cache_read_input_tokens) ?? 0)
-  return tokens === 0 ? undefined : { tokens, model }
+    (num(usage.input_tokens) ?? 0) + (num(usage.cache_creation_input_tokens) ?? 0) + (num(usage.cache_read_input_tokens) ?? 0);
+  return tokens === 0 ? undefined : { tokens, model };
 }
 
 // Resposta de verdade: texto do Claude na conversa principal, fora os avisos do próprio Claude Code.
 function replyAt(l: Line): string | undefined {
-  if (l.type !== 'assistant' || l.isSidechain) return undefined
-  const message = obj(l.message)
-  if (message?.model === '<synthetic>') return undefined
-  const content = arr(message?.content)
-  const hasText = content?.some((c) => obj(c)?.type === 'text' && typeof obj(c)?.text === 'string' && String(obj(c)?.text).trim())
-  return hasText ? str(l.timestamp) : undefined
+  if (l.type !== 'assistant' || l.isSidechain) return undefined;
+  const message = obj(l.message);
+  if (message?.model === '<synthetic>') return undefined;
+  const content = arr(message?.content);
+  const hasText = content?.some((c) => obj(c)?.type === 'text' && typeof obj(c)?.text === 'string' && String(obj(c)?.text).trim());
+  return hasText ? str(l.timestamp) : undefined;
 }
 
-const title = (x: unknown) => (typeof x === 'string' && x.trim() ? x : undefined)
+const title = (x: unknown) => (typeof x === 'string' && x.trim() ? x : undefined);
 
 export async function readTail(file: string, size: number, wantPrompt: boolean): Promise<Tail> {
-  const text = await readSlice(file, Math.max(0, size - TAIL_BYTES), Math.min(size, TAIL_BYTES))
-  const lines = text.split('\n')
-  const tail: Tail = {}
-  let custom = false
-  let ai = false
+  const text = await readSlice(file, Math.max(0, size - TAIL_BYTES), Math.min(size, TAIL_BYTES));
+  const lines = text.split('\n');
+  const tail: Tail = {};
+  let custom = false;
+  let ai = false;
   // Compactação depois da última resposta: a conversa ocupa o tamanho resumido, não o de antes.
-  let compacted: number | undefined
+  let compacted: number | undefined;
   // De trás para frente, montando só as linhas que podem ter o que falta (o texto é conferido
   // antes): parsear os 512 KB inteiros de cada conversa pesava com centenas delas.
   for (let i = lines.length - 1; i >= 0 && !(custom && ai && tail.usage && tail.repliedAt); i--) {
-    const raw = lines[i]
-    const wantCustom = !custom && raw.includes('"custom-title"')
-    const wantAi = !ai && raw.includes('"ai-title"')
-    const wantUsage = !tail.usage && raw.includes('"usage"')
-    const wantCompact = !tail.usage && compacted === undefined && raw.includes('"compact_boundary"')
-    const wantReply = !tail.repliedAt && raw.includes('"assistant"') && raw.includes('"text"')
-    if (!wantCustom && !wantAi && !wantUsage && !wantCompact && !wantReply) continue
-    const l = parseLine(raw)
-    if (!l) continue
+    const raw = lines[i];
+    const wantCustom = !custom && raw.includes('"custom-title"');
+    const wantAi = !ai && raw.includes('"ai-title"');
+    const wantUsage = !tail.usage && raw.includes('"usage"');
+    const wantCompact = !tail.usage && compacted === undefined && raw.includes('"compact_boundary"');
+    const wantReply = !tail.repliedAt && raw.includes('"assistant"') && raw.includes('"text"');
+    if (!wantCustom && !wantAi && !wantUsage && !wantCompact && !wantReply) continue;
+    const l = parseLine(raw);
+    if (!l) continue;
     if (wantCustom && l.type === 'custom-title') {
-      custom = true
-      tail.customTitle = title(l.customTitle)
+      custom = true;
+      tail.customTitle = title(l.customTitle);
     }
     if (wantAi && l.type === 'ai-title') {
-      ai = true
-      tail.aiTitle = title(l.aiTitle)
+      ai = true;
+      tail.aiTitle = title(l.aiTitle);
     }
-    if (wantCompact && l.type === 'system' && l.subtype === 'compact_boundary') compacted = num(obj(l.compactMetadata)?.postTokens) ?? 0
+    if (wantCompact && l.type === 'system' && l.subtype === 'compact_boundary') compacted = num(obj(l.compactMetadata)?.postTokens) ?? 0;
     // A resposta de antes da compactação só serve para saber o modelo.
     if (wantUsage) {
-      const usage = usageOf(l)
-      tail.usage = usage && compacted !== undefined ? { ...usage, tokens: compacted } : usage
+      const usage = usageOf(l);
+      tail.usage = usage && compacted !== undefined ? { ...usage, tokens: compacted } : usage;
     }
-    if (wantReply) tail.repliedAt = replyAt(l)
+    if (wantReply) tail.repliedAt = replyAt(l);
   }
   if (wantPrompt) {
     for (const raw of lines) {
-      if (!raw.includes('"user"')) continue
-      const l = parseLine(raw)
-      const prompt = l && userText(l)
+      if (!raw.includes('"user"')) continue;
+      const l = parseLine(raw);
+      const prompt = l && userText(l);
       if (prompt) {
-        tail.firstPrompt = prompt
-        break
+        tail.firstPrompt = prompt;
+        break;
       }
     }
   }
-  return tail
+  return tail;
 }

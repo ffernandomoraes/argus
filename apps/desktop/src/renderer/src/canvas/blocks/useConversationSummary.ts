@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
-import { useSessions } from '../sessionsStore'
-import type { ConversationSummary, SessionStatus } from '../types'
+import { useMemo, useState } from 'react';
+import { useSessions } from '../sessionsStore';
+import type { ConversationSummary, SessionStatus } from '../types';
 
-const nowIso = () => new Date().toISOString()
+const nowIso = () => new Date().toISOString();
 
 // Conversa de um bloco do canvas (card solto ou conversa no canvas), lida da lista da pasta.
 // Logo depois do primeiro envio, ou ao abrir o app, ela pode ainda não estar na lista: até lá
@@ -11,13 +11,13 @@ export function useConversationSummary(
   path: string,
   sessionId: string,
   name: string,
-  status: SessionStatus
+  status: SessionStatus,
 ): ConversationSummary {
-  const sessions = useSessions(path)
+  const sessions = useSessions(path);
   // Hora da reserva fixa desde a montagem: com a hora de agora, ela mudava a cada minuto e o
   // histórico da conversa era relido junto (o updatedAt é o que manda reler).
-  const [since] = useState(nowIso)
-  const found = sessions.find((s) => s.id === sessionId)
+  const [since] = useState(nowIso);
+  const found = sessions.find((s) => s.id === sessionId);
   return useMemo(
     () =>
       found ?? {
@@ -28,8 +28,8 @@ export function useConversationSummary(
         updatedAt: since,
         repliedAt: since,
         contextPercent: 0,
-        sessionId
+        sessionId,
       },
-    [found, sessionId, name, status, since]
-  )
+    [found, sessionId, name, status, since],
+  );
 }

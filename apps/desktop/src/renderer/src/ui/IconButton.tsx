@@ -1,5 +1,5 @@
-import type { ComponentProps } from 'react'
-import { iconButtonClass, type ButtonVariant, type IconButtonSize } from './buttonStyles'
+import type { ComponentProps } from 'react';
+import { iconButtonClass, type ButtonVariant, type IconButtonSize } from './buttonStyles';
 
 export type IconButtonProps = Omit<ComponentProps<'button'>, 'aria-label'> & {
   // Nome do botão para leitor de tela; também vira o title, salvo se `title` vier.
@@ -9,7 +9,7 @@ export type IconButtonProps = Omit<ComponentProps<'button'>, 'aria-label'> & {
   danger?: boolean
   // Botão de alternar ligado (vira aria-pressed).
   pressed?: boolean
-}
+};
 
 // Botão quadrado só com ícone (o ícone vem como filho, com o tamanho dele). Padrão: ghost de 28 px,
 // o dos cabeçalhos e do X dos modais. `className` só para o lugar dele, como no Button.
@@ -23,5 +23,5 @@ export function IconButton({ label, title, variant, size, danger, pressed, class
       className={`${iconButtonClass(variant, size, { danger, pressed })}${className ? ` ${className}` : ''}`}
       {...props}
     />
-  )
+  );
 }

@@ -14,29 +14,29 @@ export interface Link {
 // quem mandou), e cada lado recebe uma cópia dos bytes. Fechar entrega antes o que já foi mandado,
 // como o WebSocket: o motivo de uma recusa, mandado logo antes de fechar, chega.
 export function memoryLinks(): [Link, Link] {
-  type Side = { message: ((d: Buffer) => void)[]; close: (() => void)[] }
+  type Side = { message: ((d: Buffer) => void)[]; close: (() => void)[] };
   const sides: [Side, Side] = [
     { message: [], close: [] },
-    { message: [], close: [] }
-  ]
-  let closed = false
+    { message: [], close: [] },
+  ];
+  let closed = false;
   const shut = (): void => {
-    if (closed) return
-    closed = true
-    setImmediate(() => sides.forEach((s) => s.close.forEach((cb) => cb())))
-  }
+    if (closed) return;
+    closed = true;
+    setImmediate(() => sides.forEach((s) => s.close.forEach((cb) => cb())));
+  };
   const end = (mine: number): Link => {
-    const other = sides[1 - mine]
+    const other = sides[1 - mine];
     return {
       send: (data) => {
-        if (closed) return
-        const copy = Buffer.from(data)
-        setImmediate(() => other.message.forEach((cb) => cb(copy)))
+        if (closed) return;
+        const copy = Buffer.from(data);
+        setImmediate(() => other.message.forEach((cb) => cb(copy)));
       },
       onMessage: (cb) => void sides[mine].message.push(cb),
       onClose: (cb) => void sides[mine].close.push(cb),
-      close: shut
-    }
-  }
-  return [end(0), end(1)]
+      close: shut,
+    };
+  };
+  return [end(0), end(1)];
 }

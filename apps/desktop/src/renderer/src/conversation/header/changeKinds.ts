@@ -1,5 +1,5 @@
-import type { UncommittedFile } from '@argus/shared/sessions'
-import { tr } from '../../i18n'
+import type { UncommittedFile } from '@argus/shared/sessions';
+import { tr } from '../../i18n';
 
 // Cor da letra de cada mudança, nos tons do VS Code.
 export const KIND_COLOR: Record<UncommittedFile['kind'], string> = {
@@ -8,8 +8,8 @@ export const KIND_COLOR: Record<UncommittedFile['kind'], string> = {
   A: 'text-done',
   U: 'text-done',
   D: 'text-red-400',
-  '!': 'text-red-400'
-}
+  '!': 'text-red-400',
+};
 
 export const KIND_LABEL: Record<UncommittedFile['kind'], string> = {
   M: tr('Alterado', 'Modified'),
@@ -17,5 +17,5 @@ export const KIND_LABEL: Record<UncommittedFile['kind'], string> = {
   A: tr('Adicionado', 'Added'),
   U: tr('Novo, fora do git', 'New, untracked'),
   D: tr('Apagado', 'Deleted'),
-  '!': tr('Em conflito', 'Conflicted')
-}
+  '!': tr('Em conflito', 'Conflicted'),
+};

@@ -1,60 +1,60 @@
-import { memo, useCallback, useMemo, useRef } from 'react'
-import type { NodeProps } from '@xyflow/react'
-import { ExternalLink, PanelRight, Star, StarOff } from 'lucide-react'
-import { askColors } from '../conversation/askColors'
-import { CodeTerminalButtons } from '../conversation/composer/CodeTerminalButtons'
-import { ConversationView } from '../conversation/ConversationView'
-import { DrawerTerminal, useDrawerShell } from '../conversation/DrawerTerminal'
-import type { LineRange } from '../conversation/fileLinks'
-import { MoreMenu } from '../conversation/header/MoreMenu'
-import { useStableCallback } from '../lib/useStableCallback'
-import { BlockFrame } from './blocks/BlockFrame'
-import { sameNodeProps } from './blocks/sameNodeProps'
-import { useConversationSummary } from './blocks/useConversationSummary'
-import { useGroupOf } from './blocks/useGroupOf'
-import { useCanvasActions, type SubagentRef, type TasksRef } from './CanvasContext'
-import { favoriteKey, setFavorite, useFavorites } from './favorites'
-import type { ChatPanelNode as ChatPanelNodeType } from './types'
-import { useIsCodeOpen, useIsNewBlock } from './useCanvasView'
-import { tr } from '../i18n'
+import { memo, useCallback, useMemo, useRef } from 'react';
+import type { NodeProps } from '@xyflow/react';
+import { ExternalLink, PanelRight, Star, StarOff } from 'lucide-react';
+import { askColors } from '../conversation/askColors';
+import { CodeTerminalButtons } from '../conversation/composer/CodeTerminalButtons';
+import { ConversationView } from '../conversation/ConversationView';
+import { DrawerTerminal, useDrawerShell } from '../conversation/DrawerTerminal';
+import type { LineRange } from '../conversation/fileLinks';
+import { MoreMenu } from '../conversation/header/MoreMenu';
+import { useStableCallback } from '../lib/useStableCallback';
+import { BlockFrame } from './blocks/BlockFrame';
+import { sameNodeProps } from './blocks/sameNodeProps';
+import { useConversationSummary } from './blocks/useConversationSummary';
+import { useGroupOf } from './blocks/useGroupOf';
+import { useCanvasActions, type SubagentRef, type TasksRef } from './CanvasContext';
+import { favoriteKey, setFavorite, useFavorites } from './favorites';
+import type { ChatPanelNode as ChatPanelNodeType } from './types';
+import { useIsCodeOpen, useIsNewBlock } from './useCanvasView';
+import { tr } from '../i18n';
 
 // A conversa morando no canvas, como o terminal: o mesmo chat do painel lateral, num bloco que
 // acompanha o zoom. Arrasta pelo cabeçalho; no corpo, dá para selecionar texto e rolar o chat.
 function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanelNodeType>) {
   // A conversa já existe (só entra no canvas depois do primeiro envio), mas pode demorar a
   // aparecer na lista da pasta ao abrir o app.
-  const conversation = useConversationSummary(data.path, data.sessionId, data.name, 'idle')
+  const conversation = useConversationSummary(data.path, data.sessionId, data.name, 'idle');
   // Conta do grupo onde o bloco está (vale ao abrir a sessão, como no painel) e a cor dele, para
   // as perguntas e permissões no chat.
-  const { account, color: tint } = useGroupOf(parentId)
+  const { account, color: tint } = useGroupOf(parentId);
   // Só o bloco que acabou de ser posto no canvas pega o foco: ao abrir o app, expandir o grupo ou
   // desfazer, a caixa de escrever não rouba as teclas do canvas.
-  const isNew = useIsNewBlock(id)
-  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom, openPlanFrom, openSubagent, openTasks, toggleProjectCode } = useCanvasActions()
+  const isNew = useIsNewBlock(id);
+  const { closeChatPanel, chatPanelToDrawer, chatPanelPopout, openFileFrom, openPlanFrom, openSubagent, openTasks, toggleProjectCode } = useCanvasActions();
 
   // Tudo fixo enquanto a pasta não muda: o ConversationView é memorizado, e arrastar o bloco não
   // pode redesenhar a conversa.
-  const { projectName, path, folders } = data
+  const { projectName, path, folders } = data;
   const project = useMemo(
     () => ({
       name: projectName ?? tr('Sem projeto', 'No project'),
       path,
       color: '#71717a',
-      ...(folders && { folders })
+      ...(folders && { folders }),
     }),
-    [projectName, path, folders]
-  )
-  const onOpenFile = useCallback((file: string, lines?: LineRange) => openFileFrom(project, file, lines), [openFileFrom, project])
-  const onOpenDiff = useCallback((file: string) => openFileFrom(project, file, undefined, true), [openFileFrom, project])
-  const onClose = useCallback(() => closeChatPanel(id), [closeChatPanel, id])
+    [projectName, path, folders],
+  );
+  const onOpenFile = useCallback((file: string, lines?: LineRange) => openFileFrom(project, file, lines), [openFileFrom, project]);
+  const onOpenDiff = useCallback((file: string) => openFileFrom(project, file, undefined, true), [openFileFrom, project]);
+  const onClose = useCallback(() => closeChatPanel(id), [closeChatPanel, id]);
   // Subagente da conversa: abre no drawer, ao lado do bloco (pela pasta dona da conversa).
-  const onOpenSubagent = useCallback((subagent: SubagentRef) => openSubagent(null, path, subagent), [openSubagent, path])
-  const onOpenTasks = useCallback((tasks: TasksRef) => openTasks(null, path, tasks), [openTasks, path])
+  const onOpenSubagent = useCallback((subagent: SubagentRef) => openSubagent(null, path, subagent), [openSubagent, path]);
+  const onOpenTasks = useCallback((tasks: TasksRef) => openTasks(null, path, tasks), [openTasks, path]);
   // Mesmo menu de mais opções do drawer, com o que faz sentido para o bloco.
-  const key = favoriteKey(conversation)
-  const favorite = useFavorites().has(key ?? '')
+  const key = favoriteKey(conversation);
+  const favorite = useFavorites().has(key ?? '');
   // Estável: a conversa muda a cada passo do Claude e redesenharia o cabeçalho à toa.
-  const toggleFavorite = useStableCallback(() => setFavorite(conversation, !favorite))
+  const toggleFavorite = useStableCallback(() => setFavorite(conversation, !favorite));
   const actions = useMemo(
     () => (
       <MoreMenu
@@ -65,37 +65,37 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
                   ? {
                       label: tr('Remover dos favoritos', 'Remove from favorites'),
                       icon: StarOff,
-                      onClick: toggleFavorite
+                      onClick: toggleFavorite,
                     }
                   : {
                       label: tr('Favoritar', 'Add to favorites'),
                       icon: Star,
-                      onClick: toggleFavorite
-                    }
+                      onClick: toggleFavorite,
+                    },
               ]
             : []),
           {
             label: tr('Voltar para o painel lateral', 'Move back to side panel'),
             icon: PanelRight,
-            onClick: () => chatPanelToDrawer(id)
+            onClick: () => chatPanelToDrawer(id),
           },
           {
             label: tr('Abrir em janela separada', 'Open in separate window'),
             icon: ExternalLink,
-            onClick: () => chatPanelPopout(id)
-          }
+            onClick: () => chatPanelPopout(id),
+          },
         ]}
       />
     ),
-    [key, favorite, toggleFavorite, chatPanelToDrawer, chatPanelPopout, id]
-  )
+    [key, favorite, toggleFavorite, chatPanelToDrawer, chatPanelPopout, id],
+  );
 
   // Código e terminal em cima da caixa de escrever, como no drawer. Sem projeto ou no workspace,
   // não tem um código da pasta para abrir (o do workspace abre pelo link de cada arquivo).
-  const codeOpen = useIsCodeOpen(path)
-  const hasCode = !!projectName && !folders
-  const onToggleCode = useCallback(() => toggleProjectCode(project, codeOpen), [toggleProjectCode, project, codeOpen])
-  const shell = useDrawerShell(conversation)
+  const codeOpen = useIsCodeOpen(path);
+  const hasCode = !!projectName && !folders;
+  const onToggleCode = useCallback(() => toggleProjectCode(project, codeOpen), [toggleProjectCode, project, codeOpen]);
+  const shell = useDrawerShell(conversation);
   const composerAboveEnd = useMemo(
     () => (
       <CodeTerminalButtons
@@ -105,11 +105,11 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
         onToggleTerminal={shell.toggle}
       />
     ),
-    [codeOpen, hasCode, onToggleCode, shell.open, shell.toggle]
-  )
-  const areaRef = useRef<HTMLDivElement>(null)
+    [codeOpen, hasCode, onToggleCode, shell.open, shell.toggle],
+  );
+  const areaRef = useRef<HTMLDivElement>(null);
 
-  const style = useMemo(() => (tint ? askColors(tint) : undefined), [tint])
+  const style = useMemo(() => (tint ? askColors(tint) : undefined), [tint]);
 
   return (
     // nowheel: rolar em cima do bloco rola o chat, não o canvas
@@ -152,7 +152,7 @@ function ChatPanelNodeView({ id, data, selected, parentId }: NodeProps<ChatPanel
         )}
       </div>
     </BlockFrame>
-  )
+  );
 }
 
-export const ChatPanelNode = memo(ChatPanelNodeView, sameNodeProps)
+export const ChatPanelNode = memo(ChatPanelNodeView, sameNodeProps);

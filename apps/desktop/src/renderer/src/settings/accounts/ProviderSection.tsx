@@ -1,47 +1,47 @@
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react';
 import {
   MAIN_PROVIDER_ACCOUNT,
   PROVIDER_NAMES,
   type ProviderAccount,
   type ProviderId,
   type ProviderInstall,
-  type ProvidersState
-} from '@argus/shared/providers'
-import type { ConfirmRequest } from '../../canvas/ConfirmDialog'
-import { HOST_IS_WIN } from '../../platform'
-import { Button } from '../../ui/Button'
-import { AgentIcon } from '@argus/ui/icons/AgentIcon'
-import { AccountName } from './AccountName'
-import { ProviderLoginPanel } from './ProviderLoginPanel'
-import { tr } from '../../i18n'
+  type ProvidersState,
+} from '@argus/shared/providers';
+import type { ConfirmRequest } from '../../canvas/ConfirmDialog';
+import { HOST_IS_WIN } from '../../platform';
+import { Button } from '../../ui/Button';
+import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { AccountName } from './AccountName';
+import { ProviderLoginPanel } from './ProviderLoginPanel';
+import { tr } from '../../i18n';
 
 // Como cada agente entra, numa frase.
 const HOW: Record<ProviderId, string> = {
   codex: tr('Entra com a conta do ChatGPT, pelo navegador. Pode ter várias.', 'Signs in with your ChatGPT account, in the browser. You can have several.'),
   gemini: tr(
     'Usa uma chave do Google AI Studio. O login com a conta Google não é usado: o Google suspende contas que fazem isso fora do Gemini CLI.',
-    'Uses a Google AI Studio key. Google sign-in isn’t used: Google suspends accounts that do it outside the Gemini CLI.'
+    'Uses a Google AI Studio key. Google sign-in isn’t used: Google suspends accounts that do it outside the Gemini CLI.',
   ),
   cursor: tr(
     'A primeira conta é a do terminal, pelo navegador. As outras usam chave de API, para uma não trocar a outra.',
-    'The first account is the terminal one, in the browser. Others use an API key, so one doesn’t replace the other.'
-  )
-}
+    'The first account is the terminal one, in the browser. Others use an API key, so one doesn’t replace the other.',
+  ),
+};
 
 export function ProviderSection({
   provider,
   state,
-  onConfirm
+  onConfirm,
 }: {
   provider: ProviderId
   state: ProvidersState
   onConfirm: (req: ConfirmRequest) => void
 }) {
-  const { install, accounts, defaultId } = state.providers[provider]
-  const name = PROVIDER_NAMES[provider]
-  const login = state.login.status !== 'idle' && state.login.provider === provider ? state.login : null
+  const { install, accounts, defaultId } = state.providers[provider];
+  const name = PROVIDER_NAMES[provider];
+  const login = state.login.status !== 'idle' && state.login.provider === provider ? state.login : null;
   // Login de outro agente em andamento: um de cada vez (o do Codex usa uma porta fixa).
-  const busyElsewhere = state.login.status !== 'idle' && !login
+  const busyElsewhere = state.login.status !== 'idle' && !login;
 
   return (
     <section className="mt-8">
@@ -81,11 +81,11 @@ export function ProviderSection({
         </>
       )}
     </section>
-  )
+  );
 }
 
 function InstallCard({ provider, state }: { provider: ProviderId; state: ProviderInstall }) {
-  const name = PROVIDER_NAMES[provider]
+  const name = PROVIDER_NAMES[provider];
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-fill p-4">
       {state.status === 'installing' ? (
@@ -115,7 +115,7 @@ function InstallCard({ provider, state }: { provider: ProviderId; state: Provide
         </>
       )}
     </div>
-  )
+  );
 }
 
 function ProviderAccountCard({
@@ -123,7 +123,7 @@ function ProviderAccountCard({
   multiple,
   isDefault,
   disabled,
-  onConfirm
+  onConfirm,
 }: {
   account: ProviderAccount
   multiple: boolean
@@ -131,11 +131,11 @@ function ProviderAccountCard({
   disabled: boolean
   onConfirm: (req: ConfirmRequest) => void
 }) {
-  const s = account.status
-  const signedIn = !!s?.signedIn
-  const main = account.id === MAIN_PROVIDER_ACCOUNT
-  const name = PROVIDER_NAMES[account.provider]
-  const who = s?.email ?? (s?.keyHint ? tr(`Chave ${s.keyHint}`, `Key ${s.keyHint}`) : undefined)
+  const s = account.status;
+  const signedIn = !!s?.signedIn;
+  const main = account.id === MAIN_PROVIDER_ACCOUNT;
+  const name = PROVIDER_NAMES[account.provider];
+  const who = s?.email ?? (s?.keyHint ? tr(`Chave ${s.keyHint}`, `Key ${s.keyHint}`) : undefined);
 
   return (
     <div className="overflow-hidden rounded-xl bg-fill">
@@ -193,14 +193,14 @@ function ProviderAccountCard({
               description: main
                 ? tr(
                     `A conta sai do Argus, mas continua logada no ${name} do terminal.`,
-                    `The account leaves Argus, but stays signed in to ${name} in the terminal.`
+                    `The account leaves Argus, but stays signed in to ${name} in the terminal.`,
                   )
                 : tr(
                     'O Argus apaga o login (ou a chave) e a pasta dessa conta. Conversas abertas com ela fecham.',
-                    'Argus deletes this account’s sign-in (or key) and folder. Chats open with it close.'
+                    'Argus deletes this account’s sign-in (or key) and folder. Chats open with it close.',
                   ),
               confirmLabel: tr('Remover', 'Remove'),
-              onConfirm: () => window.api.providers.remove(account.provider, account.id)
+              onConfirm: () => window.api.providers.remove(account.provider, account.id),
             })
           }
         >
@@ -208,9 +208,9 @@ function ProviderAccountCard({
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[15px] text-faint">{children}</span>
+  return <span className="shrink-0 rounded-full border border-line px-1.5 py-px text-[15px] text-faint">{children}</span>;
 }

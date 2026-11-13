@@ -4,8 +4,8 @@ const LINES = [
   { x: 2, y: 2.75, w: 8 },
   { x: 4.5, y: 5.75, w: 8.5 },
   { x: 4.5, y: 8.75, w: 5 },
-  { x: 2, y: 11.75, w: 10 }
-]
+  { x: 2, y: 11.75, w: 10 },
+];
 
 export function CodeTyping({ size = 16, label }: { size?: number; label?: string }) {
   return (
@@ -14,5 +14,5 @@ export function CodeTyping({ size = 16, label }: { size?: number; label?: string
         <rect key={i} x={l.x} y={l.y} width={l.w} height={1.5} rx={0.75} fill="currentColor" style={{ animationDelay: `${i * 0.35}s` }} />
       ))}
     </svg>
-  )
+  );
 }

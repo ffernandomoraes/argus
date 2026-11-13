@@ -1,19 +1,19 @@
-import { Presence } from './motion'
-import { REMOTE_HOST, useRemoteState } from './remote'
-import { Button } from './ui/Button'
-import { Modal } from './ui/Modal'
-import { tr } from './i18n'
+import { Presence } from './motion';
+import { REMOTE_HOST, useRemoteState } from './remote';
+import { Button } from './ui/Button';
+import { Modal } from './ui/Modal';
+import { tr } from './i18n';
 
-const keepOpen = () => false
+const keepOpen = () => false;
 
 // Janela de acesso remoto sem ligação: cobre tudo, porque nada do que aparece atrás está
 // atualizado e nenhum clique chega ao outro computador. Reconectando, some sozinho quando a
 // ligação volta (a janela recarrega).
 export function RemoteLostModal() {
-  const state = useRemoteState()
-  const name = REMOTE_HOST?.name ?? ''
-  const reconnecting = state === 'reconnecting'
-  const kicked = state === 'kicked'
+  const state = useRemoteState();
+  const name = REMOTE_HOST?.name ?? '';
+  const reconnecting = state === 'reconnecting';
+  const kicked = state === 'kicked';
   return (
     <Presence kind="modal">
       {state !== 'connected' && (
@@ -26,16 +26,16 @@ export function RemoteLostModal() {
               {reconnecting
                 ? tr(
                     `A ligação com ${name} caiu. Tentando de novo; o que estava rodando lá continua rodando.`,
-                    `The connection to ${name} dropped. Trying again; what was running there keeps running.`
+                    `The connection to ${name} dropped. Trying again; what was running there keeps running.`,
                   )
                 : kicked
                   ? tr(
                       `Alguém em ${name} desconectou esta janela. Para voltar, abra de novo em Configurações > Acesso remoto.`,
-                      `Someone on ${name} disconnected this window. To come back, open it again in Settings > Remote access.`
+                      `Someone on ${name} disconnected this window. To come back, open it again in Settings > Remote access.`,
                     )
                   : tr(
                     `Esta janela não está mais ligada ao Argus de ${name}. O que estava rodando lá continua rodando. Para voltar, abra de novo em Configurações > Acesso remoto.`,
-                    `This window is no longer connected to Argus on ${name}. What was running there keeps running. To come back, open it again in Settings > Remote access.`
+                    `This window is no longer connected to Argus on ${name}. What was running there keeps running. To come back, open it again in Settings > Remote access.`,
                   )}
             </p>
           </div>
@@ -47,5 +47,5 @@ export function RemoteLostModal() {
         </Modal>
       )}
     </Presence>
-  )
+  );
 }

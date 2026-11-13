@@ -1,12 +1,12 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { keys } from '../platform'
-import { Button } from '../ui/Button'
-import type { AgentProvider } from '@argus/shared/agents'
-import { lastStep, type Draft } from './agentDraft'
-import { InstructionsStep } from './InstructionsStep'
-import { StepTabs } from './StepTabs'
-import { ToolsStep } from './ToolsStep'
-import { tr } from '../i18n'
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { keys } from '../platform';
+import { Button } from '../ui/Button';
+import type { AgentProvider } from '@argus/shared/agents';
+import { lastStep, type Draft } from './agentDraft';
+import { InstructionsStep } from './InstructionsStep';
+import { StepTabs } from './StepTabs';
+import { ToolsStep } from './ToolsStep';
+import { tr } from '../i18n';
 
 // Agente aberto: as abas dos passos, o passo atual e o rodapé com Voltar, Salvar e Continuar.
 export function AgentEditor({
@@ -22,7 +22,7 @@ export function AgentEditor({
   onBack,
   onSave,
   onChange,
-  onToggleTool
+  onToggleTool,
 }: {
   provider: AgentProvider
   draft: Draft
@@ -40,7 +40,7 @@ export function AgentEditor({
   onChange: (patch: Partial<Draft>) => void
   onToggleTool: (name: string) => void
 }) {
-  const LAST_STEP = lastStep(provider)
+  const LAST_STEP = lastStep(provider);
   return (
     <>
       <StepTabs provider={provider} step={step} reached={reached} onGo={onGo} />
@@ -78,5 +78,5 @@ export function AgentEditor({
         )}
       </footer>
     </>
-  )
+  );
 }

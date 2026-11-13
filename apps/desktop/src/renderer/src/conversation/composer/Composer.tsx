@@ -9,36 +9,36 @@ import {
   type DragEvent,
   type KeyboardEvent,
   type ReactNode,
-  type Ref
-} from 'react'
-import type { AgentDef } from '@argus/shared/agents'
-import { Presence } from '../../motion'
-import { keys } from '../../platform'
-import { AgentMenu } from '../AgentMenu'
-import { AttachmentList } from '../AttachmentList'
-import { transcriptsPending, transcriptStore } from '../audio/transcripts'
-import type { SessionSettings } from '../SessionSettings'
-import { SlashMenu } from '../SlashMenu'
-import type { SlashCommand } from '../slashCommands'
-import type { OutgoingMessage } from '../timeline/useOptimisticSends'
-import { useAttachments } from '../useAttachments'
-import { useDictation, type DictationState } from '../useDictation'
-import { ComposerActions } from './ComposerActions'
-import { ComposerFooter } from './ComposerFooter'
-import { ComposerNotices } from './ComposerNotices'
-import { pastedFiles } from './pastedFiles'
-import { useComposerMenus } from './useComposerMenus'
-import { useDraft } from './useDraft'
-import { usePromptHistory } from './usePromptHistory'
-import { tr } from '../../i18n'
-import { useStore } from '../../lib/useStore'
+  type Ref,
+} from 'react';
+import type { AgentDef } from '@argus/shared/agents';
+import { Presence } from '../../motion';
+import { keys } from '../../platform';
+import { AgentMenu } from '../AgentMenu';
+import { AttachmentList } from '../AttachmentList';
+import { transcriptsPending, transcriptStore } from '../audio/transcripts';
+import type { SessionSettings } from '../SessionSettings';
+import { SlashMenu } from '../SlashMenu';
+import type { SlashCommand } from '../slashCommands';
+import type { OutgoingMessage } from '../timeline/useOptimisticSends';
+import { useAttachments } from '../useAttachments';
+import { useDictation, type DictationState } from '../useDictation';
+import { ComposerActions } from './ComposerActions';
+import { ComposerFooter } from './ComposerFooter';
+import { ComposerNotices } from './ComposerNotices';
+import { pastedFiles } from './pastedFiles';
+import { useComposerMenus } from './useComposerMenus';
+import { useDraft } from './useDraft';
+import { usePromptHistory } from './usePromptHistory';
+import { tr } from '../../i18n';
+import { useStore } from '../../lib/useStore';
 
 export type ComposerHandle = {
   // Envio que não chegou: o texto volta (se o campo estiver vazio), os anexos voltam e o aviso aparece.
   restore: (typed: string, files: File[], error: string) => void
   // Envia este texto como se tivesse sido digitado (a sugestão clicada).
   send: (text: string) => void
-}
+};
 
 type Props = {
   ref?: Ref<ComposerHandle>
@@ -64,212 +64,212 @@ type Props = {
   onTypingChange?: (typing: boolean) => void
   // Pedidos gravados na conversa, do mais velho ao mais novo: as setas percorrem eles.
   pastPrompts?: string[]
-}
+};
 
-const NO_PROMPTS: string[] = []
+const NO_PROMPTS: string[] = [];
 
 // Caixa de escrever da conversa, com estado próprio: digitar não redesenha a conversa. Texto,
 // menus de comandos e de agentes, anexos (botão ou ⌘V), ditado, enviar ou parar, e os seletores
 // de modelo e modo embaixo.
 export const Composer = memo(function Composer(props: Props) {
-  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onRename, onToggleRemote, onInterrupt } = props
-  const attachments = useAttachments(draftKey)
-  const field = useRef<HTMLTextAreaElement>(null)
-  const [draft, setDraft] = useDraft(draftKey)
-  const menus = useComposerMenus(draft, agents)
-  const [sendError, setSendError] = useState<string | null>(null)
-  const history = usePromptHistory(draftKey, props.pastPrompts ?? NO_PROMPTS)
+  const { ref, draftKey, autoFocus, agents, running, onSubmit, onOpenMcp, onOpenOutputStyle, onRename, onToggleRemote, onInterrupt } = props;
+  const attachments = useAttachments(draftKey);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const [draft, setDraft] = useDraft(draftKey);
+  const menus = useComposerMenus(draft, agents);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const history = usePromptHistory(draftKey, props.pastPrompts ?? NO_PROMPTS);
 
   // Abrir a conversa já deixa o campo pronto para digitar, com o cursor no fim do rascunho.
   // Espera um quadro: o drawer nasce invisível até ser posicionado, e campo invisível não recebe foco.
   // Sem autoFocus (bloco do canvas que não é novo), o campo espera o clique.
   useEffect(() => {
-    if (!autoFocus) return
+    if (!autoFocus) return;
     const frame = requestAnimationFrame(() => {
-      const el = field.current
-      if (!el) return
-      focusField(el)
-      el.setSelectionRange(el.value.length, el.value.length)
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [autoFocus])
+      const el = field.current;
+      if (!el) return;
+      focusField(el);
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [autoFocus]);
 
   // Ditado: o que for falado entra depois do texto que já estava no campo ao começar.
-  const dictationBase = useRef('')
+  const dictationBase = useRef('');
   const dictation = useDictation((spoken) => {
-    const base = dictationBase.current
-    setDraft(base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken)
-  })
+    const base = dictationBase.current;
+    setDraft(base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken);
+  });
   // O texto ditado entra por código, e o navegador não rola o campo sozinho:
   // sem isso as últimas palavras ficam escondidas abaixo da terceira linha.
   useEffect(() => {
-    const el = field.current
-    if (!el || dictation.state === 'idle') return
-    el.setSelectionRange(el.value.length, el.value.length)
-    el.scrollTop = el.scrollHeight
-  }, [draft, dictation.state])
+    const el = field.current;
+    if (!el || dictation.state === 'idle') return;
+    el.setSelectionRange(el.value.length, el.value.length);
+    el.scrollTop = el.scrollHeight;
+  }, [draft, dictation.state]);
 
-  const addFiles = attachments.add
+  const addFiles = attachments.add;
   const restore = useCallback(
     (typed: string, files: File[], error: string) => {
-      setDraft((current) => current || typed)
-      if (files.length) addFiles(files)
-      setSendError(error)
+      setDraft((current) => current || typed);
+      if (files.length) addFiles(files);
+      setSendError(error);
     },
-    [setDraft, addFiles]
-  )
+    [setDraft, addFiles],
+  );
 
-  const typing = draft.trim().length > 0
-  const onTypingChange = props.onTypingChange
-  useEffect(() => onTypingChange?.(typing), [typing, onTypingChange])
+  const typing = draft.trim().length > 0;
+  const onTypingChange = props.onTypingChange;
+  useEffect(() => onTypingChange?.(typing), [typing, onTypingChange]);
 
-  const canSend = typing || attachments.items.length > 0
+  const canSend = typing || attachments.items.length > 0;
   // Áudio anexado ainda transcrevendo (ou esperando o modelo, ou a resposta de baixar): o Enviar
   // fica desabilitado até terminar ou até escolher "Agora não" nele.
-  const transcribing = useStore(transcriptStore, (map) => transcriptsPending(attachments.items.map((a) => a.file), map))
+  const transcribing = useStore(transcriptStore, (map) => transcriptsPending(attachments.items.map((a) => a.file), map));
 
   const updateDraft = (value: string) => {
-    setDraft(value)
-    menus.reset()
-    setSendError(null)
-  }
+    setDraft(value);
+    menus.reset();
+    setSendError(null);
+  };
 
   // command: comando escolhido no menu, enviado no lugar do que está no campo.
   const send = (command?: string) => {
-    if (dictation.state !== 'idle') dictation.stop()
-    if (!command && !canSend) return
-    const typed = command ?? draft.trim()
-    const text = typed
+    if (dictation.state !== 'idle') dictation.stop();
+    if (!command && !canSend) return;
+    const typed = command ?? draft.trim();
+    const text = typed;
     if (text === '/mcp') {
-      setDraft('')
-      return onOpenMcp()
+      setDraft('');
+      return onOpenMcp();
     }
     if (text === '/output-style') {
-      setDraft('')
-      return onOpenOutputStyle()
+      setDraft('');
+      return onOpenOutputStyle();
     }
     // /rename sozinho (ou escolhido na lista) abre o título para editar; com o nome, já renomeia.
     // Vale para qualquer agente: não vai para o Claude, que mostraria o comando no chat.
-    const rename = text.match(/^\/rename(?:\s+([\s\S]*))?$/)
+    const rename = text.match(/^\/rename(?:\s+([\s\S]*))?$/);
     if (rename) {
-      const error = onRename(rename[1] ?? '')
-      if (error) return setSendError(error)
-      setDraft('')
-      return setSendError(null)
+      const error = onRename(rename[1] ?? '');
+      if (error) return setSendError(error);
+      setDraft('');
+      return setSendError(null);
     }
     if (text === '/remote-control') {
-      setDraft('')
-      return onToggleRemote()
+      setDraft('');
+      return onToggleRemote();
     }
-    const files = attachments.items.map((a) => a.file)
+    const files = attachments.items.map((a) => a.file);
     // Áudio ainda sem transcrição (ou sem resposta à pergunta de baixar o modelo): espera.
     if (transcriptsPending(files)) {
-      setSendError(tr('Espere a transcrição do áudio terminar, ou escolha "Agora não" nele.', 'Wait for the audio transcript to finish, or choose "Not now" on it.'))
-      return
+      setSendError(tr('Espere a transcrição do áudio terminar, ou escolha "Agora não" nele.', 'Wait for the audio transcript to finish, or choose "Not now" on it.'));
+      return;
     }
-    if (typed) history.remember(typed)
-    setDraft('')
-    setSendError(null)
-    attachments.clear()
-    onSubmit({ text, typed, files }).catch((err: unknown) => restore(typed, files, sendFailure(err)))
-  }
+    if (typed) history.remember(typed);
+    setDraft('');
+    setSendError(null);
+    attachments.clear();
+    onSubmit({ text, typed, files }).catch((err: unknown) => restore(typed, files, sendFailure(err)));
+  };
 
   // Sem lista de dependências: o send muda a cada desenho (lê o rascunho e os anexos atuais).
-  useImperativeHandle(ref, () => ({ restore, send }))
+  useImperativeHandle(ref, () => ({ restore, send }));
 
   // Escolher um agente completa o nome dele no campo; escolher um comando já executa ele.
   const selectAgent = (a: AgentDef) => {
-    setDraft(`${draft.slice(0, menus.mention?.start ?? draft.length)}@${a.name} `)
-    menus.close()
-    focusField(field.current)
-  }
+    setDraft(`${draft.slice(0, menus.mention?.start ?? draft.length)}@${a.name} `);
+    menus.close();
+    focusField(field.current);
+  };
   const selectCommand = (c: SlashCommand) => {
-    menus.close()
-    send(`/${c.name}`)
-    focusField(field.current)
-  }
+    menus.close();
+    send(`/${c.name}`);
+    focusField(field.current);
+  };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter envia; Shift+Enter quebra a linha (igual à extensão do VS Code).
     if (menus.size === undefined) {
       if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-        e.preventDefault()
-        send()
+        e.preventDefault();
+        send();
       } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
         // Setas percorrem os pedidos já enviados (campo vazio ou mostrando um deles), cursor no fim.
-        const recalled = history.step(e.key === 'ArrowUp' ? -1 : 1, draft)
-        if (recalled === null) return
-        e.preventDefault()
-        setDraft(recalled)
-        setSendError(null)
+        const recalled = history.step(e.key === 'ArrowUp' ? -1 : 1, draft);
+        if (recalled === null) return;
+        e.preventDefault();
+        setDraft(recalled);
+        setSendError(null);
         // Pedido que começa com / ou @ não abre o menu: as setas continuam no histórico.
-        menus.close()
+        menus.close();
         requestAnimationFrame(() => {
-          const el = field.current
-          if (el) el.setSelectionRange(el.value.length, el.value.length)
-        })
+          const el = field.current;
+          if (el) el.setSelectionRange(el.value.length, el.value.length);
+        });
       }
-      return
+      return;
     }
-    const command = menus.commands?.[menus.active]
-    const agent = menus.mention?.items[menus.active]
+    const command = menus.commands?.[menus.active];
+    const agent = menus.mention?.items[menus.active];
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      menus.move(e.key === 'ArrowDown' ? 1 : -1)
+      e.preventDefault();
+      menus.move(e.key === 'ArrowDown' ? 1 : -1);
     } else if ((e.key === 'Enter' || e.key === 'Tab') && command) {
-      e.preventDefault()
-      selectCommand(command)
+      e.preventDefault();
+      selectCommand(command);
     } else if ((e.key === 'Enter' || e.key === 'Tab') && agent) {
-      e.preventDefault()
-      selectAgent(agent)
+      e.preventDefault();
+      selectAgent(agent);
     } else if (e.key === 'Escape') {
-      e.preventDefault()
-      menus.close()
+      e.preventDefault();
+      menus.close();
     }
-  }
+  };
 
   const toggleDictation = () => {
     if (dictation.state === 'idle') {
-      dictationBase.current = draft
-      menus.close()
-      focusField(field.current)
+      dictationBase.current = draft;
+      menus.close();
+      focusField(field.current);
     }
-    dictation.toggle()
-  }
+    dictation.toggle();
+  };
 
   const openCommands = () => {
-    updateDraft('/')
-    focusField(field.current)
-  }
+    updateDraft('/');
+    focusField(field.current);
+  };
 
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
-    const files = pastedFiles(e.clipboardData, (f) => window.api.isDiskFile(f))
-    if (!files.length) return
-    e.preventDefault()
-    attachments.add(files)
-  }
+    const files = pastedFiles(e.clipboardData, (f) => window.api.isDiskFile(f));
+    if (!files.length) return;
+    e.preventDefault();
+    attachments.add(files);
+  };
 
   // Arquivo arrastado para a caixa (do Finder, do Explorer, de outro app) vira anexo, como no ⌘V.
   // Sem isto o Chromium tentava abrir o arquivo na janela (bloqueado em lockNavigation) e nada
   // acontecia. Texto arrastado segue o padrão do campo.
-  const [dragging, setDragging] = useState(false)
-  const hasFiles = (e: DragEvent) => e.dataTransfer.types.includes('Files')
+  const [dragging, setDragging] = useState(false);
+  const hasFiles = (e: DragEvent) => e.dataTransfer.types.includes('Files');
   const onDragOver = (e: DragEvent<HTMLDivElement>) => {
-    if (!hasFiles(e)) return
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-    setDragging(true)
-  }
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragging(true);
+  };
   const onDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false)
-  }
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+  };
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
-    setDragging(false)
-    if (!hasFiles(e) || !e.dataTransfer.files.length) return
-    e.preventDefault()
-    attachments.add(e.dataTransfer.files)
-    focusField(field.current)
-  }
+    setDragging(false);
+    if (!hasFiles(e) || !e.dataTransfer.files.length) return;
+    e.preventDefault();
+    attachments.add(e.dataTransfer.files);
+    focusField(field.current);
+  };
 
   return (
     <>
@@ -323,30 +323,30 @@ export const Composer = memo(function Composer(props: Props) {
         contextPercent={props.contextPercent}
       />
     </>
-  )
-})
+  );
+});
 
 // Foco sem rolar o que está em volta: com a conversa num bloco do canvas, focar o campo deslocava
 // o canvas.
 function focusField(el: HTMLTextAreaElement | null): void {
-  el?.focus({ preventScroll: true })
+  el?.focus({ preventScroll: true });
 }
 
 function placeholderFor(dictation: DictationState, withAgents: boolean): string {
-  if (dictation === 'listening') return tr('Ouvindo… fale à vontade', 'Listening… speak freely')
-  if (dictation === 'starting') return tr('Ligando o microfone…', 'Turning on the microphone…')
+  if (dictation === 'listening') return tr('Ouvindo… fale à vontade', 'Listening… speak freely');
+  if (dictation === 'starting') return tr('Ligando o microfone…', 'Turning on the microphone…');
   return withAgents
     ? tr(
         `Escreva, fale, cole um print (${keys('⌘V')}), / para comandos ou @ para agentes`,
-        `Type, speak, paste a screenshot (${keys('⌘V')}), / for commands or @ for agents`
+        `Type, speak, paste a screenshot (${keys('⌘V')}), / for commands or @ for agents`,
       )
     : tr(
         `Escreva, fale, cole um print (${keys('⌘V')}) ou digite / para comandos`,
-        `Type, speak, paste a screenshot (${keys('⌘V')}) or type / for commands`
-      )
+        `Type, speak, paste a screenshot (${keys('⌘V')}) or type / for commands`,
+      );
 }
 
 const sendFailure = (err: unknown) => {
-  const detail = err instanceof Error && err.message ? err.message : ''
-  return tr(`Não deu para enviar. ${detail || 'Tente de novo.'}`, `Couldn’t send. ${detail || 'Try again.'}`)
-}
+  const detail = err instanceof Error && err.message ? err.message : '';
+  return tr(`Não deu para enviar. ${detail || 'Tente de novo.'}`, `Couldn’t send. ${detail || 'Try again.'}`);
+};

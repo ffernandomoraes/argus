@@ -1,8 +1,8 @@
 // Conversa gravada pelo Claude Code em ~/.claude/projects/<pasta>/<id>.jsonl.
-import type { LiveStatus } from './history'
+import type { LiveStatus } from './history';
 
 // Conversa achada pela busca no conteúdo: o id e um trecho em volta da primeira ocorrência.
-export type SearchHit = { id: string; snippet: string }
+export type SearchHit = { id: string; snippet: string };
 
 export type SessionSummary = {
   // Id da sessão (nome do arquivo); serve para `claude --resume`.
@@ -20,7 +20,7 @@ export type SessionSummary = {
   // Conversa com outro agente (Codex, Gemini, Cursor), gravada pelo Argus: agente e conta dela
   // ("codex:main", ver providers.ts). Sem ele: Claude Code.
   agent?: string
-}
+};
 
 // Pasta onde o Claude Code já conversou (lista do "Nova pasta").
 export type KnownFolder = {
@@ -28,7 +28,7 @@ export type KnownFolder = {
   path: string
   // Conversa mais recente da pasta, em ISO.
   updatedAt: string
-}
+};
 
 // Arquivo com mudança ainda não comitada no repositório da pasta.
 export type UncommittedFile = {
@@ -37,17 +37,17 @@ export type UncommittedFile = {
   // Letra do VS Code: M alterado, A adicionado, D apagado, R renomeado, U novo (fora do git),
   // ! em conflito.
   kind: 'M' | 'A' | 'D' | 'R' | 'U' | '!'
-}
+};
 
 // Por que a pasta mudou, no aviso sessions:changed: a lista de conversas mudou (transcript: uma
 // conversa gravou ou apareceu), o status de algum Claude Code mudou (status)
 // ou o .git mudou (git: checkout, add, commit). A janela relê só o que o motivo pede: o git status,
 // o mais caro, só no aviso do git.
-export type SessionChange = 'transcript' | 'status' | 'git'
+export type SessionChange = 'transcript' | 'status' | 'git';
 
 // Branch para o seletor acima da pasta. Sem `remote`: existe aqui. Com: só no remoto (origin/x),
 // e escolher cria a local que acompanha ela.
-export type BranchOption = { name: string; remote?: string }
+export type BranchOption = { name: string; remote?: string };
 
 // Branches do repositório da pasta, da usada mais recentemente para a mais antiga.
-export type BranchList = { current: string | null; branches: BranchOption[] }
+export type BranchList = { current: string | null; branches: BranchOption[] };

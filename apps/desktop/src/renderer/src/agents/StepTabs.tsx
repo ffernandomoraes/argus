@@ -1,16 +1,16 @@
-import type { AgentProvider } from '@argus/shared/agents'
-import { stepsFor } from './agentDraft'
-import { tr } from '../i18n'
+import type { AgentProvider } from '@argus/shared/agents';
+import { stepsFor } from './agentDraft';
+import { tr } from '../i18n';
 
 // Abas do agente. No agente novo, a seguinte só abre depois desta. Com um passo só, sem abas.
 export function StepTabs({ provider, step, reached, onGo }: { provider: AgentProvider; step: number; reached: number; onGo: (step: number) => void }) {
-  const steps = stepsFor(provider)
-  if (steps.length < 2) return null
+  const steps = stepsFor(provider);
+  if (steps.length < 2) return null;
   return (
     <div role="tablist" className="flex gap-6 border-b border-line px-5">
       {steps.map((label, i) => {
-        const active = i === step
-        const enabled = i <= reached
+        const active = i === step;
+        const enabled = i <= reached;
         return (
           <button
             key={label}
@@ -25,8 +25,8 @@ export function StepTabs({ provider, step, reached, onGo }: { provider: AgentPro
           >
             {label}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

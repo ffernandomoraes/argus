@@ -5,4 +5,4 @@ export type CliStatus = {
   warning?: string
   // Não deu para instalar.
   error?: string
-}
+};

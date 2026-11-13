@@ -9,6 +9,6 @@ export type NowPlaying = {
   duration: number
   // Volume de saída do sistema, de 0 a 100.
   volume: number
-}
+};
 
-export type MediaCommand = 'toggle' | 'next' | 'previous'
+export type MediaCommand = 'toggle' | 'next' | 'previous';

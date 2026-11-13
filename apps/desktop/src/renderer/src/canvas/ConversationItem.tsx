@@ -1,8 +1,8 @@
-import { memo, type MouseEvent as ReactMouseEvent } from 'react'
-import { ConversationLabel } from './blocks/ConversationLabel'
-import { Highlight } from './Highlight'
-import { TimeAgo } from './blocks/TimeAgo'
-import type { ConversationSummary } from './types'
+import { memo, type MouseEvent as ReactMouseEvent } from 'react';
+import { ConversationLabel } from './blocks/ConversationLabel';
+import { Highlight } from './Highlight';
+import { TimeAgo } from './blocks/TimeAgo';
+import type { ConversationSummary } from './types';
 
 // Conversa: bloco solto no canvas (card) ou linha no painel "todas as conversas".
 export const ConversationItem = memo(function ConversationItem({
@@ -14,7 +14,7 @@ export const ConversationItem = memo(function ConversationItem({
   card = false,
   draggable = false,
   onOpen,
-  onContextMenu
+  onContextMenu,
 }: {
   conversation: ConversationSummary
   // Busca: o trecho da conversa onde o termo apareceu, numa linha embaixo do título.
@@ -37,7 +37,7 @@ export const ConversationItem = memo(function ConversationItem({
       <ConversationLabel conversation={c} poppedOut={poppedOut} query={query} place={card ? 'card' : 'panel'} />
       <TimeAgo iso={c.repliedAt} className="pl-1" />
     </>
-  )
+  );
   return (
     <li
       role="button"
@@ -63,5 +63,5 @@ export const ConversationItem = memo(function ConversationItem({
         </span>
       )}
     </li>
-  )
-})
+  );
+});

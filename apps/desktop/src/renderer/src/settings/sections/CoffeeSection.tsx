@@ -1,38 +1,38 @@
-import { useEffect, useState } from 'react'
-import { Check, Copy } from 'lucide-react'
-import { useCopied } from '../../lib/useCopied'
-import { Button } from '../../ui/Button'
-import { PIX_KEY, PIX_PAYLOAD } from './pix'
-import { tr } from '../../i18n'
+import { useEffect, useState } from 'react';
+import { Check, Copy } from 'lucide-react';
+import { useCopied } from '../../lib/useCopied';
+import { Button } from '../../ui/Button';
+import { PIX_KEY, PIX_PAYLOAD } from './pix';
+import { tr } from '../../i18n';
 
 function CopyButton({ text, label }: { text: string; label: string }) {
-  const { copied, copy } = useCopied()
+  const { copied, copy } = useCopied();
   return (
     <Button size="lg" className="w-full" onClick={() => copy(text)}>
       {copied ? <Check size={12} className="text-done" /> : <Copy size={12} />}
       {copied ? tr('Copiado', 'Copied') : label}
     </Button>
-  )
+  );
 }
 
 // Seção "Me pague um café" das configurações: QR Code do Pix, chave e os botões de copiar. O
 // cabeçalho da seção (SettingsPage) já traz o título e o convite.
 export function CoffeeSection() {
-  const [qr, setQr] = useState<string | null>(null)
+  const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
-    let alive = true
+    let alive = true;
     // O qrcode só carrega aqui: é a única tela que usa.
     import('qrcode')
       .then(({ default: QRCode }) => QRCode.toString(PIX_PAYLOAD, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }))
       .then(
         (svg) => alive && setQr(svg),
-        (err: unknown) => console.error('[café] QR Code:', err)
-      )
+        (err: unknown) => console.error('[café] QR Code:', err),
+      );
     return () => {
-      alive = false
-    }
-  }, [])
+      alive = false;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center rounded-xl bg-fill px-6 py-6 text-center">
@@ -51,5 +51,5 @@ export function CoffeeSection() {
         <CopyButton text={PIX_PAYLOAD} label={tr('Pix copia e cola', 'Copy Pix code')} />
       </div>
     </div>
-  )
+  );
 }

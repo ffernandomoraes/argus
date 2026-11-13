@@ -1,13 +1,13 @@
-import { Group, Row, Segmented, Select } from '../settings/controls'
-import { MODELS, TOOLS, type Draft } from './agentDraft'
-import { INPUT } from './Field'
-import { tr } from '../i18n'
+import { Group, Row, Segmented, Select } from '../settings/controls';
+import { MODELS, TOOLS, type Draft } from './agentDraft';
+import { INPUT } from './Field';
+import { tr } from '../i18n';
 
 // Segundo passo: o modelo e as ferramentas que o agente pode usar.
 export function ToolsStep({
   draft,
   onChange,
-  onToggleTool
+  onToggleTool,
 }: {
   draft: Draft
   onChange: (patch: Partial<Draft>) => void
@@ -41,7 +41,7 @@ export function ToolsStep({
             value={draft.allTools ? 'all' : 'some'}
             options={[
               { value: 'all', label: tr('Todas', 'All') },
-              { value: 'some', label: tr('Só estas', 'Only these') }
+              { value: 'some', label: tr('Só estas', 'Only these') },
             ]}
             onChange={(v) => onChange({ allTools: v === 'all' })}
           />
@@ -68,5 +68,5 @@ export function ToolsStep({
         </div>
       )}
     </div>
-  )
+  );
 }

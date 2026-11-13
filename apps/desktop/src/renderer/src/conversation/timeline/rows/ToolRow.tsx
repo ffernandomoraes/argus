@@ -1,13 +1,13 @@
-import { memo } from 'react'
-import type { Message } from '../../types'
-import { DiffView } from '../../DiffView'
-import { diffStats } from '../../diffLines'
-import type { ImageView } from '../imageViews'
-import { TaskOutputButton } from '../../taskOpen'
-import { LazyDetails } from './LazyDetails'
+import { memo } from 'react';
+import type { Message } from '../../types';
+import { DiffView } from '../../DiffView';
+import { diffStats } from '../../diffLines';
+import type { ImageView } from '../imageViews';
+import { TaskOutputButton } from '../../taskOpen';
+import { LazyDetails } from './LazyDetails';
 
 // Ferramentas cujo detalhe é o caminho de um arquivo ou pasta (ver toolLabels no main).
-const PATH_TOOLS = new Set(['Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Grep', 'Glob'])
+const PATH_TOOLS = new Set(['Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Grep', 'Glob']);
 
 // Caminho em uma linha, cortado no começo: o "…" fica na frente e o fim (pasta e arquivo) sempre à
 // vista. A direção da direita para a esquerda é o que põe o corte no começo; as marcas invisíveis
@@ -17,19 +17,19 @@ function PathLine({ path }: { path: string }) {
     <div title={path} className="mt-1 truncate rounded-md bg-bg px-2 py-1 text-left font-mono text-xs text-muted [direction:rtl]">
       {`\u200E${path}\u200E`}
     </div>
-  )
+  );
 }
 
 export const ToolRow = memo(function ToolRow({
   message,
-  image
+  image,
 }: {
   message: Extract<Message, { role: 'tool' }>
   image?: ImageView
 }) {
-  const stats = message.diff && diffStats(message.diff)
-  const detail = message.detail && message.detail !== message.input ? message.detail : undefined
-  const pathDetail = !!detail && PATH_TOOLS.has(message.name) && !detail.includes('\n')
+  const stats = message.diff && diffStats(message.diff);
+  const detail = message.detail && message.detail !== message.input ? message.detail : undefined;
+  const pathDetail = !!detail && PATH_TOOLS.has(message.name) && !detail.includes('\n');
   // Sem caixa, como a resposta: a ação não chama mais atenção que o texto. Passar o mouse só clareia a linha.
   return (
     <LazyDetails
@@ -42,8 +42,8 @@ export const ToolRow = memo(function ToolRow({
           onClick={
             image &&
             ((e) => {
-              e.preventDefault()
-              image.open(0)
+              e.preventDefault();
+              image.open(0);
             })
           }
         >
@@ -86,5 +86,5 @@ export const ToolRow = memo(function ToolRow({
         )
       )}
     </LazyDetails>
-  )
-})
+  );
+});

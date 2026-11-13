@@ -1,27 +1,27 @@
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { Loader2, Smartphone, X } from 'lucide-react'
-import { ConfirmDialog } from '../canvas/ConfirmDialog'
-import type { RemoteControl } from '@argus/shared/chat'
-import { TAG } from './header/BranchTag'
-import { Presence } from '../motion'
-import { tr } from '../i18n'
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Loader2, Smartphone, X } from 'lucide-react';
+import { ConfirmDialog } from '../canvas/ConfirmDialog';
+import type { RemoteControl } from '@argus/shared/chat';
+import { TAG } from './header/BranchTag';
+import { Presence } from '../motion';
+import { tr } from '../i18n';
 
 // Remote control ligado (/remote-control), discreto na linha em cima da caixa de escrever, antes da
 // branch: no estilo do botão do código, com o X para desligar.
 export function RemoteControlTag({ remote, onTurnOff }: { remote: RemoteControl; onTurnOff: () => void }) {
-  const [confirming, setConfirming] = useState(false)
+  const [confirming, setConfirming] = useState(false);
   // Falhou: não há conexão a perder, então o X só tira o aviso.
-  const turnOff = () => (remote.status === 'failed' ? onTurnOff() : setConfirming(true))
-  const failed = remote.status === 'failed'
+  const turnOff = () => (remote.status === 'failed' ? onTurnOff() : setConfirming(true));
+  const failed = remote.status === 'failed';
 
   const label =
     remote.status === 'connected'
       ? tr('Controle remoto ligado', 'Remote control on')
       : failed
         ? tr('Controle remoto não conectou', 'Remote control didn’t connect')
-        : tr('Ligando o controle remoto…', 'Turning on remote control…')
-  const title = failed && remote.detail ? `${label}: ${remote.detail}` : label
+        : tr('Ligando o controle remoto…', 'Turning on remote control…');
+  const title = failed && remote.detail ? `${label}: ${remote.detail}` : label;
 
   return (
     <span title={title} className={`${TAG} shrink-0 gap-1.5 whitespace-nowrap ${failed ? 'text-red-400' : ''}`}>
@@ -51,17 +51,17 @@ export function RemoteControlTag({ remote, onTurnOff }: { remote: RemoteControl;
                 description:
                   tr(
                     'Pelo claude.ai e pelo celular não dá mais para continuar esta conversa. Aqui no app ela segue normal, e /remote\u2011control liga de novo.',
-                    'You won’t be able to continue this chat on claude.ai or your phone. It keeps working here in the app, and /remote\u2011control turns it back on.'
+                    'You won’t be able to continue this chat on claude.ai or your phone. It keeps working here in the app, and /remote\u2011control turns it back on.',
                   ),
                 confirmLabel: tr('Desligar', 'Turn off'),
-                onConfirm: onTurnOff
+                onConfirm: onTurnOff,
               }}
               onClose={() => setConfirming(false)}
             />
           )}
         </Presence>,
-        document.body
+        document.body,
       )}
     </span>
-  )
+  );
 }

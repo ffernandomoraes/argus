@@ -1,5 +1,5 @@
-import type { ChatImage, ChatSettings } from '@argus/shared/chat'
-import type { DiffHunk } from '@argus/shared/history'
+import type { ChatImage, ChatSettings } from '@argus/shared/chat';
+import type { DiffHunk } from '@argus/shared/history';
 
 // O que a conversa (session.ts) pede a cada agente, e o que ouve dele. Cada CLI fala de um jeito
 // (codex.ts: app-server; acp.ts: Gemini e Cursor); aqui tudo chega no formato do chat.
@@ -17,7 +17,7 @@ export type ToolEvent = {
   error?: boolean
   diff?: DiffHunk[]
   done: boolean
-}
+};
 
 export type PermissionAsk = {
   toolName: string
@@ -26,9 +26,9 @@ export type PermissionAsk = {
   detail?: string
   diff?: DiffHunk[]
   canAlwaysAllow: boolean
-}
+};
 
-export type PermissionReply = 'allow' | 'always' | 'deny'
+export type PermissionReply = 'allow' | 'always' | 'deny';
 
 export type DriverEvents = {
   // Texto da resposta chegando; `done` fecha a mensagem atual (vai para o histórico).
@@ -43,9 +43,9 @@ export type DriverEvents = {
   usage: (u: { contextPercent?: number; turnTokens?: number }) => void
   // O processo do agente terminou (caiu ou foi fechado).
   exited: (reason?: string) => void
-}
+};
 
-export type PromptInput = { text: string; images: ChatImage[] }
+export type PromptInput = { text: string; images: ChatImage[] };
 
 export interface Driver {
   // Abre o processo, entra e cria (ou retoma) a conversa do agente. Devolve o id nativo dela.

@@ -1,46 +1,46 @@
-import { useEffect } from 'react'
-import { getPreferences, setPreferences, usePreference } from '../settings/preferences'
+import { useEffect } from 'react';
+import { getPreferences, setPreferences, usePreference } from '../settings/preferences';
 
 // Escala do conteúdo do drawer, no espírito do zoom do VS Code: texto, espaçamento e
 // ícones crescem juntos. ⌘+ sobe um degrau, ⌘- desce um, ⌘0 volta ao normal.
 // Enquanto o drawer está aberto, esses atalhos são dele: o canvas desliga os seus
 // (ver useCanvasShortcuts). Fica salvo neste computador e vale nas duas janelas.
-const DRAWER_ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2]
+const DRAWER_ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
 
 function step(zoom: number, direction: 1 | -1): number {
-  let closest = 0
+  let closest = 0;
   for (let i = 1; i < DRAWER_ZOOM_STEPS.length; i++) {
-    if (Math.abs(DRAWER_ZOOM_STEPS[i] - zoom) < Math.abs(DRAWER_ZOOM_STEPS[closest] - zoom)) closest = i
+    if (Math.abs(DRAWER_ZOOM_STEPS[i] - zoom) < Math.abs(DRAWER_ZOOM_STEPS[closest] - zoom)) closest = i;
   }
-  const next = Math.min(DRAWER_ZOOM_STEPS.length - 1, Math.max(0, closest + direction))
-  return DRAWER_ZOOM_STEPS[next]
+  const next = Math.min(DRAWER_ZOOM_STEPS.length - 1, Math.max(0, closest + direction));
+  return DRAWER_ZOOM_STEPS[next];
 }
 
 // ⌘+, ⌘- e ⌘0 mudam a escala; devolve se a tecla era uma delas.
 export function drawerZoomKey(e: KeyboardEvent): boolean {
-  if (!(e.metaKey || e.ctrlKey)) return false
+  if (!(e.metaKey || e.ctrlKey)) return false;
   // '+' e '_' aparecem quando o teclado manda a tecla já com shift.
-  const direction = e.key === '=' || e.key === '+' ? 1 : e.key === '-' || e.key === '_' ? -1 : 0
-  if (direction) setPreferences({ drawerZoom: step(getPreferences().drawerZoom, direction) })
-  else if (e.key === '0') setPreferences({ drawerZoom: 1 })
-  else return false
-  e.preventDefault()
-  return true
+  const direction = e.key === '=' || e.key === '+' ? 1 : e.key === '-' || e.key === '_' ? -1 : 0;
+  if (direction) setPreferences({ drawerZoom: step(getPreferences().drawerZoom, direction) });
+  else if (e.key === '0') setPreferences({ drawerZoom: 1 });
+  else return false;
+  e.preventDefault();
+  return true;
 }
 
 // Os drawers abertos ao mesmo tempo dividem um ouvinte só. O navegador guarda a mesma função uma
 // vez: com cada drawer pondo e tirando a sua, o primeiro a fechar desligava os atalhos do outro.
 // Liga com o primeiro e desliga com o último.
-let holders = 0
+let holders = 0;
 
 function holdZoomKeys(): () => void {
-  if (holders++ === 0) window.addEventListener('keydown', drawerZoomKey)
+  if (holders++ === 0) window.addEventListener('keydown', drawerZoomKey);
   return () => {
-    if (--holders === 0) window.removeEventListener('keydown', drawerZoomKey)
-  }
+    if (--holders === 0) window.removeEventListener('keydown', drawerZoomKey);
+  };
 }
 
 export function useDrawerZoom(): number {
-  useEffect(holdZoomKeys, [])
-  return usePreference('drawerZoom')
+  useEffect(holdZoomKeys, []);
+  return usePreference('drawerZoom');
 }

@@ -1,36 +1,36 @@
-import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react'
-import { ArrowDown } from 'lucide-react'
-import type { AgentDef } from '@argus/shared/agents'
-import type { AttachedFile } from '@argus/shared/attachedFiles'
-import type { ChatState, InterruptReason, PermissionAnswer } from '@argus/shared/chat'
-import type { SessionStatus } from '../canvas/types'
-import { useStableCallback } from '../lib/useStableCallback'
-import { Presence } from '../motion'
-import { Composer, type ComposerHandle } from './composer/Composer'
-import { ImageViewer } from './ImageViewer'
-import { RemoteControlTag } from './RemoteControlTag'
-import { usePreference } from '../settings/preferences'
-import { SuggestionChip } from './composer/SuggestionChip'
-import { ChatSearchBox } from './search/ChatSearchBox'
-import { useChatSearch } from './search/useChatSearch'
-import { imageFiles } from './chatImages'
-import { CONTINUE_TEXT, FreedNotice, InterruptedNotice } from './composer/InterruptedNotice'
-import type { SessionSettings } from './SessionSettings'
-import { ChatPlaceholder } from './timeline/ChatPlaceholder'
-import { olderRow } from './timeline/olderRow'
-import { PinnedPrompt } from './timeline/PinnedPrompt'
-import { promptOf } from './timeline/promptOf'
-import { Timeline, type TimelineHandle } from './timeline/Timeline'
-import { useImageViews } from './timeline/useImageViews'
-import { useOlderMessages, type OlderMessages } from './timeline/useOlderMessages'
-import { useOptimisticSends, type OutgoingMessage } from './timeline/useOptimisticSends'
-import { useStickyScroll } from './timeline/useStickyScroll'
-import { useTimeline } from './timeline/useTimeline'
-import type { Message } from './types'
-import { tr } from '../i18n'
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react';
+import { ArrowDown } from 'lucide-react';
+import type { AgentDef } from '@argus/shared/agents';
+import type { AttachedFile } from '@argus/shared/attachedFiles';
+import type { ChatState, InterruptReason, PermissionAnswer } from '@argus/shared/chat';
+import type { SessionStatus } from '../canvas/types';
+import { useStableCallback } from '../lib/useStableCallback';
+import { Presence } from '../motion';
+import { Composer, type ComposerHandle } from './composer/Composer';
+import { ImageViewer } from './ImageViewer';
+import { RemoteControlTag } from './RemoteControlTag';
+import { usePreference } from '../settings/preferences';
+import { SuggestionChip } from './composer/SuggestionChip';
+import { ChatSearchBox } from './search/ChatSearchBox';
+import { useChatSearch } from './search/useChatSearch';
+import { imageFiles } from './chatImages';
+import { CONTINUE_TEXT, FreedNotice, InterruptedNotice } from './composer/InterruptedNotice';
+import type { SessionSettings } from './SessionSettings';
+import { ChatPlaceholder } from './timeline/ChatPlaceholder';
+import { olderRow } from './timeline/olderRow';
+import { PinnedPrompt } from './timeline/PinnedPrompt';
+import { promptOf } from './timeline/promptOf';
+import { Timeline, type TimelineHandle } from './timeline/Timeline';
+import { useImageViews } from './timeline/useImageViews';
+import { useOlderMessages, type OlderMessages } from './timeline/useOlderMessages';
+import { useOptimisticSends, type OutgoingMessage } from './timeline/useOptimisticSends';
+import { useStickyScroll } from './timeline/useStickyScroll';
+import { useTimeline } from './timeline/useTimeline';
+import type { Message } from './types';
+import { tr } from '../i18n';
 
-const NO_AGENTS: AgentDef[] = []
-const LOST = tr('A mensagem não chegou ao Claude. Tente enviar de novo.', 'The message didn’t reach Claude. Try sending it again.')
+const NO_AGENTS: AgentDef[] = [];
+const LOST = tr('A mensagem não chegou ao Claude. Tente enviar de novo.', 'The message didn’t reach Claude. Try sending it again.');
 
 export type ChatViewProps = {
   // Conversa dona do rascunho guardado.
@@ -85,7 +85,7 @@ export type ChatViewProps = {
   interrupted?: { reason?: InterruptReason; onDismiss: () => void }
   // Fechada para liberar memória do computador: a linha que explica a primeira resposta mais lenta.
   freed?: boolean
-}
+};
 
 // A conversa: a linha do tempo (o histórico gravado e o que acontece agora), o prompt preso no
 // topo e a caixa de escrever. Serve à conversa (ConversationView) e ao histórico do subagente.
@@ -117,49 +117,49 @@ export const ChatView = memo(function ChatView({
   readOnly = false,
   emptyText,
   interrupted,
-  freed = false
+  freed = false,
 }: ChatViewProps) {
-  const scroller = useRef<HTMLDivElement>(null)
+  const scroller = useRef<HTMLDivElement>(null);
   // A mesma área, para a linha do tempo virtualizada: ela precisa saber quando a área montou.
-  const [scrollerEl, setScrollerEl] = useState<HTMLDivElement | null>(null)
+  const [scrollerEl, setScrollerEl] = useState<HTMLDivElement | null>(null);
   const attachScroller = useCallback((el: HTMLDivElement | null) => {
-    scroller.current = el
-    setScrollerEl(el)
-  }, [])
-  const content = useRef<HTMLDivElement>(null)
-  const timeline = useRef<TimelineHandle>(null)
-  const composer = useRef<ComposerHandle>(null)
-  const images = useImageViews(loadImages)
+    scroller.current = el;
+    setScrollerEl(el);
+  }, []);
+  const content = useRef<HTMLDivElement>(null);
+  const timeline = useRef<TimelineHandle>(null);
+  const composer = useRef<ComposerHandle>(null);
+  const images = useImageViews(loadImages);
   // Envio que não chegou ao Claude no prazo: o texto e os anexos voltam para o campo.
   const sends = useOptimisticSends(messages, live, images.viewer !== null, (lost) =>
     composer.current?.restore(
       lost.map((s) => s.typed).filter(Boolean).join('\n\n'),
       lost.flatMap((s) => s.files),
-      LOST
-    )
-  )
-  const running = status === 'running' || status === 'needs-you' || sends.waiting.length > 0
+      LOST,
+    ),
+  );
+  const running = status === 'running' || status === 'needs-you' || sends.waiting.length > 0;
   // Com mensagem a caminho, sem o "Nova conversa" (ver o comentário onde ele aparece).
-  const placeholder = (loading || messages.length === 0) && sends.waiting.length === 0
-  const answer = useStableCallback(onAnswer)
+  const placeholder = (loading || messages.length === 0) && sends.waiting.length === 0;
+  const answer = useStableCallback(onAnswer);
   // Mensagem editada (o lápis do balão): a versão nova vai como mensagem nova, no fim da conversa.
   // Com o Claude respondendo, ele para antes, e ela roda logo depois do pedido parado. Envio que
   // falha devolve o texto ao campo, como o da caixa de escrever.
   const edit = useStableCallback((text: string) => {
-    if (status === 'running' || status === 'needs-you') onInterrupt()
-    submit({ text, typed: text, files: [] }).catch(() => composer.current?.restore(text, [], LOST))
-  })
+    if (status === 'running' || status === 'needs-you') onInterrupt();
+    submit({ text, typed: text, files: [] }).catch(() => composer.current?.restore(text, [], LOST));
+  });
   // O "Reenviar" da linha do erro, depois de entrar de novo na conta (ver ErrorRow): a última
   // mensagem sua vai de novo, inteira. As imagens são lidas do histórico; os outros arquivos vão pelo
   // mesmo caminho no disco. Envio que falha devolve o texto e as imagens ao campo.
   const resend = useStableCallback(async () => {
-    const last = [...messages].reverse().find((m) => m.role === 'user')
-    if (!last || last.role !== 'user') return
-    const pictures = last.images && loadImages ? await loadImages(last.id).then(imageFiles, () => []) : []
+    const last = [...messages].reverse().find((m) => m.role === 'user');
+    if (!last || last.role !== 'user') return;
+    const pictures = last.images && loadImages ? await loadImages(last.id).then(imageFiles, () => []) : [];
     submit({ text: last.text, typed: last.text, files: pictures, attached: last.files }).catch(() =>
-      composer.current?.restore(last.text, pictures, LOST)
-    )
-  })
+      composer.current?.restore(last.text, pictures, LOST),
+    );
+  });
   const items = useTimeline({
     messages,
     waiting: sends.waiting,
@@ -170,66 +170,66 @@ export const ChatView = memo(function ChatView({
     readsImages: !!loadImages,
     onAnswer: answer,
     onResend: readOnly ? undefined : resend,
-    onEdit: edit
-  })
+    onEdit: edit,
+  });
 
   // Enquanto há anteriores, o loader delas vai na frente (olderRow).
-  const olderMore = !!older?.more
-  const olderLoading = !!older?.loading
-  const rows = useMemo(() => (olderMore ? [olderRow(olderLoading), ...items] : items), [olderMore, olderLoading, items])
+  const olderMore = !!older?.more;
+  const olderLoading = !!older?.loading;
+  const rows = useMemo(() => (olderMore ? [olderRow(olderLoading), ...items] : items), [olderMore, olderLoading, items]);
   const promptBefore = useStableCallback((index: number) => {
-    for (let i = Math.min(index, rows.length) - 1; i >= 0; i--) if (rows[i].kind === 'user') return rows[i].key
-    return null
-  })
-  const scrollToKey = useStableCallback((key: string) => timeline.current?.scrollToKey(key))
-  const stickyTimeline = useMemo(() => ({ promptBefore, scrollToKey }), [promptBefore, scrollToKey])
-  const sticky = useStickyScroll(scroller, content, stickyTimeline)
-  const { toEnd, follow, settle } = sticky
-  const olderMessages = useOlderMessages(scroller, older)
+    for (let i = Math.min(index, rows.length) - 1; i >= 0; i--) if (rows[i].kind === 'user') return rows[i].key;
+    return null;
+  });
+  const scrollToKey = useStableCallback((key: string) => timeline.current?.scrollToKey(key));
+  const stickyTimeline = useMemo(() => ({ promptBefore, scrollToKey }), [promptBefore, scrollToKey]);
+  const sticky = useStickyScroll(scroller, content, stickyTimeline);
+  const { toEnd, follow, settle } = sticky;
+  const olderMessages = useOlderMessages(scroller, older);
   const onScroll = (e: UIEvent<HTMLDivElement>) => {
-    sticky.onScroll(e)
-    olderMessages.onScroll()
-  }
+    sticky.onScroll(e);
+    olderMessages.onScroll();
+  };
   // Mudou algo na conversa: vai para o fim, se estiver seguindo.
-  useLayoutEffect(() => toEnd(), [items, toEnd])
+  useLayoutEffect(() => toEnd(), [items, toEnd]);
   // Abriu: assim que o histórico chega (ou de cara, sem histórico a esperar), acerta no fim. Aberta
   // de novo já estando à vista (endSignal), também.
   useLayoutEffect(() => {
-    if (!loading) return settle()
-  }, [loading, endSignal, settle])
+    if (!loading) return settle();
+  }, [loading, endSignal, settle]);
 
-  const pinned = useMemo(() => promptOf(sticky.pinnedKey, messages, sends.waiting), [sticky.pinnedKey, messages, sends.waiting])
-  const search = useChatSearch({ rows, scroller, timeline, older, openSignal: searchSignal, onJump: sticky.release })
+  const pinned = useMemo(() => promptOf(sticky.pinnedKey, messages, sends.waiting), [sticky.pinnedKey, messages, sends.waiting]);
+  const search = useChatSearch({ rows, scroller, timeline, older, openSignal: searchSignal, onJump: sticky.release });
 
   // Pedidos já feitos, para as setas da caixa de escrever.
-  const pastPrompts = useMemo(() => messages.flatMap((m) => (m.role === 'user' && m.text.trim() ? [m.text] : [])), [messages])
+  const pastPrompts = useMemo(() => messages.flatMap((m) => (m.role === 'user' && m.text.trim() ? [m.text] : [])), [messages]);
 
   // A mensagem aparece na hora como balão provisório. Envio que falha antes de sair tira o balão
   // e repassa o erro: o campo devolve o texto e os anexos.
   const submit = useStableCallback(async (message: OutgoingMessage) => {
-    const id = sends.add(message)
-    follow()
+    const id = sends.add(message);
+    follow();
     try {
-      await onSend(message.text, message.files, message.attached)
+      await onSend(message.text, message.files, message.attached);
     } catch (err) {
-      sends.drop(id)
-      throw err
+      sends.drop(id);
+      throw err;
     }
-  })
+  });
   // Funções fixas para a caixa de escrever, que é memorizada: as que chegam podem mudar a cada desenho.
-  const toggleRemote = useStableCallback(() => onRemoteControl(!live?.remote || live.remote.status === 'failed'))
-  const turnOffRemote = useStableCallback(() => onRemoteControl(false))
-  const openMcp = useStableCallback(onOpenMcp)
-  const openOutputStyle = useStableCallback(onOpenOutputStyle)
-  const rename = useStableCallback(onRename)
-  const interrupt = useStableCallback(onInterrupt)
+  const toggleRemote = useStableCallback(() => onRemoteControl(!live?.remote || live.remote.status === 'failed'));
+  const turnOffRemote = useStableCallback(() => onRemoteControl(false));
+  const openMcp = useStableCallback(onOpenMcp);
+  const openOutputStyle = useStableCallback(onOpenOutputStyle);
+  const rename = useStableCallback(onRename);
+  const interrupt = useStableCallback(onInterrupt);
   // Texto no campo esconde a sugestão; clicar nela envia pelo mesmo caminho da caixa de escrever.
-  const [typing, setTyping] = useState(false)
-  const sendSuggestion = useStableCallback((text: string) => composer.current?.send(text))
-  const sendContinue = useStableCallback(() => composer.current?.send(CONTINUE_TEXT))
+  const [typing, setTyping] = useState(false);
+  const sendSuggestion = useStableCallback((text: string) => composer.current?.send(text));
+  const sendContinue = useStableCallback(() => composer.current?.send(CONTINUE_TEXT));
   // Desligada em Configurações > Conversas, o balão nunca aparece.
-  const suggestions = usePreference('promptSuggestions')
-  const changeSetting = useStableCallback(onSettingChange)
+  const suggestions = usePreference('promptSuggestions');
+  const changeSetting = useStableCallback(onSettingChange);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -330,5 +330,5 @@ export const ChatView = memo(function ChatView({
         {images.viewer && <ImageViewer load={images.viewer.load} start={images.viewer.start} onClose={images.close} />}
       </Presence>
     </div>
-  )
-})
+  );
+});

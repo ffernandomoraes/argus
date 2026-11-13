@@ -2,7 +2,7 @@
 // carregados (sistema, pasta pessoal, idioma, workspaces). Para testar outro sistema, ver asPlatform em
 // test/platform.ts.
 
-const globals = globalThis as Record<string, unknown>
+const globals = globalThis as Record<string, unknown>;
 
 globals.window = {
   api: {
@@ -11,8 +11,8 @@ globals.window = {
     language: { get: () => 'pt', onChange: () => () => undefined },
     boards: {
       state: () => ({ boards: [{ id: 'main', name: 'Principal', paths: [], sessions: [] }], current: 'main' }),
-      onChange: () => () => undefined
-    }
-  }
-}
-globals.document = { documentElement: {} }
+      onChange: () => () => undefined,
+    },
+  },
+};
+globals.document = { documentElement: {} };

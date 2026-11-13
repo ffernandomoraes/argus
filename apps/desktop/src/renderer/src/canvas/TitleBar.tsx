@@ -1,24 +1,24 @@
-import { memo, useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react'
-import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
-import { NavButton } from '../ui/NavButton'
-import { IS_REMOTE, REMOTE_HOST, useRemoteAccess } from '../remote'
-import { Presence } from '../motion'
-import { HealthAlert } from '../systemHealth/HealthAlert'
-import { ReleaseNotesModal } from '../updates/ReleaseNotesModal'
-import { useUpdates } from '../updates/useUpdates'
-import { IS_MAC } from '../platform'
-import { useWindowControls } from '../useWindowControls'
-import { BoardSwitcher } from './bars/BoardSwitcher'
-import { RemoteConnections } from './bars/RemoteConnections'
-import { UpdateStatus } from './bars/UpdateStatus'
-import { updateProgress } from './bars/updateProgress'
-import { useNewWindowShortcut } from './bars/useNewWindowShortcut'
-import type { ConfirmRequest } from './ConfirmDialog'
-import { tr } from '../i18n'
+import { memo, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AppWindow, Eye, EyeOff, ScrollText } from 'lucide-react';
+import { TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel';
+import { NavButton } from '../ui/NavButton';
+import { IS_REMOTE, REMOTE_HOST, useRemoteAccess } from '../remote';
+import { Presence } from '../motion';
+import { HealthAlert } from '../systemHealth/HealthAlert';
+import { ReleaseNotesModal } from '../updates/ReleaseNotesModal';
+import { useUpdates } from '../updates/useUpdates';
+import { IS_MAC } from '../platform';
+import { useWindowControls } from '../useWindowControls';
+import { BoardSwitcher } from './bars/BoardSwitcher';
+import { RemoteConnections } from './bars/RemoteConnections';
+import { UpdateStatus } from './bars/UpdateStatus';
+import { updateProgress } from './bars/updateProgress';
+import { useNewWindowShortcut } from './bars/useNewWindowShortcut';
+import type { ConfirmRequest } from './ConfirmDialog';
+import { tr } from '../i18n';
 
-const Divider = () => <span className="h-4 w-px bg-line" />
+const Divider = () => <span className="h-4 w-px bg-line" />;
 
 // Barra de título, como a do VS Code: sem a barra do sistema, é ela que guarda os botões da janela
 // (os semáforos do Mac à esquerda; minimizar, maximizar e fechar do Windows à direita), arrasta a
@@ -32,27 +32,27 @@ export const TitleBar = memo(function TitleBar({
   windowTitle,
   uiHidden,
   onToggleUi,
-  confirm
+  confirm,
 }: {
   windowTitle: string
   uiHidden: boolean
   onToggleUi: () => void
   confirm: (request: ConfirmRequest) => void
 }) {
-  const updates = useUpdates()
-  const controls = useWindowControls()
-  const status = updateProgress(updates?.state)
-  const [notesOpen, setNotesOpen] = useState(false)
-  useNewWindowShortcut()
+  const updates = useUpdates();
+  const controls = useWindowControls();
+  const status = updateProgress(updates?.state);
+  const [notesOpen, setNotesOpen] = useState(false);
+  useNewWindowShortcut();
   // Azul nos dois lados do acesso remoto: na janela que mostra outro computador e no computador que
   // está sendo usado de outro (com algum aparelho conectado agora).
-  const access = useRemoteAccess()
-  const beingAccessed = !!access?.devices.some((d) => d.connected)
+  const access = useRemoteAccess();
+  const beingAccessed = !!access?.devices.some((d) => d.connected);
 
   // Aparece no menu Janela e no Mission Control.
   useEffect(() => {
-    document.title = windowTitle
-  }, [windowTitle])
+    document.title = windowTitle;
+  }, [windowTitle]);
 
   return (
     // Acima do escurecimento do canvas (z-30), abaixo dos painéis (z-40) e dos modais (z-50). Com o
@@ -83,7 +83,7 @@ export const TitleBar = memo(function TitleBar({
         <span
           title={tr(
             `Este Argus está na ${REMOTE_HOST.clientVersion} e o de ${REMOTE_HOST.name} na ${REMOTE_HOST.version}. Atualize os dois para a mesma versão; o de lá dá para atualizar daqui.`,
-            `This Argus is on ${REMOTE_HOST.clientVersion} and the one on ${REMOTE_HOST.name} on ${REMOTE_HOST.version}. Update both to the same version; you can update the other one from here.`
+            `This Argus is on ${REMOTE_HOST.clientVersion} and the one on ${REMOTE_HOST.name} on ${REMOTE_HOST.version}. Update both to the same version; you can update the other one from here.`,
           )}
           className="rounded-full border border-dev/40 bg-dev/10 px-2 py-px text-[11px] font-medium tracking-wide text-dev uppercase"
         >
@@ -135,8 +135,8 @@ export const TitleBar = memo(function TitleBar({
       {/* No body: dentro da barra, o modal ficaria preso na camada (z-35) dela. */}
       {createPortal(
         <Presence kind="modal">{notesOpen && updates && <ReleaseNotesModal current={updates.version} onClose={() => setNotesOpen(false)} />}</Presence>,
-        document.body
+        document.body,
       )}
     </div>
-  )
-})
+  );
+});

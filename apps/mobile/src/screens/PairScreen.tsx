@@ -1,33 +1,33 @@
-import { useEffect, useRef, useState } from 'react'
-import { tr } from '../i18n'
-import { pairWithCode } from '../net/connection'
-import { Section } from '../ui/List'
+import { useEffect, useRef, useState } from 'react';
+import { tr } from '../i18n';
+import { pairWithCode } from '../net/connection';
+import { Section } from '../ui/List';
 
 // Primeira vez: parear o app com o Argus de casa (só roda instalado; ver InstallScreen). Pelo QR code o código já vem no endereço
 // (#pair=...) e o pareamento começa sozinho.
 export function PairScreen({ initialCode, onPaired }: { initialCode?: string; onPaired: () => void }) {
-  const [code, setCode] = useState(initialCode ?? '')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const started = useRef(false)
+  const [code, setCode] = useState(initialCode ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const started = useRef(false);
 
   const pair = async (text: string) => {
-    setBusy(true)
-    setError(null)
-    const err = await pairWithCode(text)
-    setBusy(false)
-    if (err) return setError(err)
+    setBusy(true);
+    setError(null);
+    const err = await pairWithCode(text);
+    setBusy(false);
+    if (err) return setError(err);
     // O código não fica no endereço (nem no histórico).
-    history.replaceState(null, '', '#/')
-    onPaired()
-  }
+    history.replaceState(null, '', '#/');
+    onPaired();
+  };
 
   useEffect(() => {
     if (initialCode && !started.current) {
-      started.current = true
-      void pair(initialCode)
+      started.current = true;
+      void pair(initialCode);
     }
-  }, [initialCode])
+  }, [initialCode]);
 
   return (
     <div className="pt-safe px-safe pb-safe flex min-h-full flex-col">
@@ -42,14 +42,14 @@ export function PairScreen({ initialCode, onPaired }: { initialCode?: string; on
         title={tr('Parear com o computador', 'Pair with the computer')}
         footer={tr(
           'No computador: Argus > Configurações > Acesso remoto > Gerar código. Aponte a câmera para o QR code ou digite o código aqui.',
-          'On the computer: Argus > Settings > Remote access > Generate code. Point the camera at the QR code or type the code here.'
+          'On the computer: Argus > Settings > Remote access > Generate code. Point the camera at the QR code or type the code here.',
         )}
       >
         <form
           className="flex items-center gap-2 px-4 py-2"
           onSubmit={(e) => {
-            e.preventDefault()
-            if (code.trim() && !busy) void pair(code)
+            e.preventDefault();
+            if (code.trim() && !busy) void pair(code);
           }}
         >
           <input
@@ -71,9 +71,9 @@ export function PairScreen({ initialCode, onPaired }: { initialCode?: string; on
       <p className="mt-auto px-4 pt-10 text-center text-[13px] leading-snug text-faint">
         {tr(
           'A ligação é cifrada de ponta a ponta: só este aparelho e o seu computador leem o que passa.',
-          'The connection is end-to-end encrypted: only this device and your computer can read what goes through.'
+          'The connection is end-to-end encrypted: only this device and your computer can read what goes through.',
         )}
       </p>
     </div>
-  )
+  );
 }

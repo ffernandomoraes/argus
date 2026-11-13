@@ -1,9 +1,9 @@
-import { useRef, type ChangeEvent } from 'react'
-import { Mic, Paperclip, SendHorizontal, Square } from 'lucide-react'
-import { IconButton } from '../../ui/IconButton'
-import type { DictationState } from '../useDictation'
-import { VoiceWave } from '../VoiceWave'
-import { tr } from '../../i18n'
+import { useRef, type ChangeEvent } from 'react';
+import { Mic, Paperclip, SendHorizontal, Square } from 'lucide-react';
+import { IconButton } from '../../ui/IconButton';
+import type { DictationState } from '../useDictation';
+import { VoiceWave } from '../VoiceWave';
+import { tr } from '../../i18n';
 
 // Linha de baixo da caixa de escrever: comandos, anexar imagem ou arquivo, ditado e enviar (ou parar, com o
 // Claude trabalhando e nada para enviar). Anexar é um botão só: com um ao lado só para imagem, quem o
@@ -17,7 +17,7 @@ export function ComposerActions({
   onStop,
   onSend,
   sendDisabled,
-  sendTitle
+  sendTitle,
 }: {
   onOpenCommands: () => void
   onFiles: (files: FileList) => void
@@ -31,12 +31,12 @@ export function ComposerActions({
   // Por que o Enviar está desabilitado (no lugar do "Enviar (Enter)").
   sendTitle?: string
 }) {
-  const fileInput = useRef<HTMLInputElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null);
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) onFiles(e.target.files)
-    e.target.value = ''
-  }
-  const dictating = dictation !== 'idle'
+    if (e.target.files?.length) onFiles(e.target.files);
+    e.target.value = '';
+  };
+  const dictating = dictation !== 'idle';
 
   return (
     <div className="flex items-center gap-1 px-2 pb-2">
@@ -74,5 +74,5 @@ export function ComposerActions({
         </IconButton>
       )}
     </div>
-  )
+  );
 }

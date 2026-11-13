@@ -1,27 +1,27 @@
-import { memo, useCallback, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { ChevronDown, Folder, Loader2, Plus, Search, X } from 'lucide-react'
-import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel'
-import { useNow } from '../lib/clock'
-import { IconButton } from '../ui/IconButton'
-import { useEscape } from '../useEscape'
-import { useCanvasActions } from './CanvasContext'
-import { ConversationItem } from './ConversationItem'
-import { favoriteKey, useFavorites } from './favorites'
-import { groupByDay } from './project/groupByDay'
-import { useEmptyListText } from './project/useEmptyListText'
-import { useSessions } from './sessionsStore'
-import { useConversationSearch } from './useConversationSearch'
-import type { ConversationSummary } from './types'
-import { useActiveConversationIn, usePoppedOutSet } from './useCanvasView'
-import { tr } from '../i18n'
+import { memo, useCallback, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { ChevronDown, Folder, Loader2, Plus, Search, X } from 'lucide-react';
+import { ResizeHandles, useFloatingRect, type PanelRect } from '../conversation/FloatingPanel';
+import { useNow } from '../lib/clock';
+import { IconButton } from '../ui/IconButton';
+import { useEscape } from '../useEscape';
+import { useCanvasActions } from './CanvasContext';
+import { ConversationItem } from './ConversationItem';
+import { favoriteKey, useFavorites } from './favorites';
+import { groupByDay } from './project/groupByDay';
+import { useEmptyListText } from './project/useEmptyListText';
+import { useSessions } from './sessionsStore';
+import { useConversationSearch } from './useConversationSearch';
+import type { ConversationSummary } from './types';
+import { useActiveConversationIn, usePoppedOutSet } from './useCanvasView';
+import { tr } from '../i18n';
 
 // Todas as conversas de uma pasta, num painel flutuante: no canvas só as mais recentes
 // viram card. Nasce à esquerda, para ficar ao lado do drawer da conversa (à direita), e continua
 // aberto ao abrir uma: dá para ir passando de uma para outra.
-const LIST_WIDTH = 400
+const LIST_WIDTH = 400;
 // Quantas conversas a lista mostra de cada vez; "Ver mais" mostra outras tantas. Pasta com
 // centenas de conversas montava todas as linhas ao abrir o painel.
-const PAGE = 50
+const PAGE = 50;
 
 export const AllConversationsPanel = memo(function AllConversationsPanel({
   project,
@@ -30,7 +30,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
   onRectChange,
   onOpen,
   onNew,
-  onClose
+  onClose,
 }: {
   project: { name: string; path: string }
   nodeId: string
@@ -41,39 +41,39 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
   onClose: () => void
 }) {
   // Já vem da mais recente para a mais antiga (sessionsStore).
-  const all = useSessions(project.path)
-  const emptyText = useEmptyListText(project.path)
+  const all = useSessions(project.path);
+  const emptyText = useEmptyListText(project.path);
   // As favoritas ficam numa seção no topo, sempre à vista; as outras seguem por dia, em levas.
-  const favoriteIds = useFavorites()
+  const favoriteIds = useFavorites();
   const [favorites, conversations] = useMemo(() => {
-    if (!favoriteIds.size) return [[], all]
-    const isFav = (c: ConversationSummary) => favoriteIds.has(favoriteKey(c) ?? '')
-    return [all.filter(isFav), all.filter((c) => !isFav(c))]
-  }, [all, favoriteIds])
+    if (!favoriteIds.size) return [[], all];
+    const isFav = (c: ConversationSummary) => favoriteIds.has(favoriteKey(c) ?? '');
+    return [all.filter(isFav), all.filter((c) => !isFav(c))];
+  }, [all, favoriteIds]);
   // Busca pelo título e pelo conteúdo: com algo digitado, a lista vira os resultados (favoritas primeiro).
-  const [query, setQuery] = useState('')
-  const ordered = useMemo(() => [...favorites, ...conversations], [favorites, conversations])
-  const search = useConversationSearch(project.path, ordered, query)
+  const [query, setQuery] = useState('');
+  const ordered = useMemo(() => [...favorites, ...conversations], [favorites, conversations]);
+  const search = useConversationSearch(project.path, ordered, query);
   // Trocou de pasta: volta à primeira leva.
-  const [page, setPage] = useState({ path: project.path, count: PAGE })
-  const count = page.path === project.path ? page.count : PAGE
-  const shown = conversations.length > count ? conversations.slice(0, count) : conversations
+  const [page, setPage] = useState({ path: project.path, count: PAGE });
+  const count = page.path === project.path ? page.count : PAGE;
+  const shown = conversations.length > count ? conversations.slice(0, count) : conversations;
   // A conversa aberta no drawer, se for desta pasta, e as que estão em janela separada.
-  const active = useActiveConversationIn(nodeId)
-  const poppedOut = usePoppedOutSet()
+  const active = useActiveConversationIn(nodeId);
+  const poppedOut = usePoppedOutSet();
   // Só para separar os dias (o "há 5min" de cada linha acompanha o relógio sozinho).
-  const now = useNow(60_000)
-  const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, rect, onRectChange, LIST_WIDTH, undefined, 'left')
-  useEscape(onClose)
+  const now = useNow(60_000);
+  const panelRef = useRef<HTMLElement>(null);
+  const floating = useFloatingRect(panelRef, rect, onRectChange, LIST_WIDTH, undefined, 'left');
+  useEscape(onClose);
   // A mesma função para todas as linhas.
-  const open = useCallback((c: ConversationSummary) => onOpen(c.id), [onOpen])
+  const open = useCallback((c: ConversationSummary) => onOpen(c.id), [onOpen]);
   // Botão direito: o mesmo menu da lista na pasta (abrir, mover para a Lixeira).
-  const { openConversationMenu } = useCanvasActions()
+  const { openConversationMenu } = useCanvasActions();
   const openMenu = useCallback(
     (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c, 'panel'),
-    [openConversationMenu, nodeId]
-  )
+    [openConversationMenu, nodeId],
+  );
 
   return (
     <aside
@@ -90,7 +90,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
           <div className="truncate text-sm font-medium">
             {tr(
               `${all.length} conversa${all.length === 1 ? '' : 's'}`,
-              `${all.length} chat${all.length === 1 ? '' : 's'}`
+              `${all.length} chat${all.length === 1 ? '' : 's'}`,
             )}
           </div>
           <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
@@ -119,8 +119,8 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
           onKeyDown={(e) => {
             // Com algo digitado, o ESC limpa a busca; vazio, fecha o painel (useEscape).
             if (e.key === 'Escape' && query) {
-              e.preventDefault()
-              setQuery('')
+              e.preventDefault();
+              setQuery('');
             }
           }}
           placeholder={tr('Buscar no título ou no conteúdo', 'Search titles or content')}
@@ -157,7 +157,7 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
           {[
             ...(favorites.length ? [{ key: 'favorites', label: tr('Favoritas', 'Favorites'), items: favorites }] : []),
             // Com as favoritas em cima, as de hoje também precisam de título, senão parecem favoritas.
-            ...groupByDay(shown, now).map((g) => (g.label || !favorites.length ? g : { ...g, label: tr('Hoje', 'Today') }))
+            ...groupByDay(shown, now).map((g) => (g.label || !favorites.length ? g : { ...g, label: tr('Hoje', 'Today') })),
           ].map((g, i) => (
             <li key={g.key} className="flex flex-col gap-1">
               {g.label && (
@@ -192,5 +192,5 @@ export const AllConversationsPanel = memo(function AllConversationsPanel({
         </ul>
       )}
     </aside>
-  )
-})
+  );
+});

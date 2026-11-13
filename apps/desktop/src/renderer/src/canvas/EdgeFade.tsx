@@ -1,21 +1,21 @@
-import type { CSSProperties } from 'react'
-import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel'
+import type { CSSProperties } from 'react';
+import { BOTTOM_BAR_HEIGHT, TITLE_BAR_HEIGHT } from '../conversation/FloatingPanel';
 
 // Largura da faixa esfumaçada em cada borda. O "ver tudo" deixa folga maior que ela, para os
 // nomes dos grupos não caírem no borrão (useCanvasShortcuts).
-export const FADE_SIZE = 48
+export const FADE_SIZE = 48;
 
-type Side = 'top' | 'bottom' | 'left' | 'right'
+type Side = 'top' | 'bottom' | 'left' | 'right';
 
 // Para onde o efeito some: da borda para o centro do canvas.
-const TOWARD: Record<Side, string> = { top: 'to bottom', bottom: 'to top', left: 'to right', right: 'to left' }
+const TOWARD: Record<Side, string> = { top: 'to bottom', bottom: 'to top', left: 'to right', right: 'to left' };
 
 const PLACE: Record<Side, CSSProperties> = {
   top: { top: TITLE_BAR_HEIGHT, left: 0, right: 0, height: FADE_SIZE },
   bottom: { bottom: BOTTOM_BAR_HEIGHT, left: 0, right: 0, height: FADE_SIZE },
   left: { top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, left: 0, width: FADE_SIZE },
-  right: { top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, right: 0, width: FADE_SIZE }
-}
+  right: { top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, right: 0, width: FADE_SIZE },
+};
 
 // Bordas do canvas esfumaçadas: desfoque e a cor do fundo, fortes na beirada e sumindo para o
 // centro. Os blocos que passam por baixo da navegação, do zoom e dos limites (todos nos cantos)
@@ -26,7 +26,7 @@ export function EdgeFade() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[4] overflow-hidden">
       {(Object.keys(PLACE) as Side[]).map((side) => {
-        const mask = `linear-gradient(${TOWARD[side]}, black, transparent)`
+        const mask = `linear-gradient(${TOWARD[side]}, black, transparent)`;
         return (
           <div
             key={side}
@@ -36,11 +36,11 @@ export function EdgeFade() {
               background: `linear-gradient(${TOWARD[side]}, color-mix(in srgb, var(--color-canvas) 65%, transparent), transparent)`,
               backdropFilter: 'blur(3px)',
               maskImage: mask,
-              WebkitMaskImage: mask
+              WebkitMaskImage: mask,
             }}
           />
-        )
+        );
       })}
     </div>
-  )
+  );
 }

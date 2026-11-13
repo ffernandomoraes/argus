@@ -1,11 +1,11 @@
-import { ViewportPortal, useStore } from '@xyflow/react'
-import type { Guide } from './snapping'
+import { ViewportPortal, useStore } from '@xyflow/react';
+import type { Guide } from './snapping';
 
 // Linhas-guia do encaixe, desenhadas dentro do canvas (acompanham zoom e posição).
 export function AlignmentGuides({ guides }: { guides: Guide[] }) {
   // Espessura de 1px na tela em qualquer zoom.
-  const thickness = useStore((s) => 1 / s.transform[2])
-  if (guides.length === 0) return null
+  const thickness = useStore((s) => 1 / s.transform[2]);
+  if (guides.length === 0) return null;
 
   return (
     <ViewportPortal>
@@ -21,5 +21,5 @@ export function AlignmentGuides({ guides }: { guides: Guide[] }) {
         />
       ))}
     </ViewportPortal>
-  )
+  );
 }

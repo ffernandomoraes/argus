@@ -1,27 +1,27 @@
-import type { ActiveConversation } from '../CanvasContext'
-import { looseProject } from '../factory'
-import { groupAccount } from '../operations'
-import type { CanvasNode, ConversationSummary, ProjectData } from '../types'
-import { tr } from '../../i18n'
+import type { ActiveConversation } from '../CanvasContext';
+import { looseProject } from '../factory';
+import { groupAccount } from '../operations';
+import type { CanvasNode, ConversationSummary, ProjectData } from '../types';
+import { tr } from '../../i18n';
 
 // Pasta em que a conversa do bloco roda: a do projeto ou, na conversa solta, a do usuário.
 export function projectOf(node: CanvasNode | undefined): ProjectData | null {
-  if (node?.type === 'project') return node.data
-  if (node?.type === 'chat') return looseProject()
+  if (node?.type === 'project') return node.data;
+  if (node?.type === 'chat') return looseProject();
   if (node?.type === 'chatPanel')
     return {
       name: node.data.projectName ?? tr('Sem projeto', 'No project'),
       path: node.data.path,
       color: '#71717a',
-      ...(node.data.folders && { folders: node.data.folders })
-    }
-  return null
+      ...(node.data.folders && { folders: node.data.folders }),
+    };
+  return null;
 }
 
 // Tom do grupo que contém o bloco: o drawer puxa essa cor de leve.
 function tintOf(nodes: CanvasNode[], parentId: string | undefined): string | undefined {
-  const group = parentId ? nodes.find((n) => n.id === parentId) : undefined
-  return group?.type === 'area' ? group.data.color : undefined
+  const group = parentId ? nodes.find((n) => n.id === parentId) : undefined;
+  return group?.type === 'area' ? group.data.color : undefined;
 }
 
 // De onde a conversa de um drawer abriu e onde ela roda, com a conta e a cor do grupo.
@@ -32,16 +32,16 @@ export type SlotTarget = {
   loose: boolean
   account?: string
   tint?: string
-}
+};
 
 // Conversa sem projeto ainda não enviada não tem bloco: roda na pasta do usuário. Nulo se a pasta
 // (ou o card) saiu do canvas: o drawer some sozinho.
 export function slotTarget(nodes: CanvasNode[], active: ActiveConversation | null): SlotTarget | null {
-  if (!active) return null
-  const node = nodes.find((n) => n.id === active.nodeId)
-  const loose = node ? node.type === 'chat' : active.nodeId === null
-  const project = node ? projectOf(node) : loose ? looseProject() : null
-  if (!project) return null
+  if (!active) return null;
+  const node = nodes.find((n) => n.id === active.nodeId);
+  const loose = node ? node.type === 'chat' : active.nodeId === null;
+  const project = node ? projectOf(node) : loose ? looseProject() : null;
+  if (!project) return null;
   return {
     nodeId: node?.id,
     parentId: node?.parentId,
@@ -49,8 +49,8 @@ export function slotTarget(nodes: CanvasNode[], active: ActiveConversation | nul
     loose,
     // Conta do grupo da pasta (ou do card da conversa solta); fora de grupo, a padrão.
     account: groupAccount(nodes, node),
-    tint: tintOf(nodes, node?.parentId)
-  }
+    tint: tintOf(nodes, node?.parentId),
+  };
 }
 
 // Mesmo lugar, mesma pasta, mesma conta e cor: a lista de nós muda a cada quadro de um arraste, e o
@@ -66,7 +66,7 @@ export function sameTarget(a: SlotTarget, b: SlotTarget): boolean {
     a.project.path === b.project.path &&
     a.project.color === b.project.color &&
     a.project.folders?.join('\n') === b.project.folders?.join('\n')
-  )
+  );
 }
 
 // Conversa nova, ainda fora da lista da pasta. Sem mensagem, a hora não aparece em lugar nenhum:
@@ -81,8 +81,8 @@ export function draftConversation(active: ActiveConversation): ConversationSumma
     repliedAt: '',
     contextPercent: 0,
     sessionId: active.sessionId,
-    draft: true
-  }
+    draft: true,
+  };
 }
 
 // A conversa do drawer. A nova, que já entrou na lista da pasta, passa a ser a conversa normal;
@@ -90,8 +90,8 @@ export function draftConversation(active: ActiveConversation): ConversationSumma
 export function conversationOf(
   active: ActiveConversation,
   sessions: ConversationSummary[],
-  draft: ConversationSummary | null
+  draft: ConversationSummary | null,
 ): ConversationSummary | undefined {
-  const started = active.sessionId ? sessions.find((c) => c.id === active.sessionId) : undefined
-  return started ?? draft ?? sessions.find((c) => c.id === active.conversationId)
+  const started = active.sessionId ? sessions.find((c) => c.id === active.sessionId) : undefined;
+  return started ?? draft ?? sessions.find((c) => c.id === active.conversationId);
 }

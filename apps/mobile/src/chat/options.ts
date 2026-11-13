@@ -1,41 +1,41 @@
-import { FilePen, Hand, ListChecks, ShieldCheck, ShieldOff, type LucideIcon } from 'lucide-react'
-import type { ClaudeModel } from '@argus/shared/models'
-import type { ChatSettings } from '@argus/shared/chat'
-import { tr } from '../i18n'
+import { FilePen, Hand, ListChecks, ShieldCheck, ShieldOff, type LucideIcon } from 'lucide-react';
+import type { ClaudeModel } from '@argus/shared/models';
+import type { ChatSettings } from '@argus/shared/chat';
+import { tr } from '../i18n';
 
 // Cópia das opções da conversa do Argus (apps/desktop/src/renderer/src/conversation/modelOptions.ts e
 // permissionModes.ts): as de lá dependem do window.api do Electron. Mudou lá, mude aqui.
 
-export const DEFAULT_SETTINGS: ChatSettings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: '' }
+export const DEFAULT_SETTINGS: ChatSettings = { model: '', effort: '', thinking: false, ultracode: false, permissionMode: '' };
 
 export const EFFORTS = [
   { value: 'low', label: tr('Baixo', 'Low') },
   { value: 'medium', label: tr('Médio', 'Medium') },
   { value: 'high', label: tr('Alto', 'High') },
   { value: 'xhigh', label: tr('Muito alto', 'Extra high') },
-  { value: 'max', label: tr('Máximo', 'Max') }
-]
+  { value: 'max', label: tr('Máximo', 'Max') },
+];
 
-export const effortLabel = (value: string) => EFFORTS.find((e) => e.value === value)?.label ?? 'Auto'
+export const effortLabel = (value: string) => EFFORTS.find((e) => e.value === value)?.label ?? 'Auto';
 
 export function familyOf(name: string): string {
-  if (name.includes(' ')) return name.split(' ')[0]
-  const words: string[] = []
+  if (name.includes(' ')) return name.split(' ')[0];
+  const words: string[] = [];
   for (const part of name.split('-')) {
-    if (/^\d/.test(part)) break
-    words.push(part.length <= 3 ? part.toUpperCase() : part[0].toUpperCase() + part.slice(1))
+    if (/^\d/.test(part)) break;
+    words.push(part.length <= 3 ? part.toUpperCase() : part[0].toUpperCase() + part.slice(1));
   }
-  return words.join(' ') || name
+  return words.join(' ') || name;
 }
 
 export function groupByFamily(models: ClaudeModel[]): [string, ClaudeModel[]][] {
-  const families = new Map<string, ClaudeModel[]>()
+  const families = new Map<string, ClaudeModel[]>();
   for (const m of models) {
-    if (m.value === '') continue
-    const family = familyOf(m.displayName)
-    families.set(family, [...(families.get(family) ?? []), m])
+    if (m.value === '') continue;
+    const family = familyOf(m.displayName);
+    families.set(family, [...(families.get(family) ?? []), m]);
   }
-  return [...families.entries()]
+  return [...families.entries()];
 }
 
 export const MODES: { value: string; label: string; description: string; icon: LucideIcon; danger?: boolean }[] = [
@@ -46,40 +46,40 @@ export const MODES: { value: string; label: string; description: string; icon: L
     value: 'auto',
     label: 'Auto',
     description: tr('Aprova o que passa numa checagem de segurança e para no que for arriscado.', 'Approves what passes a safety check and stops on anything risky.'),
-    icon: ShieldCheck
+    icon: ShieldCheck,
   },
   {
     value: 'bypassPermissions',
     label: tr('Ignorar permissões', 'Bypass permissions'),
     description: tr('Não pede aprovação nem para comandos potencialmente perigosos.', 'Doesn’t ask for approval, even for potentially dangerous commands.'),
     icon: ShieldOff,
-    danger: true
-  }
-]
+    danger: true,
+  },
+];
 
 // Comandos de barra que o celular oferece (os do Argus que fazem sentido aqui).
 export const COMMANDS = [
   { name: 'compact', description: tr('Resume a conversa até aqui para liberar contexto.', 'Summarizes the chat so far to free up context.') },
   { name: 'clear', description: tr('Começa uma conversa nova nesta pasta. A atual fica salva.', 'Starts a new chat in this folder. The current one is saved.') },
-  { name: 'rename', description: tr('Renomeia a conversa.', 'Renames the chat.') }
-] as const
+  { name: 'rename', description: tr('Renomeia a conversa.', 'Renames the chat.') },
+] as const;
 
 // Preferências de cada conversa guardadas neste aparelho (como a janela do Argus faz): a conta
 // escolhida e o modelo/esforço/modo. Conversa aberta no Argus vale o que ela usa de verdade.
-type Prefs = { account?: string; settings?: ChatSettings }
-const key = (id: string) => `argus-chat:${id}`
+type Prefs = { account?: string; settings?: ChatSettings };
+const key = (id: string) => `argus-chat:${id}`;
 
 export function loadPrefs(id: string): Prefs {
   try {
-    return JSON.parse(localStorage.getItem(key(id)) ?? '{}') as Prefs
+    return JSON.parse(localStorage.getItem(key(id)) ?? '{}') as Prefs;
   } catch {
-    return {}
+    return {};
   }
 }
 
 export function savePrefs(id: string, patch: Prefs): void {
   try {
-    localStorage.setItem(key(id), JSON.stringify({ ...loadPrefs(id), ...patch }))
+    localStorage.setItem(key(id), JSON.stringify({ ...loadPrefs(id), ...patch }));
   } catch {
     // sem armazenamento: vale até fechar a página
   }
@@ -87,11 +87,11 @@ export function savePrefs(id: string, patch: Prefs): void {
 
 // Conversa nova ganhou a sessão: o que foi escolhido antes vai junto.
 export function movePrefs(from: string, to: string): void {
-  const saved = loadPrefs(from)
-  if (!Object.keys(saved).length) return
-  savePrefs(to, saved)
+  const saved = loadPrefs(from);
+  if (!Object.keys(saved).length) return;
+  savePrefs(to, saved);
   try {
-    localStorage.removeItem(key(from))
+    localStorage.removeItem(key(from));
   } catch {
     // nada
   }

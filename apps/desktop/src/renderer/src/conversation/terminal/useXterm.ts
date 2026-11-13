@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useEffectEvent, useRef, useState, type RefObject } from 'react'
-import { getConversationSettings } from '../conversationSettings'
-import { launchSettings } from '../SessionSettings'
-import { connectPty } from './connectPty'
-import type { Xterm } from './createXterm'
-import { fontSizeFor } from './theme'
+import { useCallback, useEffect, useEffectEvent, useRef, useState, type RefObject } from 'react';
+import { getConversationSettings } from '../conversationSettings';
+import { launchSettings } from '../SessionSettings';
+import { connectPty } from './connectPty';
+import type { Xterm } from './createXterm';
+import { fontSizeFor } from './theme';
 
 // O xterm (~500 KB) fica num pedaço à parte, fora do que roda na abertura do app. O main.tsx o
 // pré-carrega com a janela ociosa; carregado, o terminal abre na hora, como antes.
-let xtermModule: typeof import('./createXterm') | null = null
-export const loadXterm = () => import('./createXterm').then((m) => (xtermModule = m))
+let xtermModule: typeof import('./createXterm') | null = null;
+export const loadXterm = () => import('./createXterm').then((m) => (xtermModule = m));
 
 export type XtermOptions = {
   sessionKey: string
@@ -28,27 +28,27 @@ export type XtermOptions = {
   gpu?: boolean
   // Mudou: abre de novo, lendo conta e conversa outra vez (a troca de conta já encerrou o processo).
   relaunch?: number
-}
+};
 
-type Ended = { generation: string; error: string | null; exitCode: number | null }
+type Ended = { generation: string; error: string | null; exitCode: number | null };
 
 // Terminal do xterm em `ref`, ligado ao processo da sessão. Abre de novo quando muda a sessão, a
 // pasta ou o tipo (claude ou shell), ou com `reopen`; a escala da fonte só ajusta o que está aberto.
 export function useXterm(
   ref: RefObject<HTMLElement | null>,
-  { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus, gpu, relaunch = 0 }: XtermOptions
+  { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus, gpu, relaunch = 0 }: XtermOptions,
 ): { error: string | null; exitCode: number | null; reopen: () => void } {
-  const [attempt, setAttempt] = useState(0)
+  const [attempt, setAttempt] = useState(0);
   // Erro ou fim do processo da abertura atual; o de uma abertura anterior não vale mais.
-  const [ended, setEnded] = useState<Ended | null>(null)
-  const generation = `${sessionKey}\n${cwd}\n${shell ? 'shell' : 'claude'}\n${attempt}\n${relaunch}`
-  const live = useRef<{ xterm: Xterm; scale: number } | null>(null)
+  const [ended, setEnded] = useState<Ended | null>(null);
+  const generation = `${sessionKey}\n${cwd}\n${shell ? 'shell' : 'claude'}\n${attempt}\n${relaunch}`;
+  const live = useRef<{ xterm: Xterm; scale: number } | null>(null);
 
   // Conta, sessão, modelo, esforço e modo valem ao abrir, como no terminal comum (os da conversa
   // que ele retoma): lidos aqui, mudar depois não recria o terminal.
   const open = useEffectEvent((el: HTMLElement, generation: string, { createXterm }: NonNullable<typeof xtermModule>) => {
-    const xterm = createXterm(el, fontSizeFor(fontScale), autoFocus, gpu)
-    const settings = getConversationSettings(sessionId)
+    const xterm = createXterm(el, fontSizeFor(fontScale), autoFocus, gpu);
+    const settings = getConversationSettings(sessionId);
     const disconnect = connectPty(
       xterm,
       {
@@ -61,51 +61,51 @@ export function useXterm(
         model: settings.model || undefined,
         effort: settings.effort || undefined,
         settingsJson: launchSettings(settings),
-        permissionMode: settings.permissionMode || undefined
+        permissionMode: settings.permissionMode || undefined,
       },
       {
         onError: (error) => setEnded({ generation, error, exitCode: null }),
-        onExit: (exitCode) => setEnded({ generation, error: null, exitCode })
-      }
-    )
-    live.current = { xterm, scale: fontScale }
+        onExit: (exitCode) => setEnded({ generation, error: null, exitCode }),
+      },
+    );
+    live.current = { xterm, scale: fontScale };
     // A conversa digitou um comando aqui (shell do drawer): o foco vem para a pessoa só dar Enter.
-    const offTyped = window.api.terminal.onTyped(sessionKey, () => xterm.term.focus())
+    const offTyped = window.api.terminal.onTyped(sessionKey, () => xterm.term.focus());
     return () => {
-      offTyped()
-      live.current = null
-      disconnect()
-      xterm.dispose()
-    }
-  })
+      offTyped();
+      live.current = null;
+      disconnect();
+      xterm.dispose();
+    };
+  });
 
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (xtermModule) return open(el, generation, xtermModule)
-    let close: (() => void) | undefined
-    let cancelled = false
+    const el = ref.current;
+    if (!el) return;
+    if (xtermModule) return open(el, generation, xtermModule);
+    let close: (() => void) | undefined;
+    let cancelled = false;
     loadXterm().then(
       (m) => {
-        if (!cancelled) close = open(el, generation, m)
+        if (!cancelled) close = open(el, generation, m);
       },
-      (err: unknown) => !cancelled && setEnded({ generation, error: String(err), exitCode: null })
-    )
+      (err: unknown) => !cancelled && setEnded({ generation, error: String(err), exitCode: null }),
+    );
     return () => {
-      cancelled = true
-      close?.()
-    }
-  }, [ref, generation])
+      cancelled = true;
+      close?.();
+    };
+  }, [ref, generation]);
 
   // A montagem já abriu com a escala atual: só uma troca de verdade mexe na fonte.
   useEffect(() => {
-    const current = live.current
-    if (!current || current.scale === fontScale) return
-    current.scale = fontScale
-    current.xterm.setFontSize(fontSizeFor(fontScale))
-  }, [fontScale])
+    const current = live.current;
+    if (!current || current.scale === fontScale) return;
+    current.scale = fontScale;
+    current.xterm.setFontSize(fontSizeFor(fontScale));
+  }, [fontScale]);
 
-  const reopen = useCallback(() => setAttempt((a) => a + 1), [])
-  const shown = ended?.generation === generation ? ended : null
-  return { error: shown?.error ?? null, exitCode: shown?.exitCode ?? null, reopen }
+  const reopen = useCallback(() => setAttempt((a) => a + 1), []);
+  const shown = ended?.generation === generation ? ended : null;
+  return { error: shown?.error ?? null, exitCode: shown?.exitCode ?? null, reopen };
 }

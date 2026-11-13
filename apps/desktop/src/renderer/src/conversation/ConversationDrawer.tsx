@@ -1,29 +1,29 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { ExternalLink, Mail, Maximize2, PictureInPicture2, Pin, PinOff, Search, Star, StarOff } from 'lucide-react'
-import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites'
-import { markUnread } from '../canvas/sessionsStore'
-import type { SubagentRef, TasksRef } from '../canvas/CanvasContext'
-import type { ConversationSummary, ProjectData } from '../canvas/types'
-import { useStableCallback } from '../lib/useStableCallback'
-import { MOTION, reduced } from '../motion'
-import { useEscape } from '../useEscape'
-import { askColors } from './askColors'
-import { sameConversation } from './conversationIdentity'
-import { CodeTerminalButtons } from './composer/CodeTerminalButtons'
-import { ConversationView } from './ConversationView'
-import { DrawerTerminal, useDrawerShell } from './DrawerTerminal'
-import type { LineRange } from './fileLinks'
-import { HeaderButton } from './header/HeaderButton'
-import { MoreMenu, type MoreMenuItem } from './header/MoreMenu'
-import { useFloatingRect } from './hooks/useFloatingRect'
-import { useFocusMode } from './hooks/useFocusMode'
-import { BOTTOM_BAR_HEIGHT, DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry'
-import { ResizeHandles } from './FloatingPanel'
-import { useSearchShortcut } from './search/searchShortcut'
-import { useDrawerZoom } from './useDrawerZoom'
-import { keys } from '../platform'
-import { tr } from '../i18n'
-import { IS_REMOTE } from '../remote'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { ExternalLink, Mail, Maximize2, PictureInPicture2, Pin, PinOff, Search, Star, StarOff } from 'lucide-react';
+import { favoriteKey, setFavorite, useFavorites } from '../canvas/favorites';
+import { markUnread } from '../canvas/sessionsStore';
+import type { SubagentRef, TasksRef } from '../canvas/CanvasContext';
+import type { ConversationSummary, ProjectData } from '../canvas/types';
+import { useStableCallback } from '../lib/useStableCallback';
+import { MOTION, reduced } from '../motion';
+import { useEscape } from '../useEscape';
+import { askColors } from './askColors';
+import { sameConversation } from './conversationIdentity';
+import { CodeTerminalButtons } from './composer/CodeTerminalButtons';
+import { ConversationView } from './ConversationView';
+import { DrawerTerminal, useDrawerShell } from './DrawerTerminal';
+import type { LineRange } from './fileLinks';
+import { HeaderButton } from './header/HeaderButton';
+import { MoreMenu, type MoreMenuItem } from './header/MoreMenu';
+import { useFloatingRect } from './hooks/useFloatingRect';
+import { useFocusMode } from './hooks/useFocusMode';
+import { BOTTOM_BAR_HEIGHT, DRAWER_DEFAULT_WIDTH, TITLE_BAR_HEIGHT, type PanelRect } from './panelGeometry';
+import { ResizeHandles } from './FloatingPanel';
+import { useSearchShortcut } from './search/searchShortcut';
+import { useDrawerZoom } from './useDrawerZoom';
+import { keys } from '../platform';
+import { tr } from '../i18n';
+import { IS_REMOTE } from '../remote';
 
 type Props = {
   project: ProjectData
@@ -63,53 +63,53 @@ type Props = {
   // Sem ele, o item de fixar não aparece.
   onTogglePin?: () => void
   onClose: () => void
-}
+};
 
 // Painel flutuante à direita. Não é modal: o canvas continua clicável ao lado,
 // e abrir outra conversa troca o conteúdo deste mesmo painel.
 // No modo foco, o painel cobre a área toda abaixo da barra de título e a conversa fica numa
 // coluna estreita no centro: para ler respostas longas sem distração.
 export function ConversationDrawer(props: Props) {
-  const { project, account, tint, conversation, rect, onClose } = props
-  const zoom = useDrawerZoom()
-  const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH, props.obstacles)
-  const [focus, setFocus, covering] = useFocusMode(panelRef)
-  const leaveFocus = useCallback(() => void setFocus(false), [setFocus])
+  const { project, account, tint, conversation, rect, onClose } = props;
+  const zoom = useDrawerZoom();
+  const panelRef = useRef<HTMLElement>(null);
+  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH, props.obstacles);
+  const [focus, setFocus, covering] = useFocusMode(panelRef);
+  const leaveFocus = useCallback(() => void setFocus(false), [setFocus]);
 
   // Outra conversa no mesmo drawer: o painel fica, e só o conteúdo entra com o efeito padrão
   // (fade subindo uns pixels). Sem fade de saída: a conversa antiga já deixou de ser a aberta,
   // e segurá-la na tela misturaria o histórico dela com a pasta da nova. A conversa nova que
   // ganhou o id da sessão continua a mesma: não anima.
-  const contentRef = useRef<HTMLDivElement>(null)
-  const { id, sessionId } = conversation
-  const shown = useRef({ id, sessionId })
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { id, sessionId } = conversation;
+  const shown = useRef({ id, sessionId });
   useLayoutEffect(() => {
-    const before = shown.current
-    const now = { id, sessionId }
-    shown.current = now
-    if (sameConversation(before, now) || reduced()) return
-    contentRef.current?.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], MOTION.panel.in)
-  }, [id, sessionId])
+    const before = shown.current;
+    const now = { id, sessionId };
+    shown.current = now;
+    if (sameConversation(before, now) || reduced()) return;
+    contentRef.current?.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], MOTION.panel.in);
+  }, [id, sessionId]);
 
-  useEscape(onClose)
+  useEscape(onClose);
   // Empilhado depois do fechar: o primeiro ESC sai do foco, o segundo fecha.
-  useEscape(leaveFocus, focus)
+  useEscape(leaveFocus, focus);
 
   // Arquivo e diff abrem no código ao lado, por baixo do foco: saem dele para aparecer.
   const openFile = useStableCallback((path: string, lines?: LineRange) => {
-    leaveFocus()
-    props.onOpenFile(path, lines)
-  })
+    leaveFocus();
+    props.onOpenFile(path, lines);
+  });
   const openDiff = useStableCallback((path: string) => {
-    leaveFocus()
-    props.onOpenDiff(path)
-  })
+    leaveFocus();
+    props.onOpenDiff(path);
+  });
   // O plano também: o drawer volta ao tamanho dele e encolhe se precisar de espaço (drawerState).
   const openPlan = useStableCallback((text: string, path?: string) => {
-    leaveFocus()
-    props.onOpenPlan(text, path)
-  })
+    leaveFocus();
+    props.onOpenPlan(text, path);
+  });
 
   // No foco, o cabeçalho tem a cor do painel: o tom do grupo destacava demais.
   const headerStyle = useMemo<CSSProperties>(
@@ -118,20 +118,20 @@ export function ConversationDrawer(props: Props) {
       ...(tint &&
         !focus && {
           background: `color-mix(in srgb, ${tint} 8%, var(--color-bg))`,
-          borderBottomColor: `color-mix(in srgb, ${tint} 25%, var(--color-line))`
-        })
+          borderBottomColor: `color-mix(in srgb, ${tint} 25%, var(--color-line))`,
+        }),
     }),
-    [zoom, tint, focus]
-  )
+    [zoom, tint, focus],
+  );
   // Busca na conversa: ⌘F (Ctrl+F) com este drawer em uso, ou a lupa do cabeçalho.
-  const [searchSignal, setSearchSignal] = useState(0)
-  const openSearch = useCallback(() => setSearchSignal((n) => n + 1), [])
-  useSearchShortcut(panelRef, openSearch)
-  const actions = useDrawerActions(props, focus, setFocus, openSearch)
-  const shell = useDrawerShell(conversation)
-  const codeButton = useCodeButton(props, focus, shell.open, shell.toggle)
+  const [searchSignal, setSearchSignal] = useState(0);
+  const openSearch = useCallback(() => setSearchSignal((n) => n + 1), []);
+  useSearchShortcut(panelRef, openSearch);
+  const actions = useDrawerActions(props, focus, setFocus, openSearch);
+  const shell = useDrawerShell(conversation);
+  const codeButton = useCodeButton(props, focus, shell.open, shell.toggle);
   // Workspace: o shell abre na primeira pasta dele (a do workspace em si é só um id).
-  const shellCwd = project.folders?.[0] ?? project.path
+  const shellCwd = project.folders?.[0] ?? project.path;
 
   return (
     <aside
@@ -151,9 +151,9 @@ export function ConversationDrawer(props: Props) {
         ...(tint && {
           borderColor: `color-mix(in srgb, ${tint} 35%, var(--color-line))`,
           background: `color-mix(in srgb, ${tint} 3%, var(--color-bg))`,
-          ...askColors(tint)
+          ...askColors(tint),
         }),
-        ...(focus && { borderColor: 'transparent' })
+        ...(focus && { borderColor: 'transparent' }),
       }}
     >
       {!focus && <ResizeHandles onResizeStart={floating.onResizeStart} />}
@@ -198,27 +198,27 @@ export function ConversationDrawer(props: Props) {
         )}
       </div>
     </aside>
-  )
+  );
 }
 
 // Botões do cabeçalho do drawer: a lupa da busca e o menu de mais opções. Somem no foco (lá o ⌘F
 // continua valendo). Memorizados, para o cabeçalho e a conversa não redesenharem enquanto o painel
 // é arrastado.
 function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) => Promise<void>, onSearch: () => void) {
-  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, onClose } = props
-  const draft = !!conversation.draft
+  const { pinned = false, onTogglePin, conversation, onPinToCanvas, onPopout, onClose } = props;
+  const draft = !!conversation.draft;
   // Favoritar precisa do id da sessão: a conversa ainda não enviada não tem.
-  const key = favoriteKey(conversation)
-  const favorite = useFavorites().has(key ?? '')
+  const key = favoriteKey(conversation);
+  const favorite = useFavorites().has(key ?? '');
   // Estável: a conversa muda a cada passo do Claude e redesenharia o cabeçalho à toa.
-  const toggleFavorite = useStableCallback(() => setFavorite(conversation, !favorite))
+  const toggleFavorite = useStableCallback(() => setFavorite(conversation, !favorite));
   // Fecha junto: com a conversa na tela, a bolinha apagaria de novo ao voltar para a janela.
   const leaveUnread = useStableCallback(() => {
-    markUnread(conversation.sessionId ?? conversation.id)
-    onClose()
-  })
+    markUnread(conversation.sessionId ?? conversation.id);
+    onClose();
+  });
   return useMemo(() => {
-    if (focus) return null
+    if (focus) return null;
     const items: MoreMenuItem[] = [
       { label: tr('Modo foco', 'Focus mode'), icon: Maximize2, onClick: () => void setFocus(true) },
       ...(onTogglePin ? [pinned ? { label: tr('Desafixar', 'Unpin'), icon: PinOff, onClick: onTogglePin } : { label: tr('Fixar', 'Pin'), icon: Pin, onClick: onTogglePin }] : []),
@@ -230,15 +230,15 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
               ? [
                   favorite
                     ? { label: tr('Remover dos favoritos', 'Remove from favorites'), icon: StarOff, onClick: toggleFavorite }
-                    : { label: tr('Favoritar', 'Add to favorites'), icon: Star, onClick: toggleFavorite }
+                    : { label: tr('Favoritar', 'Add to favorites'), icon: Star, onClick: toggleFavorite },
                 ]
               : []),
             { label: tr('Marcar como não lida', 'Mark as unread'), icon: Mail, onClick: leaveUnread },
             { label: tr('Colocar no canvas', 'Place on canvas'), icon: PictureInPicture2, onClick: onPinToCanvas },
             // Na janela remota a janela separada abriria lá, não aqui.
-            ...(IS_REMOTE ? [] : [{ label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }])
-          ])
-    ]
+            ...(IS_REMOTE ? [] : [{ label: tr('Abrir em janela separada', 'Open in separate window'), icon: ExternalLink, onClick: onPopout }]),
+          ]),
+    ];
     return (
       <>
         <HeaderButton label={tr(`Buscar na conversa (${keys('⌘F')})`, `Search in chat (${keys('⌘F')})`)} onClick={onSearch}>
@@ -246,17 +246,17 @@ function useDrawerActions(props: Props, focus: boolean, setFocus: (on: boolean) 
         </HeaderButton>
         <MoreMenu items={items} />
       </>
-    )
-  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, leaveUnread, onPinToCanvas, onPopout, onSearch])
+    );
+  }, [focus, setFocus, onTogglePin, pinned, draft, key, favorite, toggleFavorite, leaveUnread, onPinToCanvas, onPopout, onSearch]);
 }
 
 // Botões do código e do terminal em cima da caixa de escrever. O do código some no foco; o do
 // terminal fica, porque o terminal continua embaixo.
 function useCodeButton(props: Props, focus: boolean, terminalOpen: boolean, onToggleTerminal: () => void) {
-  const { loose = false, codeOpen = false, onToggleCode } = props
+  const { loose = false, codeOpen = false, onToggleCode } = props;
   // Workspace: o código abre pelo link de cada arquivo, na pasta dele; a do workspace não tem projeto.
-  const workspace = !!props.project.folders
-  const showCode = !(focus || loose || workspace)
+  const workspace = !!props.project.folders;
+  const showCode = !(focus || loose || workspace);
   return useMemo(
     () => (
       <CodeTerminalButtons
@@ -266,6 +266,6 @@ function useCodeButton(props: Props, focus: boolean, terminalOpen: boolean, onTo
         onToggleTerminal={onToggleTerminal}
       />
     ),
-    [showCode, codeOpen, onToggleCode, terminalOpen, onToggleTerminal]
-  )
+    [showCode, codeOpen, onToggleCode, terminalOpen, onToggleTerminal],
+  );
 }

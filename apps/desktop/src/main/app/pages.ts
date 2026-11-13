@@ -1,4 +1,4 @@
-import type { Page } from '../ipc/page'
+import type { Page } from '../ipc/page';
 
 // O que uma página pediu (pastas vigiadas, terminais abertos, "canvas pronto") vale até ela acabar:
 // a janela fechar, recarregar (o quadro principal abre outro documento) ou a página cair. A página
@@ -8,59 +8,59 @@ import type { Page } from '../ipc/page'
 // iframe carregando não conta, nem uma navegação barrada pelas travas de segurança.
 function onPageGone(wc: Page, cb: () => void): () => void {
   const gone = (): void => {
-    stop()
-    cb()
-  }
+    stop();
+    cb();
+  };
   const stop = (): void => {
-    wc.off('did-navigate', gone)
-    wc.off('render-process-gone', gone)
-    wc.off('destroyed', gone)
-  }
-  wc.on('did-navigate', gone)
-  wc.on('render-process-gone', gone)
-  wc.once('destroyed', gone)
-  return stop
+    wc.off('did-navigate', gone);
+    wc.off('render-process-gone', gone);
+    wc.off('destroyed', gone);
+  };
+  wc.on('did-navigate', gone);
+  wc.on('render-process-gone', gone);
+  wc.once('destroyed', gone);
+  return stop;
 }
 
 // Um valor por página, que some sozinho quando ela acaba (onDrop avisa).
 export class PageMap<T> {
-  private items = new Map<Page, { value: T; stop: () => void }>()
+  private items = new Map<Page, { value: T; stop: () => void }>();
 
   constructor(private onDrop?: (wc: Page) => void) {}
 
   get(wc: Page): T | undefined {
-    return this.items.get(wc)?.value
+    return this.items.get(wc)?.value;
   }
 
   has(wc: Page): boolean {
-    return this.items.has(wc)
+    return this.items.has(wc);
   }
 
   set(wc: Page, value: T): void {
-    const item = this.items.get(wc)
+    const item = this.items.get(wc);
     if (item) {
-      item.value = value
-      return
+      item.value = value;
+      return;
     }
     const stop = onPageGone(wc, () => {
-      this.items.delete(wc)
-      this.onDrop?.(wc)
-    })
-    this.items.set(wc, { value, stop })
+      this.items.delete(wc);
+      this.onDrop?.(wc);
+    });
+    this.items.set(wc, { value, stop });
   }
 
   delete(wc: Page): void {
-    const item = this.items.get(wc)
-    if (!item) return
-    item.stop()
-    this.items.delete(wc)
+    const item = this.items.get(wc);
+    if (!item) return;
+    item.stop();
+    this.items.delete(wc);
   }
 
   entries(): [Page, T][] {
-    return [...this.items].map(([wc, item]) => [wc, item.value])
+    return [...this.items].map(([wc, item]) => [wc, item.value]);
   }
 
   values(): T[] {
-    return [...this.items.values()].map((item) => item.value)
+    return [...this.items.values()].map((item) => item.value);
   }
 }

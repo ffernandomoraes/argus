@@ -1,5 +1,5 @@
-import { addBreadcrumb, breadcrumbsIntegration, eventLoopBlockIntegration, init } from '@sentry/electron/renderer'
-import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '@argus/shared/windowBlock'
+import { addBreadcrumb, breadcrumbsIntegration, eventLoopBlockIntegration, init } from '@sentry/electron/renderer';
+import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '@argus/shared/windowBlock';
 
 // Erros desta janela vão para o processo principal, que limpa o que identifica a pessoa e envia (ver
 // src/main/errorReports). Importado antes de tudo em
@@ -13,9 +13,9 @@ declare global {
 }
 
 // Quadro que levou mais que isso para sair vira uma das últimas ações do relatório.
-const LONG_FRAME_MS = 1000
+const LONG_FRAME_MS = 1000;
 
-const BLOCK_CONFIG = { threshold: WINDOW_BLOCK_MS, pollInterval: WINDOW_POLL_MS }
+const BLOCK_CONFIG = { threshold: WINDOW_BLOCK_MS, pollInterval: WINDOW_POLL_MS };
 
 if (window.__SENTRY_IPC__) {
   init({
@@ -29,14 +29,14 @@ if (window.__SENTRY_IPC__) {
       // Janela parada por 5 s (um laço sem fim, por exemplo): o processo principal pega onde ela
       // estava. O "estou viva" a cada 1 s, e não a cada 2,5 s (o padrão): com o intervalo longo, uma
       // parada de 2,6 s já disparava o aviso de 5 s.
-      eventLoopBlockIntegration(BLOCK_CONFIG)
-    ]
-  })
-  reportVisibility()
-  watchLongFrames()
+      eventLoopBlockIntegration(BLOCK_CONFIG),
+    ],
+  });
+  reportVisibility();
+  watchLongFrames();
 }
 
-type SentryIpc = Record<string, { sendStatus?: (status: unknown) => void } | undefined>
+type SentryIpc = Record<string, { sendStatus?: (status: unknown) => void } | undefined>;
 
 // Janela escondida (minimizada, coberta por outra, a tela bloqueada): o Chromium segura os relógios
 // dela e, depois de 5 min, só os solta uma vez por minuto. O "estou viva" atrasa e o vigia acusava
@@ -46,9 +46,9 @@ type SentryIpc = Record<string, { sendStatus?: (status: unknown) => void } | und
 // mensagem (ver hiddenWindowBlock em src/main/errorReports/snapshot.ts). Mesmo canal do SDK
 // ('sentry-ipc', o padrão dele).
 function reportVisibility(): void {
-  const ipc = (window.__SENTRY_IPC__ as SentryIpc)['sentry-ipc']
-  const config = { ...BLOCK_CONFIG, anrThreshold: WINDOW_BLOCK_MS, captureStackTrace: true }
-  document.addEventListener('visibilitychange', () => ipc?.sendStatus?.({ status: document.visibilityState, config }))
+  const ipc = (window.__SENTRY_IPC__ as SentryIpc)['sentry-ipc'];
+  const config = { ...BLOCK_CONFIG, anrThreshold: WINDOW_BLOCK_MS, captureStackTrace: true };
+  document.addEventListener('visibilitychange', () => ipc?.sendStatus?.({ status: document.visibilityState, config }));
 }
 
 // Os tipos do TypeScript ainda não têm esta medição do Chromium (Long Animation Frames).
@@ -60,13 +60,13 @@ type ScriptTiming = {
   sourceFunctionName: string
   sourceCharPosition: number
   forcedStyleAndLayoutDuration: number
-}
+};
 type LongFrame = PerformanceEntry & {
   renderStart: number
   styleAndLayoutStart: number
   blockingDuration: number
   scripts: ScriptTiming[]
-}
+};
 
 // Quadro demorado: o Chromium já mede todo quadro, e o observador só é chamado quando um passa de
 // 50 ms. O que vai é a divisão do tempo (código, layout, desenho) e quais funções do app rodaram,
@@ -74,12 +74,12 @@ type LongFrame = PerformanceEntry & {
 // desenho da tela; o processo principal junta isto ao aviso de travamento (ver
 // src/main/errorReports).
 function watchLongFrames(): void {
-  if (!PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) return
+  if (!PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) return;
   new PerformanceObserver((list) => {
     for (const entry of list.getEntries() as LongFrame[]) {
-      if (entry.duration < LONG_FRAME_MS) continue
-      const end = entry.startTime + entry.duration
-      const scripts = [...entry.scripts].sort((a, b) => b.duration - a.duration)
+      if (entry.duration < LONG_FRAME_MS) continue;
+      const end = entry.startTime + entry.duration;
+      const scripts = [...entry.scripts].sort((a, b) => b.duration - a.duration);
       addBreadcrumb({
         category: 'ui.long-frame',
         level: 'warning',
@@ -95,10 +95,10 @@ function watchLongFrames(): void {
             layoutMs: Math.round(s.forcedStyleAndLayoutDuration),
             invoker: s.invoker,
             fn: s.sourceFunctionName,
-            at: `${s.sourceURL.split('/').pop() ?? ''}:${s.sourceCharPosition}`
-          }))
-        }
-      })
+            at: `${s.sourceURL.split('/').pop() ?? ''}:${s.sourceCharPosition}`,
+          })),
+        },
+      });
     }
-  }).observe({ type: 'long-animation-frame' })
+  }).observe({ type: 'long-animation-frame' });
 }

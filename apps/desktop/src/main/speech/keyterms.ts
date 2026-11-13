@@ -9,18 +9,18 @@ export const KEYTERMS = [
   'JavaScript', 'Node', 'Vite', 'Tailwind', 'pnpm', 'npm', 'Claude', 'Claude Code', 'Opus', 'Sonnet', 'Haiku',
   'SDK', 'API', 'CLI', 'GitHub', 'branch', 'merge', 'pull request', 'commit', 'deploy', 'build', 'debug',
   'log', 'diff', 'refactor', 'endpoint', 'cache', 'props', 'hook', 'render', 'prompt', 'markdown', 'thread',
-  'workspace', 'feature', 'release', 'terminal', 'shell', 'bash', 'grid', 'flexbox', 'Canva', 'Argus'
-]
+  'workspace', 'feature', 'release', 'terminal', 'shell', 'bash', 'grid', 'flexbox', 'Canva', 'Argus',
+];
 
 // Cabeçalho aceito pelo serviço: só ASCII, separado por vírgula, até 1024 caracteres.
 export function keytermsHeader(terms: string[]): string {
-  const out: string[] = []
-  let size = 0
+  const out: string[] = [];
+  let size = 0;
   for (const term of new Set(terms.map((t) => t.replace(/,/g, ' ').trim()))) {
-    if (!term || !/^[\x20-\x7E]+$/.test(term)) continue
-    size += term.length + (out.length ? 1 : 0)
-    if (size > 1024) break
-    out.push(term)
+    if (!term || !/^[\x20-\x7E]+$/.test(term)) continue;
+    size += term.length + (out.length ? 1 : 0);
+    if (size > 1024) break;
+    out.push(term);
   }
-  return out.join(',')
+  return out.join(',');
 }

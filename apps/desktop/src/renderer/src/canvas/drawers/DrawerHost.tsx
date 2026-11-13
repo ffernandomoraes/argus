@@ -1,17 +1,17 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { PANEL_MARGIN, PLAN_WIDTH, type PanelRect } from '../../conversation/FloatingPanel'
-import { publishOpenPlan } from '../../conversation/openPlanStore'
-import { MOTION, Presence } from '../../motion'
-import { CodePanel } from './CodePanel'
-import type { DrawerLayout, SlotTargets } from './drawerLayout'
-import { DrawerSlot, type SlotActions } from './DrawerSlot'
-import { PlanPanel } from './PlanPanel'
-import { SubagentSlot } from './SubagentSlot'
-import { TasksSlot } from './TasksSlot'
-import type { Drawer, DrawerState, SlotId } from './drawerState'
-import type { SlotTarget } from './drawerView'
-import type { DrawerCommands } from './useDrawers'
-import { useSlotConversation } from './useSlotConversation'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { PANEL_MARGIN, PLAN_WIDTH, type PanelRect } from '../../conversation/FloatingPanel';
+import { publishOpenPlan } from '../../conversation/openPlanStore';
+import { MOTION, Presence } from '../../motion';
+import { CodePanel } from './CodePanel';
+import type { DrawerLayout, SlotTargets } from './drawerLayout';
+import { DrawerSlot, type SlotActions } from './DrawerSlot';
+import { PlanPanel } from './PlanPanel';
+import { SubagentSlot } from './SubagentSlot';
+import { TasksSlot } from './TasksSlot';
+import type { Drawer, DrawerState, SlotId } from './drawerState';
+import type { SlotTarget } from './drawerView';
+import type { DrawerCommands } from './useDrawers';
+import { useSlotConversation } from './useSlotConversation';
 
 type Props = {
   state: DrawerState
@@ -22,25 +22,25 @@ type Props = {
   onShown: (slot: SlotId, title: string | null) => void
   // Lista de conversas aberta: nenhum drawer entra nela ao mover ou redimensionar.
   aside: PanelRect | null
-}
+};
 
 // Drawers por cima do canvas, nesta ordem (a de baixo aparece por cima): o painel de código (ou,
 // no lugar dele, o plano aberto ao lado de um drawer), os
 // drawers de conversa (do mais antigo ao mais novo). O drawer de conversa só existe
 // com a conversa na lista: se ela for excluída, sai daqui e a saída anima.
 export function DrawerHost({ state, targets, layout, commands, actions, onShown, aside }: Props) {
-  const { code } = layout
-  const leaving = useLeaving(state.drawers)
+  const { code } = layout;
+  const leaving = useLeaving(state.drawers);
   // Com vários drawers de conversa à vista, um não passa por cima nem por baixo dos outros.
-  const placed = state.drawers.filter((d) => d.rect && targets[d.id])
+  const placed = state.drawers.filter((d) => d.rect && targets[d.id]);
   // O plano vai até a borda do drawer que o abriu (sem drawer, na largura padrão); o código volta
   // quando ele fecha.
-  const planDrawer = state.plan?.slot ? placed.find((d) => d.id === state.plan?.slot) : undefined
-  const drawerX = state.plan?.slot ? planDrawer?.rect?.x : PLAN_WIDTH + PANEL_MARGIN * 2
-  const plan = state.plan && drawerX !== undefined ? { text: state.plan.text, path: state.plan.path, drawerX } : null
+  const planDrawer = state.plan?.slot ? placed.find((d) => d.id === state.plan?.slot) : undefined;
+  const drawerX = state.plan?.slot ? planDrawer?.rect?.x : PLAN_WIDTH + PANEL_MARGIN * 2;
+  const plan = state.plan && drawerX !== undefined ? { text: state.plan.text, path: state.plan.path, drawerX } : null;
   // O cartão do plano aberto mostra "Fechar" no lugar de "Abrir ao lado".
-  const planText = plan?.text ?? null
-  useLayoutEffect(() => publishOpenPlan(planText, commands.closePlan), [planText, commands])
+  const planText = plan?.text ?? null;
+  useLayoutEffect(() => publishOpenPlan(planText, commands.closePlan), [planText, commands]);
   return (
     <>
       <Presence>
@@ -73,10 +73,10 @@ export function DrawerHost({ state, targets, layout, commands, actions, onShown,
         />
       ))}
     </>
-  )
+  );
 }
 
-const NO_OBSTACLES: Drawer[] = []
+const NO_OBSTACLES: Drawer[] = [];
 
 type EntryProps = {
   slot: SlotId
@@ -90,20 +90,20 @@ type EntryProps = {
   commands: DrawerCommands
   actions: SlotActions
   onShown: (slot: SlotId, title: string | null) => void
-}
+};
 
 // Um drawer de conversa com a sua entrada e saída. A conversa é procurada aqui, fora do Presence,
 // para a saída animar quando ela some da lista.
 function DrawerEntry({ slot, drawer, target, obstacles, aside, codeOpen, commands, actions, onShown }: EntryProps) {
-  const active = drawer?.conversation ?? null
-  const conversation = useSlotConversation(active, target)
+  const active = drawer?.conversation ?? null;
+  const conversation = useSlotConversation(active, target);
   const others = useMemo(() => {
-    const rects = obstacles.flatMap((o) => (o.id !== slot && o.rect ? [o.rect] : []))
-    return aside ? [...rects, aside] : rects
-  }, [obstacles, slot, aside])
+    const rects = obstacles.flatMap((o) => (o.id !== slot && o.rect ? [o.rect] : []));
+    return aside ? [...rects, aside] : rects;
+  }, [obstacles, slot, aside]);
   // Subagente e tarefas: só o histórico ou a saída, sem a conversa da lista.
-  const subagent = active?.subagent
-  const tasks = active?.tasks
+  const subagent = active?.subagent;
+  const tasks = active?.tasks;
   return (
     <Presence>
       {drawer && target && subagent && (
@@ -147,24 +147,24 @@ function DrawerEntry({ slot, drawer, target, obstacles, aside, codeOpen, command
         />
       )}
     </Presence>
-  )
+  );
 }
 
 // Drawers que acabaram de fechar: ficam montados (vazios) o tempo da saída, para o Presence de cada
 // um mostrar o último conteúdo sumindo.
 function useLeaving(drawers: readonly Drawer[]): SlotId[] {
-  const [prev, setPrev] = useState(drawers)
-  const [gone, setGone] = useState<SlotId[]>([])
+  const [prev, setPrev] = useState(drawers);
+  const [gone, setGone] = useState<SlotId[]>([]);
   if (prev !== drawers) {
-    const removed = prev.filter((p) => !drawers.some((d) => d.id === p.id)).map((p) => p.id)
-    setPrev(drawers)
-    if (removed.length) setGone((g) => [...g, ...removed])
+    const removed = prev.filter((p) => !drawers.some((d) => d.id === p.id)).map((p) => p.id);
+    setPrev(drawers);
+    if (removed.length) setGone((g) => [...g, ...removed]);
   }
   useEffect(() => {
-    if (!gone.length) return
-    const timer = setTimeout(() => setGone([]), MOTION.panel.out.duration + 100)
-    return () => clearTimeout(timer)
-  }, [gone])
-  return gone
+    if (!gone.length) return;
+    const timer = setTimeout(() => setGone([]), MOTION.panel.out.duration + 100);
+    return () => clearTimeout(timer);
+  }, [gone]);
+  return gone;
 }
 

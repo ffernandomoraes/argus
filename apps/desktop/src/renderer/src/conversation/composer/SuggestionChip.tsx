@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { tr } from '../../i18n'
+import { useState } from 'react';
+import { tr } from '../../i18n';
 
 // Próxima mensagem que o Claude Code prevê ao fim do pedido ("Sim, pode seguir"), no pé da conversa,
 // em cima da linha que separa a caixa de escrever: um clique envia como mensagem sua. Na cor do
@@ -8,9 +8,9 @@ import { tr } from '../../i18n'
 // fecha junto (grid de 0fr a 1fr): a caixa de escrever desliza em vez de pular no fim.
 export function SuggestionChip({ text, visible, onSend }: { text?: string; visible: boolean; onSend: (text: string) => void }) {
   // Último texto mostrado: é ele que fica na tela enquanto o balão some.
-  const [last, setLast] = useState(text)
-  if (text && text !== last) setLast(text)
-  const shown = visible && !!text
+  const [last, setLast] = useState(text);
+  if (text && text !== last) setLast(text);
+  const shown = visible && !!text;
 
   return (
     <div
@@ -32,5 +32,5 @@ export function SuggestionChip({ text, visible, onSend }: { text?: string; visib
         )}
       </div>
     </div>
-  )
+  );
 }

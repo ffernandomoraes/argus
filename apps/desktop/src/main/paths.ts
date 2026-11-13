@@ -1,26 +1,26 @@
-import { realpathSync, statSync } from 'node:fs'
-import { stat } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { isAbsolute, relative, resolve, sep } from 'node:path'
-import { IS_WIN } from './platform'
-import { parseWslPath } from './wsl/path'
+import { realpathSync, statSync } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { IS_WIN } from './platform';
+import { parseWslPath } from './wsl/path';
 
 // "~/proj" (Mac) ou "~\proj" (Windows): o canvas guarda as pastas a partir da pasta do usuário.
 export function expandHome(path: string): string {
-  if (path === '~') return homedir()
-  const tilde = path.startsWith('~/') || (IS_WIN && path.startsWith('~\\'))
-  return tilde ? homedir() + path.slice(1) : path
+  if (path === '~') return homedir();
+  const tilde = path.startsWith('~/') || (IS_WIN && path.startsWith('~\\'));
+  return tilde ? homedir() + path.slice(1) : path;
 }
 
 // Resolve um caminho relativo dentro da raiz; recusa o que tentar sair dela (../). No Windows,
 // também o que estiver em outro disco: lá o relative devolve o caminho absoluto ("D:\x"). Uma
 // pasta que só começa com dois pontos ("..dados") é legítima: sair é ".." inteiro.
 export function insideRoot(root: string, rel: string): string | null {
-  const base = resolve(expandHome(root))
-  const full = resolve(base, rel)
-  const r = relative(base, full)
-  const leaves = r === '..' || r.startsWith('..' + sep)
-  return leaves || isAbsolute(r) || resolve(base, r) !== full ? null : full
+  const base = resolve(expandHome(root));
+  const full = resolve(base, rel);
+  const r = relative(base, full);
+  const leaves = r === '..' || r.startsWith('..' + sep);
+  return leaves || isAbsolute(r) || resolve(base, r) !== full ? null : full;
 }
 
 // O lsof devolve a pasta real (sem atalhos); a do projeto precisa estar igual para comparar. No
@@ -29,24 +29,24 @@ export function insideRoot(root: string, rel: string): string | null {
 // como está: o Windows não enxerga os processos de lá, e resolver pela rede, síncrono, a cada
 // consulta dos servidores travava o app inteiro enquanto o WSL não respondia (2026-10-23).
 export function realRoot(path: string): string {
-  const full = resolve(expandHome(path))
-  if (parseWslPath(path)) return full
+  const full = resolve(expandHome(path));
+  if (parseWslPath(path)) return full;
   try {
-    return realpathSync.native(full)
+    return realpathSync.native(full);
   } catch {
-    return full
+    return full;
   }
 }
 
 // A pasta é a raiz ou fica dentro dela.
-export const inside = (root: string, dir: string): boolean => dir === root || dir.startsWith(root + sep)
+export const inside = (root: string, dir: string): boolean => dir === root || dir.startsWith(root + sep);
 
 // É uma pasta que existe? Nunca lança: entre conferir e usar, ela pode sumir ou ficar sem permissão.
 export function isDirectory(path: string): boolean {
   try {
-    return statSync(path, { throwIfNoEntry: false })?.isDirectory() ?? false
+    return statSync(path, { throwIfNoEntry: false })?.isDirectory() ?? false;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -54,8 +54,8 @@ export function isDirectory(path: string): boolean {
 // síncrona trava tudo enquanto a máquina virtual liga ou demora a responder.
 export async function isDirectoryAsync(path: string): Promise<boolean> {
   try {
-    return (await stat(path)).isDirectory()
+    return (await stat(path)).isDirectory();
   } catch {
-    return false
+    return false;
   }
 }

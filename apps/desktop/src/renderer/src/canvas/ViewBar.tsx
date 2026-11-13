@@ -1,39 +1,39 @@
-import { memo, useState } from 'react'
-import { MiniMap, Panel, useReactFlow, useStore, type Node } from '@xyflow/react'
-import { Map as MapIcon, Maximize, Minus, Plus } from 'lucide-react'
-import { BOTTOM_BAR_HEIGHT, CANVAS_BAR_INSET } from '../conversation/FloatingPanel'
-import { NavButton } from '../ui/NavButton'
-import { MENU_HOVER, MENU_ROW } from '../ui/menuStyles'
-import type { AreaNode } from './types'
-import { useFitAll, ZOOM_DURATION } from './useCanvasShortcuts'
-import { LOCALE, tr } from '../i18n'
+import { memo, useState } from 'react';
+import { MiniMap, Panel, useReactFlow, useStore, type Node } from '@xyflow/react';
+import { Map as MapIcon, Maximize, Minus, Plus } from 'lucide-react';
+import { BOTTOM_BAR_HEIGHT, CANVAS_BAR_INSET } from '../conversation/FloatingPanel';
+import { NavButton } from '../ui/NavButton';
+import { MENU_HOVER, MENU_ROW } from '../ui/menuStyles';
+import type { AreaNode } from './types';
+import { useFitAll, ZOOM_DURATION } from './useCanvasShortcuts';
+import { LOCALE, tr } from '../i18n';
 
 // Só muda quando um grupo muda: arrastar uma pasta não redesenha a barra.
-const sameGroups = (a: AreaNode[], b: AreaNode[]) => a.length === b.length && a.every((g, i) => g === b[i])
+const sameGroups = (a: AreaNode[], b: AreaNode[]) => a.length === b.length && a.every((g, i) => g === b[i]);
 
 // Zoom, "ver tudo" e minimapa juntos no canto inferior direito, acima da barra de baixo; o minimapa abre acima da barra.
 export const ViewBar = memo(function ViewBar() {
-  const [mapOpen, setMapOpen] = useState(false)
-  const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow()
-  const fitAll = useFitAll()
-  const zoom = useStore((s) => s.transform[2])
-  const groups = useStore((s) => s.nodes.filter((n): n is AreaNode => n.type === 'area'), sameGroups)
-  const colorOf = new Map(groups.map((g) => [g.id, g.data.color]))
+  const [mapOpen, setMapOpen] = useState(false);
+  const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
+  const fitAll = useFitAll();
+  const zoom = useStore((s) => s.transform[2]);
+  const groups = useStore((s) => s.nodes.filter((n): n is AreaNode => n.type === 'area'), sameGroups);
+  const colorOf = new Map(groups.map((g) => [g.id, g.data.color]));
   // Em ordem alfabética: com muitos grupos, acha-se pelo nome.
-  const anchors = [...groups].sort((a, b) => a.data.label.localeCompare(b.data.label, LOCALE))
+  const anchors = [...groups].sort((a, b) => a.data.label.localeCompare(b.data.label, LOCALE));
 
   // No minimapa, o grupo é a área tingida na cor dele e o que está dentro, a cor cheia; fora de
   // grupo, o cinza padrão.
   const nodeColor = (node: Node) => {
-    if (node.type === 'area') return `color-mix(in srgb, ${colorOf.get(node.id)} 22%, transparent)`
-    const color = node.parentId ? colorOf.get(node.parentId) : undefined
-    return color ? `color-mix(in srgb, ${color} 85%, transparent)` : 'var(--color-line-strong)'
-  }
+    if (node.type === 'area') return `color-mix(in srgb, ${colorOf.get(node.id)} 22%, transparent)`;
+    const color = node.parentId ? colorOf.get(node.parentId) : undefined;
+    return color ? `color-mix(in srgb, ${color} 85%, transparent)` : 'var(--color-line-strong)';
+  };
 
   const goToGroup = (id: string) => {
-    void fitView({ nodes: [{ id }], padding: 0.15, maxZoom: 1, duration: 300 })
-    setMapOpen(false)
-  }
+    void fitView({ nodes: [{ id }], padding: 0.15, maxZoom: 1, duration: 300 });
+    setMapOpen(false);
+  };
 
   return (
     <Panel position="bottom-right" className="!m-0" style={{ bottom: BOTTOM_BAR_HEIGHT + CANVAS_BAR_INSET, right: CANVAS_BAR_INSET }}>
@@ -84,5 +84,5 @@ export const ViewBar = memo(function ViewBar() {
         </div>
       </div>
     </Panel>
-  )
-})
+  );
+});

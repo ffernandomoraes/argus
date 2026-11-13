@@ -1,8 +1,8 @@
-import type { RenamePlace } from './conversationRename'
-import { createContext, useContext, type MouseEvent as ReactMouseEvent } from 'react'
-import type { XYPosition } from '@xyflow/react'
-import type { LineRange } from '../conversation/fileLinks'
-import type { ConversationSummary, ProjectData, TerminalKind } from './types'
+import type { RenamePlace } from './conversationRename';
+import { createContext, useContext, type MouseEvent as ReactMouseEvent } from 'react';
+import type { XYPosition } from '@xyflow/react';
+import type { LineRange } from '../conversation/fileLinks';
+import type { ConversationSummary, ProjectData, TerminalKind } from './types';
 
 // draft: conversa nova, que ainda não existe na lista da pasta.
 // sessionId: id que o Claude deu à conversa nova no primeiro envio.
@@ -16,7 +16,7 @@ export type ActiveConversation = {
   at?: XYPosition
   subagent?: SubagentRef
   tasks?: TasksRef
-}
+};
 
 // Subagente lançado por uma conversa do Claude: a sessão dela e a chamada da ferramenta Agent.
 export type SubagentRef = {
@@ -25,14 +25,14 @@ export type SubagentRef = {
   // Tipo do agente (Explore, general-purpose, um da biblioteca...) e a tarefa que recebeu.
   agent: string
   description: string
-}
+};
 
 // Id do drawer de um subagente: não se confunde com o de nenhuma conversa.
-export const subagentConversationId = (toolUseId: string): string => `subagent-${toolUseId}`
+export const subagentConversationId = (toolUseId: string): string => `subagent-${toolUseId}`;
 
 // Tarefa em segundo plano a mostrar (comando, monitor...): o id dela no Claude Code e o que o chat
 // sabe dela. Aberta pelo chat, pode já ter terminado.
-export type TaskRef = { id: string; description: string; command?: string; outputFile?: string }
+export type TaskRef = { id: string; description: string; command?: string; outputFile?: string };
 
 // Drawer das tarefas em segundo plano de uma conversa: a saída de cada uma, só para ler.
 export type TasksRef = {
@@ -41,10 +41,10 @@ export type TasksRef = {
   selected?: string
   // Aberta pelo chat ("Ver saída"): entra mesmo fora da lista das que estão rodando.
   extra?: TaskRef
-}
+};
 
 // Id do drawer das tarefas de uma conversa: um por conversa.
-export const tasksConversationId = (sessionId: string): string => `tasks-${sessionId}`
+export const tasksConversationId = (sessionId: string): string => `tasks-${sessionId}`;
 
 
 // Os comandos que os blocos e as barras pedem ao Canvas (montados em actions/useCanvasCommands).
@@ -118,12 +118,12 @@ export type CanvasActions = {
   toggleProjectCode: (project: ProjectData, open: boolean) => void
   // Tarefa isolada (git worktree): remover a pasta (a branch fica).
   removeWorktree: (nodeId: string) => void
-}
+};
 
-export const CanvasContext = createContext<CanvasActions | null>(null)
+export const CanvasContext = createContext<CanvasActions | null>(null);
 
 export function useCanvasActions(): CanvasActions {
-  const ctx = useContext(CanvasContext)
-  if (!ctx) throw new Error('useCanvasActions fora do Canvas')
-  return ctx
+  const ctx = useContext(CanvasContext);
+  if (!ctx) throw new Error('useCanvasActions fora do Canvas');
+  return ctx;
 }

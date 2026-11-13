@@ -1,13 +1,13 @@
-import { MENU_ACTIVE } from '../ui/menuStyles'
-import { POPOVER } from './popover'
-import type { SlashCommand } from './slashCommands'
+import { MENU_ACTIVE } from '../ui/menuStyles';
+import { POPOVER } from './popover';
+import type { SlashCommand } from './slashCommands';
 
 // Lista dos comandos de barra acima do campo, enquanto o texto é "/" + palavra.
 export function SlashMenu({
   items,
   active,
   onHover,
-  onSelect
+  onSelect,
 }: {
   items: SlashCommand[]
   active: number
@@ -25,8 +25,8 @@ export function SlashMenu({
           key={c.name}
           // mousedown: escolher sem tirar o foco do campo de texto
           onMouseDown={(e) => {
-            e.preventDefault()
-            onSelect(c)
+            e.preventDefault();
+            onSelect(c);
           }}
           onMouseEnter={() => onHover(i)}
           className={`col-span-2 grid grid-cols-subgrid items-baseline gap-x-3 rounded-md px-2 py-1.5 text-left ${i === active ? MENU_ACTIVE : ''}`}
@@ -36,5 +36,5 @@ export function SlashMenu({
         </button>
       ))}
     </div>
-  )
+  );
 }

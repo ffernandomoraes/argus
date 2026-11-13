@@ -1,69 +1,69 @@
-import { useCallback, useEffect, useEffectEvent, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import {
   claimDictation,
   createDictationSession,
   listensToDictation,
   releaseDictation,
-  setDictationPhase
-} from './dictationOwner'
+  setDictationPhase,
+} from './dictationOwner';
 
-export type DictationState = 'idle' | 'starting' | 'listening'
+export type DictationState = 'idle' | 'starting' | 'listening';
 
 // Ditado (transcrição do Claude). onText recebe o texto acumulado da fala
 // (não só o pedaço novo), então quem usa decide onde encaixar. Um campo por vez recebe o texto: o
 // que começou por último (ver dictationOwner).
 export function useDictation(onText: (text: string) => void) {
-  const [state, setState] = useState<DictationState>('idle')
-  const [error, setError] = useState<{ message: string; action?: 'dictation-settings' } | null>(null)
-  const [session] = useState(() => createDictationSession(() => setState('idle')))
-  const text = useEffectEvent((spoken: string) => onText(spoken))
+  const [state, setState] = useState<DictationState>('idle');
+  const [error, setError] = useState<{ message: string; action?: 'dictation-settings' } | null>(null);
+  const [session] = useState(() => createDictationSession(() => setState('idle')));
+  const text = useEffectEvent((spoken: string) => onText(spoken));
 
   useEffect(
     () =>
       window.api.speech.onEvent((e) => {
-        if (!listensToDictation(session)) return
+        if (!listensToDictation(session)) return;
         if (e.type === 'ready') {
-          if (session.phase === 'on') setState('listening')
-        } else if (e.type === 'text') text(e.text)
+          if (session.phase === 'on') setState('listening');
+        } else if (e.type === 'text') text(e.text);
         else if (e.type === 'error') {
-          setDictationPhase(session, 'off')
-          setError({ message: e.message, action: e.action })
-          setState('idle')
+          setDictationPhase(session, 'off');
+          setError({ message: e.message, action: e.action });
+          setState('idle');
         } else if (e.type === 'done') {
-          if (session.phase === 'on') setState('idle')
-          setDictationPhase(session, 'off')
+          if (session.phase === 'on') setState('idle');
+          setDictationPhase(session, 'off');
         }
       }),
-    [session]
-  )
+    [session],
+  );
 
   const start = useCallback(() => {
     // Na janela remota também: o ditado roda neste computador (microfone e conta daqui; ver
     // remote/policy.ts) e só o texto vai para o outro.
-    setError(null)
-    setState('starting')
-    claimDictation(session)
-    window.api.speech.start()
-  }, [session])
+    setError(null);
+    setState('starting');
+    claimDictation(session);
+    window.api.speech.start();
+  }, [session]);
 
   // flush: as últimas palavras, que o serviço entrega logo depois de parar, ainda entram no
   // campo (até o "done"). Sem flush (ex.: ao enviar a mensagem), o que chegar é descartado.
   const stop = useCallback(
     (flush = false) => {
-      window.api.speech.stop()
-      setDictationPhase(session, flush ? 'flushing' : 'off')
-      setState('idle')
+      window.api.speech.stop();
+      setDictationPhase(session, flush ? 'flushing' : 'off');
+      setState('idle');
     },
-    [session]
-  )
+    [session],
+  );
 
   // Sair da conversa com o microfone ligado desliga o ditado.
   useEffect(
     () => () => {
-      if (releaseDictation(session)) window.api.speech.stop()
+      if (releaseDictation(session)) window.api.speech.stop();
     },
-    [session]
-  )
+    [session],
+  );
 
-  return { state, error, start, stop, toggle: state === 'idle' ? start : () => stop(true) }
+  return { state, error, start, stop, toggle: state === 'idle' ? start : () => stop(true) };
 }

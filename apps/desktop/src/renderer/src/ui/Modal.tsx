@@ -1,29 +1,29 @@
-import { useCallback, useLayoutEffect, useRef, type MouseEvent, type ReactNode, type RefObject } from 'react'
-import { useEscape } from '../useEscape'
-import { ModalCloseContext, type ModalCloseReason } from './modalContext'
-import { useFocusTrap } from './useFocusTrap'
+import { useCallback, useLayoutEffect, useRef, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { useEscape } from '../useEscape';
+import { ModalCloseContext, type ModalCloseReason } from './modalContext';
+import { useFocusTrap } from './useFocusTrap';
 
 // panel: os modais grandes (configurações, agentes, memória, servidores), dentro da janela e com
 // folga para a barra de título. alert: confirmação pequena, centrada na tela. blocking: por cima
 // de tudo, com o fundo desfocado e a faixa de cima ainda arrastando a janela (boas-vindas); não
 // fecha clicando fora. palette: caixa de busca presa no alto da tela (Nova pasta).
-export type ModalVariant = 'panel' | 'alert' | 'blocking' | 'palette'
-export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'auto'
+export type ModalVariant = 'panel' | 'alert' | 'blocking' | 'palette';
+export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'auto';
 
 const BACKDROP: Record<ModalVariant, string> = {
   panel: 'absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16',
   alert: 'fixed inset-0 z-50 flex items-center justify-center bg-black/50',
   blocking: 'absolute inset-0 z-[60] flex items-center justify-center bg-black/50 px-6 pb-6 pt-12 backdrop-blur-[2px]',
-  palette: 'fixed inset-0 z-50 bg-black/50'
-}
+  palette: 'fixed inset-0 z-50 bg-black/50',
+};
 
 const CARD: Record<ModalVariant, string> = {
   panel: 'overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50 outline-none',
   alert: 'rounded-2xl border border-line bg-surface p-5 shadow-2xl shadow-black/60 outline-none',
   blocking: 'relative overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50 outline-none',
   palette:
-    'absolute left-1/2 top-[18%] max-h-[60vh] w-[520px] max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/60 outline-none'
-}
+    'absolute left-1/2 top-[18%] max-h-[60vh] w-[520px] max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/60 outline-none',
+};
 
 // Tamanhos da caixa. xs: confirmação; sm: boas-vindas; md: lista que cresce com o conteúdo
 // (servidores); lg: configurações; xl: memória; 2xl: agentes. auto: sem tamanho daqui (a medida
@@ -35,12 +35,12 @@ const SIZES: Record<ModalSize, string> = {
   lg: 'h-[min(640px,100%)] w-[min(880px,100%)]',
   xl: 'h-[min(680px,100%)] w-[min(980px,100%)]',
   '2xl': 'h-[min(760px,100%)] w-[min(1040px,100%)]',
-  auto: ''
-}
+  auto: '',
+};
 
-const DEFAULT_SIZE: Record<ModalVariant, ModalSize> = { panel: 'lg', alert: 'xs', blocking: 'sm', palette: 'auto' }
+const DEFAULT_SIZE: Record<ModalVariant, ModalSize> = { panel: 'lg', alert: 'xs', blocking: 'sm', palette: 'auto' };
 
-const stop = (e: MouseEvent) => e.stopPropagation()
+const stop = (e: MouseEvent) => e.stopPropagation();
 
 export type ModalProps = {
   children: ReactNode
@@ -63,7 +63,7 @@ export type ModalProps = {
   // Quem recebe o foco ao abrir; sem ele, o primeiro focável (autoFocus de dentro também vale).
   initialFocus?: RefObject<HTMLElement | null>
   closeOnBackdrop?: boolean
-}
+};
 
 // Casca comum dos modais: fundo escuro, caixa, Esc, clique fora e foco (entra ao abrir, o Tab não
 // sai, volta para quem abriu ao fechar). A animação continua com <Presence kind="modal"> em volta,
@@ -79,24 +79,24 @@ export function Modal({
   size,
   className,
   initialFocus,
-  closeOnBackdrop
+  closeOnBackdrop,
 }: ModalProps) {
   // Padrão: fecha clicando fora, menos o blocking.
-  const backdropCloses = closeOnBackdrop ?? variant !== 'blocking'
-  const card = useRef<HTMLDivElement>(null)
-  const latest = useRef({ onClose, onRequestClose })
+  const backdropCloses = closeOnBackdrop ?? variant !== 'blocking';
+  const card = useRef<HTMLDivElement>(null);
+  const latest = useRef({ onClose, onRequestClose });
   useLayoutEffect(() => {
-    latest.current = { onClose, onRequestClose }
-  })
+    latest.current = { onClose, onRequestClose };
+  });
   // Função fixa (vai no contexto para o botão de fechar), sempre com as funções do último render.
   const requestClose = useCallback((reason: ModalCloseReason = 'button') => {
-    const { onClose, onRequestClose } = latest.current
-    if (onRequestClose?.(reason) === false) return
-    onClose()
-  }, [])
+    const { onClose, onRequestClose } = latest.current;
+    if (onRequestClose?.(reason) === false) return;
+    onClose();
+  }, []);
 
-  useFocusTrap(card, { initialFocus })
-  useEscape(() => (onEscape ? onEscape() : requestClose('escape')))
+  useFocusTrap(card, { initialFocus });
+  useEscape(() => (onEscape ? onEscape() : requestClose('escape')));
 
   return (
     <div
@@ -119,5 +119,5 @@ export function Modal({
         <ModalCloseContext.Provider value={requestClose}>{children}</ModalCloseContext.Provider>
       </div>
     </div>
-  )
+  );
 }

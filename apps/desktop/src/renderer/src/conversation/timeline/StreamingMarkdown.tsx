@@ -1,6 +1,6 @@
-import { memo } from 'react'
-import { MarkdownBlock } from '../Markdown'
-import { splitMarkdownBlocks } from './markdownBlocks'
+import { memo } from 'react';
+import { MarkdownBlock } from '../Markdown';
+import { splitMarkdownBlocks } from './markdownBlocks';
 
 // Resposta chegando aos poucos: o texto cresce no fim a cada atualização (~50 ms). Ler o markdown
 // inteiro a cada vez custava cada vez mais (16 ms com 32 mil caracteres, mais de meio minuto de
@@ -14,5 +14,5 @@ export const StreamingMarkdown = memo(function StreamingMarkdown({ text }: { tex
         <MarkdownBlock key={i} text={block} />
       ))}
     </div>
-  )
-})
+  );
+});

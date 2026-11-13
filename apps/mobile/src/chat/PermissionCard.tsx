@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { ShieldQuestion } from 'lucide-react'
-import type { PermissionAnswer, PermissionRequest, Question } from '@argus/shared/chat'
-import { tr } from '../i18n'
+import { useState } from 'react';
+import { ShieldQuestion } from 'lucide-react';
+import type { PermissionAnswer, PermissionRequest, Question } from '@argus/shared/chat';
+import { tr } from '../i18n';
 
 // O Claude pedindo permissão (rodar um comando, editar um arquivo) ou fazendo perguntas com opções.
 
 function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (a: PermissionAnswer) => void }) {
-  const [picked, setPicked] = useState<Record<string, string[]>>({})
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
   const toggle = (q: Question, label: string) =>
     setPicked((prev) => {
-      const cur = prev[q.question] ?? []
-      const next = q.multiSelect ? (cur.includes(label) ? cur.filter((l) => l !== label) : [...cur, label]) : [label]
-      return { ...prev, [q.question]: next }
-    })
-  const complete = questions.every((q) => picked[q.question]?.length)
+      const cur = prev[q.question] ?? [];
+      const next = q.multiSelect ? (cur.includes(label) ? cur.filter((l) => l !== label) : [...cur, label]) : [label];
+      return { ...prev, [q.question]: next };
+    });
+  const complete = questions.every((q) => picked[q.question]?.length);
   return (
     <div className="mt-2 space-y-3">
       {questions.map((q) => (
@@ -21,7 +21,7 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
           <p className="text-[15px] font-semibold">{q.question}</p>
           <div className="mt-1.5 flex flex-col gap-1.5">
             {q.options.map((o) => {
-              const on = picked[q.question]?.includes(o.label)
+              const on = picked[q.question]?.includes(o.label);
               return (
                 <button
                   key={o.label}
@@ -32,7 +32,7 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
                   <span className="block text-[15px] font-medium">{o.label}</span>
                   {o.description && <span className="block text-[13px] leading-snug text-muted">{o.description}</span>}
                 </button>
-              )
+              );
             })}
           </div>
         </div>
@@ -51,15 +51,15 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 export function PermissionCard({ request, onAnswer }: { request: PermissionRequest; onAnswer: (a: PermissionAnswer) => void }) {
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(false);
   const answer = (a: PermissionAnswer) => {
-    setBusy(true)
-    onAnswer(a)
-  }
+    setBusy(true);
+    onAnswer(a);
+  };
   return (
     <div className={`my-2 rounded-2xl border border-orange/40 bg-card p-3 ${busy ? 'opacity-50' : ''}`}>
       <div className="flex items-start gap-2">
@@ -77,7 +77,7 @@ export function PermissionCard({ request, onAnswer }: { request: PermissionReque
               <div key={`${i}:${j}`} className={l.startsWith('+') ? 'text-green' : l.startsWith('-') ? 'text-red' : 'text-muted'}>
                 {l || ' '}
               </div>
-            ))
+            )),
           )}
         </pre>
       ) : null}
@@ -99,5 +99,5 @@ export function PermissionCard({ request, onAnswer }: { request: PermissionReque
         </div>
       )}
     </div>
-  )
+  );
 }

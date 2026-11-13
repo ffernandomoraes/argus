@@ -1,8 +1,8 @@
-import { useRef } from 'react'
-import { Button } from '../ui/Button'
-import { TERMINAL_THEME } from './terminal/theme'
-import { useXterm } from './terminal/useXterm'
-import { tr } from '../i18n'
+import { useRef } from 'react';
+import { Button } from '../ui/Button';
+import { TERMINAL_THEME } from './terminal/theme';
+import { useXterm } from './terminal/useXterm';
+import { tr } from '../i18n';
 
 // Terminal de verdade rodando o `claude` (ou o shell, com `shell`) na pasta. O processo vive
 // no processo principal: fechar o painel ou trocar de conversa não encerra a sessão. Modelo,
@@ -17,7 +17,7 @@ export function TerminalView({
   fontScale = 1,
   autoFocus = true,
   gpu = false,
-  relaunch
+  relaunch,
 }: {
   sessionKey: string
   cwd: string
@@ -37,8 +37,8 @@ export function TerminalView({
   // Ver useXterm.
   relaunch?: number
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const { error, exitCode, reopen } = useXterm(ref, { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus, gpu, relaunch })
+  const ref = useRef<HTMLDivElement>(null);
+  const { error, exitCode, reopen } = useXterm(ref, { sessionKey, cwd, folders, shell, account, sessionId, fontScale, autoFocus, gpu, relaunch });
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" style={{ background: TERMINAL_THEME.background }}>
@@ -58,5 +58,5 @@ export function TerminalView({
         </div>
       )}
     </div>
-  )
+  );
 }

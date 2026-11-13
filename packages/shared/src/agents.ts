@@ -1,17 +1,17 @@
-import { parseAgentRef, PROVIDER_NAMES, PROVIDERS, type ProviderId } from './providers'
+import { parseAgentRef, PROVIDER_NAMES, PROVIDERS, type ProviderId } from './providers';
 
 // Cada agente (Claude, Codex, Gemini, Cursor) tem a biblioteca dele: cada um tem pontos fortes
 // próprios, e o @ de uma conversa lista só os do agente que roda nela.
-export type AgentProvider = 'claude' | ProviderId
+export type AgentProvider = 'claude' | ProviderId;
 
-export const AGENT_PROVIDERS: AgentProvider[] = ['claude', ...PROVIDERS]
+export const AGENT_PROVIDERS: AgentProvider[] = ['claude', ...PROVIDERS];
 
-export const agentProviderName = (p: AgentProvider): string => (p === 'claude' ? 'Claude' : PROVIDER_NAMES[p])
+export const agentProviderName = (p: AgentProvider): string => (p === 'claude' ? 'Claude' : PROVIDER_NAMES[p]);
 
 // Provedor de uma conversa pela conta dela ("codex:main"); a conta do Claude não tem prefixo.
-export const agentProviderOf = (account?: string): AgentProvider => parseAgentRef(account)?.provider ?? 'claude'
+export const agentProviderOf = (account?: string): AgentProvider => parseAgentRef(account)?.provider ?? 'claude';
 
-export const isAgentProvider = (v: unknown): v is AgentProvider => typeof v === 'string' && (AGENT_PROVIDERS as string[]).includes(v)
+export const isAgentProvider = (v: unknown): v is AgentProvider => typeof v === 'string' && (AGENT_PROVIDERS as string[]).includes(v);
 
 // Um agente da biblioteca. No Claude, no Gemini e no Cursor, um .md com cabeçalho (name,
 // description, tools, model) e as instruções no corpo; no Codex, um .toml (name, description,
@@ -30,14 +30,14 @@ export type AgentDef = {
   scope: 'global' | 'project'
   // Caminho do arquivo no disco.
   path: string
-}
+};
 
 export type AgentSaveRequest = Omit<AgentDef, 'scope' | 'path'> & {
   // Nome antes de editar: renomear apaga o arquivo antigo.
   previousName?: string
-}
+};
 
-export type AgentSaveResult = { ok: true; agent: AgentDef } | { ok: false; error: string }
+export type AgentSaveResult = { ok: true; agent: AgentDef } | { ok: false; error: string };
 
 // Subagente trabalhando dentro de uma conversa, enquanto não termina.
 export type RunningAgent = {
@@ -58,4 +58,4 @@ export type RunningAgent = {
   steps: { label: string; summary: string }[]
   // Lançado em segundo plano: a conversa segue enquanto ele trabalha.
   background: boolean
-}
+};

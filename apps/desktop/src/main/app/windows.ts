@@ -1,73 +1,73 @@
-import { join } from 'node:path'
-import { app, BrowserWindow, screen } from 'electron'
-import { loadCanvasWindows, saveCanvasWindows, type SavedCanvasWindow } from '../canvasWindows'
-import { IS_MAC } from '../platform'
-import { rendererEntry } from './appUrl'
-import { activeCanvas, addCanvasWindow, canvasWindowList, windowBoard, windowViewport } from './canvasRegistry'
-import { placeCanvas } from './canvasPlacement'
-import { lockNavigation, openLinksOutside } from './navigation'
-import { frame, setWindowKind, windowShortcuts, type WindowKind } from './windowChrome'
+import { join } from 'node:path';
+import { app, BrowserWindow, screen } from 'electron';
+import { loadCanvasWindows, saveCanvasWindows, type SavedCanvasWindow } from '../canvasWindows';
+import { IS_MAC } from '../platform';
+import { rendererEntry } from './appUrl';
+import { activeCanvas, addCanvasWindow, canvasWindowList, windowBoard, windowViewport } from './canvasRegistry';
+import { placeCanvas } from './canvasPlacement';
+import { lockNavigation, openLinksOutside } from './navigation';
+import { frame, setWindowKind, windowShortcuts, type WindowKind } from './windowChrome';
 
 // Criar as janelas do app (canvas e conversa avulsa), trazer o app para frente e guardar onde as
 // janelas do canvas estavam.
 
 // Sandbox ainda desligado: o preload já roda sem módulos do Node (só o electron), mas ligar fica
 // para depois de conferir o app montado.
-const webPreferences = { preload: join(__dirname, '../preload/index.js'), sandbox: false }
+const webPreferences = { preload: join(__dirname, '../preload/index.js'), sandbox: false };
 
 function loadRenderer(win: BrowserWindow, hash = ''): void {
-  const entry = rendererEntry()
+  const entry = rendererEntry();
   const loading =
     'dev' in entry
       ? win.loadURL(entry.dev + (hash ? `#${hash}` : ''))
-      : win.loadFile(entry.file, hash ? { hash } : undefined)
-  loading.catch((err: unknown) => console.error('[janela] a interface não carregou:', err))
+      : win.loadFile(entry.file, hash ? { hash } : undefined);
+  loading.catch((err: unknown) => console.error('[janela] a interface não carregou:', err));
 }
 
 // O que toda janela do app tem: a moldura do tipo dela, as travas de navegação e os atalhos.
 function prepare(win: BrowserWindow, kind: WindowKind, hash?: string): void {
-  setWindowKind(win, kind)
-  lockNavigation(win.webContents)
-  openLinksOutside(win.webContents)
-  windowShortcuts(win)
-  loadRenderer(win, hash)
+  setWindowKind(win, kind);
+  lockNavigation(win.webContents);
+  openLinksOutside(win.webContents);
+  windowShortcuts(win);
+  loadRenderer(win, hash);
 }
 
 // A última janela do canvas fechada (Mac: o app segue no Dock). Volta no mesmo lugar ao clicar no
 // Dock e é a que fica guardada se o app fechar sem nenhuma aberta.
-let lastClosed: SavedCanvasWindow | null = null
+let lastClosed: SavedCanvasWindow | null = null;
 
 // Onde a janela está. Maximizada, o Electron devolve o lugar de antes de maximizar, que pode ser
 // outro monitor (a janela abriu maximizada no principal e foi levada para outro): aí vale o atual.
 function placementOf(win: BrowserWindow): SavedCanvasWindow {
-  const maximized = win.isMaximized()
-  const normal = win.getNormalBounds()
-  const current = win.getBounds()
-  const sameDisplay = screen.getDisplayMatching(normal).id === screen.getDisplayMatching(current).id
-  const board = windowBoard(win.webContents)
-  return { bounds: maximized && !sameDisplay ? current : normal, maximized, ...(board && { board }), viewport: windowViewport(win.webContents) }
+  const maximized = win.isMaximized();
+  const normal = win.getNormalBounds();
+  const current = win.getBounds();
+  const sameDisplay = screen.getDisplayMatching(normal).id === screen.getDisplayMatching(current).id;
+  const board = windowBoard(win.webContents);
+  return { bounds: maximized && !sameDisplay ? current : normal, maximized, ...(board && { board }), viewport: windowViewport(win.webContents) };
 }
 
 export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
   // Sem lugar guardado e sem outra janela aberta (clique no Dock): volta onde a última fechou.
-  const where = saved ?? (canvasWindowList().length ? undefined : (lastClosed ?? undefined))
-  const place = placeCanvas(where)
+  const where = saved ?? (canvasWindowList().length ? undefined : (lastClosed ?? undefined));
+  const place = placeCanvas(where);
   const win = new BrowserWindow({
     ...place.bounds,
     minWidth: 900,
     minHeight: 600,
     ...frame('canvas'),
     backgroundColor: '#1c1c1c',
-    webPreferences
-  })
-  addCanvasWindow(win, where?.board, where?.viewport)
-  lastClosed = null
-  if (place.maximize) win.maximize()
+    webPreferences,
+  });
+  addCanvasWindow(win, where?.board, where?.viewport);
+  lastClosed = null;
+  if (place.maximize) win.maximize();
   win.on('close', () => {
-    if (canvasWindowList().length === 1) lastClosed = placementOf(win)
-  })
-  prepare(win, 'canvas')
-  return win
+    if (canvasWindowList().length === 1) lastClosed = placementOf(win);
+  });
+  prepare(win, 'canvas');
+  return win;
 }
 
 // Janela de acesso remoto: o canvas do Argus de outro computador (ver src/main/remote). A moldura e
@@ -75,18 +75,18 @@ export function createCanvasWindow(saved?: SavedCanvasWindow): BrowserWindow {
 // não é guardada ao fechar o app e os pedidos dela vão para lá. `remoteArg` diz ao preload qual
 // computador ela mostra.
 export function createRemoteWindow(remoteArg: string): BrowserWindow {
-  const place = placeCanvas(undefined)
+  const place = placeCanvas(undefined);
   const win = new BrowserWindow({
     ...place.bounds,
     minWidth: 900,
     minHeight: 600,
     ...frame('canvas'),
     backgroundColor: '#1c1c1c',
-    webPreferences: { ...webPreferences, additionalArguments: [remoteArg] }
-  })
-  if (place.maximize) win.maximize()
-  prepare(win, 'canvas')
-  return win
+    webPreferences: { ...webPreferences, additionalArguments: [remoteArg] },
+  });
+  if (place.maximize) win.maximize();
+  prepare(win, 'canvas');
+  return win;
 }
 
 // Janela de uma conversa só, para levar a outro monitor.
@@ -98,10 +98,10 @@ export function createConversationWindow(hash: string): BrowserWindow {
     minHeight: 480,
     ...frame('conversation'),
     backgroundColor: '#1c1c1c',
-    webPreferences
-  })
-  prepare(win, 'conversation', hash)
-  return win
+    webPreferences,
+  });
+  prepare(win, 'conversation', hash);
+  return win;
 }
 
 // Mascote solto na tela: janela transparente, sem moldura nem sombra, por cima de todos os apps e
@@ -126,40 +126,40 @@ export function createMascotWindow(bounds: Electron.Rectangle): BrowserWindow {
     ...(IS_MAC ? {} : { focusable: false }),
     show: false,
     ...(IS_MAC ? { type: 'panel' } : {}),
-    webPreferences
-  })
-  win.setAlwaysOnTop(true, 'screen-saver')
+    webPreferences,
+  });
+  win.setAlwaysOnTop(true, 'screen-saver');
   // skipTransformProcessType: sem ele, no Mac, o ícone do Dock some e volta a cada chamada.
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
-  lockNavigation(win.webContents)
-  openLinksOutside(win.webContents)
-  loadRenderer(win, 'mascot')
-  win.once('ready-to-show', () => win.showInactive())
-  return win
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  lockNavigation(win.webContents);
+  openLinksOutside(win.webContents);
+  loadRenderer(win, 'mascot');
+  win.once('ready-to-show', () => win.showInactive());
+  return win;
 }
 
 // Ao abrir o app: as janelas do canvas como estavam ao fechar; sem nada guardado, uma só.
 export function restoreCanvasWindows(): void {
-  const saved = loadCanvasWindows()
-  if (!saved.length) return void createCanvasWindow()
-  for (const w of saved) createCanvasWindow(w)
+  const saved = loadCanvasWindows();
+  if (!saved.length) return void createCanvasWindow();
+  for (const w of saved) createCanvasWindow(w);
 }
 
 // Ao fechar o app; a janela em uso vai por último, para voltar na frente.
 export function saveCanvasWindowLayout(): void {
-  const active = activeCanvas()
-  const open = canvasWindowList().filter((w) => !w.isDestroyed())
-  const ordered = [...open.filter((w) => w !== active), ...open.filter((w) => w === active)]
-  saveCanvasWindows(ordered.length ? ordered.map(placementOf) : lastClosed ? [lastClosed] : [])
+  const active = activeCanvas();
+  const open = canvasWindowList().filter((w) => !w.isDestroyed());
+  const ordered = [...open.filter((w) => w !== active), ...open.filter((w) => w === active)];
+  saveCanvasWindows(ordered.length ? ordered.map(placementOf) : lastClosed ? [lastClosed] : []);
 }
 
 // Traz o canvas para frente (ou abre de novo, se as janelas foram fechadas).
 export function showApp(): void {
-  const win = activeCanvas()
-  if (!win) return void createCanvasWindow()
-  if (win.isMinimized()) win.restore()
-  win.show()
+  const win = activeCanvas();
+  if (!win) return void createCanvasWindow();
+  if (win.isMinimized()) win.restore();
+  win.show();
   // No Windows o foco não vem junto (o "steal" é só do Mac).
-  if (!IS_MAC) win.focus()
-  app.focus({ steal: true })
+  if (!IS_MAC) win.focus();
+  app.focus({ steal: true });
 }

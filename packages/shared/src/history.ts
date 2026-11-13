@@ -1,7 +1,7 @@
-import type { AttachedFile } from './attachedFiles'
+import type { AttachedFile } from './attachedFiles';
 
 // Trecho de um arquivo alterado: linhas com " " (igual), "-" (removida) ou "+" (adicionada).
-export type DiffHunk = { oldStart: number; newStart: number; lines: string[] }
+export type DiffHunk = { oldStart: number; newStart: number; lines: string[] };
 
 // Mensagem da conversa como o chat mostra. at: quando foi gravada (ISO).
 // tokens: tokens gerados pela resposta do Claude, contados na primeira parte dela.
@@ -47,25 +47,25 @@ export type Message =
       toolUseId?: string
       // Subagente (ferramenta Agent): qual agente foi chamado.
       agent?: string
-    }
+    };
 
-export type EventKind = 'model' | 'effort' | 'mode' | 'thinking' | 'ultracode' | 'compact' | 'interrupted'
+export type EventKind = 'model' | 'effort' | 'mode' | 'thinking' | 'ultracode' | 'compact' | 'interrupted';
 
 // Status de uma sessão aberta do Claude Code (em qualquer lugar: VS Code, terminal, este app).
-export type LiveStatus = 'running' | 'needs-you' | 'idle'
+export type LiveStatus = 'running' | 'needs-you' | 'idle';
 
 // Trecho do histórico pedido pela tela, contado do fim. since: a mensagem mais antiga que a tela
 // já tem; o trecho começa nela e cresce com as novas, em vez de deslizar (as de cima sumiriam
 // enquanto você lê). count: no mínimo quantas, contando do fim (ao abrir, ou ao carregar as anteriores).
-export type HistoryRequest = { since?: string; count: number }
+export type HistoryRequest = { since?: string; count: number };
 // more: há mensagens antes do trecho.
-export type HistoryPage = { messages: Message[]; more: boolean }
+export type HistoryPage = { messages: Message[]; more: boolean };
 
 // O trecho pedido de uma lista que vai até a última mensagem. `dropped`: quantas antigas já
 // saíram da lista (contam para `more`).
 export function pageOf(list: readonly Message[], request: HistoryRequest, dropped = 0): HistoryPage {
-  const fromEnd = Math.max(0, list.length - Math.max(1, request.count))
-  const at = request.since === undefined ? -1 : list.findIndex((m) => m.id === request.since)
-  const start = at >= 0 ? Math.min(at, fromEnd) : fromEnd
-  return { messages: list.slice(start), more: start > 0 || dropped > 0 }
+  const fromEnd = Math.max(0, list.length - Math.max(1, request.count));
+  const at = request.since === undefined ? -1 : list.findIndex((m) => m.id === request.since);
+  const start = at >= 0 ? Math.min(at, fromEnd) : fromEnd;
+  return { messages: list.slice(start), more: start > 0 || dropped > 0 };
 }

@@ -1,24 +1,24 @@
-import { useEffect, useState } from 'react'
-import { Download, PlusSquare, Share } from 'lucide-react'
-import { tr } from '../i18n'
-import { isIos } from '../lib/push'
+import { useEffect, useState } from 'react';
+import { Download, PlusSquare, Share } from 'lucide-react';
+import { tr } from '../i18n';
+import { isIos } from '../lib/push';
 
 // Aberto no navegador, o Argus não roda: só esta tela, pedindo para instalar. Como app (Tela de
 // Início) ele abre em tela cheia, guarda o pareamento à parte do navegador e recebe notificações.
 // No Android e no Chrome, o botão Instalar pede direto ao navegador; no iPhone isso não existe, e
 // a tela mostra o caminho pelo Compartilhar. O código do QR code fica à vista para digitar no app.
 
-type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
+type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
 // O navegador avisa cedo, antes de a tela montar: guardado aqui (ver main.tsx).
-let deferred: InstallPrompt | null = null
-const listeners = new Set<() => void>()
+let deferred: InstallPrompt | null = null;
+const listeners = new Set<() => void>();
 export function captureInstallPrompt(): void {
   window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferred = e as InstallPrompt
-    listeners.forEach((cb) => cb())
-  })
+    e.preventDefault();
+    deferred = e as InstallPrompt;
+    listeners.forEach((cb) => cb());
+  });
 }
 
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
@@ -27,26 +27,26 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
       <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-[15px] font-semibold text-white">{n}</span>
       <span className="pt-0.5 text-[17px] leading-snug">{children}</span>
     </li>
-  )
+  );
 }
 
 export function InstallScreen({ code }: { code?: string }) {
-  const [canPrompt, setCanPrompt] = useState(!!deferred)
+  const [canPrompt, setCanPrompt] = useState(!!deferred);
   useEffect(() => {
-    const cb = () => setCanPrompt(!!deferred)
-    listeners.add(cb)
-    return () => void listeners.delete(cb)
-  }, [])
-  const ios = isIos()
+    const cb = () => setCanPrompt(!!deferred);
+    listeners.add(cb);
+    return () => void listeners.delete(cb);
+  }, []);
+  const ios = isIos();
 
   const install = async () => {
-    const p = deferred
-    if (!p) return
-    await p.prompt()
-    await p.userChoice.catch(() => null)
-    deferred = null
-    setCanPrompt(false)
-  }
+    const p = deferred;
+    if (!p) return;
+    await p.prompt();
+    await p.userChoice.catch(() => null);
+    deferred = null;
+    setCanPrompt(false);
+  };
 
   return (
     <div className="pt-safe px-safe pb-end flex min-h-full flex-col">
@@ -94,5 +94,5 @@ export function InstallScreen({ code }: { code?: string }) {
         </div>
       )}
     </div>
-  )
+  );
 }

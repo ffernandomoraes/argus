@@ -1,8 +1,8 @@
-import { isInterfaceZoom } from '@argus/shared/interfaceZoom'
-import { DEFAULT_LOOK, normalizeLook, type MascotLook } from '../canvas/mascot/look'
-import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings'
-import { createStore } from '../lib/createStore'
-import { useStore } from '../lib/useStore'
+import { isInterfaceZoom } from '@argus/shared/interfaceZoom';
+import { DEFAULT_LOOK, normalizeLook, type MascotLook } from '../canvas/mascot/look';
+import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings';
+import { createStore } from '../lib/createStore';
+import { useStore } from '../lib/useStore';
 
 // Preferências do app, salvas neste computador. Valem em todas as janelas.
 export type Preferences = {
@@ -36,10 +36,10 @@ export type Preferences = {
   favoriteChats: string[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
   promptSuggestions: boolean
-}
+};
 
-const KEY = 'preferences'
-const CONVERSATION_DEFAULTS = 2
+const KEY = 'preferences';
+const CONVERSATION_DEFAULTS = 2;
 const DEFAULTS: Preferences = {
   openIn: 'panel',
   drawerZoom: 1,
@@ -54,14 +54,14 @@ const DEFAULTS: Preferences = {
   mascotLook: DEFAULT_LOOK,
   worktrees: false,
   favoriteChats: [],
-  promptSuggestions: true
-}
+  promptSuggestions: true,
+};
 
 function read(): Preferences {
   try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return DEFAULTS
-    const saved = JSON.parse(raw) as Partial<Preferences>
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return DEFAULTS;
+    const saved = JSON.parse(raw) as Partial<Preferences>;
     return {
       ...DEFAULTS,
       ...saved,
@@ -76,38 +76,38 @@ function read(): Preferences {
           : { ...DEFAULT_SETTINGS, ...saved.conversation, thinking: false, ultracode: false },
       conversationDefaults: CONVERSATION_DEFAULTS,
       interfaceZoom: isInterfaceZoom(saved.interfaceZoom) ? saved.interfaceZoom : 1,
-      mascotLook: normalizeLook(saved.mascotLook)
-    }
+      mascotLook: normalizeLook(saved.mascotLook),
+    };
   } catch {
-    return DEFAULTS
+    return DEFAULTS;
   }
 }
 
-const prefs = createStore<Preferences>(read())
+const prefs = createStore<Preferences>(read());
 
 // Mudança feita em outra janela (ex.: janela de conversa).
 window.addEventListener('storage', (e) => {
-  if (e.key === KEY) prefs.set(read())
-})
+  if (e.key === KEY) prefs.set(read());
+});
 
 export function getPreferences(): Preferences {
-  return prefs.get()
+  return prefs.get();
 }
 
 export function setPreferences(patch: Partial<Preferences>): void {
-  prefs.set((p) => ({ ...p, ...patch }))
+  prefs.set((p) => ({ ...p, ...patch }));
   try {
-    localStorage.setItem(KEY, JSON.stringify(prefs.get()))
+    localStorage.setItem(KEY, JSON.stringify(prefs.get()));
   } catch {
     // Sem armazenamento, vale só até fechar o app.
   }
 }
 
 export function usePreferences(): Preferences {
-  return useStore(prefs)
+  return useStore(prefs);
 }
 
 // Uma preferência só: redesenha apenas quando ela muda (ex.: usePreference('welcomeSeen')).
 export function usePreference<K extends keyof Preferences>(key: K): Preferences[K] {
-  return useStore(prefs, (p) => p[key])
+  return useStore(prefs, (p) => p[key]);
 }

@@ -3,15 +3,15 @@
 // endereço (postgres://user:senha@host) e os formatos conhecidos de chave. Não pega tudo: uma senha
 // solta numa linha, sem nome, passa.
 
-const MASK = '***'
+const MASK = '***';
 
 // Nome de variável que guarda segredo, em inglês ou português. As palavras longas valem em qualquer
 // parte do nome (DBPASSWORD, apiSecret); as curtas, só inteiras: key em API_KEY e apiKey, não em
 // keyboard ou keywords; pass em DB_PASS, não em passive. Session só no fim (SESSION, SESSION_ID),
 // não em sessionTimeout. PWD é a pasta atual.
-const SECRET_PART = /PASSWORD|PASSWD|PASSPHRASE|SECRET|TOKEN|CREDENTIAL|APIKEY|SENHA|SEGREDO/i
-const SECRET_WORDS = new Set(['key', 'keys', 'pass', 'pwd', 'signature', 'cookie', 'cookies', 'chave', 'chaves'])
-const NOT_SECRET = /^PWD$/i
+const SECRET_PART = /PASSWORD|PASSWD|PASSPHRASE|SECRET|TOKEN|CREDENTIAL|APIKEY|SENHA|SEGREDO/i;
+const SECRET_WORDS = new Set(['key', 'keys', 'pass', 'pwd', 'signature', 'cookie', 'cookies', 'chave', 'chaves']);
+const NOT_SECRET = /^PWD$/i;
 
 // O nome em palavras: separadas por _, -, . ou pela maiúscula (apiKey, APIKey).
 const words = (name: string) =>
@@ -20,25 +20,25 @@ const words = (name: string) =>
     .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
     .toLowerCase()
     .split(/[^a-z\d]+/)
-    .filter(Boolean)
+    .filter(Boolean);
 
 function isSecretName(name: string): boolean {
-  if (NOT_SECRET.test(name)) return false
-  if (SECRET_PART.test(name)) return true
-  const w = words(name)
-  return w.some((word) => SECRET_WORDS.has(word)) || w.at(-1) === 'session' || (w.at(-2) === 'session' && w.at(-1) === 'id')
+  if (NOT_SECRET.test(name)) return false;
+  if (SECRET_PART.test(name)) return true;
+  const w = words(name);
+  return w.some((word) => SECRET_WORDS.has(word)) || w.at(-1) === 'session' || (w.at(-2) === 'session' && w.at(-1) === 'id');
 }
 
 // Valor que não guarda segredo: true, false, null e o que não tem letra nem número (o [ que abre uma
 // lista no JSON).
-const NOT_SECRET_VALUE = /^(true|false|null|undefined|none|nil)$|^[^A-Za-z\d]*$/i
+const NOT_SECRET_VALUE = /^(true|false|null|undefined|none|nil)$|^[^A-Za-z\d]*$/i;
 
 // NOME=valor, NOME: valor, "nome": "valor" (o export na frente não muda nada). O valor vai até o
 // espaço, ou entre as aspas dele.
-const ASSIGNMENT = /(["']?)([A-Za-z_][\w.-]*)\1(\s*[:=]\s*)(?:"([^"\n]*)"|'([^'\n]*)'|([^\s"',;]+))/g
+const ASSIGNMENT = /(["']?)([A-Za-z_][\w.-]*)\1(\s*[:=]\s*)(?:"([^"\n]*)"|'([^'\n]*)'|([^\s"',;]+))/g;
 
 // Senha num endereço: esquema://usuário:senha@host.
-const URL_PASSWORD = /([a-z][a-z\d+.-]*:\/\/[^\s:/@]+:)([^\s@/]+)(@)/gi
+const URL_PASSWORD = /([a-z][a-z\d+.-]*:\/\/[^\s:/@]+:)([^\s@/]+)(@)/gi;
 
 // Formatos com cara própria: Anthropic/OpenAI, GitHub, AWS, Slack, Stripe, Google, npm, JWT e chave
 // privada (o bloco inteiro, ou do começo até o fim do texto, se o fim não veio).
@@ -52,28 +52,28 @@ const KNOWN = [
   /\bAIza[\w-]{35}/g,
   /\bnpm_[A-Za-z\d]{36}\b/g,
   /\beyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,}/g,
-  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g
-]
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,
+];
 
 // O texto com os segredos trocados e quantos foram trocados.
 export function redactSecrets(text: string): { text: string; count: number } {
-  let count = 0
+  let count = 0;
   let out = text.replace(ASSIGNMENT, (whole, quote: string, name: string, sep: string, dq?: string, sq?: string, bare?: string) => {
-    const value = dq ?? sq ?? bare ?? ''
-    if (NOT_SECRET_VALUE.test(value) || !isSecretName(name)) return whole
-    count++
-    const masked = dq !== undefined ? `"${MASK}"` : sq !== undefined ? `'${MASK}'` : MASK
-    return `${quote}${name}${quote}${sep}${masked}`
-  })
+    const value = dq ?? sq ?? bare ?? '';
+    if (NOT_SECRET_VALUE.test(value) || !isSecretName(name)) return whole;
+    count++;
+    const masked = dq !== undefined ? `"${MASK}"` : sq !== undefined ? `'${MASK}'` : MASK;
+    return `${quote}${name}${quote}${sep}${masked}`;
+  });
   out = out.replace(URL_PASSWORD, (_whole, head: string, _password: string, at: string) => {
-    count++
-    return `${head}${MASK}${at}`
-  })
+    count++;
+    return `${head}${MASK}${at}`;
+  });
   for (const pattern of KNOWN) {
     out = out.replace(pattern, () => {
-      count++
-      return MASK
-    })
+      count++;
+      return MASK;
+    });
   }
-  return { text: out, count }
+  return { text: out, count };
 }

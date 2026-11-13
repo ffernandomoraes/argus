@@ -1,11 +1,11 @@
-import { useMemo } from 'react'
-import { RefreshCw } from 'lucide-react'
-import type { McpSource } from '../mcp/McpServers'
-import { McpServerList, useMcpServers } from '../mcp/McpServers'
-import { IconButton } from '../ui/IconButton'
-import { Modal } from '../ui/Modal'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { tr } from '../i18n'
+import { useMemo } from 'react';
+import { RefreshCw } from 'lucide-react';
+import type { McpSource } from '../mcp/McpServers';
+import { McpServerList, useMcpServers } from '../mcp/McpServers';
+import { IconButton } from '../ui/IconButton';
+import { Modal } from '../ui/Modal';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { tr } from '../i18n';
 
 // Lista dos servidores MCP da pasta, no lugar do /mcp que abriria uma tela no terminal. Cada conta
 // tem os seus: sem conversa aberta, a consulta usa a conta do grupo.
@@ -13,7 +13,7 @@ export function McpPanel({
   conversationKey,
   cwd,
   account,
-  onClose
+  onClose,
 }: {
   conversationKey: string
   cwd: string
@@ -27,11 +27,11 @@ export function McpPanel({
       authenticate: (name) => window.api.chat.mcpAuthenticate(conversationKey, name),
       submitCallback: (name, url) => window.api.chat.mcpSubmitCallback(conversationKey, name, url),
       clearAuth: (name) => window.api.chat.mcpClearAuth(conversationKey, name),
-      remove: (name, scope) => window.api.chat.mcpRemove(conversationKey, cwd, account, name, scope)
+      remove: (name, scope) => window.api.chat.mcpRemove(conversationKey, cwd, account, name, scope),
     }),
-    [conversationKey, cwd, account]
-  )
-  const state = useMcpServers(source)
+    [conversationKey, cwd, account],
+  );
+  const state = useMcpServers(source);
 
   return (
     <Modal
@@ -57,10 +57,10 @@ export function McpPanel({
           empty={tr('Nenhum servidor MCP configurado para esta pasta.', 'No MCP servers configured for this folder.')}
           notLive={tr(
             'Esta conversa ainda não abriu o agente: a lista mostra como os servidores ficam ao abrir. Para autorizar ou reconectar um, mande uma mensagem antes, ou use Configurações > MCP.',
-            'This chat hasn’t started the agent yet: the list shows how the servers look when it starts. To authorize or reconnect one, send a message first, or use Settings > MCP.'
+            'This chat hasn’t started the agent yet: the list shows how the servers look when it starts. To authorize or reconnect one, send a message first, or use Settings > MCP.',
           )}
         />
       </div>
     </Modal>
-  )
+  );
 }

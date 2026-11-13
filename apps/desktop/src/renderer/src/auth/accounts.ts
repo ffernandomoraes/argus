@@ -1,59 +1,59 @@
-import { followMerged, MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '@argus/shared/auth'
-import { agentRef, parseAgentRef, PROVIDERS, type ProvidersState } from '@argus/shared/providers'
+import { followMerged, MAIN_ACCOUNT, type AuthState, type ClaudeAccount } from '@argus/shared/auth';
+import { agentRef, parseAgentRef, PROVIDERS, type ProvidersState } from '@argus/shared/providers';
 
 // A conta do Claude guardada, se ela está na lista; se saiu por ter o mesmo login de outra (ver
 // AuthState.mergedInto), a que ficou no lugar dela. Nada se não existe mais.
 function listedAccount(auth: AuthState, id: string): string | undefined {
-  const listed = (a: string) => auth.accounts.some((x) => x.id === a)
-  if (listed(id)) return id
-  const kept = followMerged(auth.mergedInto, id)
-  return listed(kept) ? kept : undefined
+  const listed = (a: string) => auth.accounts.some((x) => x.id === a);
+  if (listed(id)) return id;
+  const kept = followMerged(auth.mergedInto, id);
+  return listed(kept) ? kept : undefined;
 }
 
 // A conta pedida, se ela ainda existe; senão (vazia ou removida), a padrão. É o que o processo
 // principal faz ao abrir a conversa, então a tela mostra a mesma conta que vai rodar.
 // Conta de outro agente ("codex:main") passa como veio: quem confere é o processo principal.
 export function resolveAccount(auth: AuthState | null, id?: string): string {
-  if (parseAgentRef(id)) return id!
-  if (!auth) return id ?? MAIN_ACCOUNT
-  return (id && listedAccount(auth, id)) || auth.defaultId
+  if (parseAgentRef(id)) return id!;
+  if (!auth) return id ?? MAIN_ACCOUNT;
+  return (id && listedAccount(auth, id)) || auth.defaultId;
 }
 
 // Conta guardada no grupo, se ela ainda está no app (de qualquer agente). Removida, o grupo volta a
 // não ter escolha e vale a padrão; juntada a outra com o mesmo login, vale a que ficou. Enquanto a
 // lista não chegou (null), passa como veio.
 export function liveAccount(auth: AuthState | null, providers: ProvidersState | null, id?: string): string | undefined {
-  if (!id) return undefined
-  const ref = parseAgentRef(id)
-  if (ref) return !providers || providers.providers[ref.provider].accounts.some((a) => a.id === ref.account) ? id : undefined
-  return auth ? listedAccount(auth, id) : id
+  if (!id) return undefined;
+  const ref = parseAgentRef(id);
+  if (ref) return !providers || providers.providers[ref.provider].accounts.some((a) => a.id === ref.account) ? id : undefined;
+  return auth ? listedAccount(auth, id) : id;
 }
 
 // Contas de todos os agentes. Com uma só, não há o que escolher: o grupo não mostra qual roda.
 export function accountCount(auth: AuthState | null, providers: ProvidersState | null): number {
-  return (auth?.accounts.length ?? 0) + PROVIDERS.reduce((n, p) => n + (providers?.providers[p].accounts.length ?? 0), 0)
+  return (auth?.accounts.length ?? 0) + PROVIDERS.reduce((n, p) => n + (providers?.providers[p].accounts.length ?? 0), 0);
 }
 
 export function findAccount(auth: AuthState | null, id?: string): ClaudeAccount | undefined {
-  const resolved = resolveAccount(auth, id)
-  return auth?.accounts.find((a) => a.id === resolved)
+  const resolved = resolveAccount(auth, id);
+  return auth?.accounts.find((a) => a.id === resolved);
 }
 
 // Claude Code instalado e nenhuma conta confirmada sem login. Conta que não respondeu (null) não
 // conta como sem login: é a mesma regra para abrir o canvas.
 export function claudeReady(auth: AuthState): boolean {
-  const loggedOut = !!auth.accounts.length && auth.accounts.every((a) => a.status?.loggedIn === false)
-  return auth.claude.status === 'found' && !loggedOut
+  const loggedOut = !!auth.accounts.length && auth.accounts.every((a) => a.status?.loggedIn === false);
+  return auth.claude.status === 'found' && !loggedOut;
 }
 
 // Sem o Claude pronto, o agente que roda fora de grupo (e nos grupos sem agente escolhido): o
 // primeiro outro agente com a conta padrão conectada ("codex:main").
 export function fallbackAgent(auth: AuthState | null, providers: ProvidersState | null): string | undefined {
-  if (!auth || !providers || claudeReady(auth)) return undefined
+  if (!auth || !providers || claudeReady(auth)) return undefined;
   for (const p of PROVIDERS) {
-    const { accounts, defaultId } = providers.providers[p]
-    const chosen = accounts.find((a) => a.id === defaultId && a.status?.signedIn) ?? accounts.find((a) => a.status?.signedIn)
-    if (chosen) return agentRef(p, chosen.id)
+    const { accounts, defaultId } = providers.providers[p];
+    const chosen = accounts.find((a) => a.id === defaultId && a.status?.signedIn) ?? accounts.find((a) => a.status?.signedIn);
+    if (chosen) return agentRef(p, chosen.id);
   }
-  return undefined
+  return undefined;
 }

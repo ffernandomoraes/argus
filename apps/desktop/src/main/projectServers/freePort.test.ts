@@ -1,101 +1,101 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { freePort } from './freePort'
-import { packageManager, projectScript, type ProjectScript } from './scripts'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { freePort } from './freePort';
+import { packageManager, projectScript, type ProjectScript } from './scripts';
 
 // Portas abertas no computador: no teste, as que cada caso disser.
-const busy = vi.hoisted(() => ({ ports: [] as number[] }))
-vi.mock('../processScan', () => ({ scanListening: async () => [{ pid: 1, ports: busy.ports }] }))
+const busy = vi.hoisted(() => ({ ports: [] as number[] }));
+vi.mock('../processScan', () => ({ scanListening: async () => [{ pid: 1, ports: busy.ports }] }));
 
-const folder = () => mkdtempSync(join(process.env.HOME ?? '', 'server-'))
-const vite = (body = 'vite', manager = 'pnpm'): ProjectScript => ({ script: 'dev', command: `${manager} run dev`, body, manager })
+const folder = () => mkdtempSync(join(process.env.HOME ?? '', 'server-'));
+const vite = (body = 'vite', manager = 'pnpm'): ProjectScript => ({ script: 'dev', command: `${manager} run dev`, body, manager });
 
 beforeEach(() => {
-  busy.ports = []
-})
+  busy.ports = [];
+});
 
 // 6e46860: o servidor aberto pelo Argus caía na mesma porta de outro já rodando (o Vite não pula
 // de porta quando os dois abrem em endereços diferentes), e os dois respondiam no mesmo endereço.
 describe('freePort', () => {
   it('porta do Vite livre: o comando fica como está', async () => {
-    busy.ports = [3000]
-    expect(await freePort(folder(), vite())).toEqual(vite())
-  })
+    busy.ports = [3000];
+    expect(await freePort(folder(), vite())).toEqual(vite());
+  });
 
   it('porta ocupada: passa a primeira livre depois dela', async () => {
-    busy.ports = [5173, 5174, 8080]
-    expect((await freePort(folder(), vite())).command).toBe('pnpm run dev --port 5175')
-  })
+    busy.ports = [5173, 5174, 8080];
+    expect((await freePort(folder(), vite())).command).toBe('pnpm run dev --port 5175');
+  });
 
   it('no npm, a porta vai depois de "--"', async () => {
-    busy.ports = [5173]
-    expect((await freePort(folder(), vite('vite dev', 'npm'))).command).toBe('npm run dev -- --port 5174')
-  })
+    busy.ports = [5173];
+    expect((await freePort(folder(), vite('vite dev', 'npm'))).command).toBe('npm run dev -- --port 5174');
+  });
 
   it('usa a porta do vite.config', async () => {
-    const root = folder()
-    writeFileSync(join(root, 'vite.config.ts'), 'export default { server: { port: 3001 } }')
-    busy.ports = [3001]
-    expect((await freePort(root, vite())).command).toBe('pnpm run dev --port 3002')
-  })
+    const root = folder();
+    writeFileSync(join(root, 'vite.config.ts'), 'export default { server: { port: 3001 } }');
+    busy.ports = [3001];
+    expect((await freePort(root, vite())).command).toBe('pnpm run dev --port 3002');
+  });
 
   it('porta fixada pela pessoa: respeita a escolha dela', async () => {
-    busy.ports = [5173, 4000]
-    expect(await freePort(folder(), vite('vite --port 4000'))).toEqual(vite('vite --port 4000'))
-    const root = folder()
-    writeFileSync(join(root, 'vite.config.mjs'), 'export default { server: { strictPort: true } }')
-    expect(await freePort(root, vite())).toEqual(vite())
-  })
+    busy.ports = [5173, 4000];
+    expect(await freePort(folder(), vite('vite --port 4000'))).toEqual(vite('vite --port 4000'));
+    const root = folder();
+    writeFileSync(join(root, 'vite.config.mjs'), 'export default { server: { strictPort: true } }');
+    expect(await freePort(root, vite())).toEqual(vite());
+  });
 
   it('script que não é o vite direto fica como está', async () => {
-    busy.ports = [5173]
+    busy.ports = [5173];
     for (const body of ['turbo dev', 'vite build && vite preview', 'vitest', 'next dev']) {
-      expect(await freePort(folder(), vite(body))).toEqual(vite(body))
+      expect(await freePort(folder(), vite(body))).toEqual(vite(body));
     }
-  })
-})
+  });
+});
 
 describe('packageManager e projectScript', () => {
   it('o gerenciador declarado no package.json vale primeiro', async () => {
-    expect(await packageManager(folder(), 'yarn@4.1.0')).toBe('yarn')
-  })
+    expect(await packageManager(folder(), 'yarn@4.1.0')).toBe('yarn');
+  });
 
   it('em monorepo, acha a trava numa pasta acima', async () => {
-    const root = folder()
-    writeFileSync(join(root, 'pnpm-lock.yaml'), '')
-    mkdirSync(join(root, 'apps', 'web'), { recursive: true })
-    expect(await packageManager(join(root, 'apps', 'web'), undefined)).toBe('pnpm')
-  })
+    const root = folder();
+    writeFileSync(join(root, 'pnpm-lock.yaml'), '');
+    mkdirSync(join(root, 'apps', 'web'), { recursive: true });
+    expect(await packageManager(join(root, 'apps', 'web'), undefined)).toBe('pnpm');
+  });
 
   it('com duas travas na mesma pasta, vale a da ordem de preferência', async () => {
-    const root = folder()
-    writeFileSync(join(root, 'package-lock.json'), '')
-    writeFileSync(join(root, 'yarn.lock'), '')
-    expect(await packageManager(root, undefined)).toBe('yarn')
-  })
+    const root = folder();
+    writeFileSync(join(root, 'package-lock.json'), '');
+    writeFileSync(join(root, 'yarn.lock'), '');
+    expect(await packageManager(root, undefined)).toBe('yarn');
+  });
 
   it('sem nada, npm', async () => {
-    expect(await packageManager(folder(), 'gerenciador-estranho')).toBe('npm')
-  })
+    expect(await packageManager(folder(), 'gerenciador-estranho')).toBe('npm');
+  });
 
   // A consulta dos servidores pergunta a cada poucos segundos: a procura não roda toda vez.
   it('a trava achada vale por um tempo', async () => {
-    const root = folder()
-    expect(await packageManager(root, undefined)).toBe('npm')
-    writeFileSync(join(root, 'pnpm-lock.yaml'), '')
-    expect(await packageManager(root, undefined)).toBe('npm')
-  })
+    const root = folder();
+    expect(await packageManager(root, undefined)).toBe('npm');
+    writeFileSync(join(root, 'pnpm-lock.yaml'), '');
+    expect(await packageManager(root, undefined)).toBe('npm');
+  });
 
   it('roda o dev; sem ele, o start; sem nenhum, nada', async () => {
     const pkg = (scripts: Record<string, string>) => {
-      const root = folder()
-      writeFileSync(join(root, 'package.json'), JSON.stringify({ scripts, packageManager: 'pnpm@11.0.0' }))
-      return root
-    }
-    expect(await projectScript(pkg({ start: 'node a', dev: 'vite' }))).toEqual({ script: 'dev', command: 'pnpm run dev', body: 'vite', manager: 'pnpm' })
-    expect((await projectScript(pkg({ start: 'node a' })))?.script).toBe('start')
-    expect(await projectScript(pkg({ build: 'tsc' }))).toBeNull()
-    expect(await projectScript(folder())).toBeNull()
-  })
-})
+      const root = folder();
+      writeFileSync(join(root, 'package.json'), JSON.stringify({ scripts, packageManager: 'pnpm@11.0.0' }));
+      return root;
+    };
+    expect(await projectScript(pkg({ start: 'node a', dev: 'vite' }))).toEqual({ script: 'dev', command: 'pnpm run dev', body: 'vite', manager: 'pnpm' });
+    expect((await projectScript(pkg({ start: 'node a' })))?.script).toBe('start');
+    expect(await projectScript(pkg({ build: 'tsc' }))).toBeNull();
+    expect(await projectScript(folder())).toBeNull();
+  });
+});

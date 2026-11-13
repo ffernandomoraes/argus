@@ -1,20 +1,20 @@
-import type { MemoryProject } from '@argus/shared/memory'
-import { useSaveShortcut } from '../lib/useSaveShortcut'
-import { Modal } from '../ui/Modal'
-import { findLinked } from './memoryText'
-import { MemoryFileView } from './MemoryFileView'
-import { MemoryNav } from './MemoryNav'
-import { useMemoryFiles } from './useMemoryFiles'
-import { tr } from '../i18n'
+import type { MemoryProject } from '@argus/shared/memory';
+import { useSaveShortcut } from '../lib/useSaveShortcut';
+import { Modal } from '../ui/Modal';
+import { findLinked } from './memoryText';
+import { MemoryFileView } from './MemoryFileView';
+import { MemoryNav } from './MemoryNav';
+import { useMemoryFiles } from './useMemoryFiles';
+import { tr } from '../i18n';
 
-const DISCARD = tr('Descartar as alterações deste arquivo?', 'Discard changes to this file?')
+const DISCARD = tr('Descartar as alterações deste arquivo?', 'Discard changes to this file?');
 
 // Memória do Claude Code: instruções (CLAUDE.md) e o que ele anotou sozinho, por pasta do canvas.
 export function MemoryModal({
   projects,
   only,
   initialProject,
-  onClose
+  onClose,
 }: {
   projects: MemoryProject[]
   // Caminho de uma pasta: mostra só a memória dela, sem o global e sem as outras.
@@ -23,21 +23,21 @@ export function MemoryModal({
   initialProject?: string
   onClose: () => void
 }) {
-  const memory = useMemoryFiles(projects, only, initialProject)
-  const { current, draft, dirty, editing, setDraft } = memory
+  const memory = useMemoryFiles(projects, only, initialProject);
+  const { current, draft, dirty, editing, setDraft } = memory;
 
   const select = (path: string) => {
-    if (dirty && !window.confirm(DISCARD)) return
-    memory.select(path)
-  }
+    if (dirty && !window.confirm(DISCARD)) return;
+    memory.select(path);
+  };
 
   // ⌘S salva a edição.
-  useSaveShortcut(memory.save, editing)
+  useSaveShortcut(memory.save, editing);
 
   const openLink = (target: string) => {
-    const found = current && findLinked(memory.files, current, target)
-    if (found) select(found.path)
-  }
+    const found = current && findLinked(memory.files, current, target);
+    if (found) select(found.path);
+  };
 
   return (
     <Modal
@@ -52,7 +52,7 @@ export function MemoryModal({
       onEscape={
         editing
           ? () => {
-              if (!dirty) memory.cancel()
+              if (!dirty) memory.cancel();
             }
           : undefined
       }
@@ -71,5 +71,5 @@ export function MemoryModal({
         onOpenLink={openLink}
       />
     </Modal>
-  )
+  );
 }

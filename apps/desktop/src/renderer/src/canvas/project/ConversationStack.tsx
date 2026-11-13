@@ -1,16 +1,16 @@
-import { memo, useCallback, type MouseEvent as ReactMouseEvent } from 'react'
-import { List } from 'lucide-react'
-import { useCanvasActions } from '../CanvasContext'
-import type { RunningAgent } from '@argus/shared/agents'
-import type { ConversationSummary } from '../types'
-import { useActiveConversationIn } from '../useCanvasView'
-import { AgentRow } from './AgentRow'
-import { ConversationRow } from './ConversationRow'
-import { TasksRow } from './TasksRow'
-import { INDENT, legPath } from './geometry'
-import { useProjectRows } from './useProjectRows'
-import { MAX_CONVERSATIONS } from './projectRows'
-import { tr } from '../../i18n'
+import { memo, useCallback, type MouseEvent as ReactMouseEvent } from 'react';
+import { List } from 'lucide-react';
+import { useCanvasActions } from '../CanvasContext';
+import type { RunningAgent } from '@argus/shared/agents';
+import type { ConversationSummary } from '../types';
+import { useActiveConversationIn } from '../useCanvasView';
+import { AgentRow } from './AgentRow';
+import { ConversationRow } from './ConversationRow';
+import { TasksRow } from './TasksRow';
+import { INDENT, legPath } from './geometry';
+import { useProjectRows } from './useProjectRows';
+import { MAX_CONVERSATIONS } from './projectRows';
+import { tr } from '../../i18n';
 
 // Lista de conversas dentro da caixa da pasta: as mais recentes (recolhida, só as que pedem
 // atenção), cada uma com os subagentes rodando e a perninha que sai do ícone da pasta, e o botão
@@ -19,7 +19,7 @@ export const ConversationStack = memo(function ConversationStack({
   nodeId,
   conversations,
   collapsed,
-  flowColor
+  flowColor,
 }: {
   nodeId: string
   conversations: ConversationSummary[]
@@ -27,39 +27,39 @@ export const ConversationStack = memo(function ConversationStack({
   // Cor da linha até a conversa rodando e dos subagentes (a do grupo, ou a de "rodando").
   flowColor: string
 }) {
-  const { rows, legs } = useProjectRows(conversations, collapsed)
-  const { openConversation, openSubagent, openTasks, openConversationMenu, openAllConversations } = useCanvasActions()
+  const { rows, legs } = useProjectRows(conversations, collapsed);
+  const { openConversation, openSubagent, openTasks, openConversationMenu, openAllConversations } = useCanvasActions();
   // Conversa aberta, só se for desta pasta: abrir em outra pasta não redesenha esta.
-  const activeConversation = useActiveConversationIn(nodeId)
+  const activeConversation = useActiveConversationIn(nodeId);
   // As mesmas funções para todas as linhas: o memo delas vale enquanto as ações não mudam.
-  const open = useCallback((c: ConversationSummary) => openConversation(nodeId, c.id), [openConversation, nodeId])
+  const open = useCallback((c: ConversationSummary) => openConversation(nodeId, c.id), [openConversation, nodeId]);
   // Subagente rodando: o histórico dele, só para ler. Sem a chamada que o lançou, não há como
   // achá-lo: abre a conversa.
   const openAgent = useCallback(
     (a: RunningAgent, c: ConversationSummary) => {
-      const sessionId = c.sessionId ?? c.id
-      if (!a.toolUseId) return openConversation(nodeId, c.id)
-      openSubagent(nodeId, '', { sessionId, toolUseId: a.toolUseId, agent: a.agent, description: a.description })
+      const sessionId = c.sessionId ?? c.id;
+      if (!a.toolUseId) return openConversation(nodeId, c.id);
+      openSubagent(nodeId, '', { sessionId, toolUseId: a.toolUseId, agent: a.agent, description: a.description });
     },
-    [openConversation, openSubagent, nodeId]
-  )
+    [openConversation, openSubagent, nodeId],
+  );
   // Tarefas em segundo plano: a saída de cada uma, só para ler.
   const openTaskList = useCallback(
     (c: ConversationSummary) => openTasks(nodeId, '', { sessionId: c.sessionId ?? c.id }),
-    [openTasks, nodeId]
-  )
+    [openTasks, nodeId],
+  );
   const openMenu = useCallback(
     (e: ReactMouseEvent, c: ConversationSummary) => openConversationMenu(e, nodeId, c, 'stack'),
-    [openConversationMenu, nodeId]
-  )
-  if (rows.length === 0 && collapsed) return null
+    [openConversationMenu, nodeId],
+  );
+  if (rows.length === 0 && collapsed) return null;
   // À direita, os mesmos 12px do ícone da pasta à esquerda (o px-3 do cabeçalho).
   // "Ver todas" só quando sobra conversa fora da pilha. Sem ele, a última conversa ganha mais
   // respiro até o fim do card (ou até a divisória das pastas do espaço de trabalho).
-  const showAll = !collapsed && conversations.length > MAX_CONVERSATIONS
+  const showAll = !collapsed && conversations.length > MAX_CONVERSATIONS;
 
   const isActive = (c: ConversationSummary) =>
-    !!activeConversation && (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id)
+    !!activeConversation && (activeConversation.conversationId === c.id || activeConversation.sessionId === c.id);
 
   return (
     <ul className={`relative flex flex-col gap-1 pr-3 ${showAll ? 'pb-1.5' : 'pb-3'}`} style={{ paddingLeft: INDENT }}>
@@ -82,7 +82,7 @@ export const ConversationStack = memo(function ConversationStack({
               strokeWidth={1.5}
               className="conversation-flow"
             />
-          ) : null
+          ) : null,
         )}
       </svg>
       {rows.map((row) =>
@@ -113,7 +113,7 @@ export const ConversationStack = memo(function ConversationStack({
             onOpen={open}
             onContextMenu={openMenu}
           />
-        )
+        ),
       )}
       {/* Fecha a lista: abre todas no painel flutuante. Só quando sobra conversa fora da pilha. */}
       {showAll && (
@@ -128,5 +128,5 @@ export const ConversationStack = memo(function ConversationStack({
         </li>
       )}
     </ul>
-  )
-})
+  );
+});

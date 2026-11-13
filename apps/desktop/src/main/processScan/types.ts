@@ -1,4 +1,4 @@
-import type { DevServer } from '@argus/shared/devServers'
+import type { DevServer } from '@argus/shared/devServers';
 
 // Processo com porta aberta, com todas as portas dele. `claude`: o próprio Claude Code ou algo
 // no grupo dele (servidor MCP); não é servidor de projeto nenhum. `env`: o ambiente do processo,
@@ -10,4 +10,4 @@ export type Listening = Omit<DevServer, 'port'> & {
   env: string
   name?: string
   chain?: number[]
-}
+};

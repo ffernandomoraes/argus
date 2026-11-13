@@ -1,31 +1,31 @@
-import type { UnreadChat } from '@argus/shared/chat'
-import { untildify } from '../../platform'
-import { canvasScope, inScope } from '../canvasScope'
-import { store } from './state'
-import { unread } from './unread'
+import type { UnreadChat } from '@argus/shared/chat';
+import { untildify } from '../../platform';
+import { canvasScope, inScope } from '../canvasScope';
+import { store } from './state';
+import { unread } from './unread';
 
 // Manda ao processo principal as conversas com resposta não vista (bolinha verde), com a pasta e o
 // título: o ícone da barra de menus conta e lista. Só das pastas que estão no canvas (ver
 // canvasScope). Só quando a lista muda de verdade.
-let sent = ''
+let sent = '';
 
 function sync(): void {
-  const ids = unread.get()
-  const scope = canvasScope.get()
-  const list: UnreadChat[] = []
+  const ids = unread.get();
+  const scope = canvasScope.get();
+  const list: UnreadChat[] = [];
   if (ids.size) {
     for (const [path, conversations] of store.get().sessions) {
       for (const c of conversations) {
-        if (ids.has(c.id) && inScope(scope, path, c.id)) list.push({ id: c.id, cwd: untildify(path), title: c.title })
+        if (ids.has(c.id) && inScope(scope, path, c.id)) list.push({ id: c.id, cwd: untildify(path), title: c.title });
       }
     }
   }
-  const key = JSON.stringify(list)
-  if (key === sent) return
-  sent = key
-  window.api.chat.setUnread(list)
+  const key = JSON.stringify(list);
+  if (key === sent) return;
+  sent = key;
+  window.api.chat.setUnread(list);
 }
 
-unread.subscribe(sync)
-store.subscribe(sync)
-canvasScope.subscribe(sync)
+unread.subscribe(sync);
+store.subscribe(sync);
+canvasScope.subscribe(sync);

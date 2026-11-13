@@ -1,15 +1,15 @@
-import { ExternalLink, FolderMinus, FolderOpen, FolderPlus, GitBranchPlus, MessageCirclePlus, Pencil, StickyNote, Trash2 } from 'lucide-react'
-import type { XYPosition } from '@xyflow/react'
-import type { MenuItem } from '../ContextMenu'
-import { groupAccount, removeNode } from '../operations'
-import { getSessions } from '../sessionsStore'
-import { getPreferences } from '../../settings/preferences'
-import type { ConversationSummary, ProjectNode } from '../types'
-import { baseName, FILE_MANAGER } from '../../platform'
-import { boardSubmenu, isBusy, moveSubmenu, terminalSubmenu } from './shared'
-import type { Deps } from './types'
-import { tr } from '../../i18n'
-import { IS_REMOTE } from '../../remote'
+import { ExternalLink, FolderMinus, FolderOpen, FolderPlus, GitBranchPlus, MessageCirclePlus, Pencil, StickyNote, Trash2 } from 'lucide-react';
+import type { XYPosition } from '@xyflow/react';
+import type { MenuItem } from '../ContextMenu';
+import { groupAccount, removeNode } from '../operations';
+import { getSessions } from '../sessionsStore';
+import { getPreferences } from '../../settings/preferences';
+import type { ConversationSummary, ProjectNode } from '../types';
+import { baseName, FILE_MANAGER } from '../../platform';
+import { boardSubmenu, isBusy, moveSubmenu, terminalSubmenu } from './shared';
+import type { Deps } from './types';
+import { tr } from '../../i18n';
+import { IS_REMOTE } from '../../remote';
 
 type ProjectDeps = Pick<
   Deps,
@@ -27,17 +27,17 @@ type ProjectDeps = Pick<
   | 'newWorktree'
   | 'removeWorktree'
   | 'removeForever'
->
+>;
 
 // Lista de títulos para o aviso de bloqueio, entre aspas.
-const titles = (cs: ConversationSummary[]) => cs.map((c) => `"${c.title}"`).join(', ')
+const titles = (cs: ConversationSummary[]) => cs.map((c) => `"${c.title}"`).join(', ');
 
 // "Abrir no GitHub" quando o remoto é do GitHub; outro host (GitLab, Bitbucket...) leva o nome
 // genérico. Sem remoto, a opção não aparece.
 function repoItem(node: ProjectNode, repoUrl: string | null): MenuItem[] {
-  if (!repoUrl) return []
-  const label = new URL(repoUrl).hostname === 'github.com' ? tr('Abrir no GitHub', 'Open on GitHub') : tr('Abrir repositório', 'Open repository')
-  return [{ type: 'action', label, icon: ExternalLink, onSelect: () => (IS_REMOTE ? void window.open(repoUrl, '_blank') : window.api.sessions.openRepo(node.data.path)) }]
+  if (!repoUrl) return [];
+  const label = new URL(repoUrl).hostname === 'github.com' ? tr('Abrir no GitHub', 'Open on GitHub') : tr('Abrir repositório', 'Open repository');
+  return [{ type: 'action', label, icon: ExternalLink, onSelect: () => (IS_REMOTE ? void window.open(repoUrl, '_blank') : window.api.sessions.openRepo(node.data.path)) }];
 }
 
 // Workspace: pôr e tirar pastas e abrir cada uma no Finder. Sem repositório: cada
@@ -48,9 +48,9 @@ function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[])
     type: 'submenu',
     label: tr(`Abrir no ${FILE_MANAGER}`, `Open in ${FILE_MANAGER}`),
     icon: FolderOpen,
-    items: folders.map((f) => ({ type: 'action' as const, label: baseName(f), onSelect: () => window.api.files.openFolder(f) }))
-  }
-  if (node.data.groupWide) return folders.length && !IS_REMOTE ? [open] : []
+    items: folders.map((f) => ({ type: 'action' as const, label: baseName(f), onSelect: () => window.api.files.openFolder(f) })),
+  };
+  if (node.data.groupWide) return folders.length && !IS_REMOTE ? [open] : [];
   // Na janela remota não há seletor de pastas de lá: pôr pasta e abrir no Finder ficam de fora.
   return [
     ...(IS_REMOTE ? [] : [{ type: 'action', label: tr('Adicionar pasta', 'Add folder'), icon: FolderPlus, onSelect: () => deps.addWorkspaceFolder(node.id) } as const]),
@@ -63,20 +63,20 @@ function workspaceItems(deps: ProjectDeps, node: ProjectNode, folders: string[])
         label: baseName(f),
         // Fica pelo menos uma.
         disabled: folders.length < 2,
-        onSelect: () => deps.removeWorkspaceFolder(node.id, f)
-      }))
+        onSelect: () => deps.removeWorkspaceFolder(node.id, f),
+      })),
     },
-    ...(IS_REMOTE ? [] : [open])
-  ]
+    ...(IS_REMOTE ? [] : [open]),
+  ];
 }
 
 // Menu da pasta. `at`: onde foi o clique; a nota nasce ali, em cima da pasta.
 export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: string | null, at: XYPosition): MenuItem[] {
-  const { setNodes } = deps
-  const repo = repoItem(node, repoUrl)
-  const workspace = node.data.folders
-  const worktree = node.data.worktree
-  const groupWide = !!node.data.groupWide
+  const { setNodes } = deps;
+  const repo = repoItem(node, repoUrl);
+  const workspace = node.data.folders;
+  const worktree = node.data.worktree;
+  const groupWide = !!node.data.groupWide;
   return [
     { type: 'action', label: tr('Adicionar nota', 'Add note'), icon: StickyNote, onSelect: () => deps.addNote(at) },
     { type: 'separator' },
@@ -114,13 +114,13 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
       icon: Trash2,
       danger: true,
       onSelect: () => {
-        const conversations = getSessions(node.data.path)
-        const busy = conversations.filter(isBusy)
+        const conversations = getSessions(node.data.path);
+        const busy = conversations.filter(isBusy);
         if (busy.length > 0) {
           return deps.confirm({
             title: tr(
               `O projeto "${node.data.name}" tem conversa em andamento`,
-              `The project "${node.data.name}" has a chat in progress`
+              `The project "${node.data.name}" has a chat in progress`,
             ),
             description: tr(
               `${busy.length === 1 ? 'A conversa' : 'As conversas'} ${titles(busy)} ${
@@ -128,11 +128,11 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
               }. Interrompa ou termine antes de tirar o projeto do canvas.`,
               `${busy.length === 1 ? 'The chat' : 'The chats'} ${titles(busy)} ${
                 busy.length === 1 ? 'is still running or waiting for your reply' : 'are still running or waiting for your reply'
-              }. Stop or finish ${busy.length === 1 ? 'it' : 'them'} before removing the project from the canvas.`
-            )
-          })
+              }. Stop or finish ${busy.length === 1 ? 'it' : 'them'} before removing the project from the canvas.`,
+            ),
+          });
         }
-        const count = conversations.length
+        const count = conversations.length;
         deps.confirm({
           title: tr(`Tirar o projeto "${node.data.name}" do canvas?`, `Remove the project "${node.data.name}" from the canvas?`),
           description: tr(
@@ -145,22 +145,22 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
                 : count === 1
                   ? 'The project card and its chat leave'
                   : `The project card and its ${count} chats leave`
-            } the canvas. Nothing is deleted from disk: the folder and chats stay there, and the project can come back through "New folder".`
+            } the canvas. Nothing is deleted from disk: the folder and chats stay there, and the project can come back through "New folder".`,
           ),
           confirmLabel: tr('Tirar do canvas', 'Remove from canvas'),
           // Espaço de trabalho sai sem volta pelo ⌘Z; pasta comum pode voltar.
-          onConfirm: () => (workspace ? deps.removeForever(node.id) : setNodes((ns) => removeNode(ns, node.id)))
-        })
-      }
-    } as const])
-  ]
+          onConfirm: () => (workspace ? deps.removeForever(node.id) : setNodes((ns) => removeNode(ns, node.id))),
+        });
+      },
+    } as const]),
+  ];
 }
 
 // Com conversa em andamento, bloqueia, como a pasta. Sem confirmação: o ⌘Z traz o card de volta, com
 // as conversas.
 function removeGroupWide(deps: ProjectDeps, node: ProjectNode): void {
-  const busy = getSessions(node.data.path).filter(isBusy)
-  if (busy.length === 0) return deps.setNodes((ns) => removeNode(ns, node.id))
+  const busy = getSessions(node.data.path).filter(isBusy);
+  if (busy.length === 0) return deps.setNodes((ns) => removeNode(ns, node.id));
   deps.confirm({
     title: tr('As conversas do grupo têm conversa em andamento', 'The group chats have a chat in progress'),
     description: tr(
@@ -169,7 +169,7 @@ function removeGroupWide(deps: ProjectDeps, node: ProjectNode): void {
       }. Interrompa ou termine antes de tirar o card do canvas.`,
       `${busy.length === 1 ? 'The chat' : 'The chats'} ${titles(busy)} ${
         busy.length === 1 ? 'is still running or waiting for your reply' : 'are still running or waiting for your reply'
-      }. Stop or finish ${busy.length === 1 ? 'it' : 'them'} before removing the card from the canvas.`
-    )
-  })
+      }. Stop or finish ${busy.length === 1 ? 'it' : 'them'} before removing the card from the canvas.`,
+    ),
+  });
 }

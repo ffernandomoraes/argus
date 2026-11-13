@@ -1,38 +1,38 @@
-import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Download } from 'lucide-react'
-import { agentProviderName, type AgentDef, type AgentProvider } from '@argus/shared/agents'
-import { POPOVER } from '../conversation/popover'
-import { Presence } from '../motion'
-import { Button } from '../ui/Button'
-import { MenuArrow } from '../ui/MenuArrow'
-import { MENU_HOVER } from '../ui/menuStyles'
-import { useEscape } from '../useEscape'
-import { useOutsideClick } from '../useOutsideClick'
-import { ProviderLogo } from './ProviderLogo'
-import { tr } from '../i18n'
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Download } from 'lucide-react';
+import { agentProviderName, type AgentDef, type AgentProvider } from '@argus/shared/agents';
+import { POPOVER } from '../conversation/popover';
+import { Presence } from '../motion';
+import { Button } from '../ui/Button';
+import { MenuArrow } from '../ui/MenuArrow';
+import { MENU_HOVER } from '../ui/menuStyles';
+import { useEscape } from '../useEscape';
+import { useOutsideClick } from '../useOutsideClick';
+import { ProviderLogo } from './ProviderLogo';
+import { tr } from '../i18n';
 
-type Library = { provider: AgentProvider; agents: AgentDef[] }
+type Library = { provider: AgentProvider; agents: AgentDef[] };
 
 // "Importar": os agentes globais dos outros provedores, para começar um agente novo daqui a
 // partir de um deles. Lidos ao abrir o menu.
 export function ImportMenu({ others, onPick }: { others: AgentProvider[]; onPick: (agent: AgentDef) => void }) {
-  const [open, setOpen] = useState(false)
-  const [libraries, setLibraries] = useState<Library[] | null>(null)
-  const ref = useRef<HTMLDivElement>(null)
-  useOutsideClick(ref, () => setOpen(false), open)
-  useEscape(() => setOpen(false), open)
+  const [open, setOpen] = useState(false);
+  const [libraries, setLibraries] = useState<Library[] | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  useOutsideClick(ref, () => setOpen(false), open);
+  useEscape(() => setOpen(false), open);
 
   useEffect(() => {
-    if (!open) return
-    let alive = true
-    setLibraries(null)
+    if (!open) return;
+    let alive = true;
+    setLibraries(null);
     Promise.all(others.map(async (provider) => ({ provider, agents: await window.api.agents.list(provider).catch(() => []) }))).then(
-      (list) => alive && setLibraries(list.filter((l) => l.agents.length))
-    )
+      (list) => alive && setLibraries(list.filter((l) => l.agents.length)),
+    );
     return () => {
-      alive = false
-    }
-  }, [open, others])
+      alive = false;
+    };
+  }, [open, others]);
 
   return (
     <div ref={ref} className="relative">
@@ -61,8 +61,8 @@ export function ImportMenu({ others, onPick }: { others: AgentProvider[]; onPick
                     key={a.path}
                     title={a.description}
                     onClick={() => {
-                      onPick(a)
-                      setOpen(false)
+                      onPick(a);
+                      setOpen(false);
                     }}
                     className={`flex w-full items-center rounded-md px-2 py-1 text-left text-xs ${MENU_HOVER}`}
                   >
@@ -75,5 +75,5 @@ export function ImportMenu({ others, onPick }: { others: AgentProvider[]; onPick
         )}
       </Presence>
     </div>
-  )
+  );
 }

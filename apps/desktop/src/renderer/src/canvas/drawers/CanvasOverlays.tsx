@@ -1,19 +1,19 @@
-import { memo, useCallback, useMemo } from 'react'
-import type { MemoryProject } from '@argus/shared/memory'
-import { AgentsModal } from '../../agents/AgentsModal'
-import { DevServersModal } from '../../devServers/DevServersModal'
-import { MemoryModal } from '../../memory/MemoryModal'
-import { Presence } from '../../motion'
-import type { Change, FocusNode, NodesApi } from '../actions/types'
-import { AllConversationsPanel } from '../AllConversationsPanel'
-import { CommandBar } from '../CommandBar'
-import { ConfirmDialog } from '../ConfirmDialog'
-import { ContextMenu } from '../ContextMenu'
-import { createFolderInstance, findFolderNode, folderKey } from '../factory'
-import { FolderPicker } from '../FolderPicker'
-import { addNode } from '../operations'
-import type { ProjectNode } from '../types'
-import type { OverlayCommands, OverlayState } from './useOverlays'
+import { memo, useCallback, useMemo } from 'react';
+import type { MemoryProject } from '@argus/shared/memory';
+import { AgentsModal } from '../../agents/AgentsModal';
+import { DevServersModal } from '../../devServers/DevServersModal';
+import { MemoryModal } from '../../memory/MemoryModal';
+import { Presence } from '../../motion';
+import type { Change, FocusNode, NodesApi } from '../actions/types';
+import { AllConversationsPanel } from '../AllConversationsPanel';
+import { CommandBar } from '../CommandBar';
+import { ConfirmDialog } from '../ConfirmDialog';
+import { ContextMenu } from '../ContextMenu';
+import { createFolderInstance, findFolderNode, folderKey } from '../factory';
+import { FolderPicker } from '../FolderPicker';
+import { addNode } from '../operations';
+import type { ProjectNode } from '../types';
+import type { OverlayCommands, OverlayState } from './useOverlays';
 
 type Props = {
   state: OverlayState
@@ -29,43 +29,43 @@ type Props = {
   change: Change
   nodesRef: NodesApi['nodesRef']
   focusNode: FocusNode
-}
+};
 
 // Painéis e modais por cima do canvas: todas as conversas de uma pasta, memória, agentes,
 // servidores, "Nova pasta", o menu de botão direito, a confirmação e a barra de comando.
 function CanvasOverlaysView(props: Props) {
-  const { state, commands, projects, allConversations, change, nodesRef, focusNode, openConversation, newConversation } = props
-  const paths = useMemo(() => projects.map((p) => p.path), [projects])
-  const onCanvas = useMemo(() => new Set(paths.map(folderKey)), [paths])
-  const listId = allConversations?.id
+  const { state, commands, projects, allConversations, change, nodesRef, focusNode, openConversation, newConversation } = props;
+  const paths = useMemo(() => projects.map((p) => p.path), [projects]);
+  const onCanvas = useMemo(() => new Set(paths.map(folderKey)), [paths]);
+  const listId = allConversations?.id;
 
   // A lista continua aberta: a conversa abre no drawer ao lado dela.
   const openFromList = useCallback(
     (conversationId: string) => {
-      if (listId) openConversation(listId, conversationId)
+      if (listId) openConversation(listId, conversationId);
     },
-    [listId, openConversation]
-  )
+    [listId, openConversation],
+  );
   const newFromList = useCallback(() => {
-    if (listId) newConversation(listId)
-  }, [listId, newConversation])
+    if (listId) newConversation(listId);
+  }, [listId, newConversation]);
 
   // Dentro de um grupo, a pasta entra num lugar livre e o grupo cresce se precisar. Pasta que já
   // está no canvas não entra de novo (duas instâncias da mesma pasta se confundem): a tela vai até
   // a que existe. Nos dois casos a câmera enquadra a pasta, que pode ter caído fora da tela.
-  const { folderPicker } = state
+  const { folderPicker } = state;
   const pickFolder = useCallback(
     (folder: string) => {
-      if (!folderPicker) return
-      commands.closeFolderPicker()
-      const existing = findFolderNode(nodesRef.current, folder)
-      if (existing) return focusNode(existing.id, 0.3)
-      const node = createFolderInstance(folderPicker.position, folder)
-      change((ns) => addNode(ns, node, folderPicker.groupId))
-      focusNode(node.id, 0.3)
+      if (!folderPicker) return;
+      commands.closeFolderPicker();
+      const existing = findFolderNode(nodesRef.current, folder);
+      if (existing) return focusNode(existing.id, 0.3);
+      const node = createFolderInstance(folderPicker.position, folder);
+      change((ns) => addNode(ns, node, folderPicker.groupId));
+      focusNode(node.id, 0.3);
     },
-    [folderPicker, change, commands, nodesRef, focusNode]
-  )
+    [folderPicker, change, commands, nodesRef, focusNode],
+  );
 
   return (
     <>
@@ -114,7 +114,7 @@ function CanvasOverlaysView(props: Props) {
         {state.commandBar && <CommandBar voice={state.commandBar.voice} onClose={commands.closeCommandBar} />}
       </Presence>
     </>
-  )
+  );
 }
 
-export const CanvasOverlays = memo(CanvasOverlaysView)
+export const CanvasOverlays = memo(CanvasOverlaysView);

@@ -1,26 +1,26 @@
-import { app, BrowserWindow, type WebContents } from 'electron'
-import { openArg, validFolder } from '../cli'
-import { sendTo } from '../ipc/events'
-import { IS_MAC } from '../platform'
-import { isCanvasWindow, markCanvasReady, readyCanvas } from './canvasRegistry'
-import { showApp } from './windows'
+import { app, BrowserWindow, type WebContents } from 'electron';
+import { openArg, validFolder } from '../cli';
+import { sendTo } from '../ipc/events';
+import { IS_MAC } from '../platform';
+import { isCanvasWindow, markCanvasReady, readyCanvas } from './canvasRegistry';
+import { showApp } from './windows';
 
 // `argus .` num terminal: traz o app para frente e manda a pasta para o canvas. Com o app ainda
 // abrindo, a pasta espera o canvas avisar que está pronto.
-const pendingOpens: string[] = []
+const pendingOpens: string[] = [];
 
 export function openFolder(path: string): void {
-  showApp()
-  const win = readyCanvas()
-  if (win) sendTo(win.webContents, 'cli:open', path)
-  else pendingOpens.push(path)
+  showApp();
+  const win = readyCanvas();
+  if (win) sendTo(win.webContents, 'cli:open', path);
+  else pendingOpens.push(path);
 }
 
 // O canvas de uma janela montou (cli:ready): passa a receber as pastas, e recebe as que esperavam.
 export function canvasMounted(wc: WebContents): void {
-  if (!isCanvasWindow(BrowserWindow.fromWebContents(wc))) return
-  markCanvasReady(wc)
-  for (const path of pendingOpens.splice(0)) sendTo(wc, 'cli:open', path)
+  if (!isCanvasWindow(BrowserWindow.fromWebContents(wc))) return;
+  markCanvasReady(wc);
+  for (const path of pendingOpens.splice(0)) sendTo(wc, 'cli:open', path);
 }
 
 // Windows: o argus.cmd abre o Argus.exe com a pasta. Com o app fechado, ela vem na abertura; com
@@ -30,15 +30,15 @@ export function receiveFolders(): void {
   // A conferência da pasta não segura a abertura: se o canvas montar antes dela, a pasta vai direto.
   if (!IS_MAC)
     void validFolder(openArg(process.argv)).then((path) => {
-      if (!path) return
-      const win = readyCanvas()
-      if (win) sendTo(win.webContents, 'cli:open', path)
-      else pendingOpens.push(path)
-    })
+      if (!path) return;
+      const win = readyCanvas();
+      if (win) sendTo(win.webContents, 'cli:open', path);
+      else pendingOpens.push(path);
+    });
   app.on('second-instance', (_e, argv, _cwd, data) => {
     void validFolder((data as { open?: string | null } | undefined)?.open ?? openArg(argv)).then((path) => {
-      if (path) openFolder(path)
-      else showApp()
-    })
-  })
+      if (path) openFolder(path);
+      else showApp();
+    });
+  });
 }

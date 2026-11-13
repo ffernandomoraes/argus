@@ -1,15 +1,15 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 // Campo de texto do agente (nome, quando usar, instruções, outras ferramentas).
 export const INPUT =
-  'rounded-md border border-line bg-bg px-2.5 py-1.5 text-sm text-text outline-none placeholder:text-faint focus:border-line-strong'
+  'rounded-md border border-line bg-bg px-2.5 py-1.5 text-sm text-text outline-none placeholder:text-faint focus:border-line-strong';
 
 // Rótulo em cima, o campo e a explicação embaixo.
 export function Field({
   label,
   hint,
   className = '',
-  children
+  children,
 }: {
   label: string
   hint?: string
@@ -22,5 +22,5 @@ export function Field({
       {children}
       {hint && <span className="text-[12px] leading-snug text-faint">{hint}</span>}
     </label>
-  )
+  );
 }

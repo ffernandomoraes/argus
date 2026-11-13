@@ -1,13 +1,13 @@
-import { SYSTEM_SETTINGS } from '../../platform'
-import { tr } from '../../i18n'
+import { SYSTEM_SETTINGS } from '../../platform';
+import { tr } from '../../i18n';
 
-type DictationError = { message: string; action?: 'dictation-settings' }
+type DictationError = { message: string; action?: 'dictation-settings' };
 
 // Avisos embaixo da caixa de escrever: envio que não deu certo e o erro do ditado (com
 // o atalho para os ajustes do sistema quando é falta de permissão).
 export function ComposerNotices({
   sendError,
-  error
+  error,
 }: {
   sendError: string | null
   error: DictationError | null
@@ -29,5 +29,5 @@ export function ComposerNotices({
         </p>
       )}
     </>
-  )
+  );
 }

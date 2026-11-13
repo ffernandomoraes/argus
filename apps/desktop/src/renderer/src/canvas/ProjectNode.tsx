@@ -1,51 +1,51 @@
-import { memo } from 'react'
-import { Handle, Position, useStore as useFlowStore, type NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronUp, Folder, Folders, GitBranch, MessagesSquare } from 'lucide-react'
-import { IconTile } from '../settings/controls'
-import { IconButton } from '../ui/IconButton'
-import { sameNodeProps } from './blocks/sameNodeProps'
-import { useGroupOf } from './blocks/useGroupOf'
-import { useCanvasActions } from './CanvasContext'
-import { CodeTyping } from './CodeTyping'
-import { EditableName } from './EditableName'
-import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH, WORKTREE_WIDTH } from './factory'
-import { PathLabel } from './PathLabel'
-import { ConversationStack } from './project/ConversationStack'
-import { ProjectActions } from './project/ProjectActions'
-import { useEmptyListText } from './project/useEmptyListText'
-import { WorkspaceFolders } from './project/WorkspaceFolders'
-import { useSessions } from './sessionsStore'
-import type { ProjectNode as ProjectNodeType } from './types'
-import { Tag } from '../ui/Tag'
-import { WORKTREE_IN, WORKTREE_OUT } from './worktrees/edges'
-import { useWorktreeJob } from './worktrees/jobs'
-import { WorktreeStrip } from './worktrees/WorktreeStrip'
-import { tr } from '../i18n'
+import { memo } from 'react';
+import { Handle, Position, useStore as useFlowStore, type NodeProps } from '@xyflow/react';
+import { ChevronDown, ChevronUp, Folder, Folders, GitBranch, MessagesSquare } from 'lucide-react';
+import { IconTile } from '../settings/controls';
+import { IconButton } from '../ui/IconButton';
+import { sameNodeProps } from './blocks/sameNodeProps';
+import { useGroupOf } from './blocks/useGroupOf';
+import { useCanvasActions } from './CanvasContext';
+import { CodeTyping } from './CodeTyping';
+import { EditableName } from './EditableName';
+import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH, WORKTREE_WIDTH } from './factory';
+import { PathLabel } from './PathLabel';
+import { ConversationStack } from './project/ConversationStack';
+import { ProjectActions } from './project/ProjectActions';
+import { useEmptyListText } from './project/useEmptyListText';
+import { WorkspaceFolders } from './project/WorkspaceFolders';
+import { useSessions } from './sessionsStore';
+import type { ProjectNode as ProjectNodeType } from './types';
+import { Tag } from '../ui/Tag';
+import { WORKTREE_IN, WORKTREE_OUT } from './worktrees/edges';
+import { useWorktreeJob } from './worktrees/jobs';
+import { WorktreeStrip } from './worktrees/WorktreeStrip';
+import { tr } from '../i18n';
 
 // Pasta no canvas: uma caixa só, com a pasta no cabeçalho e as conversas como linhas dentro dela
 // (project/ConversationStack). Branch e ações ficam fora da caixa, logo acima (project/ProjectActions).
 function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNodeType>) {
-  const conversations = useSessions(data.path)
-  const emptyText = useEmptyListText(data.path)
-  const collapsed = !!data.collapsed
-  const { color: groupColor } = useGroupOf(parentId)
+  const conversations = useSessions(data.path);
+  const emptyText = useEmptyListText(data.path);
+  const collapsed = !!data.collapsed;
+  const { color: groupColor } = useGroupOf(parentId);
   // Linha até a conversa rodando e os subagentes na cor do grupo; grupo cinza (o padrão) conta como sem cor.
-  const flowColor = groupColor && groupColor !== DEFAULT_GROUP_COLOR ? groupColor : 'var(--color-running)'
+  const flowColor = groupColor && groupColor !== DEFAULT_GROUP_COLOR ? groupColor : 'var(--color-running)';
   // Qualquer conversa do projeto rodando (não só as visíveis na lista) troca a pasta pelas linhas de código animadas.
-  const running = conversations.some((c) => c.status === 'running')
-  const { toggleProject } = useCanvasActions()
+  const running = conversations.some((c) => c.status === 'running');
+  const { toggleProject } = useCanvasActions();
   // Workspace: várias pastas num card só. Ícone, selo e a lista das pastas deixam isso à vista.
-  const folders = data.folders
+  const folders = data.folders;
   // Conversas do grupo: as pastas vêm do grupo (useGroupWide) e já estão à vista nele; o card diz
   // quais enxerga, sem lista própria.
-  const groupWide = !!data.groupWide
+  const groupWide = !!data.groupWide;
   // Tarefa isolada (git worktree): ícone de branch, sem caminho embaixo do nome (a branch fica no
   // selo acima do card) e a faixa com o que está acontecendo (WorktreeStrip).
-  const worktree = data.worktree
+  const worktree = data.worktree;
   // Com tarefas embaixo, recolher a pasta esconde elas também (operations/worktrees.ts).
   // Tarefa sendo removida (apagando a pasta): o card pisca até sair do canvas.
-  const removing = useWorktreeJob(id)?.kind === 'removing'
-  const hasTasks = useFlowStore((s) => s.nodes.some((n) => (n.data as { worktree?: { of: string } }).worktree?.of === id))
+  const removing = useWorktreeJob(id)?.kind === 'removing';
+  const hasTasks = useFlowStore((s) => s.nodes.some((n) => (n.data as { worktree?: { of: string } }).worktree?.of === id));
 
   return (
     <div
@@ -126,8 +126,8 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
               size="sm"
               className="nodrag -mr-1"
               onClick={(e) => {
-                e.stopPropagation()
-                toggleProject(id)
+                e.stopPropagation();
+                toggleProject(id);
               }}
             >
               {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -149,8 +149,8 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
         {worktree && <WorktreeStrip nodeId={id} name={data.name} path={data.path} />}
       </div>
     </div>
-  )
+  );
 }
 
 // Arrastar a pasta não redesenha o conteúdo dela (ver sameNodeProps).
-export const ProjectNode = memo(ProjectNodeView, sameNodeProps)
+export const ProjectNode = memo(ProjectNodeView, sameNodeProps);

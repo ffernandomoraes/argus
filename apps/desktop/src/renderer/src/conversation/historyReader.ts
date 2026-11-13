@@ -16,45 +16,45 @@ export type HistoryReader = {
   // Relê agora, sem aviso de mudança (a tela pediu mais mensagens).
   now(): void
   dispose(): void
-}
+};
 
 export function createHistoryReader<T>(read: () => Promise<T>, onResult: (value: T) => void): HistoryReader {
-  let running = false
-  let again = false
-  let disposed = false
-  let revision: number | undefined
-  let updatedAt = -Infinity
+  let running = false;
+  let again = false;
+  let disposed = false;
+  let revision: number | undefined;
+  let updatedAt = -Infinity;
 
   const start = (): void => {
-    running = true
-    again = false
+    running = true;
+    again = false;
     // Leitura que falhou não apaga o que já está na tela.
     read()
       .then((value) => {
-        if (!disposed) onResult(value)
+        if (!disposed) onResult(value);
       })
       .catch(() => {})
       .finally(() => {
-        running = false
-        if (again && !disposed) start()
-      })
-  }
+        running = false;
+        if (again && !disposed) start();
+      });
+  };
   const request = (): void => {
-    if (disposed) return
-    if (running) again = true
-    else start()
-  }
+    if (disposed) return;
+    if (running) again = true;
+    else start();
+  };
 
   return {
     sync(nextRevision, nextUpdatedAt) {
-      const changed = nextRevision !== revision || nextUpdatedAt > updatedAt
-      revision = nextRevision
-      updatedAt = Math.max(updatedAt, nextUpdatedAt)
-      if (changed) request()
+      const changed = nextRevision !== revision || nextUpdatedAt > updatedAt;
+      revision = nextRevision;
+      updatedAt = Math.max(updatedAt, nextUpdatedAt);
+      if (changed) request();
     },
     now: request,
     dispose() {
-      disposed = true
-    }
-  }
+      disposed = true;
+    },
+  };
 }

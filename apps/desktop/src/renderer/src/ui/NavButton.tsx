@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { Tooltip, type TooltipSide } from './Tooltip'
+import type { ReactNode } from 'react';
+import { Tooltip, type TooltipSide } from './Tooltip';
 
 // Botão das barras do canvas (lateral, zoom, título), com a dica ao passar o mouse. `selected`
 // marca um botão ligado sem esconder a dica.
@@ -12,7 +12,7 @@ export function NavButton({
   primary,
   compact,
   side = 'right',
-  children
+  children,
 }: {
   label: string
   shortcut?: string
@@ -30,7 +30,7 @@ export function NavButton({
     ? 'bg-accent text-white hover:brightness-110'
     : active || selected
       ? 'bg-fill text-text ring-1 ring-line ring-inset'
-      : 'text-muted hover:bg-fill hover:text-text'
+      : 'text-muted hover:bg-fill hover:text-text';
 
   return (
     <button
@@ -41,5 +41,5 @@ export function NavButton({
       {children}
       {!active && <Tooltip label={label} shortcut={shortcut} side={side} />}
     </button>
-  )
+  );
 }

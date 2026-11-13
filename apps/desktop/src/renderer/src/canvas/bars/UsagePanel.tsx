@@ -1,13 +1,13 @@
-import { PROVIDER_NAMES, type ProviderId } from '@argus/shared/providers'
-import { expiredUsage, type Usage, type UsageWindow } from '@argus/shared/usage'
-import { AgentIcon } from '@argus/ui/icons/AgentIcon'
-import { ClaudeIcon } from '@argus/ui/icons/ClaudeIcon'
-import { useNow } from '../../lib/clock'
-import { Button } from '../../ui/Button'
-import { MenuArrow } from '../../ui/MenuArrow'
-import { UsageBar } from './UsageBar'
-import { resetLabel, staleText, timeLeft, windowTitle } from './usageFormat'
-import { LOCALE, tr } from '../../i18n'
+import { PROVIDER_NAMES, type ProviderId } from '@argus/shared/providers';
+import { expiredUsage, type Usage, type UsageWindow } from '@argus/shared/usage';
+import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { ClaudeIcon } from '@argus/ui/icons/ClaudeIcon';
+import { useNow } from '../../lib/clock';
+import { Button } from '../../ui/Button';
+import { MenuArrow } from '../../ui/MenuArrow';
+import { UsageBar } from './UsageBar';
+import { resetLabel, staleText, timeLeft, windowTitle } from './usageFormat';
+import { LOCALE, tr } from '../../i18n';
 
 // Uma conta com limites à vista: do Claude (sem provider) ou de outro agente (hoje, só o Codex).
 // key: a mesma do aviso de uso ("main", "codex:main", "wsl:ubuntu:main"). place: onde vale esse uso
@@ -15,50 +15,50 @@ import { LOCALE, tr } from '../../i18n'
 // janelas dela (o login dela no WSL é o de outra conta do app). endings: o login da conta (ou o dela
 // numa distro do WSL) está perto do prazo final (ver auth/loginEnd.ts), em destaque e com o botão de
 // entrar de novo.
-export type ShownUsage = { key: string; provider?: ProviderId; name: string; place?: string; usage: Usage; note?: string; endings?: LoginEnding[] }
+export type ShownUsage = { key: string; provider?: ProviderId; name: string; place?: string; usage: Usage; note?: string; endings?: LoginEnding[] };
 
 // Aviso de prazo final de um login, com o que o botão precisa para entrar de novo.
-export type LoginEnding = { text: string; account: string; distro?: string }
+export type LoginEnding = { text: string; account: string; distro?: string };
 
 // Conta do Claude que perdeu o login (ver lostLogin): fica na barra, sem números, com o botão de entrar.
-export type SignedOutLogin = { key: string; name: string; account: string }
+export type SignedOutLogin = { key: string; name: string; account: string };
 
 // note: o texto no lugar da barra quando a janela não existe na conta (não é falta de dado).
-type Row = { title: string; window: UsageWindow | null; note?: string }
+type Row = { title: string; window: UsageWindow | null; note?: string };
 
 // Linhas de uma conta. As do Claude têm rótulo fixo (sessão de 5 horas e semanal, que aparece mesmo
 // sem dados); na conta sem sessão (Ultra verificado), a linha da sessão diz que não há limite. As dos outros agentes vêm da duração que cada janela informa, e só as que existem: o
 // plano free do Codex tem uma janela só, de 30 dias.
 // A janela que já recomeçou fica sem número até a leitura nova (ver usableUsage), e a linha diz isso.
 function rowsOf({ provider, usage }: ShownUsage): Row[] {
-  const restarted = tr('Recomeçou, aguardando a próxima leitura', 'Restarted, waiting for the next reading')
+  const restarted = tr('Recomeçou, aguardando a próxima leitura', 'Restarted, waiting for the next reading');
   if (!provider) {
     return [
       {
         title: tr('Sessão (5 horas)', 'Session (5 hours)'),
         window: usage.session,
-        note: usage.noSession ? tr('Sem limite neste plano', 'No limit on this plan') : usage.restarted?.session ? restarted : undefined
+        note: usage.noSession ? tr('Sem limite neste plano', 'No limit on this plan') : usage.restarted?.session ? restarted : undefined,
       },
       { title: tr('Semanal', 'Weekly'), window: usage.weekly, note: usage.restarted?.weekly ? restarted : undefined },
-      ...usage.models.map((m) => ({ title: tr(`Semanal ${m.name}`, `Weekly ${m.name}`), window: m.window }))
-    ]
+      ...usage.models.map((m) => ({ title: tr(`Semanal ${m.name}`, `Weekly ${m.name}`), window: m.window })),
+    ];
   }
-  const windows = [usage.session, usage.weekly].filter((w): w is UsageWindow => !!w)
+  const windows = [usage.session, usage.weekly].filter((w): w is UsageWindow => !!w);
   const rows = [
     ...windows.map((w) => ({ title: windowTitle(w.minutes), window: w })),
-    ...usage.models.map((m) => ({ title: `${m.name} - ${windowTitle(m.window.minutes)}`, window: m.window }))
-  ]
+    ...usage.models.map((m) => ({ title: `${m.name} - ${windowTitle(m.window.minutes)}`, window: m.window })),
+  ];
   // A duração da janela foi junto com ela: sem nenhuma outra, uma linha só com o aviso.
-  if (!rows.length && usage.restarted) return [{ title: windowTitle(), window: null, note: restarted }]
-  return rows
+  if (!rows.length && usage.restarted) return [{ title: windowTitle(), window: null, note: restarted }];
+  return rows;
 }
 
 // "O Gemini não informa os limites." / "Gemini e Cursor não informam os limites."
 function silentNote(silent: ProviderId[]): string {
-  const names = silent.map((p) => PROVIDER_NAMES[p])
-  if (names.length === 1) return tr(`O ${names[0]} não informa os limites.`, `${names[0]} doesn’t report its limits.`)
-  const list = `${names.slice(0, -1).join(', ')} ${tr('e', 'and')} ${names[names.length - 1]}`
-  return tr(`${list} não informam os limites.`, `${list} don’t report their limits.`)
+  const names = silent.map((p) => PROVIDER_NAMES[p]);
+  if (names.length === 1) return tr(`O ${names[0]} não informa os limites.`, `${names[0]} doesn’t report its limits.`);
+  const list = `${names.slice(0, -1).join(', ')} ${tr('e', 'and')} ${names[names.length - 1]}`;
+  return tr(`${list} não informam os limites.`, `${list} don’t report their limits.`);
 }
 
 function WindowDetail({ title, window, note, now }: Row & { now: number }) {
@@ -68,9 +68,9 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
         <div className="text-xs text-text">{title}</div>
         <div className="mt-1 text-[12px] text-faint">{note ?? tr('Sem dados', 'No data')}</div>
       </div>
-    )
+    );
   }
-  const percent = Math.round(window.percent)
+  const percent = Math.round(window.percent);
   return (
     <div>
       <div className="flex items-baseline justify-between">
@@ -82,12 +82,12 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
         {window.resetsAt
           ? tr(
               `Reseta em ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`,
-              `Resets in ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`
+              `Resets in ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`,
             )
           : tr('Começa a contar na próxima mensagem', 'Starts counting on the next message')}
       </div>
     </div>
-  )
+  );
 }
 
 // Painel dos limites, aberto pelo botão da barra de baixo (abre para cima): as janelas de cada conta. Só com o
@@ -101,21 +101,21 @@ export function UsagePanel({
   shown,
   silent,
   signedOut = [],
-  onLogin
+  onLogin,
 }: {
   shown: ShownUsage[]
   silent: ProviderId[]
   signedOut?: SignedOutLogin[]
   onLogin: (account: string, distro?: string) => void
 }) {
-  const now = useNow(30_000)
-  const mixed = shown.some((x) => x.provider)
-  const named = shown.length + signedOut.length > 1 || mixed || shown.some((x) => x.place)
+  const now = useNow(30_000);
+  const mixed = shown.some((x) => x.provider);
+  const named = shown.length + signedOut.length > 1 || mixed || shown.some((x) => x.place);
   // A leitura mais antiga das contas à vista: o rodapé nunca diz mais novo do que é.
-  const updatedAt = shown.length ? Math.min(...shown.map((x) => x.usage.updatedAt)) : now
-  const updatedTime = new Date(updatedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })
-  const updatedToday = new Date(updatedAt).toDateString() === new Date(now).toDateString()
-  const saved = shown.some((x) => x.usage.saved)
+  const updatedAt = shown.length ? Math.min(...shown.map((x) => x.usage.updatedAt)) : now;
+  const updatedTime = new Date(updatedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
+  const updatedToday = new Date(updatedAt).toDateString() === new Date(now).toDateString();
+  const saved = shown.some((x) => x.usage.saved);
 
   return (
     // A rolagem fica num filho: a caixa não corta a seta, que vaza para fora dela.
@@ -131,8 +131,8 @@ export function UsagePanel({
         </div>
         <div className="flex flex-col gap-5">
           {shown.map((entry) => {
-            const expired = expiredUsage(entry.usage, now)
-            const stale = staleText(entry.usage, expired)
+            const expired = expiredUsage(entry.usage, now);
+            const stale = staleText(entry.usage, expired);
             return (
               <div key={entry.key}>
                 {named && (
@@ -160,7 +160,7 @@ export function UsagePanel({
                 ))}
                 {entry.note && <div className="mt-3 text-[12px] text-faint">{entry.note}</div>}
               </div>
-            )
+            );
           })}
           {signedOut.map((entry) => (
             <div key={entry.key}>
@@ -173,7 +173,7 @@ export function UsagePanel({
                 <span className="text-[12px] text-needs-you">
                   {tr(
                     'Sem login: as conversas desta conta não respondem até você entrar de novo.',
-                    'Signed out: chats on this account won’t respond until you sign in again.'
+                    'Signed out: chats on this account won’t respond until you sign in again.',
                   )}
                 </span>
                 <Button size="sm" onClick={() => onLogin(entry.account)}>
@@ -189,7 +189,7 @@ export function UsagePanel({
             <span>
               {tr(
                 'Último uso guardado, da abertura anterior. Conferindo de novo.',
-                'Last saved usage, from the previous launch. Checking again.'
+                'Last saved usage, from the previous launch. Checking again.',
               )}
             </span>
           )}
@@ -203,5 +203,5 @@ export function UsagePanel({
         </div>
       </div>
     </div>
-  )
+  );
 }

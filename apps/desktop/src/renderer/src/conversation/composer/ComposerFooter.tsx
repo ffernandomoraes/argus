@@ -1,14 +1,14 @@
-import { ContextRing } from '../../canvas/ContextRing'
-import { ModelEffortPicker } from '../ModelEffortPicker'
-import { PermissionModePicker } from '../PermissionModePicker'
-import type { SessionSettings } from '../SessionSettings'
-import { tr } from '../../i18n'
+import { ContextRing } from '../../canvas/ContextRing';
+import { ModelEffortPicker } from '../ModelEffortPicker';
+import { PermissionModePicker } from '../PermissionModePicker';
+import type { SessionSettings } from '../SessionSettings';
+import { tr } from '../../i18n';
 
 // Fora da caixa de texto: o contexto à esquerda; modelo e esforço e o modo à direita.
 export function ComposerFooter({
   settings,
   onSettingChange,
-  contextPercent
+  contextPercent,
 }: {
   settings: SessionSettings
   onSettingChange: (patch: Partial<SessionSettings>) => void
@@ -25,5 +25,5 @@ export function ComposerFooter({
         <PermissionModePicker value={settings.permissionMode} onChange={(permissionMode) => onSettingChange({ permissionMode })} />
       </div>
     </div>
-  )
+  );
 }

@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
-import { tr } from '../i18n'
-import { useHost, useStatus } from '../lib/host'
-import { currentSubscription, disablePush, enablePush, installed, isIos as detectIos, pushSupported } from '../lib/push'
-import { back } from '../lib/router'
-import { forgetPairedHost } from '../net/connection'
-import { Row, Section } from '../ui/List'
-import { FLOATING_HEADER_SPACE, FloatingHeader } from '../ui/FloatingHeader'
+import { useEffect, useState } from 'react';
+import { tr } from '../i18n';
+import { useHost, useStatus } from '../lib/host';
+import { currentSubscription, disablePush, enablePush, installed, isIos as detectIos, pushSupported } from '../lib/push';
+import { back } from '../lib/router';
+import { forgetPairedHost } from '../net/connection';
+import { Row, Section } from '../ui/List';
+import { FLOATING_HEADER_SPACE, FloatingHeader } from '../ui/FloatingHeader';
 
-const isIos = detectIos()
+const isIos = detectIos();
 
 function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (on: boolean) => void; disabled?: boolean }) {
   return (
@@ -21,26 +21,26 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (on: boolea
     >
       <span className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[22px]' : 'left-[2px]'}`} />
     </button>
-  )
+  );
 }
 
 export function SettingsScreen() {
-  const { conn } = useHost()
-  const status = useStatus()
-  const [push, setPush] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { conn } = useHost();
+  const status = useStatus();
+  const [push, setPush] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    void currentSubscription().then((s) => setPush(!!s && Notification.permission === 'granted'))
-  }, [])
-  const canPush = pushSupported() && (!isIos || installed())
-  const [testing, setTesting] = useState(false)
+    void currentSubscription().then((s) => setPush(!!s && Notification.permission === 'granted'));
+  }, []);
+  const canPush = pushSupported() && (!isIos || installed());
+  const [testing, setTesting] = useState(false);
   const sendTest = async () => {
-    if (testing) return
-    setTesting(true)
-    setError(null)
+    if (testing) return;
+    setTesting(true);
+    setError(null);
     try {
-      const result = await conn.testPush()
+      const result = await conn.testPush();
       setError(
         result === 'sent'
           ? tr('Enviada pelo computador. Deve aparecer em alguns segundos.', 'Sent by the computer. It should show up in a few seconds.')
@@ -48,35 +48,35 @@ export function SettingsScreen() {
             ? tr('A inscrição deste aparelho venceu. Desligue e ligue "Avisar no celular" de novo.', 'This device subscription expired. Turn "Alert on this phone" off and on again.')
             : result === 'none'
               ? tr('O computador não tem a inscrição deste aparelho. Desligue e ligue "Avisar no celular" de novo.', "The computer doesn't have this device's subscription. Turn \"Alert on this phone\" off and on again.")
-              : tr('O serviço de notificações recusou. Veja o log do Argus ([remoto web]).', 'The notification service refused. Check the Argus log ([remoto web]).')
-      )
+              : tr('O serviço de notificações recusou. Veja o log do Argus ([remoto web]).', 'The notification service refused. Check the Argus log ([remoto web]).'),
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setTesting(false)
+      setTesting(false);
     }
-  }
+  };
 
   const togglePush = async (on: boolean) => {
-    setBusy(true)
-    setError(null)
+    setBusy(true);
+    setError(null);
     try {
       if (on) {
-        const err = await enablePush(conn)
-        setError(err)
-        setPush(!err)
+        const err = await enablePush(conn);
+        setError(err);
+        setPush(!err);
       } else {
-        await disablePush(conn)
-        setPush(false)
+        await disablePush(conn);
+        setPush(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
-  const info = conn.info
+  const info = conn.info;
   return (
     <div className="min-h-full">
       <FloatingHeader title={tr('Ajustes', 'Settings')} onBack={() => back({ name: 'home' })} backLabel={tr('Início', 'Home')} />
@@ -113,16 +113,16 @@ export function SettingsScreen() {
             danger
             chevron={false}
             onClick={() => {
-              if (!confirm(tr('Esquecer este computador? Para entrar de novo, será preciso parear com um código novo.', 'Forget this computer? To connect again you will need a new pairing code.'))) return
-              void disablePush(conn).catch(() => {})
-              conn.stop()
-              forgetPairedHost()
-              location.hash = ''
-              location.reload()
+              if (!confirm(tr('Esquecer este computador? Para entrar de novo, será preciso parear com um código novo.', 'Forget this computer? To connect again you will need a new pairing code.'))) return;
+              void disablePush(conn).catch(() => {});
+              conn.stop();
+              forgetPairedHost();
+              location.hash = '';
+              location.reload();
             }}
           />
         </Section>
       </div>
     </div>
-  )
+  );
 }

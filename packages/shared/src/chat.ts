@@ -1,7 +1,7 @@
-import type { RunningAgent } from './agents'
-import type { AttachedFile } from './attachedFiles'
-import type { DiffHunk, LiveStatus } from './history'
-import type { BackgroundTaskInfo } from './backgroundTasks'
+import type { RunningAgent } from './agents';
+import type { AttachedFile } from './attachedFiles';
+import type { DiffHunk, LiveStatus } from './history';
+import type { BackgroundTaskInfo } from './backgroundTasks';
 
 // Pedido de permissão do Claude (editar, rodar comando...) esperando resposta no chat.
 export type PermissionRequest = {
@@ -20,17 +20,17 @@ export type PermissionRequest = {
   diff?: DiffHunk[]
   // Perguntas com opções (ferramenta AskUserQuestion), respondidas no próprio chat.
   questions?: Question[]
-}
+};
 
 export type Question = {
   question: string
   header: string
   multiSelect: boolean
   options: { label: string; description: string }[]
-}
+};
 
 // Respostas das perguntas: texto da pergunta → opção escolhida (várias, separadas por vírgula).
-export type PermissionAnswer = 'allow' | 'always' | 'deny' | { answers: Record<string, string> }
+export type PermissionAnswer = 'allow' | 'always' | 'deny' | { answers: Record<string, string> };
 
 // Estado da conversa ligada ao Claude pelo chat. O histórico em si vem do arquivo da sessão.
 export type ChatState = {
@@ -79,16 +79,16 @@ export type ChatState = {
   // Pedido aberto pelo próprio Claude Code para entregar o aviso de uma tarefa em segundo plano que
   // terminou, sem mensagem sua: o fim dele não vira notificação. Sai com a sua próxima mensagem.
   wake?: boolean
-}
+};
 
 // O Claude Code leva o arquivo da conversa para a pasta de conversas do worktree ao entrar, e de
 // volta ao sair: a tela acompanha, com a conversa no card filho do worktree, embaixo da pasta.
 // path: o worktree; from: a pasta de onde a conversa saiu; left: o Claude saiu dele, mantendo
 // ('keep') ou apagando ('remove') a pasta. Caminhos como o Argus enxerga (no WSL, \\wsl.localhost\...).
-export type ChatWorktree = { path: string; from: string; branch?: string; left?: 'keep' | 'remove' }
+export type ChatWorktree = { path: string; from: string; branch?: string; left?: 'keep' | 'remove' };
 
 // Mensagem enviada com o Claude no meio de um pedido. at: hora do envio (ms).
-export type QueuedMessage = { id: string; text: string; at: number }
+export type QueuedMessage = { id: string; text: string; at: number };
 
 // Conversa do app trabalhando ou esperando você: uma linha do indicador no canto do canvas.
 export type ActiveChat = {
@@ -104,22 +104,22 @@ export type ActiveChat = {
   // conversa no indicador (status 'running', sem turnStartedAt).
   background: number
   turnStartedAt?: number
-}
+};
 
 // Conversa com resposta que você ainda não viu (bolinha verde na lista), como a janela conta.
-export type UnreadChat = { id: string; cwd: string; title: string }
+export type UnreadChat = { id: string; cwd: string; title: string };
 
 // Conversa que parou no meio de um pedido sem você pedir: aparece interrompida (bolinha vermelha) até
 // você continuar, mandar outra mensagem ou dispensar o aviso. Sem `reason`, o Argus fechou com ela
 // trabalhando; 'memory', o sistema encerrou o Claude por falta de memória.
-export type InterruptReason = 'memory'
-export type InterruptedChat = { sessionId: string; cwd: string; reason?: InterruptReason }
+export type InterruptReason = 'memory';
+export type InterruptedChat = { sessionId: string; cwd: string; reason?: InterruptReason };
 
 // O que o mascote solto na tela mostra além do que as conversas ativas dizem. done: respostas não
 // vistas que terminaram bem (check verde). failed: chaves das conversas que pararam com erro e
 // você ainda não viu (aviso vermelho); a que acabou de parar conta por alguns segundos mesmo
 // aberta na tela.
-export type MascotAlerts = { done: number; failed: string[] }
+export type MascotAlerts = { done: number; failed: string[] };
 
 // thinking: pensando ou esperando o modelo. writing: escrevendo a resposta. preparing: montando o
 // pedido de uma ferramenta (o resumo chega aos poucos). running: ferramenta rodando.
@@ -130,7 +130,7 @@ export type ChatActivity = {
   summary?: string
   // Quando a etapa começou (ms).
   since: number
-}
+};
 
 // Nova tentativa da API: o motivo, a tentativa (1 = a primeira nova tentativa), quantas no máximo e
 // quando ela sai (ms).
@@ -139,10 +139,10 @@ export type ChatRetry = {
   attempt: number
   maxRetries: number
   at: number
-}
+};
 
 // connecting: ligando ou reconectando. failed: não conectou (detail diz o motivo).
-export type RemoteControl = { status: 'connecting' | 'connected' | 'failed'; url?: string; detail?: string }
+export type RemoteControl = { status: 'connecting' | 'connected' | 'failed'; url?: string; detail?: string };
 
 export type ChatSettings = {
   model: string
@@ -150,9 +150,9 @@ export type ChatSettings = {
   thinking: boolean
   ultracode: boolean
   permissionMode: string
-}
+};
 
-export type ChatImage = { mediaType: string; data: string }
+export type ChatImage = { mediaType: string; data: string };
 
 export type ChatSendRequest = {
   key: string
@@ -171,24 +171,24 @@ export type ChatSendRequest = {
   files?: AttachedFile[]
   // Aviso para o Claude que não aparece no chat (ex.: agentes chamados com @nome).
   hint?: string
-}
+};
 
 // Conversa aberta no Argus: a conta (ou "agente:conta") e o que ela usa agora. O app do celular mostra
 // nos seletores (a janela do Argus guarda a escolha dela no próprio armazenamento).
-export type ChatDetails = { account: string; settings: ChatSettings }
+export type ChatDetails = { account: string; settings: ChatSettings };
 
 // /remote-control: liga ou desliga. Sem sessão aberta, abre uma (por isso os dados da conversa).
-export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'files' | 'hint'> & { enabled: boolean }
+export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'files' | 'hint'> & { enabled: boolean };
 
 // Renomear a conversa (botão direito no título ou /rename). key: a chave do chat na tela.
-export type ChatRenameRequest = { key: string; cwd: string; sessionId: string; title: string }
+export type ChatRenameRequest = { key: string; cwd: string; sessionId: string; title: string };
 
 // Nome digitado pela pessoa: uma linha só, sem espaços sobrando. Vazio: nada a renomear. O limite é
 // o mesmo da lista de conversas (sessions/summary.ts).
-export const MAX_TITLE = 120
+export const MAX_TITLE = 120;
 export function cleanTitle(text: string): string {
-  return text.replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE)
+  return text.replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE);
 }
 
 // /output-style: o estilo de resposta em vigor na pasta (nome do Claude Code: "default", "Explanatory"...).
-export type OutputStyleStatus = { ok: true; style: string } | { ok: false; error: string }
+export type OutputStyleStatus = { ok: true; style: string } | { ok: false; error: string };

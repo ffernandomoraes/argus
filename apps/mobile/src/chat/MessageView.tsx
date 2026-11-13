@@ -1,18 +1,18 @@
-import { memo, useState } from 'react'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { AlertCircle, Brain, ChevronDown, ChevronRight, FileText, Image as ImageIcon, Wrench } from 'lucide-react'
-import { filesInBlock, withoutLegacyFiles } from '@argus/shared/attachedFiles'
-import type { DiffHunk, Message } from '@argus/shared/history'
-import { tr } from '../i18n'
-import { useHost } from '../lib/host'
-import { baseName, formatDuration, formatTokens, messageTime } from '../ui/format'
-import type { TurnFooter } from './turnFooters'
+import { memo, useState } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { AlertCircle, Brain, ChevronDown, ChevronRight, FileText, Image as ImageIcon, Wrench } from 'lucide-react';
+import { filesInBlock, withoutLegacyFiles } from '@argus/shared/attachedFiles';
+import type { DiffHunk, Message } from '@argus/shared/history';
+import { tr } from '../i18n';
+import { useHost } from '../lib/host';
+import { baseName, formatDuration, formatTokens, messageTime } from '../ui/format';
+import type { TurnFooter } from './turnFooters';
 
 // Uma mensagem do histórico, do jeito compacto do celular: as suas em balão, as respostas em texto
 // formatado, e cada ferramenta numa linha que abre ao tocar.
 
-const FILES_BLOCK = /\n*<argus-files(?: sizes="[\d,]*")?>\n[\s\S]*?\n<\/argus-files>\s*$/
+const FILES_BLOCK = /\n*<argus-files(?: sizes="[\d,]*")?>\n[\s\S]*?\n<\/argus-files>\s*$/;
 
 export const MarkdownText = memo(function MarkdownText({ text }: { text: string }) {
   return (
@@ -26,14 +26,14 @@ export const MarkdownText = memo(function MarkdownText({ text }: { text: string 
             </a>
           ),
           // Imagens de fora não carregam (a página só fala com a ponte).
-          img: ({ alt }) => <span className="text-muted">[{alt || 'imagem'}]</span>
+          img: ({ alt }) => <span className="text-muted">[{alt || 'imagem'}]</span>,
         }}
       >
         {text}
       </Markdown>
     </div>
-  )
-})
+  );
+});
 
 function DiffLines({ diff }: { diff: DiffHunk[] }) {
   return (
@@ -44,15 +44,15 @@ function DiffLines({ diff }: { diff: DiffHunk[] }) {
           <div key={`${i}:${j}`} className={l.startsWith('+') ? 'text-green' : l.startsWith('-') ? 'text-red' : 'text-muted'}>
             {l || ' '}
           </div>
-        ))
+        )),
       ])}
     </pre>
-  )
+  );
 }
 
 function ToolRow({ m }: { m: Extract<Message, { role: 'tool' }> }) {
-  const [open, setOpen] = useState(false)
-  const result = m.result.length > 4000 ? `${m.result.slice(0, 4000)}\n…` : m.result
+  const [open, setOpen] = useState(false);
+  const result = m.result.length > 4000 ? `${m.result.slice(0, 4000)}\n…` : m.result;
   return (
     <div className="text-[15px]">
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-1.5 py-1 text-left text-muted active:opacity-60">
@@ -77,11 +77,11 @@ function ToolRow({ m }: { m: Extract<Message, { role: 'tool' }> }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function Thinking({ m }: { m: Extract<Message, { role: 'thinking' }> }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
   return (
     <div className="text-[15px] text-muted">
       <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 py-1 active:opacity-60">
@@ -91,12 +91,12 @@ function Thinking({ m }: { m: Extract<Message, { role: 'thinking' }> }) {
       </button>
       {open && <p className="mb-2 ml-5 text-[15px] whitespace-pre-wrap italic">{m.text}</p>}
     </div>
-  )
+  );
 }
 
 function UserImages({ cwd, sessionId, messageId, count }: { cwd: string; sessionId: string; messageId: string; count: number }) {
-  const { conn } = useHost()
-  const [images, setImages] = useState<string[] | null>(null)
+  const { conn } = useHost();
+  const [images, setImages] = useState<string[] | null>(null);
   if (images)
     return (
       <div className="mt-1.5 flex flex-wrap justify-end gap-1.5">
@@ -104,7 +104,7 @@ function UserImages({ cwd, sessionId, messageId, count }: { cwd: string; session
           <img key={i} src={src} alt="" className="max-h-48 max-w-[70%] rounded-xl object-cover" />
         ))}
       </div>
-    )
+    );
   return (
     <button
       type="button"
@@ -114,13 +114,13 @@ function UserImages({ cwd, sessionId, messageId, count }: { cwd: string; session
       <ImageIcon size={14} />
       {count === 1 ? tr('1 imagem - ver', '1 image - view') : tr(`${count} imagens - ver`, `${count} images - view`)}
     </button>
-  )
+  );
 }
 
 // Hora embaixo da mensagem, pequena, do lado dela.
 function Time({ at, right }: { at?: string; right?: boolean }) {
-  const text = messageTime(at)
-  return text ? <div className={`mt-0.5 text-[12px] text-faint tabular-nums ${right ? 'pr-1 text-right' : ''}`}>{text}</div> : null
+  const text = messageTime(at);
+  return text ? <div className={`mt-0.5 text-[12px] text-faint tabular-nums ${right ? 'pr-1 text-right' : ''}`}>{text}</div> : null;
 }
 
 export function UserBubble({
@@ -129,7 +129,7 @@ export function UserBubble({
   images,
   files,
   imageRef,
-  at
+  at,
 }: {
   text: string
   pending?: boolean
@@ -151,15 +151,15 @@ export function UserBubble({
       </div>
       {pending ? <div className="mt-0.5 pr-1 text-[12px] text-faint">{tr('Enviando…', 'Sending…')}</div> : <Time at={at} right />}
     </div>
-  )
+  );
 }
 
 // footer: só no último texto de cada pedido, como no Argus: "14:32 - levou 1min 05s - 2,3 mil tokens".
 export const MessageView = memo(function MessageView({ m, cwd, sessionId, footer }: { m: Message; cwd: string; sessionId?: string; footer?: TurnFooter }) {
   switch (m.role) {
     case 'user': {
-      const legacy = withoutLegacyFiles(m.text.replace(FILES_BLOCK, ''))
-      const files = [...(m.files ?? filesInBlock(m.text)), ...legacy.files].map((f) => f.path)
+      const legacy = withoutLegacyFiles(m.text.replace(FILES_BLOCK, ''));
+      const files = [...(m.files ?? filesInBlock(m.text)), ...legacy.files].map((f) => f.path);
       return (
         <UserBubble
           text={legacy.text.trim()}
@@ -168,7 +168,7 @@ export const MessageView = memo(function MessageView({ m, cwd, sessionId, footer
           imageRef={sessionId && m.images ? { cwd, sessionId, messageId: m.id } : undefined}
           at={m.at}
         />
-      )
+      );
     }
     case 'assistant':
       return (
@@ -182,13 +182,13 @@ export const MessageView = memo(function MessageView({ m, cwd, sessionId, footer
             </div>
           )}
         </div>
-      )
+      );
     case 'thinking':
-      return <Thinking m={m} />
+      return <Thinking m={m} />;
     case 'tool':
-      return <ToolRow m={m} />
+      return <ToolRow m={m} />;
     case 'output':
-      return <pre className="my-1 overflow-x-auto rounded-lg bg-code p-2 font-mono text-[12px] whitespace-pre-wrap">{m.text}</pre>
+      return <pre className="my-1 overflow-x-auto rounded-lg bg-code p-2 font-mono text-[12px] whitespace-pre-wrap">{m.text}</pre>;
     case 'event':
       return (
         <div className="my-2 flex items-center gap-2 text-[13px] text-faint">
@@ -196,6 +196,6 @@ export const MessageView = memo(function MessageView({ m, cwd, sessionId, footer
           <span className="max-w-[80%] truncate">{m.text}</span>
           <span className="h-px flex-1 bg-line" />
         </div>
-      )
+      );
   }
-})
+});

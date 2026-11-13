@@ -1,51 +1,51 @@
-import { useState } from 'react'
-import { ExternalLink, Lock, Power, Server } from 'lucide-react'
-import { baseName, tildify } from '../platform'
-import { Button } from '../ui/Button'
-import { Modal } from '../ui/Modal'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { useDevServers } from './useDevServers'
-import { tr } from '../i18n'
-import { IS_REMOTE } from '../remote'
-import { openRemoteLocalhost } from '../RemoteNotice'
+import { useState } from 'react';
+import { ExternalLink, Lock, Power, Server } from 'lucide-react';
+import { baseName, tildify } from '../platform';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { useDevServers } from './useDevServers';
+import { tr } from '../i18n';
+import { IS_REMOTE } from '../remote';
+import { openRemoteLocalhost } from '../RemoteNotice';
 
 const LOCK_REASON = tr(
   'Aberto por uma sessão do Claude Code: encerrar derrubaria a sessão',
-  'Opened by a Claude Code session: stopping it would end the session'
-)
+  'Opened by a Claude Code session: stopping it would end the session',
+);
 
-const folderName = (cwd: string) => baseName(cwd) || cwd
+const folderName = (cwd: string) => baseName(cwd) || cwd;
 
 // Caminho longo em uma linha só: corta no meio e deixa o começo e a última pasta à vista.
 function MiddlePath({ path }: { path: string }) {
-  const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1
+  const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1;
   return (
     <div className="mt-0.5 flex min-w-0 font-mono text-[12px] text-faint" title={path}>
       <span className="truncate">{path.slice(0, cut)}</span>
       <span className="max-w-[70%] shrink-0 truncate">{path.slice(cut)}</span>
     </div>
-  )
+  );
 }
 
 // Servidores locais que o Claude Code ou o play deixou rodando, ou que rodam dentro de uma pasta
 // do canvas (`paths`): abrir no navegador ou encerrar.
 export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: () => void }) {
-  const { servers, loaded, refresh, kill: killGroup } = useDevServers(paths)
-  const [killing, setKilling] = useState<ReadonlySet<number>>(new Set())
+  const { servers, loaded, refresh, kill: killGroup } = useDevServers(paths);
+  const [killing, setKilling] = useState<ReadonlySet<number>>(new Set());
 
   const kill = (pgid: number) => {
-    setKilling((s) => new Set(s).add(pgid))
+    setKilling((s) => new Set(s).add(pgid));
     void killGroup(pgid)
       .then(() => refresh())
       .catch((err: unknown) => console.error('[servidores] encerrar:', err))
       .finally(() =>
         setKilling((s) => {
-          const next = new Set(s)
-          next.delete(pgid)
-          return next
-        })
-      )
-  }
+          const next = new Set(s);
+          next.delete(pgid);
+          return next;
+        }),
+      );
+  };
 
   return (
     <Modal label={tr('Servidores rodando', 'Running servers')} size="md" className="flex flex-col" onClose={onClose}>
@@ -109,5 +109,5 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
         </ul>
       )}
     </Modal>
-  )
+  );
 }

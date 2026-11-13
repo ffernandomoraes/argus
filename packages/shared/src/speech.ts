@@ -6,4 +6,4 @@ export type SpeechEvent =
   | { type: 'text'; text: string }
   // action: o app pode oferecer um botão para resolver (ex.: abrir os Ajustes do Ditado).
   | { type: 'error'; message: string; action?: 'dictation-settings' }
-  | { type: 'done'; text: string }
+  | { type: 'done'; text: string };

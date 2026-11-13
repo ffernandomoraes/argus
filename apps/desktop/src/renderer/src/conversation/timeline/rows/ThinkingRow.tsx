@@ -1,8 +1,8 @@
-import { memo } from 'react'
-import { Brain } from 'lucide-react'
-import type { Message } from '../../types'
-import { LazyDetails } from './LazyDetails'
-import { tr } from '../../../i18n'
+import { memo } from 'react';
+import { Brain } from 'lucide-react';
+import type { Message } from '../../types';
+import { LazyDetails } from './LazyDetails';
+import { tr } from '../../../i18n';
 
 // Raciocínio do Claude: uma linha recolhida ("Pensou por 4s"), aberta com um clique.
 export const ThinkingRow = memo(function ThinkingRow({ message }: { message: Extract<Message, { role: 'thinking' }> }) {
@@ -24,5 +24,5 @@ export const ThinkingRow = memo(function ThinkingRow({ message }: { message: Ext
         {message.text}
       </div>
     </LazyDetails>
-  )
-})
+  );
+});

@@ -1,7 +1,7 @@
-import { EFFORTS, effortLabel } from '../modelOptions'
-import { tr } from '../../i18n'
+import { EFFORTS, effortLabel } from '../modelOptions';
+import { tr } from '../../i18n';
 
-type Effort = (typeof EFFORTS)[number]
+type Effort = (typeof EFFORTS)[number];
 
 // Régua do esforço no menu do modelo (e nas Configurações): uma marca por nível que o modelo
 // aceita. Clicar na marca atual volta para Auto. `untitled`: sem o "Esforço" em cima, onde a linha
@@ -10,14 +10,14 @@ export function EffortSlider({
   allowed,
   value,
   onChange,
-  untitled
+  untitled,
 }: {
   allowed: Effort[]
   value: string
   onChange: (effort: string) => void
   untitled?: boolean
 }) {
-  const index = allowed.findIndex((e) => e.value === value)
+  const index = allowed.findIndex((e) => e.value === value);
   return (
     <div className="px-2 pb-2 pt-1.5">
       <div className="flex items-center justify-between text-[12px]">
@@ -43,7 +43,7 @@ export function EffortSlider({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // Bolinhas do esforço no botão do seletor: quantas acesas, de cinco.
@@ -54,5 +54,5 @@ export function EffortDots({ level }: { level: number }) {
         <span key={i} className={`size-[5px] rounded-full bg-current ${i < level ? '' : 'opacity-20'}`} />
       ))}
     </span>
-  )
+  );
 }

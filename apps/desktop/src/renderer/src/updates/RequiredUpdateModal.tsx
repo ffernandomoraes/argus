@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import type { UpdateInfo } from '@argus/shared/updates'
-import { Presence } from '../motion'
-import { Button } from '../ui/Button'
-import { Modal } from '../ui/Modal'
-import { useUpdates } from './useUpdates'
-import { tr } from '../i18n'
-import { installUpdate } from './installUpdate'
+import { useState } from 'react';
+import type { UpdateInfo } from '@argus/shared/updates';
+import { Presence } from '../motion';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { useUpdates } from './useUpdates';
+import { tr } from '../i18n';
+import { installUpdate } from './installUpdate';
 
-const keepOpen = () => false
+const keepOpen = () => false;
 
 // Versão em uso muito atrás da última (ver REQUIRED_BEHIND em updater/index.ts): cobre a janela até
 // atualizar, sem fechar pelo Esc nem clicando fora. Só aparece onde a atualização automática
 // funciona; se ela der erro no meio, dá para seguir sem atualizar.
 export function RequiredUpdateModal() {
-  const updates = useUpdates()
-  const state = updates?.state
-  const required = (state?.status === 'downloading' || state?.status === 'ready') && !!state.required
+  const updates = useUpdates();
+  const state = updates?.state;
+  const required = (state?.status === 'downloading' || state?.status === 'ready') && !!state.required;
   // Fica na tela depois de aparecer, também quando o estado passa por "procurando" ou "erro".
-  const [shown, setShown] = useState(false)
-  if (required && !shown) setShown(true)
+  const [shown, setShown] = useState(false);
+  if (required && !shown) setShown(true);
 
   return (
     <Presence kind="modal">{shown && updates && <RequiredUpdateCard updates={updates} onContinue={() => setShown(false)} />}</Presence>
-  )
+  );
 }
 
 function RequiredUpdateCard({ updates, onContinue }: { updates: UpdateInfo; onContinue: () => void }) {
-  const { version: current, state } = updates
-  const latest = state.status === 'downloading' || state.status === 'ready' ? state.version : null
+  const { version: current, state } = updates;
+  const latest = state.status === 'downloading' || state.status === 'ready' ? state.version : null;
   // Fora do caminho da atualização (erro no download, por exemplo): não bloqueia mais.
-  const failed = state.status !== 'checking' && state.status !== 'downloading' && state.status !== 'ready'
+  const failed = state.status !== 'checking' && state.status !== 'downloading' && state.status !== 'ready';
 
   const status =
     state.status === 'checking'
@@ -40,7 +40,7 @@ function RequiredUpdateCard({ updates, onContinue }: { updates: UpdateInfo; onCo
           ? state.message
           : state.status === 'unsupported'
             ? state.reason
-            : null
+            : null;
 
   return (
     <Modal variant="blocking" size="xs" labelledBy="required-update-title" onClose={onContinue} onRequestClose={keepOpen}>
@@ -52,7 +52,7 @@ function RequiredUpdateCard({ updates, onContinue }: { updates: UpdateInfo; onCo
           {latest
             ? tr(
                 `Você está na versão ${current}, e a mais recente é a ${latest}. Atualize para continuar usando o Argus.`,
-                `You're on version ${current}, and the latest is ${latest}. Update to keep using Argus.`
+                `You're on version ${current}, and the latest is ${latest}. Update to keep using Argus.`,
               )
             : tr(`Você está na versão ${current}. Atualize para continuar usando o Argus.`, `You're on version ${current}. Update to keep using Argus.`)}
         </p>
@@ -88,5 +88,5 @@ function RequiredUpdateCard({ updates, onContinue }: { updates: UpdateInfo; onCo
         )}
       </footer>
     </Modal>
-  )
+  );
 }

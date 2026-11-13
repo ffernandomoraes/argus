@@ -1,18 +1,18 @@
-import { memo, useState, type MouseEvent, type ReactNode } from 'react'
-import { ChevronRight, File, Folder, FolderOpen } from 'lucide-react'
-import type { FileEntry } from '@argus/shared/files'
-import { KIND_COLOR, KIND_LABEL } from '../../conversation/ConversationView'
-import { NameInput } from './NameInput'
-import type { Kind } from './treePaths'
-import { indent } from './treeStyle'
-import { LOCALE, tr } from '../../i18n'
+import { memo, useState, type MouseEvent, type ReactNode } from 'react';
+import { ChevronRight, File, Folder, FolderOpen } from 'lucide-react';
+import type { FileEntry } from '@argus/shared/files';
+import { KIND_COLOR, KIND_LABEL } from '../../conversation/ConversationView';
+import { NameInput } from './NameInput';
+import type { Kind } from './treePaths';
+import { indent } from './treeStyle';
+import { LOCALE, tr } from '../../i18n';
 
 // Itens desenhados por pasta antes do "mostrar mais": uma pasta com dezenas de milhares de arquivos
 // (node_modules aberta, uma pasta de imagens) travava o painel.
-const PAGE = 2000
+const PAGE = 2000;
 
 // Criação ou renomeação em andamento: um campo de nome no lugar da linha.
-export type Editing = { kind: 'create'; dir: string; isDir: boolean } | { kind: 'rename'; path: string }
+export type Editing = { kind: 'create'; dir: string; isDir: boolean } | { kind: 'rename'; path: string };
 
 export type TreeProps = {
   listings: Readonly<Record<string, FileEntry[]>>
@@ -27,7 +27,7 @@ export type TreeProps = {
   onContextMenu: (e: MouseEvent, entry: FileEntry) => void
   onSubmitEdit: (name: string) => void
   onCancelEdit: () => void
-}
+};
 
 type ItemProps = Pick<TreeProps, 'onClick' | 'onContextMenu' | 'onSubmitEdit' | 'onCancelEdit'> & {
   entry: FileEntry
@@ -39,19 +39,19 @@ type ItemProps = Pick<TreeProps, 'onClick' | 'onContextMenu' | 'onSubmitEdit' | 
   renaming: boolean
   // A lista de dentro da pasta aberta.
   children?: ReactNode
-}
+};
 
 // Uma linha da árvore. Memo: digitar, focar outro item ou abrir outra pasta só redesenha as linhas
 // que mudaram (a pasta aberta redesenha junto com o conteúdo dela).
 const TreeItem = memo(function TreeItem({ entry, depth, open, focused, draft, change, renaming, children, ...p }: ItemProps) {
-  const Icon = entry.isDir ? (open ? FolderOpen : Folder) : File
+  const Icon = entry.isDir ? (open ? FolderOpen : Folder) : File;
 
   if (renaming) {
     return (
       <li>
         <NameInput depth={depth} isDir={entry.isDir} initial={entry.name} onSubmit={p.onSubmitEdit} onCancel={p.onCancelEdit} />
       </li>
-    )
+    );
   }
 
   return (
@@ -81,15 +81,15 @@ const TreeItem = memo(function TreeItem({ entry, depth, open, focused, draft, ch
       </button>
       {children}
     </li>
-  )
-})
+  );
+});
 
 // Conteúdo de uma pasta da árvore (a raiz é dir '').
 export function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: string; entries?: FileEntry[]; depth: number }) {
-  const [limit, setLimit] = useState(PAGE)
-  const creating = p.editing?.kind === 'create' && p.editing.dir === dir ? p.editing : null
-  const shown = entries && entries.length > limit ? entries.slice(0, limit) : entries
-  const hidden = entries ? entries.length - limit : 0
+  const [limit, setLimit] = useState(PAGE);
+  const creating = p.editing?.kind === 'create' && p.editing.dir === dir ? p.editing : null;
+  const shown = entries && entries.length > limit ? entries.slice(0, limit) : entries;
+  const hidden = entries ? entries.length - limit : 0;
   return (
     <ul>
       {creating && (
@@ -98,7 +98,7 @@ export function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: strin
         </li>
       )}
       {shown?.map((e) => {
-        const open = e.isDir && p.expanded.has(e.path)
+        const open = e.isDir && p.expanded.has(e.path);
         return (
           <TreeItem
             key={e.path}
@@ -116,7 +116,7 @@ export function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: strin
           >
             {open && <TreeList dir={e.path} entries={p.listings[e.path]} depth={depth + 1} {...p} />}
           </TreeItem>
-        )
+        );
       })}
       {hidden > 0 && (
         <li>
@@ -135,5 +135,5 @@ export function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: strin
         </li>
       )}
     </ul>
-  )
+  );
 }

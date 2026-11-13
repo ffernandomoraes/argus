@@ -1,11 +1,11 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
-import type { XYPosition } from '@xyflow/react'
-import type { PanelRect } from '../../conversation/FloatingPanel'
-import type { ConfirmRequest } from '../ConfirmDialog'
-import type { MenuState } from '../ContextMenu'
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import type { XYPosition } from '@xyflow/react';
+import type { PanelRect } from '../../conversation/FloatingPanel';
+import type { ConfirmRequest } from '../ConfirmDialog';
+import type { MenuState } from '../ContextMenu';
 
 // "Nova pasta" aberto: onde a pasta entra e, se veio de um grupo, em qual.
-type FolderPickerState = { position: XYPosition; groupId?: string }
+type FolderPickerState = { position: XYPosition; groupId?: string };
 
 export type OverlayState = {
   menu: MenuState | null
@@ -20,7 +20,7 @@ export type OverlayState = {
   // Pasta (id do bloco) do painel com todas as conversas: o card do canvas mostra só as recentes.
   allConversations: string | null
   allConversationsRect: PanelRect | null
-}
+};
 
 export type OverlayCommands = {
   setMenu: Dispatch<SetStateAction<MenuState | null>>
@@ -40,25 +40,25 @@ export type OverlayCommands = {
   openAllConversations: (nodeId: string) => void
   closeAllConversations: () => void
   setAllConversationsRect: (rect: PanelRect) => void
-}
+};
 
 // Painéis e modais por cima do canvas (CanvasOverlays): o que está aberto e como abrir e fechar,
 // com identidade fixa para ir ao contexto e aos menus.
 export function useOverlays(): { state: OverlayState; commands: OverlayCommands } {
-  const [menu, setMenu] = useState<MenuState | null>(null)
-  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
-  const [memory, setMemory] = useState<'all' | string | null>(null)
-  const [agents, setAgents] = useState(false)
-  const [devServers, setDevServers] = useState(false)
-  const [commandBar, setCommandBar] = useState<{ voice: boolean } | null>(null)
-  const [folderPicker, setFolderPicker] = useState<FolderPickerState | null>(null)
-  const [allConversations, setAllConversations] = useState<string | null>(null)
-  const [allConversationsRect, setAllConversationsRect] = useState<PanelRect | null>(null)
+  const [menu, setMenu] = useState<MenuState | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  const [memory, setMemory] = useState<'all' | string | null>(null);
+  const [agents, setAgents] = useState(false);
+  const [devServers, setDevServers] = useState(false);
+  const [commandBar, setCommandBar] = useState<{ voice: boolean } | null>(null);
+  const [folderPicker, setFolderPicker] = useState<FolderPickerState | null>(null);
+  const [allConversations, setAllConversations] = useState<string | null>(null);
+  const [allConversationsRect, setAllConversationsRect] = useState<PanelRect | null>(null);
 
   const state = useMemo(
     () => ({ menu, confirm, memory, agents, devServers, commandBar, folderPicker, allConversations, allConversationsRect }),
-    [menu, confirm, memory, agents, devServers, commandBar, folderPicker, allConversations, allConversationsRect]
-  )
+    [menu, confirm, memory, agents, devServers, commandBar, folderPicker, allConversations, allConversationsRect],
+  );
 
   const commands = useMemo<OverlayCommands>(
     () => ({
@@ -80,10 +80,10 @@ export function useOverlays(): { state: OverlayState; commands: OverlayCommands 
       closeFolderPicker: () => setFolderPicker(null),
       openAllConversations: (nodeId) => setAllConversations(nodeId),
       closeAllConversations: () => setAllConversations(null),
-      setAllConversationsRect
+      setAllConversationsRect,
     }),
-    []
-  )
+    [],
+  );
 
-  return { state, commands }
+  return { state, commands };
 }

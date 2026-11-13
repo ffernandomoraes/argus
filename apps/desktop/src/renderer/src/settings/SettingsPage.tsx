@@ -1,43 +1,43 @@
-import { useState } from 'react'
-import type { ThemePreference } from '../theme/useTheme'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { ExperimentTag } from '../ui/ExperimentTag'
-import { usePreference } from './preferences'
-import { AccountsSection } from './sections/AccountsSection'
-import { AppearanceSection } from './sections/AppearanceSection'
-import { CoffeeSection } from './sections/CoffeeSection'
-import { ConversationsSection } from './sections/ConversationsSection'
-import { ExperimentsSection } from './sections/ExperimentsSection'
-import { GeneralSection } from './sections/GeneralSection'
-import { MascotSection } from './sections/MascotSection'
-import { McpSection } from './sections/McpSection'
-import { RemoteAccessSection } from './sections/RemoteAccessSection'
-import { IS_REMOTE } from '../remote'
-import { NotificationsSection } from './sections/NotificationsSection'
-import { StorageSection } from './sections/StorageSection'
-import { UpdatesSection } from './sections/UpdatesSection'
-import { SECTION_GROUPS, SECTIONS, type Section } from './sections/sectionList'
-import { tr } from '../i18n'
+import { useState } from 'react';
+import type { ThemePreference } from '../theme/useTheme';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { ExperimentTag } from '../ui/ExperimentTag';
+import { usePreference } from './preferences';
+import { AccountsSection } from './sections/AccountsSection';
+import { AppearanceSection } from './sections/AppearanceSection';
+import { CoffeeSection } from './sections/CoffeeSection';
+import { ConversationsSection } from './sections/ConversationsSection';
+import { ExperimentsSection } from './sections/ExperimentsSection';
+import { GeneralSection } from './sections/GeneralSection';
+import { MascotSection } from './sections/MascotSection';
+import { McpSection } from './sections/McpSection';
+import { RemoteAccessSection } from './sections/RemoteAccessSection';
+import { IS_REMOTE } from '../remote';
+import { NotificationsSection } from './sections/NotificationsSection';
+import { StorageSection } from './sections/StorageSection';
+import { UpdatesSection } from './sections/UpdatesSection';
+import { SECTION_GROUPS, SECTIONS, type Section } from './sections/sectionList';
+import { tr } from '../i18n';
 
 // Conteúdo do modal de configurações: seções à esquerda, opções à direita.
 export function SettingsPage({
   theme,
-  onThemeChange
+  onThemeChange,
 }: {
   theme: ThemePreference
   onThemeChange: (t: ThemePreference) => void
 }) {
-  const [section, setSection] = useState<Section>('general')
+  const [section, setSection] = useState<Section>('general');
   // Seção de experimento só aparece com ele ligado em Experimentos.
-  const mascot = usePreference('mascot')
+  const mascot = usePreference('mascot');
   // Acesso remoto fica fora da janela remota: parear e hospedar são da máquina de quem está usando.
-  const sections = SECTIONS.filter((s) => (s.id !== 'mascot' || mascot) && (s.id !== 'remote' || !IS_REMOTE))
-  const current = SECTIONS.find((s) => s.id === section)!
-  const CurrentIcon = current.icon
+  const sections = SECTIONS.filter((s) => (s.id !== 'mascot' || mascot) && (s.id !== 'remote' || !IS_REMOTE));
+  const current = SECTIONS.find((s) => s.id === section)!;
+  const CurrentIcon = current.icon;
 
   const navItem = (s: (typeof SECTIONS)[number]) => {
-    const Icon = s.icon
-    const selected = section === s.id
+    const Icon = s.icon;
+    const selected = section === s.id;
     return (
       <button
         key={s.id}
@@ -51,8 +51,8 @@ export function SettingsPage({
         <span className="flex-1">{s.label}</span>
         {s.experimental && <ExperimentTag />}
       </button>
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex h-full">
@@ -60,15 +60,15 @@ export function SettingsPage({
       <nav className="flex w-56 shrink-0 flex-col overflow-y-auto border-r border-line bg-bg p-3">
         <div className="mb-3 px-3 pt-1 text-[16px] font-semibold">{tr('Configurações', 'Settings')}</div>
         {SECTION_GROUPS.map((g) => {
-          const items = sections.filter((s) => s.group === g.id)
-          if (items.length === 0) return null
+          const items = sections.filter((s) => s.group === g.id);
+          if (items.length === 0) return null;
           return (
             <div key={g.id} className="mb-3 flex flex-col gap-0.5">
               {/* Título do grupo, apagado como o "Favoritos" da lateral do Finder. */}
               <div className="px-3 pb-1 text-[12px] uppercase tracking-widest text-faint">{g.label}</div>
               {items.map(navItem)}
             </div>
-          )
+          );
         })}
         {/* Pé da lateral: o café, fora dos grupos. */}
         <div className="mt-auto flex flex-col gap-0.5">{sections.filter((s) => s.group === 'footer').map(navItem)}</div>
@@ -103,5 +103,5 @@ export function SettingsPage({
         </section>
       </div>
     </div>
-  )
+  );
 }

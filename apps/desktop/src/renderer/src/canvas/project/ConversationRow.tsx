@@ -1,9 +1,9 @@
-import { memo, type MouseEvent as ReactMouseEvent } from 'react'
-import { ConversationLabel } from '../blocks/ConversationLabel'
-import { TimeAgo } from '../blocks/TimeAgo'
-import type { ConversationSummary } from '../types'
-import { useIsPoppedOut } from '../useCanvasView'
-import { tr } from '../../i18n'
+import { memo, type MouseEvent as ReactMouseEvent } from 'react';
+import { ConversationLabel } from '../blocks/ConversationLabel';
+import { TimeAgo } from '../blocks/TimeAgo';
+import type { ConversationSummary } from '../types';
+import { useIsPoppedOut } from '../useCanvasView';
+import { tr } from '../../i18n';
 
 // Conversa como linha dentro da caixa da pasta: ícone, título com a bolinha
 // de status logo depois e, à direita, "esperando você" quando ela pede atenção ou há quanto
@@ -12,7 +12,7 @@ export const ConversationRow = memo(function ConversationRow({
   conversation: c,
   active,
   onOpen,
-  onContextMenu
+  onContextMenu,
 }: {
   conversation: ConversationSummary
   active: boolean
@@ -21,7 +21,7 @@ export const ConversationRow = memo(function ConversationRow({
   onContextMenu: (e: ReactMouseEvent, conversation: ConversationSummary) => void
 }) {
   // Cada linha acompanha só se a sua conversa está em janela separada.
-  const poppedOut = useIsPoppedOut(c.id)
+  const poppedOut = useIsPoppedOut(c.id);
   return (
     <li
       role="button"
@@ -38,5 +38,5 @@ export const ConversationRow = memo(function ConversationRow({
         c.status !== 'running' && <TimeAgo iso={c.repliedAt} className="pl-2" />
       )}
     </li>
-  )
-})
+  );
+});

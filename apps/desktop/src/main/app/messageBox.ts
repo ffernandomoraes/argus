@@ -1,7 +1,7 @@
-import { BrowserWindow, dialog } from 'electron'
-import { withoutBlockDetection } from '../errorReports'
-import { IS_MAC } from '../platform'
-import { isAppWindow } from './windowChrome'
+import { BrowserWindow, dialog } from 'electron';
+import { withoutBlockDetection } from '../errorReports';
+import { IS_MAC } from '../platform';
+import { isAppWindow } from './windowChrome';
 
 // Caixa de mensagem presa à janela do Argus em foco. No macOS, a caixa sem janela dona é síncrona:
 // o processo principal para até a resposta, e com ele a saída dos terminais, as conversas e os
@@ -11,7 +11,7 @@ import { isAppWindow } from './windowChrome'
 // a caixa fica solta, para aparecer na frente, e no Mac a parada não conta como travamento. O
 // mascote nunca fica com ela.
 export function showMessageBox(options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> {
-  const win = BrowserWindow.getFocusedWindow()
-  if (win && isAppWindow(win)) return dialog.showMessageBox(win, options)
-  return IS_MAC ? withoutBlockDetection(() => dialog.showMessageBox(options)) : dialog.showMessageBox(options)
+  const win = BrowserWindow.getFocusedWindow();
+  if (win && isAppWindow(win)) return dialog.showMessageBox(win, options);
+  return IS_MAC ? withoutBlockDetection(() => dialog.showMessageBox(options)) : dialog.showMessageBox(options);
 }

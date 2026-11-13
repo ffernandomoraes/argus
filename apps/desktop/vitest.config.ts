@@ -1,15 +1,15 @@
-import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vitest/config';
 
 // Testes (pnpm test). Lógica pura do núcleo: conversas, sessões, histórico, projetos e caminhos.
 // Sem Electron de verdade: o 'electron' importado vira o substituto de test/electron.ts. Cada
 // arquivo de teste roda com uma pasta pessoal (HOME) falsa e vazia (ver test/setup.ts): nada lê nem
 // grava o ~/.claude de quem roda.
-const root = (path: string) => fileURLToPath(new URL(path, import.meta.url))
+const root = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
   resolve: {
-    alias: { electron: root('test/electron.ts') }
+    alias: { electron: root('test/electron.ts') },
   },
   test: {
     environment: 'node',
@@ -20,8 +20,8 @@ export default defineConfig({
       {
         extends: true,
         resolve: { alias: { '@': root('src/renderer/src') } },
-        test: { name: 'renderer', include: ['src/renderer/**/*.test.ts'], setupFiles: [root('test/rendererSetup.ts')] }
-      }
-    ]
-  }
-})
+        test: { name: 'renderer', include: ['src/renderer/**/*.test.ts'], setupFiles: [root('test/rendererSetup.ts')] },
+      },
+    ],
+  },
+});

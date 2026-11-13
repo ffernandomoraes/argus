@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import { X } from 'lucide-react'
-import type { AuthState } from '@argus/shared/auth'
-import { Button } from '../ui/Button'
-import { IconButton } from '../ui/IconButton'
-import { Modal } from '../ui/Modal'
-import { useProviders } from '../providers/useProviders'
-import { setupReady } from './SetupStep'
-import { welcomeSteps } from './steps'
-import { tr } from '../i18n'
+import { useState } from 'react';
+import { X } from 'lucide-react';
+import type { AuthState } from '@argus/shared/auth';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { Modal } from '../ui/Modal';
+import { useProviders } from '../providers/useProviders';
+import { setupReady } from './SetupStep';
+import { welcomeSteps } from './steps';
+import { tr } from '../i18n';
 
 // Boas-vindas em até 5 etapas: o que o Argus faz e, por último, a configuração do Claude Code ou
 // de outro agente (Codex, Gemini, Cursor).
@@ -15,13 +15,13 @@ import { tr } from '../i18n'
 // Só fecha com a configuração pronta: sem ela, o canvas não funciona. Antes disso, o X leva à
 // configuração, e o Esc fica aqui (não fecha o drawer que está atrás).
 export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; startAtSetup: boolean; onDone: () => void }) {
-  const list = welcomeSteps(auth)
-  const last = list.length - 1
-  const [index, setIndex] = useState(startAtSetup ? last : 0)
-  const providers = useProviders()
-  const ready = setupReady(auth, providers)
-  const step = list[index]
-  const closeBlocked = !ready && index === last
+  const list = welcomeSteps(auth);
+  const last = list.length - 1;
+  const [index, setIndex] = useState(startAtSetup ? last : 0);
+  const providers = useProviders();
+  const ready = setupReady(auth, providers);
+  const step = list[index];
+  const closeBlocked = !ready && index === last;
 
   return (
     <Modal variant="blocking" className="flex flex-col" label={tr('Boas-vindas ao Argus', 'Welcome to Argus')} onClose={onDone} onRequestClose={() => ready}>
@@ -89,5 +89,5 @@ export function WelcomeModal({ auth, startAtSetup, onDone }: { auth: AuthState; 
         )}
       </footer>
     </Modal>
-  )
+  );
 }

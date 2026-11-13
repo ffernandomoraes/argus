@@ -1,11 +1,11 @@
-import { defaultUrlTransform, type Components } from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { inlineFileHref } from './fileLinks'
-import { MarkdownImage, MarkdownLink } from './MarkdownLink'
-import { CopyButton } from './CopyButton'
-import { tr } from '../i18n'
+import { defaultUrlTransform, type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { inlineFileHref } from './fileLinks';
+import { MarkdownImage, MarkdownLink } from './MarkdownLink';
+import { CopyButton } from './CopyButton';
+import { tr } from '../i18n';
 
-export const REMARK_PLUGINS = [remarkGfm]
+export const REMARK_PLUGINS = [remarkGfm];
 
 // Estilos do markdown das respostas, no tamanho do chat.
 export const MARKDOWN_COMPONENTS: Components = {
@@ -35,17 +35,17 @@ export const MARKDOWN_COMPONENTS: Components = {
   // nome de arquivo) não quebra no hífen: "/remote-control" fica inteiro. Caminho longo segue quebrando.
   // Caminho de arquivo vira link, como os links de arquivo das respostas.
   code: ({ children, className }) => {
-    if (className) return <code className={className}>{children}</code>
-    const text = typeof children === 'string' ? children : null
+    if (className) return <code className={className}>{children}</code>;
+    const text = typeof children === 'string' ? children : null;
     const code = (
       <code
         className={`rounded bg-surface-2 px-1 py-0.5 font-mono text-[13px] ${text && text.length <= 40 && !/\s/.test(text) ? 'whitespace-nowrap' : ''}`}
       >
         {children}
       </code>
-    )
-    const href = text && inlineFileHref(text)
-    return href ? <MarkdownLink href={href}>{code}</MarkdownLink> : code
+    );
+    const href = text && inlineFileHref(text);
+    return href ? <MarkdownLink href={href}>{code}</MarkdownLink> : code;
   },
   // Bloco de código com botão de copiar no canto, que aparece ao passar o mouse. Copia o texto
   // cru do bloco, sem a quebra de linha final que o markdown acrescenta.
@@ -67,21 +67,21 @@ export const MARKDOWN_COMPONENTS: Components = {
     </div>
   ),
   th: ({ children }) => <th className="border border-line bg-surface-2 px-2 py-1 text-left font-medium">{children}</th>,
-  td: ({ children }) => <td className="border border-line px-2 py-1 align-top">{children}</td>
-}
+  td: ({ children }) => <td className="border border-line px-2 py-1 align-top">{children}</td>,
+};
 
 // Por padrão o markdown descarta link com protocolo que não seja da web, e "C:\proj\a.ts" parece
 // ter o protocolo "c". Caminho do Windows e file:// passam nos links (viram link de arquivo, ver
 // MarkdownLink), mas nunca no endereço de uma imagem. A barra invertida chega codificada (%5C):
 // sem aceitar assim, o link do caminho do Windows saía vazio e não fazia nada.
 export function urlTransform(url: string, key: string): string {
-  return key !== 'src' && /^([a-zA-Z]:([\\/]|%5[cC])|file:)/.test(url) ? url : defaultUrlTransform(url)
+  return key !== 'src' && /^([a-zA-Z]:([\\/]|%5[cC])|file:)/.test(url) ? url : defaultUrlTransform(url);
 }
 
 // Texto puro de um trecho da árvore do markdown (o conteúdo do bloco de código).
-type TextNode = { type: string; value?: string; children?: TextNode[] }
+type TextNode = { type: string; value?: string; children?: TextNode[] };
 function nodeText(node: TextNode | undefined): string {
-  if (!node) return ''
-  if (node.type === 'text') return node.value ?? ''
-  return node.children?.map(nodeText).join('') ?? ''
+  if (!node) return '';
+  if (node.type === 'text') return node.value ?? '';
+  return node.children?.map(nodeText).join('') ?? '';
 }

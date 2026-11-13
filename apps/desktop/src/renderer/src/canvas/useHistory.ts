@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type Dispatch, type SetStateAction } from 'react'
-import type { CanvasNode } from './types'
+import { useCallback, useEffect, useLayoutEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import type { CanvasNode } from './types';
 
 // Desfazer/refazer do layout do canvas. O histórico fica no processo principal, um por workspace
 // para todas as janelas: ⌘Z desfaz a última ação dele, feita em qualquer uma (ver main/canvasHub.ts).
@@ -7,11 +7,11 @@ import type { CanvasNode } from './types'
 export function useHistory(board: string, nodes: CanvasNode[], setNodes: Dispatch<SetStateAction<CanvasNode[]>>) {
   // Lista atual para quem age fora do render (menus, atalhos, assistente do canvas). Atualizada
   // logo depois do render: escrita durante ele, o React Compiler recusaria otimizar o Canvas.
-  const nodesRef = useRef(nodes)
+  const nodesRef = useRef(nodes);
   useLayoutEffect(() => {
-    nodesRef.current = nodes
-  }, [nodes])
-  const inGesture = useRef(false)
+    nodesRef.current = nodes;
+  }, [nodes]);
+  const inGesture = useRef(false);
 
   // Ação discreta (menu, renomear, criar): grava o estado anterior e aplica. Sem mudança de fato
   // (as operações devolvem a mesma lista: cor igual, grupo já ajustado), não grava passo vazio no
@@ -19,33 +19,33 @@ export function useHistory(board: string, nodes: CanvasNode[], setNodes: Dispatc
   // revelar) já parte dela. O estado em si continua aplicado pela função, na fila do React.
   const change = useCallback(
     (update: SetStateAction<CanvasNode[]>) => {
-      const current = nodesRef.current
-      const next = typeof update === 'function' ? update(current) : update
-      if (next === current) return
-      nodesRef.current = next
-      window.api.canvas.record(board)
-      setNodes(update)
+      const current = nodesRef.current;
+      const next = typeof update === 'function' ? update(current) : update;
+      if (next === current) return;
+      nodesRef.current = next;
+      window.api.canvas.record(board);
+      setNodes(update);
     },
-    [board, setNodes]
-  )
+    [board, setNodes],
+  );
 
   // Arrastar e redimensionar geram várias mudanças por gesto: grava só no início.
   const trackGesture = useCallback((active: boolean) => {
     if (active && !inGesture.current) {
-      inGesture.current = true
-      window.api.canvas.record(board)
+      inGesture.current = true;
+      window.api.canvas.record(board);
     }
-  }, [board])
+  }, [board]);
 
   useEffect(() => {
-    const end = () => (inGesture.current = false)
-    window.addEventListener('pointerup', end, true)
-    return () => window.removeEventListener('pointerup', end, true)
-  }, [])
+    const end = () => (inGesture.current = false);
+    window.addEventListener('pointerup', end, true);
+    return () => window.removeEventListener('pointerup', end, true);
+  }, []);
 
   // O estado desfeito volta pelo processo principal, para esta e para as outras janelas.
-  const undo = useCallback(() => window.api.canvas.undo(board), [board])
-  const redo = useCallback(() => window.api.canvas.redo(board), [board])
+  const undo = useCallback(() => window.api.canvas.undo(board), [board]);
+  const redo = useCallback(() => window.api.canvas.redo(board), [board]);
 
-  return { nodesRef, change, trackGesture, undo, redo }
+  return { nodesRef, change, trackGesture, undo, redo };
 }

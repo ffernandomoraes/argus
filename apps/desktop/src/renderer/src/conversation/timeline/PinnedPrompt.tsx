@@ -1,6 +1,6 @@
-import { Image as ImageIcon } from 'lucide-react'
-import { formatImageCount } from '../format'
-import { tr } from '../../i18n'
+import { Image as ImageIcon } from 'lucide-react';
+import { formatImageCount } from '../format';
+import { tr } from '../../i18n';
 
 // O seu pedido do trecho que está na tela, preso no topo depois de rolar para cima. Clicar leva
 // até ele. Aparece descendo de leve do topo.
@@ -8,7 +8,7 @@ export function PinnedPrompt({
   text,
   images,
   visible,
-  onClick
+  onClick,
 }: {
   text: string
   images: number
@@ -33,5 +33,5 @@ export function PinnedPrompt({
         </span>
       )}
     </button>
-  )
+  );
 }

@@ -1,21 +1,21 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import { useUncommitted } from '../canvas/sessionsStore'
-import { DocumentMarkdown } from '../conversation/DocumentMarkdown'
-import type { LineRange } from '../conversation/fileLinks'
-import { isMod, keys } from '../platform'
-import { CloseCodeButton } from './CloseCodeButton'
-import { DiffPane } from './DiffPane'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useUncommitted } from '../canvas/sessionsStore';
+import { DocumentMarkdown } from '../conversation/DocumentMarkdown';
+import type { LineRange } from '../conversation/fileLinks';
+import { isMod, keys } from '../platform';
+import { CloseCodeButton } from './CloseCodeButton';
+import { DiffPane } from './DiffPane';
 // Pergunta antes do ⌘R descartar os rascunhos (registra ao carregar, ver o arquivo).
-import './draftsReloadGuard'
-import { useCodeEditor } from './editor/useCodeEditor'
-import { useFileRevision } from './editor/useFileRevision'
-import { useFileEscape } from './fileEscape'
-import { changesInTree } from './tree/treePaths'
-import { tr } from '../i18n'
+import './draftsReloadGuard';
+import { useCodeEditor } from './editor/useCodeEditor';
+import { useFileRevision } from './editor/useFileRevision';
+import { useFileEscape } from './fileEscape';
+import { changesInTree } from './tree/treePaths';
+import { tr } from '../i18n';
 
-type View = 'diff' | 'file' | 'preview'
+type View = 'diff' | 'file' | 'preview';
 
-const isMarkdown = (path: string) => /\.(md|markdown)$/i.test(path)
+const isMarkdown = (path: string) => /\.(md|markdown)$/i.test(path);
 
 // Arquivo aberto, à direita da árvore no painel de código, num editor com a coloração do VS Code
 // (Dark+). ⌘S salva. O que não foi salvo fica como rascunho (drafts.ts) ao trocar de arquivo.
@@ -28,7 +28,7 @@ export function FileViewer({
   diff: wantsDiff,
   onDiffChange,
   onClose,
-  onCloseCode
+  onCloseCode,
 }: {
   root: string
   path: string
@@ -41,47 +41,47 @@ export function FileViewer({
   onClose: () => void
   onCloseCode: () => void
 }) {
-  const hostRef = useRef<HTMLDivElement>(null)
+  const hostRef = useRef<HTMLDivElement>(null);
   // Recarga por mudança no disco.
-  const revision = useFileRevision(root, path)
-  const { content, dirty, conflict, saveError, reloadFromDisk, docVersion, text, focus } = useCodeEditor(hostRef, { root, path, lines, revision })
-  useFileEscape(onClose)
+  const revision = useFileRevision(root, path);
+  const { content, dirty, conflict, saveError, reloadFromDisk, docVersion, text, focus } = useCodeEditor(hostRef, { root, path, lines, revision });
+  useFileEscape(onClose);
   // Diff só para arquivo com mudança desde o último commit (a mesma cor da árvore); sem mudança, o
   // seletor some e o arquivo aparece mesmo que o Diff tenha sido pedido.
-  const uncommitted = useUncommitted(root)
-  const changed = useMemo(() => changesInTree(root, uncommitted).has(path), [root, uncommitted, path])
-  const diff = wantsDiff && changed
-  const markdown = isMarkdown(path)
-  const [preview, setPreview] = useState(false)
-  const view: View = diff ? 'diff' : preview && markdown ? 'preview' : 'file'
+  const uncommitted = useUncommitted(root);
+  const changed = useMemo(() => changesInTree(root, uncommitted).has(path), [root, uncommitted, path]);
+  const diff = wantsDiff && changed;
+  const markdown = isMarkdown(path);
+  const [preview, setPreview] = useState(false);
+  const view: View = diff ? 'diff' : preview && markdown ? 'preview' : 'file';
   const views = useMemo(() => {
-    const list: { value: View; label: string }[] = []
-    if (changed) list.push({ value: 'diff', label: 'Diff' })
-    list.push({ value: 'file', label: tr('Arquivo', 'File') })
-    if (markdown) list.push({ value: 'preview', label: tr('Prévia', 'Preview') })
-    return list
-  }, [changed, markdown])
+    const list: { value: View; label: string }[] = [];
+    if (changed) list.push({ value: 'diff', label: 'Diff' });
+    list.push({ value: 'file', label: tr('Arquivo', 'File') });
+    if (markdown) list.push({ value: 'preview', label: tr('Prévia', 'Preview') });
+    return list;
+  }, [changed, markdown]);
   const choose = (next: View) => {
-    onDiffChange(next === 'diff')
-    setPreview(next === 'preview')
-  }
+    onDiffChange(next === 'diff');
+    setPreview(next === 'preview');
+  };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- docVersion: o texto do editor mudou
-  const previewText = useMemo(() => (view === 'preview' ? text() : ''), [view, docVersion, content])
+  const previewText = useMemo(() => (view === 'preview' ? text() : ''), [view, docVersion, content]);
   // O foco vai junto da troca: sem isso, ficava no editor escondido e o ⌘⇧V seguinte não chegava.
-  const previewRef = useRef<HTMLDivElement>(null)
-  const switched = useRef(false)
+  const previewRef = useRef<HTMLDivElement>(null);
+  const switched = useRef(false);
   useEffect(() => {
-    if (!switched.current) return
-    switched.current = false
-    if (view === 'preview') previewRef.current?.focus()
-    else if (view === 'file') focus()
-  }, [view, focus])
+    if (!switched.current) return;
+    switched.current = false;
+    if (view === 'preview') previewRef.current?.focus();
+    else if (view === 'file') focus();
+  }, [view, focus]);
   const onKeyDown = (e: KeyboardEvent) => {
-    if (!markdown || !isMod(e) || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'v') return
-    e.preventDefault()
-    switched.current = true
-    choose(view === 'preview' ? 'file' : 'preview')
-  }
+    if (!markdown || !isMod(e) || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'v') return;
+    e.preventDefault();
+    switched.current = true;
+    choose(view === 'preview' ? 'file' : 'preview');
+  };
 
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-[#1e1e1e]" onKeyDownCapture={onKeyDown}>
@@ -120,7 +120,7 @@ export function FileViewer({
           <span className="flex-1">
             {tr(
               'O arquivo mudou no disco depois da sua edição. Salvar sobrescreve a versão do disco.',
-              'The file changed on disk after your edit. Saving overwrites the version on disk.'
+              'The file changed on disk after your edit. Saving overwrites the version on disk.',
             )}
           </span>
           <button onClick={() => void reloadFromDisk()} className="rounded-md px-2 py-0.5 text-text hover:bg-surface-2">
@@ -148,5 +148,5 @@ export function FileViewer({
         <div ref={hostRef} className={`code-editor min-h-0 flex-1 select-text ${content?.ok ? '' : 'hidden'}`} />
       </div>
     </section>
-  )
+  );
 }

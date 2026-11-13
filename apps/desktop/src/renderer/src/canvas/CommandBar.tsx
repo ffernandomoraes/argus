@@ -1,71 +1,71 @@
-import { memo, useEffect, useEffectEvent, useRef, useState } from 'react'
-import { Loader2, Mic, SendHorizontal, Sparkles, Square } from 'lucide-react'
-import { useDictation } from '../conversation/useDictation'
-import { VoiceWave } from '../conversation/VoiceWave'
-import { IconButton } from '../ui/IconButton'
-import { useEscape } from '../useEscape'
-import { SYSTEM_SETTINGS } from '../platform'
-import { useCanvasAgent } from './bars/useCanvasAgent'
-import { tr } from '../i18n'
+import { memo, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { Loader2, Mic, SendHorizontal, Sparkles, Square } from 'lucide-react';
+import { useDictation } from '../conversation/useDictation';
+import { VoiceWave } from '../conversation/VoiceWave';
+import { IconButton } from '../ui/IconButton';
+import { useEscape } from '../useEscape';
+import { SYSTEM_SETTINGS } from '../platform';
+import { useCanvasAgent } from './bars/useCanvasAgent';
+import { tr } from '../i18n';
 
 // Depois de cumprir o pedido, a resposta fica um pouco na tela e a barra some sozinha.
-const AUTO_CLOSE_MS = 4000
+const AUTO_CLOSE_MS = 4000;
 
 // Barra de comando do canvas: pede por voz ou texto e o Claude mexe nos blocos.
 // voice: abre já ouvindo.
 export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: boolean; onClose: () => void }) {
-  const [draft, setDraft] = useState('')
-  const agent = useCanvasAgent()
+  const [draft, setDraft] = useState('');
+  const agent = useCanvasAgent();
   // Só a resposta de um pedido feito nesta abertura aparece (e fecha a barra sozinha).
-  const [asked, setAsked] = useState(false)
-  const [hovered, setHovered] = useState(false)
-  const input = useRef<HTMLInputElement>(null)
+  const [asked, setAsked] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
 
   // Ditado: o que for falado entra depois do texto que já estava no campo ao começar.
-  const dictationBase = useRef('')
+  const dictationBase = useRef('');
   const dictation = useDictation((spoken) => {
-    const base = dictationBase.current
-    setDraft(base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken)
-  })
+    const base = dictationBase.current;
+    setDraft(base && spoken ? `${base.trimEnd()} ${spoken}` : base + spoken);
+  });
   const toggleDictation = () => {
-    if (dictation.state === 'idle') dictationBase.current = draft
-    dictation.toggle()
-    input.current?.focus()
-  }
+    if (dictation.state === 'idle') dictationBase.current = draft;
+    dictation.toggle();
+    input.current?.focus();
+  };
 
   // Ao abrir: o campo pega o foco e, pedindo voz, o microfone já liga.
   const onOpen = useEffectEvent(() => {
-    input.current?.focus()
-    if (voice) dictation.start()
-  })
-  useEffect(() => onOpen(), [])
+    input.current?.focus();
+    if (voice) dictation.start();
+  });
+  useEffect(() => onOpen(), []);
 
-  const running = agent.status === 'running'
+  const running = agent.status === 'running';
 
   const send = () => {
-    if (dictation.state !== 'idle') dictation.stop()
-    const text = draft.trim()
-    if (!text || running) return
-    window.api.canvasAgent.send(text)
-    setDraft('')
-    setAsked(true)
-  }
+    if (dictation.state !== 'idle') dictation.stop();
+    const text = draft.trim();
+    if (!text || running) return;
+    window.api.canvasAgent.send(text);
+    setDraft('');
+    setAsked(true);
+  };
 
   // Esc fecha; clique no fundo também. O Claude continua o pedido mesmo com a barra fechada.
-  useEscape(onClose)
+  useEscape(onClose);
 
   // Pedido cumprido: some sozinha. Fica se o Claude perguntou algo, deu erro, ou você já
   // está mexendo na barra.
-  const done = asked && !running && !!agent.reply && !agent.error
-  const question = agent.reply.trim().endsWith('?')
-  const busy = hovered || !!draft || dictation.state !== 'idle'
+  const done = asked && !running && !!agent.reply && !agent.error;
+  const question = agent.reply.trim().endsWith('?');
+  const busy = hovered || !!draft || dictation.state !== 'idle';
   useEffect(() => {
-    if (!done || question || busy) return
-    const t = setTimeout(onClose, AUTO_CLOSE_MS)
-    return () => clearTimeout(t)
-  }, [done, question, busy, onClose])
+    if (!done || question || busy) return;
+    const t = setTimeout(onClose, AUTO_CLOSE_MS);
+    return () => clearTimeout(t);
+  }, [done, question, busy, onClose]);
 
-  const listening = dictation.state !== 'idle'
+  const listening = dictation.state !== 'idle';
   const status = running ? (
     <span className="flex items-center gap-2 text-muted">
       <Loader2 size={13} className="animate-spin" />
@@ -75,7 +75,7 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
     <span className="text-red-400">{agent.error}</span>
   ) : asked && agent.reply ? (
     <span className="text-text">{agent.reply}</span>
-  ) : null
+  ) : null;
 
   return (
     // Fundo escuro sobre o canvas inteiro: a barra fica em evidência, sem se misturar aos blocos.
@@ -100,8 +100,8 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                e.preventDefault()
-                send()
+                e.preventDefault();
+                send();
               }
             }}
             placeholder={
@@ -161,5 +161,5 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
         )}
       </div>
     </div>
-  )
-})
+  );
+});

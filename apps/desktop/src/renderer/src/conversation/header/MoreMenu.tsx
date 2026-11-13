@@ -1,22 +1,22 @@
-import { useRef, useState } from 'react'
-import { Ellipsis, type LucideIcon } from 'lucide-react'
-import { Presence } from '../../motion'
-import { MenuArrow } from '../../ui/MenuArrow'
-import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles'
-import { useEscape } from '../../useEscape'
-import { useOutsideClick } from '../../useOutsideClick'
-import { HeaderButton } from './HeaderButton'
-import { tr } from '../../i18n'
+import { useRef, useState } from 'react';
+import { Ellipsis, type LucideIcon } from 'lucide-react';
+import { Presence } from '../../motion';
+import { MenuArrow } from '../../ui/MenuArrow';
+import { MENU_PANEL, MENU_ROW } from '../../ui/menuStyles';
+import { useEscape } from '../../useEscape';
+import { useOutsideClick } from '../../useOutsideClick';
+import { HeaderButton } from './HeaderButton';
+import { tr } from '../../i18n';
 
-export type MoreMenuItem = { label: string; icon: LucideIcon; onClick: () => void }
+export type MoreMenuItem = { label: string; icon: LucideIcon; onClick: () => void };
 
 // O que não é fechar nem código fica num menu só: o cabeçalho com um botão por opção pesava.
 export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useOutsideClick(ref, () => setOpen(false), open)
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useOutsideClick(ref, () => setOpen(false), open);
   // Empilhado depois do fechar do drawer: com o menu aberto, o ESC fecha só ele.
-  useEscape(() => setOpen(false), open)
+  useEscape(() => setOpen(false), open);
   return (
     <div ref={ref} className="relative">
       <HeaderButton label={tr('Mais opções', 'More options')} onClick={() => setOpen((o) => !o)} active={open}>
@@ -31,8 +31,8 @@ export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
               <button
                 key={label}
                 onClick={() => {
-                  setOpen(false)
-                  onClick()
+                  setOpen(false);
+                  onClick();
                 }}
                 className={`${MENU_ROW} text-text hover:bg-accent hover:text-white`}
               >
@@ -44,5 +44,5 @@ export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
         )}
       </Presence>
     </div>
-  )
+  );
 }

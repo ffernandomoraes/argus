@@ -11,7 +11,7 @@ export type MemoryFile = {
   description?: string
   type?: string
   exists: boolean
-}
+};
 
 export type MemoryGroup = {
   id: string
@@ -19,10 +19,10 @@ export type MemoryGroup = {
   // Pasta do projeto; vazio no grupo global.
   projectPath?: string
   files: MemoryFile[]
-}
+};
 
-export type MemoryProject = { name: string; path: string }
+export type MemoryProject = { name: string; path: string };
 
 // Resposta de gravar: true gravou; false não deu (sem permissão, disco cheio, fora da memória);
 // 'conflict' (só quando a base vai junto) o arquivo mudou no disco desde a base e nada foi gravado.
-export type MemoryWriteResult = boolean | 'conflict'
+export type MemoryWriteResult = boolean | 'conflict';

@@ -1,24 +1,24 @@
-import { memo, useEffect, useRef, useState } from 'react'
-import { lostLogin } from '@argus/shared/auth'
-import { agentRef, type ProviderId } from '@argus/shared/providers'
-import { barWindow, expiredUsage, showsUsage, usableUsage } from '@argus/shared/usage'
-import { wslUsage, wslUsageKey } from '@argus/shared/wslUsage'
-import { loginEndWarning } from '../auth/loginEnd'
-import { LoginModal, startRelogin, type ReloginTarget } from '../auth/LoginModal'
-import { useAuth } from '../auth/useAuth'
-import { AgentIcon } from '@argus/ui/icons/AgentIcon'
-import { useNow } from '../lib/clock'
-import { Presence } from '../motion'
-import { useProviders } from '../providers/useProviders'
-import { useEscape } from '../useEscape'
-import { useOutsideClick } from '../useOutsideClick'
-import { UsageBar } from './bars/UsageBar'
-import { UsagePanel, type LoginEnding, type ShownUsage, type SignedOutLogin } from './bars/UsagePanel'
-import { useUsages } from './bars/useUsages'
-import { tr } from '../i18n'
+import { memo, useEffect, useRef, useState } from 'react';
+import { lostLogin } from '@argus/shared/auth';
+import { agentRef, type ProviderId } from '@argus/shared/providers';
+import { barWindow, expiredUsage, showsUsage, usableUsage } from '@argus/shared/usage';
+import { wslUsage, wslUsageKey } from '@argus/shared/wslUsage';
+import { loginEndWarning } from '../auth/loginEnd';
+import { LoginModal, startRelogin, type ReloginTarget } from '../auth/LoginModal';
+import { useAuth } from '../auth/useAuth';
+import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { useNow } from '../lib/clock';
+import { Presence } from '../motion';
+import { useProviders } from '../providers/useProviders';
+import { useEscape } from '../useEscape';
+import { useOutsideClick } from '../useOutsideClick';
+import { UsageBar } from './bars/UsageBar';
+import { UsagePanel, type LoginEnding, type ShownUsage, type SignedOutLogin } from './bars/UsagePanel';
+import { useUsages } from './bars/useUsages';
+import { tr } from '../i18n';
 
 // Agentes sem limite legível por programa: aparecem só como aviso no painel (ver UsagePanel).
-const SILENT: ProviderId[] = ['gemini', 'cursor']
+const SILENT: ProviderId[] = ['gemini', 'cursor'];
 
 // Limites no canto direito da barra de baixo; o painel abre para cima. O botão mostra a janela mais curta de cada
 // conta (a sessão de 5 horas no Claude; o semanal na conta sem sessão, ver barWindow), com o logo antes das contas de cada agente e o nome quando
@@ -33,89 +33,89 @@ const SILENT: ProviderId[] = ['gemini', 'cursor']
 // O aberto fica com a BottomBar: enquanto o painel está à vista, ela sobe acima dos drawers.
 export const UsageIndicator = memo(function UsageIndicator({
   open,
-  onOpenChange
+  onOpenChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const usages = useUsages()
-  const now = useNow(30_000)
-  const auth = useAuth()
-  const providers = useProviders()
+  const usages = useUsages();
+  const now = useNow(30_000);
+  const auth = useAuth();
+  const providers = useProviders();
   // Login começado pelo painel (conta sem login ou perto do prazo): o aviso fica aqui, e não no
   // painel, que fecha ao abrir o navegador.
-  const [relogin, setRelogin] = useState<ReloginTarget | null>(null)
+  const [relogin, setRelogin] = useState<ReloginTarget | null>(null);
   // Botão e painel num elemento só: o clique no botão não conta como fora.
-  const ref = useRef<HTMLDivElement>(null)
-  useOutsideClick(ref, () => onOpenChange(false), open)
-  useEscape(() => onOpenChange(false), open)
+  const ref = useRef<HTMLDivElement>(null);
+  useOutsideClick(ref, () => onOpenChange(false), open);
+  useEscape(() => onOpenChange(false), open);
   // Painel aberto: quem abre quer o número de agora (o monitor só lê se a última leitura não for recente).
   useEffect(() => {
-    if (open) window.api.usage.refresh()
-  }, [open])
+    if (open) window.api.usage.refresh();
+  }, [open]);
 
   // Na ordem das configurações: o Claude primeiro (a principal antes), depois as do Codex.
   // Conta desconectada sai da barra mesmo com uso na mão; sem status (não deu para conferir), fica.
-  const accounts = auth?.accounts ?? []
-  const wsl = wslUsage(accounts)
-  const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? ''
+  const accounts = auth?.accounts ?? [];
+  const wsl = wslUsage(accounts);
+  const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? '';
   const candidates: Omit<ShownUsage, 'usage'>[] = [
     ...accounts.flatMap((a) => {
-      const lent = wsl.borrowed.find((b) => b.account === a.id)
+      const lent = wsl.borrowed.find((b) => b.account === a.id);
       const note = lent
         ? tr(
             `No WSL, esta conta está com o login de ${nameOf(lent.from)}: o uso de lá aparece em ${nameOf(lent.from)}.`,
-            `In WSL, this account is signed in as ${nameOf(lent.from)}: usage from there shows under ${nameOf(lent.from)}.`
+            `In WSL, this account is signed in as ${nameOf(lent.from)}: usage from there shows under ${nameOf(lent.from)}.`,
           )
-        : undefined
+        : undefined;
       // Login perto do prazo final: o aviso vai junto da conta, com o botão de entrar de novo. O de uma
       // distro com login próprio vai na linha dela ou, quando ela não tem linha (o login de lá é o desta
       // mesma conta), aqui.
       const ending = (status: typeof a.status, distro?: string): LoginEnding[] => {
-        const text = loginEndWarning(status, now, distro && `WSL (${distro})`)
-        return text ? [{ text, account: a.id, ...(distro && { distro }) }] : []
-      }
-      const placeOf = (distro: string) => ((a.wsl?.length ?? 0) > 1 ? `WSL (${distro})` : 'WSL')
+        const text = loginEndWarning(status, now, distro && `WSL (${distro})`);
+        return text ? [{ text, account: a.id, ...(distro && { distro }) }] : [];
+      };
+      const placeOf = (distro: string) => ((a.wsl?.length ?? 0) > 1 ? `WSL (${distro})` : 'WSL');
       // Com mais de uma distro, o nome diz qual.
       const there = wsl.logins
         .filter((l) => l.account === a.id)
-        .map((l) => ({ key: l.key, name: a.name, place: placeOf(l.distro), endings: ending(a.wsl?.find((w) => w.distro === l.distro)?.status ?? null, l.distro) }))
-      const unlisted = (a.wsl ?? []).filter((w) => !there.some((t) => t.key === wslUsageKey(w.distro, a.id))).flatMap((w) => ending(w.status, w.distro))
-      const own = a.status?.loggedIn !== false ? [{ key: a.id, name: a.name, note, endings: [...ending(a.status), ...unlisted] }] : []
-      return [...own, ...there]
+        .map((l) => ({ key: l.key, name: a.name, place: placeOf(l.distro), endings: ending(a.wsl?.find((w) => w.distro === l.distro)?.status ?? null, l.distro) }));
+      const unlisted = (a.wsl ?? []).filter((w) => !there.some((t) => t.key === wslUsageKey(w.distro, a.id))).flatMap((w) => ending(w.status, w.distro));
+      const own = a.status?.loggedIn !== false ? [{ key: a.id, name: a.name, note, endings: [...ending(a.status), ...unlisted] }] : [];
+      return [...own, ...there];
     }),
     ...(providers?.providers.codex.accounts ?? []).filter((a) => a.status?.signedIn !== false).map((a) => ({
       key: agentRef('codex', a.id),
       provider: 'codex' as const,
-      name: a.name
-    }))
-  ]
+      name: a.name,
+    })),
+  ];
   const shown = candidates.flatMap((c): ShownUsage[] => {
-    const usage = usages[c.key] && usableUsage(usages[c.key], now)
+    const usage = usages[c.key] && usableUsage(usages[c.key], now);
     // Sem atualizar há mais de uma hora, ou com a janela recém-recomeçada, fica sem números, com o
     // motivo no painel.
-    return usage && showsUsage(usage) ? [{ ...c, usage }] : []
-  })
-  const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn))
+    return usage && showsUsage(usage) ? [{ ...c, usage }] : [];
+  });
+  const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn));
   // Contas do Claude que perderam o login (ver lostLogin): ficam na barra, em destaque, com o botão
   // de entrar no painel, em vez de sumir junto com os números.
-  const signedOut: SignedOutLogin[] = accounts.filter(lostLogin).map((a) => ({ key: `lost:${a.id}`, name: a.name, account: a.id }))
+  const signedOut: SignedOutLogin[] = accounts.filter(lostLogin).map((a) => ({ key: `lost:${a.id}`, name: a.name, account: a.id }));
   if (!shown.length && !signedOut.length) return (
     <LoginModal target={relogin} onClose={() => setRelogin(null)} />
-  )
-  const mixed = shown.some((x) => x.provider)
+  );
+  const mixed = shown.some((x) => x.provider);
   // Contas por agente: o nome só aparece quando o mesmo agente tem mais de uma (o logo já diz qual é).
-  const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length
-  const saved = shown.some((x) => x.usage.saved)
-  const stale = shown.some((x) => x.usage.failure || expiredUsage(x.usage, now))
+  const perAgent = (provider?: ProviderId) => shown.filter((x) => x.provider === provider).length;
+  const saved = shown.some((x) => x.usage.saved);
+  const stale = shown.some((x) => x.usage.failure || expiredUsage(x.usage, now));
   // Sem número e sem falha: a janela recomeçou e a leitura nova ainda não chegou.
-  const waiting = shown.some((x) => !barWindow(x.usage))
+  const waiting = shown.some((x) => !barWindow(x.usage));
   // Login de alguma conta perto do prazo final: bolinha no botão, e o aviso no painel.
-  const warned = shown.some((x) => x.endings?.length)
+  const warned = shown.some((x) => x.endings?.length);
   // Barra mais larga com uma conta só; encolhe conforme entram outras, para o botão não crescer demais.
-  const barWidth = shown.length === 1 ? 'w-20' : shown.length === 2 ? 'w-14' : 'w-10'
+  const barWidth = shown.length === 1 ? 'w-20' : shown.length === 2 ? 'w-14' : 'w-10';
   // Com mais de uma conta à vista, a sem login leva o nome.
-  const signedOutNamed = shown.length + signedOut.length > 1
+  const signedOutNamed = shown.length + signedOut.length > 1;
 
   return (
     <div ref={ref} className="relative flex items-center self-stretch">
@@ -142,10 +142,10 @@ export const UsageIndicator = memo(function UsageIndicator({
       >
         {shown.map(({ key, provider, name, place, usage }, i) => {
           // Sem janela: sem atualizar há mais de uma hora, ou recém-recomeçada (ver acima).
-          const limit = barWindow(usage)
-          const percent = limit ? Math.round(limit.percent) : null
-          const firstOfAgent = i === 0 || shown[i - 1].provider !== provider
-          const dimmed = usage.saved || usage.failure
+          const limit = barWindow(usage);
+          const percent = limit ? Math.round(limit.percent) : null;
+          const firstOfAgent = i === 0 || shown[i - 1].provider !== provider;
+          const dimmed = usage.saved || usage.failure;
           return (
             <span
               key={key}
@@ -165,7 +165,7 @@ export const UsageIndicator = memo(function UsageIndicator({
               <UsageBar percent={percent ?? 0} className={`h-1 ${barWidth}`} />
               <span className="font-mono text-muted">{percent === null ? '--' : `${percent}%`}</span>
             </span>
-          )
+          );
         })}
         {signedOut.map(({ key, name }, i) => (
           <span key={key} className="flex items-center gap-2 text-needs-you">
@@ -184,15 +184,15 @@ export const UsageIndicator = memo(function UsageIndicator({
             silent={silent}
             signedOut={signedOut}
             onLogin={(accountId, distro) => {
-              const account = accounts.find((a) => a.id === accountId)
-              if (!account) return
-              setRelogin(startRelogin(auth, account, distro))
-              onOpenChange(false)
+              const account = accounts.find((a) => a.id === accountId);
+              if (!account) return;
+              setRelogin(startRelogin(auth, account, distro));
+              onOpenChange(false);
             }}
           />
         )}
       </Presence>
       <LoginModal target={relogin} onClose={() => setRelogin(null)} />
     </div>
-  )
-})
+  );
+});

@@ -1,13 +1,13 @@
-import { spawn } from 'node:child_process'
-import { access, mkdir } from 'node:fs/promises'
-import { app } from 'electron'
-import { MAIN_ACCOUNT } from '@argus/shared/auth'
-import { SHARED } from '../accounts/links'
-import { seedAsync } from '../accounts/seed'
-import { writeStdin } from '../lib/childProcess'
-import { WSL_EXE, type DistroInfo } from './distros'
-import { log } from './log'
-import { toUnc } from './path'
+import { spawn } from 'node:child_process';
+import { access, mkdir } from 'node:fs/promises';
+import { app } from 'electron';
+import { MAIN_ACCOUNT } from '@argus/shared/auth';
+import { SHARED } from '../accounts/links';
+import { seedAsync } from '../accounts/seed';
+import { writeStdin } from '../lib/childProcess';
+import { WSL_EXE, type DistroInfo } from './distros';
+import { log } from './log';
+import { toUnc } from './path';
 
 // Contas do Claude num projeto do WSL. A principal é a do ~/.claude do Linux, a mesma do terminal
 // de lá. As outras ganham uma pasta própria no Linux (~/.argus/accounts/<id>), com os mesmos
@@ -18,19 +18,19 @@ import { toUnc } from './path'
 // .credentials.json da pasta do Linux (copiar o arquivo de um lado para o outro faria um derrubar o
 // outro a cada renovação; o que funciona é os dois usarem o mesmo arquivo, com a mesma trava).
 
-const ROOT = app.isPackaged ? '.argus/accounts' : '.argus-dev/accounts'
+const ROOT = app.isPackaged ? '.argus/accounts' : '.argus-dev/accounts';
 
 // Pasta da conta no Linux; nada na principal (o `claude` sem a variável usa ~/.claude).
 export function wslAccountDir(info: DistroInfo, id: string): string | undefined {
-  return id === MAIN_ACCOUNT ? undefined : `${info.home}/${ROOT}/${id}`
+  return id === MAIN_ACCOUNT ? undefined : `${info.home}/${ROOT}/${id}`;
 }
 
 // Pastas de status (<pasta>/sessions) das contas no Linux, vistas pelo Windows.
 export function wslStatusDirs(distro: string, info: DistroInfo, ids: string[]): string[] {
-  return ids.map((id) => toUnc(distro, `${wslAccountDir(info, id) ?? `${info.home}/.claude`}/sessions`))
+  return ids.map((id) => toUnc(distro, `${wslAccountDir(info, id) ?? `${info.home}/.claude`}/sessions`));
 }
 
-const sq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
+const sq = (s: string) => `'${s.replace(/'/g, '\'\\\'\'')}'`;
 
 // Links pelo próprio Linux (ln -s): criados do Windows, pela pasta de rede, não se sabe se viram
 // links de verdade lá dentro. Uma pasta vazia da conta, com o item na principal, sai para virar o
@@ -38,41 +38,41 @@ const sq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
 // windowsConfig.ts), e o rmdir não apaga pasta com coisas.
 export function linkScript(dir: string, main: string): string {
   const lines = SHARED.flatMap((name) => {
-    const [m, d] = [sq(`${main}/${name}`), sq(`${dir}/${name}`)]
-    return [`if [ -e ${m} ] && [ -d ${d} ] && [ ! -L ${d} ]; then rmdir ${d} 2>/dev/null; fi`, `[ -e ${m} ] && [ ! -e ${d} ] && [ ! -L ${d} ] && ln -s ${m} ${d}`]
-  })
-  return [`mkdir -p ${sq(`${dir}/sessions`)} ${sq(`${main}/projects`)}`, ...lines, 'exit 0', ''].join('\n')
+    const [m, d] = [sq(`${main}/${name}`), sq(`${dir}/${name}`)];
+    return [`if [ -e ${m} ] && [ -d ${d} ] && [ ! -L ${d} ]; then rmdir ${d} 2>/dev/null; fi`, `[ -e ${m} ] && [ ! -e ${d} ] && [ ! -L ${d} ] && ln -s ${m} ${d}`];
+  });
+  return [`mkdir -p ${sq(`${dir}/sessions`)} ${sq(`${main}/projects`)}`, ...lines, 'exit 0', ''].join('\n');
 }
 
-const ready = new Set<string>()
+const ready = new Set<string>();
 
 const exists = (path: string) =>
   access(path).then(
     () => true,
-    () => false
-  )
+    () => false,
+  );
 
 // Prepara a pasta da conta no Linux antes de cada `claude` dela: cria, copia as configurações da
 // principal na primeira vez e liga o que é compartilhado. Uma vez por abertura do app.
 export async function prepareWslAccount(distro: string, info: DistroInfo, id: string): Promise<void> {
-  const dir = wslAccountDir(info, id)
-  const key = `${distro}\0${id}`
-  if (!dir || ready.has(key)) return
-  const unc = toUnc(distro, dir)
+  const dir = wslAccountDir(info, id);
+  const key = `${distro}\0${id}`;
+  if (!dir || ready.has(key)) return;
+  const unc = toUnc(distro, dir);
   // Pela pasta de rede: sem segurar o app, que travava enquanto o WSL respondia.
   try {
     if (!(await exists(unc))) {
-      await mkdir(unc, { recursive: true })
-      await seedAsync(unc, toUnc(distro, info.home))
+      await mkdir(unc, { recursive: true });
+      await seedAsync(unc, toUnc(distro, info.home));
     }
   } catch (err) {
-    log(`conta ${id} no WSL (${distro}): não deu para criar a pasta`, (err as Error).message)
+    log(`conta ${id} no WSL (${distro}): não deu para criar a pasta`, (err as Error).message);
   }
   await new Promise<void>((resolve) => {
-    const child = spawn(WSL_EXE, ['-d', distro, '--exec', 'sh', '-s'], { windowsHide: true })
-    child.on('error', () => resolve())
-    child.on('close', () => resolve())
-    writeStdin(child, linkScript(dir, `${info.home}/.claude`))
-  })
-  ready.add(key)
+    const child = spawn(WSL_EXE, ['-d', distro, '--exec', 'sh', '-s'], { windowsHide: true });
+    child.on('error', () => resolve());
+    child.on('close', () => resolve());
+    writeStdin(child, linkScript(dir, `${info.home}/.claude`));
+  });
+  ready.add(key);
 }

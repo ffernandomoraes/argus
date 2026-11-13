@@ -1,27 +1,27 @@
-import { release } from 'node:os'
-import { BrowserWindow, nativeTheme } from 'electron'
-import { IS_MAC } from '../platform'
-import { linuxIcon } from './linuxDesktop'
+import { release } from 'node:os';
+import { BrowserWindow, nativeTheme } from 'electron';
+import { IS_MAC } from '../platform';
+import { linuxIcon } from './linuxDesktop';
 
 // Moldura das janelas: barra de título própria, os botões do sistema na cor dela e os atalhos que,
 // sem menu, o Windows não teria.
 
 // Altura da barra de título do canvas (TITLE_BAR_HEIGHT, em conversation/panelGeometry.ts). A janela
 // da conversa segue com a altura de antes, a do cabeçalho dela.
-const TITLE_BAR_HEIGHT = { canvas: 34, conversation: 40 }
+const TITLE_BAR_HEIGHT = { canvas: 34, conversation: 40 };
 
 // Semáforos do Mac na janela do canvas, no meio da barra de título. Eles têm 14 pt de altura do
 // macOS 26 (Darwin 25) em diante e 12 pt antes; o topo sai da sobra dividida entre cima e baixo.
-const TRAFFIC_LIGHT_SIZE = Number(release().split('.')[0]) >= 25 ? 14 : 12
+const TRAFFIC_LIGHT_SIZE = Number(release().split('.')[0]) >= 25 ? 14 : 12;
 
 function canvasTrafficLights(zoom = 1): { x: number; y: number } {
-  return { x: 16, y: Math.round((TITLE_BAR_HEIGHT.canvas * zoom - TRAFFIC_LIGHT_SIZE) / 2) }
+  return { x: 16, y: Math.round((TITLE_BAR_HEIGHT.canvas * zoom - TRAFFIC_LIGHT_SIZE) / 2) };
 }
 
-export type WindowKind = 'canvas' | 'conversation'
-const windowKinds = new WeakMap<BrowserWindow, WindowKind>()
+export type WindowKind = 'canvas' | 'conversation';
+const windowKinds = new WeakMap<BrowserWindow, WindowKind>();
 // Tamanho da interface de cada janela (ver setInterfaceZoom); sem registro, 1.
-const windowZooms = new WeakMap<BrowserWindow, number>()
+const windowZooms = new WeakMap<BrowserWindow, number>();
 
 // Sem a barra do sistema. No Mac, os semáforos ficam dentro da barra do app. No Windows,
 // minimizar, maximizar e fechar são desenhados pelo sistema por cima da barra do app, na cor dela:
@@ -30,61 +30,61 @@ const windowZooms = new WeakMap<BrowserWindow, number>()
 export function frame(kind: WindowKind): Electron.BrowserWindowConstructorOptions {
   // Na do canvas, os semáforos descem para o meio da barra (mais baixa que a padrão do hiddenInset).
   // A da conversa tem cabeçalho próprio, alinhado com a posição padrão.
-  if (IS_MAC) return kind === 'canvas' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: canvasTrafficLights() } : { titleBarStyle: 'hiddenInset' }
-  const icon = linuxIcon()
-  return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind), ...(icon ? { icon } : {}) }
+  if (IS_MAC) return kind === 'canvas' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: canvasTrafficLights() } : { titleBarStyle: 'hiddenInset' };
+  const icon = linuxIcon();
+  return { titleBarStyle: 'hidden', titleBarOverlay: overlay(kind), ...(icon ? { icon } : {}) };
 }
 
 // zoom: a barra de título cresce com o tamanho da interface, e os botões do Windows acompanham.
 function overlay(kind: WindowKind, zoom = 1): Electron.TitleBarOverlay {
-  const dark = nativeTheme.shouldUseDarkColors
-  const color = kind === 'canvas' ? (dark ? '#282828' : '#ffffff') : dark ? '#1c1c1c' : '#ececec'
-  return { color, symbolColor: dark ? '#a5a5a5' : '#6e6e73', height: Math.round(TITLE_BAR_HEIGHT[kind] * zoom) }
+  const dark = nativeTheme.shouldUseDarkColors;
+  const color = kind === 'canvas' ? (dark ? '#282828' : '#ffffff') : dark ? '#1c1c1c' : '#ececec';
+  return { color, symbolColor: dark ? '#a5a5a5' : '#6e6e73', height: Math.round(TITLE_BAR_HEIGHT[kind] * zoom) };
 }
 
 // Tamanho da interface (Configurações > Aparência): a página inteira cresce e os botões do sistema
 // seguem no meio da barra de título, que cresce junto. A janela da conversa só tem o recuo ajustado
 // (os semáforos dela já não acompanham o zoom do drawer, que muda a altura do cabeçalho).
 export function setInterfaceZoom(win: BrowserWindow, zoom: number): void {
-  win.webContents.setZoomFactor(zoom)
-  windowZooms.set(win, zoom)
-  const kind = windowKinds.get(win)
-  if (!kind) return
-  if (!IS_MAC) return win.setTitleBarOverlay(overlay(kind, zoom))
-  if (kind === 'canvas') win.setWindowButtonPosition(canvasTrafficLights(zoom))
+  win.webContents.setZoomFactor(zoom);
+  windowZooms.set(win, zoom);
+  const kind = windowKinds.get(win);
+  if (!kind) return;
+  if (!IS_MAC) return win.setTitleBarOverlay(overlay(kind, zoom));
+  if (kind === 'canvas') win.setWindowButtonPosition(canvasTrafficLights(zoom));
 }
 
 // Guarda o tipo da janela para pintar os botões do Windows de novo quando o tema trocar.
 export function setWindowKind(win: BrowserWindow, kind: WindowKind): void {
-  windowKinds.set(win, kind)
+  windowKinds.set(win, kind);
 }
 
 // Janela do app (canvas ou conversa). A do mascote não é: não tem a moldura do app.
 export function isAppWindow(win: BrowserWindow): boolean {
-  return windowKinds.has(win)
+  return windowKinds.has(win);
 }
 
 // Tema trocado, no app ou no sistema: os botões do Windows acompanham.
 export function repaintOverlays(): void {
-  if (IS_MAC) return
+  if (IS_MAC) return;
   for (const win of BrowserWindow.getAllWindows()) {
-    const kind = windowKinds.get(win)
-    if (kind && !win.isDestroyed()) win.setTitleBarOverlay(overlay(kind, windowZooms.get(win)))
+    const kind = windowKinds.get(win);
+    if (kind && !win.isDestroyed()) win.setTitleBarOverlay(overlay(kind, windowZooms.get(win)));
   }
 }
 
 // Windows: sem o menu Ver, o F12 (ou Ctrl+Shift+I) abre as ferramentas de desenvolvedor e o F11
 // põe em tela cheia.
 export function windowShortcuts(win: BrowserWindow): void {
-  if (IS_MAC) return
+  if (IS_MAC) return;
   win.webContents.on('before-input-event', (e, input) => {
-    if (input.type !== 'keyDown') return
+    if (input.type !== 'keyDown') return;
     if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
-      e.preventDefault()
-      win.webContents.toggleDevTools()
+      e.preventDefault();
+      win.webContents.toggleDevTools();
     } else if (input.key === 'F11') {
-      e.preventDefault()
-      win.setFullScreen(!win.isFullScreen())
+      e.preventDefault();
+      win.setFullScreen(!win.isFullScreen());
     }
-  })
+  });
 }

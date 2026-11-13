@@ -1,7 +1,7 @@
-import { CircleArrowUp } from 'lucide-react'
-import { tr } from '../../i18n'
-import type { UpdateProgress } from './updateProgress'
-import { installUpdate } from '../../updates/installUpdate'
+import { CircleArrowUp } from 'lucide-react';
+import { tr } from '../../i18n';
+import type { UpdateProgress } from './updateProgress';
+import { installUpdate } from '../../updates/installUpdate';
 
 // Canto direito da barra de título: "Atualizar para…" com a versão nova pronta, o andamento da
 // conferência e a versão em uso.
@@ -21,5 +21,5 @@ export function UpdateStatus({ version, ready, progress }: UpdateProgress & { ve
       {progress && <span className="text-[12px] tabular-nums text-faint">{progress}</span>}
       <span className="text-[12px] tabular-nums text-faint">v{version}</span>
     </>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 // valida de novo o formato). Só números e nomes que não identificam ninguém: sem pastas, títulos,
 // conversas, e-mails ou nomes de projeto. Mudou o formato? Suba `v` e ensine o Worker.
 
-export const TELEMETRY_VERSION = 1
+export const TELEMETRY_VERSION = 1;
 
 // Tokens e pedidos de um modelo num dia.
 export type ModelUsage = {
@@ -13,7 +13,7 @@ export type ModelUsage = {
   cacheWrite: number
   // Custo estimado que o próprio Claude Code informa (só Claude; o Codex não informa).
   costUsd: number
-}
+};
 
 // Quanto a pessoa tem no Argus agora (não só o que fez no dia).
 export type TelemetrySnapshot = {
@@ -30,7 +30,7 @@ export type TelemetrySnapshot = {
   // Agentes com alguma conta conectada (codex, gemini, cursor).
   providers: string[]
   remoteAccess: boolean
-}
+};
 
 export type DailyReport = {
   v: number
@@ -65,4 +65,4 @@ export type DailyReport = {
   // Ferramentas chamadas pelo Claude, só o nome (Bash, Edit...). As de MCP viram "mcp".
   tools: Record<string, number>
   snapshot: TelemetrySnapshot | null
-}
+};

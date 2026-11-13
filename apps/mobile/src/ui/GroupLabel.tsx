@@ -11,5 +11,5 @@ export function GroupLabel({ label, color, workspace }: { label: string; color?:
         {label}
       </span>
     </span>
-  )
+  );
 }

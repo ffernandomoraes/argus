@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import {
   Check,
   Dices,
@@ -22,8 +22,8 @@ import {
   Shirt,
   TriangleAlert,
   WandSparkles,
-  Zap
-} from 'lucide-react'
+  Zap,
+} from 'lucide-react';
 import {
   ACCESSORIES,
   BEARD_STYLES,
@@ -56,15 +56,15 @@ import {
   type HairColor,
   type MascotLook,
   type SkinTone,
-  type Strike
-} from '../../canvas/mascot/look'
-import { MascotFigure, MascotHead, type Pose, type View } from '../../canvas/mascot/MascotFigure'
-import { tr } from '../../i18n'
-import { Button } from '../../ui/Button'
-import { ExperimentTag } from '../../ui/ExperimentTag'
-import { Modal } from '../../ui/Modal'
-import { useModalClose } from '../../ui/modalContext'
-import { getPreferences, setPreferences, usePreference } from '../preferences'
+  type Strike,
+} from '../../canvas/mascot/look';
+import { MascotFigure, MascotHead, type Pose, type View } from '../../canvas/mascot/MascotFigure';
+import { tr } from '../../i18n';
+import { Button } from '../../ui/Button';
+import { ExperimentTag } from '../../ui/ExperimentTag';
+import { Modal } from '../../ui/Modal';
+import { useModalClose } from '../../ui/modalContext';
+import { getPreferences, setPreferences, usePreference } from '../preferences';
 
 // Editor do mascote em tela cheia (aberto pelo botão da aba Mascote): o boneco grande à esquerda,
 // mudando na hora e com botões para ver cada animação, e as escolhas à direita, em abas com ícone.
@@ -73,21 +73,21 @@ import { getPreferences, setPreferences, usePreference } from '../preferences'
 
 // Pedaços do desenho (unidades do viewBox do mascote). Palco: centrado no corpo, com espaço dos
 // dois lados para o chicote caber.
-export const STAGE_VIEW: View = { x: -80, y: -14, w: 280, h: 168 }
-const BODY_VIEW: View = { x: 12, y: -12, w: 96, h: 166 }
-const HEAD_VIEW: View = { x: 12, y: -13, w: 96, h: 110 }
-const EYES_VIEW: View = { x: 32, y: 34, w: 56, h: 26 }
-const BEARD_VIEW: View = { x: 28, y: 42, w: 64, h: 54 }
-const MOUTH_VIEW: View = { x: 40, y: 60, w: 40, h: 28 }
-const STRIKE_VIEW: View = { x: 10, y: -14, w: 192, h: 166 }
+export const STAGE_VIEW: View = { x: -80, y: -14, w: 280, h: 168 };
+const BODY_VIEW: View = { x: 12, y: -12, w: 96, h: 166 };
+const HEAD_VIEW: View = { x: 12, y: -13, w: 96, h: 110 };
+const EYES_VIEW: View = { x: 32, y: 34, w: 56, h: 26 };
+const BEARD_VIEW: View = { x: 28, y: 42, w: 64, h: 54 };
+const MOUTH_VIEW: View = { x: 40, y: 60, w: 40, h: 28 };
+const STRIKE_VIEW: View = { x: 10, y: -14, w: 192, h: 166 };
 // Roupa: do queixo à barra, com as mangas; e do quadril ao tênis.
-const TOP_VIEW: View = { x: 28, y: 85, w: 64, h: 46 }
-const BOTTOM_VIEW: View = { x: 30, y: 112, w: 60, h: 38 }
+const TOP_VIEW: View = { x: 28, y: 85, w: 64, h: 46 };
+const BOTTOM_VIEW: View = { x: 30, y: 112, w: 60, h: 38 };
 
-const setLook = (patch: Partial<MascotLook>) => setPreferences({ mascotLook: { ...getPreferences().mascotLook, ...patch } })
+const setLook = (patch: Partial<MascotLook>) => setPreferences({ mascotLook: { ...getPreferences().mascotLook, ...patch } });
 
-type Tab = 'body' | 'clothes' | 'accessories' | 'face' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'strike'
-type IconType = ComponentType<{ size?: number; className?: string }>
+type Tab = 'body' | 'clothes' | 'accessories' | 'face' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'strike';
+type IconType = ComponentType<{ size?: number; className?: string }>;
 
 // Bigode, no traço dos ícones do lucide (lá não tem um).
 function MustacheIcon({ size = 24, className }: { size?: number; className?: string }) {
@@ -105,7 +105,7 @@ function MustacheIcon({ size = 24, className }: { size?: number; className?: str
     >
       <path d="M12 11c-1.5-2-4.5-2.5-6.5-.5C4 12 3 13 2 13c1 2.5 4 3.5 6.5 2.5 1.6-.6 2.8-1.6 3.5-2.5.7.9 1.9 1.9 3.5 2.5 2.5 1 5.5 0 6.5-2.5-1 0-2-1-3.5-2.5-2-2-5-1.5-6.5.5z" />
     </svg>
-  )
+  );
 }
 
 const TABS: { id: Tab; label: string; icon: IconType }[] = [
@@ -117,8 +117,8 @@ const TABS: { id: Tab; label: string; icon: IconType }[] = [
   { id: 'mouth', label: tr('Boca', 'Mouth'), icon: Laugh },
   { id: 'hair', label: tr('Cabelo', 'Hair'), icon: Scissors },
   { id: 'beard', label: tr('Barba', 'Beard'), icon: MustacheIcon },
-  { id: 'strike', label: tr('Golpe', 'Strike'), icon: Zap }
-]
+  { id: 'strike', label: tr('Golpe', 'Strike'), icon: Zap },
+];
 
 // Animações para ver no palco. O golpe toca uma vez e volta para a que estava.
 const LOOPS: { pose: Pose; label: string; icon: IconType }[] = [
@@ -131,36 +131,36 @@ const LOOPS: { pose: Pose; label: string; icon: IconType }[] = [
   { pose: 'dance', label: tr('Dançando', 'Dancing'), icon: Music },
   { pose: 'ask', label: tr('Pergunta', 'Question'), icon: CircleQuestionMark },
   { pose: 'thumbs', label: tr('Pronto', 'Done'), icon: CircleCheck },
-  { pose: 'wave', label: tr('Erro', 'Error'), icon: TriangleAlert }
-]
+  { pose: 'wave', label: tr('Erro', 'Error'), icon: TriangleAlert },
+];
 
 export function MascotEditor({ onClose }: { onClose: () => void }) {
   return (
     <Modal label={tr('Personalizar mascote', 'Customize mascot')} onClose={onClose} variant="blocking" size="auto" className="flex h-full w-full flex-col">
       <EditorBody />
     </Modal>
-  )
+  );
 }
 
 function EditorBody() {
-  const look = usePreference('mascotLook')
-  const close = useModalClose()
-  const [tab, setTab] = useState<Tab>('body')
-  const [loop, setLoop] = useState<Pose>('idle')
-  const [striking, setStriking] = useState(false)
-  const timer = useRef(0)
-  useEffect(() => () => clearTimeout(timer.current), [])
+  const look = usePreference('mascotLook');
+  const close = useModalClose();
+  const [tab, setTab] = useState<Tab>('body');
+  const [loop, setLoop] = useState<Pose>('idle');
+  const [striking, setStriking] = useState(false);
+  const timer = useRef(0);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   // Sai do golpe antes, para a animação recomeçar mesmo repetindo o mesmo.
   const playStrike = () => {
-    clearTimeout(timer.current)
-    setStriking(false)
+    clearTimeout(timer.current);
+    setStriking(false);
     requestAnimationFrame(() => {
-      setStriking(true)
-      timer.current = window.setTimeout(() => setStriking(false), STRIKES[getPreferences().mascotLook.strike].ms)
-    })
-  }
-  const pose: Pose = striking ? look.strike : loop
+      setStriking(true);
+      timer.current = window.setTimeout(() => setStriking(false), STRIKES[getPreferences().mascotLook.strike].ms);
+    });
+  };
+  const pose: Pose = striking ? look.strike : loop;
 
   return (
     <>
@@ -195,7 +195,7 @@ function EditorBody() {
             title={tr('Clique para ver o golpe', 'Click to see the strike')}
             className="min-h-0 w-full flex-1 cursor-pointer rounded-2xl"
             style={{
-              background: 'radial-gradient(ellipse 60% 55% at 50% 58%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%)'
+              background: 'radial-gradient(ellipse 60% 55% at 50% 58%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%)',
             }}
           >
             <MascotFigure pose={pose} look={look} view={STAGE_VIEW} />
@@ -211,8 +211,8 @@ function EditorBody() {
         <section className="flex min-w-0 flex-1 flex-col">
           <nav className="flex gap-1 overflow-x-auto border-b border-line px-4">
             {TABS.map((t) => {
-              const Icon = t.icon
-              const selected = tab === t.id
+              const Icon = t.icon;
+              const selected = tab === t.id;
               return (
                 <button
                   key={t.id}
@@ -226,7 +226,7 @@ function EditorBody() {
                   <Icon size={22} />
                   {t.label}
                 </button>
-              )
+              );
             })}
           </nav>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
@@ -242,8 +242,8 @@ function EditorBody() {
               <StrikeTab
                 look={look}
                 onPick={(strike) => {
-                  setLook({ strike })
-                  playStrike()
+                  setLook({ strike });
+                  playStrike();
                 }}
               />
             )}
@@ -251,14 +251,14 @@ function EditorBody() {
         </section>
       </div>
     </>
-  )
+  );
 }
 
 // ---------- abas ----------
 // Em cada aba, as cores vêm primeiro e as formas depois.
 
 function BodyTab({ look }: { look: MascotLook }) {
-  const skin = skinPalette(look.skin)
+  const skin = skinPalette(look.skin);
   return (
     <>
       <Block title={tr('Tom de pele', 'Skin tone')} value={skin.label}>
@@ -273,12 +273,12 @@ function BodyTab({ look }: { look: MascotLook }) {
         <Grid min={96}>
           {SEXES.map((s) => {
             // Como fica de fato ao trocar: o feminino vem sem barba.
-            const next: Partial<MascotLook> = s.value === 'female' ? { sex: s.value, beard: 'none' } : { sex: s.value }
+            const next: Partial<MascotLook> = s.value === 'female' ? { sex: s.value, beard: 'none' } : { sex: s.value };
             return (
               <Tile key={s.value} label={s.label} view={BODY_VIEW} selected={look.sex === s.value} onClick={() => setLook(next)}>
                 <MascotFigure pose="idle" look={{ ...look, ...next }} view={BODY_VIEW} still />
               </Tile>
-            )
+            );
           })}
         </Grid>
       </Block>
@@ -292,14 +292,14 @@ function BodyTab({ look }: { look: MascotLook }) {
         </Grid>
       </Block>
     </>
-  )
+  );
 }
 
 // Parte de cima e de baixo, cada uma com a cor antes do modelo.
 function ClothesTab({ look }: { look: MascotLook }) {
-  const top = clothPalette(look.topColor)
-  const bottom = clothPalette(look.bottomColor)
-  const colors = (Object.keys(CLOTH_COLORS) as ClothColor[]).map((k) => ({ value: k, label: CLOTH_COLORS[k].label, color: CLOTH_COLORS[k].color }))
+  const top = clothPalette(look.topColor);
+  const bottom = clothPalette(look.bottomColor);
+  const colors = (Object.keys(CLOTH_COLORS) as ClothColor[]).map((k) => ({ value: k, label: CLOTH_COLORS[k].label, color: CLOTH_COLORS[k].color }));
   return (
     <>
       <Block title={tr('Cor da parte de cima', 'Top color')} value={top.label}>
@@ -327,23 +327,23 @@ function ClothesTab({ look }: { look: MascotLook }) {
         </Grid>
       </Block>
     </>
-  )
+  );
 }
 
 // Acessórios: vários ao mesmo tempo; clicar de novo tira. Cada miniatura mostra só aquele.
-const BODY_ACCESSORIES: Accessory[] = ['necklace', 'bracelet', 'watch']
+const BODY_ACCESSORIES: Accessory[] = ['necklace', 'bracelet', 'watch'];
 
 function AccessoriesTab({ look }: { look: MascotLook }) {
-  const head = ACCESSORIES.filter((a) => !BODY_ACCESSORIES.includes(a.value))
-  const body = ACCESSORIES.filter((a) => BODY_ACCESSORIES.includes(a.value))
+  const head = ACCESSORIES.filter((a) => !BODY_ACCESSORIES.includes(a.value));
+  const body = ACCESSORIES.filter((a) => BODY_ACCESSORIES.includes(a.value));
   const chosen = (group: typeof ACCESSORIES) => {
-    const names = group.filter((a) => look.accessories.includes(a.value)).map((a) => a.label)
-    return names.length ? names.join(', ') : tr('Nenhum', 'None')
-  }
+    const names = group.filter((a) => look.accessories.includes(a.value)).map((a) => a.label);
+    return names.length ? names.join(', ') : tr('Nenhum', 'None');
+  };
   const tile = (a: (typeof ACCESSORIES)[number]) => {
-    const onBody = BODY_ACCESSORIES.includes(a.value)
-    const view = onBody ? TOP_VIEW : HEAD_VIEW
-    const preview = { ...look, accessories: [a.value] }
+    const onBody = BODY_ACCESSORIES.includes(a.value);
+    const view = onBody ? TOP_VIEW : HEAD_VIEW;
+    const preview = { ...look, accessories: [a.value] };
     return (
       <Tile
         key={a.value}
@@ -354,8 +354,8 @@ function AccessoriesTab({ look }: { look: MascotLook }) {
       >
         {onBody ? <MascotFigure pose="idle" look={preview} view={view} still /> : <MascotHead look={preview} view={view} />}
       </Tile>
-    )
-  }
+    );
+  };
   return (
     <>
       <Block
@@ -363,7 +363,7 @@ function AccessoriesTab({ look }: { look: MascotLook }) {
         value={chosen(head)}
         description={tr(
           'Escolha quantos quiser; clicar de novo tira. Um óculos e um chapéu (ou laço) por vez.',
-          'Pick as many as you like; click again to remove. One pair of glasses and one hat (or bow) at a time.'
+          'Pick as many as you like; click again to remove. One pair of glasses and one hat (or bow) at a time.',
         )}
       >
         <Grid min={112}>{head.map(tile)}</Grid>
@@ -372,7 +372,7 @@ function AccessoriesTab({ look }: { look: MascotLook }) {
         <Grid min={120}>{body.map(tile)}</Grid>
       </Block>
     </>
-  )
+  );
 }
 
 function FaceTab({ look }: { look: MascotLook }) {
@@ -386,11 +386,11 @@ function FaceTab({ look }: { look: MascotLook }) {
         ))}
       </Grid>
     </Block>
-  )
+  );
 }
 
 function EyesTab({ look }: { look: MascotLook }) {
-  const eye = eyePalette(look.eyeColor)
+  const eye = eyePalette(look.eyeColor);
   return (
     <>
       <Block title={tr('Cor dos olhos', 'Eye color')} value={eye.label}>
@@ -411,7 +411,7 @@ function EyesTab({ look }: { look: MascotLook }) {
         </Grid>
       </Block>
     </>
-  )
+  );
 }
 
 // As miniaturas mostram a boca em repouso, que é o estilo em si.
@@ -422,7 +422,7 @@ function MouthTab({ look }: { look: MascotLook }) {
       value={MOUTH_STYLES.find((m) => m.value === look.mouth)?.label}
       description={tr(
         'Dando o golpe, dançando ou fazendo joia, ele abre o sorrisão; a língua e os dentões continuam aparecendo.',
-        'While striking, dancing or giving a thumbs up it grins wide; the tongue and buck teeth still show.'
+        'While striking, dancing or giving a thumbs up it grins wide; the tongue and buck teeth still show.',
       )}
     >
       <Grid min={120}>
@@ -433,11 +433,11 @@ function MouthTab({ look }: { look: MascotLook }) {
         ))}
       </Grid>
     </Block>
-  )
+  );
 }
 
 function HairTab({ look }: { look: MascotLook }) {
-  const hair = hairPalette(look.hairColor)
+  const hair = hairPalette(look.hairColor);
   return (
     <>
       <Block title={tr('Cor do cabelo', 'Hair color')} value={hair.label}>
@@ -458,13 +458,13 @@ function HairTab({ look }: { look: MascotLook }) {
         </Grid>
       </Block>
     </>
-  )
+  );
 }
 
 function BeardTab({ look }: { look: MascotLook }) {
-  const beard = beardPalette(look)
-  const sameAsHair = tr('Igual ao cabelo', 'Same as hair')
-  const none = look.beard === 'none'
+  const beard = beardPalette(look);
+  const sameAsHair = tr('Igual ao cabelo', 'Same as hair');
+  const none = look.beard === 'none';
   return (
     <>
       {/* Sem barba, a cor fica apagada (mas dá para deixar escolhida) e o lugar não muda ao escolher
@@ -479,7 +479,7 @@ function BeardTab({ look }: { look: MascotLook }) {
           value={look.beardColor}
           options={[
             { value: 'hair', label: sameAsHair, color: hairPalette(look.hairColor).beard, icon: true },
-            ...(Object.keys(HAIR_COLORS) as HairColor[]).map((k) => ({ value: k, label: HAIR_COLORS[k].label, color: HAIR_COLORS[k].beard }))
+            ...(Object.keys(HAIR_COLORS) as HairColor[]).map((k) => ({ value: k, label: HAIR_COLORS[k].label, color: HAIR_COLORS[k].beard })),
           ]}
           pickerBase={beard.beard}
           onChange={(value) => setLook({ beardColor: value })}
@@ -495,7 +495,7 @@ function BeardTab({ look }: { look: MascotLook }) {
         </Grid>
       </Block>
     </>
-  )
+  );
 }
 
 function StrikeTab({ look, onPick }: { look: MascotLook; onPick: (strike: Strike) => void }) {
@@ -505,7 +505,7 @@ function StrikeTab({ look, onPick }: { look: MascotLook; onPick: (strike: Strike
       value={STRIKES[look.strike].label}
       description={tr(
         'O que ele faz na pasta da conversa quando você manda um pedido. Escolher já mostra no palco.',
-        'What it does to the chat’s folder when you send a request. Picking one plays it on the stage.'
+        'What it does to the chat’s folder when you send a request. Picking one plays it on the stage.',
       )}
     >
       <Grid min={170}>
@@ -516,7 +516,7 @@ function StrikeTab({ look, onPick }: { look: MascotLook; onPick: (strike: Strike
         ))}
       </Grid>
     </Block>
-  )
+  );
 }
 
 // ---------- peças ----------
@@ -528,7 +528,7 @@ function Block({
   value,
   description,
   muted,
-  children
+  children,
 }: {
   title: string
   value?: string
@@ -545,7 +545,7 @@ function Block({
       {description && <p className="mt-0.5 text-[15px] leading-relaxed text-muted">{description}</p>}
       <div className={`mt-3 ${muted ? 'opacity-45' : ''}`}>{children}</div>
     </section>
-  )
+  );
 }
 
 function Grid({ min, children }: { min: number; children: ReactNode }) {
@@ -553,7 +553,7 @@ function Grid({ min, children }: { min: number; children: ReactNode }) {
     <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))` }}>
       {children}
     </div>
-  )
+  );
 }
 
 // Opção com desenho: a miniatura em cima (na proporção do pedaço `view`), o nome embaixo e o
@@ -578,14 +578,14 @@ function Tile({ label, view, selected, onClick, children }: { label: string; vie
       </span>
       <span className="truncate text-center">{label}</span>
     </button>
-  )
+  );
 }
 
-const SWATCH = 'relative flex size-10 items-center justify-center rounded-full text-white ring-offset-2 ring-offset-surface'
-const swatchRing = (selected: boolean) => (selected ? 'ring-2 ring-accent' : 'ring-1 ring-line hover:ring-line-strong')
-const ICON_SHADOW = 'drop-shadow-[0_1px_1px_rgb(0_0_0_/_0.6)]'
+const SWATCH = 'relative flex size-10 items-center justify-center rounded-full text-white ring-offset-2 ring-offset-surface';
+const swatchRing = (selected: boolean) => (selected ? 'ring-2 ring-accent' : 'ring-1 ring-line hover:ring-line-strong');
+const ICON_SHADOW = 'drop-shadow-[0_1px_1px_rgb(0_0_0_/_0.6)]';
 // Bolinha do seletor, sem cor escolhida: o arco-íris diz "qualquer cor".
-const RAINBOW = 'conic-gradient(from 90deg, #ff5f5f, #ffd84a, #6ad66a, #4ac8ff, #7a6cff, #ff6fd2, #ff5f5f)'
+const RAINBOW = 'conic-gradient(from 90deg, #ff5f5f, #ffd84a, #6ad66a, #4ac8ff, #7a6cff, #ff6fd2, #ff5f5f)';
 
 // Bolinhas de cor; o nome da escolhida vai no título do grupo. icon: a bolinha leva o elo ("igual
 // ao cabelo"). A última abre o seletor de cor do sistema, começando na cor atual (pickerBase).
@@ -593,14 +593,14 @@ function Swatches<T extends string>({
   value,
   options,
   pickerBase,
-  onChange
+  onChange,
 }: {
   value: T | CustomColor
   options: { value: T; label: string; color: string; icon?: boolean }[]
   pickerBase: string
   onChange: (value: T | CustomColor) => void
 }) {
-  const custom = isCustomColor(value)
+  const custom = isCustomColor(value);
   return (
     <div className="flex flex-wrap gap-3">
       {options.map((o) => (
@@ -619,13 +619,13 @@ function Swatches<T extends string>({
       ))}
       <ColorPicker color={custom ? value : pickerBase} selected={custom} onPick={onChange} />
     </div>
-  )
+  );
 }
 
 // Abre o seletor de cor do sistema (o input de cor do navegador, transparente por cima da bolinha).
 // Enquanto se arrasta nele, o boneco já muda. Com uma cor escolhida, a bolinha fica nela.
 function ColorPicker({ color, selected, onPick }: { color: string; selected: boolean; onPick: (color: CustomColor) => void }) {
-  const label = tr('Escolher outra cor', 'Pick another color')
+  const label = tr('Escolher outra cor', 'Pick another color');
   return (
     <label
       title={label}
@@ -641,7 +641,7 @@ function ColorPicker({ color, selected, onPick }: { color: string; selected: boo
         className="absolute inset-0 size-full cursor-pointer rounded-full opacity-0"
       />
     </label>
-  )
+  );
 }
 
 // Botão das animações do palco: ícone e nome, aceso quando é a que está tocando.
@@ -658,5 +658,5 @@ function Chip({ icon: Icon, label, selected, onClick }: { icon: IconType; label:
       <Icon size={16} />
       {label}
     </button>
-  )
+  );
 }

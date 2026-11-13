@@ -1,17 +1,17 @@
-import { useRef, useState } from 'react'
-import { Check, ChevronDown, ChevronUp } from 'lucide-react'
-import { MODES } from './permissionModes'
-import { POPOVER } from './popover'
-import { useClaudeInfo } from './useModels'
-import { useEscape } from '../useEscape'
-import { useOutsideClick } from '../useOutsideClick'
-import { Presence } from '../motion'
-import { MenuArrow } from '../ui/MenuArrow'
-import { MENU_HOVER } from '../ui/menuStyles'
-import { tr } from '../i18n'
+import { useRef, useState } from 'react';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { MODES } from './permissionModes';
+import { POPOVER } from './popover';
+import { useClaudeInfo } from './useModels';
+import { useEscape } from '../useEscape';
+import { useOutsideClick } from '../useOutsideClick';
+import { Presence } from '../motion';
+import { MenuArrow } from '../ui/MenuArrow';
+import { MENU_HOVER } from '../ui/menuStyles';
+import { tr } from '../i18n';
 
 // A lista dos modos mora em permissionModes.ts; sai daqui também, como antes, para as Configurações.
-export { MODES } from './permissionModes'
+export { MODES } from './permissionModes';
 
 // `field`: nas Configurações. O botão tem cara de campo de seleção, o menu abre para baixo (para
 // cima seria cortado com a página rolada), só com ícone e nome, e ganha o item "Padrão da conta"
@@ -19,27 +19,27 @@ export { MODES } from './permissionModes'
 export function PermissionModePicker({
   value,
   onChange,
-  field
+  field,
 }: {
   value: string
   onChange: (mode: string) => void
   field?: boolean
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const info = useClaudeInfo()
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const info = useClaudeInfo();
 
-  useOutsideClick(ref, () => setOpen(false), open)
-  useEscape(() => setOpen(false), open)
+  useOutsideClick(ref, () => setOpen(false), open);
+  useEscape(() => setOpen(false), open);
 
   // Vazio = padrão da conta, que o claude informa ao iniciar.
-  const effective = value || info?.defaultPermissionMode || 'manual'
-  const current = MODES.find((m) => m.value === effective) ?? MODES[0]
-  const Icon = current.icon
-  const accountDefault = MODES.find((m) => m.value === info?.defaultPermissionMode)
+  const effective = value || info?.defaultPermissionMode || 'manual';
+  const current = MODES.find((m) => m.value === effective) ?? MODES[0];
+  const Icon = current.icon;
+  const accountDefault = MODES.find((m) => m.value === info?.defaultPermissionMode);
   const options = field
     ? [{ value: '', label: tr('Padrão da conta', 'Account default') + (accountDefault ? ` - ${accountDefault.label}` : ''), description: '', icon: accountDefault?.icon ?? Icon, danger: accountDefault?.danger }, ...MODES]
-    : MODES
+    : MODES;
 
   return (
     <div ref={ref} className="relative">
@@ -77,13 +77,13 @@ export function PermissionModePicker({
             <MenuArrow side={field ? 'top' : 'bottom'} align="end" />
             <div className="px-2 pb-1 pt-1.5 text-[12px] text-faint">{tr('Modo', 'Mode')}</div>
             {options.map((m) => {
-              const ModeIcon = m.icon
+              const ModeIcon = m.icon;
               return (
                 <button
                   key={m.value}
                   onClick={() => {
-                    onChange(m.value)
-                    setOpen(false)
+                    onChange(m.value);
+                    setOpen(false);
                   }}
                   className={`flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left ${MENU_HOVER}`}
                 >
@@ -97,11 +97,11 @@ export function PermissionModePicker({
                   </span>
                   {(field ? value === m.value : effective === m.value) && <Check size={13} className="mt-0.5 shrink-0 text-muted" />}
                 </button>
-              )
+              );
             })}
           </div>
         )}
       </Presence>
     </div>
-  )
+  );
 }

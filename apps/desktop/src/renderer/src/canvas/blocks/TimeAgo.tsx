@@ -1,13 +1,13 @@
-import { useNow } from '../../lib/clock'
-import { relativeTime } from '../relativeTime'
-import { LOCALE } from '../../i18n'
+import { useNow } from '../../lib/clock';
+import { relativeTime } from '../relativeTime';
+import { LOCALE } from '../../i18n';
 
 // "há 5min" à direita de uma linha, com a data completa no title. Acompanha o relógio comum da
 // janela (um timer por minuto para todos): só este pedaço redesenha a cada minuto, não a lista.
 export function TimeAgo({ iso, className }: { iso: string; className?: string }) {
-  const now = useNow(60_000)
-  const date = new Date(iso)
-  const valid = Number.isFinite(date.getTime())
+  const now = useNow(60_000);
+  const date = new Date(iso);
+  const valid = Number.isFinite(date.getTime());
   return (
     <span
       title={valid ? date.toLocaleString(LOCALE) : undefined}
@@ -15,5 +15,5 @@ export function TimeAgo({ iso, className }: { iso: string; className?: string })
     >
       {relativeTime(iso, now)}
     </span>
-  )
+  );
 }

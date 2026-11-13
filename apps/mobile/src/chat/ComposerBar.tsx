@@ -1,31 +1,31 @@
-import type { ReactNode } from 'react'
-import { Brain, Check, ChevronRight, Cpu, Gauge, Paperclip, Slash, Workflow } from 'lucide-react'
-import type { ChatSettings } from '@argus/shared/chat'
-import type { ClaudeInfo } from '@argus/shared/models'
-import { tr } from '../i18n'
-import { Sheet } from '../ui/Sheet'
-import { COMMANDS, EFFORTS, effortLabel, groupByFamily, MODES } from './options'
+import type { ReactNode } from 'react';
+import { Brain, Check, ChevronRight, Cpu, Gauge, Paperclip, Slash, Workflow } from 'lucide-react';
+import type { ChatSettings } from '@argus/shared/chat';
+import type { ClaudeInfo } from '@argus/shared/models';
+import { tr } from '../i18n';
+import { Sheet } from '../ui/Sheet';
+import { COMMANDS, EFFORTS, effortLabel, groupByFamily, MODES } from './options';
 
 // As opções da caixa de escrever, como o rodapé do campo no Argus, em gavetas: o + abre o menu
 // (fotos e arquivos, modelo, esforço com Thinking e Ultracode, modo e comandos), e cada item abre
 // a sua. O contexto usado
 // aparece discreto embaixo da caixa (Composer.tsx).
 
-export type OptionsSheet = 'menu' | 'model' | 'effort' | 'mode' | 'commands' | null
+export type OptionsSheet = 'menu' | 'model' | 'effort' | 'mode' | 'commands' | null;
 
 
 // Anel do contexto: cheio conforme a janela de contexto da conversa vai sendo usada.
 export function ContextRing({ percent, size = 18 }: { percent: number; size?: number }) {
-  const r = 7
-  const c = 2 * Math.PI * r
-  const pct = Math.max(0, Math.min(100, percent))
-  const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--orange)' : 'var(--accent)'
+  const r = 7;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(100, percent));
+  const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--orange)' : 'var(--accent)';
   return (
     <svg width={size} height={size} viewBox="0 0 18 18" className="-rotate-90" aria-hidden="true">
       <circle cx="9" cy="9" r={r} fill="none" stroke="var(--line)" strokeWidth="2.5" />
       <circle cx="9" cy="9" r={r} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} strokeLinecap="round" />
     </svg>
-  )
+  );
 }
 
 function OptionRow({ selected, onClick, children, danger }: { selected: boolean; onClick: () => void; children: ReactNode; danger?: boolean }) {
@@ -34,7 +34,7 @@ function OptionRow({ selected, onClick, children, danger }: { selected: boolean;
       <span className={`min-w-0 flex-1 ${danger ? 'text-red' : ''}`}>{children}</span>
       {selected && <Check size={18} className="shrink-0 text-accent" />}
     </button>
-  )
+  );
 }
 
 function Group({ title, children }: { title?: string; children: ReactNode }) {
@@ -43,7 +43,7 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
       {title && <h3 className="mb-1.5 px-4 text-[13px] tracking-wide text-muted uppercase">{title}</h3>}
       <div className="overflow-hidden rounded-[12px] border border-card-border bg-card">{children}</div>
     </section>
-  )
+  );
 }
 
 function MenuRow({ icon, label, value, onClick, danger }: { icon: ReactNode; label: string; value?: string; onClick: () => void; danger?: boolean }) {
@@ -54,7 +54,7 @@ function MenuRow({ icon, label, value, onClick, danger }: { icon: ReactNode; lab
       {value && <span className={`max-w-[55%] truncate text-[15px] ${danger ? 'text-red' : 'text-muted'}`}>{value}</span>}
       <ChevronRight size={18} className="shrink-0 text-faint" />
     </button>
-  )
+  );
 }
 
 function Switch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
@@ -68,17 +68,17 @@ function Switch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void
     >
       <span className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[22px]' : 'left-[2px]'}`} />
     </button>
-  )
+  );
 }
 
 // "Opus 5.5 - Alto": o modelo em vigor (o padrão mostra a que ele aponta) e o esforço, quando o
 // modelo tem. Sem a lista da conta ainda, o valor guardado ou "Padrão".
 export function modelSummary(settings: ChatSettings, info: ClaudeInfo | null): string {
-  const models = info?.models ?? []
-  const current = models.find((m) => m.value === settings.model) ?? models.find((m) => m.value === '')
-  const name = current ? (current.value === '' ? (current.resolvedName ?? tr('Padrão', 'Default')) : current.displayName) : settings.model || tr('Padrão', 'Default')
-  const hasEffort = current ? current.efforts.length > 0 : true
-  return hasEffort ? `${name} - ${effortLabel(settings.effort)}` : name
+  const models = info?.models ?? [];
+  const current = models.find((m) => m.value === settings.model) ?? models.find((m) => m.value === '');
+  const name = current ? (current.value === '' ? (current.resolvedName ?? tr('Padrão', 'Default')) : current.displayName) : settings.model || tr('Padrão', 'Default');
+  const hasEffort = current ? current.efforts.length > 0 : true;
+  return hasEffort ? `${name} - ${effortLabel(settings.effort)}` : name;
 }
 
 export function ComposerOptions({
@@ -89,7 +89,7 @@ export function ComposerOptions({
   info,
   agentChat,
   onChange,
-  onCommand
+  onCommand,
 }: {
   open: OptionsSheet
   onOpen: (sheet: OptionsSheet) => void
@@ -103,17 +103,17 @@ export function ComposerOptions({
   onChange: (patch: Partial<ChatSettings>) => void
   onCommand: (name: (typeof COMMANDS)[number]['name']) => void
 }) {
-  const close = () => onOpen(null)
-  const setOpen = onOpen
-  const models = info?.models ?? []
+  const close = () => onOpen(null);
+  const setOpen = onOpen;
+  const models = info?.models ?? [];
   // Modelo guardado que a conta não tem: vale o padrão dela.
-  const current = models.find((m) => m.value === settings.model) ?? models.find((m) => m.value === '')
-  const modelName = current ? (current.value === '' ? (current.resolvedName ?? tr('Padrão', 'Default')) : current.displayName) : settings.model || tr('Padrão', 'Default')
-  const allowed = current ? EFFORTS.filter((e) => current.efforts.includes(e.value)) : EFFORTS
-  const effective = settings.permissionMode || info?.defaultPermissionMode || 'manual'
-  const mode = MODES.find((m) => m.value === effective) ?? MODES[0]
-  const ModeIcon = mode.icon
-  const defaultModel = models.find((m) => m.value === '')
+  const current = models.find((m) => m.value === settings.model) ?? models.find((m) => m.value === '');
+  const modelName = current ? (current.value === '' ? (current.resolvedName ?? tr('Padrão', 'Default')) : current.displayName) : settings.model || tr('Padrão', 'Default');
+  const allowed = current ? EFFORTS.filter((e) => current.efforts.includes(e.value)) : EFFORTS;
+  const effective = settings.permissionMode || info?.defaultPermissionMode || 'manual';
+  const mode = MODES.find((m) => m.value === effective) ?? MODES[0];
+  const ModeIcon = mode.icon;
+  const defaultModel = models.find((m) => m.value === '');
 
   return (
     <>
@@ -123,8 +123,8 @@ export function ComposerOptions({
             icon={<Paperclip size={20} />}
             label={tr('Fotos e arquivos', 'Photos and files')}
             onClick={() => {
-              close()
-              onAttach()
+              close();
+              onAttach();
             }}
           />
         </Group>
@@ -154,8 +154,8 @@ export function ComposerOptions({
             <Group>
               {defaultModel && (
                 <OptionRow selected={(current?.value ?? '') === ''} onClick={() => {
-                    onChange({ model: '' })
-                    close()
+                    onChange({ model: '' });
+                    close();
                   }}>
                   <span className="block text-[17px]">{tr('Padrão', 'Default')}</span>
                   {defaultModel.resolvedName && <span className="block text-[13px] text-muted">{defaultModel.resolvedName}</span>}
@@ -166,8 +166,8 @@ export function ComposerOptions({
               <Group key={family} title={family}>
                 {list.map((m) => (
                   <OptionRow key={m.value} selected={current?.value === m.value} onClick={() => {
-                      onChange({ model: m.value })
-                      close()
+                      onChange({ model: m.value });
+                      close();
                     }}>
                     <span className="text-[17px]">{m.displayName}</span>
                   </OptionRow>
@@ -212,15 +212,15 @@ export function ComposerOptions({
       <Sheet open={open === 'mode'} onClose={close} title={tr('Modo', 'Mode')}>
         <Group>
           {MODES.map((m) => {
-            const Icon = m.icon
+            const Icon = m.icon;
             return (
               <OptionRow
                 key={m.value}
                 selected={effective === m.value}
                 danger={m.danger}
                 onClick={() => {
-                  onChange({ permissionMode: m.value })
-                  close()
+                  onChange({ permissionMode: m.value });
+                  close();
                 }}
               >
                 <span className="flex items-start gap-3">
@@ -234,7 +234,7 @@ export function ComposerOptions({
                   </span>
                 </span>
               </OptionRow>
-            )
+            );
           })}
         </Group>
       </Sheet>
@@ -246,8 +246,8 @@ export function ComposerOptions({
               key={c.name}
               selected={false}
               onClick={() => {
-                close()
-                onCommand(c.name)
+                close();
+                onCommand(c.name);
               }}
             >
               <span className="block font-mono text-[15px]">/{c.name}</span>
@@ -260,5 +260,5 @@ export function ComposerOptions({
         </p>
       </Sheet>
     </>
-  )
+  );
 }

@@ -1,12 +1,12 @@
-import type { RenamePlace } from '../conversationRename'
-import type { MouseEvent as ReactMouseEvent } from 'react'
-import { useStableCommands } from '../../lib/useStableCommands'
-import type { CanvasActions } from '../CanvasContext'
-import type { OverlayCommands } from '../drawers/useOverlays'
-import type { ConversationSummary } from '../types'
-import type { useConversationActions } from './useConversationActions'
-import type { useNodeActions } from './useNodeActions'
-import type { useWorktreeActions } from '../worktrees/useWorktreeActions'
+import type { RenamePlace } from '../conversationRename';
+import type { MouseEvent as ReactMouseEvent } from 'react';
+import { useStableCommands } from '../../lib/useStableCommands';
+import type { CanvasActions } from '../CanvasContext';
+import type { OverlayCommands } from '../drawers/useOverlays';
+import type { ConversationSummary } from '../types';
+import type { useConversationActions } from './useConversationActions';
+import type { useNodeActions } from './useNodeActions';
+import type { useWorktreeActions } from '../worktrees/useWorktreeActions';
 
 type Parts = {
   nodeActions: ReturnType<typeof useNodeActions>
@@ -16,7 +16,7 @@ type Parts = {
   openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary, place: RenamePlace) => void
   openSettings: () => void
   newGroupConversation: (groupId: string) => void
-}
+};
 
 // O valor do CanvasContext: só os comandos, num objeto criado uma vez (useStableCommands). O
 // estado que os blocos mostram fica no store do canvasView, lido por bloco.
@@ -42,6 +42,6 @@ export function useCanvasCommands({ nodeActions, conversations, worktrees, overl
     openMemory: overlays.openMemory,
     openAgents: overlays.openAgents,
     openDevServers: overlays.openDevServers,
-    removeWorktree: worktrees.removeWorktree
-  })
+    removeWorktree: worktrees.removeWorktree,
+  });
 }

@@ -6,7 +6,7 @@ export type ClaudeModel = {
   // Para o padrão: nome do modelo a que ele aponta hoje (ex.: "Opus 5.5").
   resolvedName?: string
   efforts: string[]
-}
+};
 
 // O que o `claude` informa ao iniciar e o app usa nos seletores.
 export type ClaudeInfo = {
@@ -15,4 +15,4 @@ export type ClaudeInfo = {
   defaultPermissionMode: string
   // Conta logada no `claude`; nulo se não houver login.
   account: { email?: string; organization?: string; subscriptionType?: string } | null
-}
+};

@@ -1,10 +1,10 @@
-import type { XYPosition } from '@xyflow/react'
-import type { CanvasNode } from '../types'
+import type { XYPosition } from '@xyflow/react';
+import type { CanvasNode } from '../types';
 
 // O que uma ferramenta do assistente do canvas recebe e devolve. As ferramentas são funções
 // comuns: mexem nos blocos e na tela só pelo `env`, por isso dá para testar sem React nem Electron.
 
-export type Args = Record<string, unknown>
+export type Args = Record<string, unknown>;
 
 export type ToolEnv = {
   // Blocos como estão agora, já com o que as ações anteriores mudaram.
@@ -18,10 +18,10 @@ export type ToolEnv = {
   frame(ids: string[]): void
   pickFolder(): Promise<string | null>
   killTerminal(id: string): void
-}
+};
 
 // Devolve o texto que volta para o Claude.
-export type Tool = (args: Args, env: ToolEnv) => string | Promise<string>
+export type Tool = (args: Args, env: ToolEnv) => string | Promise<string>;
 
 // Erro de uso (bloco que não existe, argumento que não serve): a mensagem vai para o Claude como está.
 export class ToolError extends Error {}

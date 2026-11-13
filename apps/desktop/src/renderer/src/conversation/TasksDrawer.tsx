@@ -1,20 +1,20 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { ArrowLeft, Pin, PinOff, SquareTerminal, X } from 'lucide-react'
-import { useBackgroundTaskList, type BackgroundTask } from '../canvas/backgroundTasks'
-import type { TaskRef, TasksRef } from '../canvas/CanvasContext'
-import { mergeTasks, type TaskItem as Item } from './taskList'
-import type { ProjectData } from '../canvas/types'
-import { MOTION, reduced } from '../motion'
-import { useEscape } from '../useEscape'
-import { askColors } from './askColors'
-import { Elapsed } from './Elapsed'
-import { HeaderButton } from './header/HeaderButton'
-import { useFloatingRect } from './hooks/useFloatingRect'
-import { DRAWER_DEFAULT_WIDTH, type PanelRect } from './panelGeometry'
-import { ResizeHandles } from './FloatingPanel'
-import { TaskOutputView } from './TaskOutputView'
-import { useDrawerZoom } from './useDrawerZoom'
-import { tr } from '../i18n'
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { ArrowLeft, Pin, PinOff, SquareTerminal, X } from 'lucide-react';
+import { useBackgroundTaskList, type BackgroundTask } from '../canvas/backgroundTasks';
+import type { TaskRef, TasksRef } from '../canvas/CanvasContext';
+import { mergeTasks, type TaskItem as Item } from './taskList';
+import type { ProjectData } from '../canvas/types';
+import { MOTION, reduced } from '../motion';
+import { useEscape } from '../useEscape';
+import { askColors } from './askColors';
+import { Elapsed } from './Elapsed';
+import { HeaderButton } from './header/HeaderButton';
+import { useFloatingRect } from './hooks/useFloatingRect';
+import { DRAWER_DEFAULT_WIDTH, type PanelRect } from './panelGeometry';
+import { ResizeHandles } from './FloatingPanel';
+import { TaskOutputView } from './TaskOutputView';
+import { useDrawerZoom } from './useDrawerZoom';
+import { tr } from '../i18n';
 
 type Props = {
   project: ProjectData
@@ -28,45 +28,45 @@ type Props = {
   // Volta para a conversa que lançou as tarefas, no mesmo drawer.
   onBack: () => void
   onClose: () => void
-}
+};
 
 
 // Drawer das tarefas em segundo plano de uma conversa: uma aba por tarefa e a saída da escolhida
 // num terminal só para ler. Fica no lugar do drawer da conversa, como o do subagente. A que termina
 // continua na aba enquanto o drawer está aberto, marcada como terminada.
 export function TasksDrawer(props: Props) {
-  const { project, tint, tasks, rect, pinned, onTogglePin, onBack, onClose } = props
-  const zoom = useDrawerZoom()
-  const panelRef = useRef<HTMLElement>(null)
-  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH, props.obstacles)
-  useEscape(onClose)
+  const { project, tint, tasks, rect, pinned, onTogglePin, onBack, onClose } = props;
+  const zoom = useDrawerZoom();
+  const panelRef = useRef<HTMLElement>(null);
+  const floating = useFloatingRect(panelRef, rect, props.onRectChange, DRAWER_DEFAULT_WIDTH, props.obstacles);
+  useEscape(onClose);
 
-  const running = useBackgroundTaskList(tasks.sessionId)
-  const items = useSeenTasks(running, tasks.extra)
-  const [selected, setSelected] = useSelected(tasks.selected)
-  const current = items.find((t) => t.id === selected) ?? items[0]
-  const runningIds = useMemo(() => new Set(running.map((t) => t.id)), [running])
+  const running = useBackgroundTaskList(tasks.sessionId);
+  const items = useSeenTasks(running, tasks.extra);
+  const [selected, setSelected] = useSelected(tasks.selected);
+  const current = items.find((t) => t.id === selected) ?? items[0];
+  const runningIds = useMemo(() => new Set(running.map((t) => t.id)), [running]);
 
   // Outra tarefa à vista: a saída entra com o efeito padrão, como ao trocar de conversa.
-  const contentRef = useRef<HTMLDivElement>(null)
-  const shown = useRef(current?.id)
+  const contentRef = useRef<HTMLDivElement>(null);
+  const shown = useRef(current?.id);
   useLayoutEffect(() => {
-    if (shown.current === current?.id) return
-    shown.current = current?.id
-    if (reduced()) return
-    contentRef.current?.animate([{ opacity: 0 }, { opacity: 1 }], MOTION.panel.in)
-  }, [current?.id])
+    if (shown.current === current?.id) return;
+    shown.current = current?.id;
+    if (reduced()) return;
+    contentRef.current?.animate([{ opacity: 0 }, { opacity: 1 }], MOTION.panel.in);
+  }, [current?.id]);
 
   const headerStyle = useMemo<CSSProperties>(
     () => ({
       zoom,
       ...(tint && {
         background: `color-mix(in srgb, ${tint} 8%, var(--color-bg))`,
-        borderBottomColor: `color-mix(in srgb, ${tint} 25%, var(--color-line))`
-      })
+        borderBottomColor: `color-mix(in srgb, ${tint} 25%, var(--color-line))`,
+      }),
     }),
-    [zoom, tint]
-  )
+    [zoom, tint],
+  );
 
   return (
     <aside
@@ -77,8 +77,8 @@ export function TasksDrawer(props: Props) {
         ...(tint && {
           borderColor: `color-mix(in srgb, ${tint} 35%, var(--color-line))`,
           background: `color-mix(in srgb, ${tint} 3%, var(--color-bg))`,
-          ...askColors(tint)
-        })
+          ...askColors(tint),
+        }),
       }}
     >
       <ResizeHandles onResizeStart={floating.onResizeStart} />
@@ -146,7 +146,7 @@ export function TasksDrawer(props: Props) {
         )}
       </div>
     </aside>
-  )
+  );
 }
 
 // Em cima da saída: a tarefa (o comando inteiro, quando se sabe) e se ainda roda.
@@ -161,24 +161,24 @@ function TaskLine({ task, running, zoom }: { task: Item; running: boolean; zoom:
         {running && task.startedAt !== undefined ? <Elapsed since={task.startedAt} /> : running ? '' : tr('Terminou', 'Finished')}
       </span>
     </div>
-  )
+  );
 }
 
-const taskTitle = (t: Item) => t.description || t.command || t.id
+const taskTitle = (t: Item) => t.description || t.command || t.id;
 
 // As tarefas que passaram pelo drawer enquanto ele está aberto: as rodando agora (com o que se sabe
 // delas), mais a aberta pelo chat. As que terminam ficam, para a saída não sumir da tela.
 function useSeenTasks(running: BackgroundTask[], extra: TaskRef | undefined): Item[] {
-  const [seen, setSeen] = useState<Item[]>([])
-  const next = mergeTasks(seen, running, extra)
-  if (next !== seen) setSeen(next)
-  return next
+  const [seen, setSeen] = useState<Item[]>([]);
+  const next = mergeTasks(seen, running, extra);
+  if (next !== seen) setSeen(next);
+  return next;
 }
 
 // A aba escolhida; abrir de novo pedindo outra tarefa (pelo chat) troca para ela.
 function useSelected(asked: string | undefined): [string | undefined, (id: string) => void] {
-  const [state, setState] = useState({ asked, selected: asked })
-  if (state.asked !== asked) setState({ asked, selected: asked ?? state.selected })
-  const select = (id: string) => setState((s) => ({ ...s, selected: id }))
-  return [asked !== state.asked ? asked : state.selected, select]
+  const [state, setState] = useState({ asked, selected: asked });
+  if (state.asked !== asked) setState({ asked, selected: asked ?? state.selected });
+  const select = (id: string) => setState((s) => ({ ...s, selected: id }));
+  return [asked !== state.asked ? asked : state.selected, select];
 }

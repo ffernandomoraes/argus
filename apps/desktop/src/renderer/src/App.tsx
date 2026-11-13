@@ -1,64 +1,64 @@
-import { useCallback, useEffect, useEffectEvent, useState } from 'react'
-import { ReactFlowProvider } from '@xyflow/react'
-import { useAuth } from './auth/useAuth'
-import { Canvas } from './canvas/Canvas'
-import { isMod } from './platform'
-import { SettingsModal } from './settings/SettingsModal'
-import { setPreferences, usePreference } from './settings/preferences'
-import { IS_REMOTE } from './remote'
-import { useInterfaceZoom } from './theme/useInterfaceZoom'
-import { useTheme } from './theme/useTheme'
-import { Presence } from './motion'
-import { ErrorBoundary } from './ui/ErrorBoundary'
-import { RequiredUpdateModal } from './updates/RequiredUpdateModal'
-import { RemoteLostModal } from './RemoteLostModal'
-import { RemoteNotice } from './RemoteNotice'
-import { MergedAccountsNotice } from './auth/MergedAccountsNotice'
-import { WelcomeModal } from './welcome/WelcomeModal'
-import { setupReady } from './welcome/SetupStep'
-import { useProviders } from './providers/useProviders'
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
+import { useAuth } from './auth/useAuth';
+import { Canvas } from './canvas/Canvas';
+import { isMod } from './platform';
+import { SettingsModal } from './settings/SettingsModal';
+import { setPreferences, usePreference } from './settings/preferences';
+import { IS_REMOTE } from './remote';
+import { useInterfaceZoom } from './theme/useInterfaceZoom';
+import { useTheme } from './theme/useTheme';
+import { Presence } from './motion';
+import { ErrorBoundary } from './ui/ErrorBoundary';
+import { RequiredUpdateModal } from './updates/RequiredUpdateModal';
+import { RemoteLostModal } from './RemoteLostModal';
+import { RemoteNotice } from './RemoteNotice';
+import { MergedAccountsNotice } from './auth/MergedAccountsNotice';
+import { WelcomeModal } from './welcome/WelcomeModal';
+import { setupReady } from './welcome/SetupStep';
+import { useProviders } from './providers/useProviders';
 
 export function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const theme = useTheme()
-  useInterfaceZoom()
-  const openSettings = useCallback(() => setSettingsOpen(true), [])
-  const closeSettings = useCallback(() => setSettingsOpen(false), [])
-  const auth = useAuth()
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const theme = useTheme();
+  useInterfaceZoom();
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  const auth = useAuth();
   // Só a preferência que o App usa: mudar outra (tema, zoom do drawer...) não redesenha aqui.
-  const welcomeSeen = usePreference('welcomeSeen')
+  const welcomeSeen = usePreference('welcomeSeen');
   // As favoritas ficam nos ajustes desta janela; o processo principal guarda uma cópia para o app do
   // celular. A janela de acesso remoto mostra as do notebook: não conta.
-  const favoriteChats = usePreference('favoriteChats')
+  const favoriteChats = usePreference('favoriteChats');
   useEffect(() => {
-    if (!IS_REMOTE) window.api.favorites.set(favoriteChats)
-  }, [favoriteChats])
-  const providers = useProviders()
+    if (!IS_REMOTE) window.api.favorites.set(favoriteChats);
+  }, [favoriteChats]);
+  const providers = useProviders();
   // Falta configurar: sem o Claude Code pronto (instalado e com uma conta logada) e sem outro agente
   // conectado. Com outra conta logada, a principal sem login aparece só em Configurações.
-  const needsSetup = !!auth && !setupReady(auth, providers)
+  const needsSetup = !!auth && !setupReady(auth, providers);
   // Boas-vindas: na primeira vez, o passo a passo inteiro; depois, só se faltar configurar.
-  const welcome = !!auth && (!welcomeSeen || needsSetup)
+  const welcome = !!auth && (!welcomeSeen || needsSetup);
 
   // Saiu de todas as contas: as configurações fecham e fica a tela de login.
-  const [wasWelcome, setWasWelcome] = useState(welcome)
+  const [wasWelcome, setWasWelcome] = useState(welcome);
   if (welcome !== wasWelcome) {
-    setWasWelcome(welcome)
-    if (welcome) setSettingsOpen(false)
+    setWasWelcome(welcome);
+    if (welcome) setSettingsOpen(false);
   }
 
   // ⌘, abre as configurações, como nos apps do Mac (Ctrl+, no Windows, como no VS Code). Com as
   // boas-vindas na tela, não: ao clicar "Começar", as configurações apareceriam sozinhas.
   const onSettingsKey = useEffectEvent((e: KeyboardEvent) => {
-    if (!isMod(e) || e.key !== ',') return
-    e.preventDefault()
-    if (!welcome) setSettingsOpen(true)
-  })
+    if (!isMod(e) || e.key !== ',') return;
+    e.preventDefault();
+    if (!welcome) setSettingsOpen(true);
+  });
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => onSettingsKey(e)
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+    const onKey = (e: KeyboardEvent) => onSettingsKey(e);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <main className="relative h-full">
@@ -84,5 +84,5 @@ export function App() {
       <RemoteNotice />
       <MergedAccountsNotice />
     </main>
-  )
+  );
 }

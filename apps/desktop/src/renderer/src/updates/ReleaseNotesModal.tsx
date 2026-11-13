@@ -1,53 +1,53 @@
-import { useEffect, useState } from 'react'
-import { Bug, ExternalLink, Minus, ScrollText, Sparkles, TrendingUp, type LucideIcon } from 'lucide-react'
-import type { ReleaseNote, ReleaseNoteKind } from '@argus/shared/updates'
-import { Button } from '../ui/Button'
-import { Modal } from '../ui/Modal'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { LOCALE, tr } from '../i18n'
+import { useEffect, useState } from 'react';
+import { Bug, ExternalLink, Minus, ScrollText, Sparkles, TrendingUp, type LucideIcon } from 'lucide-react';
+import type { ReleaseNote, ReleaseNoteKind } from '@argus/shared/updates';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { LOCALE, tr } from '../i18n';
 
-const RELEASES_URL = 'https://github.com/ffernandomoraes/argus/releases'
+const RELEASES_URL = 'https://github.com/ffernandomoraes/argus/releases';
 
 // Ícone na frente de cada mudança, na cor do texto; o nome aparece ao passar o mouse.
 const KIND: Record<ReleaseNoteKind, { label: string; icon: LucideIcon }> = {
   feature: { label: tr('Funcionalidade', 'Feature'), icon: Sparkles },
   improvement: { label: tr('Melhoria', 'Improvement'), icon: TrendingUp },
-  bug: { label: tr('Bug', 'Bug'), icon: Bug }
-}
+  bug: { label: tr('Bug', 'Bug'), icon: Bug },
+};
 
-const formatDate = (iso: string) => new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' })
+const formatDate = (iso: string) => new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
 
 function KindIcon({ kind }: { kind: ReleaseNoteKind | null }) {
-  const { label, icon: Icon } = kind ? KIND[kind] : { label: undefined, icon: Minus }
+  const { label, icon: Icon } = kind ? KIND[kind] : { label: undefined, icon: Minus };
   return (
     <span title={label} className="flex h-[18px] shrink-0 items-center text-faint">
       <Icon size={13} aria-label={label} aria-hidden={!label} />
     </span>
-  )
+  );
 }
 
-type Load = { status: 'loading' } | { status: 'error' } | { status: 'ok'; notes: ReleaseNote[] }
+type Load = { status: 'loading' } | { status: 'error' } | { status: 'ok'; notes: ReleaseNote[] };
 
 // Novidades: o que mudou nas últimas versões, lido dos releases do GitHub a cada abertura.
 export function ReleaseNotesModal({ current, onClose }: { current: string; onClose: () => void }) {
-  const [load, setLoad] = useState<Load>({ status: 'loading' })
+  const [load, setLoad] = useState<Load>({ status: 'loading' });
   // Cada "Tentar de novo" soma 1 e refaz a busca.
-  const [attempt, setAttempt] = useState(0)
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    let alive = true
-    setLoad({ status: 'loading' })
+    let alive = true;
+    setLoad({ status: 'loading' });
     window.api.updates
       .notes()
       .then((notes) => alive && setLoad({ status: 'ok', notes }))
       .catch((err: unknown) => {
-        console.error('[novidades]', err)
-        if (alive) setLoad({ status: 'error' })
-      })
+        console.error('[novidades]', err);
+        if (alive) setLoad({ status: 'error' });
+      });
     return () => {
-      alive = false
-    }
-  }, [attempt])
+      alive = false;
+    };
+  }, [attempt]);
 
   return (
     <Modal label={tr('Novidades', "What's new")} size="md" className="flex flex-col" onClose={onClose}>
@@ -98,5 +98,5 @@ export function ReleaseNotesModal({ current, onClose }: { current: string; onClo
         </a>
       </footer>
     </Modal>
-  )
+  );
 }

@@ -1,12 +1,12 @@
-import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { ClipboardList, FileText, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
-import { Markdown } from './Markdown'
-import { closeOpenPlan, useOpenPlan } from './openPlanStore'
-import { tr } from '../i18n'
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { ClipboardList, FileText, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
+import { Markdown } from './Markdown';
+import { closeOpenPlan, useOpenPlan } from './openPlanStore';
+import { tr } from '../i18n';
 
 // Quem abre o markdown inteiro ao lado da conversa (drawer ou bloco no canvas): o plano ou o .md
 // criado, com o caminho dele. Nulo: sem onde abrir (janela separada); fica só o "Mostrar tudo".
-export const PlanOpenContext = createContext<((text: string, path?: string) => void) | null>(null)
+export const PlanOpenContext = createContext<((text: string, path?: string) => void) | null>(null);
 
 // Plano do modo plano (ExitPlanMode) na conversa. `children`: os botões de aprovar e negar,
 // quando o Claude espera a resposta.
@@ -15,13 +15,13 @@ export function PlanCard({ plan, error, children }: { plan: string; error?: bool
     <MarkdownCard text={plan} icon={ClipboardList} title={tr('Plano', 'Plan')} error={error}>
       {children}
     </MarkdownCard>
-  )
+  );
 }
 
 // Arquivo .md que o Claude criou: o mesmo cartão, com o título da ação ("Criar arquivo - CLAUDE.md")
 // e o caminho completo.
 export function MarkdownFileCard({ text, title, path, error }: { text: string; title: string; path: string; error?: boolean }) {
-  return <MarkdownCard text={text} icon={FileText} title={title} path={path} error={error} />
+  return <MarkdownCard text={text} icon={FileText} title={title} path={path} error={error} />;
 }
 
 // Markdown na conversa: o começo já formatado, rolável numa altura limitada e cortado com um
@@ -32,7 +32,7 @@ function MarkdownCard({
   title,
   path,
   error,
-  children
+  children,
 }: {
   text: string
   icon: LucideIcon
@@ -41,24 +41,24 @@ function MarkdownCard({
   error?: boolean
   children?: ReactNode
 }) {
-  const openBeside = useContext(PlanOpenContext)
+  const openBeside = useContext(PlanOpenContext);
   // Este texto já está na janela ao lado: o botão fecha.
-  const beside = useOpenPlan() === text
-  const [expanded, setExpanded] = useState(false)
-  const whole = expanded
-  const bodyRef = useRef<HTMLDivElement>(null)
+  const beside = useOpenPlan() === text;
+  const [expanded, setExpanded] = useState(false);
+  const whole = expanded;
+  const bodyRef = useRef<HTMLDivElement>(null);
   // Texto curto cabe inteiro: sem degradê e sem "Mostrar tudo".
-  const [cut, setCut] = useState(false)
+  const [cut, setCut] = useState(false);
   // Rolou até o fim do trecho: o degradê sai, não há mais o que ver embaixo.
-  const [atEnd, setAtEnd] = useState(false)
+  const [atEnd, setAtEnd] = useState(false);
   const measure = () => {
-    const body = bodyRef.current
-    if (!body || whole) return
-    setCut(body.scrollHeight > body.clientHeight + 1)
-    setAtEnd(body.scrollTop + body.clientHeight >= body.scrollHeight - 1)
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(measure, [text, whole])
+    const body = bodyRef.current;
+    if (!body || whole) return;
+    setCut(body.scrollHeight > body.clientHeight + 1);
+    setAtEnd(body.scrollTop + body.clientHeight >= body.scrollHeight - 1);
+  };
+
+  useLayoutEffect(measure, [text, whole]);
 
   return (
     <div className="my-1 overflow-hidden rounded-lg border border-line bg-surface text-[14px]">
@@ -94,7 +94,7 @@ function MarkdownCard({
       </div>
       {children && <div className="border-t border-line px-3 py-2">{children}</div>}
     </div>
-  )
+  );
 }
 
 // Caminho em uma linha, cortado no começo (o fim, com a pasta e o arquivo, sempre à vista; como o
@@ -104,5 +104,5 @@ export function PathLine({ path, className = '' }: { path: string; className?: s
     <div title={path} className={`truncate text-left font-mono text-xs text-muted [direction:rtl] ${className || 'border-b border-line px-3 py-1.5'}`}>
       {`‎${path}‎`}
     </div>
-  )
+  );
 }

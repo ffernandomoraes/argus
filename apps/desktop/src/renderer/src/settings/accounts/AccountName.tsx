@@ -1,21 +1,21 @@
-import { useRef, useState } from 'react'
-import { Pencil } from 'lucide-react'
-import { tr } from '../../i18n'
+import { useRef, useState } from 'react';
+import { Pencil } from 'lucide-react';
+import { tr } from '../../i18n';
 
 // Apelido editável no próprio card: Enter grava, Esc desiste. Vazio volta para o nome sugerido.
 // Sem onRename, grava numa conta do Claude.
 export function AccountName({ account, onRename }: { account: { id: string; name: string }; onRename?: (name: string) => void }) {
-  const [value, setValue] = useState<string | null>(null)
+  const [value, setValue] = useState<string | null>(null);
   // O campo some ao terminar, e sumir também tira o foco: o blur que vem junto não grava de novo
   // (nem grava depois de um Esc).
-  const finished = useRef(false)
+  const finished = useRef(false);
 
   if (value === null) {
     return (
       <button
         onClick={() => {
-          finished.current = false
-          setValue(account.name)
+          finished.current = false;
+          setValue(account.name);
         }}
         title={tr('Trocar o apelido', 'Rename')}
         className="group/name flex min-w-0 items-center gap-1.5 text-left"
@@ -23,15 +23,15 @@ export function AccountName({ account, onRename }: { account: { id: string; name
         <span className="truncate text-[16px] text-text">{account.name}</span>
         <Pencil size={11} className="shrink-0 text-faint opacity-0 group-hover/name:opacity-100" />
       </button>
-    )
+    );
   }
 
   const done = (save: boolean) => {
-    if (finished.current) return
-    finished.current = true
-    setValue(null)
-    if (save && value.trim() !== account.name) (onRename ?? ((name: string) => window.api.auth.rename(account.id, name)))(value)
-  }
+    if (finished.current) return;
+    finished.current = true;
+    setValue(null);
+    if (save && value.trim() !== account.name) (onRename ?? ((name: string) => window.api.auth.rename(account.id, name)))(value);
+  };
   return (
     <input
       autoFocus
@@ -42,14 +42,14 @@ export function AccountName({ account, onRename }: { account: { id: string; name
       onFocus={(e) => e.target.select()}
       onBlur={() => done(true)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') done(true)
+        if (e.key === 'Enter') done(true);
         if (e.key === 'Escape') {
           // O Esc fica aqui: não fecha as configurações.
-          e.preventDefault()
-          done(false)
+          e.preventDefault();
+          done(false);
         }
       }}
       className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-0.5 text-[16px] text-text outline-none focus:border-accent"
     />
-  )
+  );
 }

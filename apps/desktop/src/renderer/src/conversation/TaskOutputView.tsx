@@ -1,96 +1,96 @@
-import { useEffect, useRef, useState } from 'react'
-import type { TaskOutputRef } from '@argus/shared/backgroundTasks'
-import type { Xterm } from './terminal/createXterm'
-import { fontSizeFor, TERMINAL_THEME } from './terminal/theme'
-import { loadXterm } from './terminal/useXterm'
-import { tr } from '../i18n'
+import { useEffect, useRef, useState } from 'react';
+import type { TaskOutputRef } from '@argus/shared/backgroundTasks';
+import type { Xterm } from './terminal/createXterm';
+import { fontSizeFor, TERMINAL_THEME } from './terminal/theme';
+import { loadXterm } from './terminal/useXterm';
+import { tr } from '../i18n';
 
 // Rodando, a saída é relida a cada intervalo: o processo principal lê só o que o arquivo ganhou.
-const POLL_MS = 1000
+const POLL_MS = 1000;
 // Esconde o cursor: ninguém digita aqui.
-const HIDE_CURSOR = '\x1b[?25l'
+const HIDE_CURSOR = '\x1b[?25l';
 
-type Reader = { read: () => void; setFontSize: (px: number) => void }
+type Reader = { read: () => void; setFontSize: (px: number) => void };
 
 // Saída de uma tarefa em segundo plano num terminal só para ler: as cores e a formatação do
 // comando ficam, dá para selecionar e copiar, e não dá para digitar. Não há processo por trás: o
 // texto vem do arquivo que o Claude Code grava (ver main/tasks/output.ts).
 export function TaskOutputView({ task, running, fontScale = 1 }: { task: TaskOutputRef; running: boolean; fontScale?: number }) {
-  const el = useRef<HTMLDivElement>(null)
-  const reader = useRef<Reader | null>(null)
-  const [missing, setMissing] = useState(false)
-  const { cwd, sessionId, taskId, outputFile } = task
+  const el = useRef<HTMLDivElement>(null);
+  const reader = useRef<Reader | null>(null);
+  const [missing, setMissing] = useState(false);
+  const { cwd, sessionId, taskId, outputFile } = task;
   // Escala na hora de criar o terminal; as trocas depois só ajustam a fonte (efeito de baixo).
-  const scale = useRef(fontScale)
+  const scale = useRef(fontScale);
 
   // Um terminal por tarefa; a leitura continua de onde parou.
   useEffect(() => {
-    const host = el.current
-    if (!host) return
-    let disposed = false
-    let xterm: Xterm | null = null
-    let offset = 0
-    let reading = false
-    let again = false
-    const ref: TaskOutputRef = { cwd, sessionId, taskId, outputFile }
+    const host = el.current;
+    if (!host) return;
+    let disposed = false;
+    let xterm: Xterm | null = null;
+    let offset = 0;
+    let reading = false;
+    let again = false;
+    const ref: TaskOutputRef = { cwd, sessionId, taskId, outputFile };
     const read = () => {
-      if (disposed || !xterm) return
+      if (disposed || !xterm) return;
       if (reading) {
-        again = true
-        return
+        again = true;
+        return;
       }
-      reading = true
+      reading = true;
       window.api.sessions
         .taskOutput(ref, offset)
         .then((chunk) => {
-          if (disposed || !xterm) return
+          if (disposed || !xterm) return;
           if (chunk.reset) {
-            xterm.term.reset()
-            xterm.term.write(HIDE_CURSOR)
+            xterm.term.reset();
+            xterm.term.write(HIDE_CURSOR);
           }
-          offset = chunk.offset
-          if (chunk.text) xterm.term.write(chunk.text)
-          setMissing(chunk.missing)
+          offset = chunk.offset;
+          if (chunk.text) xterm.term.write(chunk.text);
+          setMissing(chunk.missing);
         })
         .catch(() => {})
         .finally(() => {
-          reading = false
+          reading = false;
           if (again) {
-            again = false
-            read()
+            again = false;
+            read();
           }
-        })
-    }
+        });
+    };
     void loadXterm().then(({ createXterm }) => {
-      if (disposed) return
-      xterm = createXterm(host, fontSizeFor(scale.current), false)
+      if (disposed) return;
+      xterm = createXterm(host, fontSizeFor(scale.current), false);
       // O arquivo tem só "\n": sem isso, cada linha começaria onde a anterior parou.
-      xterm.term.options.convertEol = true
-      xterm.term.options.disableStdin = true
-      xterm.term.options.cursorBlink = false
-      xterm.term.write(HIDE_CURSOR)
-      reader.current = { read, setFontSize: (px) => xterm?.setFontSize(px) }
-      read()
-    })
+      xterm.term.options.convertEol = true;
+      xterm.term.options.disableStdin = true;
+      xterm.term.options.cursorBlink = false;
+      xterm.term.write(HIDE_CURSOR);
+      reader.current = { read, setFontSize: (px) => xterm?.setFontSize(px) };
+      read();
+    });
     return () => {
-      disposed = true
-      reader.current = null
-      xterm?.dispose()
-    }
-  }, [cwd, sessionId, taskId, outputFile])
+      disposed = true;
+      reader.current = null;
+      xterm?.dispose();
+    };
+  }, [cwd, sessionId, taskId, outputFile]);
 
   // Rodando, relê de tempos em tempos; ao parar, uma última vez (o fim da saída).
   useEffect(() => {
-    if (!running) return reader.current?.read()
-    const timer = setInterval(() => reader.current?.read(), POLL_MS)
-    return () => clearInterval(timer)
-  }, [running])
+    if (!running) return reader.current?.read();
+    const timer = setInterval(() => reader.current?.read(), POLL_MS);
+    return () => clearInterval(timer);
+  }, [running]);
 
   useEffect(() => {
-    if (scale.current === fontScale) return
-    scale.current = fontScale
-    reader.current?.setFontSize(fontSizeFor(fontScale))
-  }, [fontScale])
+    if (scale.current === fontScale) return;
+    scale.current = fontScale;
+    reader.current?.setFontSize(fontSizeFor(fontScale));
+  }, [fontScale]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" style={{ background: TERMINAL_THEME.background }}>
@@ -106,5 +106,5 @@ export function TaskOutputView({ task, running, fontScale = 1 }: { task: TaskOut
         </div>
       )}
     </div>
-  )
+  );
 }

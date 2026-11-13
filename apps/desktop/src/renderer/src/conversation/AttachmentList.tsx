@@ -1,23 +1,23 @@
-import { useMemo, useState } from 'react'
-import { AudioLines, X } from 'lucide-react'
-import { isAudioFile } from '@argus/shared/transcription'
-import { IconButton } from '../ui/IconButton'
-import { AudioStatus } from './audio/AudioStatus'
-import { FileCard, formatSize } from './FileCard'
-import { ImageViewer } from './ImageViewer'
-import type { Attachment } from './useAttachments'
-import { tr } from '../i18n'
+import { useMemo, useState } from 'react';
+import { AudioLines, X } from 'lucide-react';
+import { isAudioFile } from '@argus/shared/transcription';
+import { IconButton } from '../ui/IconButton';
+import { AudioStatus } from './audio/AudioStatus';
+import { FileCard, formatSize } from './FileCard';
+import { ImageViewer } from './ImageViewer';
+import type { Attachment } from './useAttachments';
+import { tr } from '../i18n';
 
 // Anexos da mensagem que está sendo escrita, acima do texto: miniatura das imagens, nome e tamanho
 // dos outros arquivos (no áudio, a transcrição). O X aparece ao passar o mouse. Clicar na miniatura
 // abre a imagem grande, antes de enviar.
 export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRemove: (id: string) => void }) {
   // Índice, entre as imagens anexadas, da que está aberta.
-  const [viewing, setViewing] = useState<number | null>(null)
-  const urls = useMemo(() => items.flatMap((a) => (a.previewUrl ? [a.previewUrl] : [])), [items])
+  const [viewing, setViewing] = useState<number | null>(null);
+  const urls = useMemo(() => items.flatMap((a) => (a.previewUrl ? [a.previewUrl] : [])), [items]);
   // Mesma função enquanto as imagens não mudam: o visualizador recarrega quando ela muda.
-  const load = useMemo(() => () => Promise.resolve(urls), [urls])
-  if (items.length === 0) return null
+  const load = useMemo(() => () => Promise.resolve(urls), [urls]);
+  if (items.length === 0) return null;
 
   return (
     <div className="flex flex-wrap gap-2 px-3 pt-3">
@@ -60,5 +60,5 @@ export function AttachmentList({ items, onRemove }: { items: Attachment[]; onRem
       ))}
       {viewing !== null && <ImageViewer load={load} start={viewing} onClose={() => setViewing(null)} />}
     </div>
-  )
+  );
 }

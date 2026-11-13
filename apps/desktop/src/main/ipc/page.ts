@@ -1,11 +1,11 @@
-import type { WebContents } from 'electron'
+import type { WebContents } from 'electron';
 
 // Quem conversa com o processo principal: uma janela do app (o webContents dela) ou uma janela de
 // outro Argus ligada por acesso remoto (RemotePage, em src/main/remote/remotePage.ts). Os dois
 // recebem avisos, abrem terminais e seguram conversas do mesmo jeito; o que só existe numa janela
 // de verdade (diálogo do sistema, zoom, mascote) pede o webContents com `contentsOf`.
 
-export type PageEvent = 'did-navigate' | 'render-process-gone' | 'destroyed'
+export type PageEvent = 'did-navigate' | 'render-process-gone' | 'destroyed';
 
 export interface Page {
   readonly id: number
@@ -22,13 +22,13 @@ export interface Caller {
 }
 
 // Marca das páginas remotas: sem importar a classe, que depende deste arquivo.
-export const REMOTE_PAGE = Symbol('remotePage')
+export const REMOTE_PAGE = Symbol('remotePage');
 
 export function isRemotePage(page: Page): boolean {
-  return REMOTE_PAGE in page
+  return REMOTE_PAGE in page;
 }
 
 // O webContents de uma janela de verdade; nulo para a página de outro Argus.
 export function contentsOf(page: Page): WebContents | null {
-  return isRemotePage(page) ? null : (page as WebContents)
+  return isRemotePage(page) ? null : (page as WebContents);
 }

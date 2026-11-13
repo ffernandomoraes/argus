@@ -1,9 +1,9 @@
-import type { ChatActivity, ChatRetry } from '@argus/shared/chat'
-import { useNow } from '../../../lib/clock'
-import { Elapsed } from '../../Elapsed'
-import { formatTokens } from '../../format'
-import { RevealText } from '../RevealText'
-import { workingStatus } from '../workingStatus'
+import type { ChatActivity, ChatRetry } from '@argus/shared/chat';
+import { useNow } from '../../../lib/clock';
+import { Elapsed } from '../../Elapsed';
+import { formatTokens } from '../../format';
+import { RevealText } from '../RevealText';
+import { workingStatus } from '../workingStatus';
 
 // Passo em andamento: o que o Claude está fazendo (o rótulo troca com animação, ver RevealText), há
 // quanto tempo e quantos tokens já gerou. Esperando muito, a frase muda; a API falhando, mostra o
@@ -14,7 +14,7 @@ export function WorkingRow({
   retry,
   compactingSince,
   startedAt,
-  tokens
+  tokens,
 }: {
   activity?: ChatActivity
   foreground: number
@@ -23,8 +23,8 @@ export function WorkingRow({
   startedAt?: number
   tokens: number
 }) {
-  const now = useNow(1000)
-  const status = workingStatus({ activity, foreground, retry, compactingSince, turnStartedAt: startedAt, now })
+  const now = useNow(1000);
+  const status = workingStatus({ activity, foreground, retry, compactingSince, turnStartedAt: startedAt, now });
   return (
     <div className="flex min-w-0 items-center gap-2 py-0.5 text-[13px] text-muted">
       <RevealText text={status.label} />
@@ -45,5 +45,5 @@ export function WorkingRow({
         </span>
       )}
     </div>
-  )
+  );
 }

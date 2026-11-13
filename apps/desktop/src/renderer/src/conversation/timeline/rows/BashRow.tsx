@@ -1,15 +1,15 @@
-import { memo, useState } from 'react'
-import { ChevronRight } from 'lucide-react'
-import { TaskOutputButton } from '../../taskOpen'
-import type { Message } from '../../types'
+import { memo, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { TaskOutputButton } from '../../taskOpen';
+import type { Message } from '../../types';
 
 // Comando no terminal: fica só a linha do comando, com a seta no fim; o clique abre o comando
 // inteiro (IN) e a saída (OUT). Em segundo plano, "Ver saída" abre a saída ao vivo.
 export const BashRow = memo(function BashRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
-  const [open, setOpen] = useState(false)
-  const command = message.detail ?? message.input
-  const output = message.result.trim()
-  const box = 'max-h-60 overflow-auto'
+  const [open, setOpen] = useState(false);
+  const command = message.detail ?? message.input;
+  const output = message.result.trim();
+  const box = 'max-h-60 overflow-auto';
   return (
     <div className="text-[13px]">
       <div className="flex items-center gap-2">
@@ -51,5 +51,5 @@ export const BashRow = memo(function BashRow({ message }: { message: Extract<Mes
         </div>
       )}
     </div>
-  )
-})
+  );
+});

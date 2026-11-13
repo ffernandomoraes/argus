@@ -1,6 +1,6 @@
-import type { PointerEvent as ReactPointerEvent } from 'react'
-import type { WidthStore } from './widthStore'
-import { tr } from '../i18n'
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import type { WidthStore } from './widthStore';
+import { tr } from '../i18n';
 
 // Alça na borda direita da coluna (que precisa ser `relative`). O ponteiro fica preso a ela durante
 // o arrasto, para não se perder em cima de um iframe ao lado. Enquanto arrasta, só a largura da
@@ -8,30 +8,30 @@ import { tr } from '../i18n'
 // o store, e fica salva, ao soltar.
 export function WidthResizer({ width: store }: { width: WidthStore }) {
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return
-    e.preventDefault()
-    const handle = e.currentTarget
-    const column = handle.parentElement
-    handle.setPointerCapture(e.pointerId)
-    const startX = e.clientX
-    const startWidth = store.get()
-    let width = startWidth
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const handle = e.currentTarget;
+    const column = handle.parentElement;
+    handle.setPointerCapture(e.pointerId);
+    const startX = e.clientX;
+    const startWidth = store.get();
+    let width = startWidth;
     const move = (ev: PointerEvent) => {
-      width = store.clamp(startWidth + ev.clientX - startX)
-      if (column) column.style.width = `${width}px`
-    }
+      width = store.clamp(startWidth + ev.clientX - startX);
+      if (column) column.style.width = `${width}px`;
+    };
     const up = () => {
-      store.set(width)
-      handle.removeEventListener('pointermove', move)
-      handle.removeEventListener('pointerup', up)
-      handle.removeEventListener('pointercancel', up)
-      document.body.style.cursor = ''
-    }
-    handle.addEventListener('pointermove', move)
-    handle.addEventListener('pointerup', up)
-    handle.addEventListener('pointercancel', up)
-    document.body.style.cursor = 'col-resize'
-  }
+      store.set(width);
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', up);
+      document.body.style.cursor = '';
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+    document.body.style.cursor = 'col-resize';
+  };
   return (
     <div
       role="separator"
@@ -41,5 +41,5 @@ export function WidthResizer({ width: store }: { width: WidthStore }) {
       onDoubleClick={() => store.set(store.initial)}
       className="absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-accent after:opacity-0 after:transition-opacity hover:after:opacity-100"
     />
-  )
+  );
 }

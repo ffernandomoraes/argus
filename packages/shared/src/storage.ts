@@ -11,12 +11,12 @@ export type StorageSettings = {
   // Conversas sem atividade há mais que isso, em dias, perdem os prints e anexos; o texto fica. Nunca
   // maior que conversationDays: a conversa sumiria antes (ver withMediaCap).
   mediaDays: number
-}
+};
 
-export const STORAGE_DEFAULTS: StorageSettings = { conversationDays: 90, scratchDays: 7, mediaDays: 60 }
+export const STORAGE_DEFAULTS: StorageSettings = { conversationDays: 90, scratchDays: 7, mediaDays: 60 };
 
 // O que uma limpeza liberou.
-export type CleanResult = { at: number; freedBytes: number; scratchRemoved: number; conversationsTrimmed: number }
+export type CleanResult = { at: number; freedBytes: number; scratchRemoved: number; conversationsTrimmed: number };
 
 // O que ocupa e, separado, o que passou dos prazos e sai na próxima limpeza (o "Limpar agora").
 export type StorageUsage = {
@@ -29,9 +29,9 @@ export type StorageUsage = {
   freeable: { scratchBytes: number; scratchSessions: number; mediaBytes: number; mediaConversations: number } | null
   lastClean: CleanResult | null
   running: boolean
-}
+};
 
 // O prazo dos prints vai até o das conversas: com o das conversas menor, os dois ficam iguais.
 export function withMediaCap(s: StorageSettings): StorageSettings {
-  return s.mediaDays > s.conversationDays ? { ...s, mediaDays: s.conversationDays } : s
+  return s.mediaDays > s.conversationDays ? { ...s, mediaDays: s.conversationDays } : s;
 }

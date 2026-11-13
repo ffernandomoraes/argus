@@ -1,5 +1,5 @@
-import { memo } from 'react'
-import { formatClock } from '../../format'
+import { memo } from 'react';
+import { formatClock } from '../../format';
 
 // Divisor: troca de modelo, esforço, modo, compactação ou parada no meio da conversa.
 export const EventDivider = memo(function EventDivider({ text, at }: { text: string; at?: string }) {
@@ -12,5 +12,5 @@ export const EventDivider = memo(function EventDivider({ text, at }: { text: str
       </span>
       <span className="wavy-line flex-1" />
     </div>
-  )
-})
+  );
+});

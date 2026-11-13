@@ -1,14 +1,14 @@
-import { memo, useState, type KeyboardEvent } from 'react'
-import { Image as ImageIcon, Pencil } from 'lucide-react'
-import { fileName, type AttachedFile } from '@argus/shared/attachedFiles'
-import { CopyButton } from '../../CopyButton'
-import { FileCard } from '../../FileCard'
-import { Button } from '../../../ui/Button'
-import { IconButton } from '../../../ui/IconButton'
-import { formatClock, formatImageCount } from '../../format'
-import type { ImageView } from '../imageViews'
-import { ImageThumbs } from './ImageThumbs'
-import { tr } from '../../../i18n'
+import { memo, useState, type KeyboardEvent } from 'react';
+import { Image as ImageIcon, Pencil } from 'lucide-react';
+import { fileName, type AttachedFile } from '@argus/shared/attachedFiles';
+import { CopyButton } from '../../CopyButton';
+import { FileCard } from '../../FileCard';
+import { Button } from '../../../ui/Button';
+import { IconButton } from '../../../ui/IconButton';
+import { formatClock, formatImageCount } from '../../format';
+import type { ImageView } from '../imageViews';
+import { ImageThumbs } from './ImageThumbs';
+import { tr } from '../../../i18n';
 
 // Mensagem sua. queued: enviada enquanto o Claude trabalhava.
 // imageView: lê as imagens enviadas (miniaturas) e abre o preview grande numa delas.
@@ -23,7 +23,7 @@ export const UserBubble = memo(function UserBubble({
   images = 0,
   imageView,
   files,
-  onEdit
+  onEdit,
 }: {
   text: string
   at?: string
@@ -33,16 +33,16 @@ export const UserBubble = memo(function UserBubble({
   files?: AttachedFile[]
   onEdit?: (text: string) => void
 }) {
-  const [editing, setEditing] = useState<string | null>(null)
-  const editable = !!onEdit && !!text && images === 0 && !files?.length
+  const [editing, setEditing] = useState<string | null>(null);
+  const editable = !!onEdit && !!text && images === 0 && !files?.length;
   if (editing !== null && onEdit) {
     const send = () => {
-      const edited = editing.trim()
-      if (!edited) return
-      setEditing(null)
-      onEdit(edited)
-    }
-    return <EditBubble value={editing} onChange={setEditing} onCancel={() => setEditing(null)} onSend={send} />
+      const edited = editing.trim();
+      if (!edited) return;
+      setEditing(null);
+      onEdit(edited);
+    };
+    return <EditBubble value={editing} onChange={setEditing} onCancel={() => setEditing(null)} onSend={send} />;
   }
   return (
     <div className="flex flex-col gap-1">
@@ -96,20 +96,20 @@ export const UserBubble = memo(function UserBubble({
         </div>
       )}
     </div>
-  )
-})
+  );
+});
 
 // O balão virando campo: Enter envia e Shift+Enter quebra a linha (como na caixa de escrever), Esc
 // desiste. As teclas param aqui: a rolagem da conversa não as toma por navegação.
 function EditBubble({ value, onChange, onCancel, onSend }: { value: string; onChange: (v: string) => void; onCancel: () => void; onSend: () => void }) {
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    e.stopPropagation()
-    if (e.key === 'Escape') onCancel()
+    e.stopPropagation();
+    if (e.key === 'Escape') onCancel();
     else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault()
-      onSend()
+      e.preventDefault();
+      onSend();
     }
-  }
+  };
   return (
     <div className="flex flex-col gap-1.5">
       <textarea
@@ -118,9 +118,9 @@ function EditBubble({ value, onChange, onCancel, onSend }: { value: string; onCh
         onKeyDown={onKeyDown}
         // Cursor no fim do texto, sem rolar a conversa até o campo.
         ref={(el) => {
-          if (!el || el === document.activeElement) return
-          el.focus({ preventScroll: true })
-          el.setSelectionRange(el.value.length, el.value.length)
+          if (!el || el === document.activeElement) return;
+          el.focus({ preventScroll: true });
+          el.setSelectionRange(el.value.length, el.value.length);
         }}
         aria-label={tr('Editar mensagem', 'Edit message')}
         className="block max-h-[calc(12lh+1rem)] w-full resize-none rounded-lg border border-accent bg-surface-2 px-3 py-2 text-[15px] outline-none [field-sizing:content]"
@@ -134,5 +134,5 @@ function EditBubble({ value, onChange, onCancel, onSend }: { value: string; onCh
         </Button>
       </div>
     </div>
-  )
+  );
 }

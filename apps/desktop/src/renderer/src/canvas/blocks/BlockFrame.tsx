@@ -1,9 +1,9 @@
-import type { CSSProperties, ReactNode } from 'react'
-import { NodeResizer } from '@xyflow/react'
+import type { CSSProperties, ReactNode } from 'react';
+import { NodeResizer } from '@xyflow/react';
 
 // Fora do componente: o NodeResizer recebe sempre os mesmos objetos de estilo.
-const RESIZER_LINE: CSSProperties = { borderColor: 'var(--color-line-strong)' }
-const RESIZER_HANDLE: CSSProperties = { background: 'var(--color-muted)', border: 'none', width: 8, height: 8 }
+const RESIZER_LINE: CSSProperties = { borderColor: 'var(--color-line-strong)' };
+const RESIZER_HANDLE: CSSProperties = { background: 'var(--color-muted)', border: 'none', width: 8, height: 8 };
 
 // Caixa dos blocos que mudam de tamanho (terminal e conversa no canvas): puxadores nas bordas
 // com o bloco selecionado e a borda na cor de destaque. `className` traz o fundo e o resto que
@@ -13,7 +13,7 @@ export function BlockFrame({
   minHeight,
   className,
   style,
-  children
+  children,
 }: {
   selected: boolean
   minHeight: number
@@ -37,5 +37,5 @@ export function BlockFrame({
         {children}
       </div>
     </>
-  )
+  );
 }

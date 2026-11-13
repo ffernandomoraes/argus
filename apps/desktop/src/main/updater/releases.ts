@@ -1,8 +1,8 @@
-import { locale, tr } from '../i18n'
+import { locale, tr } from '../i18n';
 
 // Releases do GitHub: o que o atualizador lê deles. Lógica pura, sem rede (ver github.ts).
 
-export type ReleaseAsset = { name: string; size: number; browser_download_url: string }
+export type ReleaseAsset = { name: string; size: number; browser_download_url: string };
 export type Release = {
   tag_name: string
   html_url: string
@@ -12,80 +12,80 @@ export type Release = {
   // Notas da versão (markdown, uma linha "- " por mudança) e data de publicação.
   body?: string | null
   published_at?: string | null
-}
+};
 
 // App do Mac (Apple Silicon), em .zip.
-export const isMacAsset = (a: ReleaseAsset) => a.name.endsWith('-arm64.zip')
+export const isMacAsset = (a: ReleaseAsset) => a.name.endsWith('-arm64.zip');
 // Instalador do Windows publicado em cada release (ver electron-builder.yml).
-export const isWindowsAsset = (a: ReleaseAsset) => /^Argus-Setup-[\d.]+\.exe$/.test(a.name)
+export const isWindowsAsset = (a: ReleaseAsset) => /^Argus-Setup-[\d.]+\.exe$/.test(a.name);
 // AppImage do Linux (Intel/AMD). O electron-builder escreve a arquitetura como x86_64 no AppImage.
-export const isLinuxAsset = (a: ReleaseAsset) => /^Argus-[\d.]+-(x86_64|x64)\.AppImage$/.test(a.name)
+export const isLinuxAsset = (a: ReleaseAsset) => /^Argus-[\d.]+-(x86_64|x64)\.AppImage$/.test(a.name);
 
-export const releaseVersion = (release: Release) => release.tag_name.replace(/^v/, '')
+export const releaseVersion = (release: Release) => release.tag_name.replace(/^v/, '');
 
 // "0.10.0" > "0.9.3": compara número a número, não como texto.
 export function isNewer(candidate: string, current: string): boolean {
-  const a = candidate.split('.').map(Number)
-  const b = current.split('.').map(Number)
+  const a = candidate.split('.').map(Number);
+  const b = current.split('.').map(Number);
   for (let i = 0; i < 3; i++) {
-    if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0)
+    if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0);
   }
-  return false
+  return false;
 }
 
 // Quantos releases publicados são mais novos que a versão em uso. Rascunhos e pré-lançamentos não
 // contam.
 export function countNewer(releases: Release[], current: string): number {
-  return releases.filter((r) => !r.draft && !r.prerelease && isNewer(releaseVersion(r), current)).length
+  return releases.filter((r) => !r.draft && !r.prerelease && isNewer(releaseVersion(r), current)).length;
 }
 
-export type Pick = { release: Release; asset: ReleaseAsset; version: string }
+export type Pick = { release: Release; asset: ReleaseAsset; version: string };
 
 // O release mais novo que a versão em uso e que tem o arquivo pedido, ou null. Rascunhos e
 // pré-lançamentos ficam de fora.
 export function newestWith(releases: Release[], current: string, match: (a: ReleaseAsset) => boolean): Pick | null {
-  let best: Pick | null = null
+  let best: Pick | null = null;
   for (const release of releases) {
-    if (release.draft || release.prerelease) continue
-    const version = releaseVersion(release)
-    const asset = release.assets.find(match)
-    if (!asset || !isNewer(version, current) || (best && !isNewer(version, best.version))) continue
-    best = { release, asset, version }
+    if (release.draft || release.prerelease) continue;
+    const version = releaseVersion(release);
+    const asset = release.assets.find(match);
+    if (!asset || !isNewer(version, current) || (best && !isNewer(version, best.version))) continue;
+    best = { release, asset, version };
   }
-  return best
+  return best;
 }
 
 // A versão publicada logo antes da em uso que tem o arquivo pedido, ou null: para onde volta quem
 // está numa versão que quebrou (ver app/crashGuard.ts).
 export function previousWith(releases: Release[], current: string, match: (a: ReleaseAsset) => boolean): Pick | null {
-  let best: Pick | null = null
+  let best: Pick | null = null;
   for (const release of releases) {
-    if (release.draft || release.prerelease) continue
-    const version = releaseVersion(release)
-    const asset = release.assets.find(match)
-    if (!asset || !isNewer(current, version) || (best && !isNewer(version, best.version))) continue
-    best = { release, asset, version }
+    if (release.draft || release.prerelease) continue;
+    const version = releaseVersion(release);
+    const asset = release.assets.find(match);
+    if (!asset || !isNewer(current, version) || (best && !isNewer(version, best.version))) continue;
+    best = { release, asset, version };
   }
-  return best
+  return best;
 }
 
-type Header = (name: string) => string | null
+type Header = (name: string) => string | null;
 
 // Resposta de erro da API. 403/429 com o limite esgotado (60 consultas por hora por rede, sem
 // login): diz quando o GitHub libera de novo.
 export function apiFailure(status: number, header: Header): string {
   if ((status === 403 || status === 429) && header('x-ratelimit-remaining') === '0') {
-    const reset = Number(header('x-ratelimit-reset'))
-    const time = reset ? new Date(reset * 1000).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : ''
+    const reset = Number(header('x-ratelimit-reset'));
+    const time = reset ? new Date(reset * 1000).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '';
     return time
       ? tr(
           `O GitHub limitou as consultas de atualização desta rede por enquanto. Tente de novo depois das ${time}.`,
-          `GitHub is rate-limiting update checks from this network for now. Try again after ${time}.`
+          `GitHub is rate-limiting update checks from this network for now. Try again after ${time}.`,
         )
       : tr(
           'O GitHub limitou as consultas de atualização desta rede por enquanto. Tente de novo mais tarde.',
-          'GitHub is rate-limiting update checks from this network for now. Try again later.'
-        )
+          'GitHub is rate-limiting update checks from this network for now. Try again later.',
+        );
   }
-  return tr(`O GitHub respondeu ${status} ao procurar a versão nova.`, `GitHub returned ${status} while checking for a new version.`)
+  return tr(`O GitHub respondeu ${status} ao procurar a versão nova.`, `GitHub returned ${status} while checking for a new version.`);
 }

@@ -5,42 +5,42 @@
 
 // Abertura de bloco de código: até 3 espaços de recuo e 3 ou mais crases ou tis. Com crases, a
 // informação depois delas não pode ter crase (como no CommonMark): "```a``` b" é código em linha.
-const FENCE_OPEN = /^ {0,3}(`{3,})[^`]*$|^ {0,3}(~{3,})/
+const FENCE_OPEN = /^ {0,3}(`{3,})[^`]*$|^ {0,3}(~{3,})/;
 // Fechamento: o mesmo caractere, pelo menos do mesmo tamanho, e nada depois.
-const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})\s*$/
-const LIST_ITEM = /^([-*+]|\d{1,9}[.)])(\s|$)/
+const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})\s*$/;
+const LIST_ITEM = /^([-*+]|\d{1,9}[.)])(\s|$)/;
 // Nota de rodapé ou link por referência: liga pedaços distantes do texto.
-const DEFINITION = /^ {0,3}\[[^\]]+\]:/m
+const DEFINITION = /^ {0,3}\[[^\]]+\]:/m;
 // Comentário e blocos de HTML que atravessam linhas em branco.
-const HTML_BLOCK = /<!--|<(pre|script|style|textarea)[\s>]/i
+const HTML_BLOCK = /<!--|<(pre|script|style|textarea)[\s>]/i;
 
 // Na dúvida, o texto vai inteiro: não cortar é sempre igual ao texto inteiro, só mais lento.
 export function splitMarkdownBlocks(text: string): string[] {
-  if (DEFINITION.test(text) || HTML_BLOCK.test(text)) return [text]
-  const lines = text.split('\n')
-  const blocks: string[] = []
-  let start = 0
-  let fence: string | null = null
-  let afterBlank = false
+  if (DEFINITION.test(text) || HTML_BLOCK.test(text)) return [text];
+  const lines = text.split('\n');
+  const blocks: string[] = [];
+  let start = 0;
+  let fence: string | null = null;
+  let afterBlank = false;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
+    const line = lines[i];
     if (fence) {
-      const close = FENCE_CLOSE.exec(line)
-      if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null
-      continue
+      const close = FENCE_CLOSE.exec(line);
+      if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
+      continue;
     }
     if (line.trim() === '') {
-      afterBlank = true
-      continue
+      afterBlank = true;
+      continue;
     }
     if (afterBlank && i > start && !/^\s/.test(line) && !LIST_ITEM.test(line)) {
-      blocks.push(lines.slice(start, i).join('\n'))
-      start = i
+      blocks.push(lines.slice(start, i).join('\n'));
+      start = i;
     }
-    afterBlank = false
-    const open = FENCE_OPEN.exec(line)
-    fence = open ? (open[1] ?? open[2]) : null
+    afterBlank = false;
+    const open = FENCE_OPEN.exec(line);
+    fence = open ? (open[1] ?? open[2]) : null;
   }
-  blocks.push(lines.slice(start).join('\n'))
-  return blocks
+  blocks.push(lines.slice(start).join('\n'));
+  return blocks;
 }

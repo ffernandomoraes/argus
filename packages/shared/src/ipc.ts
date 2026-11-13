@@ -1,31 +1,31 @@
-import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents'
-import type { AppSettings } from './appSettings'
-import type { Lang, LangPreference } from './i18n'
-import type { AuthState, LoginMethod } from './auth'
-import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
-import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
-import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
-import type { SystemHealthState } from './systemHealth'
-import type { CleanResult, StorageSettings, StorageUsage } from './storage'
-import type { CliStatus } from './cli'
-import type { DevServer, ProjectServer } from './devServers'
-import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files'
-import type { HistoryPage, HistoryRequest, Message } from './history'
-import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks'
-import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp'
-import type { MediaCommand, NowPlaying } from './media'
-import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory'
-import type { ClaudeVersionState } from './claudeVersion'
-import type { ClaudeInfo } from './models'
-import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions'
-import type { SpeechEvent } from './speech'
-import type { TerminalOpenRequest, TerminalOpenResult } from './terminal'
-import type { TranscriptionModel } from './transcription'
-import type { ReleaseNote, UpdateInfo, UpdateState } from './updates'
-import type { Usage } from './usage'
-import type { WorktreeReserved, WorktreeStatus } from './worktrees'
-import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote'
+import type { AgentDef, AgentProvider, AgentSaveRequest, AgentSaveResult } from './agents';
+import type { AppSettings } from './appSettings';
+import type { Lang, LangPreference } from './i18n';
+import type { AuthState, LoginMethod } from './auth';
+import type { ClipboardKey, ProviderId, ProvidersState } from './providers';
+import type { BoardsState, BoardSummary, CanvasViewport } from './canvas';
+import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent';
+import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
+import type { SystemHealthState } from './systemHealth';
+import type { CleanResult, StorageSettings, StorageUsage } from './storage';
+import type { CliStatus } from './cli';
+import type { DevServer, ProjectServer } from './devServers';
+import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files';
+import type { HistoryPage, HistoryRequest, Message } from './history';
+import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
+import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
+import type { MediaCommand, NowPlaying } from './media';
+import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
+import type { ClaudeVersionState } from './claudeVersion';
+import type { ClaudeInfo } from './models';
+import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
+import type { SpeechEvent } from './speech';
+import type { TerminalOpenRequest, TerminalOpenResult } from './terminal';
+import type { TranscriptionModel } from './transcription';
+import type { ReleaseNote, UpdateInfo, UpdateState } from './updates';
+import type { Usage } from './usage';
+import type { WorktreeReserved, WorktreeStatus } from './worktrees';
+import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote';
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (apps/desktop/src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -36,13 +36,13 @@ import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLo
 // em packages/shared/src/api.ts (o formato de window.api); (4) a implementação em apps/desktop/src/preload/index.ts. O
 // typecheck acusa o que não bater entre os quatro.
 
-export type ThemeSource = 'dark' | 'light' | 'system'
+export type ThemeSource = 'dark' | 'light' | 'system';
 // Desfazer e refazer que chegam do menu Editar (Mac) ou do Ctrl+Z (Windows, ver preload/keys.ts).
-export type EditAction = 'undo' | 'redo'
+export type EditAction = 'undo' | 'redo';
 // Recortar, copiar e colar do menu de botão direito num campo de texto: o colar nativo, porque a
 // página não lê a área de transferência (main/app/permissions.ts).
-export type ClipboardCommand = 'cut' | 'copy' | 'paste'
-export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste']
+export type ClipboardCommand = 'cut' | 'copy' | 'paste';
+export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste'];
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
 export type InvokeChannels = {
@@ -197,7 +197,7 @@ export type InvokeChannels = {
   'remoteAccess:pair': (code: string) => RemotePairResult
   // Erro em texto, ou nulo quando abriu.
   'remoteAccess:open': (hostId: string) => string | null
-}
+};
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
 export type SendChannels = {
@@ -319,7 +319,7 @@ export type SendChannels = {
   'remoteAccess:disconnect': (id?: string) => void
   'remoteAccess:removeDevice': (id: string) => void
   'remoteAccess:forgetHost': (hostId: string) => void
-}
+};
 
 // Síncronas, para o que a janela precisa antes do primeiro desenho: ipcRenderer.sendSync ↔
 // ipcMain.on com returnValue.
@@ -333,7 +333,7 @@ export type SendSyncChannels = {
   'boards:create': (name: string) => string
   // Janela de acesso remoto: o computador que ela mostra, como está agora (nulo nas comuns).
   'remote:info': () => RemoteHostInfo | null
-}
+};
 
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.
 export type EventChannels = {
@@ -396,9 +396,5 @@ export type EventChannels = {
   // Janela de acesso remoto: pediu algo que não funciona de longe (a tela explica o porquê).
   'remote:blocked': (channel: string) => void
   'remoteAccess:state': (state: RemoteAccessState) => void
-}
+};
 
-type InvokeChannel = keyof InvokeChannels
-type SendChannel = keyof SendChannels
-type SendSyncChannel = keyof SendSyncChannels
-type EventChannel = keyof EventChannels

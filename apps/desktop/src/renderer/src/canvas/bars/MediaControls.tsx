@@ -1,65 +1,65 @@
-import { memo, useEffect, useRef, useState } from 'react'
-import { Pause, Play, Volume1, Volume2, VolumeX } from 'lucide-react'
-import type { NowPlaying } from '@argus/shared/media'
-import { Presence } from '../../motion'
-import { MenuArrow } from '../../ui/MenuArrow'
-import { MENU_PANEL } from '../../ui/menuStyles'
-import { useEscape } from '../../useEscape'
-import { useOutsideClick } from '../../useOutsideClick'
-import { tr } from '../../i18n'
+import { memo, useEffect, useRef, useState } from 'react';
+import { Pause, Play, Volume1, Volume2, VolumeX } from 'lucide-react';
+import type { NowPlaying } from '@argus/shared/media';
+import { Presence } from '../../motion';
+import { MenuArrow } from '../../ui/MenuArrow';
+import { MENU_PANEL } from '../../ui/menuStyles';
+import { useEscape } from '../../useEscape';
+import { useOutsideClick } from '../../useOutsideClick';
+import { tr } from '../../i18n';
 
 // De quanto em quanto tempo confere o que toca no sistema. Só com a janela à vista.
-const POLL_MS = 2000
+const POLL_MS = 2000;
 
 // Player no meio da barra de baixo: o nome da música, tocar/pausar e o volume do sistema, de
 // qualquer app (Spotify, uma aba do navegador; ver main/media). Sem nada tocando, ou desligado nas
 // configurações, não aparece. O botão de tocar/pausar só aparece se o app aceita o comando. O
 // volume é um ícone; o controle abre num painel acima, ao clicar. Sem dicas ao passar o mouse: os controles se explicam pelo ícone.
 
-const CONTROL = 'flex h-6 min-w-6 items-center justify-center rounded-md'
-const tone = (on: boolean) => (on ? 'bg-fill text-text ring-1 ring-line ring-inset' : 'text-muted hover:bg-fill hover:text-text')
+const CONTROL = 'flex h-6 min-w-6 items-center justify-center rounded-md';
+const tone = (on: boolean) => (on ? 'bg-fill text-text ring-1 ring-line ring-inset' : 'text-muted hover:bg-fill hover:text-text');
 export const MediaControls = memo(function MediaControls() {
-  const [media, setMedia] = useState<NowPlaying | null>(null)
-  const [volumeOpen, setVolumeOpen] = useState(false)
-  const volumeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const [media, setMedia] = useState<NowPlaying | null>(null);
+  const [volumeOpen, setVolumeOpen] = useState(false);
+  const volumeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Ícone e painel num elemento só: o clique no ícone não conta como fora.
-  const volumeRef = useRef<HTMLDivElement>(null)
-  useOutsideClick(volumeRef, () => setVolumeOpen(false), volumeOpen)
-  useEscape(() => setVolumeOpen(false), volumeOpen)
+  const volumeRef = useRef<HTMLDivElement>(null);
+  useOutsideClick(volumeRef, () => setVolumeOpen(false), volumeOpen);
+  useEscape(() => setVolumeOpen(false), volumeOpen);
 
   useEffect(() => {
-    let alive = true
+    let alive = true;
     // A mesma música do jeito que estava: fica o objeto anterior, e a barra não redesenha a cada leitura.
     const read = () => {
-      if (document.hidden) return
-      void window.api.media.get().then((m) => alive && setMedia((prev) => (JSON.stringify(prev) === JSON.stringify(m) ? prev : m)))
-    }
-    read()
-    const id = setInterval(read, POLL_MS)
-    document.addEventListener('visibilitychange', read)
+      if (document.hidden) return;
+      void window.api.media.get().then((m) => alive && setMedia((prev) => (JSON.stringify(prev) === JSON.stringify(m) ? prev : m)));
+    };
+    read();
+    const id = setInterval(read, POLL_MS);
+    document.addEventListener('visibilitychange', read);
     return () => {
-      alive = false
-      clearInterval(id)
-      document.removeEventListener('visibilitychange', read)
-    }
-  }, [])
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', read);
+    };
+  }, []);
 
-  if (!media) return null
+  if (!media) return null;
 
   // O ícone muda na hora; a próxima leitura confirma.
   const toggle = () => {
-    setMedia({ ...media, playing: !media.playing })
-    void window.api.media.command('toggle')
-  }
+    setMedia({ ...media, playing: !media.playing });
+    void window.api.media.command('toggle');
+  };
 
   // Cada passo do arraste chamaria o osascript: manda só quando o arraste para.
   const changeVolume = (volume: number) => {
-    setMedia({ ...media, volume })
-    clearTimeout(volumeTimer.current)
-    volumeTimer.current = setTimeout(() => void window.api.media.setVolume(volume), 120)
-  }
+    setMedia({ ...media, volume });
+    clearTimeout(volumeTimer.current);
+    volumeTimer.current = setTimeout(() => void window.api.media.setVolume(volume), 120);
+  };
 
-  const VolumeIcon = media.volume === 0 ? VolumeX : media.volume < 50 ? Volume1 : Volume2
+  const VolumeIcon = media.volume === 0 ? VolumeX : media.volume < 50 ? Volume1 : Volume2;
   return (
     <div className="no-drag flex items-center gap-1.5">
       {media.canToggle && (
@@ -91,5 +91,5 @@ export const MediaControls = memo(function MediaControls() {
         </Presence>
       </div>
     </div>
-  )
-})
+  );
+});

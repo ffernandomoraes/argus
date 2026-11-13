@@ -14,9 +14,9 @@ export type WorktreeInfo = {
   base: string
   pending?: boolean
   adopted?: boolean
-}
+};
 
-export type WorktreeReserved = { ok: true; path: string; base: string } | { ok: false; error: string }
+export type WorktreeReserved = { ok: true; path: string; base: string } | { ok: false; error: string };
 
 // Situação do worktree para o card. state: reservado (sem pasta ainda), preparando (copiando .env e
 // instalando dependências) ou pronto. error: a criação ou a instalação falhou. files: arquivos
@@ -29,7 +29,7 @@ export type WorktreeStatus = {
   files: number
   uncommitted: number
   unpushed: number
-}
+};
 
 // "Melhorar o checkout!" → "melhorar-o-checkout": sem acento, sem símbolo, em minúsculas.
 export function slugify(text: string, max = 48): string {
@@ -40,7 +40,7 @@ export function slugify(text: string, max = 48): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, max)
-    .replace(/-+$/, '')
+    .replace(/-+$/, '');
 }
 
 // Aviso oculto para o agente que trabalha num worktree: onde está, de onde saiu e como não
@@ -63,6 +63,6 @@ export function worktreePrompt(w: WorktreeInfo, branch: string | null): string {
     w.adopted
       ? '- Se faltar .env ou dependência ao rodar, copie o .env do repositório principal ou instale.'
       : '- Os .env foram copiados do repositório principal. As dependências são instaladas pelo Argus logo após a criação; se faltar alguma ao rodar, instale.',
-    '</worktree>'
-  ].join('\n')
+    '</worktree>',
+  ].join('\n');
 }

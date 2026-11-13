@@ -9,6 +9,6 @@
 // texto (ChatState.loginNeeded); isto cobre o que chega só como texto.
 // O aviso de antes do prazo ("this sign-in can end at any time... Renewing it does not move that
 // date") não é erro e não entra.
-const NEEDS_LOGIN = /not logged in|please run \/login|failed to authenticate|oauth session expired|reached its time limit|cannot be renewed/i
+const NEEDS_LOGIN = /not logged in|please run \/login|failed to authenticate|oauth session expired|reached its time limit|cannot be renewed/i;
 
-export const needsLogin = (error: string): boolean => NEEDS_LOGIN.test(error)
+export const needsLogin = (error: string): boolean => NEEDS_LOGIN.test(error);

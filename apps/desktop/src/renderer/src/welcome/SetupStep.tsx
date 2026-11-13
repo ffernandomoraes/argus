@@ -1,24 +1,24 @@
-import type { ReactNode } from 'react'
-import { Check, CheckCircle2, Circle, Copy, Loader2 } from 'lucide-react'
-import { MAIN_ACCOUNT, type AuthState, type ClaudeInstall } from '@argus/shared/auth'
-import type { ProvidersState } from '@argus/shared/providers'
-import { claudeReady, fallbackAgent } from '../auth/accounts'
-import { LoginPanel } from '../auth/LoginPanel'
-import { useCopied } from '../lib/useCopied'
-import { HOST_IS_WIN, IS_LINUX, IS_WIN } from '../platform'
-import { Button } from '../ui/Button'
-import { IconButton } from '../ui/IconButton'
-import { tr } from '../i18n'
+import type { ReactNode } from 'react';
+import { Check, CheckCircle2, Circle, Copy, Loader2 } from 'lucide-react';
+import { MAIN_ACCOUNT, type AuthState, type ClaudeInstall } from '@argus/shared/auth';
+import type { ProvidersState } from '@argus/shared/providers';
+import { claudeReady, fallbackAgent } from '../auth/accounts';
+import { LoginPanel } from '../auth/LoginPanel';
+import { useCopied } from '../lib/useCopied';
+import { HOST_IS_WIN, IS_LINUX, IS_WIN } from '../platform';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { tr } from '../i18n';
 
-const GIT_URL = 'https://git-scm.com/download/win'
+const GIT_URL = 'https://git-scm.com/download/win';
 // Linux: o git vem do gerenciador de pacotes da distribuição (apt no Ubuntu e no Debian, dnf no
 // Fedora).
-const LINUX_GIT = 'sudo apt install git   # Fedora: sudo dnf install git'
+const LINUX_GIT = 'sudo apt install git   # Fedora: sudo dnf install git';
 
 // Pronto para começar: o Claude pronto (ver claudeReady) ou outro agente conectado. O Git falta
 // só avisa.
 export function setupReady(auth: AuthState, providers: ProvidersState | null): boolean {
-  return claudeReady(auth) || !!fallbackAgent(auth, providers)
+  return claudeReady(auth) || !!fallbackAgent(auth, providers);
 }
 
 // Uma linha da lista: feito (verde), em andamento ou pendente, com a ação embaixo quando falta.
@@ -40,12 +40,12 @@ function Item({ state, title, detail, children }: { state: 'done' | 'busy' | 'to
         {children && <div className="mt-3">{children}</div>}
       </div>
     </div>
-  )
+  );
 }
 
 // Comando do instalador para rodar na mão, com botão de copiar.
 function Command({ command }: { command: string }) {
-  const { copied, copy } = useCopied()
+  const { copied, copy } = useCopied();
   return (
     <div className="flex items-center gap-2 rounded-md border border-line bg-bg px-2.5 py-1.5">
       <code className="min-w-0 flex-1 truncate font-mono text-xs text-text" title={command}>
@@ -55,16 +55,16 @@ function Command({ command }: { command: string }) {
         {copied ? <Check size={13} /> : <Copy size={13} />}
       </IconButton>
     </div>
-  )
+  );
 }
 
 // Claude Code: um clique roda o instalador oficial. Se falhar, o erro e o comando para o terminal.
 function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
-  if (claude.status === 'found') return <Item state="done" title="Claude Code" detail={tr('Instalado.', 'Installed.')} />
+  if (claude.status === 'found') return <Item state="done" title="Claude Code" detail={tr('Instalado.', 'Installed.')} />;
   if (claude.status === 'installing') {
-    return <Item state="busy" title="Claude Code" detail={tr('Instalando… pode levar um minuto, conforme a internet.', 'Installing… this may take a minute, depending on your connection.')} />
+    return <Item state="busy" title="Claude Code" detail={tr('Instalando… pode levar um minuto, conforme a internet.', 'Installing… this may take a minute, depending on your connection.')} />;
   }
-  const failed = claude.status === 'failed'
+  const failed = claude.status === 'failed';
   return (
     <Item
       state="todo"
@@ -74,7 +74,7 @@ function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
           ? tr('Não deu para instalar.', 'Could not install.')
           : tr(
               'Ainda não está instalado. O instalador é o oficial da Anthropic e fica na sua pasta de usuário.',
-              'Not installed yet. The installer is the official one from Anthropic and goes in your user folder.'
+              'Not installed yet. The installer is the official one from Anthropic and goes in your user folder.',
             )
       }
     >
@@ -95,14 +95,14 @@ function ClaudeItem({ claude }: { claude: ClaudeInstall }) {
         </div>
       )}
     </Item>
-  )
+  );
 }
 
 export function SetupStep({ auth }: { auth: AuthState }) {
-  const claudeOk = auth.claude.status === 'found'
-  const checking = claudeOk && auth.accounts.some((a) => a.status === null)
-  const account = auth.accounts.find((a) => a.status?.loggedIn)
-  const busy = auth.claude.status === 'installing'
+  const claudeOk = auth.claude.status === 'found';
+  const checking = claudeOk && auth.accounts.some((a) => a.status === null);
+  const account = auth.accounts.find((a) => a.status?.loggedIn);
+  const busy = auth.claude.status === 'installing';
 
   return (
     <div className="flex flex-col">
@@ -158,5 +158,5 @@ export function SetupStep({ auth }: { auth: AuthState }) {
         </button>
       )}
     </div>
-  )
+  );
 }

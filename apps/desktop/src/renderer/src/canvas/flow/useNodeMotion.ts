@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { MOTION } from '../../motion'
-import type { CanvasNode } from '../types'
-import { NO_LEAVING, sameNodes, withLeaving, withoutLeaving } from './leavingNodes'
+import { useEffect, useMemo, useState } from 'react';
+import { MOTION } from '../../motion';
+import type { CanvasNode } from '../types';
+import { NO_LEAVING, sameNodes, withLeaving, withoutLeaving } from './leavingNodes';
 
 // Blocos do canvas com o efeito padrão de aparecer e sumir (motion.tsx), em CSS (index.css):
 // o React Flow posiciona o bloco com transform, então o efeito vai no conteúdo dele.
@@ -14,31 +14,31 @@ export function useNodeMotion(nodes: CanvasNode[]): {
   booting: boolean
   leaving: ReadonlySet<string>
 } {
-  const [booting, setBooting] = useState(true)
+  const [booting, setBooting] = useState(true);
   useEffect(() => {
-    const t = setTimeout(() => setBooting(false), 600)
-    return () => clearTimeout(t)
-  }, [])
+    const t = setTimeout(() => setBooting(false), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   // Calculado no render (a lista anterior fica no estado): no mesmo render em que o bloco sai do
   // estado, ele já fica na tela. Lista nova com os mesmos nós não conta (e não entra em laço).
-  const [seen, setSeen] = useState(nodes)
-  const [leaving, setLeaving] = useState(NO_LEAVING)
+  const [seen, setSeen] = useState(nodes);
+  const [leaving, setLeaving] = useState(NO_LEAVING);
   if (seen !== nodes && !sameNodes(seen, nodes)) {
-    setSeen(nodes)
-    const next = withLeaving(seen, nodes, leaving)
-    if (next !== leaving) setLeaving(next)
+    setSeen(nodes);
+    const next = withLeaving(seen, nodes, leaving);
+    if (next !== leaving) setLeaving(next);
   }
 
   // Cada saída nova recomeça a contagem; no fim, os que estavam saindo somem de vez.
   useEffect(() => {
-    if (!leaving.size) return
-    const done = [...leaving.keys()]
-    const t = setTimeout(() => setLeaving((current) => withoutLeaving(current, done)), MOTION.panel.out.duration)
-    return () => clearTimeout(t)
-  }, [leaving])
+    if (!leaving.size) return;
+    const done = [...leaving.keys()];
+    const t = setTimeout(() => setLeaving((current) => withoutLeaving(current, done)), MOTION.panel.out.duration);
+    return () => clearTimeout(t);
+  }, [leaving]);
 
-  const shown = useMemo(() => (leaving.size ? [...nodes, ...leaving.values()] : nodes), [nodes, leaving])
-  const ids = useMemo(() => new Set(leaving.keys()), [leaving])
-  return { shown, booting, leaving: ids }
+  const shown = useMemo(() => (leaving.size ? [...nodes, ...leaving.values()] : nodes), [nodes, leaving]);
+  const ids = useMemo(() => new Set(leaving.keys()), [leaving]);
+  return { shown, booting, leaving: ids };
 }

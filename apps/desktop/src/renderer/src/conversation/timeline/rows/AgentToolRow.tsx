@@ -1,30 +1,30 @@
-import { memo, useContext, type MouseEvent } from 'react'
-import { Bot, MessageSquareText } from 'lucide-react'
-import type { RunningAgent } from '@argus/shared/agents'
-import { agentActivity, useRunningAgent } from '../../../canvas/runningAgents'
-import { Elapsed } from '../../Elapsed'
-import { Markdown } from '../../Markdown'
-import { SubagentOpenContext } from '../../subagentOpen'
-import type { Message } from '../../types'
-import { LazyDetails } from './LazyDetails'
-import { tr } from '../../../i18n'
+import { memo, useContext, type MouseEvent } from 'react';
+import { Bot, MessageSquareText } from 'lucide-react';
+import type { RunningAgent } from '@argus/shared/agents';
+import { agentActivity, useRunningAgent } from '../../../canvas/runningAgents';
+import { Elapsed } from '../../Elapsed';
+import { Markdown } from '../../Markdown';
+import { SubagentOpenContext } from '../../subagentOpen';
+import type { Message } from '../../types';
+import { LazyDetails } from './LazyDetails';
+import { tr } from '../../../i18n';
 
-const SECTION_TITLE = 'mb-1 px-1 text-[13px] uppercase tracking-wide text-faint'
+const SECTION_TITLE = 'mb-1 px-1 text-[13px] uppercase tracking-wide text-faint';
 
 // Subagente chamado pela conversa: qual agente, o pedido que recebeu, o que está fazendo
 // (enquanto roda) e o que entregou. O relatório só é formatado ao abrir a linha. "Ver conversa"
 // abre tudo o que ele fez num drawer só para ler (só os do Claude).
 export const AgentToolRow = memo(function AgentToolRow({ message }: { message: Extract<Message, { role: 'tool' }> }) {
-  const running = useRunningAgent(message.toolUseId)
-  const openSubagent = useContext(SubagentOpenContext)
-  const { toolUseId, agent = '' } = message
-  const canOpen = !!openSubagent && !!toolUseId && (message.name === 'Agent' || message.name === 'Task')
+  const running = useRunningAgent(message.toolUseId);
+  const openSubagent = useContext(SubagentOpenContext);
+  const { toolUseId, agent = '' } = message;
+  const canOpen = !!openSubagent && !!toolUseId && (message.name === 'Agent' || message.name === 'Task');
   // Dentro do <summary>: o clique não abre nem fecha a linha.
   const open = (e: MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (toolUseId) openSubagent?.(toolUseId, agent, message.input)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    if (toolUseId) openSubagent?.(toolUseId, agent, message.input);
+  };
   return (
     <LazyDetails
       className="group rounded-md border border-line bg-surface-2 px-2 py-1.5 text-[13px]"
@@ -54,12 +54,12 @@ export const AgentToolRow = memo(function AgentToolRow({ message }: { message: E
     >
       <AgentReport message={message} running={running} />
     </LazyDetails>
-  )
-})
+  );
+});
 
 // O corpo da linha aberta: pedido, atividade (enquanto roda) e o que entregou.
 function AgentReport({ message, running }: { message: Extract<Message, { role: 'tool' }>; running?: RunningAgent }) {
-  const steps = running?.steps ?? []
+  const steps = running?.steps ?? [];
   return (
     <>
       {message.detail && (
@@ -94,5 +94,5 @@ function AgentReport({ message, running }: { message: Extract<Message, { role: '
         </div>
       )}
     </>
-  )
+  );
 }

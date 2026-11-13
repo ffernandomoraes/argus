@@ -1,66 +1,66 @@
-import { useMemo, useState } from 'react'
-import { ArrowLeft, Bot, Plus, Trash2 } from 'lucide-react'
-import { AGENT_PROVIDERS, agentProviderName, type AgentProvider } from '@argus/shared/agents'
-import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog'
-import { useSaveShortcut } from '../lib/useSaveShortcut'
-import { Presence } from '../motion'
-import { HOST_IS_WIN, tildify } from '../platform'
-import { useProviders } from '../providers/useProviders'
-import { Button } from '../ui/Button'
-import { IconButton } from '../ui/IconButton'
-import { Modal } from '../ui/Modal'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { AgentEditor } from './AgentEditor'
-import { AgentList } from './AgentList'
-import { ImportMenu } from './ImportMenu'
-import { ProviderLogo } from './ProviderLogo'
-import { useAgentDraft } from './useAgentDraft'
-import { tr } from '../i18n'
+import { useMemo, useState } from 'react';
+import { ArrowLeft, Bot, Plus, Trash2 } from 'lucide-react';
+import { AGENT_PROVIDERS, agentProviderName, type AgentProvider } from '@argus/shared/agents';
+import { ConfirmDialog, type ConfirmRequest } from '../canvas/ConfirmDialog';
+import { useSaveShortcut } from '../lib/useSaveShortcut';
+import { Presence } from '../motion';
+import { HOST_IS_WIN, tildify } from '../platform';
+import { useProviders } from '../providers/useProviders';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { Modal } from '../ui/Modal';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { AgentEditor } from './AgentEditor';
+import { AgentList } from './AgentList';
+import { ImportMenu } from './ImportMenu';
+import { ProviderLogo } from './ProviderLogo';
+import { useAgentDraft } from './useAgentDraft';
+import { tr } from '../i18n';
 
 // Pasta de cada biblioteca, como aparece no cabeçalho (main/agents/folder.ts).
 function libraryPath(provider: AgentProvider): string {
-  if (provider === 'cursor') return tr('Guardados pelo Argus: o Cursor não tem agentes globais', 'Kept by Argus: Cursor has no global agents')
-  return HOST_IS_WIN ? `~\\.${provider}\\agents\\` : `~/.${provider}/agents/`
+  if (provider === 'cursor') return tr('Guardados pelo Argus: o Cursor não tem agentes globais', 'Kept by Argus: Cursor has no global agents');
+  return HOST_IS_WIN ? `~\\.${provider}\\agents\\` : `~/.${provider}/agents/`;
 }
 
 // Biblioteca de agentes globais de cada provedor: arquivos que valem em todo projeto (aqui, no
 // terminal e no VS Code). O app só lê e grava esses arquivos. Com os outros agentes ligados, uma
 // aba por provedor com conta conectada.
 export function AgentsModal({ onClose }: { onClose: () => void }) {
-  const providersState = useProviders()
+  const providersState = useProviders();
   const available = useMemo(
     () => AGENT_PROVIDERS.filter((p) => p === 'claude' || !!providersState?.providers[p]?.accounts.length),
-    [providersState]
-  )
-  const [chosen, setProvider] = useState<AgentProvider>('claude')
+    [providersState],
+  );
+  const [chosen, setProvider] = useState<AgentProvider>('claude');
   // A aba escolhida some se a conta dela for desconectada: volta para o Claude.
-  const provider = available.includes(chosen) ? chosen : 'claude'
-  const others = useMemo(() => available.filter((p) => p !== provider), [available, provider])
-  const agent = useAgentDraft(provider)
-  const { draft, dirty } = agent
-  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
+  const provider = available.includes(chosen) ? chosen : 'claude';
+  const others = useMemo(() => available.filter((p) => p !== provider), [available, provider]);
+  const agent = useAgentDraft(provider);
+  const { draft, dirty } = agent;
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   // Com alteração, pergunta antes de descartar; sem, segue direto.
   const discardThen = (then: () => void) => {
-    if (!dirty) return then()
+    if (!dirty) return then();
     setConfirm({
       title: tr('Descartar as alterações deste agente?', 'Discard changes to this agent?'),
       description: tr('O que você mudou desde a última vez que salvou se perde.', 'Changes since you last saved will be lost.'),
       confirmLabel: tr('Descartar', 'Discard'),
-      onConfirm: then
-    })
-  }
-  const back = () => discardThen(agent.close)
+      onConfirm: then,
+    });
+  };
+  const back = () => discardThen(agent.close);
   const askRemove = (name: string) =>
     setConfirm({
       title: tr(`Excluir o agente ${name}?`, `Delete agent ${name}?`),
       description: tr('O arquivo dele é apagado.', 'Its file will be deleted.'),
       confirmLabel: tr('Excluir', 'Delete'),
-      onConfirm: () => void agent.remove()
-    })
+      onConfirm: () => void agent.remove(),
+    });
 
   // ⌘S salva.
-  useSaveShortcut(agent.save)
+  useSaveShortcut(agent.save);
 
   return (
     <Modal
@@ -69,9 +69,9 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
       className="flex"
       onClose={onClose}
       onRequestClose={() => {
-        if (!dirty) return true
-        discardThen(onClose)
-        return false
+        if (!dirty) return true;
+        discardThen(onClose);
+        return false;
       }}
       // ESC volta uma camada: do agente aberto para a lista, depois fecha a janela.
       onEscape={draft ? back : undefined}
@@ -151,5 +151,5 @@ export function AgentsModal({ onClose }: { onClose: () => void }) {
       </section>
       <Presence kind="modal">{confirm && <ConfirmDialog request={confirm} onClose={() => setConfirm(null)} />}</Presence>
     </Modal>
-  )
+  );
 }

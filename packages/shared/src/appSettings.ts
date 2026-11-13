@@ -1,5 +1,5 @@
-import type { LangPreference } from './i18n'
-import type { CleanResult, StorageSettings } from './storage'
+import type { LangPreference } from './i18n';
+import type { CleanResult, StorageSettings } from './storage';
 
 // Preferências que o processo principal precisa antes de abrir a janela (as do renderer ficam no
 // localStorage, que só existe depois).
@@ -26,5 +26,5 @@ export type AppSettings = {
   // O prazo das conversas não fica aqui: é o do settings.json do Claude Code (ver main/storage/retention.ts).
   storage?: Partial<Omit<StorageSettings, 'conversationDays'>>
   storageLastClean?: CleanResult | null
-}
+};
 

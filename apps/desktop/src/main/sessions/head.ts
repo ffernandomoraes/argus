@@ -1,11 +1,11 @@
-import { open } from 'node:fs/promises'
-import { parseLine } from '../transcripts/line'
-import { readLines } from '../transcripts/lineReader'
-import { isMessage, userText } from './prompt'
+import { open } from 'node:fs/promises';
+import { parseLine } from '../transcripts/line';
+import { readLines } from '../transcripts/lineReader';
+import { isMessage, userText } from './prompt';
 
 // Até onde procurar o primeiro pedido com texto. Um print colado na primeira mensagem deixa a
 // linha com MB, e ler só os primeiros 64 KB a cortava: a conversa sumia da lista.
-const PROMPT_BYTES = 16 * 1024 * 1024
+const PROMPT_BYTES = 16 * 1024 * 1024;
 
 // O começo do arquivo nunca muda (o Claude Code só acrescenta): o que já foi lido dele fica
 // guardado por arquivo, e a leitura seguinte continua de onde parou.
@@ -15,35 +15,35 @@ export type Head = {
   done: boolean
   firstPrompt: string | null
   hasMessages: boolean
-}
+};
 
-export const emptyHead = (): Head => ({ offset: 0, done: false, firstPrompt: null, hasMessages: false })
+export const emptyHead = (): Head => ({ offset: 0, done: false, firstPrompt: null, hasMessages: false });
 
 export async function readHead(file: string, size: number, prev: Head): Promise<Head> {
-  if (prev.done || prev.offset >= size) return prev
-  const head = { ...prev }
+  if (prev.done || prev.offset >= size) return prev;
+  const head = { ...prev };
   const visit = (bytes: Buffer): boolean => {
-    const line = parseLine(bytes.toString('utf8'))
-    if (!line) return false
-    if (isMessage(line)) head.hasMessages = true
-    head.firstPrompt ??= userText(line)
-    return true
-  }
-  const found = () => head.firstPrompt !== null
-  const to = Math.min(size, PROMPT_BYTES)
-  const fh = await open(file, 'r')
+    const line = parseLine(bytes.toString('utf8'));
+    if (!line) return false;
+    if (isMessage(line)) head.hasMessages = true;
+    head.firstPrompt ??= userText(line);
+    return true;
+  };
+  const found = () => head.firstPrompt !== null;
+  const to = Math.min(size, PROMPT_BYTES);
+  const fh = await open(file, 'r');
   try {
     const { next, rest } = await readLines(fh, head.offset, to, (bytes, start) => {
-      visit(bytes)
-      head.offset = start + bytes.length + 1
-      return found()
-    })
-    head.offset = next
+      visit(bytes);
+      head.offset = start + bytes.length + 1;
+      return found();
+    });
+    head.offset = next;
     // Última linha do arquivo sem "\n": vale se já estiver inteira; cortada, é lida na próxima vez.
-    if (rest.length && to === size && visit(rest)) head.offset = size
+    if (rest.length && to === size && visit(rest)) head.offset = size;
   } finally {
-    await fh.close()
+    await fh.close();
   }
-  head.done = found() || size >= PROMPT_BYTES
-  return head
+  head.done = found() || size >= PROMPT_BYTES;
+  return head;
 }

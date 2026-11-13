@@ -1,86 +1,86 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import type { ResolvedTheme } from '../theme/useTheme'
-import type { NodesApi } from './actions/types'
-import { useArrange } from './actions/useArrange'
-import { useCanvasCommands } from './actions/useCanvasCommands'
-import { useConversationActions } from './actions/useConversationActions'
-import { useGroupWide } from './actions/useGroupWide'
-import { useLooseCards } from './actions/useLooseCards'
-import { useNodeActions } from './actions/useNodeActions'
-import { useNotificationOpen } from './actions/useNotificationOpen'
-import { usePoppedOut } from './actions/usePoppedOut'
-import { CanvasContext } from './CanvasContext'
-import { CanvasViewContext, createCanvasView, patchView } from './canvasView'
-import { CanvasOverlays } from './drawers/CanvasOverlays'
-import { DrawerHost } from './drawers/DrawerHost'
-import { drawerLayout } from './drawers/drawerLayout'
-import { slotTarget } from './drawers/drawerView'
-import { useCanvasProjects } from './drawers/useCanvasProjects'
-import { useDrawers } from './drawers/useDrawers'
-import { useFitBeside } from './drawers/useFitBeside'
-import { useOverlays } from './drawers/useOverlays'
-import { looseDrawer } from './drawers/drawerState'
-import { useShownDrawers } from './drawers/useShownDrawers'
-import { CanvasFlow } from './flow/CanvasFlow'
-import { useGroupDrop } from './flow/useGroupDrop'
-import { useMenuHandlers } from './flow/useMenuHandlers'
-import { useCliOpen } from './focus/useCliOpen'
-import { useFocusNode } from './focus/useFocusNode'
-import { useCanvasKeys } from './keys/useCanvasKeys'
-import { useSpaceHeld } from './keys/useSpaceHeld'
-import { useUiHidden } from './keys/useUiHidden'
-import { useCurrentBoard } from './boards'
-import { loadNodes, useCanvasSync } from './persistence'
-import { BottomBar } from './BottomBar'
-import { setPoppedOut } from './sessionsStore'
-import { TitleBar } from './TitleBar'
-import type { CanvasNode } from './types'
-import { useCanvasAgentTools } from './useCanvasAgentTools'
-import { setCanvasScope } from './canvasScope'
-import { useHistory } from './useHistory'
-import { Mascot } from './mascot/Mascot'
-import { MascotBridge } from './mascot/MascotBridge'
-import { useWorktreeActions } from './worktrees/useWorktreeActions'
-import { useWorktreeMoves } from './worktrees/useWorktreeMoves'
+import { memo, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import type { ResolvedTheme } from '../theme/useTheme';
+import type { NodesApi } from './actions/types';
+import { useArrange } from './actions/useArrange';
+import { useCanvasCommands } from './actions/useCanvasCommands';
+import { useConversationActions } from './actions/useConversationActions';
+import { useGroupWide } from './actions/useGroupWide';
+import { useLooseCards } from './actions/useLooseCards';
+import { useNodeActions } from './actions/useNodeActions';
+import { useNotificationOpen } from './actions/useNotificationOpen';
+import { usePoppedOut } from './actions/usePoppedOut';
+import { CanvasContext } from './CanvasContext';
+import { CanvasViewContext, createCanvasView, patchView } from './canvasView';
+import { CanvasOverlays } from './drawers/CanvasOverlays';
+import { DrawerHost } from './drawers/DrawerHost';
+import { drawerLayout } from './drawers/drawerLayout';
+import { slotTarget } from './drawers/drawerView';
+import { useCanvasProjects } from './drawers/useCanvasProjects';
+import { useDrawers } from './drawers/useDrawers';
+import { useFitBeside } from './drawers/useFitBeside';
+import { useOverlays } from './drawers/useOverlays';
+import { looseDrawer } from './drawers/drawerState';
+import { useShownDrawers } from './drawers/useShownDrawers';
+import { CanvasFlow } from './flow/CanvasFlow';
+import { useGroupDrop } from './flow/useGroupDrop';
+import { useMenuHandlers } from './flow/useMenuHandlers';
+import { useCliOpen } from './focus/useCliOpen';
+import { useFocusNode } from './focus/useFocusNode';
+import { useCanvasKeys } from './keys/useCanvasKeys';
+import { useSpaceHeld } from './keys/useSpaceHeld';
+import { useUiHidden } from './keys/useUiHidden';
+import { useCurrentBoard } from './boards';
+import { loadNodes, useCanvasSync } from './persistence';
+import { BottomBar } from './BottomBar';
+import { setPoppedOut } from './sessionsStore';
+import { TitleBar } from './TitleBar';
+import type { CanvasNode } from './types';
+import { useCanvasAgentTools } from './useCanvasAgentTools';
+import { setCanvasScope } from './canvasScope';
+import { useHistory } from './useHistory';
+import { Mascot } from './mascot/Mascot';
+import { MascotBridge } from './mascot/MascotBridge';
+import { useWorktreeActions } from './worktrees/useWorktreeActions';
+import { useWorktreeMoves } from './worktrees/useWorktreeMoves';
 
-type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void }
+type Props = { colorMode: ResolvedTheme; onOpenSettings: () => void };
 
 // O canvas: a lista de nós de um workspace (salva, sincronizada entre as janelas e com desfazer) e
 // o que se monta em volta dela. Cada parte mora numa pasta: flow/ (o React Flow), actions/ (o que
 // os blocos e os menus pedem), drawers/ (drawers, painéis e modais por cima), keys/ (teclado) e
 // focus/ (câmera).
 function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: string }) {
-  const [nodes, setNodes] = useState<CanvasNode[]>(() => loadNodes(board))
-  const { nodesRef, change, trackGesture, undo, redo } = useHistory(board, nodes, setNodes)
-  useCanvasSync(board, nodes, setNodes)
+  const [nodes, setNodes] = useState<CanvasNode[]>(() => loadNodes(board));
+  const { nodesRef, change, trackGesture, undo, redo } = useHistory(board, nodes, setNodes);
+  useCanvasSync(board, nodes, setNodes);
   // O que está no canvas: só essas pastas contam para o "concluído", a barra de menus e o mascote.
-  useEffect(() => setCanvasScope(nodes), [nodes])
-  useCanvasAgentTools(nodesRef, change)
-  const api = useMemo<NodesApi>(() => ({ board, nodesRef, setNodes, change }), [board, nodesRef, change])
+  useEffect(() => setCanvasScope(nodes), [nodes]);
+  useCanvasAgentTools(nodesRef, change);
+  const api = useMemo<NodesApi>(() => ({ board, nodesRef, setNodes, change }), [board, nodesRef, change]);
   // Câmera com que esta janela estava neste workspace (ao sair dele ou ao fechar o app); sem ela,
   // enquadra tudo.
-  const [savedViewport] = useState(() => window.api.canvas.viewport(board))
+  const [savedViewport] = useState(() => window.api.canvas.viewport(board));
 
   // O que os blocos mostram e muda com o uso (canvasView.ts): lido por bloco, fora do contexto.
-  const [view] = useState(createCanvasView)
-  const overlays = useOverlays()
-  const drawers = useDrawers()
-  const shownDrawers = useShownDrawers()
-  const markPoppedOut = usePoppedOut(view)
-  const isPoppedOut = (id: string) => view.get().poppedOut.has(id)
+  const [view] = useState(createCanvasView);
+  const overlays = useOverlays();
+  const drawers = useDrawers();
+  const shownDrawers = useShownDrawers();
+  const markPoppedOut = usePoppedOut(view);
+  const isPoppedOut = (id: string) => view.get().poppedOut.has(id);
   // Conversa em janela separada está sendo vista: a resposta dela não fica como não lida.
   useEffect(() => {
-    let last = view.get().poppedOut
-    setPoppedOut(last)
+    let last = view.get().poppedOut;
+    setPoppedOut(last);
     return view.subscribe(() => {
-      const now = view.get().poppedOut
-      if (now !== last) setPoppedOut((last = now))
-    })
-  }, [view])
-  const focusNode = useFocusNode(api)
-  const nodeActions = useNodeActions(api, view, overlays.commands.confirm, focusNode)
-  const { arranging, organizeBoard, organizeGroup } = useArrange(api)
-  const watchLoose = useLooseCards(api, drawers.commands)
+      const now = view.get().poppedOut;
+      if (now !== last) setPoppedOut((last = now));
+    });
+  }, [view]);
+  const focusNode = useFocusNode(api);
+  const nodeActions = useNodeActions(api, view, overlays.commands.confirm, focusNode);
+  const { arranging, organizeBoard, organizeGroup } = useArrange(api);
+  const watchLoose = useLooseCards(api, drawers.commands);
   const conversations = useConversationActions({
     api,
     view,
@@ -88,12 +88,12 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     drawers: drawers.commands,
     markPoppedOut,
     watchLoose,
-    confirm: overlays.commands.confirm
-  })
-  const { openGroupWide, newGroupConversation } = useGroupWide(nodes, api, focusNode, overlays.commands.confirm, conversations.newConversation)
-  const drop = useGroupDrop(api, view)
-  const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm)
-  useWorktreeMoves(api, drawers.commands)
+    confirm: overlays.commands.confirm,
+  });
+  const { openGroupWide, newGroupConversation } = useGroupWide(nodes, api, focusNode, overlays.commands.confirm, conversations.newConversation);
+  const drop = useGroupDrop(api, view);
+  const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm);
+  useWorktreeMoves(api, drawers.commands);
   const menus = useMenuHandlers({
     nodesRef,
     setMenu: overlays.commands.setMenu,
@@ -108,9 +108,9 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
       removeWorktree: worktrees.removeWorktree,
       isPoppedOut,
       organizeBoard,
-      organizeGroup
-    }
-  })
+      organizeGroup,
+    },
+  });
   const commands = useCanvasCommands({
     nodeActions,
     conversations,
@@ -118,11 +118,11 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     overlays: overlays.commands,
     openConversationMenu: menus.openConversationMenu,
     openSettings: onOpenSettings,
-    newGroupConversation
-  })
+    newGroupConversation,
+  });
 
-  const spaceHeld = useSpaceHeld()
-  const { uiHidden, toggleUi } = useUiHidden()
+  const spaceHeld = useSpaceHeld();
+  const { uiHidden, toggleUi } = useUiHidden();
   useCanvasKeys({
     nodesRef,
     change,
@@ -130,31 +130,31 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     redo,
     addNote: nodeActions.addNote,
     openCommandBar: overlays.commands.openCommandBar,
-    closeMenu: overlays.commands.closeMenu
-  })
-  useCliOpen(api, focusNode)
-  const open = drawers.state.drawers
-  const shownConversations = useMemo(() => open.map((d) => d.conversation), [open])
-  const openChat = useNotificationOpen({ nodesRef, shown: shownConversations, openConversation: conversations.openConversation })
+    closeMenu: overlays.commands.closeMenu,
+  });
+  useCliOpen(api, focusNode);
+  const open = drawers.state.drawers;
+  const shownConversations = useMemo(() => open.map((d) => d.conversation), [open]);
+  const openChat = useNotificationOpen({ nodesRef, shown: shownConversations, openConversation: conversations.openConversation });
   // A conversa destacada no bloco é a do drawer solto (a última aberta), senão a do último fixado.
-  const main = (looseDrawer(open) ?? open[open.length - 1])?.conversation ?? null
+  const main = (looseDrawer(open) ?? open[open.length - 1])?.conversation ?? null;
   // A conversa aberta vai para o store, onde cada bloco lê se é a dele.
-  useLayoutEffect(() => patchView(view, { activeConversation: main }), [view, main])
+  useLayoutEffect(() => patchView(view, { activeConversation: main }), [view, main]);
 
-  const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open])
-  const layout = drawerLayout(drawers.state, targets, shownDrawers.titles)
-  const { shown } = layout
-  const codeRoot = layout.code?.root ?? null
-  useLayoutEffect(() => patchView(view, { codeRoot }), [view, codeRoot])
-  const projects = useCanvasProjects(nodes)
+  const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open]);
+  const layout = drawerLayout(drawers.state, targets, shownDrawers.titles);
+  const { shown } = layout;
+  const codeRoot = layout.code?.root ?? null;
+  useLayoutEffect(() => patchView(view, { codeRoot }), [view, codeRoot]);
+  const projects = useCanvasProjects(nodes);
   // Pasta do painel de todas as conversas; some junto com a pasta, se ela for excluída.
-  const listId = overlays.state.allConversations
+  const listId = overlays.state.allConversations;
   const allConversations = useMemo(() => {
-    const node = nodes.find((n) => n.id === listId)
-    return node?.type === 'project' ? node : null
-  }, [nodes, listId])
-  const aside = allConversations ? overlays.state.allConversationsRect : null
-  useFitBeside(aside, open, drawers.commands)
+    const node = nodes.find((n) => n.id === listId);
+    return node?.type === 'project' ? node : null;
+  }, [nodes, listId]);
+  const aside = allConversations ? overlays.state.allConversationsRect : null;
+  useFitBeside(aside, open, drawers.commands);
 
   return (
     <CanvasContext.Provider value={commands}>
@@ -218,12 +218,12 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
         />
       </CanvasViewContext.Provider>
     </CanvasContext.Provider>
-  )
+  );
 }
 
 // Trocar de workspace monta o canvas do zero (a chave): lista, desfazer, drawers e câmera são do
 // workspace. As conversas e os terminais do anterior seguem no processo principal.
 export const Canvas = memo(function Canvas(props: Props) {
-  const board = useCurrentBoard()
-  return <CanvasView key={board} board={board} {...props} />
-})
+  const board = useCurrentBoard();
+  return <CanvasView key={board} board={board} {...props} />;
+});

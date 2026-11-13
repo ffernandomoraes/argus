@@ -1,13 +1,13 @@
-import { randomUUID } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
-import { join } from 'node:path'
-import { MAIN_ACCOUNT } from '@argus/shared/auth'
-import { erase } from './erase'
-import { link } from './links'
-import { dropLoginOverrides } from './loginOverrides'
-import { accountDir, ROOT } from './paths'
-import { forgetAccount, pending, resolveAccount } from './registry'
-import { seed } from './seed'
+import { randomUUID } from 'node:crypto';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { MAIN_ACCOUNT } from '@argus/shared/auth';
+import { erase } from './erase';
+import { link } from './links';
+import { dropLoginOverrides } from './loginOverrides';
+import { accountDir, ROOT } from './paths';
+import { forgetAccount, pending, resolveAccount } from './registry';
+import { seed } from './seed';
 
 // Contas do Claude no app. A principal é a do ~/.claude, a mesma do terminal e do VS Code. Cada
 // outra mora numa pasta própria, passada ao `claude` em CLAUDE_CONFIG_DIR (a pasta de configuração
@@ -17,9 +17,9 @@ import { seed } from './seed'
 // rodam ao mesmo tempo sem uma derrubar a outra.
 // O que é seu fica ligado à principal por link simbólico; o login e os MCPs, não (ver links.ts).
 
-export { cleanupAccounts } from './erase'
-export { suggestedName } from './naming'
-export { accountDir } from './paths'
+export { cleanupAccounts } from './erase';
+export { suggestedName } from './naming';
+export { accountDir } from './paths';
 export {
   accountIds,
   addAccount,
@@ -36,46 +36,46 @@ export {
   rememberLoginMethod,
   renameAccount,
   resolveAccount,
-  setDefaultAccount
-} from './registry'
+  setDefaultAccount,
+} from './registry';
 
-export { dropLoginOverrides, overridesLogin } from './loginOverrides'
+export { dropLoginOverrides, overridesLogin } from './loginOverrides';
 
 // Põe a conta no ambiente do `claude` e devolve a que ficou valendo. A principal vai sem a
 // variável, mesmo se o app foi aberto com ela: o resto do app lê ~/.claude.
 export function applyAccount(env: Record<string, string>, id?: string): string {
-  const account = resolveAccount(id)
-  delete env.CLAUDE_CONFIG_DIR
-  delete env.CLAUDE_SECURESTORAGE_CONFIG_DIR
-  dropLoginOverrides(env, account)
-  const dir = accountDir(account)
+  const account = resolveAccount(id);
+  delete env.CLAUDE_CONFIG_DIR;
+  delete env.CLAUDE_SECURESTORAGE_CONFIG_DIR;
+  dropLoginOverrides(env, account);
+  const dir = accountDir(account);
   if (dir) {
-    link(dir)
-    env.CLAUDE_CONFIG_DIR = dir
+    link(dir);
+    env.CLAUDE_CONFIG_DIR = dir;
   }
-  return account
+  return account;
 }
 
 // Pasta de uma conta nova, pronta para o login. Ela só entra na lista com addAccount.
 export function createPendingAccount(): string {
-  const id = randomUUID().replace(/-/g, '').slice(0, 8)
-  const dir = join(ROOT, id)
-  mkdirSync(dir, { recursive: true })
-  seed(dir)
-  link(dir)
-  pending.add(id)
-  return id
+  const id = randomUUID().replace(/-/g, '').slice(0, 8);
+  const dir = join(ROOT, id);
+  mkdirSync(dir, { recursive: true });
+  seed(dir);
+  link(dir);
+  pending.add(id);
+  return id;
 }
 
 // Login de conta nova cancelado ou recusado: some a pasta e o login que ela tenha guardado.
 export function discardAccount(id: string): void {
-  pending.delete(id)
-  erase(id)
+  pending.delete(id);
+  erase(id);
 }
 
 // Tira a conta da lista e apaga a pasta. Grupos que usavam ela passam a usar a padrão.
 export function removeAccount(id: string): void {
-  if (id === MAIN_ACCOUNT) return
-  forgetAccount(id)
-  erase(id)
+  if (id === MAIN_ACCOUNT) return;
+  forgetAccount(id);
+  erase(id);
 }

@@ -1,28 +1,28 @@
-import { useEffect, useState } from 'react'
-import { Check } from 'lucide-react'
-import { MENU_HOVER } from '../ui/menuStyles'
-import { Modal } from '../ui/Modal'
-import { ModalCloseButton } from '../ui/ModalCloseButton'
-import { tr } from '../i18n'
+import { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
+import { MENU_HOVER } from '../ui/menuStyles';
+import { Modal } from '../ui/Modal';
+import { ModalCloseButton } from '../ui/ModalCloseButton';
+import { tr } from '../i18n';
 
 // Os estilos que já vêm no Claude Code, com as descrições do próprio `claude`, traduzidas.
 const STYLES = [
   {
     value: 'default',
     label: tr('Padrão', 'Default'),
-    description: tr('Faz as tarefas de código com eficiência e responde de forma direta.', 'Completes coding tasks efficiently and responds concisely.')
+    description: tr('Faz as tarefas de código com eficiência e responde de forma direta.', 'Completes coding tasks efficiently and responds concisely.'),
   },
   {
     value: 'Explanatory',
     label: tr('Explicativo', 'Explanatory'),
-    description: tr('Explica as escolhas de implementação e os padrões do código.', 'Explains its implementation choices and the codebase patterns.')
+    description: tr('Explica as escolhas de implementação e os padrões do código.', 'Explains its implementation choices and the codebase patterns.'),
   },
   {
     value: 'Learning',
     label: tr('Aprendizado', 'Learning'),
-    description: tr('Pausa e pede para você escrever pequenos trechos de código, para praticar.', 'Pauses and asks you to write small pieces of code for hands-on practice.')
-  }
-]
+    description: tr('Pausa e pede para você escrever pequenos trechos de código, para praticar.', 'Pauses and asks you to write small pieces of code for hands-on practice.'),
+  },
+];
 
 // /output-style: escolhe o estilo de resposta, no lugar da tela que abriria no terminal. Como no
 // `claude`, vale para a pasta.
@@ -30,32 +30,32 @@ export function OutputStylePanel({
   conversationKey,
   cwd,
   account,
-  onClose
+  onClose,
 }: {
   conversationKey: string
   cwd: string
   account?: string
   onClose: () => void
 }) {
-  const [current, setCurrent] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [current, setCurrent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void window.api.chat.outputStyle(conversationKey, cwd, account).then((r) => {
-      if (r.ok) setCurrent(r.style)
-      else setError(r.error)
-    })
-  }, [conversationKey, cwd, account])
+      if (r.ok) setCurrent(r.style);
+      else setError(r.error);
+    });
+  }, [conversationKey, cwd, account]);
 
   const choose = async (style: string) => {
-    if (style === current) return onClose()
-    setSaving(true)
-    const r = await window.api.chat.setOutputStyle(conversationKey, cwd, style)
-    setSaving(false)
-    if (!r.ok) return setError(r.error)
-    onClose()
-  }
+    if (style === current) return onClose();
+    setSaving(true);
+    const r = await window.api.chat.setOutputStyle(conversationKey, cwd, style);
+    setSaving(false);
+    if (!r.ok) return setError(r.error);
+    onClose();
+  };
 
   return (
     <Modal label={tr('Estilo de resposta', 'Output style')} size="auto" className="flex w-[min(440px,100%)] flex-col" onClose={onClose}>
@@ -85,5 +85,5 @@ export function OutputStylePanel({
         {error && <div className="px-2 pt-1 text-xs text-red-400">{error}</div>}
       </div>
     </Modal>
-  )
+  );
 }

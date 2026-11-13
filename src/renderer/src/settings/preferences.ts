@@ -32,8 +32,6 @@ export type Preferences = {
   // Worktrees (Configurações > Experimentos): "Nova tarefa em paralelo" no menu da pasta, que cria um git
   // worktree como card filho dela.
   worktrees: boolean
-  // Acesso remoto (Configurações > Experimentos): liga a aba Acesso remoto.
-  remoteAccess: boolean
   // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
   favoriteChats: string[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
@@ -55,7 +53,6 @@ const DEFAULTS: Preferences = {
   mascotCanvasSpot: null,
   mascotLook: DEFAULT_LOOK,
   worktrees: false,
-  remoteAccess: false,
   favoriteChats: [],
   promptSuggestions: true
 }

@@ -30,9 +30,8 @@ export function SettingsPage({
   const [section, setSection] = useState<Section>('general')
   // Seção de experimento só aparece com ele ligado em Experimentos.
   const mascot = usePreference('mascot')
-  const remote = usePreference('remoteAccess')
   // Acesso remoto fica fora da janela remota: parear e hospedar são da máquina de quem está usando.
-  const sections = SECTIONS.filter((s) => (s.id !== 'mascot' || mascot) && (s.id !== 'remote' || (remote && !IS_REMOTE)))
+  const sections = SECTIONS.filter((s) => (s.id !== 'mascot' || mascot) && (s.id !== 'remote' || !IS_REMOTE))
   const current = SECTIONS.find((s) => s.id === section)!
   const CurrentIcon = current.icon
 

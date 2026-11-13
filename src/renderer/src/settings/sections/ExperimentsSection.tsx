@@ -1,13 +1,11 @@
 import { Group, Row, Switch } from '../controls'
 import { setPreferences, usePreference } from '../preferences'
 import { tr } from '../../i18n'
-import { IS_REMOTE } from '../../remote'
 
 // Coisas em teste ou só por diversão. Tudo aqui vem desligado.
 export function ExperimentsSection() {
   const mascot = usePreference('mascot')
   const worktrees = usePreference('worktrees')
-  const remoteAccess = usePreference('remoteAccess')
   return (
     <Group>
       <Row
@@ -30,27 +28,6 @@ export function ExperimentsSection() {
       >
         <Switch label={tr('Tarefas em paralelo', 'Parallel tasks')} checked={worktrees} onChange={(next) => setPreferences({ worktrees: next })} />
       </Row>
-      {/* Na janela remota, não: parear e hospedar são da máquina de quem está usando. */}
-      {!IS_REMOTE && (
-        <Row
-          label={tr('Acesso remoto', 'Remote access')}
-          description={tr('Use o Argus deste computador de outro, como o notebook do trabalho.', 'Use this computer’s Argus from another one, like your work laptop.')}
-          info={tr(
-            'Deixe um computador ligado com o Argus e abra ele de outro, com os projetos, conversas e terminais de lá. Os dois pareiam uma vez com um código; depois, a ligação passa pela ponte do Argus na internet, cifrada de ponta a ponta. Liga a aba Acesso remoto. Os dois computadores precisam estar na mesma versão do Argus.',
-            'Leave a computer on with Argus and open it from another one, with its projects, chats and terminals. Both pair once with a code; after that, the connection goes through the Argus relay on the internet, end-to-end encrypted. Enables the Remote access tab. Both computers must be on the same Argus version.'
-          )}
-        >
-          <Switch
-            label={tr('Acesso remoto', 'Remote access')}
-            checked={remoteAccess}
-            onChange={(next) => {
-              setPreferences({ remoteAccess: next })
-              // Desligado o experimento, este computador para de aceitar conexões.
-              if (!next) void window.api.remoteAccess.setHosting(false)
-            }}
-          />
-        </Row>
-      )}
     </Group>
   )
 }

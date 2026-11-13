@@ -112,7 +112,6 @@ export const SECTIONS: {
     group: 'agents',
     label: tr('Acesso remoto', 'Remote access'),
     icon: Globe,
-    experimental: true,
     description: tr(
       'Use o Argus deste computador de outro, ou abra aqui o de outro computador. Tudo vai cifrado de ponta a ponta.',
       'Use this computer’s Argus from another one, or open another computer’s Argus here. Everything is end-to-end encrypted.'

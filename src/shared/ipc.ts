@@ -5,7 +5,7 @@ import type { AuthState, LoginMethod } from './auth'
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers'
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas'
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent'
-import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
+import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat'
 import type { SystemHealthState } from './systemHealth'
 import type { CleanResult, StorageSettings, StorageUsage } from './storage'
 import type { CliStatus } from './cli'
@@ -98,6 +98,8 @@ export type InvokeChannels = {
   // Conversas
   'chat:state': (key: string) => ChatState | null
   'chat:active': () => ActiveChat[]
+  // Conta e modelo/esforço/modo da conversa aberta; nulo sem sessão aberta.
+  'chat:details': (key: string) => ChatDetails | null
   // Conversas que o Argus fechou no meio (ver main/app/interruptedChats.ts).
   'chat:interrupted': () => InterruptedChat[]
   // Memória e disco do computador: o guardado, ou lido agora (o aviso aberto mostra os números).
@@ -151,6 +153,8 @@ export type InvokeChannels = {
   'sessions:taskOutput': (ref: TaskOutputRef, offset: number) => TaskOutputChunk
   'sessions:subagentPage': (path: string, id: string, toolUseId: string, request: HistoryRequest) => HistoryPage
   'sessions:images': (path: string, id: string, messageId: string) => string[]
+  // Conversas favoritas (ids das sessões), como a janela do Argus guarda: o app do celular lê daqui.
+  'favorites:get': () => string[]
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)
   'worktrees:reserve': (folder: string) => WorktreeReserved
   'worktrees:adopt': (path: string, from: string) => WorktreeReserved
@@ -288,6 +292,8 @@ export type SendChannels = {
   // Sessões
   'sessions:openRepo': (path: string) => void
   'sessions:watch': (paths: string[]) => void
+  // A janela do Argus conta as favoritas dela (guardadas nos ajustes da janela) ao abrir e quando mudam.
+  'favorites:set': (ids: string[]) => void
   // Arquivos
   'files:reveal': (root: string, rel: string) => void
   'files:openFolder': (path: string) => void
@@ -365,6 +371,7 @@ export type EventChannels = {
   // A ação `id` foi respondida no lugar da janela (parar, tempo esgotado): não executar mais.
   'canvasAgent:cancel': (id: string) => void
   'sessions:changed': (path: string, change: SessionChange) => void
+  'favorites:changed': (ids: string[]) => void
   'files:changed': (root: string, rel: string) => void
   'terminal:data': (key: string, data: string) => void
   'terminal:exit': (key: string, code: number) => void

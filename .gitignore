@@ -7,6 +7,8 @@ native/speech/build
 # Tipos gerados pelo wrangler (cd relay && wrangler types)
 relay/worker-configuration.d.ts
 relay/.wrangler/
+# App do celular montado (pnpm mobile:build), publicado junto com a ponte.
+relay/public/
 
 # Tipos gerados pelo wrangler (cd telemetry && wrangler types)
 telemetry/worker-configuration.d.ts

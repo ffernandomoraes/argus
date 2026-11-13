@@ -25,7 +25,9 @@ const LOCAL = new Set<string>([
   'speech:start',
   'speech:stop',
   'speech:audio',
-  'speech:openSettings'
+  'speech:openSettings',
+  // As favoritas da janela remota são as do notebook: não sobrescrevem as de casa.
+  'favorites:set'
 ] satisfies (keyof InvokeChannels | keyof SendChannels | keyof SendSyncChannels)[])
 
 const unavailable = (): string => tr('Indisponível no acesso remoto.', 'Unavailable over remote access.')

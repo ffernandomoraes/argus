@@ -173,6 +173,10 @@ export type ChatSendRequest = {
   hint?: string
 }
 
+// Conversa aberta no Argus: a conta (ou "agente:conta") e o que ela usa agora. O app do celular mostra
+// nos seletores (a janela do Argus guarda a escolha dela no próprio armazenamento).
+export type ChatDetails = { account: string; settings: ChatSettings }
+
 // /remote-control: liga ou desliga. Sem sessão aberta, abre uma (por isso os dados da conversa).
 export type ChatRemoteRequest = Omit<ChatSendRequest, 'text' | 'images' | 'files' | 'hint'> & { enabled: boolean }
 

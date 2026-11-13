@@ -47,6 +47,10 @@ export class AgentChatSession {
   private driver: Driver | null = null
   private starting: Promise<void> | null = null
   private settings: ChatSettings
+  // Modelo, esforço e modo em vigor agora (o app do celular mostra nos seletores).
+  get currentSettings(): ChatSettings {
+    return this.settings
+  }
   // Outras pastas do workspace (ver workspaceFolders.ts).
   private folders: string[]
   // Mensagens enviadas com o agente trabalhando: entram no histórico quando chega a vez delas.

@@ -1,4 +1,4 @@
-import { cleanTitle, type ChatRemoteRequest, type ChatRenameRequest, type ChatSendRequest, type ChatSettings, type ChatState, type OutputStyleStatus, type PermissionAnswer } from '../../shared/chat'
+import { cleanTitle, type ChatDetails, type ChatRemoteRequest, type ChatRenameRequest, type ChatSendRequest, type ChatSettings, type ChatState, type OutputStyleStatus, type PermissionAnswer } from '../../shared/chat'
 import type { McpAuthResult, McpCallbackResult, McpStatus } from '../../shared/mcp'
 import type { ChatEntry } from './entries'
 import { AccountMcp } from './accountMcp'
@@ -260,6 +260,11 @@ export class Chats {
       subagents: sessions.reduce((sum, s) => sum + s.state.agents.length, 0),
       agents
     }
+  }
+
+  details(key: string): ChatDetails | null {
+    const s = this.sessions.get(key)
+    return s ? { account: s.account, settings: s.currentSettings } : null
   }
 
   has(key: string): boolean {

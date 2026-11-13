@@ -1,0 +1,224 @@
+@import 'tailwindcss';
+
+/* Cores no estilo dos Ajustes do iOS (lista agrupada), claro e escuro pelo sistema. */
+:root {
+  --bg: #f2f2f7;
+  /* No claro, os cartões ficam quase no tom do fundo (só um pouco mais claros), com borda fina:
+     todas as telas com a cara da conversa. */
+  --card: #f8f8fb;
+  --card-press: #ebebf0;
+  --card-border: rgba(60, 60, 67, 0.1);
+  --text: #000000;
+  --muted: #6c6c70;
+  --faint: #8e8e93;
+  --line: rgba(60, 60, 67, 0.18);
+  --accent: #007aff;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --bubble: #007aff;
+  --code: rgba(118, 118, 128, 0.12);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --card-press: #2c2c2e;
+    --card-border: transparent;
+    --text: #ffffff;
+    --muted: #aeaeb2;
+    --faint: #8d8d93;
+    --line: rgba(84, 84, 88, 0.6);
+    --accent: #0a84ff;
+    --green: #30d158;
+    --orange: #ff9f0a;
+    --red: #ff453a;
+    --bubble: #0a84ff;
+    --code: rgba(118, 118, 128, 0.24);
+    color-scheme: dark;
+  }
+}
+
+@theme {
+  --font-serif: ui-serif, 'New York', Georgia, 'Times New Roman', serif;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-press: var(--card-press);
+  --color-card-border: var(--card-border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-green: var(--green);
+  --color-orange: var(--orange);
+  --color-red: var(--red);
+  --color-bubble: var(--bubble);
+  --color-code: var(--code);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Campos e botões herdam a DM Sans (o navegador põe a fonte do sistema neles). */
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+/* Campos com 16px ou mais: o iPhone não dá zoom ao tocar. */
+textarea,
+input {
+  font-size: 17px;
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+/* Fim das telas de lista: espaço folgado, somado à área do gesto de início no iPhone. */
+.pb-end {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+.px-safe {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* Texto das respostas (markdown). */
+.prose-chat {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+.prose-chat p {
+  margin: 0.4em 0;
+}
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.4em 0;
+  padding-left: 1.3em;
+}
+.prose-chat ul {
+  list-style: disc;
+}
+.prose-chat ol {
+  list-style: decimal;
+}
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3 {
+  font-weight: 600;
+  margin: 0.7em 0 0.3em;
+  font-size: 1.05em;
+}
+.prose-chat code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: var(--code);
+  border-radius: 5px;
+  padding: 0.1em 0.3em;
+}
+.prose-chat pre {
+  background: var(--code);
+  border-radius: 10px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.prose-chat pre code {
+  background: none;
+  padding: 0;
+}
+.prose-chat a {
+  color: var(--accent);
+}
+.prose-chat table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.prose-chat th,
+.prose-chat td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+}
+.prose-chat blockquote {
+  border-left: 3px solid var(--line);
+  padding-left: 10px;
+  color: var(--muted);
+}
+
+@keyframes pulse-dot {
+  50% {
+    opacity: 0.35;
+  }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+/* Gavetas de baixo (ui/Sheet.tsx): sobem e descem com a curva das do iOS. */
+.sheet-motion {
+  transition-duration: 280ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-motion {
+    transition-duration: 0ms;
+  }
+}
+
+/* Barras de rolagem finas e discretas, num cinza neutro que acompanha o tema. No iPhone o sistema
+   já usa a dele, que aparece só ao rolar; isto vale no Mac, no Android e no localhost. */
+:root {
+  --scrollbar: rgba(120, 120, 128, 0.32);
+  --scrollbar-hover: rgba(120, 120, 128, 0.5);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar) transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

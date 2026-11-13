@@ -46,6 +46,9 @@ function attention(kind: Kind): void {
   }
 }
 
+// O mesmo aviso para o celular (acesso pelo navegador): título, texto e a conversa que ele abre.
+export type ChatAlert = { title: string; body: string; cwd: string; sessionId?: string; kind: Kind }
+
 export class ChatNotifier {
   private changes = new StatusChanges()
   private signature: string | null = null
@@ -53,7 +56,10 @@ export class ChatNotifier {
 
   constructor(
     private list: () => ChatEntry[],
-    private open: (cwd: string, sessionId?: string) => void
+    private open: (cwd: string, sessionId?: string) => void,
+    // Toda mudança que vira aviso, com o app em foco ou não: quem está no celular não está olhando
+    // para a tela daqui.
+    private onAlert?: (alert: ChatAlert) => void
   ) {}
 
   // Chamado a cada mudança de estado de uma conversa. Sai cedo quando nenhum status mudou (o texto
@@ -65,19 +71,34 @@ export class ChatNotifier {
     this.signature = signature
     for (const { entry, before } of this.changes.next(entries)) {
       const kind = before && kindOf(entry.state)
+      if (kind && this.onAlert) void this.alert(kind, entry.cwd, entry.state.sessionId)
       if (!kind || BrowserWindow.getFocusedWindow()) continue
       attention(kind)
       void this.show(kind, entry.cwd, entry.state.sessionId)
     }
   }
 
+  private async alert(kind: Kind, cwd: string, sessionId?: string): Promise<void> {
+    try {
+      const { title, body } = await this.texts(kind, cwd, sessionId)
+      this.onAlert?.({ title, body, cwd, sessionId, kind })
+    } catch (err) {
+      console.error('[notificações] aviso para o celular:', err)
+    }
+  }
+
+  private async texts(kind: Kind, cwd: string, sessionId?: string): Promise<{ title: string; body: string }> {
+    const body = titleOf(sessionId ? await sessionTitles(cwd) : new Map(), sessionId)
+    const project = cwd === homedir() ? tr('Sem projeto', 'No project') : basename(cwd) || cwd
+    return { title: `${label(kind)} - ${project}`, body }
+  }
+
   private async show(kind: Kind, cwd: string, sessionId?: string): Promise<void> {
     // Desligadas nos ajustes, só o ícone pisca.
     const settings = loadAppSettings()
     if (!Notification.isSupported() || !settings.notifications) return
-    const title = titleOf(sessionId ? await sessionTitles(cwd) : new Map(), sessionId)
-    const project = cwd === homedir() ? tr('Sem projeto', 'No project') : basename(cwd) || cwd
-    const n = new Notification({ title: `${label(kind)} - ${project}`, body: title, silent: !settings.notificationSound })
+    const { title, body } = await this.texts(kind, cwd, sessionId)
+    const n = new Notification({ title, body, silent: !settings.notificationSound })
     n.on('click', () => {
       this.shown.delete(n)
       this.open(cwd, sessionId)

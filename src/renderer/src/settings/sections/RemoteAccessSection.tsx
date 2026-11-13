@@ -1,11 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import QRCode from 'qrcode'
+import { Check, Copy } from 'lucide-react'
+import { useCopied } from '../../lib/useCopied'
+import { IconButton } from '../../ui/IconButton'
 import { useRemoteAccess } from '../../remote'
 import type { RemoteAccessState } from '../../../../shared/remote'
 import { LOCALE, tr } from '../../i18n'
 import { Button } from '../../ui/Button'
 import { Group, Row, Switch } from '../controls'
 
-// Acesso remoto (experimento): usar o Argus deste computador de outro (o notebook no trabalho), ou
+// Acesso remoto: usar o Argus deste computador de outro (o notebook no trabalho), ou
 // abrir daqui o de outro computador. A ligação passa pela ponte do Argus na internet, cifrada de
 // ponta a ponta (ver src/main/remote).
 
@@ -29,6 +33,34 @@ function useCountdown(until: number | null): number {
     return () => clearInterval(timer)
   }, [until])
   return until ? Math.max(0, Math.round((until - now) / 1000)) : 0
+}
+
+// O QR code do pareamento: abre o app do celular já com o código (depois do #, que não sai do
+// aparelho). Escuro no branco, o que as câmeras leem melhor, nos dois temas.
+function PairQr({ url }: { url: string }) {
+  const [src, setSrc] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    QRCode.toDataURL(url, { margin: 1, width: 360, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } }).then(
+      (data) => alive && setSrc(data),
+      () => alive && setSrc(null)
+    )
+    return () => {
+      alive = false
+    }
+  }, [url])
+  if (!src) return null
+  return <img src={src} alt={tr('QR code do pareamento', 'Pairing QR code')} className="size-[180px] rounded-lg bg-white p-1" />
+}
+
+// Copiar o código (para mandar a si mesmo, por exemplo); um visto confirma por um instante.
+function CopyCode({ code }: { code: string }) {
+  const { copied, copy } = useCopied()
+  return (
+    <IconButton size="md" label={copied ? tr('Copiado', 'Copied') : tr('Copiar código', 'Copy code')} onClick={() => copy(code)}>
+      {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+    </IconButton>
+  )
 }
 
 function relayText(s: RemoteAccessState): string {
@@ -74,7 +106,10 @@ function ThisComputer({ state }: { state: RemoteAccessState }) {
         </Row>
         <Row
           label={tr('Parear um aparelho', 'Pair a device')}
-          description={tr('Gera um código para digitar no outro computador, em Acesso remoto.', 'Generates a code to type on the other computer, under Remote access.')}
+          description={tr(
+            'Gera um código para digitar no outro computador, ou um QR code para abrir no celular.',
+            'Generates a code to type on the other computer, or a QR code to open on your phone.'
+          )}
           info={tr(
             'O código vale por 10 minutos e para um aparelho só. Errado uma vez, ele deixa de valer. Quem tem o aparelho pareado vê e controla tudo deste Argus: conversas, terminais e arquivos dos projetos.',
             'The code is valid for 10 minutes and for one device only. One wrong try and it stops working. Whoever has the paired device sees and controls all of this Argus: chats, terminals and project files.'
@@ -92,16 +127,24 @@ function ThisComputer({ state }: { state: RemoteAccessState }) {
         </Row>
         {state.pairing && (
           <div className="flex flex-col items-center gap-1 border-b border-line py-4 last:border-0">
-            <span className="font-mono text-[28px] font-semibold tracking-[0.15em] text-text select-all">{state.pairing.code}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[28px] font-semibold tracking-[0.15em] text-text select-all">{state.pairing.code}</span>
+              <CopyCode code={state.pairing.code} />
+            </div>
             <span className="text-[15px] text-muted">
               {tr(`Digite no outro computador - vence em ${clock}`, `Type it on the other computer - expires in ${clock}`)}
             </span>
+            <div className="mt-3">
+              <PairQr url={state.pairing.url} />
+            </div>
+            <span className="max-w-[340px] text-center text-[15px] text-muted">
+              {tr('Ou aponte a câmera do celular para o QR code.', 'Or point your phone camera at the QR code.')}
+            </span>
           </div>
         )}
-        {!state.pairing && state.pairingResult && (
-          <p className={`border-b border-line py-3 text-[15px] last:border-0 ${state.pairingResult.ok ? 'text-text' : 'text-red-400'}`}>
-            {state.pairingResult.ok ? tr(`${state.pairingResult.name} foi pareado.`, `${state.pairingResult.name} was paired.`) : state.pairingResult.error}
-          </p>
+        {/* Pareou: o aparelho já aparece na lista de pareados, sem aviso. Só o erro fica à vista. */}
+        {!state.pairing && state.pairingResult && !state.pairingResult.ok && (
+          <p className="border-b border-line py-3 text-[15px] text-red-400 last:border-0">{state.pairingResult.error}</p>
         )}
       </Group>
     </>
@@ -121,11 +164,12 @@ function Devices({ state }: { state: RemoteAccessState }) {
             key={d.id}
             label={d.name}
             description={
-              d.connected
+              (d.web ? tr('Celular (navegador) - ', 'Phone (browser) - ') : '') +
+              (d.connected
                 ? tr('Conectado agora', 'Connected now')
                 : d.lastSeen
                   ? tr(`Última vez: ${date(d.lastSeen)}`, `Last seen: ${date(d.lastSeen)}`)
-                  : tr(`Pareado em ${date(d.pairedAt)}`, `Paired on ${date(d.pairedAt)}`)
+                  : tr(`Pareado em ${date(d.pairedAt)}`, `Paired on ${date(d.pairedAt)}`))
             }
             info={tr(
               'Remover desconecta o aparelho na hora e ele não entra mais. O que já foi feito por ele (comandos nos terminais, arquivos alterados) continua como está.',

@@ -80,6 +80,10 @@ export class ChatSession {
   private resumed = false
   // Configurações em vigor, para mandar o ultracode junto quando o esforço muda (ver flagChanges).
   private settings: ChatSettings
+  // Modelo, esforço e modo em vigor agora (o app do celular mostra nos seletores).
+  get currentSettings(): ChatSettings {
+    return this.settings
+  }
   private inbox = new Inbox()
   private q: Query
   private reader: Reader = newReader()

@@ -9,6 +9,8 @@ import type { SessionSummary } from '../../shared/sessions'
 import { pageOf, type HistoryRequest } from '../../shared/history'
 import { agentRef } from '../../shared/providers'
 import { readTaskOutput } from '../tasks/output'
+import { favoriteChats, setFavoriteChats } from '../favorites'
+import { broadcast } from './events'
 import { handle, on } from './register'
 
 // Conversas do Claude Code em cada pasta, o git dela e a vigia que avisa quando algo muda.
@@ -21,6 +23,10 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
     return [...listed, ...agentSessions(path)]
   })
   handle('sessions:folders', () => listKnownFolders())
+  handle('favorites:get', () => favoriteChats())
+  on('favorites:set', (_e, ids) => {
+    if (setFavoriteChats(ids)) broadcast('favorites:changed', favoriteChats())
+  })
   handle('sessions:search', (_e, path, query) => searchSessions(path, typeof query === 'string' ? query : ''))
   handle('sessions:trash', (_e, path, id) => (isAgentConversation(id) ? trashConversation(id) : trashSession(path, id)))
   handle('sessions:branch', (_e, path) => currentBranch(path))

@@ -24,7 +24,8 @@ export const REMOTE_ARG = '--argus-remote='
 // Configurações > Acesso remoto.
 export type RemoteRelayStatus = 'connecting' | 'online' | 'offline'
 
-export type RemoteDevice = { id: string; name: string; pairedAt: number; lastSeen: number | null; connected: boolean }
+// web: o app do celular, pelo navegador (os outros são Argus instalados).
+export type RemoteDevice = { id: string; name: string; pairedAt: number; lastSeen: number | null; connected: boolean; web: boolean }
 export type RemoteKnownHost = { hostId: string; name: string; pairedAt: number; open: boolean }
 
 export type RemoteAccessState = {
@@ -37,7 +38,8 @@ export type RemoteAccessState = {
   name: string
   devices: RemoteDevice[]
   // Código à vista esperando o outro computador digitar; some ao parear, cancelar ou vencer.
-  pairing: { code: string; expiresAt: number } | null
+  // url: o app do celular já com o código, para o QR code.
+  pairing: { code: string; url: string; expiresAt: number } | null
   // Como terminou o último pareamento (aparelho novo ou o erro).
   pairingResult: { ok: true; name: string } | { ok: false; error: string } | null
   // Computadores que este pode abrir.

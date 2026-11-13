@@ -7,8 +7,10 @@ import { acceptSession, HandshakeError, openSession, pairAsClient, pairAsHost, P
 import { RemoteClient } from './client'
 import { RemoteHost, type HostSession } from './host'
 import type { Link } from './link'
-import { connectPairing, connectToHost, HostRelay, RelayError } from './relay'
-import { loadRemoteStore, newDeviceId, saveRemoteStore, type RemoteStore } from './store'
+import { sendPush, type PushPayload } from './push'
+import { connectPairing, connectToHost, HostRelay, RelayError, relayWebUrl } from './relay'
+import { loadRemoteStore, newDeviceId, saveRemoteStore, type PairedDevice, type RemoteStore } from './store'
+import { WebHostSession } from './webHost'
 
 // O acesso remoto deste computador, dos dois lados:
 // - de casa (hosting): fica ligado à ponte, aceita os aparelhos pareados e mostra o código de
@@ -35,8 +37,8 @@ export class RemoteAccess {
   private store: RemoteStore = loadRemoteStore()
   private host: RemoteHost
   private relay: HostRelay | null = null
-  // Aparelho → sessões abertas agora.
-  private live = new Map<string, Set<HostSession>>()
+  // Aparelho → sessões abertas agora (de outro Argus ou do app do celular).
+  private live = new Map<string, Set<HostSession | WebHostSession>>()
   private pairing: { code: PairCode; expiresAt: number; link: Link | null; timer: NodeJS.Timeout } | null = null
   private pairingResult: RemoteAccessState['pairingResult'] = null
   private clients = new Map<string, RemoteClient>()
@@ -63,10 +65,18 @@ export class RemoteAccess {
         name: d.name,
         pairedAt: d.pairedAt,
         lastSeen: d.lastSeen ?? null,
-        connected: !!this.live.get(d.id)?.size
+        connected: !!this.live.get(d.id)?.size,
+        web: d.kind === 'web'
       })),
       // O código só aparece com a vaga já reservada na ponte: digitado antes, daria "nenhum pareamento".
-      pairing: this.pairing?.link ? { code: formatPairCode(this.pairing.code), expiresAt: this.pairing.expiresAt } : null,
+      pairing: this.pairing?.link
+        ? {
+            code: formatPairCode(this.pairing.code),
+            // Depois do #: o navegador não manda essa parte para a ponte.
+            url: `${relayWebUrl()}/#pair=${formatPairCode(this.pairing.code)}`,
+            expiresAt: this.pairing.expiresAt
+          }
+        : null,
       pairingResult: this.pairingResult,
       hosts: this.store.hosts.map((h) => ({ hostId: h.hostId, name: h.name, pairedAt: h.pairedAt, open: this.clients.has(h.hostId) }))
     }
@@ -122,6 +132,7 @@ export class RemoteAccess {
     this.relay = null
     this.syncAwake()
     this.host.closeAll()
+    for (const sessions of this.live.values()) for (const s of [...sessions]) s.close()
     this.cancelPairing()
   }
 
@@ -141,8 +152,8 @@ export class RemoteAccess {
     const device = this.store.devices.find((d) => d.id === session.deviceId)
     if (!device) return session.link.close()
     const quiet = !!device.lastSeen && Date.now() - device.lastSeen < QUIET_RECONNECT_MS
-    const hostSession = this.host.accept(session.link)
-    const sessions = this.live.get(device.id) ?? new Set<HostSession>()
+    const hostSession = device.kind === 'web' ? this.acceptWeb(session.link, device) : this.host.accept(session.link)
+    const sessions = this.live.get(device.id) ?? new Set<HostSession | WebHostSession>()
     sessions.add(hostSession)
     this.live.set(device.id, sessions)
     device.lastSeen = Date.now()
@@ -156,6 +167,53 @@ export class RemoteAccess {
     })
     if (!quiet) this.notifyConnected(device.name)
     this.changed()
+  }
+
+  // O app do celular: mensagens em JSON e só a lista curta de canais (ver webHost.ts).
+  private acceptWeb(link: Link, device: PairedDevice): WebHostSession {
+    return new WebHostSession(link, {
+      info: () => ({ ...this.deps.hostInfo(), pushKey: this.store.pushKeys.publicKey }),
+      push: (sub) => {
+        if (sub) device.push = sub
+        else delete device.push
+        this.save()
+      },
+      pushTest: async () => {
+        const sub = device.push
+        if (!sub) return 'none'
+        const result = await sendPush(
+          sub,
+          { title: 'Argus', body: tr('Notificação de teste: está funcionando.', 'Test notification: it works.'), url: '#/settings', tag: 'argus-test' },
+          this.store.pushKeys,
+          relayWebUrl()
+        )
+        if (result === 'gone' && device.push === sub) {
+          delete device.push
+          this.save()
+        }
+        return result
+      },
+      onEnd: () => {}
+    })
+  }
+
+  // Uma conversa terminou, parou com erro ou precisa de você: vira notificação nos celulares com
+  // notificações ligadas que não estão com o app aberto na tela agora.
+  notifyDevices(payload: PushPayload): void {
+    if (!this.store.hosting) return
+    for (const device of this.store.devices) {
+      const sub = device.push
+      if (device.kind !== 'web' || !sub) continue
+      const watching = [...(this.live.get(device.id) ?? [])].some((s) => s instanceof WebHostSession && s.visible)
+      if (watching) continue
+      void sendPush(sub, payload, this.store.pushKeys, relayWebUrl()).then((result) => {
+        // Inscrição vencida (app removido, permissão retirada): para de tentar.
+        if (result === 'gone' && device.push === sub) {
+          delete device.push
+          this.save()
+        }
+      })
+    }
   }
 
   private notifyConnected(name: string): void {
@@ -202,8 +260,8 @@ export class RemoteAccess {
     pairing.link = link
     this.changed()
     try {
-      const granted = await pairAsHost(link, code, (deviceName, psk) => {
-        const device = { id: newDeviceId(), name: deviceName.slice(0, 80), psk: psk.toString('base64'), pairedAt: Date.now() }
+      const granted = await pairAsHost(link, code, (deviceName, psk, kind) => {
+        const device: PairedDevice = { id: newDeviceId(), name: deviceName.slice(0, 80), psk: psk.toString('base64'), pairedAt: Date.now(), kind }
         this.store.devices = [...this.store.devices, device]
         this.save()
         return { hostId: this.store.hostId, hostName: this.deps.hostName(), deviceId: device.id, psk }

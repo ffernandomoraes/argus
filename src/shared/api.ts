@@ -312,6 +312,10 @@ export type Api = {
     // (um seletor de pasta que continuou aberto) não deve entrar no canvas.
     onCancel: (cb: (id: string) => void) => Off
   }
+  // Conversas favoritas: a janela conta ao processo principal (o app do celular lê de lá).
+  favorites: {
+    set: (ids: string[]) => void
+  }
   sessions: {
     // Conversas da pasta; nulo se ela não respondeu ou não deu para ler (o WSL parado ou travado):
     // não é o mesmo que não ter conversa nenhuma.

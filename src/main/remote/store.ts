@@ -3,13 +3,25 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { join } from 'node:path'
 import { app, safeStorage } from 'electron'
 import { errorMessage } from '../lib/errors'
+import type { DeviceKind, WebPushSubscription } from '../../shared/webRemote'
+import { newPushKeys, type PushKeys } from './push'
 
 // O que o acesso remoto guarda: a sala deste computador na ponte (id e chave), os aparelhos
 // pareados com ele e os computadores que ele pode abrir. Tem segredos (as chaves de cada aparelho),
 // então vai cifrado pelo cofre do sistema no app instalado. No pnpm dev, sem o cofre (ver
 // providers/keys.ts e a pergunta das Chaves a cada Electron novo): texto só com permissão do dono.
 
-export type PairedDevice = { id: string; name: string; psk: string; pairedAt: number; lastSeen?: number }
+// kind: outro Argus ou o navegador do celular (sem ele: Argus, os pareados antes do celular).
+// push: inscrição das notificações do navegador.
+export type PairedDevice = {
+  id: string
+  name: string
+  psk: string
+  pairedAt: number
+  lastSeen?: number
+  kind?: DeviceKind
+  push?: WebPushSubscription
+}
 export type KnownHost = { hostId: string; name: string; deviceId: string; psk: string; pairedAt: number }
 
 export type RemoteStore = {
@@ -22,6 +34,8 @@ export type RemoteStore = {
   hostKey: string
   devices: PairedDevice[]
   hosts: KnownHost[]
+  // Chaves com que este computador assina as notificações do celular (ver push.ts).
+  pushKeys: PushKeys
 }
 
 const SEALED = 'remote-access.bin'
@@ -36,7 +50,7 @@ const path = (name: string) => join(app.getPath('userData'), name)
 const randomId = (bytes: number) => randomBytes(bytes).toString('base64url')
 
 function fresh(): RemoteStore {
-  return { hosting: false, keepAwake: true, hostId: randomId(24), hostKey: randomId(32), devices: [], hosts: [] }
+  return { hosting: false, keepAwake: true, hostId: randomId(24), hostKey: randomId(32), devices: [], hosts: [], pushKeys: newPushKeys() }
 }
 
 function parse(text: string): RemoteStore {
@@ -48,7 +62,9 @@ function parse(text: string): RemoteStore {
     hostId: typeof raw.hostId === 'string' && raw.hostId ? raw.hostId : base.hostId,
     hostKey: typeof raw.hostKey === 'string' && raw.hostKey ? raw.hostKey : base.hostKey,
     devices: Array.isArray(raw.devices) ? raw.devices.filter((d) => d && typeof d.id === 'string' && typeof d.psk === 'string') : [],
-    hosts: Array.isArray(raw.hosts) ? raw.hosts.filter((h) => h && typeof h.hostId === 'string' && typeof h.psk === 'string') : []
+    hosts: Array.isArray(raw.hosts) ? raw.hosts.filter((h) => h && typeof h.hostId === 'string' && typeof h.psk === 'string') : [],
+    pushKeys:
+      raw.pushKeys && typeof raw.pushKeys.publicKey === 'string' && typeof raw.pushKeys.privateKey === 'string' ? raw.pushKeys : base.pushKeys
   }
 }
 

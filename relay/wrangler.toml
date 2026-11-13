@@ -1,4 +1,5 @@
-# Ponte do acesso remoto do Argus (ver src/index.ts). Publicar: cf-pessoal wrangler deploy (nesta pasta).
+# Ponte do acesso remoto do Argus (ver src/index.ts) e o app do celular (public/). Publicar: pnpm mobile:build
+# (na raiz) e depois cf-pessoal wrangler deploy (nesta pasta).
 name = "argus-relay"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
@@ -11,3 +12,8 @@ class_name = "Room"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+# O app do celular (mobile/, montado com pnpm mobile:build): servido aqui, no mesmo endereço da ponte.
+# Arquivo que existe vai direto; o resto (as rotas WebSocket) cai no Worker.
+[assets]
+directory = "./public"

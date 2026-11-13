@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { tr } from '../i18n'
 import { devicePsk, directionKeys, newEphemeral, sameBytes, secureLink, sessionKeys, Spake2, type PairCode } from './crypto'
+import type { DeviceKind } from '../../shared/webRemote'
 import type { Link } from './link'
 
 // Os apertos de mão pela ligação crua (a que passa pela ponte), antes de qualquer pedido: o do
@@ -128,9 +129,11 @@ function text(value: unknown, max = 200): string {
 // O que o computador de casa entrega ao aparelho novo, já pela ligação cifrada.
 export type PairGrant = { hostId: string; hostName: string; deviceId: string; psk: Buffer }
 
-// No computador de casa, com o código que ele mostrou. `grant` cria o aparelho (com o nome que o
-// outro mandou) e devolve o que entregar a ele.
-async function pairAsHostSteps(raw: Link, code: PairCode, grant: (deviceName: string, psk: Buffer) => PairGrant): Promise<PairGrant> {
+// No computador de casa, com o código que ele mostrou. `grant` cria o aparelho (com o nome e o tipo
+// que o outro mandou: sem tipo, outro Argus) e devolve o que entregar a ele.
+type Grant = (deviceName: string, psk: Buffer, kind: DeviceKind) => PairGrant
+
+async function pairAsHostSteps(raw: Link, code: PairCode, grant: Grant): Promise<PairGrant> {
   const io = splitLink(raw)
   const spake = new Spake2('host', code)
   const first = await io.next(PAIR_WAIT_MS)
@@ -151,7 +154,7 @@ async function pairAsHostSteps(raw: Link, code: PairCode, grant: (deviceName: st
   const keys = directionKeys(result.key, 'pair')
   const link = secureLink(io.rest(), keys.hostToClient, keys.clientToHost)
   const hello = await nextJson(link)
-  const granted = grant(text(hello.name), devicePsk(result.key))
+  const granted = grant(text(hello.name), devicePsk(result.key), hello.kind === 'web' ? 'web' : 'app')
   link.send(Buffer.from(JSON.stringify({ hostId: granted.hostId, hostName: granted.hostName, deviceId: granted.deviceId }), 'utf8'))
   return granted
 }
@@ -272,7 +275,7 @@ async function closingOnError<T>(raw: Link, run: () => Promise<T>): Promise<T> {
   }
 }
 
-export const pairAsHost = (raw: Link, code: PairCode, grant: (deviceName: string, psk: Buffer) => PairGrant) =>
+export const pairAsHost = (raw: Link, code: PairCode, grant: Grant) =>
   closingOnError(raw, () => pairAsHostSteps(raw, code, grant))
 export const pairAsClient = (raw: Link, code: PairCode, deviceName: string) => closingOnError(raw, () => pairAsClientSteps(raw, code, deviceName))
 export const acceptSession = (raw: Link, pskOf: (deviceId: string) => Buffer | null) => closingOnError(raw, () => acceptSessionSteps(raw, pskOf))

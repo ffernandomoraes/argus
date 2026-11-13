@@ -12,6 +12,11 @@ export function relayUrl(): string {
   return (process.env.ARGUS_RELAY_URL || DEFAULT_RELAY).replace(/\/+$/, '')
 }
 
+// O endereço da ponte no navegador: é ela que serve o app do celular (relay/public).
+export function relayWebUrl(): string {
+  return relayUrl().replace(/^ws/, 'http')
+}
+
 // Sem resposta do outro lado neste tempo, a conexão é dada como morta (Wi-Fi trocado, notebook
 // dormindo): o WebSocket sozinho só perceberia muito depois.
 const PING_MS = 25_000

@@ -5,6 +5,7 @@ import { Canvas } from './canvas/Canvas'
 import { isMod } from './platform'
 import { SettingsModal } from './settings/SettingsModal'
 import { setPreferences, usePreference } from './settings/preferences'
+import { IS_REMOTE } from './remote'
 import { useInterfaceZoom } from './theme/useInterfaceZoom'
 import { useTheme } from './theme/useTheme'
 import { Presence } from './motion'
@@ -25,6 +26,12 @@ export function App() {
   const auth = useAuth()
   // Só a preferência que o App usa: mudar outra (tema, zoom do drawer...) não redesenha aqui.
   const welcomeSeen = usePreference('welcomeSeen')
+  // As favoritas ficam nos ajustes desta janela; o processo principal guarda uma cópia para o app do
+  // celular. A janela de acesso remoto mostra as do notebook: não conta.
+  const favoriteChats = usePreference('favoriteChats')
+  useEffect(() => {
+    if (!IS_REMOTE) window.api.favorites.set(favoriteChats)
+  }, [favoriteChats])
   const providers = useProviders()
   // Falta configurar: sem o Claude Code pronto (instalado e com uma conta logada) e sem outro agente
   // conectado. Com outra conta logada, a principal sem login aparece só em Configurações.

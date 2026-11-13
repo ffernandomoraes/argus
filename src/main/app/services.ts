@@ -13,6 +13,7 @@ import { activeChats, activeSignature } from '../chats/entries'
 import { Cli } from '../cli'
 import { broadcast, sendTo } from '../ipc/events'
 import { ChatNotifier } from '../notifications'
+import { remoteAccess } from '../remote'
 import { Popouts } from '../popouts'
 import { SessionWatch } from '../sessionWatch'
 import { onDiskFull } from '../lib/atomicWrite'
@@ -146,7 +147,18 @@ export function createServices() {
   )
 
   // Clique na notificação: traz o app e abre a conversa que avisou.
-  const notifier = new ChatNotifier(() => chats.list(), openChat)
+  // O celular pareado (acesso pelo navegador) recebe os mesmos avisos como notificação.
+  const notifier = new ChatNotifier(
+    () => chats.list(),
+    openChat,
+    (alert) =>
+      remoteAccess().notifyDevices({
+        title: alert.title,
+        body: alert.body,
+        url: alert.sessionId ? `#/chat/${encodeURIComponent(alert.cwd)}/${encodeURIComponent(alert.sessionId)}` : '#/',
+        tag: alert.sessionId
+      })
+  )
 
   // Limites de cada conta logada.
   const usage = new UsageMonitors(

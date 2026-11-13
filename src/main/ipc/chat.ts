@@ -13,6 +13,7 @@ import { handle, on } from './register'
 export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: Terminals, unread: UnreadChats, interrupted: InterruptedChats): void {
   handle('chat:state', (_e, key) => chats.state(key))
   handle('chat:active', () => activeChats(chats.list()))
+  handle('chat:details', (_e, key) => chats.details(key))
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma
   // sessão. Abrir um encerra o outro; o histórico continua no arquivo da sessão.
   on('chat:send', async (_e, req) => {

@@ -262,6 +262,9 @@ const api: Api = {
     respond: (result) => send('canvasAgent:result', result),
     onCancel: (cb) => listen('canvasAgent:cancel', cb)
   },
+  favorites: {
+    set: (ids) => send('favorites:set', ids)
+  },
   sessions: {
     list: (path) => invoke('sessions:list', path),
     folders: () => invoke('sessions:folders'),

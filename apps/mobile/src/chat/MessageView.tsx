@@ -120,8 +120,9 @@ export function UserBubble({
   localImages?: string[]
   at?: string
 }) {
+  // data-prompt: o pedido preso no topo (PinnedPrompt) acha os balões por aqui.
   return (
-    <div className="flex flex-col items-end py-1">
+    <div className="flex flex-col items-end py-1" data-prompt={text} data-images={images || undefined}>
       <div className={`max-w-[85%] rounded-[18px] bg-bubble px-3.5 py-2 text-[15px] leading-snug whitespace-pre-wrap text-white ${pending ? 'opacity-60' : ''}`} style={{ overflowWrap: 'anywhere' }}>
         {/* Como no Argus: imagens (miniaturas e "1 imagem enviada") em cima, depois anexos e texto. */}
         {!!images && <UserImages count={images} imageRef={imageRef} local={localImages} />}

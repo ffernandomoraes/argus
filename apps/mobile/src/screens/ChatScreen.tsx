@@ -6,6 +6,7 @@ import type { Message } from '@argus/shared/history';
 import { Composer, type Draft } from '../chat/Composer';
 import { ChatTimeline, type Pending } from '../chat/ChatTimeline';
 import { ScrollToEndButton } from '../chat/ScrollToEndButton';
+import { PinnedPrompt } from '../chat/PinnedPrompt';
 import { WorkingLine } from '../chat/WorkingLine';
 import { reuseMessages } from '../chat/reuseMessages';
 import { fetchHistory } from '../chat/fetchHistory';
@@ -326,6 +327,7 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
           onAnswer={answer}
         />
       </div>
+      <PinnedPrompt stick={stick} />
       <ScrollToEndButton stick={stick} bottom={composerHeight + 12} />
       <Composer
         busy={running}
@@ -338,6 +340,7 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
         contextPercent={sessionId ? contextPercent : null}
         branch={branch}
         suggestion={prefs.suggestions ? state?.suggestion : undefined}
+        groupColor={folder?.group?.color}
         working={state && running ? <WorkingLine state={state} /> : undefined}
         onSettingsChange={changeSettings}
         onCommand={command}

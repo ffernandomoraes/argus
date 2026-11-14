@@ -47,7 +47,8 @@ function attention(kind: Kind): void {
 }
 
 // O mesmo aviso para o celular (acesso pelo navegador): título, texto e a conversa que ele abre.
-export type ChatAlert = { title: string; body: string; cwd: string; sessionId?: string; kind: Kind };
+// key: a chave da conversa (o celular só é avisado das conversas em que mexeu, ver remote/phoneChats.ts).
+export type ChatAlert = { title: string; body: string; key: string; cwd: string; sessionId?: string; kind: Kind };
 
 export class ChatNotifier {
   private changes = new StatusChanges();
@@ -71,17 +72,17 @@ export class ChatNotifier {
     this.signature = signature;
     for (const { entry, before } of this.changes.next(entries)) {
       const kind = before && kindOf(entry.state);
-      if (kind && this.onAlert) void this.alert(kind, entry.cwd, entry.state.sessionId);
+      if (kind && this.onAlert) void this.alert(kind, entry.id, entry.cwd, entry.state.sessionId);
       if (!kind || BrowserWindow.getFocusedWindow()) continue;
       attention(kind);
       void this.show(kind, entry.cwd, entry.state.sessionId);
     }
   }
 
-  private async alert(kind: Kind, cwd: string, sessionId?: string): Promise<void> {
+  private async alert(kind: Kind, key: string, cwd: string, sessionId?: string): Promise<void> {
     try {
       const { title, body } = await this.texts(kind, cwd, sessionId);
-      this.onAlert?.({ title, body, cwd, sessionId, kind });
+      this.onAlert?.({ title, body, key, cwd, sessionId, kind });
     } catch (err) {
       console.error('[notificações] aviso para o celular:', err);
     }

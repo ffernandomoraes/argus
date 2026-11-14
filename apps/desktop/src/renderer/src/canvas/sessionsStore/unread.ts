@@ -82,6 +82,9 @@ export function noteFinished(before: ConversationSummary[] | undefined, after: C
   if (done.length) unread.set((s) => new Set([...s, ...done.map((c) => c.id)]));
 }
 
+// Vista no app do celular: some daqui também.
+window.api.chat.onMarkedRead((id) => markRead([id]));
+
 // Você voltou à janela: o que está na tela foi visto.
 window.addEventListener('focus', () => markRead([...viewing.keys()]));
 

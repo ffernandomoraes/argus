@@ -8,8 +8,10 @@ import { RemoteClient } from './client';
 import { RemoteHost, type HostSession } from './host';
 import type { Link } from './link';
 import { sendPush, type PushPayload } from './push';
+import { markPhoneChat, phoneDevicesOf } from './phoneChats';
 import { connectPairing, connectToHost, HostRelay, RelayError, relayWebUrl } from './relay';
-import { loadRemoteStore, newDeviceId, saveRemoteStore, type PairedDevice, type RemoteStore } from './store';
+import { loadStoreWhenReady } from './loadStore';
+import { freshRemoteStore, newDeviceId, saveRemoteStore, type PairedDevice, type RemoteStore } from './store';
 import { WebHostSession } from './webHost';
 
 // O acesso remoto deste computador, dos dois lados:
@@ -34,7 +36,9 @@ function failure(err: unknown): string {
 }
 
 export class RemoteAccess {
-  private store: RemoteStore = loadRemoteStore();
+  private store: RemoteStore;
+  // Falso enquanto os pareamentos guardados não puderam ser lidos: nada é gravado por cima deles.
+  private loaded: boolean;
   private host: RemoteHost;
   private relay: HostRelay | null = null;
   // Aparelho → sessões abertas agora (de outro Argus ou do app do celular).
@@ -48,10 +52,22 @@ export class RemoteAccess {
 
   constructor(private deps: Deps) {
     this.host = new RemoteHost(deps.hostInfo);
+    const store = loadStoreWhenReady((later) => this.loadedLater(later));
+    this.loaded = !!store;
+    this.store = store ?? freshRemoteStore();
   }
 
   start(): void {
-    if (this.store.hosting) this.startHosting();
+    if (this.loaded && this.store.hosting) this.startHosting();
+  }
+
+  // O que foi mexido enquanto os pareamentos não eram lidos (sem gravar) dá lugar ao guardado.
+  private loadedLater(store: RemoteStore): void {
+    this.stopHosting();
+    this.store = store;
+    this.loaded = true;
+    this.start();
+    this.changed();
   }
 
   state(): RemoteAccessState {
@@ -87,6 +103,7 @@ export class RemoteAccess {
   }
 
   private save(): void {
+    if (!this.loaded) return;
     saveRemoteStore(this.store);
   }
 
@@ -193,17 +210,20 @@ export class RemoteAccess {
         }
         return result;
       },
+      interacted: (keys) => markPhoneChat(device.id, keys),
       onEnd: () => {},
     });
   }
 
   // Uma conversa terminou, parou com erro ou precisa de você: vira notificação nos celulares com
-  // notificações ligadas que não estão com o app aberto na tela agora.
-  notifyDevices(payload: PushPayload): void {
+  // notificações ligadas que mexeram nela (ver phoneChats.ts; conversa do desktop não notifica) e
+  // não estão com o app aberto na tela agora. chatKeys: a chave da conversa e o id da sessão.
+  notifyDevices(payload: PushPayload, chatKeys: (string | undefined)[]): void {
     if (!this.store.hosting) return;
+    const touched = phoneDevicesOf(chatKeys);
     for (const device of this.store.devices) {
       const sub = device.push;
-      if (device.kind !== 'web' || !sub) continue;
+      if (device.kind !== 'web' || !sub || !touched.has(device.id)) continue;
       const watching = [...(this.live.get(device.id) ?? [])].some((s) => s instanceof WebHostSession && s.visible);
       if (watching) continue;
       void sendPush(sub, payload, this.store.pushKeys, relayWebUrl()).then((result) => {

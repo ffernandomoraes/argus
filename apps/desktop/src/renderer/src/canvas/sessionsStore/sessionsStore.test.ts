@@ -33,6 +33,8 @@ beforeAll(async () => {
     getItem: (k: string) => storage.get(k) ?? null,
     setItem: (k: string, v: string) => void storage.set(k, v),
   };
+  // Vista no celular (unread.ts ouve ao ser carregado).
+  globals.window.api.chat = { onMarkedRead: () => () => undefined };
   globals.window.api.sessions = {
     list: async (path: string) => {
       reads(path);

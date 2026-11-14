@@ -71,6 +71,7 @@ export function createServices() {
 
   // Respostas que você ainda não viu, como as janelas contam: o ícone da barra mostra quantas.
   const unread = new UnreadChats(() => {
+    broadcast('chat:unreadList', unread.list());
     tray.refresh();
     badge.refresh();
     mascot.refresh();
@@ -158,7 +159,7 @@ export function createServices() {
         body: alert.body,
         url: alert.sessionId ? `#/chat/${encodeURIComponent(alert.cwd)}/${encodeURIComponent(alert.sessionId)}` : '#/',
         tag: alert.sessionId,
-      }),
+      }, [alert.key, alert.sessionId]),
   );
 
   // Limites de cada conta logada.

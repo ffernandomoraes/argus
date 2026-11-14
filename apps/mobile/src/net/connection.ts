@@ -2,7 +2,6 @@ import {
   decodeWeb,
   encodeWeb,
   WEB_PROTOCOL_VERSION,
-  type PushTestResult,
   type WebChannel,
   type WebClientMessage,
   type WebHostInfo,
@@ -10,155 +9,14 @@ import {
 } from '@argus/shared/webRemote';
 import type { EventChannels, InvokeChannels, SendChannels, SendSyncChannels } from '@argus/shared/ipc';
 import { tr } from '../i18n';
-import { clearCache } from '../lib/cache';
-import { parsePairCode, type Link } from './crypto';
-import { HandshakeError, openSession, pairAsClient } from './handshake';
+import type { Link } from './crypto';
+import { HandshakeError, openSession } from './handshake';
+import { openSocket, relayBase, unb64, type PairedHost } from './pairing';
+
+export { forgetPairedHost, loadPairedHost, pairWithCode, relayBase, type PairedHost } from './pairing';
 
 // A ligação do app do celular com o Argus de casa, pela ponte: abre, cifra (handshake.ts), religa
 // sozinha quando cai e entrega pedidos e avisos às telas.
-
-export type PairedHost = { hostId: string; hostName: string; deviceId: string; psk: string };
-
-const STORE_KEY = 'argus-paired-host';
-
-const b64 = (b: Uint8Array) => {
-  let s = '';
-  for (const x of b) s += String.fromCharCode(x);
-  return btoa(s);
-};
-const unb64 = (t: string) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0));
-
-export function loadPairedHost(): PairedHost | null {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return null;
-    const v = JSON.parse(raw) as Partial<PairedHost>;
-    return typeof v.hostId === 'string' && typeof v.deviceId === 'string' && typeof v.psk === 'string' && typeof v.hostName === 'string'
-      ? (v as PairedHost)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function savePairedHost(host: PairedHost | null): void {
-  try {
-    if (host) localStorage.setItem(STORE_KEY, JSON.stringify(host));
-    else localStorage.removeItem(STORE_KEY);
-  } catch {
-    // Sem armazenamento: o pareamento vale até fechar a página.
-  }
-}
-
-// A ponte publicada; no pnpm mobile:dev a página roda no localhost e fala com ela (ou com a de
-// VITE_RELAY_URL, como a do `wrangler dev`).
-const PUBLISHED_RELAY = 'wss://remote.argusterm.com';
-
-// A ponte: a mesma origem da página (ela serve o app).
-export function relayBase(): string {
-  const env = import.meta.env.VITE_RELAY_URL as string | undefined;
-  if (env) return env.replace(/\/+$/, '');
-  if (import.meta.env.DEV) return PUBLISHED_RELAY;
-  return location.origin.replace(/^http/, 'ws');
-}
-
-class SocketClosed extends Error {
-  constructor(readonly code: number) {
-    super(`closed ${code}`);
-  }
-}
-
-// WebSocket como Link. Recusado pela ponte (sem o de casa, código ocupado) só aparece como erro: o
-// navegador não conta o status da resposta.
-function openSocket(url: string, timeoutMs = 15_000): Promise<Link> {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url);
-    ws.binaryType = 'arraybuffer';
-    let opened = false;
-    const messageListeners: ((d: Uint8Array) => void)[] = [];
-    const closeListeners: (() => void)[] = [];
-    const timer = setTimeout(() => {
-      if (!opened) {
-        ws.close();
-        reject(new SocketClosed(0));
-      }
-    }, timeoutMs);
-    ws.onopen = () => {
-      opened = true;
-      clearTimeout(timer);
-      resolve({
-        send: (d) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(d as Uint8Array<ArrayBuffer>);
-        },
-        onMessage: (cb) => void messageListeners.push(cb),
-        onClose: (cb) => void closeListeners.push(cb),
-        close: () => ws.close(),
-      });
-    };
-    ws.onmessage = (e) => {
-      if (e.data instanceof ArrayBuffer) for (const cb of messageListeners) cb(new Uint8Array(e.data));
-    };
-    let closedOnce = false;
-    ws.onclose = (e) => {
-      clearTimeout(timer);
-      if (!opened) return reject(new SocketClosed(e.code));
-      if (closedOnce) return;
-      closedOnce = true;
-      for (const cb of closeListeners) cb();
-    };
-    ws.onerror = () => {
-      // O close vem logo depois.
-    };
-  });
-}
-
-function deviceName(): string {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua)) return 'iPhone';
-  if (/iPad|Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return 'iPad';
-  if (/Android/.test(ua)) return 'Android';
-  return tr('Navegador', 'Browser');
-}
-
-function pairFailure(err: unknown): string {
-  if (err instanceof HandshakeError) {
-    if (err.reason === 'wrong-code') return tr('Código errado. Gere um código novo no computador e tente de novo.', 'Wrong code. Generate a new code on the computer and try again.');
-    if (err.reason === 'closed') return tr('O computador não respondeu a tempo. Gere um código novo.', 'The computer did not answer in time. Generate a new code.');
-    return tr('O computador respondeu fora do esperado.', 'The computer answered unexpectedly.');
-  }
-  if (err instanceof SocketClosed)
-    return tr(
-      'Nenhum pareamento esperando com esse código. Confira o código ou gere outro no computador.',
-      'No pairing is waiting with that code. Check it or generate another one on the computer.',
-    );
-  return err instanceof Error ? err.message : String(err);
-}
-
-// Pareia com o código do computador (Configurações > Acesso remoto). Erro em texto, ou nulo.
-export async function pairWithCode(text: string): Promise<string | null> {
-  const code = parsePairCode(text);
-  if (!code) return tr('O código tem 5 letras e números, um hífen e 6 números, como K7Q4M-913776.', 'The code has 5 letters and digits, a hyphen and 6 digits, like K7Q4M-913776.');
-  let raw: Link;
-  try {
-    raw = await openSocket(`${relayBase()}/pair/${code.nameplate}?role=client`);
-  } catch (err) {
-    return pairFailure(err);
-  }
-  try {
-    const granted = await pairAsClient(raw, code, deviceName());
-    savePairedHost({ hostId: granted.hostId, hostName: granted.hostName, deviceId: granted.deviceId, psk: b64(granted.psk) });
-    return null;
-  } catch (err) {
-    return pairFailure(err);
-  } finally {
-    raw.close();
-  }
-}
-
-export function forgetPairedHost(): void {
-  savePairedHost(null);
-  clearCache();
-}
 
 // --- A conexão com o computador pareado ---
 
@@ -185,7 +43,25 @@ type Listener = (...args: never[]) => void;
 // Entre as tentativas de religar. Curto: sem ligação a tela fica bloqueada, e cada tentativa é só
 // abrir um WebSocket.
 const RETRY_MS = [1000, 2000, 3000, 5000];
+// Com o app na tela, a confirmação para o computador (que, sem ela, conta como fora da tela).
+const VISIBLE_BEAT_MS = 10_000;
 const CALL_TIMEOUT_MS = 30_000;
+// A cada batida, com o app na tela, um pedido pequeno confere se a ligação ainda responde. Sem
+// resposta nesse prazo, ela é dada como morta e religa. Trocando do Wi-Fi de casa para o 4G, a
+// ligação morria sem aviso e o app seguia "conectado" sem receber nada (2026-11-14).
+const PROBE_TIMEOUT_MS = 8000;
+// Aperto de mão feito e o computador sem dar as boas-vindas nesse prazo: tenta de novo (antes ficava
+// em "conectando" para sempre).
+const WELCOME_TIMEOUT_MS = 15_000;
+
+// Argus de casa mais antigo que o app: recusa o canal novo com "Canal X indisponível no celular".
+const UNKNOWN_CHANNEL = /^(Canal \S+ indisponível no celular|Channel \S+ unavailable on the phone)\.?$/;
+
+function friendlyError(error: string): string {
+  return UNKNOWN_CHANNEL.test(error)
+    ? tr('Isto precisa da versão mais nova do Argus no computador. Atualize o Argus por lá e tente de novo.', 'This needs the newest Argus on the computer. Update Argus there and try again.')
+    : error;
+}
 
 export class HostConnection {
   status: ConnectionStatus = 'connecting';
@@ -204,6 +80,11 @@ export class HostConnection {
   private connecting = false;
   private visible = typeof document === 'undefined' || document.visibilityState === 'visible';
   private waiters: (() => void)[] = [];
+  private beat: ReturnType<typeof setInterval> | null = null;
+  private probing = false;
+  // Ligações prontas até agora: cada uma nova faz as telas relerem (ver lib/host.tsx), mesmo quando o
+  // status não passou por fora do ar (a volta do fundo).
+  connections = 0;
 
   constructor(readonly host: PairedHost) {}
 
@@ -230,16 +111,21 @@ export class HostConnection {
   }
 
   private async connect(): Promise<void> {
-    if (this.stopped || this.connecting || this.link) return;
+    // No fundo não liga: quem olha é a notificação (ver pause).
+    if (this.stopped || this.connecting || this.link || !this.visible) return;
     this.connecting = true;
     if (this.status !== 'online') this.setStatus('connecting');
     try {
       const raw = await openSocket(`${relayBase()}/client/${this.host.hostId}`);
       const link = await openSession(raw, this.host.deviceId, unb64(this.host.psk));
       this.link = link;
-      link.onMessage((d) => this.receive(d));
+      // Recado atrasado de uma ligação já largada (ver lost) não vale para a nova.
+      link.onMessage((d) => this.link === link && this.receive(d));
       link.onClose(() => this.dropped(link));
       this.post({ t: 'hello', protocol: WEB_PROTOCOL_VERSION });
+      setTimeout(() => {
+        if (this.link === link && !this.ready) this.lost(link);
+      }, WELCOME_TIMEOUT_MS);
     } catch (err) {
       if (err instanceof HandshakeError && (err.reason === 'unknown-device' || err.reason === 'bad-key')) {
         this.setStatus('unpaired');
@@ -271,45 +157,89 @@ export class HostConnection {
     }
     this.attempts = 0;
     if (!this.link) return void this.connect();
-    const link = this.link;
-    this.call('chat:active').catch(() => {
-      if (this.link === link) link.close();
-    });
+    if (this.ready) this.probe(this.link);
+  }
+
+  // Confere se a ligação responde; sem resposta no prazo, larga ela e religa.
+  private probe(link: Link): void {
+    if (this.probing) return;
+    this.probing = true;
+    const id = this.nextId++;
+    const done = () => {
+      this.probing = false;
+    };
+    const timer = setTimeout(() => {
+      this.pending.delete(id);
+      done();
+      if (this.link === link) this.lost(link);
+    }, PROBE_TIMEOUT_MS);
+    this.pending.set(id, { resolve: done, reject: done, timer });
+    this.post({ t: 'call', id, ch: 'chat:active', args: [] });
+  }
+
+  // Ligação morta sem aviso: o fechamento dela pode demorar (o navegador espera a resposta do outro
+  // lado), então a troca não espera por ele.
+  private lost(link: Link): void {
+    link.close();
+    this.dropped(link);
   }
 
   setVisible(on: boolean): void {
     this.visible = on;
-    if (this.ready) this.post({ t: 'visible', on });
-    if (on) this.wake();
+    if (!on) return this.pause();
+    if (this.ready) this.post({ t: 'visible', on: true });
+    this.wake();
+  }
+
+  // App no fundo ou tela apagada: avisa o computador e fecha a ligação. O iPhone congela o app com a
+  // ligação aberta, e o computador seguia achando que alguém olhava a tela: as notificações não
+  // saíam. O status fica como estava (sem a camada de "sem conexão" ao voltar); ao voltar, liga de
+  // novo (wake) e as telas releem.
+  private pause(): void {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    const link = this.link;
+    if (!link) return;
+    if (this.ready) this.post({ t: 'visible', on: false });
+    this.release(link);
+    link.close();
+  }
+
+  private release(link: Link): void {
+    if (this.link !== link) return;
+    this.link = null;
+    this.ready = false;
+    this.stopBeat();
+    for (const [, p] of this.pending) {
+      clearTimeout(p.timer);
+      p.reject(new Error(tr('A ligação com o computador caiu.', 'The connection to the computer dropped.')));
+    }
+    this.pending.clear();
+  }
+
+  private startBeat(): void {
+    this.stopBeat();
+    this.beat = setInterval(() => {
+      if (!this.ready || !this.visible || !this.link) return;
+      this.post({ t: 'visible', on: true });
+      this.probe(this.link);
+    }, VISIBLE_BEAT_MS);
+  }
+
+  private stopBeat(): void {
+    if (this.beat) clearInterval(this.beat);
+    this.beat = null;
   }
 
   setPush(sub: WebPushSubscription | null): void {
     this.post({ t: 'push', sub });
   }
 
-  // O computador manda uma notificação de teste para este aparelho.
-  async testPush(): Promise<PushTestResult> {
-    await this.whenReady();
-    const id = this.nextId++;
-    return new Promise<PushTestResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        reject(new Error(tr('O computador não respondeu.', 'The computer did not answer.')));
-      }, CALL_TIMEOUT_MS);
-      this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
-      this.post({ t: 'pushTest', id });
-    });
-  }
-
   private dropped(link: Link): void {
     if (this.link !== link) return;
-    this.link = null;
-    this.ready = false;
-    for (const [, p] of this.pending) {
-      clearTimeout(p.timer);
-      p.reject(new Error(tr('A ligação com o computador caiu.', 'The connection to the computer dropped.')));
-    }
-    this.pending.clear();
+    this.release(link);
     if (this.status === 'rejected' || this.status === 'kicked') return;
     this.setStatus('offline');
     this.scheduleRetry();
@@ -328,6 +258,8 @@ export class HostConnection {
         this.ready = true;
         this.attempts = 0;
         this.post({ t: 'visible', on: this.visible });
+        this.startBeat();
+        this.connections++;
         this.setStatus('online');
         this.waiters.splice(0).forEach((w) => w());
         return;
@@ -343,7 +275,7 @@ export class HostConnection {
         this.pending.delete(m.id as number);
         clearTimeout(p.timer);
         if (m.ok) p.resolve(m.value);
-        else p.reject(new Error(typeof m.error === 'string' ? m.error : 'erro'));
+        else p.reject(new Error(typeof m.error === 'string' ? friendlyError(m.error) : 'erro'));
         return;
       }
       case 'event': {

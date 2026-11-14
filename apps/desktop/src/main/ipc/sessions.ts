@@ -3,10 +3,11 @@ import { WatchedFolders } from '../app/watchedFolders';
 import { checkoutBranch, currentBranch, fetchBranches, listBranches, repoUrl, uncommittedFiles } from '../gitBranch';
 import { readHistory, readHistoryPage, readImages, readSubagentPage } from '../history';
 import type { SessionWatch } from '../sessionWatch';
-import { listKnownFolders, listSessions, searchSessions, trashSession } from '../sessions';
+import { folderExists, listKnownFolders, listSessions, relocateHistory, searchSessions, trashSession } from '../sessions';
 import { conversationsIn, isAgentConversation, loadConversation, loadImages, trashConversation } from '../agentChats/store';
 import type { SessionSummary } from '@argus/shared/sessions';
-import { pageOf, type HistoryRequest } from '@argus/shared/history';
+import { pageOf, type HistoryPage, type HistoryRequest } from '@argus/shared/history';
+import { patchOf } from '@argus/shared/historyPatch';
 import { agentRef } from '@argus/shared/providers';
 import { readTaskOutput } from '../tasks/output';
 import { favoriteChats, setFavoriteChats } from '../favorites';
@@ -29,6 +30,8 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   });
   handle('sessions:search', (_e, path, query) => searchSessions(path, typeof query === 'string' ? query : ''));
   handle('sessions:trash', (_e, path, id) => (isAgentConversation(id) ? trashConversation(id) : trashSession(path, id)));
+  handle('sessions:exists', (_e, path) => folderExists(path));
+  handle('sessions:relocate', (_e, from, to) => relocateHistory(from, to));
   handle('sessions:branch', (_e, path) => currentBranch(path));
   handle('sessions:branches', (_e, path) => listBranches(path));
   handle('sessions:fetch', (_e, path) => fetchBranches(path));
@@ -42,13 +45,20 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   handle('sessions:changes', (_e, path) => uncommittedFiles(path));
   on('sessions:watch', (e, paths) => watched.set(e.sender, paths));
   handle('sessions:history', async (_e, path, id) => (isAgentConversation(id) ? (loadConversation(id)?.messages ?? []) : readHistory(path, id)));
-  handle('sessions:historyPage', async (_e, path, id, request) => {
-    const wanted = wantedPage(request);
-    return isAgentConversation(id) ? pageOf(loadConversation(id)?.messages ?? [], wanted) : readHistoryPage(path, id, wanted);
-  });
+  handle('sessions:historyPage', (_e, path, id, request) => historyPage(path, id, request));
+  // Vem do celular: a assinatura de cada mensagem que ele já tem (só lida, nunca usada como chave).
+  // eslint-disable-next-line max-params -- o formato do canal: o evento e os 4 argumentos do pedido.
+  handle('sessions:historyPatch', async (_e, path, id, request, have) =>
+    patchOf(await historyPage(path, id, request), have && typeof have === 'object' ? have : {}),
+  );
   handle('sessions:taskOutput', async (_e, ref, offset) => readTaskOutput(ref, Math.max(0, Math.floor(Number(offset)) || 0)));
   handle('sessions:subagentPage', async (_e, path, id, toolUseId, request) => readSubagentPage(path, id, toolUseId, wantedPage(request)));
   handle('sessions:images', async (_e, path, id, messageId) => (isAgentConversation(id) ? loadImages(id, messageId) : readImages(path, id, messageId)));
+}
+
+async function historyPage(path: string, id: string, request: HistoryRequest | undefined): Promise<HistoryPage> {
+  const wanted = wantedPage(request);
+  return isAgentConversation(id) ? pageOf(loadConversation(id)?.messages ?? [], wanted) : readHistoryPage(path, id, wanted);
 }
 
 // Trecho do histórico pedido pela tela: um número de verdade, ou a abertura padrão.

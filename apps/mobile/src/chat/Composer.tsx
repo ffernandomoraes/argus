@@ -43,6 +43,7 @@ export function Composer({
   contextPercent,
   branch,
   suggestion,
+  groupColor,
   working,
   onSettingsChange,
   onCommand,
@@ -61,6 +62,8 @@ export function Composer({
   branch?: string | null
   // Próxima mensagem prevista pelo Claude Code, ao fim do pedido.
   suggestion?: string
+  // Cor do grupo da pasta: o fundo da sugestão (como no Argus).
+  groupColor?: string
   // O que o agente está fazendo agora (WorkingLine), em cima da caixa.
   working?: ReactNode
   onSettingsChange: (patch: Partial<ChatSettings>) => void
@@ -162,7 +165,7 @@ export function Composer({
         {working}
         {/* Sugestão só com a caixa vazia e o agente parado (como no Argus). */}
         {suggestion && !busy && !sending && !disabled && !text && !files.length && (
-          <SuggestionChip text={suggestion} onSend={() => void submit({ text: suggestion, files: [] })} />
+          <SuggestionChip text={suggestion} color={groupColor} onSend={() => void submit({ text: suggestion, files: [] })} />
         )}
         <div className="pointer-events-auto rounded-[28px] border border-line bg-card p-1.5 shadow-[0_6px_24px_rgba(0,0,0,0.10)]">
           {files.length > 0 && (

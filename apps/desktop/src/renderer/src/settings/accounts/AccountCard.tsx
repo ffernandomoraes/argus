@@ -7,7 +7,6 @@ import { HOST_IS_WIN, THIS_COMPUTER } from '../../platform';
 import { Button } from '../../ui/Button';
 import { AccountName } from './AccountName';
 import { accountSummary } from './accountSummary';
-import { CopyTerminalCommand } from './CopyTerminalCommand';
 import { tr } from '../../i18n';
 
 function Badge({ children }: { children: ReactNode }) {
@@ -83,8 +82,7 @@ export function AccountCard({
         ) : (
           <div className="flex flex-wrap items-center justify-end gap-2">
             <span className="mr-auto min-w-0 truncate text-[15px] text-faint">{footer}</span>
-            {/* Desconectada, só cabe reconectar ou remover: o terminal e o padrão esperam o login. */}
-            {loggedIn && account.dir && <CopyTerminalCommand dir={account.dir} />}
+            {/* Desconectada, só cabe reconectar ou remover: o padrão espera o login. */}
             {loggedIn && multiple && !isDefault && <Button onClick={() => window.api.auth.setDefault(account.id)}>{tr('Usar como padrão', 'Use as default')}</Button>}
             {/* Conectada, o login serve para pôr outra conta no lugar desta (ou renovar o acesso). */}
             {/* Perto do prazo final, o mesmo login vira "Entrar de novo": entrar começa um login com prazo novo. */}

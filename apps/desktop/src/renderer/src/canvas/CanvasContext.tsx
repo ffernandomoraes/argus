@@ -71,6 +71,8 @@ export type CanvasActions = {
   toggleGroup: (id: string) => void
   toggleObscure: (id: string) => void
   toggleProject: (id: string) => void
+  // Pasta renomeada ou movida fora do Argus: escolher onde ela está agora (leva o histórico junto).
+  relocateFolder: (id: string) => void
   // "Tirar do grupo": o grupo encolhe, o bloco vai para fora e a câmera vai até ele.
   leaveGroup: (id: string) => void
   // "Mover para workspace": o bloco (com o que vai junto) sai daqui e entra no outro.

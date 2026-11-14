@@ -5,4 +5,5 @@ export { listKnownFolders } from './knownFolders';
 export { listSessions } from './list';
 export { searchSessions } from './search';
 export { trashSession } from './trash';
+export { folderExists, relocateHistory } from './relocate';
 export { renameSessionFile } from './rename';

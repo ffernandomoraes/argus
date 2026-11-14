@@ -16,11 +16,12 @@ type Parts = {
   openConversationMenu: (e: ReactMouseEvent, nodeId: string, conversation: ConversationSummary, place: RenamePlace) => void
   openSettings: () => void
   newGroupConversation: (groupId: string) => void
+  relocateFolder: (id: string) => void
 };
 
 // O valor do CanvasContext: só os comandos, num objeto criado uma vez (useStableCommands). O
 // estado que os blocos mostram fica no store do canvasView, lido por bloco.
-export function useCanvasCommands({ nodeActions, conversations, worktrees, overlays, openConversationMenu, openSettings, newGroupConversation }: Parts): CanvasActions {
+export function useCanvasCommands({ nodeActions, conversations, worktrees, overlays, openConversationMenu, openSettings, newGroupConversation, relocateFolder }: Parts): CanvasActions {
   return useStableCommands<CanvasActions>({
     ...nodeActions,
     addFolder: overlays.addFolder,
@@ -37,6 +38,7 @@ export function useCanvasCommands({ nodeActions, conversations, worktrees, overl
     toggleProjectCode: conversations.toggleProjectCode,
     openConversationMenu,
     newGroupConversation,
+    relocateFolder,
     openAllConversations: overlays.openAllConversations,
     openSettings,
     openMemory: overlays.openMemory,

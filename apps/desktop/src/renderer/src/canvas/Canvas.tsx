@@ -7,6 +7,7 @@ import { useConversationActions } from './actions/useConversationActions';
 import { useGroupWide } from './actions/useGroupWide';
 import { useLooseCards } from './actions/useLooseCards';
 import { useNodeActions } from './actions/useNodeActions';
+import { relocateFolderCard } from './actions/relocateFolder';
 import { useNotificationOpen } from './actions/useNotificationOpen';
 import { usePoppedOut } from './actions/usePoppedOut';
 import { CanvasContext } from './CanvasContext';
@@ -36,6 +37,7 @@ import { setPoppedOut } from './sessionsStore';
 import { TitleBar } from './TitleBar';
 import type { CanvasNode } from './types';
 import { useCanvasAgentTools } from './useCanvasAgentTools';
+import { usePhoneFolders } from './usePhoneFolders';
 import { setCanvasScope } from './canvasScope';
 import { useHistory } from './useHistory';
 import { Mascot } from './mascot/Mascot';
@@ -56,6 +58,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
   // O que está no canvas: só essas pastas contam para o "concluído", a barra de menus e o mascote.
   useEffect(() => setCanvasScope(nodes), [nodes]);
   useCanvasAgentTools(nodesRef, change);
+  usePhoneFolders();
   const api = useMemo<NodesApi>(() => ({ board, nodesRef, setNodes, change }), [board, nodesRef, change]);
   // Câmera com que esta janela estava neste workspace (ao sair dele ou ao fechar o app); sem ela,
   // enquadra tudo.
@@ -119,6 +122,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     openConversationMenu: menus.openConversationMenu,
     openSettings: onOpenSettings,
     newGroupConversation,
+    relocateFolder: (id) => void relocateFolderCard(api, overlays.commands.confirm, id),
   });
 
   const spaceHeld = useSpaceHeld();

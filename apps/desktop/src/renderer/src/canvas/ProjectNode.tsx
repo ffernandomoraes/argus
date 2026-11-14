@@ -11,8 +11,10 @@ import { EditableName } from './EditableName';
 import { DEFAULT_GROUP_COLOR, INSTANCE_WIDTH, WORKTREE_WIDTH } from './factory';
 import { PathLabel } from './PathLabel';
 import { ConversationStack } from './project/ConversationStack';
+import { MissingFolderStrip } from './project/MissingFolderStrip';
 import { ProjectActions } from './project/ProjectActions';
 import { useEmptyListText } from './project/useEmptyListText';
+import { useFolderMissing } from './project/useFolderMissing';
 import { WorkspaceFolders } from './project/WorkspaceFolders';
 import { useSessions } from './sessionsStore';
 import type { ProjectNode as ProjectNodeType } from './types';
@@ -46,6 +48,8 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
   // Tarefa sendo removida (apagando a pasta): o card pisca até sair do canvas.
   const removing = useWorktreeJob(id)?.kind === 'removing';
   const hasTasks = useFlowStore((s) => s.nodes.some((n) => (n.data as { worktree?: { of: string } }).worktree?.of === id));
+  // Pasta comum renomeada ou movida fora do Argus: aviso no lugar do caminho e "Localizar pasta…".
+  const missing = useFolderMissing(data.path, !folders && !worktree);
 
   return (
     <div
@@ -114,6 +118,10 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
               <span className="text-[12px] text-faint">
                 {folders.length === 1 ? tr('1 pasta', '1 folder') : tr(`${folders.length} pastas`, `${folders.length} folders`)}
               </span>
+            ) : missing ? (
+              <span title={data.path} className="truncate text-[12px] text-needs-you">
+                {tr('Pasta não encontrada', 'Folder not found')}
+              </span>
             ) : (
               <PathLabel path={data.path} className="text-[12px] text-faint" />
             )}
@@ -134,6 +142,8 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
             </IconButton>
           )}
         </header>
+
+        {missing && <MissingFolderStrip nodeId={id} />}
 
         {conversations.length === 0 ? (
           <p className="border-t border-line px-3 py-2.5 text-xs text-faint">{emptyText}</p>

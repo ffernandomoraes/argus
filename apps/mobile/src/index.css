@@ -124,10 +124,14 @@ textarea {
   font-family: inherit;
 }
 
-/* Campos com 16px ou mais: o iPhone não dá zoom ao tocar. */
-textarea,
-input {
-  font-size: 16px;
+/* Campos com 16px por padrão. Dentro da camada base para uma classe (text-[15px], na caixa de
+   escrever) poder trocar; o zoom do iPhone ao tocar num campo menor é barrado pelo maximum-scale
+   do index.html. */
+@layer base {
+  textarea,
+  input {
+    font-size: 16px;
+  }
 }
 
 .pt-safe {

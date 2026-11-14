@@ -9,6 +9,7 @@ type SpeechRecognitionLike = {
   interimResults: boolean
   start(): void
   stop(): void
+  abort(): void
   onresult: ((e: { results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null
   onend: (() => void) | null
   onerror: ((e: { error?: string }) => void) | null
@@ -45,17 +46,45 @@ export function useDictation(onStart: () => void, onText: (spoken: string) => vo
   const rec = useRef<SpeechRecognitionLike | null>(null);
   const handlers = useRef({ onStart, onText, onError });
   handlers.current = { onStart, onText, onError };
-  useEffect(() => () => rec.current?.stop(), []);
+  useEffect(() => () => rec.current?.abort(), []);
   if (!Recognition) return null;
+
+  // Parar não espera o navegador: no iPhone, a primeira vez (logo depois de pedir a permissão do
+  // microfone) o stop() às vezes não termina a escuta nem avisa o fim, e o botão ficava preso. O
+  // botão volta na hora; a frase final ainda entra por um instante, e depois a escuta é cortada.
+  // keepText falso (ao enviar): o que chegar depois não volta para a caixa já limpa.
+  const stop = (keepText = true) => {
+    const r = rec.current;
+    rec.current = null;
+    setOn(false);
+    if (!r) return;
+    if (!keepText) r.onresult = null;
+    try {
+      r.stop();
+    } catch {
+      // já parado
+    }
+    setTimeout(() => {
+      r.onresult = null;
+      try {
+        r.abort();
+      } catch {
+        // já parado
+      }
+    }, keepText ? 1500 : 0);
+  };
+
   const toggle = () => {
-    if (on) return rec.current?.stop();
+    if (on) return stop();
+    rec.current?.abort();
     const r = new Recognition();
     r.lang = navigator.language;
     r.continuous = true;
     r.interimResults = true;
     r.onresult = (e) => handlers.current.onText(spokenText(e.results));
     r.onend = () => {
-      if (rec.current === r) rec.current = null;
+      if (rec.current !== r) return;
+      rec.current = null;
       setOn(false);
     };
     r.onerror = (e) => {
@@ -68,9 +97,9 @@ export function useDictation(onStart: () => void, onText: (spoken: string) => vo
       r.start();
       setOn(true);
     } catch {
+      rec.current = null;
       setOn(false);
     }
   };
-  const stop = () => rec.current?.stop();
   return { on, toggle, stop };
 }

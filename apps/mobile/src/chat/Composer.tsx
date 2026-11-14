@@ -8,10 +8,12 @@ import { canReadClipboard, filesFrom, readClipboard } from './clipboard';
 import { ComposerOptions, ContextRing, modelSummary, type OptionsSheet } from './ComposerBar';
 import { SuggestionChip } from './SuggestionChip';
 import { useDictation } from './useDictation';
+import { useKeyboard } from './useKeyboard';
 import type { COMMANDS } from './options';
 
-// A caixa cresce até 3 linhas (22px cada, mais 9px em cima e embaixo); passando disso, rola dentro.
-const MAX_INPUT_HEIGHT = 84;
+// A caixa cresce até 3 linhas (14px de fonte, ~19,3px por linha, mais 9px em cima e embaixo);
+// passando disso, rola dentro.
+const MAX_INPUT_HEIGHT = 76;
 
 // A caixa de escrever, flutuando embaixo como uma pílula: o + (fotos e arquivos, colar, modelo, modo,
 // comandos e contexto, ver ComposerBar.tsx), o texto (o microfone do teclado do celular já dita),
@@ -100,17 +102,21 @@ export function Composer({
     );
   };
 
+  const dictating = dictation?.on ?? false;
+  const keyboardOpen = useKeyboard(area);
   useEffect(() => {
     const el = area.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`;
-  }, [text]);
+    // Ditando, o texto novo entra no fim: a caixa desce junto, em vez de parar nas 3 primeiras linhas.
+    if (dictating) el.scrollTop = el.scrollHeight;
+  }, [text, dictating]);
 
   const canSend = (text.trim() || files.length > 0) && !sending && !disabled;
   const send = () => {
     if (!canSend) return;
-    dictation?.stop();
+    dictation?.stop(false);
     // A caixa limpa na hora (a mensagem já aparece na conversa); se o envio falhar, o rascunho volta.
     const draft = { text: text.trim(), files };
     setText('');
@@ -151,7 +157,7 @@ export function Composer({
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20">
       {/* O conteúdo some suave atrás da pílula, em vez de cortar seco. */}
       <div className="h-6 bg-gradient-to-b from-transparent to-bg" />
-      <div ref={box} className="px-safe bg-bg pb-[max(12px,env(safe-area-inset-bottom))]">
+      <div ref={box} className={`px-safe bg-bg ${keyboardOpen ? 'pb-2' : 'pb-[max(12px,env(safe-area-inset-bottom))]'}`}>
         {error && <p className="pointer-events-auto px-2 pb-1.5 text-[12px] text-red">{error}</p>}
         {working}
         {/* Sugestão só com a caixa vazia e o agente parado (como no Argus). */}
@@ -195,7 +201,7 @@ export function Composer({
               // Imagem ou arquivo colado vira anexo; o texto colado entra como sempre.
               onPaste={(e) => addFiles(filesFrom(e.clipboardData))}
               placeholder={busy ? tr('Mandar mais um pedido…', 'Send another request…') : tr('Escreva um pedido…', 'Write a request…')}
-              className="max-h-[84px] min-w-0 flex-1 resize-none bg-transparent px-1 py-[9px] leading-snug outline-none placeholder:text-faint"
+              className="max-h-[76px] min-w-0 flex-1 resize-none bg-transparent px-1 py-[9px] text-[14px] leading-snug outline-none placeholder:text-faint"
             />
             {dictation && (
               <button

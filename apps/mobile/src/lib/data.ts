@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { ActiveChat, ChatDetails, ChatState, InterruptedChat } from '@argus/shared/chat';
+import type { ActiveChat, ChatDetails, ChatState, InterruptedChat, UnreadChat } from '@argus/shared/chat';
+import type { DesktopPreferences } from '@argus/shared/phonePreferences';
 import type { ClaudeInfo } from '@argus/shared/models';
 import type { ProvidersState } from '@argus/shared/providers';
 import type { AuthState } from '@argus/shared/auth';
@@ -7,6 +8,7 @@ import type { SessionSummary } from '@argus/shared/sessions';
 import type { Usage } from '@argus/shared/usage';
 import { PROVIDER_NAMES, type ProviderId } from '@argus/shared/providers';
 import { useHost, useRemote, useWatchFolder } from './host';
+import { throttle } from './throttle';
 
 // Os dados que as telas mostram, lidos do Argus de casa e atualizados pelos avisos de lá.
 
@@ -55,6 +57,21 @@ export function useInterrupted(): { list: InterruptedChat[]; dismiss: (id: strin
   useEffect(() => conn.on('chat:interrupted', (list) => setLive(list)), [conn]);
   useEffect(() => setLive(null), [r.data]);
   return { list: live ?? r.data ?? [], dismiss: (id) => void conn.call('chat:dismissInterrupted', id).catch(() => {}) };
+}
+
+// --- Respostas que ninguém viu ainda (a bolinha verde do Argus) ---
+
+// As janelas do Argus contam quais conversas terminaram sem ninguém olhar; abrir no celular ou no
+// Argus tira das duas listas (markRead avisa as janelas).
+export function useUnread(): { ids: ReadonlySet<string>; markRead: (id: string) => void } {
+  const { conn } = useHost();
+  // Argus antigo não tem o canal: sem bolinhas verdes.
+  const r = useRemote((c) => c.call('chat:unreadList').catch(() => []), [], 'unread');
+  const [live, setLive] = useState<UnreadChat[] | null>(null);
+  useEffect(() => conn.on('chat:unreadList', (list) => setLive(list)), [conn]);
+  useEffect(() => setLive(null), [r.data]);
+  const list = live ?? r.data ?? [];
+  return { ids: new Set(list.map((c) => c.id)), markRead: (id) => void conn.call('chat:markRead', id).catch(() => {}) };
 }
 
 // --- Projetos (as pastas dos workspaces do canvas) ---
@@ -108,7 +125,8 @@ export function groupsOf(nodes: unknown): Group[] {
       group: area ? { label: area.label, color: area.color } : undefined,
     });
   }
-  const groups = [...areas.values()].filter((g) => g.folders.length);
+  // Grupos vazios também: dá para adicionar pasta neles pelo celular (a lista não mostra os vazios).
+  const groups = [...areas.values()];
   if (loose.folders.length) groups.push(loose);
   return groups;
 }
@@ -119,7 +137,8 @@ export function useWorkspaces(): { workspaces: Workspace[]; loaded: boolean } {
     const state = await c.call('boards:state');
     const open = state.boards.filter((b) => !b.closed);
     const loaded = await Promise.all(open.map(async (b) => ({ id: b.id, name: b.name, groups: groupsOf(await c.call('canvas:load', b.id)) })));
-    return loaded.filter((w) => w.groups.length);
+    // Workspace sem nada também: acabou de ser criado e recebe pastas pelo celular.
+    return loaded;
   }, [], 'workspaces');
   useEffect(() => conn.on('boards:changed', () => r.reload()), [conn, r.reload]);
   if (r.data) lastFolders = r.data.flatMap((w) => w.groups.flatMap((g) => g.folders));
@@ -136,9 +155,51 @@ export function useSessions(path: string | null): { list: SessionSummary[] | und
   const { conn } = useHost();
   useWatchFolder(path);
   const r = useRemote((c) => (path ? c.call('sessions:list', path) : Promise.resolve(null)), [path], path ? `sessions:${path}` : undefined);
-  useEffect(() => conn.on('sessions:changed', (p) => p === path && r.reload()), [conn, path, r.reload]);
+  // Mudança no git não mexe na lista; as outras, no máximo uma releitura por segundo.
+  useEffect(() => {
+    const later = throttle(r.reload, 1000);
+    const off = conn.on('sessions:changed', (p, change) => p === path && change !== 'git' && later.run());
+    return () => {
+      off();
+      later.cancel();
+    };
+  }, [conn, path, r.reload]);
   const list = r.data ? [...r.data].sort((a, b) => (b.repliedAt || b.updatedAt).localeCompare(a.repliedAt || a.updatedAt)) : r.data === null ? [] : undefined;
   return { list, reload: r.reload };
+}
+
+export type RecentChat = SessionSummary & { cwd: string };
+
+// Todas as conversas das pastas do canvas, das mais recentes para as antigas: as recentes e a busca
+// da aba Conversas. Relidas quando alguma conversa grava (no máximo a cada 5 s).
+export function useAllChats(paths: string[]): RecentChat[] {
+  const { conn } = useHost();
+  const key = [...new Set(paths)].sort().join('\n');
+  const r = useRemote(async (c) => {
+    const lists = await Promise.all(
+      (key ? key.split('\n') : []).map(async (cwd) => ((await c.call('sessions:list', cwd).catch(() => null)) ?? []).map((s) => ({ ...s, cwd }))),
+    );
+    const at = (s: SessionSummary) => s.repliedAt || s.updatedAt;
+    return lists.flat().sort((a, b) => at(b).localeCompare(at(a)));
+  }, [key], 'allChats');
+  useEffect(() => {
+    const later = throttle(r.reload, 5000);
+    const off = conn.on('sessions:changed', (p, change) => change === 'transcript' && key.split('\n').includes(p) && later.run());
+    return () => {
+      off();
+      later.cancel();
+    };
+  }, [conn, key, r.reload]);
+  return r.data ?? [];
+}
+
+// Branch do git da pasta, para o pé da caixa de escrever. Nulo: sem git, ou o Argus de casa é de uma
+// versão que não responde isto. Relida quando o git da pasta muda (checkout, commit).
+export function useBranch(path: string): string | null {
+  const { conn } = useHost();
+  const r = useRemote((c) => c.call('sessions:branch', path).catch(() => null), [path], `branch:${path}`);
+  useEffect(() => conn.on('sessions:changed', (p, change) => p === path && change === 'git' && r.reload()), [conn, path, r.reload]);
+  return r.data ?? null;
 }
 
 // Conversas favoritas (ids das sessões), as mesmas da janela do Argus.
@@ -152,8 +213,10 @@ export function useFavorites(): ReadonlySet<string> {
   return new Set(ids);
 }
 
-// Títulos das conversas de cada pasta, para a lista de em andamento.
+// Títulos das conversas de cada pasta, para a lista de em andamento. Relidos quando alguma conversa
+// das pastas grava (no máximo a cada 2 s): conversa criada no Argus ganha o título depois.
 export function useTitles(paths: string[]): Map<string, string> {
+  const { conn } = useHost();
   const key = [...new Set(paths)].sort().join('\n');
   const r = useRemote(async (c) => {
     const out = new Map<string, string>();
@@ -163,6 +226,14 @@ export function useTitles(paths: string[]): Map<string, string> {
     }
     return out;
   }, [key], `titles:${key}`);
+  useEffect(() => {
+    const later = throttle(r.reload, 2000);
+    const off = conn.on('sessions:changed', (p, change) => change === 'transcript' && key.split('\n').includes(p) && later.run());
+    return () => {
+      off();
+      later.cancel();
+    };
+  }, [conn, key, r.reload]);
   return r.data ?? new Map();
 }
 
@@ -187,6 +258,13 @@ export function useChatState(key: string): ChatState | null {
 }
 
 // --- Contas e modelos ---
+
+// O que o celular herda do Argus do computador (padrão das conversas, sugestões, tema e idioma). Nulo:
+// o Argus ainda não respondeu, ou é de uma versão sem isso.
+export function useDesktopPreferences(): DesktopPreferences | null {
+  const r = useRemote((c) => c.call('preferences:forPhone').catch(() => null), [], 'desktopPreferences');
+  return r.data ?? null;
+}
 
 export function useAuthState(): AuthState | undefined {
   const { conn } = useHost();

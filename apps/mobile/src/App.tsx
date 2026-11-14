@@ -9,8 +9,13 @@ import { FolderScreen } from './screens/FolderScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PairScreen } from './screens/PairScreen';
 import { InstallScreen } from './screens/InstallScreen';
-import { installed } from './lib/push';
+import { needsInstall, syncPush } from './lib/push';
+import { NotificationsStep, usePushStep } from './screens/NotificationsStep';
+import { AddFolderScreen } from './screens/AddFolderScreen';
+import { ProjectsScreen } from './screens/ProjectsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { TabBar, isTab } from './ui/TabBar';
+import { ApplyPreferences } from './lib/usePreferences';
 import { UsageScreen } from './screens/UsageScreen';
 
 function Connected({ host }: { host: PairedHost }) {
@@ -30,6 +35,9 @@ function Connected({ host }: { host: PairedHost }) {
       conn.stop();
     };
   }, [conn]);
+  // Cada conexão pronta leva de novo a inscrição das notificações (ver syncPush).
+  useEffect(() => conn.onStatus(() => conn.status === 'online' && void syncPush(conn).catch(() => {})), [conn]);
+  const [pushStep, pushStepDone] = usePushStep();
   const route = parseRoute(useHash());
   // Toda troca de tela começa no topo, inclusive ao voltar (o navegador restauraria a posição de
   // antes) e antes do primeiro desenho (sem piscar). A conversa nova que ganha a sessão troca só o
@@ -42,17 +50,30 @@ function Connected({ host }: { host: PairedHost }) {
   }, [screenKey]);
   return (
     <HostProvider conn={conn}>
-      {route.name === 'folder' ? (
+      <ApplyPreferences />
+      {/* Cada tela entra com um fade curto (só opacidade: transform tiraria as barras fixas do lugar).
+          A barra de abas fica fora, parada entre as abas. */}
+      <div key={pushStep === 'hide' ? screenKey : pushStep} className="screen-fade h-full">
+      {/* Primeira entrada: o pedido das notificações antes do app (conferindo, só o fundo). */}
+      {pushStep === 'show' ? (
+        <NotificationsStep onDone={pushStepDone} />
+      ) : pushStep === 'check' ? null : route.name === 'folder' ? (
         <FolderScreen path={route.path} />
       ) : route.name === 'chat' ? (
         <ChatScreen key={route.cwd} cwd={route.cwd} id={route.id} />
+      ) : route.name === 'projects' ? (
+        <ProjectsScreen />
       ) : route.name === 'settings' ? (
         <SettingsScreen />
       ) : route.name === 'usage' ? (
         <UsageScreen />
+      ) : route.name === 'addFolder' ? (
+        <AddFolderScreen board={route.board} />
       ) : (
         <HomeScreen />
       )}
+      </div>
+      {pushStep === 'hide' && isTab(route) && <TabBar current={route.name} />}
       <ConnectionOverlay />
     </HostProvider>
   );
@@ -76,9 +97,9 @@ export function App() {
     navigator.serviceWorker?.addEventListener('message', onMessage);
     return () => navigator.serviceWorker?.removeEventListener('message', onMessage);
   }, []);
-  // Só roda instalado (tela cheia, armazenamento e notificações de app). No pnpm mobile:dev, roda no
-  // navegador para ver as mudanças na hora.
-  if (!installed() && !import.meta.env.DEV)
+  // No celular, só roda instalado (tela cheia, armazenamento e notificações de app); no computador,
+  // também no navegador. No pnpm mobile:dev, roda no navegador para ver as mudanças na hora.
+  if (needsInstall() && !import.meta.env.DEV)
     return (
       <>
         <StatusBarCover />

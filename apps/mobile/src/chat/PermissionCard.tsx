@@ -18,7 +18,7 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
     <div className="mt-2 space-y-3">
       {questions.map((q) => (
         <div key={q.question}>
-          <p className="text-[15px] font-semibold">{q.question}</p>
+          <p className="text-[14px] font-semibold">{q.question}</p>
           <div className="mt-1.5 flex flex-col gap-1.5">
             {q.options.map((o) => {
               const on = picked[q.question]?.includes(o.label);
@@ -29,8 +29,8 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
                   onClick={() => toggle(q, o.label)}
                   className={`rounded-xl border px-3 py-2 text-left ${on ? 'border-accent bg-accent/10' : 'border-line'}`}
                 >
-                  <span className="block text-[15px] font-medium">{o.label}</span>
-                  {o.description && <span className="block text-[13px] leading-snug text-muted">{o.description}</span>}
+                  <span className="block text-[14px] font-medium">{o.label}</span>
+                  {o.description && <span className="block text-[12px] leading-snug text-muted">{o.description}</span>}
                 </button>
               );
             })}
@@ -42,11 +42,11 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
           type="button"
           disabled={!complete}
           onClick={() => onAnswer({ answers: Object.fromEntries(Object.entries(picked).map(([k, v]) => [k, v.join(', ')])) })}
-          className="flex-1 rounded-xl bg-accent py-2.5 text-[15px] font-semibold text-white disabled:opacity-40"
+          className="flex-1 rounded-xl bg-accent py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"
         >
           {tr('Responder', 'Answer')}
         </button>
-        <button type="button" onClick={() => onAnswer('deny')} className="rounded-xl bg-code px-4 py-2.5 text-[15px] font-semibold">
+        <button type="button" onClick={() => onAnswer('deny')} className="rounded-xl bg-code px-4 py-2.5 text-[14px] font-semibold">
           {tr('Pular', 'Skip')}
         </button>
       </div>
@@ -65,13 +65,13 @@ export function PermissionCard({ request, onAnswer }: { request: PermissionReque
       <div className="flex items-start gap-2">
         <ShieldQuestion size={20} className="mt-0.5 shrink-0 text-orange" />
         <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold">{request.title ?? request.label}</p>
-          {request.summary && request.summary !== request.title && <p className="text-[15px] leading-snug text-muted">{request.summary}</p>}
+          <p className="text-[14px] font-semibold">{request.title ?? request.label}</p>
+          {request.summary && request.summary !== request.title && <p className="text-[14px] leading-snug text-muted">{request.summary}</p>}
         </div>
       </div>
-      {request.detail && <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-code p-2 font-mono text-[12px] whitespace-pre-wrap">{request.detail}</pre>}
+      {request.detail && <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-code p-2 font-mono text-[11px] whitespace-pre-wrap">{request.detail}</pre>}
       {request.diff?.length ? (
-        <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-code p-2 font-mono text-[12px] leading-snug">
+        <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-code p-2 font-mono text-[11px] leading-snug">
           {request.diff.flatMap((h, i) =>
             h.lines.slice(0, 120).map((l, j) => (
               <div key={`${i}:${j}`} className={l.startsWith('+') ? 'text-green' : l.startsWith('-') ? 'text-red' : 'text-muted'}>
@@ -85,15 +85,15 @@ export function PermissionCard({ request, onAnswer }: { request: PermissionReque
         <Questions questions={request.questions} onAnswer={answer} />
       ) : (
         <div className="mt-3 flex gap-2">
-          <button type="button" disabled={busy} onClick={() => answer('allow')} className="flex-1 rounded-xl bg-accent py-2.5 text-[15px] font-semibold text-white">
+          <button type="button" disabled={busy} onClick={() => answer('allow')} className="flex-1 rounded-xl bg-accent py-2.5 text-[14px] font-semibold text-white">
             {tr('Permitir', 'Allow')}
           </button>
           {request.canAlwaysAllow && (
-            <button type="button" disabled={busy} onClick={() => answer('always')} className="flex-1 rounded-xl bg-code py-2.5 text-[15px] font-semibold">
+            <button type="button" disabled={busy} onClick={() => answer('always')} className="flex-1 rounded-xl bg-code py-2.5 text-[14px] font-semibold">
               {tr('Sempre', 'Always')}
             </button>
           )}
-          <button type="button" disabled={busy} onClick={() => answer('deny')} className="rounded-xl bg-code px-4 py-2.5 text-[15px] font-semibold text-red">
+          <button type="button" disabled={busy} onClick={() => answer('deny')} className="rounded-xl bg-code px-4 py-2.5 text-[14px] font-semibold text-red">
             {tr('Negar', 'Deny')}
           </button>
         </div>

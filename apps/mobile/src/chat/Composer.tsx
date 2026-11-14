@@ -1,59 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, FileText, Mic, Plus, Square, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowUp, FileText, GitBranch, Mic, Plus, Square, X } from 'lucide-react';
 import type { ChatSettings } from '@argus/shared/chat';
 import type { ClaudeInfo } from '@argus/shared/models';
 import { tr } from '../i18n';
 import { isImage } from '../lib/images';
+import { canReadClipboard, filesFrom, readClipboard } from './clipboard';
 import { ComposerOptions, ContextRing, modelSummary, type OptionsSheet } from './ComposerBar';
+import { SuggestionChip } from './SuggestionChip';
+import { useDictation } from './useDictation';
 import type { COMMANDS } from './options';
 
-// A caixa de escrever, flutuando embaixo como uma pílula: o + (fotos e arquivos, modelo, modo,
+// A caixa cresce até 3 linhas (22px cada, mais 9px em cima e embaixo); passando disso, rola dentro.
+const MAX_INPUT_HEIGHT = 84;
+
+// A caixa de escrever, flutuando embaixo como uma pílula: o + (fotos e arquivos, colar, modelo, modo,
 // comandos e contexto, ver ComposerBar.tsx), o texto (o microfone do teclado do celular já dita),
 // o ditado próprio onde o navegador tem reconhecimento de voz, e enviar ou parar.
-
-type SpeechRecognitionLike = {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  start(): void
-  stop(): void
-  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null
-  onend: (() => void) | null
-  onerror: (() => void) | null
-};
-
-const Recognition =
-  (globalThis as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition ??
-  (globalThis as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
-
-function useDictation(onText: (text: string) => void) {
-  const [on, setOn] = useState(false);
-  const rec = useRef<SpeechRecognitionLike | null>(null);
-  const onTextRef = useRef(onText);
-  onTextRef.current = onText;
-  useEffect(() => () => rec.current?.stop(), []);
-  if (!Recognition) return null;
-  const toggle = () => {
-    if (on) return rec.current?.stop();
-    const r = new Recognition();
-    r.lang = navigator.language;
-    r.continuous = true;
-    r.interimResults = false;
-    r.onresult = (e) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onTextRef.current(e.results[i][0].transcript);
-    };
-    r.onend = () => setOn(false);
-    r.onerror = () => setOn(false);
-    rec.current = r;
-    try {
-      r.start();
-      setOn(true);
-    } catch {
-      setOn(false);
-    }
-  };
-  return { on, toggle };
-}
 
 export type Draft = { text: string; files: File[] };
 
@@ -77,8 +39,12 @@ export function Composer({
   info,
   agentChat,
   contextPercent,
+  branch,
+  suggestion,
+  working,
   onSettingsChange,
   onCommand,
+  onHeight,
 }: {
   busy: boolean
   onSend: (d: Draft) => Promise<void>
@@ -89,8 +55,16 @@ export function Composer({
   agentChat: boolean
   // Quanto da janela de contexto a conversa já usou; nulo na conversa que ainda não começou.
   contextPercent: number | null
+  // Branch do git da pasta (sem git, nada).
+  branch?: string | null
+  // Próxima mensagem prevista pelo Claude Code, ao fim do pedido.
+  suggestion?: string
+  // O que o agente está fazendo agora (WorkingLine), em cima da caixa.
+  working?: ReactNode
   onSettingsChange: (patch: Partial<ChatSettings>) => void
   onCommand: (name: (typeof COMMANDS)[number]['name']) => void
+  // Altura da parte sólida da caixa (sem o degradê de cima): a conversa termina logo acima dela.
+  onHeight?: (height: number) => void
 }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -99,30 +73,77 @@ export function Composer({
   const [sheet, setSheet] = useState<OptionsSheet>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const picker = useRef<HTMLInputElement>(null);
-  const dictation = useDictation((t) => setText((prev) => (prev && !prev.endsWith(' ') ? `${prev} ${t.trim()}` : prev + t.trim())));
+  // O texto que já estava na caixa quando o ditado começou; a fala entra depois dele.
+  const before = useRef('');
+  const dictation = useDictation(
+    () => {
+      before.current = text;
+      setError(null);
+    },
+    (spoken) => setText(before.current && !/\s$/.test(before.current) ? `${before.current} ${spoken}` : before.current + spoken),
+    setError,
+  );
+
+  const addFiles = (list: File[]) => {
+    if (list.length) setFiles((prev) => [...prev, ...list]);
+  };
+  // "Colar" do menu +: no iPhone, a caixa de texto não oferece colar quando o que foi copiado é só
+  // uma imagem; a leitura pede a confirmação do próprio sistema.
+  const pasteFromClipboard = () => {
+    readClipboard().then(
+      (got) => {
+        if (got.files.length) addFiles(got.files);
+        else if (got.text) setText((prev) => (prev && !/\s$/.test(prev) ? `${prev} ${got.text}` : prev + got.text));
+        else setError(tr('Não há imagem, arquivo ou texto copiado.', 'Nothing copied: no image, file or text.'));
+      },
+      () => setError(tr('Não deu para ler o que foi copiado. Permita colar quando o celular perguntar.', 'Couldn’t read the clipboard. Allow pasting when the phone asks.')),
+    );
+  };
 
   useEffect(() => {
     const el = area.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, window.innerHeight * 0.35)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`;
   }, [text]);
 
   const canSend = (text.trim() || files.length > 0) && !sending && !disabled;
-  const send = async () => {
+  const send = () => {
     if (!canSend) return;
+    dictation?.stop();
+    // A caixa limpa na hora (a mensagem já aparece na conversa); se o envio falhar, o rascunho volta.
+    const draft = { text: text.trim(), files };
+    setText('');
+    setFiles([]);
+    void submit(draft);
+  };
+
+  const submit = async (draft: Draft) => {
     setSending(true);
     setError(null);
     try {
-      await onSend({ text: text.trim(), files });
-      setText('');
-      setFiles([]);
+      await onSend(draft);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      setText((t) => t || draft.text);
+      setFiles((f) => (f.length ? f : draft.files));
     } finally {
       setSending(false);
     }
   };
+
+  // A caixa muda de altura (sugestão, linha do que o agente faz, texto de várias linhas): a conversa
+  // acompanha.
+  const box = useRef<HTMLDivElement>(null);
+  const heightRef = useRef(onHeight);
+  heightRef.current = onHeight;
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => heightRef.current?.(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const round = 'flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-60';
 
@@ -130,8 +151,13 @@ export function Composer({
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20">
       {/* O conteúdo some suave atrás da pílula, em vez de cortar seco. */}
       <div className="h-6 bg-gradient-to-b from-transparent to-bg" />
-      <div className="px-safe bg-bg pb-[max(12px,env(safe-area-inset-bottom))]">
-        {error && <p className="pointer-events-auto px-2 pb-1.5 text-[13px] text-red">{error}</p>}
+      <div ref={box} className="px-safe bg-bg pb-[max(12px,env(safe-area-inset-bottom))]">
+        {error && <p className="pointer-events-auto px-2 pb-1.5 text-[12px] text-red">{error}</p>}
+        {working}
+        {/* Sugestão só com a caixa vazia e o agente parado (como no Argus). */}
+        {suggestion && !busy && !sending && !disabled && !text && !files.length && (
+          <SuggestionChip text={suggestion} onSend={() => void submit({ text: suggestion, files: [] })} />
+        )}
         <div className="pointer-events-auto rounded-[28px] border border-line bg-card p-1.5 shadow-[0_6px_24px_rgba(0,0,0,0.10)]">
           {files.length > 0 && (
             <div className="flex gap-2 overflow-x-auto px-1.5 pt-1.5 pb-2">
@@ -166,8 +192,10 @@ export function Composer({
               value={text}
               rows={1}
               onChange={(e) => setText(e.target.value)}
+              // Imagem ou arquivo colado vira anexo; o texto colado entra como sempre.
+              onPaste={(e) => addFiles(filesFrom(e.clipboardData))}
               placeholder={busy ? tr('Mandar mais um pedido…', 'Send another request…') : tr('Escreva um pedido…', 'Write a request…')}
-              className="max-h-[35vh] min-w-0 flex-1 resize-none bg-transparent px-1 py-[9px] leading-snug outline-none placeholder:text-faint"
+              className="max-h-[84px] min-w-0 flex-1 resize-none bg-transparent px-1 py-[9px] leading-snug outline-none placeholder:text-faint"
             />
             {dictation && (
               <button
@@ -184,24 +212,33 @@ export function Composer({
                 <Square size={14} fill="currentColor" />
               </button>
             ) : (
-              <button type="button" aria-label={tr('Enviar', 'Send')} disabled={!canSend} onClick={() => void send()} className={`${round} bg-text text-bg disabled:opacity-25`}>
+              <button type="button" aria-label={tr('Enviar', 'Send')} disabled={!canSend} onClick={send} className={`${round} bg-text text-bg disabled:opacity-25`}>
                 <ArrowUp size={20} strokeWidth={2.6} />
               </button>
             )}
           </div>
         </div>
-        {/* Embaixo da caixa, discreto: o contexto usado à esquerda e o modelo à direita (tocar abre
-            a escolha do modelo). */}
-        <div className="pointer-events-auto mt-1.5 flex items-center gap-2 px-2 text-[12px] text-faint tabular-nums">
+        {/* Embaixo da caixa, discreto: o contexto usado à esquerda; à direita, a branch e o modelo
+            (tocar abre a escolha do modelo). */}
+        <div className="pointer-events-auto mt-1.5 flex items-center gap-2 px-2 text-[11px] text-faint tabular-nums">
           {contextPercent !== null && (
             <span className="flex items-center gap-1" aria-label={tr(`Contexto usado: ${contextPercent}%`, `Context used: ${contextPercent}%`)}>
               <ContextRing percent={contextPercent} size={12} />
               {contextPercent}%
             </span>
           )}
-          <button type="button" onClick={() => setSheet('model')} className="ml-auto min-w-0 truncate active:opacity-60">
-            {modelSummary(settings, info)}
-          </button>
+          <span className="ml-auto flex min-w-0 items-center gap-2">
+            {branch && (
+              <span className="flex max-w-[45vw] min-w-0 items-center gap-1" aria-label={tr(`Branch ${branch}`, `Branch ${branch}`)}>
+                <GitBranch size={12} className="shrink-0" />
+                <span className="truncate">{branch}</span>
+              </span>
+            )}
+            {branch && <span aria-hidden="true">-</span>}
+            <button type="button" onClick={() => setSheet('model')} className="min-w-0 truncate active:opacity-60">
+              {modelSummary(settings, info)}
+            </button>
+          </span>
         </div>
       </div>
       <input
@@ -219,6 +256,7 @@ export function Composer({
         open={sheet}
         onOpen={setSheet}
         onAttach={() => picker.current?.click()}
+        onPaste={canReadClipboard ? pasteFromClipboard : undefined}
         settings={settings}
         info={info}
         agentChat={agentChat}

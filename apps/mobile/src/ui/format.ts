@@ -62,6 +62,28 @@ export function dateGroup(iso: string | undefined, now = Date.now()): string {
   return month.charAt(0).toUpperCase() + month.slice(1);
 }
 
+// Dia de uma conversa, um grupo por dia (a aba Conversas): "Hoje", "Ontem", o dia da semana com a
+// data nos últimos 7 dias ("Quarta-feira, 12 de nov."), e a data antes disso ("3 de novembro", com
+// o ano se for de outro). Conta em dias do calendário.
+export function dayGroup(iso: string | undefined, now = Date.now()): string {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (Number.isNaN(t)) return tr('Mais antigas', 'Older');
+  const day = (ms: number) => {
+    const d = new Date(ms);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+  const days = Math.round((day(now) - day(t)) / 86_400_000);
+  if (days <= 0) return tr('Hoje', 'Today');
+  if (days === 1) return tr('Ontem', 'Yesterday');
+  const d = new Date(t);
+  const sameYear = d.getFullYear() === new Date(now).getFullYear();
+  const text =
+    days < 7
+      ? d.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'short' })
+      : d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }) });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 // Hora de uma mensagem: "14:32" hoje, "ontem 14:32", "12/11 14:32" antes disso.
 export function messageTime(iso: string | undefined, now = Date.now()): string {
   const t = iso ? Date.parse(iso) : NaN;

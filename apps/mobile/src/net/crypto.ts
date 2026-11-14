@@ -239,6 +239,7 @@ export function secureLink(raw: Link, sendKey: Uint8Array, receiveKey: Uint8Arra
     // O fechamento chega depois do que já veio: o de casa entrega a última mensagem e fecha na hora,
     // e a decifragem aqui é assíncrona (sem esperar, o "fechou" passaria na frente da mensagem).
     onClose: (cb) => raw.onClose(() => void receiving.then(cb, cb)),
-    close: () => raw.close(),
+    // Fecha depois de mandar o que já estava na fila (o aviso de "saí da tela", por exemplo).
+    close: () => void sending.then(raw.close, raw.close),
   };
 }

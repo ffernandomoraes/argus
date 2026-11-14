@@ -20,11 +20,17 @@
   --red: #ff3b30;
   --bubble: #007aff;
   --code: rgba(118, 118, 128, 0.12);
+  /* Status das conversas, as mesmas cores do Argus: trabalhando, precisa de você, resposta nova. */
+  --running: #2563eb;
+  --needs-you: #d97706;
+  --done: #059669;
   color-scheme: light;
 }
 
+/* Escuro: pelo sistema, a menos que o tema claro tenha sido escolhido (Conta > Preferências, que
+   põe data-theme na página); ou escolhido direto. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #000000;
     --card: #1c1c1e;
     --card-press: #2c2c2e;
@@ -39,8 +45,31 @@
     --red: #ff453a;
     --bubble: #0a84ff;
     --code: rgba(118, 118, 128, 0.24);
+    --running: #60a5fa;
+    --needs-you: #fbbf24;
+    --done: #34d399;
     color-scheme: dark;
   }
+}
+:root[data-theme='dark'] {
+  --bg: #000000;
+  --card: #1c1c1e;
+  --card-press: #2c2c2e;
+  --card-border: transparent;
+  --text: #ffffff;
+  --muted: #aeaeb2;
+  --faint: #8d8d93;
+  --line: rgba(84, 84, 88, 0.6);
+  --accent: #0a84ff;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  --red: #ff453a;
+  --bubble: #0a84ff;
+  --code: rgba(118, 118, 128, 0.24);
+  --running: #60a5fa;
+  --needs-you: #fbbf24;
+  --done: #34d399;
+  color-scheme: dark;
 }
 
 @theme {
@@ -62,6 +91,9 @@
   --color-red: var(--red);
   --color-bubble: var(--bubble);
   --color-code: var(--code);
+  --color-running: var(--running);
+  --color-needs-you: var(--needs-you);
+  --color-done: var(--done);
 }
 
 html,
@@ -75,7 +107,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 17px;
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -95,7 +127,7 @@ textarea {
 /* Campos com 16px ou mais: o iPhone não dá zoom ao tocar. */
 textarea,
 input {
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .pt-safe {
@@ -107,6 +139,10 @@ input {
 /* Fim das telas de lista: espaço folgado, somado à área do gesto de início no iPhone. */
 .pb-end {
   padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+/* Telas com a barra de abas (ui/TabBar.tsx) embaixo: o fim da lista passa acima dela. */
+.pb-tabs {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
 .px-safe {
   padding-left: max(16px, env(safe-area-inset-left));
@@ -120,6 +156,13 @@ input {
 }
 .prose-chat p {
   margin: 0.4em 0;
+}
+/* Sem margem antes da primeira linha: a bolinha do passo (chat/Step.tsx) fica na altura dela. */
+.prose-chat > :first-child {
+  margin-top: 0;
+}
+.prose-chat > :last-child {
+  margin-bottom: 0;
 }
 .prose-chat ul,
 .prose-chat ol {
@@ -184,6 +227,43 @@ input {
 }
 .animate-pulse-dot {
   animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+/* Anel em volta da bolinha de "trabalhando" (ui/StatusDot.tsx): cresce e some, sem parar. */
+@keyframes status-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  80%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+.status-ping {
+  animation: status-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-ping {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Troca de tela (App.tsx): a nova aparece num fade curto, sem deslizar. */
+@keyframes screen-fade {
+  from {
+    opacity: 0;
+  }
+}
+.screen-fade {
+  animation: screen-fade 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen-fade {
+    animation: none;
+  }
 }
 
 /* Gavetas de baixo (ui/Sheet.tsx): sobem e descem com a curva das do iOS. */

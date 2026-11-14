@@ -3,9 +3,12 @@ import type { UnreadChats } from '../app/unreadChats';
 import type { ChatHolders } from '../chatHolders';
 import type { Chats } from '../chats';
 import { activeChats } from '../chats/entries';
+import { phonePreferences, sharePreferences } from '../phonePreferences';
+import { forgetPhoneChat, isPhonePage } from '../remote/phoneChats';
 import type { Terminals } from '../terminals';
 import { materializeWorktree, withWorktreeHint } from '../worktrees';
 import { cleanTitle } from '@argus/shared/chat';
+import { broadcast } from './events';
 import { isRemotePage } from './page';
 import { handle, on } from './register';
 
@@ -14,9 +17,14 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   handle('chat:state', (_e, key) => chats.state(key));
   handle('chat:active', () => activeChats(chats.list()));
   handle('chat:details', (_e, key) => chats.details(key));
+  handle('preferences:forPhone', () => phonePreferences());
+  on('preferences:share', (_e, prefs) => sharePreferences(prefs));
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma
   // sessão. Abrir um encerra o outro; o histórico continua no arquivo da sessão.
-  on('chat:send', async (_e, req) => {
+  on('chat:send', async (e, req) => {
+    // Mandada pelo desktop (ou pela janela de outro computador): a conversa deixa de notificar o
+    // celular (ver remote/phoneChats.ts).
+    if (!isPhonePage(e.sender)) forgetPhoneChat([req.key, req.sessionId]);
     terminals.kill(req.key);
     if (req.sessionId) terminals.kill(req.sessionId);
     // Tarefa isolada reservada: o worktree nasce agora, com a branch provisória tirada do pedido.
@@ -29,7 +37,10 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
     if (req.sessionId) terminals.kill(req.sessionId);
     chats.remoteControl(req);
   });
-  on('chat:answer', (_e, key, id, answer) => chats.answer(key, id, answer));
+  on('chat:answer', (e, key, id, answer) => {
+    if (!isPhonePage(e.sender)) forgetPhoneChat([key]);
+    chats.answer(key, id, answer);
+  });
   handle('mcp:status', (_e, key, cwd, account) => chats.mcpStatus(key, cwd, account));
   handle('mcp:reconnect', (_e, key, name) => chats.reconnectMcp(key, name));
   // Da janela de acesso remoto, o link volta para abrir no notebook (ver authenticateMcp).
@@ -60,6 +71,9 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
   on('chat:interrupt', (_e, key) => chats.interrupt(key));
   on('chat:configure', (_e, key, patch) => chats.configure(key, patch));
   on('chat:unread', (e, list) => unread.set(e.sender, list));
+  // As não vistas para o celular, e ele avisando que viu uma: as janelas tiram a bolinha verde.
+  handle('chat:unreadList', () => unread.list());
+  on('chat:markRead', (_e, id) => broadcast('chat:markedRead', id));
   handle('chat:interrupted', () => interrupted.list());
   on('chat:dismissInterrupted', (_e, sessionId) => interrupted.dismiss(sessionId));
 }

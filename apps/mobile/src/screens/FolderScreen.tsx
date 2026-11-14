@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Star, XCircle } from 'lucide-react';
+import { Plus, Star } from 'lucide-react';
 import type { SearchHit, SessionSummary } from '@argus/shared/sessions';
 import { tr } from '../i18n';
-import { useFavorites, useSessions, useWorkspaces } from '../lib/data';
+import { useFavorites, useSessions, useUnread, useWorkspaces } from '../lib/data';
 import { useHost } from '../lib/host';
 import { back, go } from '../lib/router';
 import { ago, baseName, dateGroup } from '../ui/format';
 import { Empty, Row, Section } from '../ui/List';
 import { FLOATING_HEADER_SPACE, FloatingHeader, ROUND_BUTTON } from '../ui/FloatingHeader';
 import { GroupLabel } from '../ui/GroupLabel';
+import { SearchField, fold } from '../ui/SearchField';
 import { StatusDot } from '../ui/StatusDot';
+import { useWindowColor } from '../lib/windowColor';
 
 const PAGE = 60;
 
@@ -20,9 +22,6 @@ function shortPath(path: string, home: string | undefined): string {
   if (home && (path === home || path.startsWith(`${home}/`) || path.startsWith(`${home}\\`))) return `~${path.slice(home.length)}`;
   return path;
 }
-
-// Sem acento nem maiúscula, para comparar ("Gestão" acha "gestao").
-const fold = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Busca nas conversas da pasta: pelo título na hora, e pelo conteúdo no Argus (a mesma busca da
 // lista de conversas de lá), um instante depois de parar de digitar.
@@ -48,13 +47,15 @@ function useSearch(path: string, query: string): SearchHit[] | null {
   return hits;
 }
 
-function SessionRow({ s, path, favorite, snippet }: { s: SessionSummary; path: string; favorite?: boolean; snippet?: string }) {
+function SessionRow({ s, path, favorite, snippet, unread }: { s: SessionSummary; path: string; favorite?: boolean; snippet?: string; unread?: boolean }) {
+  // Trabalhando ou esperando você; parada com resposta que ninguém viu: verde (como no Argus).
+  const status = s.live && s.live !== 'idle' ? s.live : unread ? 'done' : null;
   return (
     <Row
-      icon={s.live && s.live !== 'idle' ? <StatusDot status={s.live} /> : favorite ? <Star size={16} className="fill-orange text-orange" /> : undefined}
+      icon={status ? <StatusDot status={status} /> : favorite ? <Star size={16} className="fill-orange text-orange" /> : undefined}
       title={s.title || tr('Sem título', 'Untitled')}
       // A data no fim da linha; embaixo do título, só o trecho achado na busca.
-      trailing={<span className="text-[13px] text-faint">{ago(s.repliedAt || s.updatedAt)}</span>}
+      trailing={<span className="text-[12px] text-faint">{ago(s.repliedAt || s.updatedAt)}</span>}
       subtitle={snippet}
       onClick={() => go({ name: 'chat', cwd: path, id: s.id })}
     />
@@ -69,8 +70,10 @@ export function FolderScreen({ path }: { path: string }) {
   const { workspaces } = useWorkspaces();
   const folder = workspaces.flatMap((w) => w.groups.flatMap((g) => g.folders)).find((f) => f.path === path);
   const name = folder?.name ?? baseName(path);
+  useWindowColor(folder?.group?.color);
   const newChat = () => go({ name: 'chat', cwd: path, id: newChatId() });
   const favorites = useFavorites();
+  const unread = useUnread().ids;
   const [query, setQuery] = useState('');
   const hits = useSearch(path, query);
   const all = list ?? [];
@@ -99,8 +102,8 @@ export function FolderScreen({ path }: { path: string }) {
       {/* Topo flutuante: voltar, o grupo da pasta na pílula colorida (como no canvas) e o + de
           conversa nova. */}
       <FloatingHeader
-        onBack={() => back({ name: 'home' })}
-        backLabel={tr('Início', 'Home')}
+        onBack={() => back({ name: 'projects' })}
+        backLabel={tr('Projetos', 'Projects')}
         title={
           <span className="inline-flex max-w-full">
             <GroupLabel label={folder?.group?.label || tr('Sem grupo', 'No group')} color={folder?.group?.color} />
@@ -113,32 +116,17 @@ export function FolderScreen({ path }: { path: string }) {
         }
       />
       <div className={`px-safe pb-end ${FLOATING_HEADER_SPACE}`}>
-        <h1 className="px-4 pt-1 text-[22px] leading-tight font-bold tracking-tight break-words">{name}</h1>
-        <p className="mt-1 truncate px-4 text-[15px] text-muted" title={path}>
+        <h1 className="px-4 pt-1 text-[20px] leading-tight font-bold tracking-tight break-words">{name}</h1>
+        <p className="mt-1 truncate px-4 text-[14px] text-muted" title={path}>
           {shortPath(path, conn.info?.homeDir)}
         </p>
 
-      <label className="mt-4 flex items-center gap-2 rounded-[12px] bg-code px-3 py-2">
-        <Search size={18} className="shrink-0 text-faint" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          type="search"
-          enterKeyHint="search"
-          placeholder={tr('Buscar conversas', 'Search chats')}
-          className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
-        />
-        {query && (
-          <button type="button" aria-label={tr('Limpar', 'Clear')} onClick={() => setQuery('')} className="shrink-0 text-faint">
-            <XCircle size={18} className="fill-faint text-bg" />
-          </button>
-        )}
-      </label>
+      <SearchField value={query} onChange={setQuery} />
 
       {searching ? (
         <Section title={tr('Resultados', 'Results')}>
           {results.map(({ s, snippet }) => (
-            <SessionRow key={s.id} s={s} path={path} favorite={favorites.has(s.id)} snippet={snippet} />
+            <SessionRow key={s.id} s={s} path={path} favorite={favorites.has(s.id)} snippet={snippet} unread={unread.has(s.id)} />
           ))}
           {!results.length && <Empty>{hits === null && query.trim().length >= 2 ? tr('Buscando…', 'Searching…') : tr('Nada encontrado.', 'Nothing found.')}</Empty>}
         </Section>
@@ -147,7 +135,7 @@ export function FolderScreen({ path }: { path: string }) {
           {favoriteList.length > 0 && (
             <Section title={tr('Favoritas', 'Favorites')}>
               {favoriteList.map((s) => (
-                <SessionRow key={s.id} s={s} path={path} favorite />
+                <SessionRow key={s.id} s={s} path={path} favorite unread={unread.has(s.id)} />
               ))}
             </Section>
           )}
@@ -164,12 +152,12 @@ export function FolderScreen({ path }: { path: string }) {
           {byDate.map(([label, items]) => (
             <Section key={label} title={label}>
               {items.map((s) => (
-                <SessionRow key={s.id} s={s} path={path} />
+                <SessionRow key={s.id} s={s} path={path} unread={unread.has(s.id)} />
               ))}
             </Section>
           ))}
           {others.length > shown && (
-            <button type="button" onClick={() => setShown((n) => n + PAGE)} className="mt-4 w-full py-2 text-[15px] text-accent active:opacity-50">
+            <button type="button" onClick={() => setShown((n) => n + PAGE)} className="mt-4 w-full py-2 text-[14px] text-accent active:opacity-50">
               {tr(`Mostrar mais (${others.length - shown})`, `Show more (${others.length - shown})`)}
             </button>
           )}

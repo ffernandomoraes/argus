@@ -4,10 +4,10 @@ import { tr } from '../i18n';
 import { forgetPairedHost, type HostConnection } from '../net/connection';
 import { useHost, useStatus } from '../lib/host';
 import { disablePush } from '../lib/push';
+import { ConfirmSheet } from './ConfirmSheet';
 
 // Esquece o computador neste aparelho e volta para a tela de pareamento.
-function disconnect(conn: HostConnection, ask: boolean): void {
-  if (ask && !confirm(tr(`Desconectar de ${conn.host.hostName}? Para entrar de novo, será preciso parear com um código novo.`, `Disconnect from ${conn.host.hostName}? To connect again you will need a new pairing code.`))) return;
+function disconnect(conn: HostConnection): void {
   void disablePush(conn).catch(() => {});
   conn.stop();
   forgetPairedHost();
@@ -24,6 +24,7 @@ export function ConnectionOverlay() {
   const { conn } = useHost();
   const status = useStatus();
   const [shown, setShown] = useState(false);
+  const [asking, setAsking] = useState(false);
   useEffect(() => {
     if (status === 'online') return setShown(false);
     const timer = setTimeout(() => setShown(true), status === 'connecting' ? SHOW_AFTER_MS : 0);
@@ -67,23 +68,33 @@ export function ConnectionOverlay() {
             <Loader2 size={30} className="animate-spin text-muted" />
           )
         ) : null}
-        <p className="mt-3 text-[17px] font-semibold">{title}</p>
-        {detail && <p className="mt-1 text-[15px] leading-snug text-muted">{detail}</p>}
+        <p className="mt-3 text-[15px] font-semibold">{title}</p>
+        {detail && <p className="mt-1 text-[14px] leading-snug text-muted">{detail}</p>}
         {(status === 'kicked' || status === 'rejected') && (
-          <button type="button" className="mt-4 rounded-full bg-accent px-5 py-2 text-[15px] font-semibold text-white" onClick={() => location.reload()}>
+          <button type="button" className="mt-4 rounded-full bg-accent px-5 py-2 text-[14px] font-semibold text-white" onClick={() => location.reload()}>
             {tr('Tentar de novo', 'Try again')}
           </button>
         )}
         {status === 'unpaired' ? (
-          <button type="button" className="mt-4 rounded-full bg-accent px-5 py-2 text-[15px] font-semibold text-white" onClick={() => disconnect(conn, false)}>
+          <button type="button" className="mt-4 rounded-full bg-accent px-5 py-2 text-[14px] font-semibold text-white" onClick={() => disconnect(conn)}>
             {tr('Parear de novo', 'Pair again')}
           </button>
         ) : (
-          <button type="button" className="mt-4 rounded-full bg-red/12 px-5 py-2 text-[15px] font-semibold text-red active:opacity-60" onClick={() => disconnect(conn, true)}>
+          <button type="button" className="mt-4 rounded-full bg-red/12 px-5 py-2 text-[14px] font-semibold text-red active:opacity-60" onClick={() => setAsking(true)}>
             {tr('Desconectar', 'Disconnect')}
           </button>
         )}
       </div>
+      <ConfirmSheet
+        open={asking}
+        above
+        title={tr(`Desconectar de ${name}?`, `Disconnect from ${name}?`)}
+        message={tr('Para entrar de novo, será preciso parear com um código novo.', 'To connect again you will need a new pairing code.')}
+        confirmLabel={tr('Desconectar', 'Disconnect')}
+        danger
+        onConfirm={() => disconnect(conn)}
+        onClose={() => setAsking(false)}
+      />
     </div>
   );
 }

@@ -33,6 +33,12 @@ export function App() {
   useEffect(() => {
     if (!IS_REMOTE) window.api.favorites.set(favoriteChats);
   }, [favoriteChats]);
+  // O padrão das conversas novas e as sugestões, idem: o celular herda (até escolher outro lá).
+  const conversation = usePreference('conversation');
+  const suggestions = usePreference('promptSuggestions');
+  useEffect(() => {
+    if (!IS_REMOTE) window.api.chat.sharePreferences({ conversation, suggestions });
+  }, [conversation, suggestions]);
   const providers = useProviders();
   // Falta configurar: sem o Claude Code pronto (instalado e com uma conta logada) e sem outro agente
   // conectado. Com outra conta logada, a principal sem login aparece só em Configurações.

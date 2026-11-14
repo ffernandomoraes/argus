@@ -13,6 +13,7 @@ import {
   type WebPushSubscription,
 } from '@argus/shared/webRemote';
 import type { Link } from './link';
+import { registerPhonePage } from './phoneChats';
 import { RemotePage } from './remotePage';
 
 // O lado do Argus de casa para um aparelho web (o app do celular): uma página remota só, que recebe
@@ -47,12 +48,22 @@ export type WebSessionHooks = {
   push: (sub: WebPushSubscription | null) => void
   // Manda uma notificação de teste para este aparelho.
   pushTest: () => Promise<PushTestResult>
+  // Mensagem mandada ou pedido respondido por este celular, nas conversas destas chaves (ver
+  // phoneChats.ts: só elas notificam).
+  interacted: (keys: (string | undefined)[]) => void
   onEnd: () => void
 };
+
+const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 
 // O estado de uma conversa chega a cada pedaço de texto (~50 ms), com a resposta inteira até ali:
 // no celular vai no máximo a cada STATE_EVERY_MS, sempre o mais recente.
 const STATE_EVERY_MS = 250;
+// Com o app na tela, o celular confirma a cada 10 s (apps/mobile/src/net/connection.ts). Sem
+// confirmação há mais que isto, conta como fora da tela: o iPhone congela o app sem avisar, e a
+// ligação pode seguir aberta na ponte. Antes, valia o último aviso para sempre, e uma ligação
+// congelada com o app "na tela" segurava as notificações.
+const VISIBLE_TTL_MS = 30_000;
 
 export class WebHostSession {
   private page: RemotePage | null = null;
@@ -61,7 +72,12 @@ export class WebHostSession {
   private held = new Map<string, number>();
   private stateTimers = new Map<string, { timer: NodeJS.Timeout; latest: unknown[] | null }>();
   // Com o app no fundo (ou a tela do celular apagada), o que acontece vira notificação.
-  visible = true;
+  private visibleOn = true;
+  private visibleAt = Date.now();
+
+  get visible(): boolean {
+    return this.visibleOn && Date.now() - this.visibleAt < VISIBLE_TTL_MS;
+  }
 
   constructor(
     private link: Link,
@@ -112,7 +128,8 @@ export class WebHostSession {
         }
         return;
       case 'visible':
-        this.visible = m.on === true;
+        this.visibleOn = m.on === true;
+        this.visibleAt = Date.now();
         return;
       case 'pushTest':
         if (!Number.isSafeInteger(m.id)) return this.close();
@@ -141,6 +158,7 @@ export class WebHostSession {
       this.send({ t: 'event', ch, args });
     });
     addRemotePage(this.page);
+    registerPhonePage(this.page);
     this.send({ t: 'welcome', info });
   }
 
@@ -177,6 +195,10 @@ export class WebHostSession {
   private async call(id: number, ch: string, args: unknown[]): Promise<void> {
     const kind = CHANNELS[ch];
     if (kind) this.track(ch, args);
+    if (ch === 'chat:send') {
+      const req = args[0] as { key?: unknown; sessionId?: unknown } | undefined;
+      this.hooks.interacted([str(req?.key), str(req?.sessionId)]);
+    } else if (ch === 'chat:answer') this.hooks.interacted([str(args[0])]);
     try {
       if (!kind || !this.page) throw new Error(tr(`Canal ${ch} indisponível no celular.`, `Channel ${ch} unavailable on the phone.`));
       const value = await dispatch(kind, ch, { sender: this.page }, args);

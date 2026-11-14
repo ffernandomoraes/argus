@@ -119,15 +119,22 @@ onSync('boards:state', () => ({ boards: [], current: 'b1' }));
 function webSession() {
   const [hostSide, clientSide] = memoryLinks();
   const pushes: unknown[] = [];
+  const touched: (string | undefined)[][] = [];
   let ended = false;
-  const session = new WebHostSession(hostSide, { info: () => INFO, push: (s) => void pushes.push(s), pushTest: async () => 'none', onEnd: () => (ended = true) });
+  const session = new WebHostSession(hostSide, {
+    info: () => INFO,
+    push: (s) => void pushes.push(s),
+    pushTest: async () => 'none',
+    interacted: (keys) => void touched.push(keys),
+    onEnd: () => (ended = true),
+  });
   const received: Record<string, unknown>[] = [];
   clientSide.onMessage((d) => {
     const m = decodeWeb(d);
     if (m) received.push(m);
   });
   const send = (m: Parameters<typeof encodeWeb>[0]) => clientSide.send(Buffer.from(encodeWeb(m)));
-  return { session, send, received, pushes, ended: () => ended, clientSide };
+  return { session, send, received, pushes, touched, ended: () => ended, clientSide };
 }
 
 describe('porteiro do aparelho web', () => {
@@ -188,6 +195,39 @@ describe('porteiro do aparelho web', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('conta como fora da tela quando o celular para de confirmar (app congelado pelo iPhone)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const s = webSession();
+      s.send({ t: 'hello', protocol: WEB_PROTOCOL_VERSION });
+      s.send({ t: 'visible', on: true });
+      await settle();
+      expect(s.session.visible).toBe(true);
+      vi.setSystemTime(Date.now() + 31_000);
+      expect(s.session.visible).toBe(false);
+      s.send({ t: 'visible', on: true });
+      await settle();
+      expect(s.session.visible).toBe(true);
+      s.send({ t: 'visible', on: false });
+      await settle();
+      expect(s.session.visible).toBe(false);
+      s.session.close();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('conta as conversas em que o celular mandou mensagem ou respondeu (só elas notificam)', async () => {
+    const s = webSession();
+    s.send({ t: 'hello', protocol: WEB_PROTOCOL_VERSION });
+    s.send({ t: 'call', id: 1, ch: 'chat:send', args: [{ key: 'new-1', sessionId: 'sessao-1', cwd: '/x', text: 'oi' }] });
+    s.send({ t: 'call', id: 2, ch: 'chat:answer', args: ['new-1', 'pedido', { behavior: 'allow' }] });
+    s.send({ t: 'call', id: 3, ch: 'chat:interrupt', args: ['new-1'] });
+    await settle();
+    expect(s.touched).toEqual([['new-1', 'sessao-1'], ['new-1']]);
+    s.session.close();
   });
 
   it('recusa versão diferente e pedido antes do cumprimento', async () => {

@@ -41,19 +41,19 @@ function WindowDetail({ title, window, note, now }: WindowLine & { now: number }
   if (!window)
     return (
       <div className="py-2.5">
-        <div className="text-[17px]">{title}</div>
-        <div className="mt-0.5 text-[15px] text-muted">{note ?? tr('Sem dados', 'No data')}</div>
+        <div className="text-[15px]">{title}</div>
+        <div className="mt-0.5 text-[14px] text-muted">{note ?? tr('Sem dados', 'No data')}</div>
       </div>
     );
   const pct = Math.round(window.percent);
   return (
     <div className="py-2.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[17px]">{title}</span>
-        <span className="font-mono text-[15px] tabular-nums">{pct}%</span>
+        <span className="text-[15px]">{title}</span>
+        <span className="font-mono text-[14px] tabular-nums">{pct}%</span>
       </div>
       <UsageBar percent={pct} className="mt-1.5 h-1.5" />
-      <p className="mt-1 text-[15px] text-muted">
+      <p className="mt-1 text-[14px] text-muted">
         {window.resetsAt
           ? tr(`Reseta em ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`, `Resets in ${timeLeft(window.resetsAt, now)} - ${resetLabel(window.resetsAt, now)}`)
           : tr('Começa a contar na próxima mensagem', 'Starts counting on the next message')}
@@ -94,7 +94,7 @@ export function UsageScreen() {
   });
   return (
     <div className="min-h-full">
-      <FloatingHeader title={tr('Uso', 'Usage')} onBack={() => back({ name: 'home' })} backLabel={tr('Início', 'Home')} />
+      <FloatingHeader title={tr('Uso', 'Usage')} onBack={() => back({ name: 'settings' })} backLabel={tr('Conta', 'Account')} />
       <div className={`px-safe pb-end ${FLOATING_HEADER_SPACE}`}>
         {shown.map(({ row, usage }) => (
           <AccountCard key={row.id} row={row} usage={usage} now={now} />

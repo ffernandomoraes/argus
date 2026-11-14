@@ -14,6 +14,8 @@ import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files';
 import type { HistoryPage, HistoryRequest, Message } from './history';
 import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
 import type { ClipboardCommand, EditAction, ThemeSource } from './ipc';
+import type { SharedPreferences } from './phonePreferences';
+import type { PlaceFolderRequest } from './phoneChannels';
 import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
 import type { MediaCommand, NowPlaying } from './media';
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
@@ -225,6 +227,9 @@ export type Api = {
     release: (key: string) => void
     restartIn: (cwd: string) => void
     configure: (key: string, patch: Partial<ChatSettings>) => void
+    // Padrão das conversas novas e sugestões (Configurações), contados ao processo principal: o app do
+    // celular herda.
+    sharePreferences: (prefs: SharedPreferences) => void
     onState: (cb: (key: string, state: ChatState) => void) => Off
     // Clique na notificação do sistema.
     onOpen: (cb: (cwd: string, sessionId: string) => void) => Off
@@ -233,6 +238,8 @@ export type Api = {
     onActive: (cb: (chats: ActiveChat[]) => void) => Off
     // Respostas não vistas nesta janela: o ícone da barra de menus conta e lista.
     setUnread: (chats: UnreadChat[]) => void
+    // Vista no celular: tirar a bolinha verde.
+    onMarkedRead: (cb: (id: string) => void) => Off
     // Conversas que o Argus fechou no meio, e o X do aviso numa delas.
     interrupted: () => Promise<InterruptedChat[]>
     onInterrupted: (cb: (chats: InterruptedChat[]) => void) => Off
@@ -283,6 +290,9 @@ export type Api = {
     viewport: (board: string) => CanvasViewport | null
     setViewport: (board: string, viewport: CanvasViewport) => void
     newWindow: () => void
+    // O app do celular pedindo para encaixar uma pasta num workspace: a janela calcula e responde.
+    onPlaceFolder: (cb: (request: PlaceFolderRequest) => void) => Off
+    placedFolder: (id: string, nodes: unknown, error: string | null) => void
   }
   // Workspaces: canvas separados, trocados no menu da barra de título.
   boards: {
@@ -328,6 +338,11 @@ export type Api = {
     search: (path: string, query: string) => Promise<SearchHit[]>
     // Move a conversa para a Lixeira; devolve o erro ou nulo.
     trash: (path: string, id: string) => Promise<string | null>
+    // A pasta existe? Renomeada ou movida fora do Argus, não; sem resposta (WSL parado), conta que sim.
+    exists: (path: string) => Promise<boolean>
+    // "Localizar pasta…": leva o histórico e a memória do Claude Code de `from` para `to`. Devolve o
+    // aviso do que não deu para levar, ou nulo.
+    relocate: (from: string, to: string) => Promise<string | null>
     // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.
     branch: (path: string) => Promise<string | null>
     // Branches locais e só do remoto, para o seletor acima da pasta; nulo fora de repositório.

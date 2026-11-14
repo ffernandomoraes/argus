@@ -11,12 +11,14 @@ const HostContext = createContext<HostValue | null>(null);
 
 export function HostProvider({ conn, children }: { conn: HostConnection; children: ReactNode }) {
   const [epoch, setEpoch] = useState(0);
+  // Cada ligação nova pronta: as telas releem (inclusive na volta do fundo, em que o status segue
+  // "no ar" enquanto liga de novo).
   useEffect(() => {
-    let wasOnline = conn.status === 'online';
+    let seen = conn.status === 'online' ? conn.connections : -1;
     return conn.onStatus(() => {
-      const online = conn.status === 'online';
-      if (online && !wasOnline) setEpoch((e) => e + 1);
-      wasOnline = online;
+      if (conn.status !== 'online' || conn.connections === seen) return;
+      seen = conn.connections;
+      setEpoch((e) => e + 1);
     });
   }, [conn]);
   return <HostContext.Provider value={{ conn, epoch }}>{children}</HostContext.Provider>;

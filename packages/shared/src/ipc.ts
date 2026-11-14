@@ -6,6 +6,7 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers';
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas';
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent';
 import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
+import type { PhoneEventChannels, PhoneInvokeChannels, PhoneSendChannels } from './phoneChannels';
 import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
 import type { CliStatus } from './cli';
@@ -45,7 +46,7 @@ export type ClipboardCommand = 'cut' | 'copy' | 'paste';
 export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste'];
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
-export type InvokeChannels = {
+export type InvokeChannels = PhoneInvokeChannels & {
   // Janela de acesso remoto: abre no navegador daqui um servidor que roda no localhost do outro
   // computador (ver main/remote/tunnelClient.ts).
   'remote:openLocalhost': (port: number) => RemoteLocalhostResult
@@ -142,6 +143,8 @@ export type InvokeChannels = {
   'sessions:folders': () => KnownFolder[]
   'sessions:search': (path: string, query: string) => SearchHit[]
   'sessions:trash': (path: string, id: string) => string | null
+  'sessions:exists': (path: string) => boolean
+  'sessions:relocate': (from: string, to: string) => string | null
   'sessions:branch': (path: string) => string | null
   'sessions:branches': (path: string) => BranchList | null
   'sessions:fetch': (path: string) => boolean
@@ -200,7 +203,7 @@ export type InvokeChannels = {
 };
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
-export type SendChannels = {
+export type SendChannels = PhoneSendChannels & {
   // "Abrir localhost" pelo acesso remoto: do Argus do notebook para o de casa, nunca de uma janela
   // (ver main/remote/tunnelHost.ts). As respostas voltam como avisos tunnel:data e tunnel:close.
   'tunnel:open': (id: number, port: number) => void
@@ -336,7 +339,7 @@ export type SendSyncChannels = {
 };
 
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.
-export type EventChannels = {
+export type EventChannels = PhoneEventChannels & {
   edit: (action: EditAction) => void
   // Para a janela do mascote: alguém escrevendo um pedido no app; respostas não vistas e erros.
   'mascot:typing': (typing: boolean) => void

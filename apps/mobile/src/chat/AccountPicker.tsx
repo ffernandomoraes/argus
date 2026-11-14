@@ -75,7 +75,7 @@ export function AccountPicker({
   const chip: ReactNode = (
     <>
       <AgentIcon provider={current.provider} size={14} />
-      <span className="max-w-[72px] truncate text-[13px] font-medium">{label}</span>
+      <span className="max-w-[72px] truncate text-[12px] font-medium">{label}</span>
       {canChange && <ChevronDown size={12} className="shrink-0 opacity-60" />}
     </>
   );
@@ -91,13 +91,13 @@ export function AccountPicker({
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title={started ? tr('Conta do Claude', 'Claude account') : tr('Agente e conta', 'Agent and account')}>
         {started && (
-          <p className="mb-3 text-center text-[13px] leading-snug text-muted">
+          <p className="mb-3 text-center text-[12px] leading-snug text-muted">
             {tr('A conversa continua de onde parou, na conta escolhida.', 'The chat continues where it left off, on the chosen account.')}
           </p>
         )}
         {groups.map((g) => (
           <section key={g.label} className="mt-4 first:mt-0">
-            <h3 className="mb-1.5 flex items-center gap-1.5 px-4 text-[13px] tracking-wide text-muted uppercase">
+            <h3 className="mb-1.5 flex items-center gap-1.5 px-4 text-[12px] tracking-wide text-muted uppercase">
               <AgentIcon provider={g.provider} size={14} />
               {g.label}
             </h3>
@@ -112,7 +112,7 @@ export function AccountPicker({
                   }}
                   className="flex w-full items-center gap-3 border-b border-line px-4 py-[13px] text-left last:border-0 active:bg-card-press"
                 >
-                  <span className="min-w-0 flex-1 truncate text-[17px]">{o.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-[15px]">{o.name}</span>
                   {o.id === current.id && <Check size={18} className="shrink-0 text-accent" />}
                 </button>
               ))}

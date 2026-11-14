@@ -1,19 +1,23 @@
 import { useSyncExternalStore } from 'react';
 
 // Rotas pela parte do endereço depois do # (a ponte só serve arquivos; o # nunca sai do aparelho).
-// #/                     início
+// #/                     aba Conversas (início)
+// #/projects             aba Projetos
 // #/folder/<pasta>       conversas de uma pasta
 // #/chat/<pasta>/<id>    uma conversa (id: a sessão, ou "new-..." para uma nova)
-// #/settings             ajustes
+// #/settings             aba Conta (uso e ajustes)
 // #/usage                uso do Claude em detalhe
+// #/add-folder/<board>   adicionar uma pasta ao workspace
 // #pair=<código>         pareamento vindo do QR code
 
 export type Route =
   | { name: 'home' }
+  | { name: 'projects' }
   | { name: 'folder'; path: string }
   | { name: 'chat'; cwd: string; id: string }
   | { name: 'settings' }
   | { name: 'usage' }
+  | { name: 'addFolder'; board: string }
   | { name: 'pair'; code: string };
 
 export function parseRoute(hash: string): Route {
@@ -28,8 +32,10 @@ export function parseRoute(hash: string): Route {
   });
   if (parts[0] === 'folder' && parts[1]) return { name: 'folder', path: parts[1] };
   if (parts[0] === 'chat' && parts[1] && parts[2]) return { name: 'chat', cwd: parts[1], id: parts[2] };
+  if (parts[0] === 'projects') return { name: 'projects' };
   if (parts[0] === 'settings') return { name: 'settings' };
   if (parts[0] === 'usage') return { name: 'usage' };
+  if (parts[0] === 'add-folder' && parts[1]) return { name: 'addFolder', board: parts[1] };
   return { name: 'home' };
 }
 
@@ -39,10 +45,14 @@ export function routeHash(route: Route): string {
       return `#/folder/${encodeURIComponent(route.path)}`;
     case 'chat':
       return `#/chat/${encodeURIComponent(route.cwd)}/${encodeURIComponent(route.id)}`;
+    case 'projects':
+      return '#/projects';
     case 'settings':
       return '#/settings';
     case 'usage':
       return '#/usage';
+    case 'addFolder':
+      return `#/add-folder/${encodeURIComponent(route.board)}`;
     case 'pair':
       return `#pair=${encodeURIComponent(route.code)}`;
     default:

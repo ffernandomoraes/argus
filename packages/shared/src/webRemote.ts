@@ -19,10 +19,13 @@ export const WEB_CHANNELS = {
   'chat:state': 'invoke',
   'chat:interrupted': 'invoke',
   'chat:dismissInterrupted': 'send',
+  'chat:unreadList': 'invoke',
+  'chat:markRead': 'send',
   'chat:send': 'send',
   'chat:answer': 'send',
   'chat:interrupt': 'send',
   'chat:details': 'invoke',
+  'preferences:forPhone': 'invoke',
   'chat:configure': 'send',
   'chat:rename': 'invoke',
   'claude:info': 'invoke',
@@ -31,12 +34,18 @@ export const WEB_CHANNELS = {
   'chat:release': 'send',
   'sessions:list': 'invoke',
   'sessions:historyPage': 'invoke',
+  'sessions:historyPatch': 'invoke',
   'sessions:images': 'invoke',
   'sessions:watch': 'send',
   'sessions:search': 'invoke',
+  'sessions:branch': 'invoke',
   'favorites:get': 'invoke',
   'files:upload': 'invoke',
   'boards:state': 'sync',
+  'boards:create': 'sync',
+  'sessions:folders': 'invoke',
+  'canvas:addFolder': 'invoke',
+  'folders:list': 'invoke',
   'canvas:load': 'sync',
 } as const satisfies Record<string, 'invoke' | 'send' | 'sync'>;
 
@@ -45,7 +54,7 @@ export type WebChannel = keyof typeof WEB_CHANNELS;
 // Avisos que chegam ao aparelho web; o resto (terminais, mascote...) não sai de casa. O canvas
 // inteiro (canvas:remote) fica de fora: vem a cada quadro de um arraste; boards:changed já avisa
 // quando pastas e conversas mudam.
-export const WEB_EVENTS = ['chat:state', 'chat:active', 'chat:interrupted', 'usage:update', 'auth:state', 'sessions:changed', 'boards:changed', 'favorites:changed', 'claude:info', 'providers:state'] as const;
+export const WEB_EVENTS = ['chat:state', 'chat:active', 'chat:interrupted', 'chat:unreadList', 'usage:update', 'auth:state', 'sessions:changed', 'boards:changed', 'favorites:changed', 'claude:info', 'providers:state'] as const;
 
 export type WebEvent = (typeof WEB_EVENTS)[number];
 

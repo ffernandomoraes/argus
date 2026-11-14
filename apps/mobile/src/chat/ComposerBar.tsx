@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Brain, Check, ChevronRight, Cpu, Gauge, Paperclip, Slash, Workflow } from 'lucide-react';
+import { Brain, Check, ChevronRight, ClipboardPaste, Cpu, Gauge, Paperclip, Slash, Workflow } from 'lucide-react';
 import type { ChatSettings } from '@argus/shared/chat';
 import type { ClaudeInfo } from '@argus/shared/models';
 import { tr } from '../i18n';
@@ -40,7 +40,7 @@ function OptionRow({ selected, onClick, children, danger }: { selected: boolean;
 function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="mt-5 first:mt-1">
-      {title && <h3 className="mb-1.5 px-4 text-[13px] tracking-wide text-muted uppercase">{title}</h3>}
+      {title && <h3 className="mb-1.5 px-4 text-[12px] tracking-wide text-muted uppercase">{title}</h3>}
       <div className="overflow-hidden rounded-[12px] border border-card-border bg-card">{children}</div>
     </section>
   );
@@ -50,8 +50,8 @@ function MenuRow({ icon, label, value, onClick, danger }: { icon: ReactNode; lab
   return (
     <button type="button" onClick={onClick} className="flex w-full items-center gap-3 border-b border-line px-4 py-[13px] text-left last:border-0 active:bg-card-press">
       <span className="flex w-6 shrink-0 justify-center text-muted">{icon}</span>
-      <span className="flex-1 text-[17px]">{label}</span>
-      {value && <span className={`max-w-[55%] truncate text-[15px] ${danger ? 'text-red' : 'text-muted'}`}>{value}</span>}
+      <span className="flex-1 text-[15px]">{label}</span>
+      {value && <span className={`max-w-[55%] truncate text-[14px] ${danger ? 'text-red' : 'text-muted'}`}>{value}</span>}
       <ChevronRight size={18} className="shrink-0 text-faint" />
     </button>
   );
@@ -64,9 +64,9 @@ function Switch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${on ? 'bg-green' : 'bg-code'}`}
+      className={`relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors ${on ? 'bg-green' : 'bg-code'}`}
     >
-      <span className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[22px]' : 'left-[2px]'}`} />
+      <span className={`absolute top-[2px] size-[22px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[20px]' : 'left-[2px]'}`} />
     </button>
   );
 }
@@ -85,6 +85,7 @@ export function ComposerOptions({
   open,
   onOpen,
   onAttach,
+  onPaste,
   settings,
   info,
   agentChat,
@@ -95,6 +96,8 @@ export function ComposerOptions({
   onOpen: (sheet: OptionsSheet) => void
   // "Fotos e arquivos": abre o seletor do sistema.
   onAttach: () => void
+  // "Colar": imagem, arquivo ou texto copiado. Sem isto (navegador que não lê), a linha some.
+  onPaste?: () => void
   settings: ChatSettings
   // Modelos e modo padrão da conta da conversa (chegam alguns segundos depois de o Argus abrir).
   info: ClaudeInfo | null
@@ -127,6 +130,17 @@ export function ComposerOptions({
               onAttach();
             }}
           />
+          {onPaste && (
+            <MenuRow
+              icon={<ClipboardPaste size={20} />}
+              label={tr('Colar', 'Paste')}
+              onClick={() => {
+                // Antes de fechar: a leitura precisa vir direto do toque.
+                onPaste();
+                close();
+              }}
+            />
+          )}
         </Group>
         <Group>
           <MenuRow icon={<Cpu size={20} />} label={tr('Modelo', 'Model')} value={modelName} onClick={() => setOpen('model')} />
@@ -148,7 +162,7 @@ export function ComposerOptions({
       </Sheet>
 
       <Sheet open={open === 'model'} onClose={close} title={tr('Modelo', 'Model')}>
-        {!info && <p className="py-6 text-center text-[15px] text-muted">{tr('Carregando os modelos da conta…', 'Loading the account models…')}</p>}
+        {!info && <p className="py-6 text-center text-[14px] text-muted">{tr('Carregando os modelos da conta…', 'Loading the account models…')}</p>}
         {info && (
           <>
             <Group>
@@ -157,8 +171,8 @@ export function ComposerOptions({
                     onChange({ model: '' });
                     close();
                   }}>
-                  <span className="block text-[17px]">{tr('Padrão', 'Default')}</span>
-                  {defaultModel.resolvedName && <span className="block text-[13px] text-muted">{defaultModel.resolvedName}</span>}
+                  <span className="block text-[15px]">{tr('Padrão', 'Default')}</span>
+                  {defaultModel.resolvedName && <span className="block text-[12px] text-muted">{defaultModel.resolvedName}</span>}
                 </OptionRow>
               )}
             </Group>
@@ -169,7 +183,7 @@ export function ComposerOptions({
                       onChange({ model: m.value });
                       close();
                     }}>
-                    <span className="text-[17px]">{m.displayName}</span>
+                    <span className="text-[15px]">{m.displayName}</span>
                   </OptionRow>
                 ))}
               </Group>
@@ -183,7 +197,7 @@ export function ComposerOptions({
           <Group>
             {[{ value: '', label: 'Auto' }, ...allowed].map((e) => (
               <OptionRow key={e.value} selected={settings.effort === e.value} onClick={() => onChange({ effort: e.value })}>
-                <span className="text-[17px]">{e.label}</span>
+                <span className="text-[15px]">{e.label}</span>
               </OptionRow>
             ))}
           </Group>
@@ -195,14 +209,14 @@ export function ComposerOptions({
               <span className="flex w-6 shrink-0 justify-center text-muted">
                 <Brain size={20} />
               </span>
-              <span className="flex-1 text-[17px]">Thinking</span>
+              <span className="flex-1 text-[15px]">Thinking</span>
               <Switch on={settings.thinking} onChange={(thinking) => onChange({ thinking })} />
             </div>
             <div className="flex items-center gap-3 px-4 py-2.5">
               <span className="flex w-6 shrink-0 justify-center text-muted">
                 <Workflow size={20} />
               </span>
-              <span className="flex-1 text-[17px]">Ultracode</span>
+              <span className="flex-1 text-[15px]">Ultracode</span>
               <Switch on={settings.ultracode} onChange={(ultracode) => onChange({ ultracode })} />
             </div>
           </Group>
@@ -226,11 +240,11 @@ export function ComposerOptions({
                 <span className="flex items-start gap-3">
                   <Icon size={18} className="mt-0.5 shrink-0" />
                   <span>
-                    <span className="block text-[17px]">
+                    <span className="block text-[15px]">
                       {m.label}
                       {m.value === info?.defaultPermissionMode && <span className="text-muted">{tr(' - padrão', ' - default')}</span>}
                     </span>
-                    <span className="block text-[13px] leading-snug text-muted">{m.description}</span>
+                    <span className="block text-[12px] leading-snug text-muted">{m.description}</span>
                   </span>
                 </span>
               </OptionRow>
@@ -250,12 +264,12 @@ export function ComposerOptions({
                 onCommand(c.name);
               }}
             >
-              <span className="block font-mono text-[15px]">/{c.name}</span>
-              <span className="block text-[13px] leading-snug text-muted">{c.description}</span>
+              <span className="block font-mono text-[14px]">/{c.name}</span>
+              <span className="block text-[12px] leading-snug text-muted">{c.description}</span>
             </OptionRow>
           ))}
         </Group>
-        <p className="mt-3 px-4 text-[13px] leading-snug text-muted">
+        <p className="mt-3 px-4 text-[12px] leading-snug text-muted">
           {tr('Outros comandos: digite no campo, começando com /.', 'Other commands: type them in the field, starting with /.')}
         </p>
       </Sheet>

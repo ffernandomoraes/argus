@@ -1,17 +1,16 @@
-import { Folder as FolderIcon, GitBranch, Settings } from 'lucide-react';
-import { barWindow, showsUsage, usableUsage } from '@argus/shared/usage';
+import { useState } from 'react';
+import { MessageCircle } from 'lucide-react';
 import type { ActiveChat, ChatActivity } from '@argus/shared/chat';
 import { tr } from '../i18n';
-import { useActiveChats, useInterrupted, useTitles, useUsage, useWorkspaces, type AccountUsage } from '../lib/data';
+import { useActiveChats, useAllChats, useInterrupted, useTitles, useUnread, useWorkspaces, type RecentChat } from '../lib/data';
 import { useHost, useStatus } from '../lib/host';
 import { go } from '../lib/router';
-import { baseName } from '../ui/format';
-import { UsageBar } from '../ui/UsageBar';
-import { GroupLabel } from '../ui/GroupLabel';
-import { ROUND_BUTTON } from '../ui/FloatingHeader';
-import { AgentIcon } from '@argus/ui/icons/AgentIcon';
+import { ago, baseName, dayGroup } from '../ui/format';
 import { Empty, Row, Section } from '../ui/List';
 import { StatusDot } from '../ui/StatusDot';
+import { SearchField } from '../ui/SearchField';
+import { TabHeader } from '../ui/TabBar';
+import { ChatSearchResults } from './ChatSearch';
 
 export function activityText(a: ChatActivity | undefined, status: string): string {
   if (status === 'needs-you') return tr('Precisa de você', 'Needs you');
@@ -20,28 +19,6 @@ export function activityText(a: ChatActivity | undefined, status: string): strin
   if (a.kind === 'writing') return tr('Escrevendo…', 'Writing…');
   const what = [a.tool, a.summary].filter(Boolean).join(' - ');
   return what || tr('Executando…', 'Running…');
-}
-
-// Como a barra de baixo do Argus: por conta, só a janela que vale agora (a sessão de 5 h, ou o
-// semanal na conta sem sessão), com a barrinha e a porcentagem. O detalhe fica na página de uso.
-function UsageSummaryRow({ row, single }: { row: AccountUsage; single: boolean }) {
-  const u = row.usage ? usableUsage(row.usage, Date.now()) : null;
-  const w = u ? barWindow(u) : null;
-  const pct = w ? Math.max(0, Math.min(100, Math.round(w.percent))) : null;
-  const dimmed = !!(u?.saved || u?.failure);
-  return (
-    <Row
-      icon={<AgentIcon provider={row.provider} size={20} />}
-      title={single ? (u?.noSession ? tr('Semana', 'Week') : tr('Sessão', 'Session')) : row.name}
-      onClick={() => go({ name: 'usage' })}
-      trailing={
-        <span className={`flex items-center gap-2 ${dimmed ? 'opacity-50' : ''}`}>
-          <UsageBar percent={pct ?? 0} className="h-1.5 w-20" />
-          <span className="w-10 text-right font-mono text-[15px] tabular-nums">{pct === null ? '--' : `${pct}%`}</span>
-        </span>
-      }
-    />
-  );
 }
 
 function ActiveRow({ chat, title }: { chat: ActiveChat; title?: string }) {
@@ -57,101 +34,114 @@ function ActiveRow({ chat, title }: { chat: ActiveChat; title?: string }) {
   );
 }
 
+// Quantas conversas recentes a aba mostra, agrupadas por dia.
+const RECENT_COUNT = 30;
+
+function RecentSections({ list, folderName, unread }: { list: RecentChat[]; folderName: (path: string) => string; unread: ReadonlySet<string> }) {
+  const groups = new Map<string, RecentChat[]>();
+  for (const s of list) {
+    const g = dayGroup(s.repliedAt || s.updatedAt);
+    groups.set(g, [...(groups.get(g) ?? []), s]);
+  }
+  return [...groups].map(([group, chats], i) => (
+    <Section key={group} title={i === 0 ? `${tr('Recentes', 'Recent')} - ${group}` : group}>
+      {chats.map((s) => (
+        <Row
+          key={s.id}
+          // Resposta que ninguém viu ainda: bolinha verde no lugar do balão, como no Argus.
+          icon={unread.has(s.id) ? <span className="flex size-5 items-center justify-center"><StatusDot status="done" /></span> : <MessageCircle size={20} className="text-faint" />}
+          title={s.title || tr('Conversa', 'Chat')}
+          subtitle={folderName(s.cwd)}
+          trailing={<span className="text-[12px] text-faint">{ago(s.repliedAt || s.updatedAt)}</span>}
+          onClick={() => go({ name: 'chat', cwd: s.cwd, id: s.id })}
+        />
+      ))}
+    </Section>
+  ));
+}
+
+// Aba Conversas (a inicial): as que estão trabalhando ou esperando você, as interrompidas e as
+// mais recentes de todas as pastas, para voltar a uma conversa sem procurar a pasta.
 export function HomeScreen() {
   const { conn } = useHost();
   const status = useStatus();
-  const usage = useUsage();
   const active = useActiveChats();
   const interrupted = useInterrupted();
   const titles = useTitles([...active.map((c) => c.cwd), ...interrupted.list.map((c) => c.cwd)]);
   const { workspaces, loaded } = useWorkspaces();
-  // Só as contas com algo que valha mostrar (como no Argus): leitura parada ou antiga demais sai.
-  const usageRows = usage.filter((r) => {
-    const u = r.usage && usableUsage(r.usage, Date.now());
-    return u && showsUsage(u);
-  });
   const needs = active.filter((c) => c.status === 'needs-you');
   const running = active.filter((c) => c.status !== 'needs-you');
+  // As em andamento ou interrompidas já aparecem em cima.
+  const folders = workspaces.flatMap((w) => w.groups.flatMap((g) => g.folders));
+  const shown = new Set([...active.map((c) => c.sessionId), ...interrupted.list.map((c) => c.sessionId)]);
+  const all = useAllChats(folders.map((f) => f.path));
+  const recent = all.filter((s) => !shown.has(s.id)).slice(0, RECENT_COUNT);
+  const [query, setQuery] = useState('');
+  const searching = query.trim().length > 0;
+  const folderName = (path: string) => folders.find((f) => f.path === path)?.name ?? baseName(path);
+  const unread = useUnread().ids;
+  const empty = loaded && !active.length && !interrupted.list.length && !recent.length;
 
   return (
-    <div className="pt-safe px-safe pb-end min-h-full">
-      <header className="flex items-center gap-3 px-4 pt-10 pb-2">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] leading-none font-bold tracking-tight">Argus</h1>
-          <p className="mt-1 flex items-center gap-1.5 truncate text-[15px] text-muted">
+    <div className="px-safe pb-tabs min-h-full">
+      <TabHeader
+        title={tr('Conversas', 'Chats')}
+        subtitle={
+          <span className="flex items-center gap-1.5">
             <span className={`inline-block size-2 shrink-0 rounded-full ${status === 'online' ? 'bg-green' : status === 'connecting' ? 'animate-pulse-dot bg-orange' : 'bg-red'}`} />
             {conn.host.hostName}
-          </p>
-        </div>
-        <button type="button" onClick={() => go({ name: 'settings' })} className={ROUND_BUTTON} aria-label={tr('Ajustes', 'Settings')}>
-          <Settings size={22} />
-        </button>
-      </header>
+          </span>
+        }
+      >
+        <SearchField value={query} onChange={setQuery} placeholder={tr('Buscar em todas as conversas', 'Search all chats')} />
+      </TabHeader>
 
-      {(needs.length > 0 || running.length > 0) && (
-        <Section title={tr('Em andamento', 'In progress')}>
-          {[...needs, ...running].map((c) => (
-            <ActiveRow key={c.key} chat={c} title={c.sessionId ? titles.get(c.sessionId) : undefined} />
-          ))}
-        </Section>
-      )}
+      {searching ? (
+        <ChatSearchResults query={query} chats={all} folderName={folderName} />
+      ) : (
+        <>
+          {(needs.length > 0 || running.length > 0) && (
+            <Section title={tr('Em andamento', 'In progress')}>
+              {[...needs, ...running].map((c) => (
+                <ActiveRow key={c.key} chat={c} title={c.sessionId ? titles.get(c.sessionId) : undefined} />
+              ))}
+            </Section>
+          )}
 
-      {interrupted.list.length > 0 && (
-        <Section title={tr('Interrompidas', 'Interrupted')} footer={tr('Pararam no meio sem você pedir. Abra para continuar.', 'They stopped midway without you asking. Open to continue.')}>
-          {interrupted.list.map((c) => (
-            <Row
-              key={c.sessionId}
-              icon={<span className="inline-block size-[9px] rounded-full bg-red" />}
-              title={titles.get(c.sessionId) || tr('Conversa', 'Chat')}
-              subtitle={`${baseName(c.cwd)} - ${c.reason === 'memory' ? tr('faltou memória', 'out of memory') : tr('o Argus fechou', 'Argus closed')}`}
-              trailing={
-                <span
-                  role="button"
-                  className="px-1 text-accent"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    interrupted.dismiss(c.sessionId);
-                  }}
-                >
-                  {tr('Dispensar', 'Dismiss')}
-                </span>
-              }
-              onClick={() => go({ name: 'chat', cwd: c.cwd, id: c.sessionId })}
-            />
-          ))}
-        </Section>
-      )}
+          {interrupted.list.length > 0 && (
+            <Section title={tr('Interrompidas', 'Interrupted')} footer={tr('Pararam no meio sem você pedir. Abra para continuar.', 'They stopped midway without you asking. Open to continue.')}>
+              {interrupted.list.map((c) => (
+                <Row
+                  key={c.sessionId}
+                  icon={<StatusDot status="interrupted" />}
+                  title={titles.get(c.sessionId) || tr('Conversa', 'Chat')}
+                  subtitle={`${baseName(c.cwd)} - ${c.reason === 'memory' ? tr('faltou memória', 'out of memory') : tr('o Argus fechou', 'Argus closed')}`}
+                  trailing={
+                    <span
+                      role="button"
+                      className="px-1 text-accent"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        interrupted.dismiss(c.sessionId);
+                      }}
+                    >
+                      {tr('Dispensar', 'Dismiss')}
+                    </span>
+                  }
+                  onClick={() => go({ name: 'chat', cwd: c.cwd, id: c.sessionId })}
+                />
+              ))}
+            </Section>
+          )}
 
-      {usageRows.length > 0 && (
-        <Section title={tr('Uso', 'Usage')}>
-          {usageRows.map((r) => (
-            <UsageSummaryRow key={r.id} row={r} single={usageRows.length === 1} />
-          ))}
-        </Section>
+          <RecentSections list={recent} folderName={folderName} unread={unread} />
+          {empty && (
+            <Section>
+              <Empty>{tr('Nenhuma conversa ainda. Abra um projeto para começar.', 'No chats yet. Open a project to start.')}</Empty>
+            </Section>
+          )}
+        </>
       )}
-
-      {workspaces.map((w) =>
-        w.groups.map((g) => (
-          <Section key={`${w.id}:${g.id}`} flush title={<GroupLabel label={g.label || tr('Sem grupo', 'No group')} color={g.color} workspace={workspaces.length > 1 ? w.name : undefined} />}>
-            {g.folders.map((f) => (
-              <Row
-                key={f.id}
-                // Na cor do grupo (fora de grupo, cinza).
-                icon={f.worktree ? <GitBranch size={20} style={{ color: g.color }} className="text-faint" /> : <FolderIcon size={20} style={{ color: g.color }} className="text-faint" />}
-                title={f.name}
-                subtitle={f.worktree ? tr('Tarefa isolada', 'Isolated task') : undefined}
-                onClick={() => go({ name: 'folder', path: f.path })}
-              />
-            ))}
-          </Section>
-        )),
-      )}
-      {loaded && workspaces.length === 0 && (
-        <Section>
-          <Empty>{tr('Nenhuma pasta no canvas do Argus ainda.', 'No folders on the Argus canvas yet.')}</Empty>
-        </Section>
-      )}
-      <p className="mt-10 text-center text-[13px] text-faint">{tr(`Versão ${__APP_VERSION__}`, `Version ${__APP_VERSION__}`)}</p>
     </div>
   );
 }

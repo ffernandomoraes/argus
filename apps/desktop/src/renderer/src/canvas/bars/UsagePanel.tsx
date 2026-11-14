@@ -4,6 +4,7 @@ import { AgentIcon } from '@argus/ui/icons/AgentIcon';
 import { ClaudeIcon } from '@argus/ui/icons/ClaudeIcon';
 import { useNow } from '../../lib/clock';
 import { Button } from '../../ui/Button';
+import { Fragment } from 'react';
 import { MenuArrow } from '../../ui/MenuArrow';
 import { UsageBar } from './UsageBar';
 import { resetLabel, staleText, timeLeft, windowTitle } from './usageFormat';
@@ -90,6 +91,11 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
   );
 }
 
+// Separa uma conta da outra com as ondinhas do divisor da conversa (ver EventDivider).
+function AccountDivider() {
+  return <span className="wavy-line block" />;
+}
+
 // Painel dos limites, aberto pelo botão da barra de baixo (abre para cima): as janelas de cada conta. Só com o
 // Claude, fica como sempre foi; com conta de outro agente, cada conta leva o logo do agente.
 // silent: agentes com conta logada que não informam limite (Gemini, Cursor): uma linha no rodapé,
@@ -130,11 +136,13 @@ export function UsagePanel({
           </span>
         </div>
         <div className="flex flex-col gap-5">
-          {shown.map((entry) => {
+          {shown.map((entry, i) => {
             const expired = expiredUsage(entry.usage, now);
             const stale = staleText(entry.usage, expired);
             return (
-              <div key={entry.key}>
+              <Fragment key={entry.key}>
+              {i > 0 && <AccountDivider />}
+              <div>
                 {named && (
                   <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
                     {mixed && <AgentIcon provider={entry.provider} size={12} />}
@@ -160,10 +168,13 @@ export function UsagePanel({
                 ))}
                 {entry.note && <div className="mt-3 text-[12px] text-faint">{entry.note}</div>}
               </div>
+              </Fragment>
             );
           })}
-          {signedOut.map((entry) => (
-            <div key={entry.key}>
+          {signedOut.map((entry, i) => (
+            <Fragment key={entry.key}>
+            {shown.length + i > 0 && <AccountDivider />}
+            <div>
               {named && (
                 <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
                   <span className="truncate">{entry.name}</span>
@@ -181,6 +192,7 @@ export function UsagePanel({
                 </Button>
               </div>
             </div>
+            </Fragment>
           ))}
         </div>
         <div className="mt-4 flex flex-col gap-1 border-t border-line pt-2 text-[11px] text-faint">

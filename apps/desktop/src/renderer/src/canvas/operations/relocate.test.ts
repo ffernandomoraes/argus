@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SEP } from '../../platform';
 import type { CanvasNode } from '../types';
 import { relocateFolder } from './relocate';
 
@@ -38,6 +39,7 @@ describe('relocateFolder', () => {
   it('caminho completo ou com ~ é a mesma pasta', () => {
     const home = window.api.homeDir;
     const next = relocateFolder([project('p', '~/proj')], `${home}/proj`, `${home}/renamed`);
-    expect(pathOf(next, 'p')).toBe('~/renamed');
+    // Com a barra do sistema: no Windows, "~\renamed".
+    expect(pathOf(next, 'p')).toBe(`~${SEP}renamed`);
   });
 });

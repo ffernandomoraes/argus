@@ -28,6 +28,10 @@ const LOCAL = new Set<string>([
   'speech:openSettings',
   // As favoritas da janela remota são as do notebook: não sobrescrevem as de casa.
   'favorites:set',
+  // As preferências da janela remota são as do notebook: não sobrescrevem as de casa.
+  'preferences:share',
+  // Resposta da janela daqui a um pedido daqui (adicionar pasta pelo celular).
+  'canvas:placedFolder',
 ] satisfies (keyof InvokeChannels | keyof SendChannels | keyof SendSyncChannels)[]);
 
 const unavailable = (): string => tr('Indisponível no acesso remoto.', 'Unavailable over remote access.');

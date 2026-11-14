@@ -2,6 +2,7 @@ import { setWindowViewport, windowViewport } from '../app/canvasRegistry';
 import { createCanvasWindow } from '../app/windows';
 import type { Boards } from '../boards';
 import type { CanvasAgent } from '../canvasAgent';
+import { addFolderFromPhone, folderListing, folderPlaced } from '../phoneCanvas';
 import type { Terminals } from '../terminals';
 import { handle, on, onSync } from './register';
 
@@ -19,6 +20,10 @@ export function registerCanvasIpc(boards: Boards, agent: CanvasAgent, terminals:
   onSync('boards:state', (e) => boards.state(e.sender));
   on('boards:show', (e, board) => boards.show(e.sender, board));
   onSync('boards:create', (_e, name) => boards.create(name));
+  // O app do celular: adicionar pasta a um workspace e navegar pelas pastas (ver phoneCanvas.ts).
+  handle('canvas:addFolder', (_e, board, path, groupId) => addFolderFromPhone(boards, board, path, groupId));
+  on('canvas:placedFolder', (_e, id, nodes, error) => folderPlaced(id, nodes, error));
+  handle('folders:list', (_e, path) => folderListing(typeof path === 'string' ? path : null));
   on('boards:rename', (_e, board, name) => boards.rename(board, name));
   on('boards:close', (_e, board) => boards.close(board));
   on('boards:reopen', (_e, board) => boards.reopen(board));

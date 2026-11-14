@@ -58,6 +58,12 @@ const vault = () =>
   process.platform !== 'darwin' &&
   safeStorage.isEncryptionAvailable() &&
   !(process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text');
+
+// Os pareamentos existem mas não dá para ler agora (as Chaves sem responder, o chaveiro do Linux
+// ainda trancado logo depois de ligar): os arquivos ficam como estão e a leitura é tentada de novo.
+// Antes isso virava pareamentos vazios com o acesso desligado, e quem estava longe ficava de fora
+// até parear de novo em casa (2026-11-14).
+export class StoreUnavailable extends Error {}
 const path = (name: string) => join(app.getPath('userData'), name);
 
 // Arquivo: iv (12 bytes) + etiqueta (16) + cifrado.
@@ -75,7 +81,12 @@ function decrypt(file: Buffer, key: Buffer): string {
 }
 
 function fileKey(create: boolean): Buffer | null {
-  const stored = keychainRead(KEYCHAIN_ACCOUNT);
+  let stored: string | null;
+  try {
+    stored = keychainRead(KEYCHAIN_ACCOUNT);
+  } catch (err) {
+    throw new StoreUnavailable(`as Chaves não responderam: ${errorMessage(err)}`);
+  }
   if (stored) return Buffer.from(stored, 'base64');
   if (!create) return null;
   const key = randomBytes(32);
@@ -85,13 +96,13 @@ function fileKey(create: boolean): Buffer | null {
 
 const randomId = (bytes: number) => randomBytes(bytes).toString('base64url');
 
-function fresh(): RemoteStore {
+export function freshRemoteStore(): RemoteStore {
   return { hosting: false, keepAwake: true, hostId: randomId(24), hostKey: randomId(32), devices: [], hosts: [], pushKeys: newPushKeys() };
 }
 
 function parse(text: string): RemoteStore {
   const raw = JSON.parse(text) as Partial<RemoteStore>;
-  const base = fresh();
+  const base = freshRemoteStore();
   return {
     hosting: raw.hosting === true,
     keepAwake: raw.keepAwake !== false,
@@ -122,11 +133,13 @@ export function loadRemoteStore(): RemoteStore {
         }
         return store;
       }
-    } else if (vault() && existsSync(path(SEALED))) {
-      return parse(safeStorage.decryptString(readFileSync(path(SEALED))));
+    } else if (app.isPackaged && existsSync(path(SEALED))) {
+      if (!safeStorage.isEncryptionAvailable()) throw new StoreUnavailable('o cofre do sistema ainda não está disponível');
+      if (vault()) return parse(safeStorage.decryptString(readFileSync(path(SEALED))));
     }
     if (existsSync(path(PLAIN))) return parse(readFileSync(path(PLAIN), 'utf8'));
   } catch (err) {
+    if (err instanceof StoreUnavailable) throw err;
     // Ilegível (cofre trocado, arquivo estragado): fica guardado à parte, em vez de a próxima gravação
     // apagar os pareamentos de vez.
     console.error('[remoto] não deu para ler os pareamentos:', errorMessage(err));
@@ -138,21 +151,29 @@ export function loadRemoteStore(): RemoteStore {
       }
     }
   }
-  return fresh();
+  return freshRemoteStore();
+}
+
+// Grava num arquivo ao lado e troca de uma vez: faltando luz no meio, fica o arquivo inteiro de antes
+// (gravado direto, ficava pela metade, ilegível, e os pareamentos se perdiam).
+function writeWhole(name: string, data: string | Buffer): void {
+  const temp = path(`${name}.tmp`);
+  writeFileSync(temp, data, { mode: 0o600 });
+  renameSync(temp, path(name));
 }
 
 export function saveRemoteStore(store: RemoteStore): void {
   mkdirSync(app.getPath('userData'), { recursive: true });
   const text = JSON.stringify(store, null, 2);
   if (macKeychain()) {
-    writeFileSync(path(ENCRYPTED), encrypt(text, fileKey(true)!), { mode: 0o600 });
+    writeWhole(ENCRYPTED, encrypt(text, fileKey(true)!));
     rmSync(path(SEALED), { force: true });
     rmSync(path(PLAIN), { force: true });
   } else if (vault()) {
-    writeFileSync(path(SEALED), safeStorage.encryptString(text), { mode: 0o600 });
+    writeWhole(SEALED, safeStorage.encryptString(text));
     rmSync(path(PLAIN), { force: true });
   } else {
-    writeFileSync(path(PLAIN), text, { mode: 0o600 });
+    writeWhole(PLAIN, text);
   }
 }
 

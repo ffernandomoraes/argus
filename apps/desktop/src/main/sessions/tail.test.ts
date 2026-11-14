@@ -41,6 +41,20 @@ describe('readTail: uso de contexto', () => {
     expect(tail.usage?.tokens).toBe(13_010);
   });
 
+  // Bug corrigido em 2026-11-14: um print (linha de centenas de KB) depois da última resposta a
+  // empurrava para antes dos 512 KB lidos, e o contexto aparecia zerado até a próxima resposta.
+  it('acha a última resposta mesmo com imagens grandes depois dela', async () => {
+    const image = (n: number) => user(`print ${n} ${'A'.repeat(400 * 1024)}`);
+    const tail = await tailOf([user('oi'), assistant([text('vou olhar')], { usage: usage(10, 50_000) }), image(1), image(2), image(3)]);
+    expect(tail.usage).toEqual({ tokens: 50_010, model: 'claude-opus-5-5' });
+  });
+
+  it('com imagens grandes depois da compactação, vale o tamanho resumido', async () => {
+    const big = user('A'.repeat(700 * 1024));
+    const tail = await tailOf([assistant([text('longa')], { usage: usage(10, 150_000) }), big, compactBoundary(150_010, 12_000), big]);
+    expect(tail.usage).toEqual({ tokens: 12_000, model: 'claude-opus-5-5' });
+  });
+
   it('ignora o aviso do próprio Claude Code (<synthetic>) e os subagentes', async () => {
     const tail = await tailOf([
       assistant([text('real')], { usage: usage(500) }),

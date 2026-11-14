@@ -101,10 +101,17 @@ async function summaryOf(dir: string, name: string, files: Map<string, Cached>):
     const keep = hit && hit.ino === info.ino && info.size >= hit.size;
     const head = await readHead(file, info.size, keep ? hit.head : emptyHead());
     const tail = await readTail(file, info.size, head.firstPrompt === null);
-    const data = summarize(name.slice(0, -'.jsonl'.length), info.mtime, head, tail);
+    const data = keepUsage(summarize(name.slice(0, -'.jsonl'.length), info.mtime, head, tail), hit?.data);
     files.set(name, { size: info.size, mtimeMs: info.mtimeMs, ino: info.ino, head, data });
     return data;
   } catch {
     return null;
   }
+}
+
+// Leitura sem resposta nenhuma (a última ficou longe do fim do arquivo, atrás de prints): vale o
+// último contexto já calculado. Contexto zerado no meio da conversa é pior que um valor um pouco
+// atrasado, e o número certo volta na próxima resposta.
+function keepUsage(data: SummaryData | null, before: SummaryData | null | undefined): SummaryData | null {
+  return data && !data.usage && before?.usage ? { ...data, usage: before.usage } : data;
 }

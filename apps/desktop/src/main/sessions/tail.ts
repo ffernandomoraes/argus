@@ -5,6 +5,11 @@ import { userText } from './prompt';
 // Título e uso de contexto são regravados ao longo da conversa: basta ler o fim.
 export const TAIL_BYTES = 512 * 1024;
 
+// Até onde voltar atrás da última resposta quando o fim não tem nenhuma. Prints e imagens coladas
+// gravam linhas de centenas de KB a mais de 1 MB: a última resposta ficava antes dos 512 KB do
+// fim, e o contexto aparecia zerado no Mac, no Windows e no celular até a próxima resposta.
+const USAGE_SEARCH_BYTES = 32 * 1024 * 1024;
+
 export type Usage = { tokens: number; model: string };
 
 export type Tail = {
@@ -40,6 +45,41 @@ function replyAt(l: Line): string | undefined {
   return hasText ? str(l.timestamp) : undefined;
 }
 
+// Tamanho da conversa depois de uma compactação.
+function compactedTo(l: Line): number | undefined {
+  return l.type === 'system' && l.subtype === 'compact_boundary' ? (num(obj(l.compactMetadata)?.postTokens) ?? 0) : undefined;
+}
+
+// A resposta de antes da compactação só serve para saber o modelo.
+function usageAfter(l: Line, compacted: number | undefined): Usage | undefined {
+  const usage = usageOf(l);
+  return usage && compacted !== undefined ? { ...usage, tokens: compacted } : usage;
+}
+
+// Procura a última resposta antes de `end`, de trás para frente em pedaços de TAIL_BYTES.
+// `carry` é o começo cortado da primeira linha já lida, que termina no pedaço anterior.
+async function usageBefore(file: string, end: number, carry: string, compacted: number | undefined): Promise<Usage | undefined> {
+  for (let stop = end; stop > 0 && end - stop < USAGE_SEARCH_BYTES; ) {
+    const start = Math.max(0, stop - TAIL_BYTES);
+    const lines = ((await readSlice(file, start, stop - start)) + carry).split('\n');
+    // A primeira linha do pedaço pode estar cortada: vai inteira com o pedaço seguinte.
+    carry = start > 0 ? (lines.shift() ?? '') : '';
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const raw = lines[i];
+      const wantUsage = raw.includes('"usage"');
+      const wantCompact = compacted === undefined && raw.includes('"compact_boundary"');
+      if (!wantUsage && !wantCompact) continue;
+      const l = parseLine(raw);
+      if (!l) continue;
+      if (wantCompact) compacted = compactedTo(l) ?? compacted;
+      const usage = wantUsage ? usageAfter(l, compacted) : undefined;
+      if (usage) return usage;
+    }
+    stop = start;
+  }
+  return undefined;
+}
+
 const title = (x: unknown) => (typeof x === 'string' && x.trim() ? x : undefined);
 
 export async function readTail(file: string, size: number, wantPrompt: boolean): Promise<Tail> {
@@ -70,14 +110,12 @@ export async function readTail(file: string, size: number, wantPrompt: boolean):
       ai = true;
       tail.aiTitle = title(l.aiTitle);
     }
-    if (wantCompact && l.type === 'system' && l.subtype === 'compact_boundary') compacted = num(obj(l.compactMetadata)?.postTokens) ?? 0;
-    // A resposta de antes da compactação só serve para saber o modelo.
-    if (wantUsage) {
-      const usage = usageOf(l);
-      tail.usage = usage && compacted !== undefined ? { ...usage, tokens: compacted } : usage;
-    }
+    if (wantCompact) compacted = compactedTo(l) ?? compacted;
+    if (wantUsage) tail.usage = usageAfter(l, compacted);
     if (wantReply) tail.repliedAt = replyAt(l);
   }
+  const start = Math.max(0, size - TAIL_BYTES);
+  if (!tail.usage && start > 0) tail.usage = await usageBefore(file, start, lines[0], compacted);
   if (wantPrompt) {
     for (const raw of lines) {
       if (!raw.includes('"user"')) continue;

@@ -101,6 +101,20 @@ describe('listSessions', () => {
   });
 
   // A lista guarda o que já leu: arquivo que mudou é relido, e o apagado sai.
+  // Pedido em 2026-11-14: nunca voltar a zero depois de ter um valor.
+  it('sem resposta no trecho lido, mantém o último contexto calculado', async () => {
+    const path = project();
+    const file = writeSession(path, 'a', [user('oi'), assistant([text('ok')], { usage: { input_tokens: 10, cache_read_input_tokens: 99_990 } })]);
+    const before = (await listSessions(path))?.[0].contextPercent;
+    expect(before).toBeGreaterThan(0);
+
+    // Linha maior que tudo o que é lido para trás: a resposta some do alcance.
+    appendFileSync(file, JSON.stringify(user('A'.repeat(33 * 1024 * 1024))) + '\n');
+    const later = new Date(Date.now() + 5000);
+    utimesSync(file, later, later);
+    expect((await listSessions(path))?.[0].contextPercent).toBe(before);
+  });
+
   it('acompanha arquivo que cresceu e arquivo apagado', async () => {
     const path = project();
     const file = writeSession(path, 'a', [user('primeiro')]);

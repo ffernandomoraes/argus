@@ -1,11 +1,14 @@
-# Gera uma versão nova: roda os testes (pnpm test) no Mac, no Windows e no Linux e só segue se
-# todos passarem; sobe o número no package.json, confere os tipos, monta o .dmg e o .zip
-# (Apple Silicon), confere se o app abre, cria a tag e publica tudo num release do GitHub. Ao mesmo
-# tempo, numa máquina Windows, monta o instalador .exe, e numa Linux, o AppImage; cada um confere se
-# o app abre e, quando o do Mac termina, é anexado ao mesmo release.
+# Gera uma versão nova, tudo ou nada, em três fases:
+# 1. testes (pnpm test) no Mac, no Windows e no Linux;
+# 2. montar e conferir, sem publicar nada: o .dmg e o .zip do Mac (Apple Silicon, assinado), o
+#    instalador .exe do Windows e o AppImage do Linux, cada um abrindo o app no teste de abertura; e,
+#    se mudaram, o app do celular, a ponte e o painel de dados de uso, montados a seco;
+# 3. publicar, só se a fase 2 passou inteira: commit da versão, tag, release do GitHub com os três
+#    instaladores juntos e, depois, a Cloudflare.
+# Qualquer falha antes da fase 3 não publica nada: quem usa continua na versão anterior, inteira.
 # Roda sozinho a cada push na main (sobe o patch; notas = commits desde a última tag).
 # Na mão, pela aba Actions ("Run workflow") ou: gh workflow run release.yml -f bump=minor -f notas="- item"
-# Com publicar=false só monta e guarda o .dmg, o .exe e o AppImage no run, sem tag nem release.
+# Com publicar=false só monta e guarda o .dmg, o .exe e o AppImage no run, sem tag, release nem Cloudflare.
 name: Release
 
 on:
@@ -35,6 +38,10 @@ permissions:
 # Um release por vez. Pushes que chegam durante um release esperam; se vierem vários, só o
 # último fica na fila, e ele publica tudo de uma vez.
 concurrency: release
+
+env:
+  # Wrangler dos jobs da Cloudflare: a mesma versão usada na máquina de desenvolvimento.
+  WRANGLER: wrangler@4.158.0
 
 jobs:
   # Escolhe o commit e o número da versão uma vez só, para o Mac e o Windows montarem o mesmo.
@@ -74,9 +81,8 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   # Testes do núcleo (conversas, sessões, histórico, projetos, caminhos) nos três sistemas, no
-  # commit escolhido. Um vermelho em qualquer um segura a versão inteira: os jobs que montam e
-  # publicam esperam este. Separado de cada um porque o do Mac publica sozinho: um teste que só
-  # quebra no Windows ainda deixaria sair a versão do Mac.
+  # commit escolhido. Um vermelho em qualquer um segura a versão inteira: os jobs que montam
+  # esperam este, e o que publica espera todos eles.
   testes:
     needs: versao
     strategy:
@@ -114,7 +120,13 @@ jobs:
       - name: Testes
         run: pnpm test
 
-  release:
+  # --- Montar e conferir, sem publicar nada ---
+  # Mac, Windows e Linux montam ao mesmo tempo, cada um na sua máquina, e cada um abre o app no teste
+  # de abertura. A Cloudflare monta a seco (cloudflare-conferir). Só se tudo passar o job publicar
+  # cria a versão: um que falhe segura todos, e quem usa continua na versão anterior, inteira.
+
+  # App do Mac (.dmg e .zip, Apple Silicon), assinado.
+  mac:
     needs: [versao, testes]
     runs-on: macos-15
     # O app do desktop mora em apps/desktop (monorepo): os comandos rodam de lá.
@@ -122,17 +134,13 @@ jobs:
       run:
         working-directory: apps/desktop
     env:
-      # No push não há as opções do disparo manual: publica sempre.
-      PUBLICAR: ${{ github.event_name == 'push' || inputs.publicar }}
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      # O commit escolhido no job versao (fetch-depth: 0: as notas listam os commits desde a última tag).
-      # persist-credentials: false: o token não fica no .git/config enquanto as dependências
-      # instalam (um pacote com script poderia lê-lo); ele entra só no push da versão.
+      # O commit escolhido no job versao. persist-credentials: false: o token não fica no
+      # .git/config enquanto as dependências instalam (um pacote com script poderia lê-lo).
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.versao.outputs.sha }}
-          fetch-depth: 0
           persist-credentials: false
 
       - uses: pnpm/action-setup@v6
@@ -214,7 +222,7 @@ jobs:
           codesign -d -r- dist/mac-arm64/Argus.app 2>&1 | tee /dev/stderr | grep -qE 'certificate (leaf|root)'
 
       # Mesmo teste do job do Windows (--smoke-test, ver apps/desktop/src/main/smokeTest.ts): abre o app, espera o
-      # canvas, abre um terminal e fecha. Se não passar, não há tag nem release. O macOS não tem o
+      # canvas, abre um terminal e fecha. Se não passar, não há versão. O macOS não tem o
       # `timeout`: a espera de 3 minutos é feita aqui.
       - name: Testar se o app abre
         run: |
@@ -238,48 +246,20 @@ jobs:
             exit 1
           fi
 
-      - name: Guardar o app (teste)
-        if: env.PUBLICAR != 'true'
+      # Publicando, o job publicar pega daqui e a cópia some em 1 dia (os arquivos ficam no
+      # release); testando, fica para baixar no run pelo prazo padrão do repositório (0).
+      - name: Guardar o app
         uses: actions/upload-artifact@v7
         with:
-          name: Argus-${{ env.VERSION }}
-          path: apps/desktop/dist/*.dmg
-
-      # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois. O token vai só neste push
-      # (o checkout não o guardou): no endereço, sem ficar gravado no repositório.
-      - name: Commit da versão e tag
-        if: env.PUBLICAR == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Versão $VERSION"
-          git tag "v$VERSION"
-          git push --atomic "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v$VERSION"
-
-      - name: Publicar release
-        if: env.PUBLICAR == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NOTAS: ${{ inputs.notas }}
-        run: |
-          notas="$RUNNER_TEMP/notas.md"
-          if [ -n "$NOTAS" ]; then
-            printf '%s\n' "$NOTAS" > "$notas"
-          else
-            prev=$(git tag --sort=-v:refname | grep -vx "v$VERSION" | head -1)
-            git log --format='- %s' "$prev..HEAD" | grep -v '^- Versão ' > "$notas" || echo "- Ajustes internos" > "$notas"
-          fi
-          gh release create "v$VERSION" \
-            dist/*.dmg dist/*.zip \
-            --title "Argus $VERSION" \
-            --notes-file "$notas"
+          name: Argus-Mac-${{ env.VERSION }}
+          path: |
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
+          retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
 
   # Instalador do Windows (.exe), numa máquina Windows do GitHub, ao mesmo tempo que o do Mac.
   # Antes de guardar, abre o app em modo de teste (--smoke-test, ver apps/desktop/src/main/smokeTest.ts): se ele
-  # nem abrir, o instalador não vai, e quem usa no Windows continua na versão anterior.
+  # nem abrir, a versão não sai (para nenhum sistema).
   windows:
     needs: [versao, testes]
     runs-on: windows-latest
@@ -293,7 +273,7 @@ jobs:
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      # O mesmo commit do Mac; a versão é trocada aqui (a tag só existe depois que o Mac publica).
+      # O mesmo commit do Mac; a versão é trocada aqui (a tag só existe depois do job publicar).
       # Sem token no .git/config (ver o job do Mac): este job não faz push.
       - uses: actions/checkout@v7
         with:
@@ -339,7 +319,7 @@ jobs:
           if (-not $done) { $app.Kill(); throw 'O app não terminou o teste a tempo.' }
           if ($app.ExitCode -ne 0) { throw "O app falhou no teste (código $($app.ExitCode))." }
 
-      # Publicando, o job anexar-windows pega daqui e a cópia some em 1 dia (o .exe fica no
+      # Publicando, o job publicar pega daqui e a cópia some em 1 dia (o .exe fica no
       # release); testando, fica para baixar no run pelo prazo padrão do repositório (0).
       - name: Guardar o instalador
         uses: actions/upload-artifact@v7
@@ -348,26 +328,8 @@ jobs:
           path: apps/desktop/dist/Argus-Setup-*.exe
           retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
 
-  # Anexa o .exe ao release que o job do Mac criou. Só roda se os dois deram certo: com o Mac
-  # falhando não há release; com o Windows falhando, o release sai só com o Mac.
-  anexar-windows:
-    needs: [versao, release, windows]
-    if: ${{ github.event_name == 'push' || inputs.publicar }}
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.versao.outputs.version }}
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: Argus-Setup-${{ env.VERSION }}
-
-      - name: Anexar ao release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v$VERSION" Argus-Setup-*.exe --clobber --repo "$GITHUB_REPOSITORY"
-
   # AppImage do Linux, numa máquina Ubuntu do GitHub, ao mesmo tempo que os outros. Mesmo teste de
-  # abertura (--smoke-test), numa tela virtual (xvfb): sem passar, o AppImage não vai.
+  # abertura (--smoke-test), numa tela virtual (xvfb): sem passar, a versão não sai.
   linux:
     needs: [versao, testes]
     runs-on: ubuntu-latest
@@ -432,19 +394,233 @@ jobs:
           path: apps/desktop/dist/Argus-*.AppImage
           retention-days: ${{ (github.event_name == 'push' || inputs.publicar) && 1 || 0 }}
 
-  # Anexa o AppImage ao release que o job do Mac criou (mesma regra do Windows).
-  anexar-linux:
-    needs: [versao, release, linux]
+  # --- Cloudflare: o que não vai dentro do instalador ---
+  # O recebimento dos dados de uso e o painel (apps/telemetry, Worker argus-telemetry) e a ponte do
+  # acesso remoto com o app do celular (apps/relay + apps/mobile, Worker argus-relay). Cada um só se
+  # algo dele mudou desde a última versão. Antes era um workflow à parte, com testes só no Linux: em
+  # 2026-11-14 o app do celular saiu enquanto um teste do Windows segurava a versão.
+  # Precisa dos secrets CLOUDFLARE_API_TOKEN (token da conta com permissão de editar Workers e D1) e
+  # CLOUDFLARE_ACCOUNT_ID. Sem eles, nada é publicado na Cloudflare e o run avisa. O site
+  # (apps/website) ainda não tem hospedagem: não entra aqui.
+
+  # O que mudou desde a última versão publicada (a última tag antes deste commit) e se os secrets
+  # existem. Comparar com a tag, e não com o push anterior, cobre os pushes que esperaram juntos na
+  # fila e a versão anterior que não saiu (o que ela trazia é publicado agora).
+  cloudflare-mudancas:
+    needs: versao
     if: ${{ github.event_name == 'push' || inputs.publicar }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      configured: ${{ steps.secrets.outputs.configured }}
+      telemetry: ${{ steps.diff.outputs.telemetry }}
+      mobile: ${{ steps.diff.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Secrets da Cloudflare
+        id: secrets
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Faltam os secrets CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID: nada foi publicado na Cloudflare."
+          fi
+
+      # Sem tag nenhuma antes (não deveria acontecer): publica os dois.
+      - name: O que mudou
+        id: diff
+        run: |
+          if ! prev=$(git describe --tags --abbrev=0 --match 'v*' HEAD 2>/dev/null); then
+            echo "telemetry=true" >> "$GITHUB_OUTPUT"
+            echo "mobile=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$prev" HEAD)
+          changed() { if echo "$files" | grep -qE "$1"; then echo true; else echo false; fi; }
+          echo "telemetry=$(changed '^apps/telemetry/')" >> "$GITHUB_OUTPUT"
+          echo "mobile=$(changed '^(apps/(relay|mobile)|packages/(shared|ui))/|^pnpm-lock\.yaml$')" >> "$GITHUB_OUTPUT"
+
+  # Monta a seco o que vai para a Cloudflare (sem login e sem publicar): o app do celular com os tipos
+  # conferidos, e o código de cada Worker empacotado como no deploy. Falhando, a versão não sai.
+  cloudflare-conferir:
+    needs: [versao, testes, cloudflare-mudancas]
+    if: needs.cloudflare-mudancas.outputs.configured == 'true' && (needs.cloudflare-mudancas.outputs.telemetry == 'true' || needs.cloudflare-mudancas.outputs.mobile == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      TELEMETRY: ${{ needs.cloudflare-mudancas.outputs.telemetry }}
+      MOBILE: ${{ needs.cloudflare-mudancas.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependências
+        if: env.MOBILE == 'true'
+        run: pnpm install --frozen-lockfile --filter "@argus/mobile..."
+
+      - name: Conferir os tipos do app do celular
+        if: env.MOBILE == 'true'
+        run: pnpm --filter @argus/mobile typecheck
+
+      - name: Montar o app do celular
+        if: env.MOBILE == 'true'
+        run: pnpm mobile:build
+
+      - name: Empacotar a ponte
+        if: env.MOBILE == 'true'
+        working-directory: apps/relay
+        run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/relay"
+
+      - name: Empacotar o painel
+        if: env.TELEMETRY == 'true'
+        working-directory: apps/telemetry
+        run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/telemetry"
+
+  # --- Publicar: só com tudo montado e conferido ---
+  # Commit da versão, tag e release com os instaladores dos três sistemas de uma vez (antes o do Mac
+  # saía primeiro, e o Windows e o Linux eram anexados depois, se dessem certo). cloudflare-conferir
+  # pulado (nada mudou lá) não segura; falhando, sim.
+  publicar:
+    needs: [versao, mac, windows, linux, cloudflare-mudancas, cloudflare-conferir]
+    if: >-
+      ${{ !cancelled() && (github.event_name == 'push' || inputs.publicar)
+      && needs.cloudflare-mudancas.result == 'success'
+      && needs.mac.result == 'success' && needs.windows.result == 'success' && needs.linux.result == 'success'
+      && (needs.cloudflare-conferir.result == 'success' || needs.cloudflare-conferir.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
+      # fetch-depth: 0: as notas listam os commits desde a última tag. Sem token no .git/config:
+      # ele entra só no push da versão.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: Argus-Mac-${{ env.VERSION }}
+          path: release-files
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: Argus-Setup-${{ env.VERSION }}
+          path: release-files
+
       - uses: actions/download-artifact@v8
         with:
           name: Argus-Linux-${{ env.VERSION }}
+          path: release-files
 
-      - name: Anexar ao release
+      # --atomic: ou vão o commit e a tag juntos, ou nenhum dos dois. O token vai só neste push
+      # (o checkout não o guardou): no endereço, sem ficar gravado no repositório.
+      - name: Commit da versão e tag
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v$VERSION" Argus-*.AppImage --clobber --repo "$GITHUB_REPOSITORY"
+        run: |
+          npm pkg set version="$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Versão $VERSION"
+          git tag "v$VERSION"
+          git push --atomic "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/${GITHUB_REF_NAME}" "refs/tags/v$VERSION"
+
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTAS: ${{ inputs.notas }}
+        run: |
+          notas="$RUNNER_TEMP/notas.md"
+          if [ -n "$NOTAS" ]; then
+            printf '%s\n' "$NOTAS" > "$notas"
+          else
+            prev=$(git tag --sort=-v:refname | grep -vx "v$VERSION" | head -1)
+            git log --format='- %s' "$prev..HEAD" | grep -v '^- Versão ' > "$notas" || echo "- Ajustes internos" > "$notas"
+          fi
+          gh release create "v$VERSION" \
+            ../../release-files/*.dmg ../../release-files/*.zip \
+            ../../release-files/Argus-Setup-*.exe ../../release-files/Argus-*.AppImage \
+            --title "Argus $VERSION" \
+            --notes-file "$notas"
+
+  # Depois do release: a Cloudflare recebe o mesmo commit da versão que acabou de sair.
+  cloudflare:
+    needs: [versao, cloudflare-mudancas, cloudflare-conferir, publicar]
+    if: needs.publicar.result == 'success' && needs.cloudflare-conferir.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      TELEMETRY: ${{ needs.cloudflare-mudancas.outputs.telemetry }}
+      MOBILE: ${{ needs.cloudflare-mudancas.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.versao.outputs.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Antes do código: o Worker novo pode depender de uma coluna nova. Sem migração pendente, não faz nada.
+      - name: Banco de dados do painel
+        if: env.TELEMETRY == 'true'
+        working-directory: apps/telemetry
+        run: npx --yes "$WRANGLER" d1 migrations apply argus-telemetry --remote
+
+      - name: Publicar o painel
+        if: env.TELEMETRY == 'true'
+        working-directory: apps/telemetry
+        run: npx --yes "$WRANGLER" deploy
+
+      - name: Instalar dependências do app do celular
+        if: env.MOBILE == 'true'
+        run: pnpm install --frozen-lockfile --filter "@argus/mobile..."
+
+      # A ponte serve o app do celular (apps/relay/public, montado aqui).
+      - name: Montar o app do celular
+        if: env.MOBILE == 'true'
+        run: pnpm mobile:build
+
+      - name: Publicar a ponte e o app do celular
+        if: env.MOBILE == 'true'
+        working-directory: apps/relay
+        run: npx --yes "$WRANGLER" deploy

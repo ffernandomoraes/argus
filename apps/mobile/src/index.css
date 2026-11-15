@@ -24,6 +24,11 @@
   --running: #2563eb;
   --needs-you: #d97706;
   --done: #059669;
+  /* Folha que sobe de baixo (Sheet): no claro, igual à tela; o fundo atrás escurece um pouco. */
+  --sheet-bg: var(--bg);
+  --sheet-card: var(--card);
+  --sheet-card-press: var(--card-press);
+  --backdrop: rgba(0, 0, 0, 0.35);
   color-scheme: light;
 }
 
@@ -48,6 +53,11 @@
     --running: #60a5fa;
     --needs-you: #fbbf24;
     --done: #34d399;
+    /* No escuro a folha sobe um tom (como no iOS), senão some no preto da tela atrás. */
+    --sheet-bg: #1c1c1e;
+    --sheet-card: #2c2c2e;
+    --sheet-card-press: #3a3a3c;
+    --backdrop: rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
 }
@@ -69,7 +79,18 @@
   --running: #60a5fa;
   --needs-you: #fbbf24;
   --done: #34d399;
+  --sheet-bg: #1c1c1e;
+  --sheet-card: #2c2c2e;
+  --sheet-card-press: #3a3a3c;
+  --backdrop: rgba(0, 0, 0, 0.6);
   color-scheme: dark;
+}
+
+/* Dentro da folha, fundo e cartões usam os tons dela: os componentes seguem com bg-bg e bg-card. */
+.sheet-surface {
+  --bg: var(--sheet-bg);
+  --card: var(--sheet-card);
+  --card-press: var(--sheet-card-press);
 }
 
 @theme {

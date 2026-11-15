@@ -58,12 +58,12 @@ export function Sheet({ open, onClose, title, children, above }: { open: boolean
       <button
         type="button"
         aria-label="Fechar"
-        className={`sheet-motion absolute inset-0 bg-black/35 ${shown ? 'opacity-100' : 'opacity-0'}`}
+        className={`sheet-motion absolute inset-0 bg-[var(--backdrop)] ${shown ? 'opacity-100' : 'opacity-0'}`}
         style={{ transitionProperty: 'opacity' }}
         onClick={onClose}
       />
       <div
-        className={`sheet-motion pb-safe relative max-h-[82vh] overflow-y-auto rounded-t-[20px] bg-bg shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${
+        className={`sheet-motion sheet-surface pb-safe relative max-h-[82vh] overflow-y-auto rounded-t-[20px] bg-bg shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${
           shown ? 'translate-y-0' : 'translate-y-full'
         }`}
         // O Tailwind 4 move com a propriedade translate (não transform).

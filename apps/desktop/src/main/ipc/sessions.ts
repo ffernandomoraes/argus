@@ -10,6 +10,8 @@ import { pageOf, type HistoryPage, type HistoryRequest } from '@argus/shared/his
 import { patchOf } from '@argus/shared/historyPatch';
 import { agentRef } from '@argus/shared/providers';
 import { readTaskOutput } from '../tasks/output';
+import { imagePathIn, readImage } from '../files/image';
+import { mentionsImage } from '@argus/shared/imageFiles';
 import { favoriteChats, setFavoriteChats } from '../favorites';
 import { broadcast } from './events';
 import { handle, on } from './register';
@@ -54,6 +56,15 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   handle('sessions:taskOutput', async (_e, ref, offset) => readTaskOutput(ref, Math.max(0, Math.floor(Number(offset)) || 0)));
   handle('sessions:subagentPage', async (_e, path, id, toolUseId, request) => readSubagentPage(path, id, toolUseId, wantedPage(request)));
   handle('sessions:images', async (_e, path, id, messageId) => (isAgentConversation(id) ? loadImages(id, messageId) : readImages(path, id, messageId)));
+  handle('sessions:image', (_e, path, id, file) => sessionImage(path, id, file));
+}
+
+// Pedido pelo celular: só abre a imagem cujo caminho aparece na conversa (lida pelo Claude ou citada
+// na resposta), nunca um arquivo qualquer do disco.
+async function sessionImage(path: unknown, id: unknown, file: unknown): Promise<string | null> {
+  if (typeof path !== 'string' || typeof id !== 'string' || typeof file !== 'string') return null;
+  const messages = isAgentConversation(id) ? (loadConversation(id)?.messages ?? []) : await readHistory(path, id);
+  return mentionsImage(messages, file) ? readImage(imagePathIn(path, file)) : null;
 }
 
 async function historyPage(path: string, id: string, request: HistoryRequest | undefined): Promise<HistoryPage> {

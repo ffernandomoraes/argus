@@ -1,4 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { isAbsolute, join, resolve } from 'node:path';
 import { imageType } from '@argus/shared/imageFiles';
 
 const LIMIT = 30_000_000;
@@ -14,4 +16,10 @@ export async function readImage(path: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// Caminho citado na conversa, no disco: "~/..." na pasta pessoal e relativo à pasta da conversa.
+export function imagePathIn(cwd: string, file: string): string {
+  if (/^~[\\/]/.test(file)) return join(homedir(), file.slice(2));
+  return isAbsolute(file) ? file : resolve(cwd, file);
 }

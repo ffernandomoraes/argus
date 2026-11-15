@@ -156,6 +156,8 @@ export type InvokeChannels = PhoneInvokeChannels & {
   'sessions:taskOutput': (ref: TaskOutputRef, offset: number) => TaskOutputChunk
   'sessions:subagentPage': (path: string, id: string, toolUseId: string, request: HistoryRequest) => HistoryPage
   'sessions:images': (path: string, id: string, messageId: string) => string[]
+  // Imagem que o Claude leu ou citou na conversa (o caminho tem que aparecer nela), pronta para o <img>.
+  'sessions:image': (path: string, id: string, file: string) => string | null
   // Conversas favoritas (ids das sessões), como a janela do Argus guarda: o app do celular lê daqui.
   'favorites:get': () => string[]
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)

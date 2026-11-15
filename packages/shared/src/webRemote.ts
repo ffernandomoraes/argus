@@ -36,6 +36,8 @@ export const WEB_CHANNELS = {
   'sessions:historyPage': 'invoke',
   'sessions:historyPatch': 'invoke',
   'sessions:images': 'invoke',
+  // Prints que o Claude leu ou citou: só os que aparecem na conversa (ver shared/imageFiles.ts).
+  'sessions:image': 'invoke',
   'sessions:watch': 'send',
   'sessions:search': 'invoke',
   'sessions:branch': 'invoke',

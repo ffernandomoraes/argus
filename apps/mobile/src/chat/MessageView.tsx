@@ -1,11 +1,13 @@
-import { memo, useState } from 'react';
-import Markdown from 'react-markdown';
+import { createContext, memo, useContext, useMemo, useState, type ReactNode } from 'react';
+import Markdown, { defaultUrlTransform, type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Brain, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { filesInBlock, withoutLegacyFiles } from '@argus/shared/attachedFiles';
 import type { DiffHunk, Message } from '@argus/shared/history';
+import { imageType, localImagePath } from '@argus/shared/imageFiles';
 import { tr } from '../i18n';
 import { UserImages } from './UserImages';
+import { ImageLink, ImageStatus, SessionImageContext, useSessionImage } from './SessionImage';
 import { baseName, formatDuration, formatTokens, messageTime } from '../ui/format';
 import { Step } from './Step';
 import type { TurnFooter } from './turnFooters';
@@ -15,21 +17,40 @@ import type { TurnFooter } from './turnFooters';
 
 const FILES_BLOCK = /\n*<argus-files(?: sizes="[\d,]*")?>\n[\s\S]*?\n<\/argus-files>\s*$/;
 
+// Dentro de um link: a imagem dele não vira outro botão (botão dentro de <a>).
+const InsideLink = createContext(false);
+
+// Caminhos de imagem no computador ("C:\...", file://) passam; o resto segue a limpeza padrão.
+const urlTransform = (url: string) => (localImagePath(url) ? url : defaultUrlTransform(url));
+
+const MARKDOWN: Components = {
+  a: ({ href = '', children }) => {
+    const file = localImagePath(href);
+    if (file) return <ImageLink file={file}>{children}</ImageLink>;
+    return (
+      <InsideLink.Provider value={true}>
+        <a href={href} target="_blank" rel="noreferrer noopener">
+          {children}
+        </a>
+      </InsideLink.Provider>
+    );
+  },
+  img: ({ src, alt }) => <MarkdownImage src={typeof src === 'string' ? src : ''} alt={alt} />,
+};
+
+// Imagem da web não carrega (a página só fala com a ponte); a do computador, citada na conversa,
+// vira um link que abre o preview.
+function MarkdownImage({ src, alt }: { src: string; alt?: string }) {
+  const inLink = useContext(InsideLink);
+  const file = localImagePath(src);
+  const label: ReactNode = `[${alt || tr('imagem', 'image')}]`;
+  return file && !inLink ? <ImageLink file={file}>{label}</ImageLink> : <span className="text-muted">{label}</span>;
+}
+
 export const MarkdownText = memo(function MarkdownText({ text }: { text: string }) {
   return (
     <div className="prose-chat text-[15px]">
-      <Markdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noreferrer noopener">
-              {children}
-            </a>
-          ),
-          // Imagens de fora não carregam (a página só fala com a ponte).
-          img: ({ alt }) => <span className="text-muted">[{alt || 'imagem'}]</span>,
-        }}
-      >
+      <Markdown remarkPlugins={[remarkGfm]} components={MARKDOWN} urlTransform={urlTransform}>
         {text}
       </Markdown>
     </div>
@@ -53,18 +74,39 @@ function DiffLines({ diff }: { diff: DiffHunk[] }) {
 
 function ToolRow({ m }: { m: Extract<Message, { role: 'tool' }> }) {
   const [open, setOpen] = useState(false);
+  // Print que o Claude leu: tocar na linha abre a imagem, como no Argus; a seta abre o detalhe.
+  const image = useSessionImage(m.name === 'Read' && m.detail && imageType(m.detail) ? m.detail : null);
   const result = m.result.length > 4000 ? `${m.result.slice(0, 4000)}\n…` : m.result;
+  const chevron = open ? <ChevronDown size={16} className="mt-0.5 shrink-0" /> : <ChevronRight size={16} className="mt-0.5 shrink-0" />;
   return (
     <div className="text-[14px] leading-[20px]">
       {/* Fechada, uma linha só, cortada com "…", como no desktop; aberta, a linha inteira e o detalhe.
           Sem ícone: a bolinha do passo já marca (vermelha e o nome em vermelho quando deu erro). */}
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-1.5 py-1 text-left text-muted active:opacity-60">
-        <span className={`min-w-0 flex-1 ${open ? '' : 'truncate'}`}>
-          <span className={`font-medium ${m.error ? 'text-red' : 'text-text'}`}>{m.agent ? `${m.label}: ${m.agent}` : m.label}</span>
-          {m.input && <span className="text-muted"> - {m.input}</span>}
-        </span>
-        {open ? <ChevronDown size={16} className="mt-0.5 shrink-0" /> : <ChevronRight size={16} className="mt-0.5 shrink-0" />}
-      </button>
+      <div className="flex w-full items-start gap-1.5 text-muted">
+        <button
+          type="button"
+          onClick={() => (image.canOpen ? image.open() : setOpen(!open))}
+          className="flex min-w-0 flex-1 items-start gap-1.5 py-1 text-left active:opacity-60"
+        >
+          <span className={`min-w-0 flex-1 ${open ? '' : 'truncate'}`}>
+            <span className={`font-medium ${m.error ? 'text-red' : 'text-text'}`}>{m.agent ? `${m.label}: ${m.agent}` : m.label}</span>
+            {m.input && (
+              <span className="text-muted">
+                {' - '}
+                <span className={image.canOpen ? 'underline decoration-faint underline-offset-2' : undefined}>{m.input}</span>
+              </span>
+            )}
+            <ImageStatus state={image.state} />
+          </span>
+          {!image.canOpen && chevron}
+        </button>
+        {image.canOpen && (
+          <button type="button" onClick={() => setOpen(!open)} aria-label={tr('Detalhes', 'Details')} className="-mr-1 px-1 py-1 active:opacity-60">
+            {chevron}
+          </button>
+        )}
+      </div>
+      {image.preview}
       {open && (
         <div className="mb-2 ml-5">
           {m.detail && <pre className="overflow-x-auto rounded-lg bg-code p-2 font-mono text-[11px] whitespace-pre-wrap">{m.detail}</pre>}
@@ -165,14 +207,21 @@ export const MessageView = memo(function MessageView({
   inProgress?: boolean
 }) {
   const row = <MessageRow m={m} cwd={cwd} sessionId={sessionId} footer={footer} />;
-  return isStep(m) ? (
+  const content = isStep(m) ? (
     <Step dot={dotOf(m, inProgress)} connect={connect}>
       {row}
     </Step>
   ) : (
     row
   );
+  return <SessionImageProvider cwd={cwd} sessionId={sessionId}>{content}</SessionImageProvider>;
 });
+
+// A conversa da mensagem, para as imagens que o Claude leu ou citou (ver SessionImage.tsx).
+function SessionImageProvider({ cwd, sessionId, children }: { cwd: string; sessionId?: string; children: ReactNode }) {
+  const value = useMemo(() => (sessionId ? { cwd, sessionId } : null), [cwd, sessionId]);
+  return <SessionImageContext.Provider value={value}>{children}</SessionImageContext.Provider>;
+}
 
 function MessageRow({ m, cwd, sessionId, footer }: { m: Message; cwd: string; sessionId?: string; footer?: TurnFooter }) {
   switch (m.role) {

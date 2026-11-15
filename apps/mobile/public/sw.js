@@ -13,14 +13,19 @@ self.addEventListener('push', (event) => {
     data = {};
   }
   const title = typeof data.title === 'string' ? data.title : 'Argus';
+  // Número no ícone do app (conversas para ver), mandado pelo Argus junto com o aviso.
+  const badge =
+    typeof data.badge === 'number' && self.navigator.setAppBadge
+      ? (data.badge > 0 ? self.navigator.setAppBadge(data.badge) : self.navigator.clearAppBadge()).catch(() => {})
+      : Promise.resolve();
   event.waitUntil(
-    self.registration.showNotification(title, {
+    Promise.all([badge, self.registration.showNotification(title, {
       body: typeof data.body === 'string' ? data.body : '',
       tag: typeof data.tag === 'string' ? data.tag : undefined,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       data: { url: typeof data.url === 'string' && data.url.startsWith('#') ? data.url : '#/' },
-    }),
+    })]),
   );
 });
 

@@ -163,6 +163,7 @@ export function createServices() {
         body: alert.body,
         url: alert.sessionId ? `#/chat/${encodeURIComponent(alert.cwd)}/${encodeURIComponent(alert.sessionId)}` : '#/',
         tag: alert.sessionId,
+        badge: badge.total(alert.kind === 'error' ? undefined : (alert.sessionId ?? alert.key)),
       }, [alert.key, alert.sessionId]),
   );
 

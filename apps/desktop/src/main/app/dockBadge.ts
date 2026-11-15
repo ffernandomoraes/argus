@@ -20,11 +20,19 @@ export class DockBadge {
     if (IS_WIN) app.on('browser-window-created', (_e, win) => this.overlay(win));
   }
 
-  refresh(): void {
+  // Quantas conversas para ver agora (o mesmo número vai para o ícone do app do celular). extra: a
+  // conversa que acabou de avisar, que a janela ainda não contou como não vista.
+  total(extra?: string): number {
     const ids = new Set(this.unread().map((u) => u.id));
+    if (extra) ids.add(extra);
     for (const { id, state } of this.chats()) if (state.status === 'needs-you') ids.add(state.sessionId ?? id);
-    if (ids.size === this.count) return;
-    this.count = ids.size;
+    return ids.size;
+  }
+
+  refresh(): void {
+    const total = this.total();
+    if (total === this.count) return;
+    this.count = total;
     if (IS_WIN) for (const win of BrowserWindow.getAllWindows()) this.overlay(win);
     else app.setBadgeCount(this.count);
   }

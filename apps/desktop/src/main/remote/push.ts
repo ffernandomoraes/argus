@@ -56,7 +56,8 @@ export function encryptPush(
 }
 
 // O que a notificação mostra e onde ela abre o app (a parte do endereço depois do #).
-export type PushPayload = { title: string; body: string; url: string; tag?: string };
+// badge: o número no ícone do app (conversas para ver, como no Dock).
+export type PushPayload = { title: string; body: string; url: string; tag?: string; badge?: number };
 
 export type PushResult = 'sent' | 'gone' | 'failed';
 

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { AppBadge } from './lib/appBadge';
 import { HostProvider } from './lib/host';
 import { setCacheScope } from './lib/cache';
 import { ConnectionOverlay } from './ui/ConnectionOverlay';
@@ -51,6 +52,7 @@ function Connected({ host }: { host: PairedHost }) {
   return (
     <HostProvider conn={conn}>
       <ApplyPreferences />
+      <AppBadge />
       {/* Cada tela entra com um fade curto (só opacidade: transform tiraria as barras fixas do lugar).
           A barra de abas fica fora, parada entre as abas. */}
       <div key={pushStep === 'hide' ? screenKey : pushStep} className="screen-fade h-full">

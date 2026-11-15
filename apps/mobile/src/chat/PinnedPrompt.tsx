@@ -4,7 +4,7 @@ import { tr } from '../i18n';
 import { imageCountLabel } from './UserImages';
 
 // O seu pedido do trecho que está na tela, preso embaixo do topo, como no Argus: aparece quando você
-// rola para cima e o balão dele já saiu da tela; rolando para baixo, some. Tocar leva até ele.
+// rola para cima e troca conforme a conversa passa; rolando para baixo, some. Tocar leva até ele.
 
 // Quanto rolar numa direção para mostrar ou esconder (como no Argus).
 const DIRECTION_PX = 60;
@@ -17,11 +17,12 @@ const JUMP_OFFSET_PX = 112;
 
 type Pinned = { el: HTMLElement; text: string; images: number };
 
-// O último balão seu que já subiu para trás do pedido preso (o pedido do trecho que está na tela).
+// O pedido do trecho no topo da tela, como no Argus: o último balão seu que começa acima do pedido
+// preso. Rolando para trás, troca para o pedido daquele ponto da conversa.
 function findPinned(line: number): Pinned | null {
   let found: HTMLElement | null = null;
   for (const el of document.querySelectorAll<HTMLElement>('[data-prompt]')) {
-    if (el.getBoundingClientRect().bottom > line) break;
+    if (el.getBoundingClientRect().top >= line) break;
     found = el;
   }
   if (!found) return null;
@@ -38,27 +39,35 @@ function usePinnedPrompt(bar: RefObject<HTMLElement | null>) {
     const moved = () => {
       movedAt = Date.now();
     };
+    // O pedido acompanha a rolagem toda, inclusive a que o iPhone continua sozinho depois de soltar
+    // o dedo (antes, ficava no primeiro que achou: o último da conversa). Uma conta por quadro.
+    let frame = 0;
+    const refresh = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const next = findPinned(bar.current?.getBoundingClientRect().top ?? 0);
+        setPinned((prev) => (prev?.el === next?.el && prev?.text === next?.text ? prev : next));
+      });
+    };
     const onScroll = () => {
       const y = window.scrollY;
       const delta = y - lastY;
       lastY = y;
+      refresh();
       const nearEnd = document.documentElement.scrollHeight - (window.innerHeight + y) <= NEAR_END_PX;
       if (nearEnd) return setVisible(false);
-      // Rolagem sozinha (a conversa descendo com a resposta) não mostra.
+      // Mostrar ou esconder, só com a sua rolagem (a conversa descendo com a resposta não mostra).
       if (Date.now() - movedAt > USER_SCROLL_MS) return;
       travel = Math.sign(delta) === Math.sign(travel) ? travel + delta : delta;
-      if (travel <= -DIRECTION_PX) {
-        const line = bar.current?.getBoundingClientRect().top ?? 0;
-        const next = findPinned(line);
-        setPinned((prev) => (prev?.el === next?.el && prev?.text === next?.text ? prev : next));
-        setVisible(true);
-      } else if (travel >= DIRECTION_PX) setVisible(false);
+      if (travel <= -DIRECTION_PX) setVisible(true);
+      else if (travel >= DIRECTION_PX) setVisible(false);
     };
     const opts = { passive: true };
     window.addEventListener('touchmove', moved, opts);
     window.addEventListener('wheel', moved, opts);
     window.addEventListener('scroll', onScroll, opts);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('touchmove', moved);
       window.removeEventListener('wheel', moved);
       window.removeEventListener('scroll', onScroll);

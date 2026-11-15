@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Privacidade · Argus</title>
+  <title>Privacidade - Argus</title>
   <meta name="description" content="O que o Argus envia para fora da sua máquina, e o que não envia.">
   <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -12,44 +12,16 @@
 </head>
 <body>
 
-<!-- Faixa de aviso -->
-<div class="banner">
-  <p>Novo: acesso remoto e app do celular, use o Argus de casa de qualquer lugar</p>
-  <a href="acesso-remoto.html">Ver como funciona</a>
-</div>
-
 <!-- Navegação -->
 <header class="nav">
   <div class="nav__inner">
-    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+    <a class="logo" href="index.html"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
 
     <nav class="nav__links" aria-label="Principal">
-      <div class="dd">
-        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
-        <div class="dd__menu">
-          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
-          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
-          <a href="acesso-remoto.html"><span class="dd__ic">⇄</span>Acesso remoto</a>
-          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
-        </div>
-      </div>
-      <a href="times.html">Para times</a>
-      <a href="download.html">Download</a>
-      <a href="comunidade.html">Comunidade</a>
-      <div class="dd">
-        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
-        <div class="dd__menu dd__menu--wide">
-          <p class="dd__eyebrow">Aprender</p>
-          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
-          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
-          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
-          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
-          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
-          <p class="dd__eyebrow">Projeto</p>
-          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
-          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
-        </div>
-      </div>
+      <a href="index.html#recursos">Recursos</a>
+      <a href="index.html#remoto">Acesso remoto</a>
+      <a href="index.html#faq">Dúvidas</a>
+      <a href="novidades.html">Novidades</a>
     </nav>
 
     <div class="nav__right">
@@ -57,8 +29,7 @@
         <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
         <span data-stars>GitHub</span>
       </a>
-      <a class="nav__plain" href="index.html#planos">Ver versões</a>
-      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+      <a class="btn btn--outline" href="download.html">Baixar</a>
     </div>
   </div>
 </header>
@@ -70,7 +41,7 @@
       <p class="pbadge"><span class="dd__ic">◍</span>Privacidade</p>
       <h1>Privacidade.</h1>
       <p class="lede">O que o Argus envia para fora da sua máquina, e o que não envia.</p>
-      <p class="pnote">Atualizada em 13 de novembro de 2026.</p>
+      <p class="pnote">Atualizada em 15 de novembro de 2026.</p>
     </div>
   </section>
 
@@ -104,10 +75,10 @@
 <tr><td>Ditado: o áudio vai em tempo real para o serviço de voz do Claude</td><td>Anthropic, com o seu login</td></tr>
 <tr><td>Transcrição de áudio local: baixar o modelo uma vez</td><td>Hugging Face</td></tr></table>
 <p>Nenhuma dessas consultas leva o conteúdo das suas conversas, exceto o ditado, que leva o áudio que você grava.</p></section>
-        <section class="doc-sec" id="site"><h2>Este site</h2><p>O site é estático e hospedado no GitHub Pages. Ele não usa cookies e não tem ferramentas de análise ou de anúncios.</p>
-<p>Ao abrir uma página, o seu navegador conversa só com o GitHub, que hospeda o site e fornece os números do repositório e os links de download. O GitHub pode registrar o seu endereço IP, conforme a <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">política de privacidade do GitHub</a>. As fontes ficam hospedadas junto com o site.</p></section>
+        <section class="doc-sec" id="site"><h2>Este site</h2><p>O site é estático e hospedado na Cloudflare. Ele não usa cookies e não tem ferramentas de análise ou de anúncios.</p>
+<p>Ao abrir uma página, o seu navegador conversa com a Cloudflare, que entrega o site, e com o GitHub, que fornece os números do repositório, as novidades e os links de download. As duas podem registrar o seu endereço IP, conforme a <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">política da Cloudflare</a> e a <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">do GitHub</a>. As fontes ficam hospedadas junto com o site.</p></section>
         <section class="doc-sec" id="codigo"><h2>Código aberto</h2><p>Tudo o que está nesta página pode ser conferido no código do Argus, que é aberto no <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a>.</p></section>
-        <section class="doc-sec" id="contato"><h2>Dúvidas</h2><p>Se tiver dúvidas sobre privacidade, fale com a gente pela <a href="contato.html">página de contato</a>. Quando o app passar a enviar algo novo, esta página muda junto.</p></section>
+        <section class="doc-sec" id="contato"><h2>Dúvidas</h2><p>Se tiver dúvidas sobre privacidade, fale com a gente pelas <a href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">issues do GitHub</a>. Quando o app passar a enviar algo novo, esta página muda junto.</p></section>
       </div>
     </div>
   </section>
@@ -116,7 +87,7 @@
 <footer class="legal">
   <div class="container legal__inner">
     <span class="mono">© 2026 Argus</span>
-    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+    <nav><a href="novidades.html">Novidades</a><a href="privacidade.html">Privacidade</a><a href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">Reportar um problema</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
   </div>
 </footer>
 

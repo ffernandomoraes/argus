@@ -1,0 +1,12 @@
+# Site do Argus (landing page), servido como arquivos estáticos por um Worker sem código.
+# Publicar: cf-pessoal wrangler deploy (nesta pasta). O que não é do site fica no .assetsignore.
+name = "argus-website"
+compatibility_date = "2026-09-01"
+workers_dev = false
+routes = [
+  { pattern = "argusterm.com", custom_domain = true },
+  { pattern = "www.argusterm.com", custom_domain = true },
+]
+
+[assets]
+directory = "."

@@ -217,89 +217,6 @@ function rippleGrid(canvas) {
 }
 document.querySelectorAll('[data-ripple-grid]').forEach(rippleGrid);
 
-// Seção do fluxo: o Argus no centro e as seis etapas girando em volta dele. A etapa que passa pelo
-// topo acende e aparece no texto ao lado.
-const STEPS = [
-  { title: 'Pedido', text: 'Escreva, cole um print ou dite o que precisa.', icon: '<path d="M4 5h16v11H9l-5 4z"/>' },
-  { title: 'Plano', text: 'O agente lê o projeto e explica o que vai fazer.', icon: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>' },
-  { title: 'Execução', text: 'Ferramentas e subagentes trabalham, e você vê cada passo.', icon: '<path d="M5 7l5 5-5 5M12.5 17H19"/>' },
-  { title: 'Permissão', text: 'O que pede aprovação chega no chat. Você decide.', icon: '<path d="M12 3l7 3v5.5c0 4.3-3 7.6-7 9.5-4-1.9-7-5.2-7-9.5V6z"/><path d="M9 12l2 2 4-4"/>' },
-  { title: 'Revisão', text: 'O diff de cada arquivo editado, antes e depois.', icon: '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M12 8.5v5M9.5 11h5M9.5 16.5h5"/>' },
-  { title: 'Pronto', text: 'Notificação no sistema quando termina.', icon: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>' },
-];
-
-function orbit(el) {
-  const card = el.closest('.cycle');
-  const core = el.querySelector('.orbit__core');
-  const PERIOD = 16000; // ms para uma volta inteira
-  const items = STEPS.map((s) => {
-    const item = document.createElement('span');
-    item.className = 'orbit__item';
-    item.title = s.title;
-    item.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${s.icon}</svg>`;
-    el.appendChild(item);
-    return item;
-  });
-  const num = card?.querySelector('[data-cycle-num]');
-  const title = card?.querySelector('[data-cycle-title]');
-  const text = card?.querySelector('[data-cycle-text]');
-  let current = -1;
-  const show = (i) => {
-    if (i === current) return;
-    current = i;
-    items.forEach((it, k) => it.classList.toggle('on', k === i));
-    if (num) num.textContent = String(i + 1).padStart(2, '0');
-    if (title) title.textContent = STEPS[i].title;
-    if (text) text.textContent = STEPS[i].text;
-  };
-
-  // Posição de cada etapa no anel de fora: a etapa i começa no topo menos i * 60°, então, girando no
-  // sentido horário, a seguinte chega ao topo logo depois dela.
-  const place = (turn) => {
-    const r = el.clientWidth / 2;
-    let top = 0;
-    let best = Infinity;
-    items.forEach((it, i) => {
-      const deg = -90 - i * 60 + turn * 360;
-      const a = (deg * Math.PI) / 180;
-      it.style.transform = `translate(${(Math.cos(a) * r).toFixed(1)}px, ${(Math.sin(a) * r).toFixed(1)}px)`;
-      const fromTop = Math.abs(((((deg + 90) % 360) + 540) % 360) - 180);
-      if (fromTop < best) {
-        best = fromTop;
-        top = i;
-      }
-    });
-    show(top);
-  };
-  place(0);
-  if (reduceMotion) return;
-
-  // O centro se inclina um pouco na direção do mouse.
-  card?.addEventListener('pointermove', (e) => {
-    const box = core.getBoundingClientRect();
-    const dx = e.clientX - (box.left + box.width / 2);
-    const dy = e.clientY - (box.top + box.height / 2);
-    const d = Math.hypot(dx, dy) || 1;
-    const k = Math.min(1, d / 300) * 12;
-    core.style.transform = `translate(${((dx / d) * k).toFixed(1)}px, ${((dy / d) * k).toFixed(1)}px)`;
-  });
-  card?.addEventListener('pointerleave', () => (core.style.transform = ''));
-
-  let visible = false;
-  new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(el);
-  let turn = 0;
-  let prev = performance.now();
-  (function loop(now) {
-    if (visible) {
-      turn = (turn + (now - prev) / PERIOD) % 1;
-      place(turn);
-    }
-    prev = now;
-    requestAnimationFrame(loop);
-  })(prev);
-}
-document.querySelectorAll('[data-orbit]').forEach(orbit);
-
 // Seções aparecem ao entrar na tela.
 const targets = document.querySelectorAll('.section .container > *, .outro__inner > *');
 if (!reduceMotion) {
@@ -316,36 +233,6 @@ if (!reduceMotion) {
   );
   targets.forEach((el) => io.observe(el));
 }
-
-// Seção "Conecte com o que você já usa": piso de teclas inclinado com as ferramentas. Cada fileira
-// anda como um letreiro (uma para cada lado) e o Argus fica parado e levantado no meio.
-const STACK = ['github', 'git', 'modelcontextprotocol', 'nodedotjs', 'npm', 'pnpm', 'figma', 'notion', 'linear', 'docker', 'vercel', 'supabase', 'postgresql', 'ubuntu', 'gnubash', 'claude', 'openai', 'googlegemini', 'cursor'];
-
-function floor(el) {
-  const plane = el.querySelector('.floor__plane');
-  const ROWS = 11;
-  const PER_ROW = 18; // teclas em cada cópia da fileira (a fileira tem duas, para o loop não ter emenda)
-  for (let r = 0; r < ROWS; r++) {
-    const row = document.createElement('div');
-    row.className = 'floor__row';
-    // Velocidades um pouco diferentes, para as fileiras não andarem em bloco.
-    row.style.setProperty('--dur', `${70 + ((r * 37) % 30)}s`);
-    const tiles = Array.from({ length: PER_ROW }, (_, i) => STACK[(i * 3 + r * 7) % STACK.length]);
-    for (const name of [...tiles, ...tiles]) {
-      const tile = document.createElement('span');
-      tile.className = 'floor__tile';
-      tile.innerHTML = `<img src="assets/stack/${name}.svg" alt="" loading="lazy">`;
-      row.appendChild(tile);
-    }
-    plane.appendChild(row);
-  }
-  const core = document.createElement('span');
-  core.className = 'floor__core';
-  core.innerHTML = '<img src="assets/icone-argus-laranja.svg" alt="">';
-  plane.appendChild(core);
-  if (reduceMotion) el.querySelectorAll('.floor__row').forEach((row) => (row.style.animation = 'none'));
-}
-document.querySelectorAll('[data-floor]').forEach(floor);
 
 // Rodapé: o ícone do Argus feito de partículas brancas, com o formato da imagem, olhando para o mouse; o cursor
 // empurra os pontos, que voltam ao lugar como molas e tremem de leve mesmo parados. Ao aparecer na
@@ -536,13 +423,14 @@ if (download) {
         if (!u) return;
         el.href = u.href;
         el.removeAttribute('target');
-        if (el.classList.contains('btn')) el.textContent += ` · ${u.mb} MB`;
+        if (el.classList.contains('btn')) el.textContent += ` - ${u.mb} MB`;
       });
       if (os && urls[PICK[os]]) {
         main.href = urls[PICK[os]].href;
         main.removeAttribute('target');
       }
-      download.querySelector('[data-dl-version]').textContent = rel.tag_name;
+      const version = download.querySelector('[data-dl-version]');
+      if (version) version.textContent = rel.tag_name;
     })
     .catch(() => {});
 }
@@ -566,29 +454,6 @@ document.querySelectorAll('[data-copy]').forEach((b) =>
     });
   }),
 );
-
-// Atalhos: mostra as teclas do sistema de quem visita, com abas para trocar.
-document.querySelectorAll('[data-keys]').forEach((box) => {
-  const show = (os) => {
-    box.dataset.os = os;
-    box.querySelectorAll('[data-os]').forEach((b) => b !== box && b.setAttribute('aria-selected', String(b.dataset.os === os)));
-  };
-  box.querySelector('.keys-os').addEventListener('click', (e) => e.target.dataset?.os && show(e.target.dataset.os));
-  show(/Mac/.test(navigator.userAgent) ? 'mac' : 'win');
-});
-
-// Documentação: marca no índice a seção que está na tela.
-const docSide = document.querySelector('.doc-side');
-if (docSide) {
-  const links = [...docSide.querySelectorAll('a[href^="#"]')];
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) if (e.isIntersecting) links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
-    },
-    { rootMargin: '-30% 0px -60% 0px' },
-  );
-  document.querySelectorAll('.doc-sec').forEach((s) => io.observe(s));
-}
 
 // Novidades: troca a lista pela dos releases mais recentes do GitHub (a do HTML fica de reserva).
 const relList = document.querySelector('[data-releases]');
@@ -615,109 +480,12 @@ if (relList) {
     .catch(() => {});
 }
 
-// Números reais do repositório: as estrelas no menu de todas as páginas e, na Comunidade, os
-// números do topo e os contribuidores (sem os bots). Sem a API, fica o que veio no HTML.
-{
-  const repo = 'https://api.github.com/repos/ffernandomoraes/argus';
-  const get = (url) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject()));
-  const fmt = (n) => (n >= 1000 ? (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K' : String(n));
-  get(repo)
-    .then((r) => {
-      document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = fmt(r.stargazers_count)));
-      document.querySelectorAll('[data-stat="stars"]').forEach((el) => (el.textContent = fmt(r.stargazers_count)));
-      document.querySelectorAll('[data-stat="forks"]').forEach((el) => (el.textContent = fmt(r.forks_count)));
-    })
-    .catch(() => {});
-  if (document.querySelector('[data-repo-stats]')) {
-    // A API pagina de 100 em 100: com 100 na primeira página, há pelo menos isso.
-    get(repo + '/releases?per_page=100')
-      .then((list) => (document.querySelector('[data-stat="releases"]').textContent = list.length >= 100 ? '100+' : String(list.length)))
-      .catch(() => {});
-  }
-  const people = document.querySelector('[data-contributors]');
-  if (people) {
-    get(repo + '/contributors?per_page=50')
-      .then((list) => {
-        const known = new Set(['ffernandomoraes']);
-        for (const c of list) {
-          if (c.type === 'Bot' || known.has(c.login)) continue;
-          const a = document.createElement('a');
-          a.className = 'person';
-          a.href = c.html_url;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          a.innerHTML = `<img src="${c.avatar_url}&s=96" alt=""><strong></strong><span>${c.contributions} contribuições</span>`;
-          a.querySelector('strong').textContent = c.login;
-          people.appendChild(a);
-        }
-      })
-      .catch(() => {});
-  }
-}
-
-// Sobre: o ícone do Argus como um olho. O hexágono fica parado e a estrela (a pupila) olha para o
-// mouse, sem passar da borda do círculo de dentro; de vez em quando ela pisca.
-document.querySelectorAll('[data-eye]').forEach((box) => {
-  const svg = box.querySelector('svg');
-  const pupil = box.querySelector('.eye__pupil');
-  const CENTER = { x: 192.8, y: 231.9 }; // centro do círculo, nas coordenadas do SVG
-  const MAX = 46; // quanto a pupila anda, antes de encostar na borda
-  const target = { x: 0, y: 0 };
-  const pos = { x: 0, y: 0 };
-  let blink = 1;
-  addEventListener('pointermove', (e) => {
-    const r = svg.getBoundingClientRect();
-    const scale = r.width / 386;
-    const dx = e.clientX - (r.left + CENTER.x * scale);
-    const dy = e.clientY - (r.top + CENTER.y * scale);
-    const d = Math.hypot(dx, dy) || 1;
-    // Perto do ícone anda pouco; a partir de ~400px, vai até a borda.
-    const k = Math.min(1, d / 400) * MAX;
-    target.x = (dx / d) * k;
-    target.y = (dy / d) * k;
-  });
-  document.addEventListener('pointerleave', () => Object.assign(target, { x: 0, y: 0 }));
-  if (reduceMotion) return;
-  let nextBlink = performance.now() + 2500;
-  (function loop(now) {
-    // Segue o mouse com atraso suave.
-    pos.x += (target.x - pos.x) * 0.12;
-    pos.y += (target.y - pos.y) * 0.12;
-    // Piscar: fecha e abre em ~180ms, a cada 3 a 6 segundos.
-    if (now > nextBlink) {
-      const t = (now - nextBlink) / 180;
-      blink = t < 1 ? Math.abs(1 - 2 * t) * 0.9 + 0.1 : 1;
-      if (t >= 1) nextBlink = now + 3000 + Math.random() * 3000;
-    }
-    pupil.setAttribute('transform', `translate(${pos.x.toFixed(2)} ${pos.y.toFixed(2)}) translate(${CENTER.x} ${CENTER.y}) scale(1 ${blink.toFixed(3)}) translate(${-CENTER.x} ${-CENTER.y})`);
-    requestAnimationFrame(loop);
-  })(performance.now());
-});
-
-// Ajuda: busca e filtro por assunto nos cartões dos tutoriais.
-document.querySelectorAll('[data-help]').forEach((box) => {
-  const cards = [...box.querySelectorAll('.tcard')];
-  const input = box.querySelector('[data-help-search]');
-  const empty = box.querySelector('[data-help-empty]');
-  const buttons = [...box.querySelectorAll('[data-filter]')];
-  let cat = '';
-  const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const apply = () => {
-    const q = norm(input.value.trim());
-    let shown = 0;
-    for (const c of cards) {
-      const ok = (!cat || c.dataset.cat === cat) && (!q || norm(c.textContent).includes(q));
-      c.hidden = !ok;
-      if (ok) shown++;
-    }
-    empty.hidden = shown > 0;
-  };
-  input.addEventListener('input', apply);
-  buttons.forEach((b) =>
-    b.addEventListener('click', () => {
-      cat = b.dataset.filter;
-      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      apply();
-    }),
-  );
-});
+// Estrelas do repositório no menu de todas as páginas. Sem a API, fica o que veio no HTML.
+fetch('https://api.github.com/repos/ffernandomoraes/argus')
+  .then((r) => (r.ok ? r.json() : Promise.reject()))
+  .then((repo) => {
+    const n = repo.stargazers_count;
+    const text = n >= 1000 ? (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K' : String(n);
+    document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = text));
+  })
+  .catch(() => {});

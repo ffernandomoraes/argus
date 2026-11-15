@@ -46,7 +46,7 @@ function WorkspaceTag({ workspace, on, onPick, onActions }: { workspace: Workspa
 function WorkspaceTags({ workspaces, current, onPick, onActions }: { workspaces: Workspace[]; current: string; onPick: (id: string) => void; onActions: (w: Workspace) => void }) {
   return (
     // Até a borda da tela ao rolar (o -mx desfaz a margem da página), começando na margem do título.
-    <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className={`-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 ${NO_CALLOUT} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
       {workspaces.map((w) => (
         <WorkspaceTag key={w.id} workspace={w} on={w.id === current} onPick={() => onPick(w.id)} onActions={() => onActions(w)} />
       ))}

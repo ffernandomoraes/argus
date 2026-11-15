@@ -1,7 +1,7 @@
 import { createContext, memo, useContext, useMemo, useState, type ReactNode } from 'react';
 import Markdown, { defaultUrlTransform, type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Brain, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { filesInBlock, withoutLegacyFiles } from '@argus/shared/attachedFiles';
 import type { DiffHunk, Message } from '@argus/shared/history';
 import { imageType, localImagePath } from '@argus/shared/imageFiles';
@@ -124,16 +124,22 @@ function ToolRow({ m }: { m: Extract<Message, { role: 'tool' }> }) {
   );
 }
 
+// Raciocínio, no estilo da linha de ferramenta (ToolRow): fechado, uma linha só com "Pensou por 4s" e
+// o começo do raciocínio cortado com "…"; aberto, o texto inteiro. Sem ícone, como no Argus.
 function Thinking({ m }: { m: Extract<Message, { role: 'thinking' }> }) {
   const [open, setOpen] = useState(false);
+  const label = m.seconds ? tr(`Pensou por ${m.seconds}s`, `Thought for ${m.seconds}s`) : tr('Pensou', 'Thought');
+  const preview = m.text.replace(/\s+/g, ' ').trim();
   return (
-    <div className="text-[14px] leading-[20px] text-muted">
-      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 py-1 active:opacity-60">
-        <Brain size={15} />
-        {m.seconds ? tr(`Pensou por ${m.seconds}s`, `Thought for ${m.seconds}s`) : tr('Pensou', 'Thought')}
-        {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+    <div className="text-[14px] leading-[20px]">
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-1.5 py-1 text-left text-muted active:opacity-60">
+        <span className="min-w-0 flex-1 truncate">
+          <span className="font-medium text-text">{label}</span>
+          {preview && <span>{` - ${preview}`}</span>}
+        </span>
+        {open ? <ChevronDown size={16} className="mt-0.5 shrink-0" /> : <ChevronRight size={16} className="mt-0.5 shrink-0" />}
       </button>
-      {open && <p className="mb-2 ml-5 text-[14px] whitespace-pre-wrap italic">{m.text}</p>}
+      {open && <p className="mb-2 rounded-lg bg-code p-2 text-[14px] whitespace-pre-wrap text-muted">{m.text}</p>}
     </div>
   );
 }

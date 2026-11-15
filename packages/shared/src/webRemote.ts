@@ -45,6 +45,11 @@ export const WEB_CHANNELS = {
   'files:upload': 'invoke',
   'boards:state': 'sync',
   'boards:create': 'sync',
+  // Renomear e excluir workspace (tocar e segurar a etiqueta, na aba Projetos). Excluir fecha antes:
+  // o Argus só exclui o workspace fechado.
+  'boards:rename': 'send',
+  'boards:close': 'send',
+  'boards:remove': 'send',
   'sessions:folders': 'invoke',
   'canvas:addFolder': 'invoke',
   'folders:list': 'invoke',

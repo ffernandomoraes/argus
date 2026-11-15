@@ -10,6 +10,8 @@ import { GroupLabel } from '../ui/GroupLabel';
 import { Empty, Row, Section } from '../ui/List';
 import { TabHeader } from '../ui/TabBar';
 import { ROUND_BUTTON } from '../ui/FloatingHeader';
+import { NO_CALLOUT, useLongPress } from '../ui/useLongPress';
+import { WorkspaceActions } from './WorkspaceActions';
 
 // Aba Projetos: as pastas do canvas do Argus, nos grupos de lá (pílula na cor do grupo). Com mais de
 // um workspace, etiquetas embaixo do título trocam entre eles (rolam para o lado quando não cabem);
@@ -25,24 +27,29 @@ function savedWorkspace(): string | null {
   }
 }
 
-function WorkspaceTags({ workspaces, current, onPick }: { workspaces: Workspace[]; current: string; onPick: (id: string) => void }) {
+// Tocar troca de workspace; tocar e segurar abre Renomear e Excluir (WorkspaceActions).
+function WorkspaceTag({ workspace, on, onPick, onActions }: { workspace: Workspace; on: boolean; onPick: () => void; onActions: () => void }) {
+  const press = useLongPress(onActions);
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onPick}
+      {...press}
+      className={`shrink-0 rounded-full px-3.5 py-1.5 text-[14px] font-medium whitespace-nowrap active:opacity-60 ${NO_CALLOUT} ${on ? 'bg-text text-bg' : 'bg-code text-muted'}`}
+    >
+      {workspace.name}
+    </button>
+  );
+}
+
+function WorkspaceTags({ workspaces, current, onPick, onActions }: { workspaces: Workspace[]; current: string; onPick: (id: string) => void; onActions: (w: Workspace) => void }) {
   return (
     // Até a borda da tela ao rolar (o -mx desfaz a margem da página), começando na margem do título.
     <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {workspaces.map((w) => {
-        const on = w.id === current;
-        return (
-          <button
-            key={w.id}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onPick(w.id)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[14px] font-medium whitespace-nowrap active:opacity-60 ${on ? 'bg-text text-bg' : 'bg-code text-muted'}`}
-          >
-            {w.name}
-          </button>
-        );
-      })}
+      {workspaces.map((w) => (
+        <WorkspaceTag key={w.id} workspace={w} on={w.id === current} onPick={() => onPick(w.id)} onActions={() => onActions(w)} />
+      ))}
     </div>
   );
 }
@@ -78,6 +85,7 @@ export function ProjectsScreen() {
   const { workspaces, loaded } = useWorkspaces();
   const [menu, setMenu] = useState(false);
   const [naming, setNaming] = useState(false);
+  const [actions, setActions] = useState<Workspace | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(savedWorkspace);
   // O guardado que não existe mais (workspace fechado no Argus): o primeiro.
@@ -107,7 +115,7 @@ export function ProjectsScreen() {
           </button>
         }
       >
-        {workspaces.length > 1 && current && <WorkspaceTags workspaces={workspaces} current={current.id} onPick={pick} />}
+        {workspaces.length > 1 && current && <WorkspaceTags workspaces={workspaces} current={current.id} onPick={pick} onActions={setActions} />}
       </TabHeader>
       {error && <p className="mt-2 px-1 text-[12px] text-red">{error}</p>}
       {groups.map((g) => (
@@ -130,6 +138,7 @@ export function ProjectsScreen() {
         </Section>
       )}
       <AddMenu open={menu} onClose={() => setMenu(false)} onAddFolder={current ? () => go({ name: 'addFolder', board: current.id }) : undefined} onNewWorkspace={() => setNaming(true)} />
+      <WorkspaceActions workspace={actions} onClose={() => setActions(null)} onError={setError} />
       <TextSheet
         open={naming}
         title={tr('Novo workspace', 'New workspace')}

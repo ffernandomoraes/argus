@@ -1,0 +1,51 @@
+# Publica o site do Argus (apps/website, Worker argus-website em argusterm.com) a cada push na main
+# que mexe nele. Fica fora do release.yml de propósito: o site não depende da versão do app (o
+# Download e as Novidades leem os releases do GitHub ao vivo), e mudança só no site não gera versão.
+# Na mão: aba Actions ("Run workflow") ou gh workflow run website.yml.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/website/**', '.github/workflows/website.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Um deploy por vez; um push novo cancela o deploy antigo que ainda não terminou.
+concurrency:
+  group: website
+  cancel-in-progress: true
+
+env:
+  # A mesma versão do release.yml e da máquina de desenvolvimento.
+  WRANGLER: wrangler@4.158.0
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Secrets da Cloudflare
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Faltam os secrets CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID: o site não foi publicado."
+            exit 1
+          fi
+
+      # O que não é do site (wrangler.toml, README) fica de fora pelo apps/website/.assetsignore.
+      - name: Publicar o site
+        working-directory: apps/website
+        run: npx --yes "$WRANGLER" deploy

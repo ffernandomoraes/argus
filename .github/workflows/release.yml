@@ -14,7 +14,7 @@ name: Release
 on:
   push:
     branches: [main]
-    # Só texto (README, anotações) e o site: não vira versão.
+    # Só texto (README, anotações) e o site (que tem o website.yml): não vira versão.
     paths-ignore: ['**.md', 'apps/website/**']
   workflow_dispatch:
     inputs:
@@ -401,7 +401,7 @@ jobs:
   # 2026-11-14 o app do celular saiu enquanto um teste do Windows segurava a versão.
   # Precisa dos secrets CLOUDFLARE_API_TOKEN (token da conta com permissão de editar Workers e D1) e
   # CLOUDFLARE_ACCOUNT_ID. Sem eles, nada é publicado na Cloudflare e o run avisa. O site
-  # (apps/website) ainda não tem hospedagem: não entra aqui.
+  # (apps/website) tem o workflow próprio, website.yml: não depende da versão do app.
 
   # O que mudou desde a última versão publicada (a última tag antes deste commit) e se os secrets
   # existem. Comparar com a tag, e não com o push anterior, cobre os pushes que esperaram juntos na

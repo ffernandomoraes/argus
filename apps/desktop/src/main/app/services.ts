@@ -15,6 +15,7 @@ import { Cli } from '../cli';
 import { broadcast, sendTo } from '../ipc/events';
 import { ChatNotifier } from '../notifications';
 import { remoteAccess } from '../remote';
+import { loadPhoneChats } from '../remote/phoneChats';
 import { Popouts } from '../popouts';
 import { SessionWatch } from '../sessionWatch';
 import { onDiskFull } from '../lib/atomicWrite';
@@ -87,6 +88,9 @@ export function createServices() {
   // tudo que abre o `claude`: o histórico precisa estar guardado quando ele abrir.
   const storage = new StorageCleaner(async () => new Set((await liveSessions()).keys()));
   storage.start();
+
+  // Conversas em que o celular mexeu (as que notificam lá): sobrevivem aos reinícios do Argus.
+  loadPhoneChats(join(app.getPath('userData'), 'phoneChats.json'));
 
   // Conversas que o app fechou no meio: as janelas mostram interrompidas, e o ícone da barra lista.
   const interrupted = new InterruptedChats(join(app.getPath('userData'), 'interruptedChats.json'), () => {

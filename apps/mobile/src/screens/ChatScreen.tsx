@@ -76,7 +76,10 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
   const branch = useBranch(cwd);
   const details = useChatDetails(chatKey, state?.status);
   const summary = sessionId ? list?.find((s) => s.id === sessionId) : undefined;
-  const account = details?.account ?? chosenAccount ?? summary?.agent ?? folder?.account;
+  // Trocada agora aqui vale sobre a da sessão aberta no Argus (chat:details ainda traz a de antes
+  // até a próxima mensagem reabrir a conversa na nova); sem isso a troca não chegava ao envio.
+  const [picked, setPicked] = useState<string | undefined>();
+  const account = picked ?? details?.account ?? chosenAccount ?? summary?.agent ?? folder?.account;
   const auth = useAuthState();
   const providers = useProvidersState();
   const resolved = resolveAccount(account, auth, providers);
@@ -86,6 +89,12 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
   useEffect(() => {
     if (details?.settings) setChosenSettings(details.settings);
   }, [details]);
+  // A sessão já reabriu na conta trocada: volta a valer a dela (e as trocas feitas no Argus).
+  useEffect(() => {
+    if (details?.account && details.account === picked) setPicked(undefined);
+  }, [details, picked]);
+  // Outra conversa nesta tela (notificação): a troca da anterior não vale aqui.
+  useEffect(() => setPicked(undefined), [chatKey]);
   // O padrão (de Conta > Preferências, herdado do Argus) vale nas conversas do Claude; as de outros
   // agentes ficam no padrão deles.
   const settings = chosenSettings ?? (!agentChat && prefs.conversation ? prefs.conversation : DEFAULT_SETTINGS);
@@ -102,6 +111,7 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
     if (state) void conn.call('chat:configure', chatKey, patch).catch(() => {});
   };
   const changeAccount = (a: string) => {
+    setPicked(a);
     setChosenAccount(a);
     savePrefs(prefsId, { account: a });
   };
@@ -293,7 +303,7 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
         subtitle={folder?.name ?? baseName(cwd)}
         onBack={() => back({ name: 'folder', path: cwd })}
         backLabel={folder?.name ?? baseName(cwd)}
-        right={<AccountPicker account={account} started={!!sessionId} onChange={changeAccount} circle />}
+        right={<AccountPicker account={account} started={!!sessionId} busy={running} onChange={changeAccount} circle />}
       />
       {/* A conversa termina logo acima da caixa de escrever (pela altura medida dela). */}
       <div className={`px-safe ${FLOATING_HEADER_SPACE}`} style={{ paddingBottom: composerHeight + 12 }}>

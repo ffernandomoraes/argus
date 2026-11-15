@@ -9,8 +9,9 @@ import { Sheet } from '../ui/Sheet';
 
 // A conta (e o agente) da conversa, na barra do topo, como o selo do cabeçalho da conversa no Argus.
 // Conversa nova: qualquer agente e conta conectados. Conversa do Claude já começada: só as contas
-// do Claude (o Argus reabre a sessão na outra conta, retomando a mesma conversa). Conversa de outro
-// agente já começada: só mostra.
+// do Claude e com ela parada (o Argus reabre a sessão na outra conta, retomando a mesma conversa;
+// trabalhando ou esperando você, ele seguiria na de antes). Conversa de outro agente já começada: só
+// mostra.
 
 type Option = { id: string; name: string; provider?: ProviderId };
 type Group = { label: string; provider?: ProviderId; options: Option[] };
@@ -49,12 +50,15 @@ export function resolveAccount(account: string | undefined, auth: AuthState | un
 export function AccountPicker({
   account,
   started,
+  busy,
   tint,
   circle,
   onChange,
 }: {
   account: string | undefined
   started: boolean
+  // Trabalhando ou esperando você: não troca (como no Argus).
+  busy?: boolean
   tint?: boolean
   // Botão redondo só com o logo do agente (a conversa no estilo flutuante).
   circle?: boolean
@@ -66,7 +70,7 @@ export function AccountPicker({
   const current = resolveAccount(account, auth, providers);
   if (!current) return null;
   const agentChat = !!current.provider;
-  const locked = started && agentChat;
+  const locked = started && (agentChat || !!busy);
   const groups = locked ? [] : groupsFor(auth, providers, started);
   const total = groups.reduce((n, g) => n + g.options.length, 0);
   const canChange = !locked && total > 1;

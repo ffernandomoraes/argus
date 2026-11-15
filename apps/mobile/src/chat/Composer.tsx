@@ -9,6 +9,7 @@ import { ComposerOptions, ContextRing, modelSummary, type OptionsSheet } from '.
 import { SuggestionChip } from './SuggestionChip';
 import { useDictation } from './useDictation';
 import { useKeyboard } from './useKeyboard';
+import { VoiceWave } from './VoiceWave';
 import type { COMMANDS } from './options';
 
 // A caixa cresce até 3 linhas (14px de fonte, ~19,3px por linha, mais 9px em cima e embaixo);
@@ -206,12 +207,18 @@ export function Composer({
               placeholder={busy ? tr('Mandar mais um pedido…', 'Send another request…') : tr('Escreva um pedido…', 'Write a request…')}
               className="max-h-[76px] min-w-0 flex-1 resize-none bg-transparent px-1 py-[9px] text-[14px] leading-snug outline-none placeholder:text-faint"
             />
+            {/* Ditando: as ondinhas ao lado do microfone, na cor dele, como no Argus. */}
+            {dictating && (
+              <div className="flex h-10 items-center pr-0.5">
+                <VoiceWave signal={text} />
+              </div>
+            )}
             {dictation && (
               <button
                 type="button"
-                aria-label={tr('Ditar', 'Dictate')}
+                aria-label={dictating ? tr('Parar ditado', 'Stop dictation') : tr('Ditar', 'Dictate')}
                 onClick={dictation.toggle}
-                className={`${round} ${dictation.on ? 'bg-red text-white' : 'bg-code text-muted'}`}
+                className={`${round} ${dictating ? 'bg-running/15 text-running' : 'bg-code text-muted'}`}
               >
                 <Mic size={20} />
               </button>

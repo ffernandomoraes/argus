@@ -48,9 +48,23 @@ describe('freePort', () => {
     expect(await freePort(root, vite())).toEqual(vite());
   });
 
-  it('script que não é o vite direto fica como está', async () => {
+  // O padrão dos projetos com Design System: o --port vai para o fim do script, que é o vite.
+  it('vite no fim de uma sequência com &&: também pula para a livre', async () => {
     busy.ports = [5173];
-    for (const body of ['turbo dev', 'vite build && vite preview', 'vitest', 'next dev']) {
+    expect((await freePort(folder(), vite('pnpm sync-rules && vite --open --host'))).command).toBe('pnpm run dev --port 5174');
+    expect((await freePort(folder(), vite('a && b && vite dev --host', 'npm'))).command).toBe('npm run dev -- --port 5174');
+  });
+
+  it('porta fixada no vite do fim da sequência: respeita', async () => {
+    busy.ports = [5173, 5174];
+    const body = 'wait-on http://localhost:3001/health && vite --open --host --port 5174';
+    expect(await freePort(folder(), vite(body))).toEqual(vite(body));
+  });
+
+  it('script que não termina no vite fica como está', async () => {
+    busy.ports = [5173];
+    const bodies = ['turbo dev', 'vite build && vite preview', 'vitest', 'next dev', 'vite && tsc', 'a; vite', 'a & vite', 'a || vite', 'concurrently "a" "vite"'];
+    for (const body of bodies) {
       expect(await freePort(folder(), vite(body))).toEqual(vite(body));
     }
   });

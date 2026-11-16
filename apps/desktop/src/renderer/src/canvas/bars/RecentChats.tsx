@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react';
+import { memo, useRef } from 'react';
 import { Clock } from 'lucide-react';
 import { Presence } from '../../motion';
 import { untildify } from '../../platform';
@@ -12,12 +12,21 @@ import { withBoard } from '../RunningIndicator';
 import { useSessions } from '../sessionsStore';
 import { tr } from '../../i18n';
 
-// Botão de histórico no canto esquerdo da barra de baixo: as últimas conversas abertas, de qualquer
-// pasta e workspace, com o título e o projeto. Para achar a que foi aberta sem querer (a concluída
-// sai do indicador ao ser vista). Clicar numa linha abre a conversa, como no indicador.
-export const RecentChats = memo(function RecentChats({ onOpen }: { onOpen: (cwd: string, sessionId: string) => void }) {
+// Botão de histórico no canto esquerdo da barra de baixo: as últimas conversas com atividade
+// (trabalharam, pediram você ou concluíram), de qualquer pasta e workspace, com o título e o
+// projeto. Para achar a que foi aberta sem querer (a concluída sai do indicador ao ser vista).
+// Clicar numa linha abre a conversa, como no indicador.
+// `open` fica na barra, que escurece e desfoca o fundo enquanto a lista está aberta.
+export const RecentChats = memo(function RecentChats({
+  onOpen,
+  open,
+  setOpen,
+}: {
+  onOpen: (cwd: string, sessionId: string) => void
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
   const recent = useRecentChats();
-  const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useOutsideClick(ref, () => setOpen(false), open);
   const pick = (c: RecentChat) => {
@@ -39,14 +48,14 @@ export const RecentChats = memo(function RecentChats({ onOpen }: { onOpen: (cwd:
               </ul>
             ) : (
               <p className="px-2.5 py-1.5 text-[12px] text-muted">
-                {tr('As conversas que você abrir aparecem aqui.', 'Chats you open show up here.')}
+                {tr('As conversas que trabalharem aparecem aqui.', 'Chats that run show up here.')}
               </p>
             )}
           </div>
         )}
       </Presence>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-label={tr('Conversas recentes', 'Recent chats')}
         title={tr('Conversas recentes', 'Recent chats')}

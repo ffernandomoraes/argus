@@ -1,42 +1,61 @@
-import { useEffect } from 'react';
-import type { ActiveConversation } from './CanvasContext';
+import { useMemo } from 'react';
+import type { ActiveChat } from '@argus/shared/chat';
+import { useStore } from '../lib/useStore';
+import { activeChats } from './activeChats';
+import { store as sessionsStore } from './sessionsStore/state';
 import { displayPath } from './factory';
 import { getPreferences, setPreferences, usePreference } from '../settings/preferences';
 
-// Últimas conversas abertas num drawer, da mais recente para a mais antiga: a pasta (como no store)
-// e o id da sessão do Claude. Servem ao histórico da barra de baixo, para achar a conversa aberta
-// sem querer (a concluída sai do indicador ao ser vista).
+// Histórico da barra de baixo: as últimas conversas que tiveram atividade (trabalharam, pediram
+// você ou concluíram), da mais recente para a mais antiga, com a pasta (como no store) e o id da
+// sessão do Claude. Conversa só aberta para olhar não entra. Serve para achar a concluída que saiu
+// do indicador ao ser vista sem querer.
 export type RecentChat = { path: string; id: string };
 
 export const RECENT_LIMIT = 10;
 
 const same = (a: RecentChat, b: RecentChat) => a.id === b.id && a.path === b.path;
 
-// Põe a conversa no topo. Já no topo, não regrava as preferências.
-export function noteRecent(chat: RecentChat): void {
-  const list = getPreferences().recentChats;
-  if (list[0] && same(list[0], chat)) return;
-  setPreferences({ recentChats: [chat, ...list.filter((c) => !same(c, chat))].slice(0, RECENT_LIMIT) });
+// Põe as conversas no topo, a primeira da lista por cima. Sem mudança, não regrava as preferências.
+function noteRecent(chats: RecentChat[]): void {
+  const list = getPreferences().chatHistory;
+  if (!chats.length || chats.every((c, i) => list[i] && same(list[i], c))) return;
+  const rest = list.filter((c) => !chats.some((n) => same(n, c)));
+  setPreferences({ chatHistory: [...chats, ...rest].slice(0, RECENT_LIMIT) });
 }
 
+// As registradas e, enquanto não chegam a 10, as que tiveram resposta por último nas pastas lidas
+// (as dos workspaces, ver allWorkspaces.ts): a lista já nasce cheia.
 export function useRecentChats(): RecentChat[] {
-  return usePreference('recentChats');
+  const noted = usePreference('chatHistory');
+  const sessions = useStore(sessionsStore, (s) => s.sessions);
+  return useMemo(() => {
+    if (noted.length >= RECENT_LIMIT) return noted;
+    const others = [...sessions]
+      .flatMap(([path, list]) => list.filter((c) => !c.draft).map((c) => ({ path, id: c.sessionId ?? c.id, at: c.repliedAt })))
+      .filter((c) => !noted.some((n) => same(n, c)))
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .slice(0, RECENT_LIMIT - noted.length)
+      .map(({ path, id }) => ({ path, id }));
+    return [...noted, ...others];
+  }, [noted, sessions]);
 }
 
-// A conversa de um drawer que vale guardar: já tem sessão e não é subagente nem tarefas.
-export function recentOf(conversation: ActiveConversation, path: string | undefined): RecentChat | null {
-  if (!path || conversation.draft || conversation.subagent || conversation.tasks) return null;
-  const id = conversation.sessionId;
-  return id ? { path: displayPath(path), id } : null;
-}
+const recentOf = (c: ActiveChat): RecentChat | null => (c.sessionId ? { path: displayPath(c.cwd), id: c.sessionId } : null);
 
-// Guarda as conversas que entram nos drawers (a conversa nova, ao ganhar a sessão).
-export function useNoteRecent(entries: (RecentChat | null)[]): void {
-  const key = entries.map((e) => (e ? `${e.path}\0${e.id}` : '')).join('\n');
-  useEffect(() => {
-    for (const line of key.split('\n')) {
-      const [path, id] = line.split('\0');
-      if (path && id) noteRecent({ path, id });
-    }
-  }, [key]);
+// Acompanha as conversas ativas do app: sobe ao topo a que começou a trabalhar, mudou de estado
+// (passou a precisar de você) ou saiu da lista (concluiu ou parou).
+let seen = new Map<string, ActiveChat>();
+function track(): void {
+  const now = new Map(activeChats.get().map((c) => [c.key, c]));
+  const changed: ActiveChat[] = [];
+  for (const [key, c] of now) {
+    const before = seen.get(key);
+    if (!before || before.status !== c.status || (!before.sessionId && c.sessionId)) changed.push(c);
+  }
+  for (const [key, c] of seen) if (!now.has(key)) changed.push(c);
+  seen = now;
+  noteRecent(changed.map(recentOf).filter((c): c is RecentChat => !!c));
 }
+activeChats.subscribe(track);
+track();

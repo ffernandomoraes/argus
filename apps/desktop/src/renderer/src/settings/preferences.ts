@@ -31,8 +31,8 @@ export type Preferences = {
   mascotLook: MascotLook
   // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
   favoriteChats: string[]
-  // Últimas conversas abertas (pasta e sessão), para o histórico da barra de baixo (recentChats).
-  recentChats: { path: string; id: string }[]
+  // Últimas conversas com atividade (pasta e sessão), para o histórico da barra de baixo (recentChats).
+  chatHistory: { path: string; id: string }[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
   promptSuggestions: boolean
 };
@@ -52,7 +52,7 @@ const DEFAULTS: Preferences = {
   mascotCanvasSpot: null,
   mascotLook: DEFAULT_LOOK,
   favoriteChats: [],
-  recentChats: [],
+  chatHistory: [],
   promptSuggestions: true,
 };
 
@@ -76,7 +76,7 @@ function read(): Preferences {
       conversationDefaults: CONVERSATION_DEFAULTS,
       interfaceZoom: isInterfaceZoom(saved.interfaceZoom) ? saved.interfaceZoom : 1,
       mascotLook: normalizeLook(saved.mascotLook),
-      recentChats: Array.isArray(saved.recentChats) ? saved.recentChats : [],
+      chatHistory: Array.isArray(saved.chatHistory) ? saved.chatHistory : [],
     };
   } catch {
     return DEFAULTS;

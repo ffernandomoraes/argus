@@ -107,7 +107,7 @@ export const RunningIndicator = memo(function RunningIndicator({
 });
 
 // Pasta da conversa e, se ela for de outro workspace, o nome dele.
-export function withBoard(path: string, board: string | null): string {
+function withBoard(path: string, board: string | null): string {
   const folder = path.split(/[\\/]/).filter(Boolean).at(-1) ?? path;
   return board ? `${folder} - ${board}` : folder;
 }

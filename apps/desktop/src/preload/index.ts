@@ -48,6 +48,7 @@ const api: Api = {
     host: remote,
     onState: (cb) => listen('remote:state', cb),
     onBlocked: (cb) => listen('remote:blocked', cb),
+    onPortMoved: (cb) => listen('remote:portMoved', cb),
     openLocalhost: (port) => invoke('remote:openLocalhost', port),
   },
   remoteAccess: {

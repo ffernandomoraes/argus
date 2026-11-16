@@ -74,15 +74,15 @@ export function showRemoteNotice(text: string): void {
 export function openRemoteLocalhost(port: number): void {
   void window.api.remote.openLocalhost(port).then((r) => {
     if (!r.ok) return showRemoteNotice(r.error);
-    if (r.port !== port)
-      showRemoteNotice(
-        tr(
-          `A porta ${port} já está em uso neste computador: o servidor de ${host()} abriu em localhost:${r.port}.`,
-          `Port ${port} is already in use on this computer: ${host()}'s server opened at localhost:${r.port}.`,
-        ),
-      );
+    if (r.port !== port) showRemoteNotice(portMovedMessage(port, r.port));
   });
 }
+
+const portMovedMessage = (port: number, local: number) =>
+  tr(
+    `A porta ${port} já está em uso neste computador: o servidor de ${host()} abriu em localhost:${local}.`,
+    `Port ${port} is already in use on this computer: ${host()}'s server opened at localhost:${local}.`,
+  );
 
 // Anexos (fora imagens e áudios) grandes demais para mandar ao outro computador.
 export function bigFilesNotice(count: number, max: number): void {
@@ -113,9 +113,12 @@ export function RemoteNotice() {
       const text = blockedMessage(channel);
       if (text) show(text);
     });
+    // Servidor de lá espelhado aqui noutra porta (ver main/remote/serverMirror.ts).
+    const offMoved = window.api.remote.onPortMoved((port, local) => show(portMovedMessage(port, local)));
     return () => {
       listeners.delete(show);
       off();
+      offMoved();
     };
   }, []);
 

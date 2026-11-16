@@ -179,6 +179,11 @@ export class Boards {
     for (const hub of this.hubs.values()) hub.flush();
   }
 
+  // As pastas de todos os workspaces, abertos ou fechados.
+  folders(): string[] {
+    return [...new Set(this.summaries().flatMap((b) => b.paths))];
+  }
+
   private summaries(): BoardSummary[] {
     return this.entries.flatMap((e) => this.summaryOf.get(e.id) ?? []);
   }

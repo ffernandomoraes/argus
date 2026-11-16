@@ -5,6 +5,7 @@ import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } fro
 import { tr } from '../i18n';
 import type { Link } from './link';
 import { decodeHost, encode, PROTOCOL_VERSION, type ClientMessage, type HostMessage } from './protocol';
+import { ServerMirror } from './serverMirror';
 import { TunnelClient } from './tunnelClient';
 
 // O lado do notebook: uma ligação com o Argus de casa e as janelas daqui que mostram ele. O pedido
@@ -64,6 +65,26 @@ export class RemoteClient {
     this.post({ t: 'call', w, id: 0, kind: 'send', ch, args });
     return true;
   });
+  // Os servidores de lá abrem sozinhos aqui, na mesma porta (ver serverMirror.ts). As portas ficam na
+  // primeira janela; fechada ela, a próxima volta abre de novo na seguinte.
+  private mirror = new ServerMirror({
+    list: async () => {
+      const w = this.mirrorWindow();
+      if (w === null) return [];
+      const ports = await this.call(w, 'invoke', 'devServers:ports', []);
+      return Array.isArray(ports) ? ports : [];
+    },
+    open: (port) => {
+      const w = this.mirrorWindow();
+      if (w === null || this.ended || this._state !== 'connected') return Promise.reject(noConnection());
+      return this.tunnels.open(w, port);
+    },
+    isOpen: (port) => this.tunnels.localOf(port) !== undefined,
+    close: (port) => this.tunnels.closePort(port),
+    moved: (port, local) => {
+      for (const wc of this.windows.values()) sendTo(wc, 'remote:portMoved', port, local);
+    },
+  });
   info: RemoteHostInfo | null = null;
 
   constructor(
@@ -87,6 +108,10 @@ export class RemoteClient {
 
   get windowCount(): number {
     return this.windows.size;
+  }
+
+  private mirrorWindow(): number | null {
+    return this.windows.keys().next().value ?? null;
   }
 
   // A primeira janela, para trazer para frente quando pedem para abrir de novo.
@@ -132,6 +157,7 @@ export class RemoteClient {
     this.windows.set(w, wc);
     windowClients.set(w, this);
     this.post({ t: 'open', w });
+    if (this._state === 'connected') this.mirror.start();
     wc.on('did-navigate', () => this.post({ t: 'nav', w }));
     wc.on('render-process-gone', () => this.post({ t: 'nav', w }));
     wc.once('destroyed', () => {
@@ -256,6 +282,7 @@ export class RemoteClient {
 
   private dropped(): void {
     this.failPending();
+    this.mirror.stop();
     this.tunnels.dropConnections();
     if (this.ended) return;
     if (!this.reconnect || !this.windows.size) return this.finish();
@@ -291,6 +318,7 @@ export class RemoteClient {
       }
       // Depois do reload: a página nova começa ligada.
       this.setState('connected');
+      this.mirror.start();
       return;
     }
     this.finish();
@@ -299,6 +327,7 @@ export class RemoteClient {
   private finish(state: 'closed' | 'kicked' = 'closed'): void {
     this.ended = true;
     this.failPending();
+    this.mirror.stop();
     this.tunnels.closeAll();
     if (this._state !== 'closed' && this._state !== 'kicked') this.setState(state);
     // As janelas seguem ligadas a esta ligação (encerrada) até fechar: o pedido delas nunca pode cair

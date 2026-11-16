@@ -68,6 +68,20 @@ export class TunnelClient {
     for (const { socket } of all) socket.destroy();
   }
 
+  // A porta daqui que leva à `port` de lá, se está aberta.
+  localOf(port: number): number | undefined {
+    return this.listening.get(port)?.local;
+  }
+
+  // Para de escutar na porta daqui que leva à `port` de lá (o servidor de lá parou). As conexões em
+  // andamento seguem até acabar.
+  closePort(port: number): void {
+    const l = this.listening.get(port);
+    if (!l) return;
+    for (const s of l.servers) s.close();
+    this.listening.delete(port);
+  }
+
   // A janela que abriu fechou: as portas dela fecham.
   closeWindow(w: number): void {
     for (const [port, l] of this.listening) {

@@ -168,6 +168,7 @@ export type InvokeChannels = PhoneInvokeChannels & {
   // Servidores
   'devServers:list': (paths: string[]) => DevServer[]
   'devServers:kill': (pgid: number, paths: string[]) => boolean
+  'devServers:ports': () => number[] // de todos os workspaces, para o acesso remoto (ver main/remote/serverMirror.ts)
   'projectServers:status': (paths: string[]) => Record<string, ProjectServer>
   'projectServers:start': (path: string) => boolean
   'projectServers:stop': (path: string) => boolean
@@ -400,6 +401,7 @@ export type EventChannels = PhoneEventChannels & {
   'remote:state': (state: RemoteConnectionState) => void
   // Janela de acesso remoto: pediu algo que não funciona de longe (a tela explica o porquê).
   'remote:blocked': (channel: string) => void
+  'remote:portMoved': (port: number, local: number) => void // servidor de lá abriu aqui noutra porta (a mesma estava em uso)
   'remoteAccess:state': (state: RemoteAccessState) => void
 };
 

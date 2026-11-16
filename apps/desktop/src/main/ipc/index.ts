@@ -32,7 +32,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerAgentsIpc();
   registerSessionsIpc(s.sessionWatch);
   registerWorktreesIpc();
-  registerServersIpc();
+  registerServersIpc(s.boards);
   registerFilesIpc(s.unsavedFiles);
   registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread, s.interrupted);
   registerHealthIpc(s.health);

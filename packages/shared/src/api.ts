@@ -48,6 +48,8 @@ export type Api = {
     onState: (cb: (state: RemoteConnectionState) => void) => Off
     // Pediu algo que não funciona pelo acesso remoto (o canal), para a tela explicar.
     onBlocked: (cb: (channel: string) => void) => Off
+    // Servidor do outro computador que abriu aqui noutra porta (a mesma estava em uso).
+    onPortMoved: (cb: (port: number, local: number) => void) => Off
     // Abre no navegador daqui o servidor da porta `port` do outro computador.
     openLocalhost: (port: number) => Promise<RemoteLocalhostResult>
   }

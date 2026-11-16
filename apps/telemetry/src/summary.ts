@@ -45,6 +45,8 @@ export type Summary = {
   claudeCode: Count[]
   arch: Count[]
   languages: Count[]
+  // País (código de 2 letras) da última conexão de cada instalação; envios de antes de 2026-11-16 não têm.
+  countries: Count[]
   plans: Count[]
   providers: Count[]
   wsl: number
@@ -203,6 +205,8 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
        FROM reports WHERE day >= ?1`,
       since,
     ),
+    // 31: país
+    q(`${LATEST} SELECT country AS key, COUNT(*) AS value FROM latest WHERE country IS NOT NULL GROUP BY key`, since),
   ]);
   const rows = (i: number) => (results[i].results ?? []) as Row[];
 
@@ -307,6 +311,7 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
     claudeCode: counts(rows(11)).slice(0, 8),
     arch: counts(rows(12)),
     languages: counts(rows(13)),
+    countries: counts(rows(31)),
     plans: counts(rows(15)),
     providers: counts(rows(16)),
     wsl: n(snap.wsl),

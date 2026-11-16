@@ -48,6 +48,13 @@ async function login(req: Request, env: Env): Promise<Response> {
   return redirect('/', await sessionCookie(env.DASHBOARD_PASSWORD));
 }
 
+// Só o país (código de 2 letras que a Cloudflare tira do IP); estado, cidade e IP ficam de fora para
+// não identificar ninguém. "XX" (desconhecido) e "T1" (Tor) não contam.
+function countryOf(req: Request): string | null {
+  const c = req.cf?.country;
+  return typeof c === 'string' && /^[A-Z]{2}$/.test(c) && c !== 'XX' && c !== 'T1' ? c : null;
+}
+
 async function receive(req: Request, env: Env): Promise<Response> {
   const length = Number(req.headers.get('content-length') ?? 0);
   if (length > MAX_BODY) return json({ error: 'too large' }, 413);
@@ -62,14 +69,15 @@ async function receive(req: Request, env: Env): Promise<Response> {
   const r = validate(body);
   if (!r) return json({ error: 'invalid report' }, 400);
   await env.DB.prepare(
-    `INSERT INTO reports (install_id, day, received_at, app_version, os, os_version, arch, language, active_minutes, payload)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+    `INSERT INTO reports (install_id, day, received_at, app_version, os, os_version, arch, language, active_minutes, payload, country)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
      ON CONFLICT (install_id, day) DO UPDATE SET
        received_at = excluded.received_at, app_version = excluded.app_version, os = excluded.os,
        os_version = excluded.os_version, arch = excluded.arch, language = excluded.language,
-       active_minutes = excluded.active_minutes, payload = excluded.payload`,
+       active_minutes = excluded.active_minutes, payload = excluded.payload,
+       country = COALESCE(excluded.country, reports.country)`,
   )
-    .bind(r.installId, r.day, Date.now(), r.app.version, r.app.os, r.app.osVersion, r.app.arch, r.app.language, r.time.activeMinutes, JSON.stringify(r))
+    .bind(r.installId, r.day, Date.now(), r.app.version, r.app.os, r.app.osVersion, r.app.arch, r.app.language, r.time.activeMinutes, JSON.stringify(r), countryOf(req))
     .run();
   return new Response(null, { status: 204 });
 }

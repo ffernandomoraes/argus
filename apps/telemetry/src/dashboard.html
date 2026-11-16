@@ -326,6 +326,13 @@ td.turns { width: 26%; }
   }
 
   // Ranking com o número escrito ao lado (não depende da cor).
+  // "BR" -> "Brasil"; navegador sem suporte mostra o código.
+  var regionNames = null
+  try { regionNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' }) } catch (e) {}
+  function countryName(code) {
+    try { return (regionNames && regionNames.of(code)) || code } catch (e) { return code }
+  }
+
   function bars(items, fmt, opts) {
     opts = opts || {}
     if (!items.length) return '<div class="empty">Sem dados no período.</div>'
@@ -584,7 +591,8 @@ td.turns { width: 26%; }
     h += '<div class="card span-12"><div class="card-head"><div><h3>Quem usa</h3><div class="desc">Pela versão mais recente de cada instalação ativa no período.</div></div></div><div class="cols">' +
       '<section><h4>Sistema</h4>' + bars(s.os, nf.format, { name: function (k) { return OS_NAME[k] || k }, share: true }) +
       '<h4>Versão do sistema</h4>' + bars(s.osVersions.slice(0, 6), nf.format, { name: function (k) { var x = k.split(' '); return (OS_NAME[x[0]] || x[0]) + ' ' + x.slice(1).join(' ') }, share: true }) +
-      (s.wsl ? '<div class="sub" style="margin-top:10px">' + nf.format(s.wsl) + ' no Windows com WSL</div>' : '') + '</section>' +
+      (s.wsl ? '<div class="sub" style="margin-top:10px">' + nf.format(s.wsl) + ' no Windows com WSL</div>' : '') +
+      '<h4>País</h4>' + bars((s.countries || []).slice(0, 8), nf.format, { name: countryName, share: true }) + '</section>' +
       '<section><h4>Versão do Argus</h4>' + bars(s.versions.slice(0, 6), nf.format, { name: function (k) { return 'v' + k }, share: true, badge: function (k) { return k === s.latestVersion ? 'última' : '' } }) +
       '<h4>Versão do Claude Code</h4>' + bars(s.claudeCode.slice(0, 5), nf.format, { share: true }) + '</section>' +
       '<section><h4>Plano do Claude</h4>' + bars(s.plans, nf.format, { share: true }) +

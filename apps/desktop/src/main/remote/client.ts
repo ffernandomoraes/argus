@@ -1,4 +1,4 @@
-import type { BrowserWindow, WebContents } from 'electron';
+import { powerSaveBlocker, type BrowserWindow, type WebContents } from 'electron';
 import type { RemoteConnectionState, RemoteHostInfo } from '@argus/shared/remote';
 import { sendTo, setRemoteWindowCheck } from '../ipc/events';
 import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } from '../ipc/register';
@@ -86,6 +86,12 @@ export class RemoteClient {
     },
   });
   info: RemoteHostInfo | null = null;
+  // Com as janelas do Argus de lá fora de vista (outra mesa do macOS, minimizadas), o sistema põe o
+  // app em economia (App Nap): os relógios atrasam e a conferência da ponte (relay.ts, keepAlive)
+  // derruba a ligação à toa. Ao religar, a janela recarrega e perde o que só ela guardava. Segurar a
+  // suspensão do app impede a economia; a tela apaga e fechar a tampa põe para dormir como sempre.
+  // Só no Mac: nos outros não há App Nap, e segurar só tiraria o repouso por inatividade.
+  private awake: number | null = process.platform === 'darwin' ? (powerSaveBlocker.start('prevent-app-suspension') ?? null) : null;
 
   constructor(
     link: Link,
@@ -326,6 +332,7 @@ export class RemoteClient {
 
   private finish(state: 'closed' | 'kicked' = 'closed'): void {
     this.ended = true;
+    this.releaseAwake();
     this.failPending();
     this.mirror.stop();
     this.tunnels.closeAll();
@@ -333,5 +340,10 @@ export class RemoteClient {
     // As janelas seguem ligadas a esta ligação (encerrada) até fechar: o pedido delas nunca pode cair
     // nos handlers daqui, que mostrariam o Argus deste computador.
     this.onEnd?.();
+  }
+
+  private releaseAwake(): void {
+    if (this.awake !== null && powerSaveBlocker.isStarted(this.awake)) powerSaveBlocker.stop(this.awake);
+    this.awake = null;
   }
 }

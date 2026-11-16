@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import { Pause, Play, Volume1, Volume2, VolumeX } from 'lucide-react';
-import type { NowPlaying } from '@argus/shared/media';
+import { Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
+import type { MediaCommand, NowPlaying } from '@argus/shared/media';
 import { Presence } from '../../motion';
 import { MenuArrow } from '../../ui/MenuArrow';
 import { MENU_PANEL } from '../../ui/menuStyles';
@@ -13,7 +13,7 @@ const POLL_MS = 2000;
 
 // Player no meio da barra de baixo: o nome da música, tocar/pausar e o volume do sistema, de
 // qualquer app (Spotify, uma aba do navegador; ver main/media). Sem nada tocando, ou desligado nas
-// configurações, não aparece. O botão de tocar/pausar só aparece se o app aceita o comando. O
+// configurações, não aparece. Anterior, tocar/pausar e próxima só aparecem se o app aceita comandos. O
 // volume é um ícone; o controle abre num painel acima, ao clicar. Sem dicas ao passar o mouse: os controles se explicam pelo ícone.
 
 const CONTROL = 'flex h-6 min-w-6 items-center justify-center rounded-md';
@@ -59,15 +59,27 @@ export const MediaControls = memo(function MediaControls() {
     volumeTimer.current = setTimeout(() => void window.api.media.setVolume(volume), 120);
   };
 
+  // Pular de faixa troca o título: lê de novo assim que o app tiver trocado.
+  const skip = (command: MediaCommand) => {
+    void window.api.media.command(command).then(() => window.api.media.get()).then((m) => setMedia(m));
+  };
+
   const VolumeIcon = media.volume === 0 ? VolumeX : media.volume < 50 ? Volume1 : Volume2;
   return (
     <div className="no-drag flex items-center gap-1.5">
       {media.canToggle && (
-        <button aria-label={media.playing ? tr('Pausar', 'Pause') : tr('Tocar', 'Play')} onClick={toggle} className={`${CONTROL} ${tone(false)}`}>
-          {media.playing ? <Pause size={14} /> : <Play size={14} />}
-        </button>
+        <div className="flex items-center">
+          <button aria-label={tr('Anterior', 'Previous')} onClick={() => skip('previous')} className={`${CONTROL} ${tone(false)}`}>
+            <SkipBack size={13} />
+          </button>
+          <button aria-label={media.playing ? tr('Pausar', 'Pause') : tr('Tocar', 'Play')} onClick={toggle} className={`${CONTROL} ${tone(false)}`}>
+            {media.playing ? <Pause size={14} /> : <Play size={14} />}
+          </button>
+          <button aria-label={tr('Próxima', 'Next')} onClick={() => skip('next')} className={`${CONTROL} ${tone(false)}`}>
+            <SkipForward size={13} />
+          </button>
+        </div>
       )}
-      <span className="max-w-40 truncate text-[12px] text-muted">{media.title}</span>
       <div ref={volumeRef} className="relative flex items-center">
         <button aria-label={tr('Volume', 'Volume')} aria-expanded={volumeOpen} onClick={() => setVolumeOpen((o) => !o)} className={`${CONTROL} ${tone(volumeOpen)}`}>
           <VolumeIcon size={14} />
@@ -90,6 +102,9 @@ export const MediaControls = memo(function MediaControls() {
           )}
         </Presence>
       </div>
+      {/* O ícone do volume tem folga própria (botão de 24px, ícone de 14px): puxa o divisor para ele e afasta do nome. */}
+      <span className="-ml-1 mr-1 h-4 w-px bg-line" />
+      <span className="max-w-40 truncate text-[12px] text-muted">{media.title}</span>
     </div>
   );
 });

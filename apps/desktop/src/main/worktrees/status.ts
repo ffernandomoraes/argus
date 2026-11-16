@@ -7,16 +7,26 @@ import { uncommittedFiles } from '../gitBranch/status';
 import { failures, preparing } from './create';
 import { worktreeOf } from './store';
 
-// Onde a base está para comparar: a local, ou a do remoto se só existir lá.
+const succeeds = (path: string, args: string[]) =>
+  git(path, args).then(
+    () => true,
+    () => false,
+  );
+
+// Onde a base está para comparar: a mais adiantada entre a local e a do remoto. Com a local
+// atrasada, os commits da branch que já entraram na base do remoto contavam como pendentes
+// (2026-11-16: branch já na origin/main mostrava 64 arquivos porque a main local estava velha).
 async function baseRef(info: WorktreeInfo): Promise<string | null> {
-  for (const ref of [info.base, `origin/${info.base}`]) {
-    const ok = await git(info.path, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]).then(
-      () => true,
-      () => false,
-    );
-    if (ok) return ref;
+  const exists = (ref: string) => succeeds(info.path, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
+  const local = info.base;
+  const remote = `origin/${info.base}`;
+  const [hasLocal, hasRemote] = await Promise.all([exists(local), exists(remote)]);
+  if (hasLocal && hasRemote) {
+    const behind = await succeeds(info.path, ['merge-base', '--is-ancestor', local, remote]);
+    return behind ? remote : local;
   }
-  return null;
+  if (hasLocal) return local;
+  return hasRemote ? remote : null;
 }
 
 // Commits desta branch que o remoto não tem. Sem branch no remoto, todos desde a base (`base`: já
@@ -78,15 +88,22 @@ async function committedPart(info: WorktreeInfo, root: string): Promise<Committe
   const key = `${info.base}|${await headSignature(info.path)}`;
   const hit = committed.get(info.path);
   if (hit && hit.key === key && Date.now() - hit.at < COMMITS_TTL_MS) return hit.value;
+  // Branch já mesclada na branch padrão do remoto: o trabalho foi entregue, sobra só o não comitado.
+  // Antes contava todos os arquivos dela desde a base e "commit não enviado" sem upstream (2026-11-16).
+  const delivered = await succeeds(info.path, ['merge-base', '--is-ancestor', 'HEAD', 'origin/HEAD']);
+  const value = delivered ? { files: [], unpushed: 0 } : await branchChanges(info, root);
+  committed.set(info.path, { key, at: Date.now(), value });
+  return value;
+}
+
+async function branchChanges(info: WorktreeInfo, root: string): Promise<Committed> {
   const base = await baseRef(info);
   const files: string[] = [];
   if (base) {
     const out = await git(root, ['diff', '--name-only', '-z', `${base}...HEAD`], { maxBuffer: 16 * 1024 * 1024 }).catch(() => '');
     for (const f of out.split('\0').filter(Boolean)) files.push(join(root, f));
   }
-  const value = { files, unpushed: await unpushedCount(info, base) };
-  committed.set(info.path, { key, at: Date.now(), value });
-  return value;
+  return { files, unpushed: await unpushedCount(info, base) };
 }
 
 // Retrato do HEAD do worktree: para onde ele aponta e o histórico dele (logs/HEAD, gravado a cada

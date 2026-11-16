@@ -4,9 +4,19 @@ import { describe, expect, it, vi } from 'vitest';
 import { worktreeStatus } from './status';
 import { rememberWorktree } from './store';
 
-// O git responde daqui, e cada chamada fica contada: o rev-list diz 2 commits sem enviar, o resto
-// volta vazio (sem arquivo alterado, a base existe).
-const git = vi.hoisted(() => vi.fn(async (_cwd: string, args: string[]) => (args.includes('rev-list') ? '2\n' : '')));
+// O git responde daqui, e cada chamada fica contada: o rev-list diz 2 commits sem enviar, a branch
+// não está na padrão do remoto (`merged`), o diff com a base traz `diffOut`, o resto volta vazio.
+const fake = vi.hoisted(() => ({ merged: false, diffOut: '' }));
+const git = vi.hoisted(() =>
+  vi.fn(async (_cwd: string, args: string[]) => {
+    if (args.includes('origin/HEAD')) {
+      if (fake.merged) return '';
+      throw Object.assign(new Error('not ancestor'), { code: 1 });
+    }
+    if (args.includes('diff')) return fake.diffOut;
+    return args.includes('rev-list') ? '2\n' : '';
+  }),
+);
 vi.mock('../gitBranch/git', async (importOriginal) => ({ ...(await importOriginal<typeof import('../gitBranch/git')>()), git }));
 
 // O git status tem leitura guardada por um instante; os outros comandos são os que se acumulavam.
@@ -71,6 +81,20 @@ describe('worktreeStatus', () => {
     await worktreeStatus(dir);
     expect(counted()).toBeGreaterThan(0);
     clock.mockRestore();
+  });
+
+  // 2026-11-16: branch já mesclada na origin/main mostrava os 64 arquivos do commit dela e
+  // "1 commit não enviado" (sem upstream, contava desde a base).
+  it('branch já na padrão do remoto: sem arquivos de commit nem commits sem enviar', async () => {
+    fake.diffOut = 'a.ts\0b.ts\0';
+    try {
+      expect(await worktreeStatus(worktree())).toMatchObject({ files: 2, unpushed: 2 });
+      fake.merged = true;
+      expect(await worktreeStatus(worktree())).toMatchObject({ files: 0, uncommitted: 0, unpushed: 0 });
+    } finally {
+      fake.merged = false;
+      fake.diffOut = '';
+    }
   });
 
   it('pasta que não é tarefa do Argus: nulo, sem git', async () => {

@@ -68,7 +68,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
   // O que os blocos mostram e muda com o uso (canvasView.ts): lido por bloco, fora do contexto.
   const [view] = useState(createCanvasView);
   const overlays = useOverlays();
-  const drawers = useDrawers();
+  const drawers = useDrawers(board, nodes);
   const shownDrawers = useShownDrawers();
   const markPoppedOut = usePoppedOut(view);
   const isPoppedOut = (id: string) => view.get().poppedOut.has(id);

@@ -3,7 +3,7 @@ import { inside, realRoot } from './paths';
 import { IS_WIN } from './platform';
 import { invalidateScan, marked, scanListening, terminate, type Listening } from './processScan';
 import { started } from './projectServers/launch';
-import { ofProject, rootsOf } from './projectServers/matching';
+import { mentions, ofProject, rootsOf } from './projectServers/matching';
 import { productName } from './projectServers/packageJson';
 
 type Found = { p: Listening; cwd: string };
@@ -22,7 +22,9 @@ function found(listening: Listening[], paths: string[]): Found[] {
 // Windows: sem o ambiente e a pasta de outro processo, vale a mesma regra do botão de cada pasta
 // (ver projectServers/matching.ts): o que o play abriu, ou um programa de servidor que cita a pasta
 // na linha de comando. A pasta mostrada é a do canvas que bateu, a mais funda primeiro (uma pasta
-// dentro de outra no canvas). O que o Claude Code subiu fora das pastas do canvas não aparece.
+// dentro de outra no canvas). Fora delas, como no Mac, o que a ferramenta Bash do Claude Code ou um
+// terminal do Argus iniciou (`launched`, ver processScan/winFamily.ts), com a pasta só quando a
+// linha de comando cita uma do canvas.
 function foundWindows(listening: Listening[], paths: string[]): Found[] {
   const all = [...new Set([...paths, ...started.keys()])].sort((a, b) => b.length - a.length);
   const seen = new Set<number>();
@@ -34,6 +36,11 @@ function foundWindows(listening: Listening[], paths: string[]): Found[] {
       seen.add(p.pid);
       out.push({ p, cwd: roots[roots.length - 1] });
     }
+  }
+  for (const p of listening) {
+    if (!p.launched || p.claude || seen.has(p.pid) || !p.ports.length) continue;
+    const at = all.find((path) => rootsOf(path).some((root) => mentions(p.command, root)));
+    out.push({ p, cwd: at ? rootsOf(at).at(-1)! : '' });
   }
   return out;
 }

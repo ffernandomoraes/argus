@@ -1,14 +1,11 @@
 import { ancestors, listeningPorts, processTable, type WinProcess } from '../winProcesses';
-import { CLAUDE_SCRIPT } from './family';
 import type { Listening } from './types';
+import { winOrigin } from './winFamily';
 
 // Windows: sem o lsof e o ps, as portas vêm do netstat e os processos, do PowerShell. A pasta
 // (cwd) de outro processo o Windows não informa: fica vazia, e quem procura o servidor de uma
 // pasta olha a linha de comando (ver projectServers/matching.ts). Sem grupo de processo, o "grupo"
 // é o próprio processo, encerrado com tudo que ele abriu. O ambiente também não: `env` fica vazio.
-const TOOL_SHELL = /^(bash|sh|zsh|powershell|pwsh)\.exe$/i;
-const isClaude = (p: WinProcess) => /^claude\.exe$/i.test(p.name) || CLAUDE_SCRIPT.test(p.command);
-
 export async function scanWindows(): Promise<Listening[]> {
   const ports = await listeningPorts();
   if (ports.size === 0) return [];
@@ -21,11 +18,9 @@ export async function scanWindows(): Promise<Listening[]> {
   for (const [pid, list] of ports) {
     const proc = table.get(pid);
     const chain = ancestors(table, pid);
-    // Do Claude Code: ele mesmo ou o que ele abriu direto (servidores MCP). O que passou pelo shell
-    // de um comando dele (a ferramenta Bash) é servidor de projeto, como no Mac.
+    // Do Claude Code (servidores MCP) ou iniciado por um shell dele ou de um terminal daqui.
     const family = [proc, ...chain].filter((p): p is WinProcess => !!p);
-    const at = family.findIndex(isClaude);
-    const claude = at >= 0 && !family.slice(0, at).some((p) => TOOL_SHELL.test(p.name));
+    const { claude, launched } = winOrigin(family, process.pid);
     found.push({
       pid,
       pgid: pid,
@@ -35,6 +30,7 @@ export async function scanWindows(): Promise<Listening[]> {
       current: own.has(pid) || undefined,
       locked: claude ? 'claude' : undefined,
       claude,
+      launched: launched || undefined,
       name: proc?.name,
       chain: chain.map((p) => p.pid),
       env: '',

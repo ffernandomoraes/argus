@@ -14,7 +14,8 @@ const LOCK_REASON = tr(
   'Opened by a Claude Code session: stopping it would end the session',
 );
 
-const folderName = (cwd: string) => baseName(cwd) || cwd;
+// Sem pasta (no Windows, servidor iniciado fora das pastas do canvas): o programa, pela linha de comando.
+const folderName = (cwd: string, command: string) => baseName(cwd) || cwd || baseName(command.split(' ')[0].replace(/"/g, '')) || tr('Servidor', 'Server');
 
 // Caminho longo em uma linha só: corta no meio e deixa o começo e a última pasta à vista.
 function MiddlePath({ path }: { path: string }) {
@@ -68,11 +69,11 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
             <li key={`${s.pid}:${s.port}`} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-surface-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="truncate text-sm text-text">{s.appName ?? folderName(s.cwd)}</span>
+                  <span className="truncate text-sm text-text">{s.appName ?? folderName(s.cwd, s.command)}</span>
                   {s.current && <span className="shrink-0 text-xs text-muted">{tr('(este app)', '(this app)')}</span>}
                   <span className="shrink-0 font-mono text-xs text-muted">:{s.port}</span>
                 </div>
-                <MiddlePath path={tildify(s.cwd)} />
+                {s.cwd && <MiddlePath path={tildify(s.cwd)} />}
                 <div className="truncate font-mono text-[12px] text-faint" title={s.command}>
                   {s.command}
                 </div>

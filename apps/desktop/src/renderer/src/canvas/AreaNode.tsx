@@ -102,7 +102,7 @@ function Tag({ color, title, children }: { color: string; title: string; childre
   return (
     <span
       title={title}
-      className="flex max-w-48 shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
+      className="flex h-6 max-w-48 shrink-0 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium"
       style={{
         color,
         borderColor: `color-mix(in srgb, ${color} 35%, transparent)`,

@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Check, GitBranch, Loader2, Plus } from 'lucide-react';
+import { PullButton } from './PullButton';
 import type { BranchList, BranchOption } from '@argus/shared/sessions';
 import { Presence } from '../../motion';
 import { MenuArrow } from '../../ui/MenuArrow';
@@ -56,6 +57,7 @@ function BranchMenu({
   const [active, setActive] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Mostra o que já se sabe na hora; o fetch traz as branches novas do remoto logo depois.
   useEffect(() => {
@@ -109,26 +111,38 @@ function BranchMenu({
       className={`absolute left-0 top-full z-50 mt-2.5 flex max-h-96 w-80 cursor-default flex-col ${MENU_PANEL}`}
     >
       <MenuArrow side="top" />
-      <input
-        autoFocus
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setActive(0);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (rows) setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + rows) % rows);
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            pick(active);
-          }
-        }}
-        placeholder={tr('Buscar ou criar branch', 'Search or create a branch')}
-        spellCheck={false}
-        className="mb-1 h-7 w-full shrink-0 rounded-md bg-fill px-2 font-mono text-[12px] outline-none placeholder:font-sans placeholder:text-faint"
-      />
+      <div className="mb-1 flex shrink-0 items-center gap-1">
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActive(0);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (rows) setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + rows) % rows);
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              pick(active);
+            }
+          }}
+          placeholder={tr('Buscar ou criar branch', 'Search or create a branch')}
+          spellCheck={false}
+          className="h-7 min-w-0 flex-1 rounded-md bg-fill px-2 font-mono text-[12px] outline-none placeholder:font-sans placeholder:text-faint"
+        />
+        {list?.current && (
+          <PullButton
+            path={path}
+            branch={list.current}
+            onResult={(err, msg) => {
+              setError(err);
+              setNotice(msg);
+            }}
+          />
+        )}
+      </div>
       {blocked && (
         <p className="shrink-0 px-2 pb-1 text-[12px] text-needs-you">
           {changes === 1
@@ -136,6 +150,7 @@ function BranchMenu({
             : tr(`${changes} arquivos não comitados: comite antes de trocar.`, `${changes} uncommitted files: commit before switching.`)}
         </p>
       )}
+      {notice && !error && <p className="shrink-0 px-2 pb-1 text-[12px] text-faint">{notice}</p>}
       {error && <p className="shrink-0 whitespace-pre-wrap break-words px-2 pb-1 text-[12px] text-red-400">{error}</p>}
       <div className="min-h-0 overflow-y-auto">
         {!list && !fetching && <p className="px-2 py-1 text-xs text-faint">{tr('Não consegui ler as branches.', 'Couldn’t read the branches.')}</p>}

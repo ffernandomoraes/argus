@@ -1,6 +1,6 @@
 import { shell } from 'electron';
 import { WatchedFolders } from '../app/watchedFolders';
-import { checkoutBranch, currentBranch, fetchBranches, listBranches, repoUrl, uncommittedFiles } from '../gitBranch';
+import { checkoutBranch, currentBranch, fetchBranches, listBranches, pullBranch, repoUrl, uncommittedFiles } from '../gitBranch';
 import { readHistory, readHistoryPage, readImages, readSubagentPage } from '../history';
 import type { SessionWatch } from '../sessionWatch';
 import { folderExists, listKnownFolders, listSessions, relocateHistory, searchSessions, trashSession } from '../sessions';
@@ -38,6 +38,7 @@ export function registerSessionsIpc(sessionWatch: SessionWatch): void {
   handle('sessions:branches', (_e, path) => listBranches(path));
   handle('sessions:fetch', (_e, path) => fetchBranches(path));
   handle('sessions:checkout', (_e, path, option, create) => checkoutBranch(path, option, create));
+  handle('sessions:pull', (_e, path) => pullBranch(path));
   handle('sessions:repoUrl', (_e, path) => repoUrl(path));
   // Abre o endereço calculado aqui, não um que venha da tela.
   on('sessions:openRepo', async (_e, path) => {

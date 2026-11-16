@@ -282,6 +282,7 @@ const api: Api = {
     branches: (path) => invoke('sessions:branches', path),
     fetch: (path) => invoke('sessions:fetch', path),
     checkout: (path, option, create) => invoke('sessions:checkout', path, option, create),
+    pull: (path) => invoke('sessions:pull', path),
     repoUrl: (path) => invoke('sessions:repoUrl', path),
     openRepo: (path) => send('sessions:openRepo', path),
     changes: (path) => invoke('sessions:changes', path),

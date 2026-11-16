@@ -51,3 +51,5 @@ export type BranchOption = { name: string; remote?: string };
 
 // Branches do repositório da pasta, da usada mais recentemente para a mais antiga.
 export type BranchList = { current: string | null; branches: BranchOption[] };
+// Resultado do git pull: o erro (nulo se deu certo) e se chegou commit novo.
+export type PullResult = { error: string | null; updated: boolean };

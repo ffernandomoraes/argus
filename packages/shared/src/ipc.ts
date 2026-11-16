@@ -19,7 +19,7 @@ import type { MediaCommand, NowPlaying } from './media';
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
 import type { ClaudeVersionState } from './claudeVersion';
 import type { ClaudeInfo } from './models';
-import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
+import type { BranchList, BranchOption, PullResult, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
 import type { SpeechEvent } from './speech';
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal';
 import type { TranscriptionModel } from './transcription';
@@ -149,6 +149,7 @@ export type InvokeChannels = PhoneInvokeChannels & {
   'sessions:branches': (path: string) => BranchList | null
   'sessions:fetch': (path: string) => boolean
   'sessions:checkout': (path: string, option: BranchOption, create?: boolean) => string | null
+  'sessions:pull': (path: string) => PullResult
   'sessions:repoUrl': (path: string) => string | null
   'sessions:changes': (path: string) => UncommittedFile[] | null
   'sessions:history': (path: string, id: string) => Message[]
@@ -399,8 +400,7 @@ export type EventChannels = PhoneEventChannels & {
   'transcription:model': (state: TranscriptionModel) => void
   // Janela de acesso remoto: a ligação com o outro computador caiu, voltou ou acabou.
   'remote:state': (state: RemoteConnectionState) => void
-  // Janela de acesso remoto: pediu algo que não funciona de longe (a tela explica o porquê).
-  'remote:blocked': (channel: string) => void
+  'remote:blocked': (channel: string) => void // pediu algo que não funciona de longe (a tela explica o porquê)
   'remote:portMoved': (port: number, local: number) => void // servidor de lá abriu aqui noutra porta (a mesma estava em uso)
   'remoteAccess:state': (state: RemoteAccessState) => void
 };

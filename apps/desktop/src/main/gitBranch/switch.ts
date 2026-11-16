@@ -1,4 +1,4 @@
-import type { BranchList, BranchOption } from '@argus/shared/sessions';
+import type { BranchList, BranchOption, PullResult } from '@argus/shared/sessions';
 import { tr } from '../i18n';
 import { errorMessage } from '../lib/errors';
 import { git } from './git';
@@ -92,5 +92,23 @@ export async function checkoutBranch(folder: string, option: BranchOption, creat
   } catch (err) {
     const stderr = (err as { stderr?: string }).stderr?.trim();
     return stderr || errorMessage(err);
+  }
+}
+
+// git pull da branch atual, só avançando (--ff-only): se a local e a remota divergiram, recusa em
+// vez de criar merge sozinho. Arquivos não comitados ficam; o git só recusa se o pull mexer neles.
+// Devolve o erro (nulo se deu certo) e se chegou commit novo.
+export async function pullBranch(folder: string): Promise<PullResult> {
+  const repo = await findRepo(folder);
+  if (!repo) return { error: tr('A pasta não é um repositório git.', 'This folder isn’t a git repository.'), updated: false };
+  try {
+    const before = await git(repo.root, ['rev-parse', 'HEAD']);
+    await git(repo.root, ['pull', '--ff-only', '--quiet'], { timeout: 60_000, env: NO_PROMPT });
+    const after = await git(repo.root, ['rev-parse', 'HEAD']);
+    forgetStatus(folder);
+    return { error: null, updated: before.trim() !== after.trim() };
+  } catch (err) {
+    const stderr = (err as { stderr?: string }).stderr?.trim();
+    return { error: stderr || errorMessage(err), updated: false };
   }
 }

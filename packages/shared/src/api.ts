@@ -21,7 +21,7 @@ import type { MediaCommand, NowPlaying } from './media';
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
 import type { ClaudeVersionState } from './claudeVersion';
 import type { ClaudeInfo } from './models';
-import type { BranchList, BranchOption, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
+import type { BranchList, BranchOption, PullResult, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
 import type { SpeechEvent } from './speech';
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal';
 import type { TranscriptionModel } from './transcription';
@@ -354,6 +354,8 @@ export type Api = {
     // Troca de branch (ou cria uma nova com `create`); devolve o erro ou nulo. Com arquivos não
     // comitados, a troca é recusada.
     checkout: (path: string, option: BranchOption, create?: boolean) => Promise<string | null>
+    // git pull --ff-only da branch atual; devolve o erro (ou nulo) e se chegou commit novo.
+    pull: (path: string) => Promise<PullResult>
     // Página do repositório no GitHub (ou outro host) a partir do remoto; nulo sem remoto.
     repoUrl: (path: string) => Promise<string | null>
     // Abre essa página no navegador.

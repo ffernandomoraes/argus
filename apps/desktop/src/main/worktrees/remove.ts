@@ -4,6 +4,7 @@ import { git } from '../gitBranch/git';
 import { findRepo } from '../gitBranch/repo';
 import { forgetStatus } from '../gitBranch/status';
 import { tr } from '../i18n';
+import { stopProjectServer } from '../projectServers';
 import { errorMessage } from '../lib/errors';
 import { expandHome } from '../paths';
 import { forgetWorktree, worktreeOf } from './store';
@@ -18,6 +19,9 @@ export async function removeWorktree(path: string): Promise<string | null> {
     forgetWorktree(info.path);
     return null;
   }
+  // Servidor da tarefa (o play do card) rodando: sem parar, ele seguiria com a porta presa e a pasta
+  // apagada debaixo dele (2026-11-16).
+  await stopProjectServer(info.path).catch(() => false);
   try {
     // --force: o que sobrou já foi conferido (ou a pessoa aceitou perder); node_modules e .env vão junto.
     await git(info.main, ['worktree', 'remove', '--force', info.path], { timeout: 180_000 });
@@ -45,6 +49,7 @@ async function removeUnregistered(path: string): Promise<string | null> {
   try {
     const common = (await git(repo.root, ['rev-parse', '--path-format=absolute', '--git-common-dir'])).trim();
     const main = dirname(common);
+    await stopProjectServer(repo.root).catch(() => false);
     await git(main, ['worktree', 'remove', '--force', repo.root], { timeout: 180_000 });
     await git(main, ['worktree', 'prune']).catch(() => {});
     forgetStatus(main);

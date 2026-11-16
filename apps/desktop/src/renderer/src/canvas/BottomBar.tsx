@@ -3,6 +3,7 @@ import { BOTTOM_BAR_HEIGHT } from '../conversation/FloatingPanel';
 import { usePreference } from '../settings/preferences';
 import { MediaControls } from './bars/MediaControls';
 import { IS_REMOTE } from '../remote';
+import { Presence } from '../motion';
 import { RunningIndicator } from './RunningIndicator';
 import { UsageIndicator } from './UsageIndicator';
 
@@ -14,8 +15,14 @@ export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (
   const mediaPlayer = usePreference('mediaPlayer');
 
   return (
-    // Mesmas camadas da barra de título: com algo aberto (ou o mouse em cima) sobe acima dos drawers,
-    // para a lista e os limites não ficarem por baixo deles.
+    <>
+    {/* Limites abertos: máscara escura com desfoque sobre o canvas e as conversas, logo abaixo da
+        barra (z-55). Clicar nela fecha o painel pelo clique fora (ver UsageIndicator). */}
+    <Presence kind="modal">
+      {usageOpen && <div aria-hidden className="absolute inset-0 z-[54] bg-black/30 backdrop-blur-sm" />}
+    </Presence>
+    {/* Mesmas camadas da barra de título: com algo aberto (ou o mouse em cima) sobe acima dos drawers,
+        para a lista e os limites não ficarem por baixo deles. */}
     <div
       style={{ height: BOTTOM_BAR_HEIGHT }}
       className="absolute inset-x-0 bottom-0 z-[35] flex items-center justify-between gap-2 border-t border-line bg-surface px-3 hover:z-[55] has-[[aria-expanded=true]]:z-[55]"
@@ -31,5 +38,6 @@ export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (
         <UsageIndicator open={usageOpen} onOpenChange={setUsageOpen} />
       </span>
     </div>
+    </>
   );
 });

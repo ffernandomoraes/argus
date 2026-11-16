@@ -79,7 +79,7 @@ export const CommandBar = memo(function CommandBar({ voice, onClose }: { voice: 
 
   return (
     // Fundo escuro sobre o canvas inteiro: a barra fica em evidência, sem se misturar aos blocos.
-    <div className="fixed inset-0 z-50 bg-black/55" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onMouseDown={onClose}>
       <div
         data-motion-card
         onMouseDown={(e) => e.stopPropagation()}

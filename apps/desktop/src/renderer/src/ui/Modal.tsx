@@ -5,16 +5,17 @@ import { useFocusTrap } from './useFocusTrap';
 
 // panel: os modais grandes (configurações, agentes, memória, servidores), dentro da janela e com
 // folga para a barra de título. alert: confirmação pequena, centrada na tela. blocking: por cima
-// de tudo, com o fundo desfocado e a faixa de cima ainda arrastando a janela (boas-vindas); não
+// de tudo, com a faixa de cima ainda arrastando a janela (boas-vindas); não
 // fecha clicando fora. palette: caixa de busca presa no alto da tela (Nova pasta).
+// Todos com o fundo escuro desfocado, igual à máscara dos limites (ver BottomBar).
 export type ModalVariant = 'panel' | 'alert' | 'blocking' | 'palette';
 export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'auto';
 
 const BACKDROP: Record<ModalVariant, string> = {
-  panel: 'absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 pt-16',
-  alert: 'fixed inset-0 z-50 flex items-center justify-center bg-black/50',
-  blocking: 'absolute inset-0 z-[60] flex items-center justify-center bg-black/50 px-6 pb-6 pt-12 backdrop-blur-[2px]',
-  palette: 'fixed inset-0 z-50 bg-black/50',
+  panel: 'absolute inset-0 z-50 flex items-center justify-center bg-black/30 p-6 pt-16 backdrop-blur-sm',
+  alert: 'fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm',
+  blocking: 'absolute inset-0 z-[60] flex items-center justify-center bg-black/30 px-6 pb-6 pt-12 backdrop-blur-sm',
+  palette: 'fixed inset-0 z-50 bg-black/30 backdrop-blur-sm',
 };
 
 const CARD: Record<ModalVariant, string> = {

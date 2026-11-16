@@ -54,7 +54,7 @@ export function ImageViewer({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8 backdrop-blur-sm"
       style={{ paddingTop: TITLE_BAR_HEIGHT + 32 }}
       onMouseDown={onClose}
     >

@@ -87,8 +87,8 @@ export function useWorktreeActions(
           return confirm({
             title: tr(`A tarefa "${node.data.name}" tem conversa em andamento`, `The task "${node.data.name}" has a chat in progress`),
             description: tr(
-              'Interrompa ou termine a conversa antes de remover a tarefa: a pasta dela seria apagada com o agente trabalhando.',
-              'Stop or finish the chat before removing the task: its folder would be deleted while the agent works.',
+              'Interrompa ou termine a conversa, e o que ela deixou rodando em segundo plano, antes de remover a tarefa: a pasta seria apagada com tudo isso trabalhando nela.',
+              'Stop or finish the chat, and anything it left running in the background, before removing the task: its folder would be deleted while they work in it.',
             ),
           });
         void remove(node);

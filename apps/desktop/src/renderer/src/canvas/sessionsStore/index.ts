@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import type { UncommittedFile } from '@argus/shared/sessions';
 import { shallowEqual } from '../../lib/shallowEqual';
-import { useBackgroundBusy } from '../backgroundTasks';
+import { backgroundBusy, useBackgroundBusy } from '../backgroundTasks';
 import { useStore } from '../../lib/useStore';
 import { onWindowActive, windowActive } from '../../lib/windowActivity';
 import type { ConversationSummary } from '../types';
@@ -52,8 +52,10 @@ window.api.sessions.onChanged((path, change) => {
   if (change === 'transcript') requestChangesSoon(path);
 });
 
+// Lida na hora, como a tela mostra: com algo em segundo plano, a conversa conta como rodando. Antes
+// vinha crua, e remover a tarefa passava com um comando ainda rodando na pasta (2026-11-16).
 export function getSessions(path: string): ConversationSummary[] {
-  return store.get().sessions.get(path) ?? EMPTY;
+  return withBackground(store.get().sessions.get(path) ?? EMPTY, backgroundBusy());
 }
 
 // Parada para o Claude Code, mas com subagente ou comando ainda rodando em segundo plano pelo chat

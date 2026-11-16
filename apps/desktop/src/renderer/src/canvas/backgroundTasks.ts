@@ -67,6 +67,9 @@ export function useBackgroundSinceOf(keys: readonly string[]): (number | undefin
   return useStore(background, (s) => keys.map((key) => (key ? s.since.get(key) : undefined)), shallowEqual);
 }
 
+// Chaves das conversas com algo em segundo plano, lidas na hora (fora de componente).
+export const backgroundBusy = (): ReadonlySet<string> => background.get().busy;
+
 // Chaves das conversas com algo em segundo plano; muda de referência só quando o conjunto muda.
 export function useBackgroundBusy(): ReadonlySet<string> {
   return useStore(background, (s) => s.busy);

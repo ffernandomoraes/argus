@@ -13,14 +13,16 @@ import { UsageIndicator } from './UsageIndicator';
 // tudo o que ela abre vai para cima. Fica à vista mesmo com a interface oculta (⌘\), como a de cima.
 export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (cwd: string, sessionId: string) => void }) {
   const [usageOpen, setUsageOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
+  const [runningOpen, setRunningOpen] = useState(false);
   const mediaPlayer = usePreference('mediaPlayer');
 
   return (
     <>
-    {/* Limites abertos: máscara escura com desfoque sobre o canvas e as conversas, logo abaixo da
-        barra (z-55). Clicar nela fecha o painel pelo clique fora (ver UsageIndicator). */}
+    {/* Limites, histórico ou conversas ativas abertos: máscara escura com desfoque sobre o canvas e as conversas, logo abaixo da
+        barra (z-55). Clicar nela fecha o painel pelo clique fora (useOutsideClick). */}
     <Presence kind="modal">
-      {usageOpen && <div aria-hidden className="absolute inset-0 z-[54] bg-black/30 backdrop-blur-sm" />}
+      {(usageOpen || recentOpen || runningOpen) && <div aria-hidden className="absolute inset-0 z-[54] bg-black/30 backdrop-blur-sm" />}
     </Presence>
     {/* Mesmas camadas da barra de título: com algo aberto (ou o mouse em cima) sobe acima dos drawers,
         para a lista e os limites não ficarem por baixo deles. */}
@@ -30,8 +32,8 @@ export const BottomBar = memo(function BottomBar({ onOpenChat }: { onOpenChat: (
     >
       {/* À esquerda: o histórico das últimas conversas abertas e, ao lado, as que trabalham. */}
       <span className="flex items-center gap-1 self-stretch">
-        <RecentChats onOpen={onOpenChat} />
-        <RunningIndicator onOpen={onOpenChat} />
+        <RecentChats onOpen={onOpenChat} open={recentOpen} setOpen={setRecentOpen} />
+        <RunningIndicator onOpen={onOpenChat} open={runningOpen} setOpen={setRunningOpen} />
       </span>
       {/* No meio da barra, não entre os dois lados. Desligado, nem consulta o sistema. */}
       {mediaPlayer && !IS_REMOTE && (

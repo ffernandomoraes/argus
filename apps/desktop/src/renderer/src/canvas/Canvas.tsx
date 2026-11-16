@@ -40,7 +40,6 @@ import { useCanvasAgentTools } from './useCanvasAgentTools';
 import { usePhoneFolders } from './usePhoneFolders';
 import { setCanvasScope } from './canvasScope';
 import { useHistory } from './useHistory';
-import { recentOf, useNoteRecent } from './recentChats';
 import { Mascot } from './mascot/Mascot';
 import { MascotBridge } from './mascot/MascotBridge';
 import { useWorktreeActions } from './worktrees/useWorktreeActions';
@@ -147,7 +146,6 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
   useLayoutEffect(() => patchView(view, { activeConversation: main }), [view, main]);
 
   const targets = useMemo(() => Object.fromEntries(open.map((d) => [d.id, slotTarget(nodes, d.conversation)])), [nodes, open]);
-  useNoteRecent(open.map((d) => recentOf(d.conversation, targets[d.id]?.project.path)));
   const layout = drawerLayout(drawers.state, targets, shownDrawers.titles);
   const { shown } = layout;
   const codeRoot = layout.code?.root ?? null;

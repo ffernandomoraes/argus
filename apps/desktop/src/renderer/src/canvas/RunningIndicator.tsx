@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ActiveChat, InterruptedChat } from '@argus/shared/chat';
 import { Elapsed } from '../conversation/Elapsed';
@@ -25,20 +25,26 @@ import { tr } from '../i18n';
 // quantas de cada, numa linha, e o clique abre a lista com cada uma, para cima. Clicar numa linha
 // abre a conversa, trocando de workspace se ela for de outro (a concluída sai da lista ao ser vista;
 // a interrompida, ao continuar).
+// `open` fica na barra, que escurece e desfoca o fundo enquanto a lista está aberta.
 export const RunningIndicator = memo(function RunningIndicator({
   onOpen,
+  open,
+  setOpen,
 }: {
   onOpen: (cwd: string, sessionId: string) => void
+  open: boolean
+  setOpen: (open: boolean) => void
 }) {
   const chats = useActiveChatsEverywhere();
   const finished = useFinishedChatsEverywhere();
   const interrupted = useInterruptedEverywhere();
-  const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useOutsideClick(ref, () => setOpen(false), open);
   const empty = !chats.length && !finished.length && !interrupted.length;
-  // Tudo visto: na próxima vez a pílula volta fechada.
-  if (empty && open) setOpen(false);
+  // Tudo visto: a lista fecha (e o fundo volta), e na próxima vez a pílula volta fechada.
+  useEffect(() => {
+    if (empty && open) setOpen(false);
+  }, [empty, open, setOpen]);
   if (empty) return null;
 
   const waiting = chats.filter((c) => c.status === 'needs-you').length;
@@ -78,7 +84,7 @@ export const RunningIndicator = memo(function RunningIndicator({
         )}
       </Presence>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         aria-expanded={open}
         className={`flex items-center gap-2 rounded-md px-2 py-0.5 text-[12px] text-muted hover:bg-fill hover:text-text ${
           open ? 'bg-fill text-text' : ''

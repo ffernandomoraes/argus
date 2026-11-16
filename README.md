@@ -1,237 +1,214 @@
 <p align="center">
-  <img src="apps/desktop/build/icon.png" width="128" alt="Ícone do Argus">
+  <img src="apps/desktop/build/icon.png" width="112" alt="Ícone do Argus">
 </p>
 
 <h1 align="center">Argus</h1>
 
 <p align="center">
-  Um canvas infinito para acompanhar todos os seus projetos e as conversas do Claude Code ao mesmo tempo.
+  <b>Ferramenta para quem quer performar de verdade com agentes de código.</b><br>
+  Um canvas para tocar vários projetos ao mesmo tempo com Claude Code, Codex, Gemini e Cursor, com tudo à vista.
 </p>
 
 <p align="center">
-  <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para macOS (Apple Silicon)</b></a>
+  <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar o Argus</b></a>
   -
-  <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para Windows</b></a>
+  <a href="https://argusterm.com">Site</a>
   -
-  <a href="https://github.com/ffernandomoraes/argus/releases/latest"><b>Baixar para Linux (AppImage)</b></a>
+  <a href="https://argusterm.com/novidades">Novidades</a>
 </p>
 
-![Ilustração do Argus: projetos agrupados em Trabalho e Pessoal, conversas rodando com seus subagentes, uma nota, um terminal e o painel da conversa pedindo permissão para um comando](docs/ilustracoes/canvas.svg)
+<p align="center">
+  macOS (Apple Silicon) - Windows 10 e 11 - Linux (AppImage) - projetos no WSL
+</p>
 
-Na mitologia grega, Argus era o gigante de cem olhos que via tudo ao mesmo tempo. O app faz
-o mesmo com os seus agentes: cada pasta de projeto vira um bloco no canvas e, dentro dele,
-você vê as conversas do Claude Code, o que cada uma está fazendo agora e quais estão
-esperando por você.
+![Ilustração do Argus: projetos agrupados no canvas, com as conversas de cada pasta e o status de cada uma, uma nota, um terminal e a conversa aberta pedindo permissão para um comando](docs/images/canvas.png)
 
-> As imagens deste README são ilustrações do app, não prints.
+<p align="center"><sub>Ilustração do app, com projetos de exemplo.</sub></p>
 
-## Por que usar
+Usa o Claude Code e a assinatura que você já tem. Sem chave de API, sem conta no Argus, grátis.
 
-- **Vários agentes, uma tela só.** Em vez de dez abas de terminal, cada projeto é um bloco com as
-  conversas dele. Bate o olho e sabe o que está rodando, o que terminou e o que parou esperando você.
-- **Nada fica parado sem você saber.** Notificação do sistema, ícone na barra de menus e a cor de
-  cada conversa avisam quando o Claude termina ou precisa de uma resposta.
-- **Responde sem trocar de contexto.** Aprova comandos, responde perguntas e lê o diff de cada
-  edição no próprio chat, sem voltar ao terminal.
-- **Do pedido à tela pronta.** No modo design, você vê a página do projeto rodando, comenta em
-  cima dela e o Claude ajusta o código de verdade, não um mockup à parte.
-- **Trabalho e pessoal separados.** Cada grupo usa a conta do Claude que você escolher, com o
-  limite de uso de cada uma à vista.
-- **Usa o que você já tem.** Roda o `claude` da sua máquina com a sua assinatura. Sem chave de API,
-  sem servidor no meio.
+## Por que o Argus
 
-## O que dá para fazer
+Com vários agentes trabalhando ao mesmo tempo, o que segura você não é escrever código: é
+acompanhar, aprovar e revisar tudo sem se perder. O Argus junta tudo num canvas só.
 
-### Organizar todos os projetos num canvas
+- **Veja tudo de uma vez.** Cada projeto é um bloco, com as conversas e o status de cada uma. Um
+  olhar e você sabe o que está rodando, o que terminou e o que espera você.
+- **Organize do seu jeito.** Grupos coloridos por cliente ou contexto, um workspace para cada
+  frente de trabalho e notas soltas ao lado dos projetos.
+- **Toque mais coisas em paralelo.** Várias conversas e terminais rodando ao mesmo tempo. Você só
+  para quando o Argus avisa que alguém terminou ou precisa de uma resposta.
 
-Cada pasta vira um bloco com a branch do git, os arquivos não comitados e as conversas mais
-recentes. Agrupe por contexto (Trabalho, Freela, Pessoal), deixe notas soltas como os
-comentários do Figma, abra terminais ao lado e peça para o Claude arrumar o canvas por texto
-ou voz: "cria um grupo Freela com essas duas pastas".
+## Feito para quem toca vários projetos
 
-### Conversar com o Claude Code onde preferir
+<table>
+<tr>
+<td colspan="2" valign="top">
+<img src="docs/images/status.png" alt="Conversas com o que cada uma está fazendo e notificações de permissão e de conclusão"><br>
+<b>Saiba a hora de agir</b><br>
+Cada conversa mostra o que o agente está fazendo agora e há quanto tempo. Quando uma termina, pede permissão ou faz uma pergunta, chega a notificação. A barra de baixo resume todas, de todos os workspaces.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/images/workspaces.png" alt="Menu de workspaces com o status de cada um"><br>
+<b>Um workspace para cada frente</b><br>
+Clientes, produtos ou estudos em canvas separados, trocados pela barra de cima. O que roda nos outros continua aparecendo.
+</td>
+<td width="50%" valign="top">
+<img src="docs/images/accounts.png" alt="Grupos Trabalho e Pessoal, cada um com a sua conta e o limite de uso"><br>
+<b>Uma conta para cada grupo</b><br>
+A conta da empresa num grupo, a pessoal em outro. Pastas, conversas e terminais usam a conta do grupo, com o limite de cada uma à vista.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/images/agents.png" alt="Claude Code, Codex, Gemini CLI e Cursor CLI, cada um com uma tarefa"><br>
+<b>O agente que você preferir</b><br>
+Claude Code, Codex, Gemini CLI e Cursor CLI lado a lado, cada conversa com o agente e o modelo certos para a tarefa.
+</td>
+<td width="50%" valign="top">
+<img src="docs/images/global-agents.png" alt="Lista de agentes aberta ao digitar @ na conversa"><br>
+<b>Seus agentes em todos os projetos</b><br>
+Monte uma biblioteca de agentes especialistas uma vez e chame qualquer um com <code>@</code> em qualquer conversa, de qualquer projeto.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/images/terminals.png" alt="Dois terminais no canvas: o servidor de um projeto e os testes de outro"><br>
+<b>Vários terminais, lado a lado</b><br>
+Terminais soltos no canvas, ao lado da pasta: o servidor de um projeto e os testes de outro à vista ao mesmo tempo.
+</td>
+<td width="50%" valign="top">
+<img src="docs/images/notes.png" alt="Duas notas no canvas perto do projeto loja-online"><br>
+<b>Notas ao lado do trabalho</b><br>
+Lembretes soltos no canvas, perto do projeto de que eles falam. O que falta fazer fica onde o trabalho acontece.
+</td>
+</tr>
+</table>
 
-O chat completo abre no painel lateral, numa janela própria ou como um bloco no canvas. Ele
-mostra o que o Claude está fazendo agora, o diff de cada arquivo editado, os pedidos de
-permissão e o quanto da janela de contexto já foi usada. Os subagentes aparecem embaixo da
-conversa que os lançou, com o que cada um está fazendo.
+## Saiu de perto? O Argus vai junto
 
-### Prototipar no código do projeto
+Deixe o Argus ligado num computador e use de outro, ou acompanhe pelo celular. Os projetos e as
+conversas continuam onde estão.
 
-![Ilustração do modo design: a página de checkout do projeto aberta no Argus, com dois comentários presos aos elementos e o chat ao lado com a etiqueta "2 comentários"](docs/ilustracoes/modo-design.svg)
+![Ilustração do acesso remoto: o Argus do computador de casa aberto no notebook do trabalho e no celular, ligados por uma conexão criptografada de ponta a ponta](docs/images/remote-access.png)
 
-O modo design abre a página do servidor do projeto dentro do Argus, com o chat ao lado. Comece
-do zero (descreva a tela e o Claude cria) ou a partir de uma tela que já existe. Clique em
-qualquer ponto da página para deixar um comentário; eles vão juntos no próximo envio, com o
-endereço e um retrato em texto do que está na tela. Alterne entre desktop e celular, e em
-projetos com vários apps (site, admin, app) escolha qual deles abrir.
+- **De um computador para outro:** no notebook, o Argus de casa abre inteiro, com canvas,
+  conversas, terminais e arquivos. Funciona entre Mac, Windows e Linux.
+- **No celular:** aponte a câmera para o QR code. Veja o uso e as conversas, mande pedidos por
+  texto, voz ou foto e receba aviso quando algo termina.
+- **Só entra quem você pareou:** código de uso único, conexão criptografada de ponta a ponta e a
+  lista de quem está conectado sempre à vista.
 
-### Saber o que precisa de você
+## Argus x editor de código
 
-![Ilustração do acompanhamento: menu da barra de menus com as conversas rodando, esperando e concluídas; notificações do sistema; limite de uso por conta e servidores locais rodando](docs/ilustracoes/acompanhamento.svg)
+| | Editor de código | Argus |
+|---|---|---|
+| **Vários projetos** | Uma janela por projeto, uma de cada vez na frente. | Todos os projetos num canvas, agrupados por cliente ou contexto. |
+| **Conversas com agentes** | Um painel lateral, com uma conversa à vista por vez. | Várias conversas em paralelo, cada uma com o status. |
+| **Saber a hora de agir** | Você volta para conferir se terminou. | O Argus avisa quando uma conversa termina ou pede permissão. |
+| **Agentes** | Um agente por extensão, cada um no seu painel. | Claude Code, Codex, Gemini CLI e Cursor CLI lado a lado. |
+| **Contas do Claude** | Uma conta logada por vez. | Uma conta por grupo: trabalho, freela e pessoal separados. |
+| **Longe do computador** | Feito para usar na frente dele. | Continue pelo notebook ou pelo celular. |
 
-O ícone na barra de menus resume tudo o que está rodando. As notificações chegam quando uma
-conversa termina, pede permissão ou faz uma pergunta. O limite de uso aparece por conta, e a
-lista de servidores locais mostra o que os agentes deixaram rodando, com atalho para abrir ou
-encerrar.
+O Argus não substitui o seu editor: ele tem árvore de arquivos e editor para ajustes rápidos, e
+você continua usando o seu editor no resto.
 
-### Ter as ferramentas do dia a dia por perto
+## Quem usa, recomenda
 
-![Ilustração das ferramentas: explorador de arquivos com as mudanças do git, editor de código, terminal rodando testes e a biblioteca de agentes](docs/ilustracoes/ferramentas.svg)
+> O Argus aumentou minha produtividade. Consigo gerir vários projetos ao mesmo tempo e não perco
+> a memória de nenhum deles.
+>
+> **João Andrade**, AI Product Engineer na HAYAH
 
-Explorador de arquivos e editor com as cores do git, terminais embutidos, botão para iniciar o
-servidor do projeto, biblioteca de agentes (chamados com `@nome` em qualquer conversa) e o
-editor da memória do Claude.
+> Estamos usando o Argus nos nossos projetos e conseguimos melhorar muito a contextualização e a
+> memória da IA. Agora a IA performa muito mais, com agentes especialistas para cada frente.
+>
+> **Henrique Lati**, Tech Lead na Z2Pay
 
-## Funcionalidades
+> Estamos testando com o nosso time e, para trabalhar com workspaces e vários desenvolvedores, ele
+> tem nos ajudado muito.
+>
+> **Murilo Lamarca**, Specialist Product Designer na Locaweb
 
-**Canvas**
-- Canvas infinito com zoom e grupos coloridos (Trabalho, Pessoal, o que você quiser).
-- Minimapa com cada bloco na cor do seu grupo e a lista dos grupos em ordem alfabética: um clique leva direto a cada um.
-- Grupos: arraste blocos para dentro, renomeie com dois cliques no nome, recolha ou oculte o conteúdo.
-- **Organizar board** e **Organizar grupo**, pelo botão direito: alinham os blocos e encolhem os grupos para caber o que têm dentro.
-- Cada pasta de projeto vira um bloco com a branch do git e as conversas mais recentes; as demais ficam em **Ver todas as conversas**, separadas por dia. Dá para recolher a lista e deixar só as que estão rodando.
-- Selo da branch com o número de arquivos não comitados: um clique lista os arquivos e abre o diff.
-- Pasta com conversa rodando mostra linhas de código sendo escritas no lugar do carregando.
-- Notas no canvas, como os comentários do Figma: tecla C com o mouse no canvas ou botão direito. Delete apaga e ⌘Z traz de volta.
-- Botão direito na pasta: nova conversa, novo design, abrir o repositório no GitHub (ou no host do remoto) e tirar do canvas, que avisa antes se houver conversa em andamento.
-- Blocos se encaixam pela borda ou pelo meio dos vizinhos ao arrastar, e ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Shift+Z no Windows) desfazem e refazem o layout.
-- Nova janela do canvas (⇧⌘N, ou Ctrl+Shift+N no Windows) para levar a outro monitor; as janelas reabrem no mesmo lugar e o desfazer vale para todas.
-- ⌘\ (Ctrl+\ no Windows) esconde as barras e deixa só o canvas.
-- O layout fica salvo e volta igual ao reabrir o app.
-- Comando `argus .` no terminal: abre a pasta atual no canvas, como o `code .` do VS Code.
-- Barra de comando por texto ou voz: peça "cria um grupo Freela com essas duas pastas" e o Claude organiza o canvas.
-- Uma conta do Claude por grupo: a pessoal num grupo, a da empresa em outro. Pastas, terminais e conversas do grupo usam a conta dele.
+## Comece em menos de 5 minutos
 
-**Conversas com o Claude Code**
-- Chat completo, com respostas em tempo real, onde você preferir: painel lateral, janela própria ou um bloco dentro do canvas.
-- **Fixar** uma conversa no painel e abrir outra ao lado, sem cobrir a fixada.
-- Modo foco: o painel ocupa a tela e a conversa fica numa coluna central, mais fácil de ler.
-- Enquanto responde, o chat mostra o que o Claude está fazendo (pensando, escrevendo, rodando uma ferramenta) e o tempo total do turno.
-- Conversa sem projeto, pelo botão direito do canvas: roda na sua pasta pessoal e vira um card no primeiro envio.
-- Cole prints com ⌘V (Ctrl+V no Windows), anexe arquivos e dite em vez de digitar. A caixa começa com uma linha e cresce até três.
-- Edições aparecem como diff (o antes e depois de cada arquivo).
-- Aprove ou negue permissões e responda às perguntas do Claude direto no chat, na cor do grupo da pasta.
-- Troque modelo, nível de esforço, thinking, Ultracode (vários subagentes em paralelo) e modo de permissão por conversa; cada conversa guarda os dela. Thinking e Ultracode começam desligados.
-- Comandos de barra (`/`), `@nome` para chamar um agente, painel de servidores MCP e remote control.
-- Anel com o quanto da janela de contexto a conversa já ocupa, em vermelho mais forte conforme ela enche.
-- Também enxerga as sessões abertas fora do app (terminal, VS Code) e o status delas.
-- Conversa que não serve mais vai para a Lixeira pelo botão direito.
+1. **Baixe o Argus** em [Releases](https://github.com/ffernandomoraes/argus/releases/latest).
+   Depois de instalado, ele se atualiza sozinho.
+2. **Entre com o Claude.** O Argus usa o Claude Code da sua máquina e a assinatura que você já
+   tem. Se faltar, as boas-vindas instalam com um clique.
+3. **Arraste uma pasta** para o canvas, ou rode `argus .` no terminal, e comece a conversar.
 
-**Modo design**
-- Protótipo no código do projeto, pelo "+" da pasta (**Novo design**): do zero, descrevendo a tela, ou a partir de uma tela que já existe.
-- A página do servidor do projeto abre dentro do app, com o chat numa coluna ao lado (dá para arrastar a divisória).
-- **Comentar**: clique num ponto da página e deixe um balão preso ao elemento. Os comentários vão juntos no próximo envio, com o caminho do elemento e, em modo de desenvolvimento, o componente e o arquivo.
-- Cada pedido leva o endereço, a visão (desktop ou celular) e um retrato em texto do que está na tela, sem gastar tokens com imagem.
-- Desktop ou Celular, **Visualizar** (só a página, Esc sai) e ⌘R (Ctrl+R no Windows) recarrega só a página.
-- Barra de endereço com a lista das rotas lidas do código do projeto.
-- Projetos com vários apps no mesmo `dev` (site, admin, app): escolha qual abrir, com o nome do pacote em cada porta.
-- O servidor não liga sozinho: o botão **Iniciar o servidor** fica ao lado do chat.
-- Agentes globais com `@` e o status ao vivo no bloco do projeto, como numa conversa.
-
-**Acompanhamento**
-- Status de cada conversa no canvas: rodando, esperando você, concluída.
-- Subagentes aparecem embaixo da conversa que os lançou enquanto trabalham, com o que estão fazendo agora.
-- Notificação do sistema quando uma conversa termina ou precisa de resposta.
-- Ícone na barra de menus (no Windows, na área de notificação) com o resumo do que está rodando.
-- Indicador do limite de uso do Claude na barra de título, de cada conta; o detalhe abre num painel logo abaixo.
-- Lista dos servidores locais que algum agente deixou rodando ou que rodam dentro das pastas do canvas, com o nome do app e atalho para abrir ou encerrar; não deixa encerrar o que derrubaria uma sessão (no Mac e no Linux).
-- Fechar ou atualizar o app com conversa ou terminal rodando pede confirmação antes.
-
-**Ferramentas**
-- Terminais embutidos (Claude Code ou shell) soltos no canvas, com modo foco e ⌘+ / ⌘- (Ctrl no Windows) para a fonte.
-- Botão acima da pasta para iniciar e encerrar o servidor do projeto (script `dev` ou `start` do `package.json`).
-- Explorador de arquivos e editor de código do projeto: criar, renomear, excluir, colar arquivos copiados no Finder ou no Explorador de Arquivos e editar com ⌘S (Ctrl+S no Windows) para salvar. Arquivos não comitados aparecem com a cor do git; PDF, imagem, mídia e arquivo grande não abrem no editor.
-- Biblioteca de agentes (subagentes do Claude Code): criação passo a passo, com o Claude preenchendo os campos a partir de uma descrição, e edição das instruções.
-- Editor da memória do Claude: `CLAUDE.md` global, de cada projeto e as anotações da memória automática.
-
-**Visual**
-- No estilo do macOS: fonte do sistema (SF Pro no Mac, Segoe UI no Windows), cinzas do sistema e cantos arredondados.
-- Usa a cor de destaque escolhida no Mac (Aparência) ou no Windows (Cores) e acompanha quando você troca.
-- Menus translúcidos e animação suave ao abrir e fechar blocos, painéis, menus e janelas.
-- Bordas do canvas esfumaçadas, para os blocos não brigarem com as barras dos cantos.
-- Tema claro, escuro ou o do sistema.
-
-**App**
-- Login do Claude Code dentro do app, sem passar pelo terminal.
-- Boas-vindas em 5 etapas com ilustrações; a última instala o Claude Code com um clique e faz o login.
-- Configurações no estilo do Ajustes do macOS (Geral, Conversas, Aparência, Contas, Me pague um café), com as Boas-vindas sempre à mão no pé da barra lateral.
-- Cada conta do Claude aparece com o nome da pessoa, a organização e o plano.
-- Atualização automática, com a versão em uso no canto da barra de título e o botão de atualizar ao lado dela.
-- Aba **Me pague um café** nas configurações, com QR Code e chave Pix para apoiar o projeto.
-
-## Requisitos
-
-- Mac com Apple Silicon (M1 ou mais novo), PC com Windows 10 ou 11 de 64 bits, ou PC com Linux de
-  64 bits (Intel/AMD; testado só no GitHub Actions, num Ubuntu).
-- [Claude Code](https://docs.claude.com/claude-code). O Argus usa o `claude` da sua máquina e a sua assinatura.
-  Na primeira vez, as boas-vindas explicam o app em 5 etapas e a última configura tudo: instala o
-  Claude Code com um clique (o instalador oficial da Anthropic), confere o Git no Windows e faz o
-  login. Outras contas entram por
-  **Configurações › Contas**.
-- No Windows, também o [Git for Windows](https://git-scm.com/download/win), que o app usa para mostrar os
-  arquivos alterados e o diff. No Linux, o git da distribuição (`sudo apt install git`).
-
-## Instalação
-
-### macOS: pelo terminal (recomendado)
+No macOS e no Linux, um comando baixa, instala e abre (rodar de novo atualiza):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ffernandomoraes/argus/main/install.sh | sh
 ```
 
-Baixa a última versão, coloca em `/Applications` e abre. Rodar de novo atualiza.
+<details>
+<summary><b>Instalação passo a passo e requisitos</b></summary>
 
-### Linux
+### Requisitos
 
-O mesmo comando acima baixa o AppImage para `~/Applications/Argus.AppImage` e abre o app. Ou
-baixe o `Argus-<versão>-x86_64.AppImage` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest),
-dê permissão de execução (`chmod +x`) e abra. Na primeira abertura o Argus aparece no menu de
-apps. As atualizações trocam o próprio arquivo, no mesmo lugar.
+- Mac com Apple Silicon (M1 ou mais novo), PC com Windows 10 ou 11 de 64 bits, ou PC com Linux de
+  64 bits (Intel/AMD).
+- [Claude Code](https://docs.claude.com/claude-code), que as boas-vindas instalam se faltar.
+- No Windows, o [Git for Windows](https://git-scm.com/download/win); no Linux, o git da
+  distribuição (`sudo apt install git`).
 
-### Atualizações
+### macOS pelo .dmg
 
-O Argus se atualiza sozinho: procura versão nova ao abrir e a cada 5 horas, e baixa em
-segundo plano. Quando ela está pronta, aparece **Atualizar para x.y.z** no canto direito da
-barra de título. Um clique reinicia o app já atualizado; se preferir não clicar, a versão
-nova entra quando você fechar o app. Também dá para procurar na hora em
-**Configurações › Geral** (no Mac, também pelo menu **Argus › Procurar atualizações…**).
-No Windows, a atualização roda o instalador da versão nova em modo silencioso, sem perguntar nada.
-
-No Mac, as permissões que você der ao app (microfone, notificações) continuam
-valendo nas versões seguintes: todas saem assinadas com o mesmo certificado, e o app só
-aceita uma atualização assinada por ele.
-
-### macOS: pelo .dmg
-
-1. Baixe o `Argus-<versão>-arm64.dmg` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest).
-2. Arraste o Argus para a pasta Aplicativos.
-3. Na primeira vez, o macOS bloqueia a abertura, porque o app não é notarizado pela Apple.
-   Vá em **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir Mesmo Assim**.
+1. Baixe o `Argus-<versão>-arm64.dmg` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest)
+   e arraste o Argus para Aplicativos.
+2. Na primeira vez, o macOS bloqueia a abertura, porque o app não é notarizado pela Apple. Vá em
+   **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir Mesmo Assim**.
 
 ### Windows
 
-1. Baixe o `Argus-Setup-<versão>.exe` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest).
-2. Abra o arquivo. Na primeira vez, o Windows mostra **O Windows protegeu o computador**, porque
-   o app não tem certificado pago de assinatura: clique em **Mais informações › Executar assim mesmo**.
-3. O Argus instala na sua pasta de usuário, sem pedir administrador, cria atalhos no Menu Iniciar e
-   na Área de Trabalho e abre.
+1. Baixe o `Argus-Setup-<versão>.exe` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest) e abra.
+2. Se aparecer **O Windows protegeu o computador**, clique em **Mais informações › Executar assim
+   mesmo** (o app não tem certificado pago de assinatura).
+3. Ele instala na sua pasta de usuário, sem pedir administrador, e cria os atalhos.
 
-No Windows o app funciona como no Mac, com duas diferenças: não há a lista de servidores que os
-agentes deixaram rodando (o Windows não deixa um programa ler as variáveis de outro), e o ditado
-usa só a transcrição do Claude, sem a reserva do reconhecimento de fala do macOS. Os terminais
-abrem no PowerShell.
+### Linux
 
-### Comando `argus`
+O comando acima baixa o AppImage para `~/Applications/Argus.AppImage`. Ou baixe o
+`Argus-<versão>-x86_64.AppImage` em [Releases](https://github.com/ffernandomoraes/argus/releases/latest),
+dê permissão de execução (`chmod +x`) e abra.
 
-Em **Configurações › Geral**, ative o comando `argus` no terminal. Depois, em qualquer pasta:
+### Atualizações e comando `argus`
 
-```bash
-argus .
-```
+O Argus procura versão nova ao abrir e a cada 5 horas e baixa em segundo plano; um clique em
+**Atualizar** na barra de título reinicia já atualizado. Para abrir pastas pelo terminal, ative o
+comando `argus` em **Configurações › Geral** e rode `argus .` em qualquer pasta.
 
-No Windows ele funciona no PowerShell e no Prompt de Comando. Se a pasta
-`%USERPROFILE%\.local\bin` não estiver no PATH, o Argus a acrescenta ao ativar o comando.
+</details>
+
+## Perguntas frequentes
+
+<details>
+<summary><b>Para quem é o Argus?</b></summary>
+
+Para quem trabalha com agentes de código em mais de um projeto: quem atende vários clientes, cuida
+de vários repositórios ou deixa tarefas rodando em paralelo. Com um projeto só e uma conversa por
+vez, o terminal já resolve.
+</details>
+
+<details>
+<summary><b>Qual a diferença para usar o agente no terminal?</b></summary>
+
+O agente é o mesmo, com o mesmo `CLAUDE.md`, as mesmas configurações e os mesmos MCPs. A diferença
+é ver todas as conversas juntas, com status, diff e permissões, sem caçar abas.
+</details>
+
+<details>
+<summary><b>Meu código sai da minha máquina?</b></summary>
+
+O app roda local. As conversas vão para o modelo do mesmo jeito que iriam pelo terminal. No acesso
+remoto, a ponte entre os aparelhos só repassa dados criptografados de ponta a ponta. Detalhes na
+página de [privacidade](https://argusterm.com/privacidade).
+</details>
 
 ## Desenvolvimento
 
@@ -239,88 +216,60 @@ Monorepo com pnpm workspaces:
 
 | Pasta | O que tem |
 |---|---|
-| `apps/desktop` | O Argus (Electron): processo principal, preload, janela, ícones, ditado nativo e testes |
+| `apps/desktop` | O Argus (Electron) |
 | `apps/mobile` | App do celular (PWA) do acesso remoto |
 | `apps/relay` | Ponte do acesso remoto (Cloudflare Worker), que também serve o app do celular |
 | `apps/telemetry` | Dados de uso anônimos (Cloudflare Worker + D1) e o painel |
-| `packages/shared` | Tipos e lógica usados pelo desktop e pelo celular (`@argus/shared`) |
-| `packages/ui` | Componentes React usados pelos dois (`@argus/ui`) |
-
-Os comandos rodam da raiz:
+| `apps/website` | O site, [argusterm.com](https://argusterm.com) |
+| `packages/shared` | Tipos e lógica do desktop e do celular (`@argus/shared`) |
+| `packages/ui` | Componentes React do desktop e do celular (`@argus/ui`) |
 
 ```bash
 pnpm install       # também compila o ditado (precisa das Command Line Tools da Apple)
 pnpm dev           # abre o app com recarga automática
-pnpm typecheck     # todos os apps e pacotes
-pnpm test          # todos os apps e pacotes
-pnpm dist          # gera o .dmg e o .zip em apps/desktop/dist/
-pnpm dist:win      # gera o instalador do Windows em apps/desktop/dist/ (rode num Windows: no Mac falta o ícone do .exe)
-pnpm mobile:dev    # abre o app do celular no navegador
-pnpm mobile:build  # monta o app do celular em apps/relay/public
+pnpm typecheck
+pnpm test
+pnpm dist          # .dmg e .zip em apps/desktop/dist/
+pnpm dist:win      # instalador do Windows (rode num Windows)
+pnpm mobile:dev    # app do celular no navegador
 ```
 
-Para mexer num só: `pnpm --filter argus <script>` (desktop), `pnpm --filter @argus/mobile <script>`.
+A versão de desenvolvimento usa dados e comando `argus` próprios e roda ao lado da instalada.
+Rodando de dentro do VS Code ou do Claude Code, use `env -u ELECTRON_RUN_AS_NODE pnpm dev`.
 
-A versão de desenvolvimento usa uma pasta de dados própria (`Argus Dev`) e um comando
-`argus` próprio, então roda ao lado da instalada sem mexer nela.
+Stack: Electron, React, TypeScript, electron-vite, React Flow, Tailwind, CodeMirror, xterm.js com
+node-pty e o [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview). Mais detalhes
+em [docs/](docs/).
 
-Rodando de dentro do VS Code ou do Claude Code, a variável `ELECTRON_RUN_AS_NODE` pode
-vir ligada e o Electron abre como Node, sem janela. Nesse caso:
+As imagens do README são as ilustrações do site (`apps/website`), não prints do app. Mudou o
+site? Rode `sh scripts/capture-readme-images.sh` para trocá-las (precisa da
+[agent-browser](https://github.com/vercel-labs/agent-browser)).
 
-```bash
-env -u ELECTRON_RUN_AS_NODE pnpm dev
-```
+<details>
+<summary><b>Gerar uma versão</b></summary>
 
-Stack: Electron, React, TypeScript, electron-vite, React Flow, Tailwind, CodeMirror,
-xterm.js com node-pty e o [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview)
-(rodando o `claude` da máquina, ver [docs/integracao-com-agentes.md](docs/integracao-com-agentes.md)).
+Todo push na `main` vira uma versão: o workflow **Release** sobe o patch no
+`apps/desktop/package.json`, cria a tag, monta os instaladores de macOS, Windows e Linux, publica o
+release e usa os títulos dos commits como notas. Pushes que só mexem em `.md` não geram versão.
 
-As ilustrações deste README (`docs/ilustracoes/*.svg`) saem de um script, não de prints, e
-trocam sozinhas entre claro e escuro conforme o tema do GitHub. Para mudar alguma, edite o
-script e rode:
-
-```bash
-python3 scripts/gerar-ilustracoes.py
-```
-
-### Gerar uma versão
-
-Todo push na `main` vira uma versão: o workflow **Release** sobe o patch no `apps/desktop/package.json`,
-cria a tag, monta o `.dmg` e o `.zip`, publica o release e usa os títulos dos commits desde
-a última versão como notas. Em seguida, numa máquina Windows do GitHub, monta o instalador
-`.exe`, abre o app em modo de teste (`--smoke-test`) e, se ele subir, anexa o instalador ao
-mesmo release. Pushes que só mexem em `.md` não geram versão. Como os títulos
-viram as notas, escreva-os para quem usa o app.
-
-Para subir minor ou major, ou escrever as notas à mão, dispare pela aba
-**Actions › Release › Run workflow** ou:
+Para subir minor ou major, ou escrever as notas à mão:
 
 ```bash
 gh workflow run release.yml -f bump=minor -f notas="- item 1
 - item 2"
 ```
 
-Com `publicar` desmarcado, o workflow só monta o app e guarda o `.dmg` e o `.exe` no run,
-sem tag nem release.
+A assinatura do Mac usa o certificado autoassinado dos secrets do repositório (`MAC_CERT_P12`,
+`MAC_CERT_PASSWORD`, `MAC_SIGN_IDENTITY`). Sem eles, cada versão conta como um app novo para o
+macOS, que volta a pedir o microfone.
 
-A assinatura usa o certificado autoassinado guardado nos secrets do repositório
-(`MAC_CERT_P12`, `MAC_CERT_PASSWORD`, `MAC_SIGN_IDENTITY`). Sem eles, o app sai com
-assinatura ad-hoc e cada versão conta como um app novo para o macOS, que volta a pedir
-o microfone.
-
-## Documentos
-
-| Arquivo | O que tem |
-|---|---|
-| [docs/visao.md](docs/visao.md) | Problema, ideia, princípios e o pedido original |
-| [docs/conceitos.md](docs/conceitos.md) | Vocabulário do produto: grupo, pasta, conversa, terminal, agente, conta |
-| [docs/funcionalidades.md](docs/funcionalidades.md) | O que foi planejado por fase, o que já existe e o que falta |
-| [docs/integracao-com-agentes.md](docs/integracao-com-agentes.md) | Como o app conversa com o Claude e o que ele lê do Claude Code |
-| [docs/decisoes.md](docs/decisoes.md) | O que já foi decidido e o que está em aberto |
+</details>
 
 ## Licença
 
-MIT com a [Commons Clause](https://commonsclause.com): qualquer pessoa pode usar, modificar e distribuir o Argus de graça, inclusive no trabalho, mas não pode vendê-lo nem cobrar por um produto ou serviço que seja basicamente ele. Texto completo em [LICENSE](LICENSE).
+MIT com a [Commons Clause](https://commonsclause.com): qualquer pessoa pode usar, modificar e
+distribuir o Argus de graça, inclusive no trabalho, mas não pode vendê-lo nem cobrar por um
+produto ou serviço que seja basicamente ele. Texto completo em [LICENSE](LICENSE).
 
 ---
 

@@ -5,6 +5,7 @@ import { tr } from '../i18n';
 import type { Link } from './link';
 import { decodeClient, encode, PROTOCOL_VERSION, type ClientMessage, type HostMessage } from './protocol';
 import { RemotePage } from './remotePage';
+import { telemetry } from '../telemetry';
 
 // O lado do Argus de casa: cada ligação que chega (um notebook) abre uma sessão. Cada janela do
 // notebook vira uma RemotePage daqui, que recebe os avisos como as janelas locais, e os pedidos
@@ -130,6 +131,8 @@ export class HostSession {
     const page = this.pages.get(w);
     try {
       if (!page) throw new Error(`Janela ${w} desconhecida.`);
+      // Janela remota (outro computador): o uso conta aqui, no Argus que atende.
+      telemetry.channelUsed(ch);
       const value = await dispatch(kind, ch, { sender: page }, args);
       if (kind !== 'send') this.send({ t: 'reply', id, ok: true, value });
     } catch (err) {

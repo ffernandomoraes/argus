@@ -8,6 +8,7 @@ import type { TelemetrySources } from '.';
 export function telemetrySources(s: Services): TelemetrySources {
   return {
     busy: () => s.chats.summary().running > 0,
+    phoneOnScreen: () => remoteAccess().phoneOnScreen(),
     claudeCode: () => s.claudeVersion.state.current?.version ?? null,
     wsl: () => knownDistros().length > 0,
     snapshot: (): TelemetrySnapshot => {

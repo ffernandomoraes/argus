@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { release } from 'node:os';
 import { join } from 'node:path';
 import { app, BrowserWindow } from 'electron';
-import { TELEMETRY_VERSION, type DailyReport, type TelemetrySnapshot } from '@argus/shared/telemetry';
+import { FEATURE_CHANNELS, TELEMETRY_VERSION, type DailyReport, type TelemetrySnapshot } from '@argus/shared/telemetry';
 import { loadAppSettings, saveAppSettings } from '../appSettings';
 import { lang } from '../i18n';
 import { errorMessage } from '../lib/errors';
 import { readJsonFile, writeJsonAtomic, writeJsonAtomicSync } from '../lib/jsonFile';
 import { IS_LINUX, IS_MAC, IS_WIN } from '../platform';
 import { SMOKE_TEST } from '../smokeTest';
-import { addUsage, bump, emptyDay, localDay, toolName, usageDelta, type DayStats, type Totals } from './day';
+import { addUsage, bump, emptyDay, localDay, toolName, upgradeDay, usageDelta, type DayStats, type Totals } from './day';
 
 // Dados de uso anônimos (Configurações > Geral). Cada instalação junta números do dia (tempo de uso,
 // conversas, tokens por modelo, quanto tem no canvas) e manda o resumo ao Worker apps/telemetry, que
@@ -44,6 +44,8 @@ type Stored = {
 export type TelemetrySources = {
   // Alguma conversa trabalhando agora.
   busy: () => boolean
+  // O app do celular aberto na tela agora.
+  phoneOnScreen: () => boolean
   snapshot: () => TelemetrySnapshot
   claudeCode: () => string | null
   wsl: () => boolean
@@ -86,7 +88,10 @@ class Telemetry {
     if (SMOKE_TEST || !endpoint() || !enabled()) return;
     this.sources = sources;
     const r = readJsonFile<Stored>(file());
-    if (r.status === 'ok' && r.data?.days && r.data.sessions) this.state = r.data;
+    if (r.status === 'ok' && r.data?.days && r.data.sessions) {
+      this.state = r.data;
+      for (const day of Object.values(this.state.days)) upgradeDay(day);
+    }
     this.today().counts.appOpens++;
     this.lastTick = Date.now();
     this.timer = setInterval(() => this.tick(), TICK_MS);
@@ -137,6 +142,19 @@ class Telemetry {
 
   worktreeCreated(): void {
     if (this.on) this.today().counts.worktreesCreated++;
+  }
+
+  // Um pedido de IPC que é um recurso da interface (FEATURE_CHANNELS). phone: veio do app do celular.
+  channelUsed(channel: string, phone = false): void {
+    const name = FEATURE_CHANNELS[channel];
+    if (!this.on || !name) return;
+    const day = this.today();
+    bump(phone ? day.phone.features : day.features, name);
+  }
+
+  // O app do celular abriu ou voltou para a tela (uma ligação nova com este computador).
+  phoneOpened(): void {
+    if (this.on) this.today().phone.opens++;
   }
 
   toolUsed(name: string): void {
@@ -207,12 +225,15 @@ class Telemetry {
     this.lastTick = now;
     let focused = false;
     let busy = false;
+    let phone = false;
     try {
       focused = BrowserWindow.getFocusedWindow() !== null;
       busy = sources.busy();
+      phone = sources.phoneOnScreen();
     } catch {
       // Janelas fechando: a volta não conta.
     }
+    if (phone) this.today().phone.minutes += minutes;
     if (focused || busy) {
       const t = this.today().time;
       t.activeMinutes += minutes;
@@ -264,6 +285,8 @@ class Telemetry {
       counts: stats.counts,
       models: Object.fromEntries(Object.entries(stats.models).map(([k, u]) => [k, { ...u, costUsd: Math.round(u.costUsd * 10000) / 10000 }])),
       tools: stats.tools,
+      features: stats.features,
+      phone: { ...stats.phone, minutes: round(stats.phone.minutes) },
       snapshot: stats.snapshot,
     };
   }

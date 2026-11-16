@@ -16,6 +16,9 @@ export type Report = {
   }
   models: Record<string, { turns: number; input: number; output: number; cacheRead: number; cacheWrite: number; costUsd: number }>
   tools: Record<string, number>
+  // v2: recursos da interface usados no computador e o app do celular (v1 chega com tudo zerado).
+  features: Record<string, number>
+  phone: { minutes: number; opens: number; features: Record<string, number> }
   snapshot: {
     workspaces: number
     folders: number
@@ -39,6 +42,8 @@ const SYSTEMS = ['macos', 'windows', 'linux'];
 // Nomes de modelo e ferramenta: letras, números e pontuação comum de id, sem espaço.
 const KEY = /^[\w.:\-/@[\]]{1,80}$/;
 const MAX_KEYS = 60;
+// Nomes de recurso (FEATURE_CHANNELS em packages/shared/src/telemetry.ts): camelCase curto.
+const FEATURE = /^[a-z][A-Za-z]{0,39}$/;
 // Um dia tem 1.440 minutos.
 const MAX_MINUTES = 1440;
 
@@ -73,7 +78,7 @@ function dayInRange(day: string, now: number): boolean {
 }
 
 export function validate(body: unknown, now = Date.now()): Report | null {
-  if (!isObj(body) || body.v !== 1) return null;
+  if (!isObj(body) || (body.v !== 1 && body.v !== 2)) return null;
   const installId = str(body.installId, UUID, '');
   const day = str(body.day, DAY, '');
   if (!installId || !day || !dayInRange(day, now)) return null;
@@ -81,6 +86,7 @@ export function validate(body: unknown, now = Date.now()): Report | null {
   if (!a || !SYSTEMS.includes(a.os as string)) return null;
   const t = isObj(body.time) ? body.time : {};
   const c = isObj(body.counts) ? body.counts : {};
+  const p = isObj(body.phone) ? body.phone : {};
 
   const models: Report['models'] = {};
   if (isObj(body.models)) {
@@ -142,6 +148,12 @@ export function validate(body: unknown, now = Date.now()): Report | null {
     },
     models,
     tools: countMap(body.tools, /^[A-Za-z][A-Za-z0-9_]{0,39}$/, 1_000_000),
+    features: countMap(body.features, FEATURE, 100_000),
+    phone: {
+      minutes: num(p.minutes, MAX_MINUTES, true),
+      opens: num(p.opens, 10_000),
+      features: countMap(p.features, FEATURE, 100_000),
+    },
     snapshot,
   };
 }

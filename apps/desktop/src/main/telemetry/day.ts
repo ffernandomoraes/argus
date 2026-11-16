@@ -3,7 +3,7 @@ import type { DailyReport, ModelUsage } from '@argus/shared/telemetry';
 // O que um dia junta até ser mandado. Funções puras: o serviço (index.ts) cuida de relógio,
 // arquivo e envio.
 
-export type DayStats = Pick<DailyReport, 'time' | 'counts' | 'models' | 'tools' | 'snapshot'> & {
+export type DayStats = Pick<DailyReport, 'time' | 'counts' | 'models' | 'tools' | 'features' | 'phone' | 'snapshot'> & {
   app: DailyReport['app'] | null
 };
 
@@ -13,8 +13,19 @@ export const emptyDay = (): DayStats => ({
   counts: { appOpens: 0, workspacesCreated: 0, worktreesCreated: 0, chatsCreated: {}, messagesSent: {} },
   models: {},
   tools: {},
+  features: {},
+  phone: emptyPhone(),
   snapshot: null,
 });
+
+export const emptyPhone = (): DailyReport['phone'] => ({ minutes: 0, opens: 0, features: {} });
+
+// Dia guardado por uma versão sem recursos nem celular (v1): ganha os campos vazios.
+export function upgradeDay(day: DayStats): DayStats {
+  day.features ??= {};
+  day.phone ??= emptyPhone();
+  return day;
+}
 
 export const emptyUsage = (): ModelUsage => ({ turns: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0 });
 

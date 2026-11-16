@@ -229,6 +229,19 @@ td.turns { width: 26%; }
   var AGENT_NAME = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini', cursor: 'Cursor' }
   var AGENT_COLOR = { claude: 'var(--s1)', codex: 'var(--s2)', gemini: 'var(--s3)', cursor: 'var(--s4)' }
   var OS_NAME = { macos: 'macOS', windows: 'Windows', linux: 'Linux' }
+  // Nomes dos recursos (FEATURE_CHANNELS em packages/shared/src/telemetry.ts).
+  var FEATURE_NAME = {
+    message: 'Mandar mensagem', permissionAnswer: 'Responder permissão', interrupt: 'Interromper', chatSettings: 'Trocar modelo/ajustes',
+    renameChat: 'Renomear conversa', restartChat: 'Reiniciar conversa', search: 'Buscar conversas', switchBranch: 'Trocar de branch',
+    gitPull: 'Pull', openRepo: 'Abrir repositório', attachFile: 'Anexar arquivo', editFile: 'Salvar arquivo', createFile: 'Criar arquivo',
+    renameFile: 'Renomear arquivo', deleteFile: 'Apagar arquivo', addFolder: 'Adicionar pasta', undo: 'Desfazer no canvas',
+    renameWorkspace: 'Renomear workspace', removeWorkspace: 'Remover workspace', globalAgent: 'Salvar agente global (@)',
+    commandBar: 'Barra de comando', editMemory: 'Editar memória', dictation: 'Ditado', transcription: 'Transcrever áudio',
+    mcpLogin: 'Login de MCP', startServer: 'Iniciar servidor', stopServer: 'Parar servidor', popout: 'Abrir em janela',
+    zoom: 'Zoom da interface', pairDevice: 'Parear aparelho', installUpdate: 'Instalar atualização', cleanStorage: 'Limpar armazenamento',
+    addClaudeAccount: 'Adicionar conta do Claude', addAgentAccount: 'Adicionar conta de agente'
+  }
+  function featureName(k) { return FEATURE_NAME[k] || k }
   var nf = new Intl.NumberFormat('pt-BR')
   var cf = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
   var usd = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
@@ -427,6 +440,10 @@ td.turns { width: 26%; }
         series: [{ name: 'Instalações ativas', color: 'var(--s1)', get: function (d) { return d.installs } }] },
       minutes: { label: 'Tempo de uso', desc: 'Soma de todas as instalações: janela em foco ou alguma conversa rodando.', fmt: minutes, axis: hours,
         series: [{ name: 'Tempo de uso', color: 'var(--s1)', get: function (d) { return d.minutes } }] },
+      maxTime: { label: 'Tempo máx.', desc: 'Maior tempo de uso de uma instalação em cada dia.', fmt: minutes, axis: hours,
+        series: [{ name: 'Tempo máximo', color: 'var(--s1)', get: function (d) { return d.maxMinutes || 0 } }] },
+      medianTime: { label: 'Mediana', desc: 'Tempo de uso da instalação do meio em cada dia (metade usou mais, metade menos).', fmt: minutes, axis: hours,
+        series: [{ name: 'Mediana do tempo', color: 'var(--s1)', get: function (d) { return d.medianMinutes || 0 } }] },
       chats: { label: 'Conversas', desc: 'Conversas novas criadas em cada dia, todos os agentes.', fmt: nf.format,
         series: [{ name: 'Conversas criadas', color: 'var(--s1)', get: function (d) { return d.chats } }] },
       tokens: { label: 'Tokens', desc: 'Entrada, saída e cache somados, por agente. Gemini e Cursor não informam tokens.', fmt: cf.format,
@@ -502,7 +519,21 @@ td.turns { width: 26%; }
       '<div class="card fill"><div class="card-head"><div><h3>Novas instalações</h3><div class="desc">Primeiro dia em que cada uma mandou dados.</div></div></div>' + chartBox('new-chart', 110) + '</div>' +
       '</div>'
 
-    // 3. Agentes e modelos
+    // 3. Tempo e recursos
+    h += '<div class="section-title">Tempo e recursos</div>'
+    var td = s.time.desktop, tp = s.time.phone
+    h += '<div class="card strip span-12">' +
+      timeCell('Média no computador', td.avg, td.samples) + timeCell('Mediana no computador', td.median, td.samples) + timeCell('Máximo no computador', td.max, td.samples) +
+      timeCell('Média no celular', tp.avg, tp.samples) + timeCell('Mediana no celular', tp.median, tp.samples) + timeCell('Máximo no celular', tp.max, tp.samples) +
+      '</div>'
+    var ph = s.phone
+    h += '<div class="card span-6"><div class="card-head"><div><h3>Recursos usados no computador</h3><div class="desc">Ações da pessoa, contadas desde a versão com dados de recursos.</div></div></div>' +
+      bars(s.features.slice(0, 12), nf.format, { name: featureName }) + '</div>'
+    h += '<div class="card span-6"><div class="card-head"><div><h3>Recursos usados no celular</h3><div class="desc">' +
+      nf.format(ph.installs) + ' instalações usaram o celular - ' + nf.format(ph.opens) + ' aberturas - ' + esc(hours(ph.minutes)) + ' com o app na tela.</div></div></div>' +
+      bars(ph.features.slice(0, 12), nf.format, { name: featureName }) + '</div>'
+
+    // 4. Agentes e modelos
     h += '<div class="section-title">Agentes e modelos</div>'
     var maxTurns = Math.max.apply(null, s.models.map(function (m) { return m.turns }).concat([1]))
     var models = s.models.length
@@ -532,7 +563,7 @@ td.turns { width: 26%; }
     h += modelsCard
     h += '<div class="card tools span-12"><div class="card-head"><div><h3>Ferramentas mais chamadas</h3><div class="desc">Pelo Claude. As de MCP contam juntas, sem o nome do servidor.</div></div></div>' + bars(s.tools.slice(0, 10)) + '</div>'
 
-    // 4. O Argus como um todo
+    // 5. O Argus como um todo
     var sn = s.snapshot
     var per = function (v) { return sn.installs ? cf.format(v / sn.installs) + ' por instalação' : '' }
     h += '<div class="section-title">O Argus como um todo</div>'
@@ -548,7 +579,7 @@ td.turns { width: 26%; }
       fact('Acesso remoto', s.remoteAccess, 'instalações hospedando') +
       '</div></div>'
 
-    // 5. Instalações
+    // 6. Instalações
     h += '<div class="section-title">Instalações</div>'
     h += '<div class="card span-12"><div class="card-head"><div><h3>Quem usa</h3><div class="desc">Pela versão mais recente de cada instalação ativa no período.</div></div></div><div class="cols">' +
       '<section><h4>Sistema</h4>' + bars(s.os, nf.format, { name: function (k) { return OS_NAME[k] || k }, share: true }) +
@@ -564,6 +595,12 @@ td.turns { width: 26%; }
     h += '</div>'
     document.getElementById('main').innerHTML = h
     charts.forEach(drawColumns)
+  }
+
+  // Tempo por instalação num dia: média, mediana ou máximo (ver src/timeStats.ts).
+  function timeCell(label, value, samples) {
+    return '<div title="' + esc(nf.format(samples) + ' dias de instalação com uso') + '"><div class="label">' + esc(label) + '</div><div class="value">' +
+      (samples ? esc(minutes(value)) : '-') + '</div></div>'
   }
 
   function fact(label, value, note) {

@@ -215,6 +215,12 @@ export class RemoteAccess {
     });
   }
 
+  // Algum app do celular aberto na tela agora (dados de uso: tempo no celular).
+  phoneOnScreen(): boolean {
+    for (const sessions of this.live.values()) for (const s of sessions) if (s instanceof WebHostSession && s.visible) return true;
+    return false;
+  }
+
   // Uma conversa terminou, parou com erro ou precisa de você: vira notificação nos celulares com
   // notificações ligadas que mexeram nela (ver phoneChats.ts; conversa do desktop não notifica) e
   // não estão com o app aberto na tela agora. chatKeys: a chave da conversa e o id da sessão.

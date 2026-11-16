@@ -1,3 +1,5 @@
+import { timeStats, type TimeStats } from './timeStats';
+
 // Os números do painel, somados no próprio banco (D1 é SQLite: json_each abre os mapas guardados no
 // payload). Período: os últimos N dias, pelo dia local de quem mandou.
 
@@ -25,7 +27,12 @@ export type Summary = {
   }
   // Os mesmos números no período anterior, do mesmo tamanho (para a variação).
   previous: { installs: number; newInstalls: number; avgMinutesPerDay: number; chats: number; messages: number; tokens: number; costUsd: number }
-  daily: { day: string; installs: number; newInstalls: number; minutes: number; chats: number; tokens: Record<string, number> }[]
+  daily: { day: string; installs: number; newInstalls: number; minutes: number; maxMinutes: number; medianMinutes: number; chats: number; tokens: Record<string, number> }[]
+  // Tempo por instalação e dia, no computador e com o app do celular na tela.
+  time: { desktop: TimeStats; phone: TimeStats }
+  // Recursos da interface usados (v2 em diante).
+  features: Count[]
+  phone: { installs: number; opens: number; minutes: number; features: Count[] }
   chatsByAgent: Count[]
   messagesByAgent: Count[]
   models: { key: string; agent: string; model: string; turns: number; input: number; output: number; cacheRead: number; cacheWrite: number; costUsd: number }[]
@@ -62,6 +69,23 @@ const LATEST = `WITH latest AS (
   SELECT r.* FROM reports r
   WHERE r.day >= ?1 AND r.day = (SELECT MAX(day) FROM reports WHERE install_id = r.install_id AND day >= ?1)
 )`;
+
+// Tempo por instalação e dia (computador e celular), recursos usados e uso do celular.
+function usageExtras(minutes: Row[], features: Row[], phoneFeatures: Row[], phone: Row) {
+  const minutesByDay = new Map<string, number[]>();
+  for (const r of minutes) {
+    const day = String(r.day);
+    const list = minutesByDay.get(day) ?? [];
+    list.push(n(r.desktop));
+    minutesByDay.set(day, list);
+  }
+  return {
+    minutesByDay,
+    time: { desktop: timeStats(minutes.map((r) => n(r.desktop))), phone: timeStats(minutes.map((r) => n(r.phone))) },
+    features: counts(features),
+    phone: { installs: n(phone.installs), opens: n(phone.opens), minutes: n(phone.minutes), features: counts(phoneFeatures) },
+  };
+}
 
 export async function buildSummary(db: D1Database, days: number, today = new Date()): Promise<Summary> {
   const since = new Date(today.getTime() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
@@ -167,6 +191,18 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
       since,
     ),
     q('SELECT COUNT(*) AS value FROM (SELECT MIN(day) AS d0 FROM reports GROUP BY install_id) WHERE d0 >= ?1 AND d0 < ?2', prevSince, since),
+    // 27: minutos de cada instalação em cada dia (média, mediana e máximo saem daqui)
+    q("SELECT day, active_minutes AS desktop, COALESCE(json_extract(payload, '$.phone.minutes'), 0) AS phone FROM reports WHERE day >= ?1", since),
+    // 28, 29: recursos no computador e no celular
+    mapSum('$.features'),
+    mapSum('$.phone.features'),
+    // 30: uso do celular
+    q(
+      `SELECT COUNT(DISTINCT CASE WHEN json_extract(payload, '$.phone.opens') > 0 THEN install_id END) AS installs,
+              SUM(json_extract(payload, '$.phone.opens')) AS opens, SUM(json_extract(payload, '$.phone.minutes')) AS minutes
+       FROM reports WHERE day >= ?1`,
+      since,
+    ),
   ]);
   const rows = (i: number) => (results[i].results ?? []) as Row[];
 
@@ -180,13 +216,24 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
     m[agent] = (m[agent] ?? 0) + n(r.value);
     tokensByDay.set(day, m);
   }
+  const usage = usageExtras(rows(27), rows(28), rows(29), rows(30)[0] ?? {});
   // Todos os dias do período, mesmo os sem nenhum relatório.
   const perDay = new Map(rows(0).map((r) => [String(r.day), r]));
   const daily: Summary['daily'] = [];
   for (let i = days - 1; i >= 0; i--) {
     const day = new Date(today.getTime() - i * 86_400_000).toISOString().slice(0, 10);
     const r = perDay.get(day);
-    daily.push({ day, installs: n(r?.installs), newInstalls: newByDay.get(day) ?? 0, minutes: n(r?.minutes), chats: chatsByDay.get(day) ?? 0, tokens: tokensByDay.get(day) ?? {} });
+    const dayTime = timeStats(usage.minutesByDay.get(day) ?? []);
+    daily.push({
+      day,
+      installs: n(r?.installs),
+      newInstalls: newByDay.get(day) ?? 0,
+      minutes: n(r?.minutes),
+      maxMinutes: dayTime.max,
+      medianMinutes: dayTime.median,
+      chats: chatsByDay.get(day) ?? 0,
+      tokens: tokensByDay.get(day) ?? {},
+    });
   }
 
   const models = rows(5)
@@ -246,6 +293,9 @@ export async function buildSummary(db: D1Database, days: number, today = new Dat
       installsAllTime: n(rows(18)[0]?.value),
     },
     daily,
+    time: usage.time,
+    features: usage.features,
+    phone: usage.phone,
     chatsByAgent,
     messagesByAgent,
     models,

@@ -1,6 +1,7 @@
 import { addRemotePage, removeRemotePage } from '../ipc/events';
 import { dispatch } from '../ipc/register';
 import { tr } from '../i18n';
+import { telemetry } from '../telemetry';
 import {
   decodeWeb,
   encodeWeb,
@@ -159,6 +160,7 @@ export class WebHostSession {
     });
     addRemotePage(this.page);
     registerPhonePage(this.page);
+    telemetry.phoneOpened();
     this.send({ t: 'welcome', info });
   }
 
@@ -194,7 +196,10 @@ export class WebHostSession {
 
   private async call(id: number, ch: string, args: unknown[]): Promise<void> {
     const kind = CHANNELS[ch];
-    if (kind) this.track(ch, args);
+    if (kind) {
+      this.track(ch, args);
+      telemetry.channelUsed(ch, true);
+    }
     if (ch === 'chat:send') {
       const req = args[0] as { key?: unknown; sessionId?: unknown } | undefined;
       this.hooks.interacted([str(req?.key), str(req?.sessionId)]);

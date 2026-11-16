@@ -2,6 +2,7 @@ import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents }
 import type { InvokeChannels, SendChannels, SendSyncChannels } from '@argus/shared/ipc';
 import { isAppFrame } from '../app/appUrl';
 import { blockedReply, channelPolicy } from '../remote/policy';
+import { telemetry } from '../telemetry';
 import type { Caller } from './page';
 
 // Registro dos canais, tipados pelo contrato (packages/shared/src/ipc.ts): um handler com argumentos ou
@@ -73,6 +74,7 @@ export function handle<C extends keyof InvokeChannels>(
       return blockedReply(channel);
     }
     if (remote) return remote.call('invoke', channel, args);
+    telemetry.channelUsed(channel);
     return handler(e, ...(args as Parameters<InvokeChannels[C]>));
   });
 }
@@ -88,6 +90,7 @@ export function on<C extends keyof SendChannels>(
     const remote = remoteFor(e.sender, channel);
     if (remote === 'blocked') return blocked(e.sender, channel);
     if (remote) return void remote.call('send', channel, args).catch((err: unknown) => report(channel, err));
+    telemetry.channelUsed(channel);
     runSend(channel, handler as AnyHandler, e, args);
   });
 }
@@ -130,6 +133,7 @@ export function onSync<C extends keyof SendSyncChannels>(
       );
       return;
     }
+    telemetry.channelUsed(channel);
     try {
       e.returnValue = handler(e, ...(args as Parameters<SendSyncChannels[C]>));
     } catch (err) {

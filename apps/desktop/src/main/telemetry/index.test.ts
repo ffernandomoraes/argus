@@ -8,6 +8,7 @@ import type { TelemetrySources } from '.';
 
 const sources: TelemetrySources = {
   busy: () => false,
+  phoneOnScreen: () => false,
   claudeCode: () => '2.1.300',
   wsl: () => false,
   snapshot: () => ({
@@ -60,6 +61,10 @@ describe('dados de uso', () => {
     telemetry.messageSent('claude');
     telemetry.toolUsed('Bash');
     telemetry.toolUsed('mcp__empresa__deploy');
+    telemetry.channelUsed('canvasAgent:send');
+    telemetry.channelUsed('sessions:list');
+    telemetry.channelUsed('chat:send', true);
+    telemetry.phoneOpened();
     // Dois fins de pedido da mesma conversa: o segundo traz o total acumulado.
     telemetry.claudeResult('s1', { 'claude-opus-5-5': tokens(100, 50, 1) }, false, null);
     telemetry.claudeResult('s1', { 'claude-opus-5-5': tokens(160, 70, 1.5) }, false, null);
@@ -74,6 +79,9 @@ describe('dados de uso', () => {
     expect(report!.counts.messagesSent).toEqual({ claude: 2 });
     expect(report!.tools).toEqual({ Bash: 1, mcp: 1 });
     expect(report!.snapshot?.folders).toBe(5);
+    // Só os canais da lista viram recurso; os do celular contam à parte.
+    expect(report!.features).toEqual({ commandBar: 1 });
+    expect(report!.phone).toEqual({ minutes: 0, opens: 1, features: { message: 1 } });
   });
 
   it('conversa retomada sem total guardado conta só o pedido de agora', async () => {

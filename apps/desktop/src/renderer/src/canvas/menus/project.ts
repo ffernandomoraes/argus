@@ -3,7 +3,6 @@ import type { XYPosition } from '@xyflow/react';
 import type { MenuItem } from '../ContextMenu';
 import { groupAccount, removeNode } from '../operations';
 import { getSessions } from '../sessionsStore';
-import { getPreferences } from '../../settings/preferences';
 import type { ConversationSummary, ProjectNode } from '../types';
 import { baseName, FILE_MANAGER } from '../../platform';
 import { boardSubmenu, isBusy, moveSubmenu, terminalSubmenu } from './shared';
@@ -82,11 +81,11 @@ export function instanceMenu(deps: ProjectDeps, node: ProjectNode, repoUrl: stri
     { type: 'separator' },
     { type: 'action', label: tr('Nova conversa', 'New chat'), icon: MessageCirclePlus, onSelect: () => deps.newConversation(node.id) },
     terminalSubmenu(tr('Novo terminal aqui', 'New terminal here'), (kind, account) => deps.addTerminal(node.position, node.parentId, node.data.path, kind, account, workspace, workspace && node.data.name), groupAccount(deps.nodes, node)),
-    // Tarefa em paralelo (git worktree) é experimento. Não sai de workspace (várias pastas, vários repositórios) nem de
+    // Tarefa em paralelo (git worktree). Não sai de workspace (várias pastas, vários repositórios) nem de
     // outra tarefa: sai da pasta principal.
-    ...(workspace || worktree || !getPreferences().worktrees
+    ...(workspace || worktree
       ? []
-      : [{ type: 'action', label: tr('Nova tarefa em paralelo', 'New parallel task'), icon: GitBranchPlus, experiment: true, onSelect: () => deps.newWorktree(node.id) } as const]),
+      : [{ type: 'action', label: tr('Nova tarefa em paralelo', 'New parallel task'), icon: GitBranchPlus, onSelect: () => deps.newWorktree(node.id) } as const]),
     { type: 'separator' },
     ...(workspace
       ? workspaceItems(deps, node, workspace)

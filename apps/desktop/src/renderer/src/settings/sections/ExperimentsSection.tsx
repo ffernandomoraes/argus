@@ -5,7 +5,6 @@ import { tr } from '../../i18n';
 // Coisas em teste ou só por diversão. Tudo aqui vem desligado.
 export function ExperimentsSection() {
   const mascot = usePreference('mascot');
-  const worktrees = usePreference('worktrees');
   return (
     <Group>
       <Row
@@ -17,16 +16,6 @@ export function ExperimentsSection() {
         )}
       >
         <Switch label={tr('Mascote', 'Mascot')} checked={mascot} onChange={(next) => setPreferences({ mascot: next })} />
-      </Row>
-      <Row
-        label={tr('Tarefas em paralelo (worktrees)', 'Parallel tasks (worktrees)')}
-        description={tr('Várias tarefas no mesmo projeto, cada uma na sua cópia da pasta.', 'Several tasks in the same project, each in its own copy of the folder.')}
-        info={tr(
-          'Várias tarefas no mesmo projeto ao mesmo tempo, sem uma mexer nos arquivos da outra: cada uma ganha uma cópia da pasta (git worktree) e uma branch própria, num card ligado à pasta. Liga o "Nova tarefa em paralelo" no menu da pasta.',
-          'Several tasks in the same project at once, without one touching the other’s files: each gets its own copy of the folder (git worktree) and branch, in a card linked to the folder. Turns on "New parallel task" in the folder menu.',
-        )}
-      >
-        <Switch label={tr('Tarefas em paralelo', 'Parallel tasks')} checked={worktrees} onChange={(next) => setPreferences({ worktrees: next })} />
       </Row>
     </Group>
   );

@@ -29,9 +29,6 @@ export type Preferences = {
   mascotCanvasSpot: { x: number; y: number } | null
   // Visual do mascote e o golpe no envio (Configurações > Mascote).
   mascotLook: MascotLook
-  // Worktrees (Configurações > Experimentos): "Nova tarefa em paralelo" no menu da pasta, que cria um git
-  // worktree como card filho dela.
-  worktrees: boolean
   // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
   favoriteChats: string[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
@@ -52,7 +49,6 @@ const DEFAULTS: Preferences = {
   mascotFloating: false,
   mascotCanvasSpot: null,
   mascotLook: DEFAULT_LOOK,
-  worktrees: false,
   favoriteChats: [],
   promptSuggestions: true,
 };

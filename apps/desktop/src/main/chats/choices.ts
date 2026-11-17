@@ -92,7 +92,14 @@ export class ChatChoices {
     return true;
   }
 
+  // Termina quando a última gravação pedida chegou ao disco (os testes esperam por ela).
+  whenSaved(): Promise<void> {
+    return this.saving;
+  }
+
+  private saving: Promise<void> = Promise.resolve();
+
   private save(): void {
-    writeJsonAtomic(this.file, this.all()).catch((err: unknown) => console.error('[conversas] escolhas não gravadas:', err));
+    this.saving = writeJsonAtomic(this.file, this.all()).catch((err: unknown) => console.error('[conversas] escolhas não gravadas:', err));
   }
 }

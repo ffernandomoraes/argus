@@ -8,7 +8,6 @@ import { ChatChoices, cleanChoice } from './choices';
 // guardava os seus: continuada na janela do acesso remoto, a conversa trocava de conta sozinha.
 
 const fileIn = () => join(mkdtempSync(join(tmpdir(), 'choices-')), 'chatChoices.json');
-const settle = () => new Promise((r) => setTimeout(r, 20));
 
 describe('escolhas das conversas', () => {
   it('troca vale por cima; primeiro envio e versões antigas só preenchem o que falta', () => {
@@ -40,7 +39,7 @@ describe('escolhas das conversas', () => {
     const c = new ChatChoices(file, () => undefined);
     c.set('s1', { account: 'b', settings: { model: 'opus' } });
     c.set('s2', { account: 42, settings: 'x' } as never);
-    await settle();
+    await c.whenSaved();
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ s1: { account: 'b', settings: { model: 'opus' } } });
     expect(new ChatChoices(file, () => undefined).get('s1')).toEqual({ account: 'b', settings: { model: 'opus' } });
   });

@@ -47,14 +47,27 @@ let poppedOut: ReadonlySet<string> = new Set();
 // janela separada fica de fora: esta janela não sabe se ela está em foco.
 const seen = (id: string) => (viewing.has(id) && document.hasFocus()) || poppedOut.has(id);
 
-function markRead(ids: Iterable<string>): void {
+// Vista aqui: as outras janelas (a do acesso remoto, no outro computador, conta as dela) e o celular
+// tiram a bolinha também. Sem isso, a vista aqui seguia não vista lá e o número do Dock, que soma
+// todas as janelas, ficava com ela.
+function share(ids: Iterable<string>): void {
+  for (const id of ids) window.api.chat.markRead(id);
+}
+
+// Tira a bolinha; devolve as que estavam não vistas aqui.
+function clear(ids: Iterable<string>): string[] {
+  const gone = [...ids].filter((id) => unread.get().has(id));
+  if (!gone.length) return gone;
   unread.set((s) => {
-    const gone = [...ids].filter((id) => s.has(id));
-    if (!gone.length) return s;
     const next = new Set(s);
     for (const id of gone) next.delete(id);
     return next;
   });
+  return gone;
+}
+
+function markRead(ids: Iterable<string>): void {
+  share(clear(ids));
 }
 
 // "Marcar como não lida" (menu da conversa): a bolinha volta a ficar verde, como se a resposta
@@ -75,15 +88,18 @@ export const isUnread = (id: string): boolean => unread.get().has(id);
 export function noteFinished(before: ConversationSummary[] | undefined, after: ConversationSummary[] | undefined): void {
   if (!before || !after) return;
   const was = new Map(before.map((c) => [c.id, c.status]));
-  const done = after.filter((c) => {
+  const finished = after.filter((c) => {
     const prev = was.get(c.id);
-    return c.status === 'idle' && (prev === 'running' || prev === 'needs-you') && !seen(c.id);
+    return c.status === 'idle' && (prev === 'running' || prev === 'needs-you');
   });
+  const done = finished.filter((c) => !seen(c.id));
   if (done.length) unread.set((s) => new Set([...s, ...done.map((c) => c.id)]));
+  // Terminou com você vendo aqui: a outra janela, que não estava vendo, marcou como não vista.
+  share(finished.filter((c) => seen(c.id)).map((c) => c.id));
 }
 
-// Vista no app do celular: some daqui também.
-window.api.chat.onMarkedRead((id) => markRead([id]));
+// Vista no celular ou em outra janela: some daqui também, sem avisar de volta.
+window.api.chat.onMarkedRead((id) => void clear([id]));
 
 // Você voltou à janela: o que está na tela foi visto.
 window.addEventListener('focus', () => markRead([...viewing.keys()]));

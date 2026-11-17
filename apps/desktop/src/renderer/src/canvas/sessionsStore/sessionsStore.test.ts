@@ -17,6 +17,9 @@ let branchGate: Promise<void> = Promise.resolve();
 const reads = vi.fn();
 // O localStorage da janela, onde as não vistas ficam guardadas.
 const storage = new Map<string, string>();
+// Vistas avisadas às outras janelas, e o aviso de vista em outra janela (ou no celular).
+const sharedRead = vi.fn();
+let markedElsewhere: (id: string) => void = () => undefined;
 
 let mod: {
   convert: typeof import('./convert')
@@ -33,8 +36,14 @@ beforeAll(async () => {
     getItem: (k: string) => storage.get(k) ?? null,
     setItem: (k: string, v: string) => void storage.set(k, v),
   };
-  // Vista no celular (unread.ts ouve ao ser carregado).
-  globals.window.api.chat = { onMarkedRead: () => () => undefined };
+  // Vista no celular ou em outra janela (unread.ts ouve ao ser carregado).
+  globals.window.api.chat = {
+    markRead: sharedRead,
+    onMarkedRead: (cb: (id: string) => void) => {
+      markedElsewhere = cb;
+      return () => undefined;
+    },
+  };
   globals.window.api.sessions = {
     list: async (path: string) => {
       reads(path);
@@ -243,6 +252,32 @@ describe('respostas não vistas', () => {
     mod.unread.setPoppedOut(new Set(['d']));
     mod.unread.noteFinished([conv('d', 'running')], [conv('d', 'idle')]);
     expect(mod.unread.unread.get().has('d')).toBe(false);
+  });
+
+  // A janela do acesso remoto conta as não vistas dela: vista aqui seguia não vista lá, e o número
+  // do Dock (soma de todas as janelas) ficava com ela.
+  it('vista aqui avisa as outras janelas; vista em outra some daqui sem avisar de volta', () => {
+    mod.unread.markUnread('i');
+    sharedRead.mockClear();
+    mod.unread.markAsRead('i');
+    expect(sharedRead).toHaveBeenCalledWith('i');
+    // Já vista: não avisa de novo.
+    mod.unread.markAsRead('i');
+    expect(sharedRead).toHaveBeenCalledTimes(1);
+
+    mod.unread.markUnread('j');
+    sharedRead.mockClear();
+    markedElsewhere('j');
+    expect(mod.unread.unread.get().has('j')).toBe(false);
+    expect(sharedRead).not.toHaveBeenCalled();
+  });
+
+  it('terminou com você vendo aqui: avisa a outra janela, que marcou como não vista', () => {
+    sharedRead.mockClear();
+    mod.unread.setPoppedOut(new Set(['k']));
+    sharedRead.mockClear();
+    mod.unread.noteFinished([conv('k', 'running'), conv('l', 'running')], [conv('k', 'idle'), conv('l', 'idle')]);
+    expect(sharedRead.mock.calls).toEqual([['k']]);
   });
 
   // Atualizar o Argus apagava a bolinha verde de tudo que tinha terminado sem você ver.

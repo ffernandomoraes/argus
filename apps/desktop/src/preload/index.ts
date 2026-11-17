@@ -207,6 +207,7 @@ const api: Api = {
     active: () => invoke('chat:active'),
     onActive: (cb) => listen('chat:active', cb),
     setUnread: (chats) => send('chat:unread', chats),
+    markRead: (id) => send('chat:markRead', id),
     onMarkedRead: (cb) => listen('chat:markedRead', cb),
     interrupted: () => invoke('chat:interrupted'),
     onInterrupted: (cb) => listen('chat:interrupted', cb),

@@ -240,7 +240,9 @@ export type Api = {
     onActive: (cb: (chats: ActiveChat[]) => void) => Off
     // Respostas não vistas nesta janela: o ícone da barra de menus conta e lista.
     setUnread: (chats: UnreadChat[]) => void
-    // Vista no celular: tirar a bolinha verde.
+    // Vista nesta janela: as outras (a do acesso remoto, o celular) tiram a bolinha verde.
+    markRead: (id: string) => void
+    // Vista no celular ou em outra janela: tirar a bolinha verde.
     onMarkedRead: (cb: (id: string) => void) => Off
     // Conversas que o Argus fechou no meio, e o X do aviso numa delas.
     interrupted: () => Promise<InterruptedChat[]>

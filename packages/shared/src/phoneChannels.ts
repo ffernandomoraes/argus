@@ -34,7 +34,7 @@ export type PhoneSendChannels = {
   'preferences:share': (prefs: SharedPreferences) => void
   // Resposta da janela ao pedido de encaixar uma pasta: o workspace com ela, ou o erro.
   'canvas:placedFolder': (id: string, nodes: unknown, error: string | null) => void
-  // O celular abriu a conversa: as janelas do Argus tiram a bolinha verde dela.
+  // O celular ou uma janela viu a conversa: as janelas do Argus tiram a bolinha verde dela.
   'chat:markRead': (id: string) => void
 };
 
@@ -42,6 +42,6 @@ export type PhoneEventChannels = {
   'canvas:placeFolder': (request: PlaceFolderRequest) => void
   // A lista das não vistas mudou (o celular acompanha).
   'chat:unreadList': (chats: UnreadChat[]) => void
-  // Vista em outro lugar (no celular): a janela tira a bolinha verde.
+  // Vista em outro lugar (no celular, em outra janela ou na do acesso remoto): a janela tira a bolinha verde.
   'chat:markedRead': (id: string) => void
 };

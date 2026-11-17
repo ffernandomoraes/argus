@@ -10,11 +10,16 @@ import { IS_WIN } from '../platform';
 // Windows: a barra de tarefas não mostra número, então vai uma bolinha vermelha sobre o ícone.
 export class DockBadge {
   private count = -1;
+  private local = -1;
   private dot: NativeImage | null = null;
 
   constructor(
     private chats: () => ChatEntry[],
     private unread: () => UnreadChat[],
+    // As dos computadores que este mostra pelo acesso remoto (ver remote/remoteNotices.ts).
+    private remote: () => number = () => 0,
+    // O número deste computador mudou: os notebooks ligados nele mostram também.
+    private onLocalChange: (total: number) => void = () => undefined,
   ) {
     // Janela aberta depois do aviso nasce sem a bolinha.
     if (IS_WIN) app.on('browser-window-created', (_e, win) => this.overlay(win));
@@ -30,7 +35,12 @@ export class DockBadge {
   }
 
   refresh(): void {
-    const total = this.total();
+    const local = this.total();
+    if (local !== this.local) {
+      this.local = local;
+      this.onLocalChange(local);
+    }
+    const total = local + this.remote();
     if (total === this.count) return;
     this.count = total;
     if (IS_WIN) for (const win of BrowserWindow.getAllWindows()) this.overlay(win);

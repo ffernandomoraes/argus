@@ -221,6 +221,11 @@ export class RemoteAccess {
     return false;
   }
 
+  // Aviso para os notebooks ligados (o Argus de lá, não as janelas): ver remoteNotices.ts.
+  notifyDesktops(ch: string, args: unknown[], sticky = false): void {
+    this.host.notify(ch, args, sticky);
+  }
+
   // Uma conversa terminou, parou com erro ou precisa de você: vira notificação nos celulares com
   // notificações ligadas que mexeram nela (ver phoneChats.ts; conversa do desktop não notifica) e
   // não estão com o app aberto na tela agora. chatKeys: a chave da conversa e o id da sessão.

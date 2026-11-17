@@ -17,6 +17,7 @@ import { broadcast, sendTo } from '../ipc/events';
 import { ChatNotifier } from '../notifications';
 import { remoteAccess } from '../remote';
 import { loadPhoneChats } from '../remote/phoneChats';
+import { onRemoteBadgeChange, remoteBadgeTotal, REMOTE_ALERT, REMOTE_BADGE } from '../remote/remoteNotices';
 import { Popouts } from '../popouts';
 import { SessionWatch } from '../sessionWatch';
 import { onDiskFull } from '../lib/atomicWrite';
@@ -104,7 +105,14 @@ export function createServices() {
     tray.refresh();
   });
   const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), interrupted: () => interrupted.list(), showApp, openChat });
-  const badge = new DockBadge(() => chats.list(), () => unread.list());
+  // Só o deste computador vai para os notebooks: o deles já soma o que eles mostram.
+  const badge = new DockBadge(
+    () => chats.list(),
+    () => unread.list(),
+    remoteBadgeTotal,
+    (total) => remoteAccess().notifyDesktops(REMOTE_BADGE, [total], true),
+  );
+  onRemoteBadgeChange(() => badge.refresh());
   // Mascote solto na tela: check verde com resposta não vista, aviso vermelho com erro.
   const mascot = new MascotOverlay(() => unread.list(), () => chats.list());
 
@@ -159,18 +167,22 @@ export function createServices() {
   );
 
   // Clique na notificação: traz o app e abre a conversa que avisou.
-  // O celular pareado (acesso pelo navegador) recebe os mesmos avisos como notificação.
+  // O celular pareado (acesso pelo navegador) recebe os mesmos avisos como notificação, e o notebook
+  // ligado pelo acesso remoto também (ver remote/remoteNotices.ts).
   const notifier = new ChatNotifier(
     () => chats.list(),
     openChat,
-    (alert) =>
+    (alert) => {
+      const { title, body, kind, cwd, sessionId } = alert;
+      remoteAccess().notifyDesktops(REMOTE_ALERT, [{ title, body, kind, cwd, sessionId }]);
       remoteAccess().notifyDevices({
-        title: alert.title,
-        body: alert.body,
-        url: alert.sessionId ? `#/chat/${encodeURIComponent(alert.cwd)}/${encodeURIComponent(alert.sessionId)}` : '#/',
-        tag: alert.sessionId,
-        badge: badge.total(alert.kind === 'error' ? undefined : (alert.sessionId ?? alert.key)),
-      }, [alert.key, alert.sessionId]),
+        title,
+        body,
+        url: sessionId ? `#/chat/${encodeURIComponent(cwd)}/${encodeURIComponent(sessionId)}` : '#/',
+        tag: sessionId,
+        badge: badge.total(kind === 'error' ? undefined : (sessionId ?? alert.key)),
+      }, [alert.key, sessionId]);
+    },
   );
 
   // Limites de cada conta logada.

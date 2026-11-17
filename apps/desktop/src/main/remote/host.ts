@@ -14,13 +14,22 @@ import { telemetry } from '../telemetry';
 
 export class RemoteHost {
   private sessions = new Set<HostSession>();
+  // Avisos que valem até o próximo do mesmo canal (o número de conversas para ver): quem entra depois
+  // recebe o último.
+  private sticky = new Map<string, unknown[]>();
 
   constructor(private info: () => RemoteHostInfo) {}
 
   accept(link: Link): HostSession {
-    const session = new HostSession(link, this.info, () => this.sessions.delete(session));
+    const session = new HostSession(link, this.info, () => this.sessions.delete(session), () => this.sticky);
     this.sessions.add(session);
     return session;
+  }
+
+  // Aviso para o Argus do notebook, não para uma janela dele (ver remote/remoteNotices.ts).
+  notify(ch: string, args: unknown[], sticky = false): void {
+    if (sticky) this.sticky.set(ch, args);
+    for (const s of this.sessions) s.notify(ch, args);
   }
 
   get connections(): number {
@@ -41,6 +50,7 @@ export class HostSession {
     private link: Link,
     private info: () => RemoteHostInfo,
     private onEnd: () => void,
+    private sticky: () => Map<string, unknown[]> = () => new Map(),
   ) {
     link.onMessage((data) => this.receive(data));
     link.onClose(() => this.end());
@@ -49,6 +59,11 @@ export class HostSession {
   close(): void {
     this.link.close();
     this.end();
+  }
+
+  // w 0: não é de nenhuma janela, é do Argus de lá. Versões antigas do notebook ignoram (não acham a janela).
+  notify(ch: string, args: unknown[]): void {
+    if (this.greeted) this.send({ t: 'event', w: 0, ch, args });
   }
 
   // Desconectado daqui (Desconectar, Remover): o aparelho fica sabendo e não tenta religar.
@@ -110,6 +125,7 @@ export class HostSession {
     }
     this.greeted = true;
     this.send({ t: 'welcome', info });
+    for (const [ch, args] of this.sticky()) this.notify(ch, args);
   }
 
   private open(w: number): void {

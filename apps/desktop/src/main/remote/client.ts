@@ -5,6 +5,7 @@ import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } fro
 import { tr } from '../i18n';
 import type { Link } from './link';
 import { decodeHost, encode, PROTOCOL_VERSION, type ClientMessage, type HostMessage } from './protocol';
+import { forgetRemoteNotices, remoteNotice } from './remoteNotices';
 import { ServerMirror } from './serverMirror';
 import { TunnelClient } from './tunnelClient';
 
@@ -251,6 +252,8 @@ export class RemoteClient {
       case 'event': {
         // Do "abrir localhost": é daqui do processo principal, não da janela.
         if (message.ch.startsWith('tunnel:')) return this.tunnels.event(message.ch, message.args);
+        // Do Argus de lá para este (número no ícone, notificação), não para uma janela.
+        if (message.w === 0) return remoteNotice(this, message.ch, message.args);
         const wc = this.windows.get(message.w);
         if (wc && !wc.isDestroyed()) wc.send(message.ch, ...message.args);
         return;
@@ -333,6 +336,7 @@ export class RemoteClient {
   private finish(state: 'closed' | 'kicked' = 'closed'): void {
     this.ended = true;
     this.releaseAwake();
+    forgetRemoteNotices(this);
     this.failPending();
     this.mirror.stop();
     this.tunnels.closeAll();

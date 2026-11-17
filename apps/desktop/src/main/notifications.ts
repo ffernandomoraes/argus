@@ -11,7 +11,7 @@ import { IS_MAC } from './platform';
 // Notificação do sistema quando uma conversa aberta no app precisa de você, termina ou para com
 // erro. Só com o app fora de foco: olhando o app, o canvas já mostra o status.
 
-type Kind = 'needs-you' | 'done' | 'error';
+export type Kind = 'needs-you' | 'done' | 'error';
 
 // Função, não constante: o idioma pode mudar com o app aberto.
 const label = (kind: Kind): string =>
@@ -34,7 +34,7 @@ function kindOf(state: ChatState): Kind | null {
 // Ícone pulando no Dock (Mac) ou piscando na barra de tarefas (Windows/Linux). "Precisa de você"
 // insiste até você voltar ao app; concluído e erro pulam uma vez só, para não incomodar com várias
 // conversas rodando.
-function attention(kind: Kind): void {
+export function attention(kind: Kind): void {
   if (IS_MAC) {
     app.dock?.bounce(kind === 'needs-you' ? 'critical' : 'informational');
     return;

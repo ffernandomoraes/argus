@@ -116,13 +116,15 @@ export class Updater {
     this.timer = null;
   }
 
-  async check(): Promise<UpdateState> {
+  // visible: pedida por alguém (menu, botão, "Reiniciar e atualizar"), mostra a conferência e o
+  // download mesmo com uma versão já baixada.
+  async check(visible = false): Promise<UpdateState> {
     if (this.state.status === 'unsupported' || this.busy || this.rollingBack) return this.state;
     this.busy = true;
-    // Já há uma versão baixada (ex.: 0.0.2) e saiu outra mais nova (0.0.10): baixa a mais nova sem
-    // mexer na barra de título, e ela substitui a baixada; quem reiniciar no meio leva a que já estava.
-    // Se der errado, também fica a que já estava.
-    const quiet = this.ready !== null;
+    // Já há uma versão baixada (ex.: 0.0.2) e saiu outra mais nova (0.0.10): baixa a mais nova e ela
+    // substitui a baixada; na conferência automática, sem mexer na barra de título. Se der errado,
+    // fica a que já estava.
+    const quiet = this.ready !== null && !visible;
     if (!quiet) this.set({ status: 'checking' });
     try {
       await this.cleaning;
@@ -145,8 +147,20 @@ export class Updater {
       if (!quiet) this.set({ status: 'error', message: errorMessage(err) });
     } finally {
       this.busy = false;
+      // Conferência visível sem versão mais nova (ou com erro): volta a mostrar a que já estava baixada.
+      if (this.ready && this.current.status !== 'ready') this.showReady(this.ready);
     }
     return this.state;
+  }
+
+  // Antes do "Reiniciar e atualizar": entra a versão mais recente, não a baixada horas antes.
+  async refresh(): Promise<void> {
+    await this.settled();
+    await this.check(true);
+  }
+
+  private showReady(ready: Ready): void {
+    this.set({ status: 'ready', version: ready.version, notesUrl: ready.notesUrl, required: this.required });
   }
 
   // Conta os releases mais novos que a versão em uso. Falhar aqui não impede a atualização: fica
@@ -200,7 +214,7 @@ export class Updater {
     if (this.installing) return removePath(next.dir);
     const previous = this.ready;
     this.ready = next;
-    this.set({ status: 'ready', version: next.version, notesUrl: next.notesUrl, required: this.required });
+    this.showReady(next);
     if (previous) await removePath(previous.dir);
   }
 

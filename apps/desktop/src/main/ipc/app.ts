@@ -97,7 +97,7 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
     return saved;
   });
   handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }));
-  handle('updates:check', () => s.updater.check());
+  handle('updates:check', () => s.updater.check(true));
   handle('updates:notes', () => fetchReleaseNotes());
   // De outro computador (acesso remoto): a confirmação já foi feita na janela de lá; perguntar aqui
   // deixaria a atualização esperando alguém na frente deste computador.

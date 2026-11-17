@@ -13,7 +13,7 @@ export function checkForUpdates(updater: Updater, restartToUpdate: () => Promise
 }
 
 async function checkAndShow(updater: Updater, restartToUpdate: () => Promise<void>): Promise<void> {
-  const state = await updater.check();
+  const state = await updater.check(true);
   const current = app.getVersion();
   if (state.status === 'ready') {
     const { response } = await showMessageBox({

@@ -27,6 +27,8 @@ export type QuitHost = {
   quit(): void
   exit(): void
   updatePending(): boolean
+  // Procura uma versão mais nova que a baixada e, se houver, baixa antes de reiniciar.
+  refreshUpdate(): Promise<void>
   // Responde quando o programa da troca (ou o instalador) abriu de fato: false se não abriu.
   install(relaunch: boolean): Promise<boolean>
 };
@@ -75,6 +77,9 @@ export class QuitFlow {
   // Só troca o app depois do sim: o script da troca reabre o Argus assim que o processo sai.
   // ask falso: já perguntaram (na janela de outro computador, pelo acesso remoto).
   async restartToUpdate({ ask = true }: { ask?: boolean } = {}): Promise<void> {
+    if (!this.host.updatePending()) return;
+    // Falhar aqui não impede: entra a versão que já estava baixada.
+    await this.host.refreshUpdate().catch((err: unknown) => console.error('[atualização] não deu para procurar a mais nova:', err));
     if (!this.host.updatePending()) return;
     const items = ask ? [...this.host.inProgress(), ...(await this.host.busyShells())] : [];
     if (items.length && !(await this.confirm(true, items))) return;

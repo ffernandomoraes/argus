@@ -30,6 +30,7 @@ export function setupLifecycle(s: Services): Lifecycle {
     quit: () => app.quit(),
     exit: () => app.exit(0),
     updatePending: () => s.updater.pending,
+    refreshUpdate: () => s.updater.refresh(),
     install: (relaunch) => s.updater.installAsync(relaunch),
   });
 

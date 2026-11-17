@@ -16,7 +16,6 @@ import { handle, on } from './register';
 export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: Terminals, unread: UnreadChats, interrupted: InterruptedChats): void {
   handle('chat:state', (_e, key) => chats.state(key));
   handle('chat:active', () => activeChats(chats.list()));
-  handle('chat:details', (_e, key) => chats.details(key));
   handle('preferences:forPhone', () => phonePreferences());
   on('preferences:share', (_e, prefs) => sharePreferences(prefs));
   // Chat e terminal não ficam abertos juntos na mesma conversa: os dois gravariam na mesma

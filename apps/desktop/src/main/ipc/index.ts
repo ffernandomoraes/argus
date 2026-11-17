@@ -5,6 +5,7 @@ import { registerAppIpc } from './app';
 import { registerAuthIpc } from './auth';
 import { registerCanvasIpc } from './canvas';
 import { registerChatIpc } from './chat';
+import { registerChatChoicesIpc } from './chatChoices';
 import { registerCliIpc } from './cli';
 import { registerFilesIpc } from './files';
 import { registerHealthIpc } from './health';
@@ -35,6 +36,7 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerServersIpc(s.boards);
   registerFilesIpc(s.unsavedFiles);
   registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread, s.interrupted);
+  registerChatChoicesIpc(s.chats, s.choices);
   registerHealthIpc(s.health);
   registerStorageIpc(s.storage);
   registerTerminalIpc(s.terminals, s.chats, s.terminalViewers, s.terminalSizes);

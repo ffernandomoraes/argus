@@ -7,6 +7,7 @@ import type { BoardsState, BoardSummary, CanvasViewport } from './canvas';
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent';
 import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
 import type { PhoneEventChannels, PhoneInvokeChannels, PhoneSendChannels } from './phoneChannels';
+import type { ChatChoicesEventChannels, ChatChoicesInvokeChannels, ChatChoicesSendChannels } from './chatChoices';
 import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
 import type { CliStatus } from './cli';
@@ -46,7 +47,7 @@ export type ClipboardCommand = 'cut' | 'copy' | 'paste';
 export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste'];
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
-export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & {
+export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoicesInvokeChannels & {
   // Janela de acesso remoto: abre no navegador daqui um servidor que roda no localhost do outro
   // computador (ver main/remote/tunnelClient.ts).
   'remote:openLocalhost': (port: number) => RemoteLocalhostResult
@@ -207,7 +208,7 @@ export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & {
 };
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
-export type SendChannels = PhoneSendChannels & CodePanelSendChannels & {
+export type SendChannels = PhoneSendChannels & CodePanelSendChannels & ChatChoicesSendChannels & {
   // "Abrir localhost" pelo acesso remoto: do Argus do notebook para o de casa, nunca de uma janela
   // (ver main/remote/tunnelHost.ts). As respostas voltam como avisos tunnel:data e tunnel:close.
   'tunnel:open': (id: number, port: number) => void
@@ -343,7 +344,7 @@ export type SendSyncChannels = {
 };
 
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.
-export type EventChannels = PhoneEventChannels & {
+export type EventChannels = PhoneEventChannels & ChatChoicesEventChannels & {
   edit: (action: EditAction) => void
   // Para a janela do mascote: alguém escrevendo um pedido no app; respostas não vistas e erros.
   'mascot:typing': (typing: boolean) => void

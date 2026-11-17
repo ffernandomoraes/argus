@@ -10,6 +10,7 @@ import { ChatHolders } from '../chatHolders';
 import { ClaudeVersion } from '../claudeVersion';
 import { reportWarning } from '../errorReports';
 import { Chats } from '../chats';
+import { ChatChoices } from '../chats/choices';
 import { activeChats, activeSignature } from '../chats/entries';
 import { Cli } from '../cli';
 import { broadcast, sendTo } from '../ipc/events';
@@ -69,6 +70,11 @@ export function createServices() {
     const win = readyCanvas();
     if (sessionId && win) sendTo(win.webContents, 'chat:open', cwd, sessionId);
   };
+
+  // Conta e modelo/esforço/modo de cada conversa: as janelas (as daqui e a do acesso remoto) leem daqui.
+  const choices = new ChatChoices(join(app.getPath('userData'), 'chatChoices.json'), (id, choice) =>
+    broadcast('chatChoices:changed', id, choice),
+  );
 
   // Respostas que você ainda não viu, como as janelas contam: o ícone da barra mostra quantas.
   const unread = new UnreadChats(() => {
@@ -282,6 +288,7 @@ export function createServices() {
     sessionWatch,
     tray,
     unread,
+    choices,
     interrupted,
     health,
     storage,

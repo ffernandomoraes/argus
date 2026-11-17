@@ -16,6 +16,7 @@ import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
 import type { ClipboardCommand, EditAction, ThemeSource } from './ipc';
 import type { SharedPreferences } from './phonePreferences';
 import type { PlaceFolderRequest } from './phoneChannels';
+import type { ConversationChoice } from './chatChoices';
 import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
 import type { MediaCommand, NowPlaying } from './media';
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
@@ -248,6 +249,15 @@ export type Api = {
     interrupted: () => Promise<InterruptedChat[]>
     onInterrupted: (cb: (chats: InterruptedChat[]) => void) => Off
     dismissInterrupted: (sessionId: string) => void
+    // Conta e modelo/esforço/modo de cada conversa, guardados no Argus que roda ela (ver chatChoices.ts).
+    choices: {
+      all: () => Promise<Record<string, ConversationChoice>>
+      set: (id: string, choice: ConversationChoice) => void
+      freeze: (id: string, choice: ConversationChoice) => void
+      move: (from: string, to: string) => void
+      seed: (choices: Record<string, ConversationChoice>) => void
+      onChanged: (cb: (id: string, choice: ConversationChoice | null) => void) => Off
+    }
   }
   // Memória e disco do computador (o aviso da barra de cima). read: lê agora; get: o guardado.
   health: {

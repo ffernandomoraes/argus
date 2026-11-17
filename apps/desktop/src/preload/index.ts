@@ -212,6 +212,14 @@ const api: Api = {
     interrupted: () => invoke('chat:interrupted'),
     onInterrupted: (cb) => listen('chat:interrupted', cb),
     dismissInterrupted: (sessionId) => send('chat:dismissInterrupted', sessionId),
+    choices: {
+      all: () => invoke('chatChoices:all'),
+      set: (id, choice) => send('chatChoices:set', id, choice),
+      freeze: (id, choice) => send('chatChoices:freeze', id, choice),
+      move: (from, to) => send('chatChoices:move', from, to),
+      seed: (choices) => send('chatChoices:seed', choices),
+      onChanged: (cb) => listen('chatChoices:changed', cb),
+    },
   },
   health: {
     get: () => invoke('health:get'),

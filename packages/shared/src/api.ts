@@ -357,6 +357,8 @@ export type Api = {
     // "Localizar pasta…": leva o histórico e a memória do Claude Code de `from` para `to`. Devolve o
     // aviso do que não deu para levar, ou nulo.
     relocate: (from: string, to: string) => Promise<string | null>
+    // Leva a conversa solta para a pasta de um projeto; devolve o erro.
+    move: (from: string, to: string, id: string) => Promise<string | null>
     // Branch atual do git da pasta; nulo fora de repositório. O aviso onChanged cobre a troca.
     branch: (path: string) => Promise<string | null>
     // Branches locais e só do remoto, para o seletor acima da pasta; nulo fora de repositório.

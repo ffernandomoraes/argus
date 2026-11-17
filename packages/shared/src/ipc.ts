@@ -8,19 +8,18 @@ import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canva
 import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
 import type { PhoneEventChannels, PhoneInvokeChannels, PhoneSendChannels } from './phoneChannels';
 import type { ChatChoicesEventChannels, ChatChoicesInvokeChannels, ChatChoicesSendChannels } from './chatChoices';
+import type { SessionsInvokeChannels } from './sessionChannels';
 import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
 import type { CliStatus } from './cli';
 import type { DevServer, ProjectServer } from './devServers';
 import type { FileContent, FileDiff, FileEntry, FileOpResult, CodePanelChannels, CodePanelSendChannels } from './files';
-import type { HistoryPage, HistoryRequest, Message } from './history';
-import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
 import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
 import type { MediaCommand, NowPlaying } from './media';
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
 import type { ClaudeVersionState } from './claudeVersion';
 import type { ClaudeInfo } from './models';
-import type { BranchList, BranchOption, PullResult, KnownFolder, SearchHit, SessionChange, SessionSummary, UncommittedFile } from './sessions';
+import type { SessionChange } from './sessions';
 import type { SpeechEvent } from './speech';
 import type { TerminalOpenRequest, TerminalOpenResult } from './terminal';
 import type { TranscriptionModel } from './transcription';
@@ -47,7 +46,7 @@ export type ClipboardCommand = 'cut' | 'copy' | 'paste';
 export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste'];
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
-export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoicesInvokeChannels & {
+export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoicesInvokeChannels & SessionsInvokeChannels & {
   // Janela de acesso remoto: abre no navegador daqui um servidor que roda no localhost do outro
   // computador (ver main/remote/tunnelClient.ts).
   'remote:openLocalhost': (port: number) => RemoteLocalhostResult
@@ -139,27 +138,6 @@ export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoic
   'memory:write': (path: string, text: string, projects: MemoryProject[], base?: string) => MemoryWriteResult
   // Canvas
   'canvasAgent:state': () => CanvasAgentState
-  // Sessões do Claude Code e git da pasta
-  'sessions:list': (path: string) => SessionSummary[] | null
-  'sessions:folders': () => KnownFolder[]
-  'sessions:search': (path: string, query: string) => SearchHit[]
-  'sessions:trash': (path: string, id: string) => string | null
-  'sessions:exists': (path: string) => boolean
-  'sessions:relocate': (from: string, to: string) => string | null
-  'sessions:branch': (path: string) => string | null
-  'sessions:branches': (path: string) => BranchList | null
-  'sessions:fetch': (path: string) => boolean
-  'sessions:checkout': (path: string, option: BranchOption, create?: boolean) => string | null
-  'sessions:pull': (path: string) => PullResult
-  'sessions:repoUrl': (path: string) => string | null
-  'sessions:changes': (path: string) => UncommittedFile[] | null
-  'sessions:history': (path: string, id: string) => Message[]
-  'sessions:historyPage': (path: string, id: string, request: HistoryRequest) => HistoryPage
-  'sessions:taskOutput': (ref: TaskOutputRef, offset: number) => TaskOutputChunk
-  'sessions:subagentPage': (path: string, id: string, toolUseId: string, request: HistoryRequest) => HistoryPage
-  'sessions:images': (path: string, id: string, messageId: string) => string[]
-  // Imagem que o Claude leu ou citou na conversa (o caminho tem que aparecer nela), pronta para o <img>.
-  'sessions:image': (path: string, id: string, file: string) => string | null
   // Conversas favoritas (ids das sessões), como a janela do Argus guarda: o app do celular lê daqui.
   'favorites:get': () => string[]
   // Worktrees criados pelo Argus (ver shared/worktrees.ts)

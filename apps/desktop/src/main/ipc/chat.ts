@@ -1,13 +1,16 @@
 import type { InterruptedChats } from '../app/interruptedChats';
 import type { UnreadChats } from '../app/unreadChats';
 import type { ChatHolders } from '../chatHolders';
+import { isAgentConversation } from '../agentChats/store';
 import type { Chats } from '../chats';
 import { activeChats } from '../chats/entries';
 import { phonePreferences, sharePreferences } from '../phonePreferences';
 import { forgetPhoneChat, isPhonePage } from '../remote/phoneChats';
 import type { Terminals } from '../terminals';
+import { moveSession } from '../sessions';
 import { materializeWorktree, withWorktreeHint } from '../worktrees';
 import { cleanTitle } from '@argus/shared/chat';
+import { tr } from '../i18n';
 import { broadcast } from './events';
 import { isRemotePage } from './page';
 import { handle, on } from './register';
@@ -56,6 +59,13 @@ export function registerChatIpc(chats: Chats, holders: ChatHolders, terminals: T
       if (terminals.sessionOf(key) === req.sessionId) terminals.write(key, `/rename ${cleanTitle(req.title)}\r`);
     return chats.rename(req);
   });
+  // "Mover para projeto": a conversa solta passa a ser de uma pasta (ver sessions/move.ts).
+  // Conversas com Codex, Gemini e Cursor ficam no Argus (agentChats/store.ts) e ainda não mudam de pasta.
+  handle('sessions:move', (_e, from, to, id) =>
+    isAgentConversation(id)
+      ? tr('Por enquanto, só conversas do Claude podem ir para um projeto.', 'For now, only Claude chats can move to a project.')
+      : moveSession(from, to, id, (sessionId) => chats.closeIdle(sessionId)),
+  );
   handle('mcp:account:status', (_e, account, wait) => chats.accountMcp.status(account, wait));
   handle('mcp:account:reconnect', (_e, account, name) => chats.accountMcp.reconnect(account, name));
   handle('mcp:account:authenticate', (e, account, name) => chats.accountMcp.authenticate(account, name, isRemotePage(e.sender)));

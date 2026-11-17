@@ -438,6 +438,16 @@ export class Chats {
     if (s) this.closeSession(s);
   }
 
+  // Antes de mover a conversa de pasta (sessions/move.ts): fecha a sessão parada que esteja com ela.
+  // Falso se ela está trabalhando (ou com o remote control ligado), e aí nada é fechado.
+  closeIdle(sessionId: string): boolean {
+    const s = this.sessions.get(sessionId);
+    if (!s) return true;
+    if (s.busy || s.remoteOn) return false;
+    this.closeSession(s);
+    return true;
+  }
+
   closeAll(): void {
     this.accountMcp.closeAll();
     if (this.memoryTimer) clearTimeout(this.memoryTimer);

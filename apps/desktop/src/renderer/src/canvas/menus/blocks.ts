@@ -1,6 +1,7 @@
-import { ExternalLink, MessageCircle, PanelRight, Pencil, Trash2, X } from 'lucide-react';
+import { ExternalLink, Folder, MessageCircle, PanelRight, Pencil, Trash2, X } from 'lucide-react';
 import type { MenuItem } from '../ContextMenu';
 import { removeNode, setNoteColor } from '../operations';
+import { projectTargets } from '../operations/projectDrop';
 import type { ChatNode, ChatPanelNode, NoteNode, TerminalNode } from '../types';
 import { renameItem } from './conversation';
 import { boardSubmenu, moveSubmenu, type MoveDeps } from './shared';
@@ -26,7 +27,7 @@ export function terminalMenu(deps: Pick<Deps, 'startRename' | 'closeTerminal' | 
 }
 
 // Conversa sem projeto: sair do canvas não apaga a conversa, que continua salva no Claude Code.
-export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confirm'>, node: ChatNode): MenuItem[] {
+export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confirm' | 'moveToProject'>, node: ChatNode): MenuItem[] {
   const { setNodes } = deps;
   return [
     {
@@ -37,6 +38,7 @@ export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confi
     },
     renameItem(deps, node.data.path, { id: node.data.sessionId, sessionId: node.data.sessionId }, 'card'),
     { type: 'separator' },
+    projectSubmenu(deps, node),
     moveSubmenu(deps, node),
     boardSubmenu(deps, node),
     { type: 'separator' },
@@ -57,6 +59,18 @@ export function chatMenu(deps: MoveDeps & Pick<Deps, 'openConversation' | 'confi
         }),
     },
   ];
+}
+
+// "Mover para projeto": as pastas do canvas. A conversa deixa de ser solta e vai para a lista da pasta.
+function projectSubmenu(deps: Pick<Deps, 'nodes' | 'moveToProject'>, node: ChatNode): MenuItem {
+  const items: MenuItem[] = projectTargets(deps.nodes, node).map((p) => ({
+    type: 'action',
+    label: p.data.name,
+    dot: p.data.color,
+    onSelect: () => deps.moveToProject(node.id, p.id),
+  }));
+  if (items.length === 0) items.push({ type: 'action', label: tr('Nenhuma pasta no canvas', 'No folders on the canvas'), disabled: true, onSelect: () => {} });
+  return { type: 'submenu', label: tr('Mover para projeto', 'Move to project'), icon: Folder, items };
 }
 
 // Conversa no canvas: fechar só tira o bloco, sem perguntar, como o X do painel lateral.

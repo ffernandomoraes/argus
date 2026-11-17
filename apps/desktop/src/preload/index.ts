@@ -287,6 +287,7 @@ const api: Api = {
     trash: (path, id) => invoke('sessions:trash', path, id),
     exists: (path) => invoke('sessions:exists', path),
     relocate: (from, to) => invoke('sessions:relocate', from, to),
+    move: (from, to, id) => invoke('sessions:move', from, to, id),
     branch: (path) => invoke('sessions:branch', path),
     branches: (path) => invoke('sessions:branches', path),
     fetch: (path) => invoke('sessions:fetch', path),

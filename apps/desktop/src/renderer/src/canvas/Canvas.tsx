@@ -24,6 +24,7 @@ import { looseDrawer } from './drawers/drawerState';
 import { useShownDrawers } from './drawers/useShownDrawers';
 import { CanvasFlow } from './flow/CanvasFlow';
 import { useGroupDrop } from './flow/useGroupDrop';
+import { useMoveToProject } from './actions/useMoveToProject';
 import { useMenuHandlers } from './flow/useMenuHandlers';
 import { useCliOpen } from './focus/useCliOpen';
 import { useFocusNode } from './focus/useFocusNode';
@@ -94,7 +95,8 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     confirm: overlays.commands.confirm,
   });
   const { openGroupWide, newGroupConversation } = useGroupWide(nodes, api, focusNode, overlays.commands.confirm, conversations.newConversation);
-  const drop = useGroupDrop(api, view);
+  const projectMoves = useMoveToProject(api, drawers.commands, overlays.commands.confirm);
+  const drop = useGroupDrop(api, view, projectMoves.dropOnProject);
   const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm);
   useWorktreeMoves(api, drawers.commands);
   const menus = useMenuHandlers({
@@ -110,6 +112,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
       newWorktree: worktrees.newWorktree,
       removeWorktree: worktrees.removeWorktree,
       isPoppedOut,
+      moveToProject: projectMoves.moveToProject,
       organizeBoard,
       organizeGroup,
     },

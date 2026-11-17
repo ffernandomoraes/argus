@@ -38,6 +38,8 @@ export type Deps = {
   // Conversa aberta em janela separada agora (lido na hora do clique).
   isPoppedOut: (conversationId: string) => boolean
   trashConversation: (path: string, conversationId: string) => void
+  // "Mover para projeto": a conversa solta (card `chatId`) passa a ser da pasta `projectId`.
+  moveToProject: (chatId: string, projectId: string) => void
   // Tarefa isolada (git worktree): criar a partir da pasta (abre a conversa dela) e remover.
   newWorktree: (nodeId: string) => void
   removeWorktree: (nodeId: string) => void

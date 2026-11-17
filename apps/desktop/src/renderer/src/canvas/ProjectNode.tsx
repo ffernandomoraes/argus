@@ -17,6 +17,7 @@ import { useEmptyListText } from './project/useEmptyListText';
 import { useFolderMissing } from './project/useFolderMissing';
 import { WorkspaceFolders } from './project/WorkspaceFolders';
 import { useSessions } from './sessionsStore';
+import { useIsDropTarget } from './useCanvasView';
 import type { ProjectNode as ProjectNodeType } from './types';
 import { Tag } from '../ui/Tag';
 import { WORKTREE_IN, WORKTREE_OUT } from './worktrees/edges';
@@ -50,6 +51,8 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
   const hasTasks = useFlowStore((s) => s.nodes.some((n) => (n.data as { worktree?: { of: string } }).worktree?.of === id));
   // Pasta comum renomeada ou movida fora do Argus: aviso no lugar do caminho e "Localizar pasta…".
   const missing = useFolderMissing(data.path, !folders && !worktree);
+  // Conversa solta arrastada em cima: soltar leva ela para esta pasta (flow/useGroupDrop).
+  const receiving = useIsDropTarget(id);
 
   return (
     <div
@@ -70,7 +73,10 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
           // sombra menor; é uma cópia ligada à pasta, não outra pasta.
           worktree ? 'border-dashed bg-project/60 shadow-lg shadow-black/25' : 'bg-project shadow-xl shadow-black/40'
         }`}
-        style={{ borderColor: selected ? 'var(--color-accent)' : 'var(--color-line-strong)' }}
+        style={{
+          borderColor: selected || receiving ? 'var(--color-accent)' : 'var(--color-line-strong)',
+          boxShadow: receiving ? '0 0 0 3px color-mix(in srgb, var(--color-accent) 30%, transparent)' : undefined,
+        }}
       >
         <header className="flex h-14 shrink-0 items-center gap-2.5 px-3">
           <IconTile color={groupColor ?? '#3d9df5'} size={28} soft>

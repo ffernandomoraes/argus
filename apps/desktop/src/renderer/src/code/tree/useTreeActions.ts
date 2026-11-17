@@ -4,10 +4,13 @@ import type { ConfirmRequest } from '../../canvas/ConfirmDialog';
 import type { MenuState } from '../../canvas/ContextMenu';
 import { refreshNow } from '../../canvas/sessionsStore';
 import { useStableCallback } from '../../lib/useStableCallback';
-import { HOST_IS_MAC, HOST_IS_WIN, IS_MAC, isMod, isWslFolder, SEP, untildify } from '../../platform';
+import { HOST_IS_WIN, IS_MAC, isMod, SEP, untildify } from '../../platform';
 import { moveDrafts } from '../drafts';
 import type { Editing } from './FileTree';
-import { treeMenu, type TreeMenuActions } from './treeMenu';
+import { treeMenu, treeMenuForMany, type TreeMenuActions } from './treeMenu';
+import { useCodeEditors } from '../useCodeEditors';
+import { useTreeSelection } from './useTreeSelection';
+import { deleteRequest } from './treeDelete';
 import { dirsUpTo, parentOf } from './treePaths';
 import type { FileTree } from './useFileTree';
 import { tr } from '../../i18n';
@@ -17,15 +20,6 @@ import { IS_REMOTE } from '../../remote';
 // do outro. Copiar na árvore guarda aqui o que foi copiado, e colar copia direto entre as pastas de
 // lá (vale entre árvores e projetos desta janela).
 let remoteCopied: { root: string; rels: string[] } | null = null;
-
-// A Lixeira do Windows abre direto da Área de Trabalho; a do Mac, pelo Finder.
-// Em inglês, a Lixeira tem nome diferente em cada sistema.
-const TRASH = HOST_IS_WIN ? 'Recycle Bin' : 'Trash';
-const RECOVER = HOST_IS_MAC
-  ? tr('Dá para recuperar pelo Finder.', 'You can restore it from the Finder.')
-  : tr('Dá para recuperar pela Lixeira.', `You can restore it from the ${TRASH}.`);
-// Pasta do WSL não tem Lixeira do Windows: vai para a do Linux (ver main/wsl/trash.ts).
-const WSL_RECOVER = tr('Fica em ~/.local/share/Trash, não na Lixeira do Windows.', 'It stays in ~/.local/share/Trash, not the Windows Recycle Bin.');
 
 type Options = {
   root: string
@@ -42,17 +36,13 @@ type Options = {
 // O que dá para fazer na árvore: criar, renomear, excluir (vai para a Lixeira), copiar e colar,
 // inclusive arquivos copiados no Finder; pelo botão direito, pelos ícones do cabeçalho ou atalhos.
 export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRenamed, onDeleted }: Options) {
-  const [focused, setFocused] = useState<string | null>(selected);
+  const picked = useTreeSelection(tree, selected);
+  const { focused, setFocused } = picked;
   const [editing, setEditing] = useState<Editing | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const [prevSelected, setPrevSelected] = useState(selected);
-  if (selected !== prevSelected) {
-    setPrevSelected(selected);
-    setFocused(selected);
-  }
+  const editors = useCodeEditors();
 
   useEffect(() => {
     if (!error) return;
@@ -97,31 +87,21 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     }
   };
 
-  const askDelete = (entry: FileEntry) =>
-    setConfirm({
-      title: entry.isDir
-        ? tr(`Excluir a pasta "${entry.name}"?`, `Delete the folder "${entry.name}"?`)
-        : tr(`Excluir o arquivo "${entry.name}"?`, `Delete the file "${entry.name}"?`),
-      description: isWslFolder(root)
-        ? entry.isDir
-          ? tr(`A pasta e tudo o que há dentro dela vão para a Lixeira do Linux (WSL). ${WSL_RECOVER}`, `The folder and everything in it go to the Linux (WSL) Trash. ${WSL_RECOVER}`)
-          : tr(`O arquivo vai para a Lixeira do Linux (WSL). ${WSL_RECOVER}`, `The file goes to the Linux (WSL) Trash. ${WSL_RECOVER}`)
-        : entry.isDir
-          ? tr(`A pasta e tudo o que há dentro dela vão para a Lixeira. ${RECOVER}`, `The folder and everything in it go to the ${TRASH}. ${RECOVER}`)
-          : tr(`O arquivo vai para a Lixeira. ${RECOVER}`, `The file goes to the ${TRASH}. ${RECOVER}`),
-      confirmLabel: tr('Mover para a Lixeira', `Move to ${TRASH}`),
-      onConfirm: () => {
-        void (async () => {
-          if (done(await window.api.files.trash(root, entry.path)) === null) return;
-          moveDrafts(root, entry.path, null);
-          tree.forgetDirs(entry.path);
-          tree.load(parentOf(entry.path));
-          setFocused(null);
-          onDeleted(entry.path);
-          treeRef.current?.focus();
-        })();
-      },
-    });
+  const trashAll = async (paths: string[]) => {
+    for (const path of paths) {
+      if (done(await window.api.files.trash(root, path)) === null) break;
+      moveDrafts(root, path, null);
+      tree.forgetDirs(path);
+      onDeleted(path);
+    }
+    tree.reloadAll();
+    setFocused(null);
+    treeRef.current?.focus();
+  };
+  const askDelete = (entries: FileEntry[]) => {
+    const request = deleteRequest(root, entries, (paths) => void trashAll(paths));
+    if (request) setConfirm(request);
+  };
 
   const paste = async (dir: string) => {
     const path = done(
@@ -139,7 +119,7 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
 
   const menuActions: TreeMenuActions = {
     create: startCreate,
-    copy: (path) => (IS_REMOTE ? void (remoteCopied = { root, rels: [path] }) : void window.api.files.copy(root, [path])),
+    copy: (paths) => (IS_REMOTE ? void (remoteCopied = { root, rels: paths }) : void window.api.files.copy(root, paths)),
     paste: (dir) => void paste(dir),
     copyPath: (path) => void navigator.clipboard.writeText(path),
     // Pasta do projeto + caminho da árvore, com as barras do sistema ("~/proj" vira o caminho completo).
@@ -149,13 +129,17 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
     reveal: (path) => window.api.files.reveal(root, path),
     openInBrowser: (path) => window.api.files.openInBrowser(root, path),
     remove: askDelete,
+    editors,
+    openInEditor: (path, editor) => window.api.files.openInEditor(root, path, { editor }),
   };
 
   const openMenu = (e: MouseEvent, entry: FileEntry | null) => {
     e.preventDefault();
     e.stopPropagation();
-    setFocused(entry?.path ?? null);
-    setMenu({ x: e.clientX, y: e.clientY, items: treeMenu(entry, menuActions) });
+    picked.pick(entry?.path ?? null);
+    // Num item da seleção com vários escolhidos, o menu vale para todos.
+    const many = entry && picked.selection.has(entry.path) && picked.selection.size > 1 ? picked.chosen() : null;
+    setMenu({ x: e.clientX, y: e.clientY, items: many ? treeMenuForMany(many, menuActions) : treeMenu(entry, menuActions) });
   };
 
   // Atalhos com a árvore em foco: ⌘C copia, ⌘V cola, Enter renomeia, ⌘⌫ exclui. No Windows,
@@ -164,23 +148,25 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
   const onKeyDown = (e: KeyboardEvent) => {
     if (editing) return;
     const entry = tree.entryOf(focused);
+    const chosen = picked.chosen();
     if (isMod(e) && e.key === 'v') {
       e.preventDefault();
       void paste(targetDir(focused));
-    } else if (isMod(e) && e.key === 'c' && entry) {
+    } else if (isMod(e) && e.key === 'c' && chosen.length) {
       e.preventDefault();
-      menuActions.copy(entry.path);
+      menuActions.copy(chosen.map((c) => c.path));
     } else if ((e.key === 'Enter' || (!IS_MAC && e.key === 'F2')) && entry) {
       e.preventDefault();
       setEditing({ kind: 'rename', path: entry.path });
-    } else if ((IS_MAC ? e.metaKey && e.key === 'Backspace' : e.key === 'Delete') && entry) {
+    } else if ((IS_MAC ? e.metaKey && e.key === 'Backspace' : e.key === 'Delete') && chosen.length) {
       e.preventDefault();
-      askDelete(entry);
+      askDelete(chosen);
     }
   };
 
-  const onItemClick = useStableCallback((entry: FileEntry) => {
-    setFocused(entry.path);
+  const onItemClick = useStableCallback((entry: FileEntry, e: MouseEvent) => {
+    // ⌘-clique e ⇧-clique só escolhem.
+    if (!picked.click(entry, e)) return;
     if (!entry.isDir) return onOpenFile(entry.path);
     tree.toggle(entry.path);
   });
@@ -194,6 +180,8 @@ export function useTreeActions({ root, tree, selected, treeRef, onOpenFile, onRe
   return {
     focused,
     setFocused,
+    selection: picked.selection,
+    setError,
     editing,
     menu,
     closeMenu: () => setMenu(null),

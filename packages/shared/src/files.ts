@@ -17,6 +17,42 @@ export type FileContent =
 // Arquivo novo, fora do git: tudo como linha adicionada. hunks vazio: sem mudanças.
 export type FileDiff = { ok: true; hunks: DiffHunk[] } | { ok: false; error: string };
 
+// Busca no painel de código. Nomes: todos os arquivos do projeto (sem o que o .gitignore esconde),
+// filtrados na própria janela a cada tecla. truncated: o projeto tinha mais que o limite.
+export type FileNameList = { files: string[]; truncated: boolean };
+
+export type TextSearchOptions = { caseSensitive: boolean; wholeWord: boolean; regex: boolean };
+
+// Uma linha encontrada: o número (1 = primeira), o trecho mostrado (sem o recuo; linha longa vem
+// cortada em volta do achado) e onde o termo está dentro do trecho, [início, fim).
+export type TextSearchMatch = { line: number; text: string; ranges: [number, number][] };
+export type TextSearchFile = { path: string; matches: TextSearchMatch[] };
+
+// cancelled: uma busca mais nova da mesma janela tomou o lugar desta.
+export type TextSearchResult =
+  | { ok: true; files: TextSearchFile[]; total: number; truncated: boolean }
+  | { ok: false; error: string; cancelled?: boolean };
+
+// Editores de código que abrem um arquivo numa linha pelo link deles.
+export type CodeEditorId = 'vscode' | 'cursor';
+
+// Canais do painel de código além dos básicos (entram em InvokeChannels e SendChannels, em ipc.ts).
+export type CodePanelChannels = {
+  // Busca: os nomes de todos os arquivos e o texto dentro deles.
+  'files:names': (root: string) => FileNameList
+  'files:search': (root: string, query: string, options: TextSearchOptions) => TextSearchResult
+  // Arrastar na árvore: move itens para uma pasta; soltar do Finder: copia os caminhos para ela.
+  'files:move': (root: string, rels: string[], dir: string) => FileOpResult
+  'files:import': (paths: string[], root: string, dir: string) => FileOpResult
+  // Volta o arquivo ao último commit (novo: vai para a Lixeira).
+  'files:discard': (root: string, rel: string) => FileOpResult
+  'files:editors': () => CodeEditorId[]
+};
+
+export type CodePanelSendChannels = {
+  'files:openInEditor': (root: string, rel: string, at: { editor: CodeEditorId; line?: number }) => void
+};
+
 // Criar, renomear, excluir, colar, salvar. `path`: o item criado ou renomeado, relativo à raiz.
 // conflict: ao salvar com a base, o arquivo no disco já não era ela (alguém mudou por fora); nada
 // foi gravado.

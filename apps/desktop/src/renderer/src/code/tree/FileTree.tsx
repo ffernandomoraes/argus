@@ -1,4 +1,4 @@
-import { memo, useState, type MouseEvent, type ReactNode } from 'react';
+import { memo, useState, type DragEvent, type MouseEvent, type ReactNode } from 'react';
 import { ChevronRight, File, Folder, FolderOpen } from 'lucide-react';
 import type { FileEntry } from '@argus/shared/files';
 import { KIND_COLOR, KIND_LABEL } from '../../conversation/ConversationView';
@@ -17,23 +17,31 @@ export type Editing = { kind: 'create'; dir: string; isDir: boolean } | { kind: 
 export type TreeProps = {
   listings: Readonly<Record<string, FileEntry[]>>
   expanded: ReadonlySet<string>
-  focused: string | null
+  // Itens escolhidos (um, ou vários com ⌘ e ⇧).
+  selection: ReadonlySet<string>
+  // Pasta onde um arrasto vai soltar ('' = raiz; null = nenhum arrasto).
+  dropDir: string | null
   drafts: ReadonlySet<string>
   // Não comitado: o nome ganha a cor do VS Code (amarelo alterado, verde novo) e a letra à direita.
   changes: ReadonlyMap<string, Kind>
   editing: Editing | null
   // Os de baixo vão para cada item: precisam ser funções fixas (o item é memo).
-  onClick: (entry: FileEntry) => void
+  onClick: (entry: FileEntry, e: MouseEvent) => void
   onContextMenu: (e: MouseEvent, entry: FileEntry) => void
+  onDragStart: (e: DragEvent, entry: FileEntry) => void
+  onDragOver: (e: DragEvent, entry: FileEntry) => void
+  onDrop: (e: DragEvent, entry: FileEntry) => void
   onSubmitEdit: (name: string) => void
   onCancelEdit: () => void
 };
 
-type ItemProps = Pick<TreeProps, 'onClick' | 'onContextMenu' | 'onSubmitEdit' | 'onCancelEdit'> & {
+type ItemProps = Pick<TreeProps, 'onClick' | 'onContextMenu' | 'onSubmitEdit' | 'onCancelEdit' | 'onDragStart' | 'onDragOver' | 'onDrop'> & {
   entry: FileEntry
   depth: number
   open: boolean
-  focused: boolean
+  selected: boolean
+  // Pasta onde o arrasto vai soltar.
+  dropping: boolean
   draft: boolean
   change?: Kind
   renaming: boolean
@@ -43,7 +51,7 @@ type ItemProps = Pick<TreeProps, 'onClick' | 'onContextMenu' | 'onSubmitEdit' | 
 
 // Uma linha da árvore. Memo: digitar, focar outro item ou abrir outra pasta só redesenha as linhas
 // que mudaram (a pasta aberta redesenha junto com o conteúdo dela).
-const TreeItem = memo(function TreeItem({ entry, depth, open, focused, draft, change, renaming, children, ...p }: ItemProps) {
+const TreeItem = memo(function TreeItem({ entry, depth, open, selected, dropping, draft, change, renaming, children, ...p }: ItemProps) {
   const Icon = entry.isDir ? (open ? FolderOpen : Folder) : File;
 
   if (renaming) {
@@ -55,14 +63,18 @@ const TreeItem = memo(function TreeItem({ entry, depth, open, focused, draft, ch
   }
 
   return (
-    <li>
+    <li className={dropping ? 'rounded-md bg-accent/15 ring-1 ring-accent/60' : undefined}>
       <button
-        onClick={() => p.onClick(entry)}
+        onClick={(e) => p.onClick(entry, e)}
         onContextMenu={(e) => p.onContextMenu(e, entry)}
+        draggable
+        onDragStart={(e) => p.onDragStart(e, entry)}
+        onDragOver={(e) => p.onDragOver(e, entry)}
+        onDrop={(e) => p.onDrop(e, entry)}
         data-path={entry.path}
         style={{ paddingLeft: indent(depth) }}
         className={`flex w-full items-center gap-1.5 rounded-md py-1 pr-2 text-left text-xs outline-none ${
-          focused ? 'bg-selection text-white [&_span]:text-white [&_svg]:text-white' : 'text-muted hover:bg-fill hover:text-text'
+          selected ? 'bg-selection text-white [&_span]:text-white [&_svg]:text-white' : 'text-muted hover:bg-fill hover:text-text'
         } ${entry.ignored ? 'opacity-50' : ''}`}
       >
         <ChevronRight size={12} className={`shrink-0 transition-transform ${entry.isDir ? '' : 'invisible'} ${open ? 'rotate-90' : ''}`} />
@@ -105,12 +117,16 @@ export function TreeList({ dir, entries, depth, ...p }: TreeProps & { dir: strin
             entry={e}
             depth={depth}
             open={open}
-            focused={p.focused === e.path}
+            selected={p.selection.has(e.path)}
+            dropping={e.isDir && p.dropDir === e.path}
             draft={p.drafts.has(e.path)}
             change={p.changes.get(e.path)}
             renaming={p.editing?.kind === 'rename' && p.editing.path === e.path}
             onClick={p.onClick}
             onContextMenu={p.onContextMenu}
+            onDragStart={p.onDragStart}
+            onDragOver={p.onDragOver}
+            onDrop={p.onDrop}
             onSubmitEdit={p.onSubmitEdit}
             onCancelEdit={p.onCancelEdit}
           >

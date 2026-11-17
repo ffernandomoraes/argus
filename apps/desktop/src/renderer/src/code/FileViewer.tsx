@@ -2,18 +2,19 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useUncommitted } from '../canvas/sessionsStore';
 import { DocumentMarkdown } from '../conversation/DocumentMarkdown';
 import type { LineRange } from '../conversation/fileLinks';
-import { isMod, keys } from '../platform';
-import { CloseCodeButton } from './CloseCodeButton';
+import { isMod } from '../platform';
+import { FileHeader, type View } from './FileHeader';
 import { DiffPane } from './DiffPane';
 // Pergunta antes do ⌘R descartar os rascunhos (registra ao carregar, ver o arquivo).
 import './draftsReloadGuard';
 import { useCodeEditor } from './editor/useCodeEditor';
+import { useGitMarks } from './editor/useGitMarks';
+import { useFileTools } from './fileTools/useFileTools';
 import { useFileRevision } from './editor/useFileRevision';
 import { useFileEscape } from './fileEscape';
 import { changesInTree } from './tree/treePaths';
 import { tr } from '../i18n';
 
-type View = 'diff' | 'file' | 'preview';
 
 const isMarkdown = (path: string) => /\.(md|markdown)$/i.test(path);
 
@@ -29,6 +30,8 @@ export function FileViewer({
   onDiffChange,
   onClose,
   onCloseCode,
+  askKey,
+  onDeleted,
 }: {
   root: string
   path: string
@@ -40,16 +43,24 @@ export function FileViewer({
   // ESC fecha só o arquivo (volta para a árvore); o X fecha o painel de código inteiro.
   onClose: () => void
   onCloseCode: () => void
+  // Campo da conversa que recebe as linhas escolhidas (⌘L); nulo: nenhuma conversa desta pasta.
+  askKey: string | null
+  // O arquivo deixou de existir (arquivo novo desfeito).
+  onDeleted: () => void
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   // Recarga por mudança no disco.
   const revision = useFileRevision(root, path);
-  const { content, dirty, conflict, saveError, reloadFromDisk, docVersion, text, focus } = useCodeEditor(hostRef, { root, path, lines, revision });
+  const editor = useCodeEditor(hostRef, { root, path, lines, revision });
+  const { content, dirty, conflict, saveError, reloadFromDisk, docVersion, text, focus } = editor;
   useFileEscape(onClose);
   // Diff só para arquivo com mudança desde o último commit (a mesma cor da árvore); sem mudança, o
   // seletor some e o arquivo aparece mesmo que o Diff tenha sido pedido.
   const uncommitted = useUncommitted(root);
-  const changed = useMemo(() => changesInTree(root, uncommitted).has(path), [root, uncommitted, path]);
+  const change = useMemo(() => changesInTree(root, uncommitted).get(path), [root, uncommitted, path]);
+  const changed = !!change;
+  const tools = useFileTools({ root, path, editor, change, askKey, onDeleted });
+  useGitMarks(root, path, editor, `${revision}|${change ?? ''}|${dirty}`);
   const diff = wantsDiff && changed;
   const markdown = isMarkdown(path);
   const [preview, setPreview] = useState(false);
@@ -77,44 +88,29 @@ export function FileViewer({
     else if (view === 'file') focus();
   }, [view, focus]);
   const onKeyDown = (e: KeyboardEvent) => {
+    if (view === 'file' && tools.onKeyDown(e)) return;
     if (!markdown || !isMod(e) || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'v') return;
     e.preventDefault();
     switched.current = true;
     choose(view === 'preview' ? 'file' : 'preview');
   };
 
+  // O editor à vista e carregado: as ferramentas dele aparecem no cabeçalho.
+  const ready = view === 'file' && content?.ok === true;
+
   return (
-    <section className="flex min-w-0 flex-1 flex-col bg-[#1e1e1e]" onKeyDownCapture={onKeyDown}>
-      <header className="flex h-12 items-center gap-2 border-b border-line bg-surface px-3">
-        <span className="min-w-0 truncate font-mono text-xs text-muted" title={path}>
-          {path}
-        </span>
-        {dirty && (
-          <span className="shrink-0 text-[12px] text-faint" title={tr('Alterações não salvas', 'Unsaved changes')}>
-            {tr(`● não salvo - ${keys('⌘S')}`, `● unsaved - ${keys('⌘S')}`)}
-          </span>
-        )}
-        <span className="flex-1" />
-        {view === 'file' && content?.ok && content.truncated && (
-          <span className="text-[12px] text-needs-you">{tr('mostrando só o primeiro 1 MB, sem edição', 'showing only the first 1 MB, read-only')}</span>
-        )}
-        {views.length > 1 && (
-          <div className="flex rounded-lg border border-line p-0.5 text-[12px]">
-            {views.map((o) => (
-              <button
-                key={o.value}
-                onClick={() => choose(o.value)}
-                aria-pressed={view === o.value}
-                title={o.value === 'preview' || (markdown && o.value === 'file') ? keys('⇧⌘V') : undefined}
-                className={`rounded-md px-2 py-0.5 ${view === o.value ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <CloseCodeButton onClick={onCloseCode} />
-      </header>
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#1e1e1e]" onKeyDownCapture={onKeyDown}>
+      <FileHeader
+        path={path}
+        dirty={dirty}
+        truncated={ready && content.truncated}
+        view={view}
+        views={views}
+        markdown={markdown}
+        onChoose={choose}
+        tools={ready ? tools : null}
+        onCloseCode={onCloseCode}
+      />
       {view === 'file' && conflict && (
         <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[12px] text-needs-you">
           <span className="flex-1">

@@ -92,7 +92,8 @@ export async function copyInto(fromRoot: string, rels: string[], root: string, d
   return copyEach(root, dir, sources);
 }
 
-async function copyEach(root: string, dir: string, sources: string[]): Promise<FileOpResult> {
+// Também usada ao soltar na árvore arquivos do Finder (move.ts).
+export async function copyEach(root: string, dir: string, sources: string[]): Promise<FileOpResult> {
   let last = '';
   try {
     for (const src of sources) {

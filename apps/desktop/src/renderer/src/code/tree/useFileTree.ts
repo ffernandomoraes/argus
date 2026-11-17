@@ -71,6 +71,8 @@ export function useFileTree(root: string) {
     toggle,
     // Renomeado: as pastas abertas dentro dele continuam abertas com o nome novo.
     renameDirs: (from: string, to: string) => setExpanded((s) => renamedDirs(s, from, to)),
+    // Recolher tudo: só a raiz fica à vista.
+    collapseAll: () => setExpanded(() => new Set()),
     // Excluído: as pastas dentro dele saem da lista das abertas.
     forgetDirs: (path: string) => setExpanded((s) => new Set([...s].filter((d) => !inside(d, path)))),
     entryOf: (path: string | null) => (path === null ? null : (all().find((e) => e.path === path) ?? null)),

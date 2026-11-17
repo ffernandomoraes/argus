@@ -17,6 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@codemirror/search": "6.7.2",
     "@sentry/electron": "8.4.0",
     "@sentry/node-native": "11.12.0",
     "@tanstack/react-virtual": "3.14.26",

@@ -54,6 +54,7 @@ export function DrawerHost({ state, targets, layout, commands, actions, onShown,
             file={state.code.file}
             rightOffset={layout.codeOffset}
             commands={commands}
+            askKey={askTarget(state, targets, code.root)}
           />
         )}
       </Presence>
@@ -77,6 +78,17 @@ export function DrawerHost({ state, targets, layout, commands, actions, onShown,
 }
 
 const NO_OBSTACLES: Drawer[] = [];
+
+// Conversa que recebe a seleção do editor ("Perguntar ao Claude"): a do drawer dono do código; sem
+// ele (código aberto pelo card da pasta), a última conversa à vista da mesma pasta. A chave é a do
+// rascunho do campo dela.
+function askTarget(state: DrawerState, targets: SlotTargets, root: string): string | null {
+  const isChat = (d: Drawer) => !d.conversation.subagent && !d.conversation.tasks;
+  const owner = state.code.slot ? state.drawers.find((d) => d.id === state.code.slot) : undefined;
+  if (owner && isChat(owner)) return owner.conversation.conversationId;
+  const same = state.drawers.filter((d) => isChat(d) && targets[d.id]?.project.path === root);
+  return same[same.length - 1]?.conversation.conversationId ?? null;
+}
 
 type EntryProps = {
   slot: SlotId

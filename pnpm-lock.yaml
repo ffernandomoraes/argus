@@ -44,6 +44,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@codemirror/search':
+        specifier: 6.7.2
+        version: 6.7.2
       '@sentry/electron':
         specifier: 8.4.0
         version: 8.4.0(@sentry/node-native@11.12.0(rollup@4.64.0))(rollup@4.64.0)

@@ -71,7 +71,7 @@ export type DrawerAction =
   | { type: 'toggleCode'; slot: SlotId }
   | { type: 'openProjectCode'; project: ProjectData }
   | { type: 'openFile'; slot?: SlotId; project?: ProjectData; file: OpenFile | null }
-  | { type: 'selectFile'; root: string; path: string }
+  | { type: 'selectFile'; root: string; path: string; lines?: LineRange }
   | { type: 'renamedFile'; root: string; from: string; to: string }
   | { type: 'deletedFile'; root: string; path: string }
   | { type: 'fileDiff'; diff: boolean }
@@ -237,7 +237,7 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
     case 'openFile':
       return openFile(action.file ? withoutPlan(state) : state, action);
     case 'selectFile':
-      return file(state, { root: action.root, path: action.path });
+      return file(state, { root: action.root, path: action.path, ...(action.lines && { lines: action.lines }) });
     case 'renamedFile': {
       const f = state.code.file;
       return touches(f, action.root, action.from) ? file(state, { ...f, path: action.to + f.path.slice(action.from.length) }) : state;

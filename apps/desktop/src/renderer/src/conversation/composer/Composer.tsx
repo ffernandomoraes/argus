@@ -28,6 +28,7 @@ import { ComposerFooter } from './ComposerFooter';
 import { ComposerNotices } from './ComposerNotices';
 import { pastedFiles } from './pastedFiles';
 import { useComposerMenus } from './useComposerMenus';
+import { useComposerInbox } from './composerInbox';
 import { useDraft } from './useDraft';
 import { usePromptHistory } from './usePromptHistory';
 import { tr } from '../../i18n';
@@ -176,6 +177,9 @@ export const Composer = memo(function Composer(props: Props) {
 
   // Sem lista de dependências: o send muda a cada desenho (lê o rascunho e os anexos atuais).
   useImperativeHandle(ref, () => ({ restore, send }));
+
+  // Trecho mandado do editor de código: entra no fim do que já está escrito, e o foco vem para cá.
+  useComposerInbox(draftKey, setDraft, field);
 
   // Escolher um agente completa o nome dele no campo; escolher um comando já executa ele.
   const selectAgent = (a: AgentDef) => {

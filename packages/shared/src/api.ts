@@ -10,7 +10,7 @@ import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
 import type { CliStatus } from './cli';
 import type { DevServer, ProjectServer } from './devServers';
-import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files';
+import type { FileContent, FileDiff, FileEntry, CodeEditorId, FileNameList, FileOpResult, TextSearchOptions, TextSearchResult } from './files';
 import type { HistoryPage, HistoryRequest, Message } from './history';
 import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
 import type { ClipboardCommand, EditAction, ThemeSource } from './ipc';
@@ -428,6 +428,18 @@ export type Api = {
     // Grava um anexo da janela de acesso remoto numa pasta temporária do computador da conversa; o
     // caminho dele em `path`.
     upload: (name: string, data: Uint8Array) => Promise<FileOpResult>
+    // Busca do painel de código: os nomes de todos os arquivos (filtrados na janela) e o texto
+    // dentro deles. Uma busca nova da mesma janela cancela a anterior.
+    names: (root: string) => Promise<FileNameList>
+    search: (root: string, query: string, options: TextSearchOptions) => Promise<TextSearchResult>
+    // Arrastar na árvore: move para a pasta. Soltar do Finder: copia os caminhos para ela.
+    move: (root: string, rels: string[], dir: string) => Promise<FileOpResult>
+    importPaths: (paths: string[], root: string, dir: string) => Promise<FileOpResult>
+    // Desfaz as mudanças do arquivo desde o último commit (o novo vai para a Lixeira).
+    discard: (root: string, rel: string) => Promise<FileOpResult>
+    // VS Code e Cursor instalados; abrir o arquivo num deles, na linha.
+    editors: () => Promise<CodeEditorId[]>
+    openInEditor: (root: string, rel: string, at: { editor: CodeEditorId; line?: number }) => void
     reveal: (root: string, rel: string) => void
     // Abre a própria pasta no Finder ou no Explorador de Arquivos.
     openFolder: (path: string) => void

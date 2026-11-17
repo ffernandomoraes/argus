@@ -7,7 +7,17 @@ import { changedSpan, lineEnds, toDoc, withLf, type LineEnds } from './fileText'
 // do editor = não salvo. `baseText` é a base como está no disco, guardada uma vez, para o rascunho
 // não converter o arquivo inteiro a cada tecla. `ends`: o fim de cada linha da base, para salvar
 // sem trocar o das linhas que não mudaram.
-export type OpenedFile = { view: EditorView; ends: LineEnds; truncated: boolean; base: Text; baseText: string };
+// `setWrap`: liga ou desliga a quebra de linha; `setMention`: o botão "Mencionar na conversa" sobre a
+// seleção (null tira).
+export type OpenedFile = {
+  view: EditorView
+  ends: LineEnds
+  truncated: boolean
+  base: Text
+  baseText: string
+  setWrap: (on: boolean) => void
+  setMention: (onMention: (() => void) | null) => void
+};
 
 // O disco tem um texto novo (lido ou acabado de gravar).
 export function setBase(file: OpenedFile, text: string, doc: Text = toDoc(text)): void {

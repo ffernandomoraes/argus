@@ -3,7 +3,9 @@ import type { FileContent } from '@argus/shared/files';
 import { refreshNow } from '../../canvas/sessionsStore';
 import type { LineRange } from '../../conversation/fileLinks';
 import { getDraft, setDraft } from '../drafts';
+import type { EditorView } from '@codemirror/view';
 import type { OpenedFile } from './openedFile';
+import { getWrap } from './editorPrefs';
 import { tr } from '../../i18n';
 
 // O CodeMirror fica num pedaço à parte, fora do que roda na abertura do app. O main.tsx o
@@ -11,6 +13,7 @@ import { tr } from '../../i18n';
 // arquivo já aberto, e aí ele já carregou.
 let engine: typeof import('./engine') | null = null;
 export const loadEditor = () => import('./engine').then((m) => (engine = m));
+export type EditorEngine = typeof import('./engine');
 const loaded = () => engine!;
 
 // Só o que importa para a interface: o texto fica no editor.
@@ -80,6 +83,7 @@ export function useCodeEditor(
           doc: draft?.doc ?? base,
           path,
           readOnly: res.truncated,
+          wrapped: getWrap(),
           onSave: () => onSaveKey(),
           onChange: (doc) => {
             setDocVersion((v) => v + 1);
@@ -90,7 +94,7 @@ export function useCodeEditor(
           },
         });
         destroy = editor.destroy;
-        file = { view: editor.view, ends: lineEnds(res.text), truncated: res.truncated, base, baseText: res.text };
+        file = { view: editor.view, ends: lineEnds(res.text), truncated: res.truncated, base, baseText: res.text, setWrap: editor.setWrap, setMention: editor.setMention };
         opened.current = file;
         setDirty(!!draft && !draft.doc.eq(base));
         const l = latestLines();
@@ -153,9 +157,21 @@ export function useCodeEditor(
     setDraft(root, path, null);
   };
 
-  // Texto como está no editor, com o que ainda não foi salvo.
-  const text = () => opened.current?.view.state.doc.toString() ?? '';
-  const focus = () => opened.current?.view.focus();
+  return { content, dirty, conflict, saveError, save, reloadFromDisk, docVersion, ...editorAccess(opened) };
+}
 
-  return { content, dirty, conflict, saveError, save, reloadFromDisk, docVersion, text, focus };
+// O editor já montado, para quem está fora dele. Antes de montar, nada acontece.
+function editorAccess(opened: RefObject<OpenedFile | null>) {
+  return {
+    // Texto como está no editor, com o que ainda não foi salvo.
+    text: () => opened.current?.view.state.doc.toString() ?? '',
+    focus: () => opened.current?.view.focus(),
+    // Comando no editor (ir para a linha, linhas escolhidas, marcas do git).
+    command: <T>(run: (view: EditorView, engine: EditorEngine) => T): T | null => {
+      const file = opened.current;
+      return file && engine ? run(file.view, engine) : null;
+    },
+    setWrap: (on: boolean) => opened.current?.setWrap(on),
+    setMention: (onMention: (() => void) | null) => opened.current?.setMention(onMention),
+  };
 }

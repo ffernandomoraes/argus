@@ -1,5 +1,6 @@
-import { ClipboardPaste, Copy, FilePlus, FolderPlus, FolderSearch, Globe, Link, Pencil, Trash2 } from 'lucide-react';
-import type { FileEntry } from '@argus/shared/files';
+import { ClipboardPaste, Code2, Copy, FilePlus, FolderPlus, FolderSearch, Globe, Link, Pencil, Trash2 } from 'lucide-react';
+import type { CodeEditorId, FileEntry } from '@argus/shared/files';
+import { EDITOR_NAMES } from '../useCodeEditors';
 import type { MenuItem } from '../../canvas/ContextMenu';
 import { FILE_MANAGER } from '../../platform';
 import { parentOf } from './treePaths';
@@ -8,14 +9,17 @@ import { IS_REMOTE } from '../../remote';
 
 export type TreeMenuActions = {
   create: (dir: string, isDir: boolean) => void
-  copy: (path: string) => void
+  copy: (paths: string[]) => void
   paste: (dir: string) => void
   copyPath: (path: string) => void
   copyAbsolutePath: (path: string) => void
   rename: (path: string) => void
   reveal: (path: string) => void
   openInBrowser: (path: string) => void
-  remove: (entry: FileEntry) => void
+  remove: (entries: FileEntry[]) => void
+  // VS Code e Cursor instalados.
+  editors: CodeEditorId[]
+  openInEditor: (path: string, editor: CodeEditorId) => void
 };
 
 // O que o navegador mostra sozinho: página, PDF, imagem.
@@ -30,7 +34,7 @@ export function treeMenu(entry: FileEntry | null, a: TreeMenuActions): MenuItem[
     { type: 'action', label: tr('Nova pasta', 'New folder'), icon: FolderPlus, onSelect: () => a.create(dir, true) },
     { type: 'separator' },
   ];
-  if (entry) items.push({ type: 'action', label: tr('Copiar', 'Copy'), icon: Copy, onSelect: () => a.copy(entry.path) });
+  if (entry) items.push({ type: 'action', label: tr('Copiar', 'Copy'), icon: Copy, onSelect: () => a.copy([entry.path]) });
   items.push({ type: 'action', label: tr('Colar', 'Paste'), icon: ClipboardPaste, onSelect: () => a.paste(dir) });
   if (entry) {
     items.push(
@@ -42,10 +46,22 @@ export function treeMenu(entry: FileEntry | null, a: TreeMenuActions): MenuItem[
   }
   // Abrir no navegador e mostrar no Finder abririam no outro computador: fora da janela remota.
   if (!IS_REMOTE) {
+    for (const editor of entry && !entry.isDir ? a.editors : [])
+      items.push({ type: 'action', label: tr(`Abrir no ${EDITOR_NAMES[editor]}`, `Open in ${EDITOR_NAMES[editor]}`), icon: Code2, onSelect: () => a.openInEditor(entry!.path, editor) });
     if (entry && !entry.isDir && BROWSER_FILE.test(entry.path))
       items.push({ type: 'action', label: tr('Abrir no navegador', 'Open in browser'), icon: Globe, onSelect: () => a.openInBrowser(entry.path) });
     items.push({ type: 'action', label: tr(`Mostrar no ${FILE_MANAGER}`, `Show in ${FILE_MANAGER}`), icon: FolderSearch, onSelect: () => a.reveal(entry?.path ?? '') });
   }
-  if (entry) items.push({ type: 'separator' }, { type: 'action', label: tr('Excluir', 'Delete'), icon: Trash2, danger: true, onSelect: () => a.remove(entry) });
+  if (entry) items.push({ type: 'separator' }, { type: 'action', label: tr('Excluir', 'Delete'), icon: Trash2, danger: true, onSelect: () => a.remove([entry]) });
   return items;
+}
+
+// Menu com vários itens escolhidos: o que vale para todos de uma vez.
+export function treeMenuForMany(entries: FileEntry[], a: TreeMenuActions): MenuItem[] {
+  const n = entries.length;
+  return [
+    { type: 'action', label: tr(`Copiar ${n} itens`, `Copy ${n} items`), icon: Copy, onSelect: () => a.copy(entries.map((e) => e.path)) },
+    { type: 'separator' },
+    { type: 'action', label: tr(`Excluir ${n} itens`, `Delete ${n} items`), icon: Trash2, danger: true, onSelect: () => a.remove(entries) },
+  ];
 }

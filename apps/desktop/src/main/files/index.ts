@@ -3,6 +3,8 @@
 export { listDir } from './tree';
 export { readFile } from './read';
 export { locateFile } from './locate';
+export { listFileNames } from './fileNames';
+export { searchText } from './textSearch';
 export { readImage } from './image';
 export { createItem, openFolder, openInBrowser, renameItem, revealItem, trashItem, viewItem, writeFile } from './ops';
 export { copyInto, copyToClipboard, pasteFromClipboard } from './clipboard';

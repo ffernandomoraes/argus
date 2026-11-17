@@ -52,6 +52,9 @@ const BLOCKED_INVOKE: { [C in keyof InvokeChannels]?: () => Awaited<ReturnType<I
   // copia entre pastas de lá por files:copyInto.
   'files:copy': () => undefined,
   'files:paste': () => ({ ok: false, error: unavailable() }),
+  // Os arquivos soltos e o editor de código são deste computador, não do outro.
+  'files:import': () => ({ ok: false, error: unavailable() }),
+  'files:editors': () => [],
   // O login de MCP passa: o de lá devolve o link para abrir aqui (ver chats/mcpStatus.ts).
 };
 
@@ -70,6 +73,7 @@ const BLOCKED_SEND = new Set<string>([
   'files:openFolder',
   'files:view',
   'files:openInBrowser',
+  'files:openInEditor',
   'sessions:openRepo',
   'providers:install',
   'providers:add',

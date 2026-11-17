@@ -30,7 +30,8 @@ export type DrawerCommands = {
   // ou por uma conversa do canvas (`project`). Fora da pasta, o visualizador não tem acesso.
   openFile: (from: { slot?: SlotId; project?: ProjectData }, root: string, path: string, lines?: LineRange, diff?: boolean) => void
   // Arquivo escolhido, renomeado ou excluído na árvore do código.
-  selectFile: (root: string, path: string) => void
+  // lines: a linha de um resultado da busca no conteúdo, destacada ao abrir.
+  selectFile: (root: string, path: string, lines?: LineRange) => void
   renamedFile: (root: string, from: string, to: string) => void
   deletedFile: (root: string, path: string) => void
   setFileDiff: (diff: boolean) => void
@@ -71,7 +72,7 @@ export function useDrawers(board: string, nodes: CanvasNode[]): { state: DrawerS
         if (rel && outside) return window.api.files[outside](root, rel);
         dispatch({ type: 'openFile', ...from, file: rel ? { root, path: rel, lines, diff } : null });
       },
-      selectFile: (root, path) => dispatch({ type: 'selectFile', root, path }),
+      selectFile: (root, path, lines) => dispatch({ type: 'selectFile', root, path, lines }),
       renamedFile: (root, from, to) => dispatch({ type: 'renamedFile', root, from, to }),
       deletedFile: (root, path) => dispatch({ type: 'deletedFile', root, path }),
       setFileDiff: (diff) => dispatch({ type: 'fileDiff', diff }),

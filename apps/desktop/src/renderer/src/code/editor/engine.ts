@@ -3,3 +3,4 @@ export { createEditor } from './createEditor';
 export { highlightLines } from './editorSetup';
 export { diskChange, fromDoc, lineEnds, toDoc } from './fileText';
 export { replaceWithDisk, setBase } from './openedFile';
+export { goToLine, selectedLines, showGitMarks } from './editorCommands';

@@ -11,7 +11,7 @@ import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
 import type { CliStatus } from './cli';
 import type { DevServer, ProjectServer } from './devServers';
-import type { FileContent, FileDiff, FileEntry, FileOpResult } from './files';
+import type { FileContent, FileDiff, FileEntry, FileOpResult, CodePanelChannels, CodePanelSendChannels } from './files';
 import type { HistoryPage, HistoryRequest, Message } from './history';
 import type { TaskOutputChunk, TaskOutputRef } from './backgroundTasks';
 import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
@@ -46,7 +46,7 @@ export type ClipboardCommand = 'cut' | 'copy' | 'paste';
 export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste'];
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
-export type InvokeChannels = PhoneInvokeChannels & {
+export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & {
   // Janela de acesso remoto: abre no navegador daqui um servidor que roda no localhost do outro
   // computador (ver main/remote/tunnelClient.ts).
   'remote:openLocalhost': (port: number) => RemoteLocalhostResult
@@ -207,7 +207,7 @@ export type InvokeChannels = PhoneInvokeChannels & {
 };
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
-export type SendChannels = PhoneSendChannels & {
+export type SendChannels = PhoneSendChannels & CodePanelSendChannels & {
   // "Abrir localhost" pelo acesso remoto: do Argus do notebook para o de casa, nunca de uma janela
   // (ver main/remote/tunnelHost.ts). As respostas voltam como avisos tunnel:data e tunnel:close.
   'tunnel:open': (id: number, port: number) => void

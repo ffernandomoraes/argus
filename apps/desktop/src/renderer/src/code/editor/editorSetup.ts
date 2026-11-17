@@ -50,6 +50,40 @@ export const editorTheme = EditorView.theme({
   '.cm-gutters': { backgroundColor: '#1e1e1e', border: 'none' },
   '.cm-line-highlight': { backgroundColor: 'rgba(96, 165, 250, 0.16)' },
   '.cm-line-changed': { backgroundColor: 'rgba(74, 222, 128, 0.16)' },
+  // Localizar e substituir do arquivo (⌘F, do basicSetup) com os campos e botões do app, no lugar
+  // do visual padrão do CodeMirror.
+  '.cm-panels': { backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' },
+  '.cm-panels-top': { borderBottom: '1px solid var(--color-line)' },
+  '.cm-panels-bottom': { borderTop: '1px solid var(--color-line)' },
+  '.cm-search': { fontFamily: 'var(--font-sans)', fontSize: '12px', padding: '6px 32px 6px 8px', lineHeight: '2' },
+  '.cm-search label': { color: 'var(--color-muted)', fontSize: '12px', marginRight: '6px' },
+  '.cm-search input[type=checkbox]': { accentColor: 'var(--color-accent)', verticalAlign: 'middle' },
+  '.cm-textfield': {
+    backgroundColor: 'var(--color-bg)',
+    color: 'var(--color-text)',
+    border: '1px solid var(--color-line)',
+    borderRadius: '6px',
+    padding: '3px 8px',
+    fontSize: '12px',
+    outline: 'none',
+  },
+  '.cm-textfield:focus': { borderColor: 'var(--color-line-strong)' },
+  '.cm-button': {
+    backgroundImage: 'none',
+    backgroundColor: 'var(--color-fill)',
+    color: 'var(--color-text)',
+    border: '1px solid var(--color-line)',
+    borderRadius: '6px',
+    padding: '2px 8px',
+    fontSize: '12px',
+  },
+  '.cm-button:hover': { backgroundColor: 'var(--color-surface-2)' },
+  '.cm-button:active': { backgroundImage: 'none', backgroundColor: 'var(--color-surface-2)' },
+  '.cm-search button[name=close]': { color: 'var(--color-muted)', fontSize: '18px', top: '6px', right: '10px', cursor: 'pointer' },
+  '.cm-search button[name=close]:hover': { color: 'var(--color-text)' },
+  // Achados no arquivo: o mesmo âmbar da busca no painel; o atual, mais forte.
+  '.cm-searchMatch': { backgroundColor: 'rgba(251, 191, 36, 0.25)', outline: 'none' },
+  '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: 'rgba(251, 191, 36, 0.55)' },
 });
 
 // Destaca as linhas citadas num link do chat e rola até elas.

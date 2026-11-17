@@ -90,6 +90,8 @@ win:
   files:
     - '!node_modules/onnxruntime-node/bin/napi-v6/{darwin,linux}/**'
     - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
+  # Gerado de build/iconWindows.svg, que não tem a margem do ícone do Mac: no Windows os ícones
+  # ocupam o quadro todo, e com a margem o Argus ficava menor que os outros na barra de tarefas.
   icon: build/icon.ico
 
 # Instala na pasta do usuário, sem pedir administrador, e abre o app no fim. O nome do arquivo é o

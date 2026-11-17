@@ -10,6 +10,7 @@ import { reportWarning } from '../errorReports';
 import { createBackoff } from '../lib/backoff';
 import { closeGently, guardStdin, writeStdin } from '../lib/childProcess';
 import { withTimeout } from '../lib/timeout';
+import { createModelRetry, MODEL_GRACE_MS } from './modelRetry';
 import { parseControlReply, parseRateLimits, type ChatWindows } from './parse';
 
 // Os limites de uso de uma conta do Claude. Vêm do mesmo endereço que o Claude Code consulta para
@@ -158,6 +159,8 @@ export class UsageMonitor {
   // A última leitura pedida por uma janela que recomeçou: no máximo uma por batida, mesmo que o
   // servidor siga devolvendo uma janela prestes a recomeçar.
   private resetReadAt = 0;
+  // Lista de modelos reduzida (o `claude` respondeu antes de ter o catálogo): pergunta de novo depois.
+  private modelRetry = createModelRetry(() => this.askModelsAgain());
   // A última leitura que deu certo (sem o motivo da falha; para a tela, ver current).
   last: Usage | null = null;
   info: ClaudeInfo | null = null;
@@ -187,6 +190,7 @@ export class UsageMonitor {
   stop(): void {
     this.stopped = true;
     this.starts++;
+    this.modelRetry.reset();
     this.clearTimer();
     if (this.restart) clearTimeout(this.restart);
     this.restart = null;
@@ -541,6 +545,8 @@ export class UsageMonitor {
 
     let gotInfo = false;
     let gotUsage = false;
+    let reduced = false;
+    let closing = false;
     const epoch = this.epoch;
     createInterface({ input: proc.stdout }).on('line', (line) => {
       // Conta que saiu, ou login trocado: este `claude` ainda responde pela conta anterior.
@@ -548,8 +554,16 @@ export class UsageMonitor {
       const reply = this.onLine(line);
       gotInfo ||= !!reply?.info;
       gotUsage ||= !!reply?.usage || !!reply?.noLimits;
-      // O de uma vez só já deu o que tinha a dar.
-      if (oneShot && gotInfo && gotUsage && this.proc === proc) this.closeProc();
+      if (reply?.info) reduced = this.modelRetry.check(reply.info.models);
+      if (!oneShot || !gotInfo || !gotUsage || this.proc !== proc || closing) return;
+      // O de uma vez só já deu o que tinha a dar. Com a lista de modelos reduzida, fica aberto mais um
+      // pouco: a busca do catálogo segue em segundo plano e só grava com o processo vivo (ver modelRetry).
+      closing = true;
+      if (!reduced) return this.closeProc();
+      this.clearOneShotTimer();
+      this.oneShotTimer = setTimeout(() => {
+        if (this.proc === proc) this.closeProc();
+      }, MODEL_GRACE_MS);
     });
     proc.stderr.on('data', () => {});
     proc.on('error', (err) => console.warn('[usage] falha ao iniciar o claude:', err.message));
@@ -576,6 +590,15 @@ export class UsageMonitor {
         if (silent) this.fail('timeout');
       }, ONE_SHOT_TIMEOUT_MS);
     }
+  }
+
+  // A lista de modelos veio reduzida: um `claude` novo, já com o catálogo guardado, traz a inteira. O de
+  // reserva aberto é trocado; com um de uma vez só no ar, a resposta dele decide a próxima tentativa.
+  private askModelsAgain(): void {
+    if (this.stopped) return;
+    if (this.proc && this.oneShot) return;
+    if (this.proc) this.closeProc();
+    this.launch(!this.persistent);
   }
 
   // O de reserva caiu (ou nem abriu): reabre depois de esperar (backoff).

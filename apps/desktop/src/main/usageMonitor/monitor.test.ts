@@ -521,6 +521,45 @@ describe('UsageMonitor', () => {
 
   // ARGUS-A, 2026-11: uma conta recebia 403 em toda tentativa; o monitor insistia, ia para o `claude`
   // de reserva e avisava o Sentry em toda abertura.
+  // 2026-11-17 (Windows): o menu só com "Fable", sem 5.2 nem 5.1. Sem o catálogo guardado, o `claude`
+  // responde ao "init" com a lista reduzida do binário; o Argus perguntava uma vez só (ver modelRetry).
+  it('lista de modelos reduzida na abertura: segura o claude 15 s e pergunta de novo a um novo', async () => {
+    fake.launches = true;
+    fake.reads = Array.from({ length: 20 }, () => login(600 * MIN));
+    fake.fetch.mockImplementation(async () => ok());
+    let names = ['Opus', 'Fable'];
+    fake.answer = (req) => ({
+      type: 'control_response',
+      response: {
+        subtype: 'success',
+        request_id: req.request_id,
+        response:
+          req.request.subtype === 'initialize'
+            ? { models: [{ value: 'opus', displayName: names[0] }, { value: 'fable', displayName: names[1] }] }
+            : { rate_limits: body, subscription_type: 'max' },
+      },
+    });
+    const lists: string[][] = [];
+    monitor = new UsageMonitor('main', () => {}, (info) => lists.push(info.models.map((m) => m.displayName)));
+    monitor.start();
+    await vi.advanceTimersByTimeAsync(1000);
+    // Respondeu tudo, mas segue aberto: a busca do catálogo só grava com o processo vivo.
+    expect(lists).toEqual([['Opus', 'Fable']]);
+    expect(fake.closed).toBe(0);
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(fake.closed).toBe(1);
+
+    // 30 s depois da lista reduzida, um `claude` novo, agora com o catálogo.
+    names = ['Opus 5.5', 'Fable 5.2'];
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(fake.spawned).toBe(2);
+    expect(lists.at(-1)).toEqual(['Opus 5.5', 'Fable 5.2']);
+    // A lista inteira fecha ao responder, e ninguém pergunta mais.
+    expect(fake.closed).toBe(2);
+    await vi.advanceTimersByTimeAsync(30 * MIN);
+    expect(fake.spawned).toBe(2);
+  });
+
   it('recusa da conta (403) espera 1 hora, sem claude de reserva e sem aviso ao Sentry', async () => {
     fake.reads.push(login(600 * MIN));
     fake.fetch.mockImplementationOnce(async () => ok());

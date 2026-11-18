@@ -91,12 +91,79 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
   );
 }
 
-// Separa uma conta da outra com as ondinhas do divisor da conversa (ver EventDivider).
-function AccountDivider() {
+// Separa um agente do outro (um embaixo do outro) com as ondinhas do divisor da conversa (ver EventDivider).
+function AgentDivider() {
   return <span className="wavy-line block" />;
 }
 
-// Painel dos limites, aberto pelo botão da barra de baixo (abre para cima): as janelas de cada conta. Só com o
+// Ordem dos agentes, de cima para baixo. Só aparece o agente que tem conta à vista.
+const AGENT_ORDER: (ProviderId | 'claude')[] = ['cursor', 'claude', 'gemini', 'codex'];
+
+function AccountName({ name }: { name: string }) {
+  return (
+    <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
+      <span className="truncate">{name}</span>
+    </div>
+  );
+}
+
+type ColumnProps = { entry: ShownUsage; named: boolean; mixed: boolean; now: number; onLogin: (account: string, distro?: string) => void };
+
+// Uma conta: o nome e as janelas dela, numa coluna.
+function AccountColumn({ entry, named, mixed, now, onLogin }: ColumnProps) {
+  const expired = expiredUsage(entry.usage, now);
+  const stale = staleText(entry.usage, expired);
+  return (
+    <div>
+      {named && (
+        <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
+          {mixed && <AgentIcon provider={entry.provider} size={12} />}
+          <span className="truncate">{entry.place ? `${entry.name} - ${entry.place}` : entry.name}</span>
+          {entry.usage.saved && <span className="shrink-0 normal-case tracking-normal font-normal">- {tr('guardado', 'saved')}</span>}
+        </div>
+      )}
+      {!expired && (
+        <div className={`flex flex-col gap-4 ${entry.usage.saved || entry.usage.failure ? 'opacity-60' : ''}`}>
+          {rowsOf(entry).map((row) => (
+            <WindowDetail key={row.title} {...row} now={now} />
+          ))}
+        </div>
+      )}
+      {stale && <div className={`text-[12px] text-needs-you ${expired ? '' : 'mt-3'}`}>{stale}</div>}
+      {entry.endings?.map((e) => (
+        <div key={`${e.account}-${e.distro ?? ''}`} className="mt-3 flex flex-col items-start gap-2">
+          <span className="text-[12px] text-needs-you">{e.text}</span>
+          <Button size="sm" onClick={() => onLogin(e.account, e.distro)}>
+            {tr('Entrar de novo', 'Sign in again')}
+          </Button>
+        </div>
+      ))}
+      {entry.note && <div className="mt-3 text-[12px] text-faint">{entry.note}</div>}
+    </div>
+  );
+}
+
+function SignedOutColumn({ entry, named, onLogin }: { entry: SignedOutLogin; named: boolean; onLogin: (account: string) => void }) {
+  return (
+    <div>
+      {named && <AccountName name={entry.name} />}
+      <div className="flex flex-col items-start gap-2">
+        <span className="text-[12px] text-needs-you">
+          {tr(
+            'Sem login: as conversas desta conta não respondem até você entrar de novo.',
+            'Signed out: chats on this account won’t respond until you sign in again.',
+          )}
+        </span>
+        <Button size="sm" onClick={() => onLogin(entry.account)}>
+          {tr('Entrar', 'Sign in')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Painel dos limites, aberto pelo botão da barra de baixo (abre para cima): as janelas de cada conta, as do mesmo
+// agente lado a lado e cada agente numa faixa (ver AGENT_ORDER). Só com o
 // Claude, fica como sempre foi; com conta de outro agente, cada conta leva o logo do agente.
 // silent: agentes com conta logada que não informam limite (Gemini, Cursor): uma linha no rodapé,
 // sem número inventado.
@@ -122,13 +189,23 @@ export function UsagePanel({
   const updatedTime = new Date(updatedAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
   const updatedToday = new Date(updatedAt).toDateString() === new Date(now).toDateString();
   const saved = shown.some((x) => x.usage.saved);
+  // Um grupo por agente, na ordem de AGENT_ORDER; as contas sem login são do Claude.
+  const groups = AGENT_ORDER.map((agent) => [
+    ...shown
+      .filter((x) => (x.provider ?? 'claude') === agent)
+      .map((entry) => ({ key: entry.key, node: <AccountColumn entry={entry} named={named} mixed={mixed} now={now} onLogin={onLogin} /> })),
+    ...(agent === 'claude' ? signedOut : []).map((entry) => ({
+      key: entry.key,
+      node: <SignedOutColumn entry={entry} named={named} onLogin={onLogin} />,
+    })),
+  ]).filter((columns) => columns.length > 0);
 
   return (
     // A rolagem fica num filho: a caixa não corta a seta, que vaza para fora dela.
-    <div className="absolute right-0 bottom-full mb-2.5 w-72 origin-bottom-right rounded-2xl border border-line bg-surface/90 shadow-xl shadow-black/40 backdrop-blur-xl">
+    <div className="absolute right-0 bottom-full mb-2.5 w-max max-w-[calc(100vw-2rem)] origin-bottom-right rounded-2xl border border-line bg-surface/90 shadow-xl shadow-black/40 backdrop-blur-xl">
       {/* Depois da curva do canto (rounded-2xl, 16px): no padrão, a seta caía em cima dela. */}
       <MenuArrow side="bottom" align="end" at={30} />
-      <div className="max-h-[70vh] overflow-y-auto p-4 text-left">
+      <div className="max-h-[70vh] overflow-auto p-4 text-left">
         <div className="mb-4 flex items-center gap-2">
           {!mixed && <ClaudeIcon size={14} />}
           <span className="text-xs font-medium text-text">
@@ -136,62 +213,18 @@ export function UsagePanel({
           </span>
         </div>
         <div className="flex flex-col gap-5">
-          {shown.map((entry, i) => {
-            const expired = expiredUsage(entry.usage, now);
-            const stale = staleText(entry.usage, expired);
-            return (
-              <Fragment key={entry.key}>
-              {i > 0 && <AccountDivider />}
-              <div>
-                {named && (
-                  <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
-                    {mixed && <AgentIcon provider={entry.provider} size={12} />}
-                    <span className="truncate">{entry.place ? `${entry.name} - ${entry.place}` : entry.name}</span>
-                    {entry.usage.saved && <span className="shrink-0 normal-case tracking-normal font-normal">- {tr('guardado', 'saved')}</span>}
-                  </div>
-                )}
-                {!expired && (
-                  <div className={`flex flex-col gap-4 ${entry.usage.saved || entry.usage.failure ? 'opacity-60' : ''}`}>
-                    {rowsOf(entry).map((row) => (
-                      <WindowDetail key={row.title} {...row} now={now} />
-                    ))}
-                  </div>
-                )}
-                {stale && <div className={`text-[12px] text-needs-you ${expired ? '' : 'mt-3'}`}>{stale}</div>}
-                {entry.endings?.map((e) => (
-                  <div key={`${e.account}-${e.distro ?? ''}`} className="mt-3 flex flex-col items-start gap-2">
-                    <span className="text-[12px] text-needs-you">{e.text}</span>
-                    <Button size="sm" onClick={() => onLogin(e.account, e.distro)}>
-                      {tr('Entrar de novo', 'Sign in again')}
-                    </Button>
-                  </div>
+          {groups.map((columns, i) => (
+            <Fragment key={i}>
+              {i > 0 && <AgentDivider />}
+              {/* Contas do mesmo agente lado a lado, com um traço vertical entre elas. */}
+              <div className="flex">
+                {columns.map((column, j) => (
+                  <Fragment key={column.key}>
+                    {j > 0 && <span className="mx-4 w-px shrink-0 self-stretch bg-line" />}
+                    <div className="w-64 shrink-0">{column.node}</div>
+                  </Fragment>
                 ))}
-                {entry.note && <div className="mt-3 text-[12px] text-faint">{entry.note}</div>}
               </div>
-              </Fragment>
-            );
-          })}
-          {signedOut.map((entry, i) => (
-            <Fragment key={entry.key}>
-            {shown.length + i > 0 && <AccountDivider />}
-            <div>
-              {named && (
-                <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint">
-                  <span className="truncate">{entry.name}</span>
-                </div>
-              )}
-              <div className="flex flex-col items-start gap-2">
-                <span className="text-[12px] text-needs-you">
-                  {tr(
-                    'Sem login: as conversas desta conta não respondem até você entrar de novo.',
-                    'Signed out: chats on this account won’t respond until you sign in again.',
-                  )}
-                </span>
-                <Button size="sm" onClick={() => onLogin(entry.account)}>
-                  {tr('Entrar', 'Sign in')}
-                </Button>
-              </div>
-            </div>
             </Fragment>
           ))}
         </div>

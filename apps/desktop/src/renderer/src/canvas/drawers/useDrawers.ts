@@ -6,7 +6,7 @@ import type { ActiveConversation } from '../CanvasContext';
 import type { CanvasNode, ProjectData } from '../types';
 import { drawerReducer, type DrawerState, type SlotId } from './drawerState';
 import { fileInFolder } from './fileInFolder';
-import { loadPinnedDrawers, savePinnedDrawers } from './savedDrawers';
+import { loadBoardDrawers, saveBoardDrawers } from './savedDrawers';
 
 // Comandos dos drawers, com identidade fixa: podem ir para o contexto, para os menus e para os
 // drawers sem fazer ninguém redesenhar. Leem o estado atual pelo reducer, nunca o de um render velho.
@@ -42,12 +42,12 @@ export type DrawerCommands = {
   closePlan: () => void
 };
 
-// Drawers de conversa (os fixados e o solto) e o painel de código. Os fixados do workspace voltam
+// Drawers de conversa (os fixados e o solto) e o painel de código. Os do workspace voltam
 // ao montar (savedDrawers.ts); `nodes`: o canvas como foi carregado, só lido nessa hora.
 export function useDrawers(board: string, nodes: CanvasNode[]): { state: DrawerState; commands: DrawerCommands } {
-  const [state, dispatch] = useReducer(drawerReducer, nodes, (initial) => loadPinnedDrawers(board, initial));
+  const [state, dispatch] = useReducer(drawerReducer, nodes, (initial) => loadBoardDrawers(board, initial));
   const { drawers } = state;
-  useEffect(() => savePinnedDrawers(board, drawers), [board, drawers]);
+  useEffect(() => saveBoardDrawers(board, drawers), [board, drawers]);
 
   const commands = useMemo<DrawerCommands>(
     () => ({

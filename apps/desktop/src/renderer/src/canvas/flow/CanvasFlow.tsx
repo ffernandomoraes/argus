@@ -11,11 +11,12 @@ import { ViewBar } from '../ViewBar';
 import { worktreeEdges } from '../worktrees/edges';
 import { edgeTypes } from '../worktrees/WorktreeEdge';
 import { displayNodes } from './displayNodes';
-import { FIT_VIEW_OPTIONS, keepPointerEvents, nodeTypes, PAN_ON_DRAG, PRO_OPTIONS, saveViewport } from './flowConfig';
+import { FIT_VIEW_OPTIONS, keepPointerEvents, nodeTypes, PAN_ON_DRAG, PRO_OPTIONS, viewportSaver } from './flowConfig';
 import { useNodeMotion } from './useNodeMotion';
 import { useNodesChange } from './useNodesChange';
 
 type Props = {
+  board: string
   nodes: CanvasNode[]
   nodesRef: NodesApi['nodesRef']
   setNodes: NodesApi['setNodes']
@@ -39,7 +40,8 @@ type Props = {
 // O React Flow com os blocos, o fundo de pontos, as linhas-guia e as barras flutuantes. Só
 // redesenha quando muda o que é dele: drawer, modal ou menu abrindo no Canvas não chega aqui.
 function CanvasFlowView(props: Props) {
-  const { nodes, nodesRef, setNodes, trackGesture, spaceHeld, uiHidden, arranging, savedViewport } = props;
+  const { board, nodes, nodesRef, setNodes, trackGesture, spaceHeld, uiHidden, arranging, savedViewport } = props;
+  const saveViewport = useMemo(() => viewportSaver(board), [board]);
   const flowNodes = useMemo(() => displayNodes(nodes), [nodes]);
   // Linhas das tarefas isoladas (a mesma lista enquanto nenhuma entra, sai ou muda de pasta).
   const edges = worktreeEdges(nodes);

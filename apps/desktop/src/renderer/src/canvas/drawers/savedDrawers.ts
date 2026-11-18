@@ -3,14 +3,16 @@ import type { ActiveConversation } from '../CanvasContext';
 import type { CanvasNode } from '../types';
 import { INITIAL_DRAWERS, type Drawer, type DrawerState } from './drawerState';
 
-// Drawers fixados de cada workspace, guardados nesta janela: voltam quando o canvas monta de novo
-// (troca de workspace, app reaberto, janela do acesso remoto recarregada ao religar). Antes eles
-// sumiam e a conversa ficava só na lista da pasta. O solto não volta: é o de passagem.
+// Drawers de cada workspace (os fixados e o solto), guardados nesta janela: voltam quando o canvas
+// monta de novo (troca de workspace, app reaberto ou atualizado, janela do acesso remoto recarregada
+// ao religar), no mesmo lugar e na mesma ordem. Antes sumiam e a conversa ficava só na lista da pasta.
 // O acesso remoto guarda à parte, por computador: os workspaces de lá têm ids que podem coincidir
 // com os daqui.
 
-type Saved = { conversation: ActiveConversation; rect: PanelRect | null };
+// pinned ausente: guardado por versão antiga, que só gravava os fixados.
+type Saved = { conversation: ActiveConversation; rect: PanelRect | null; pinned?: boolean };
 
+// O nome antigo fica: assim os fixados guardados antes continuam voltando.
 const PREFIX = 'argus.pinnedDrawers';
 
 function storageKey(board: string): string {
@@ -48,16 +50,17 @@ function parse(raw: string | null): Saved[] {
         isRecord(item.conversation) &&
         typeof item.conversation.conversationId === 'string' &&
         (item.conversation.nodeId === null || typeof item.conversation.nodeId === 'string') &&
-        (item.rect === null || isRect(item.rect)),
+        (item.rect === null || isRect(item.rect)) &&
+        (item.pinned === undefined || typeof item.pinned === 'boolean'),
     );
   } catch {
     return [];
   }
 }
 
-// Estado inicial dos drawers do workspace: os fixados guardados cuja pasta (ou card) ainda está no
-// canvas. Sem eles, nenhum drawer aberto, como antes.
-export function loadPinnedDrawers(board: string, nodes: CanvasNode[]): DrawerState {
+// Estado inicial dos drawers do workspace: os guardados cuja pasta (ou card) ainda está no canvas.
+// Sem nenhum, nenhum drawer aberto.
+export function loadBoardDrawers(board: string, nodes: CanvasNode[]): DrawerState {
   let raw: string | null;
   try {
     raw = localStorage.getItem(storageKey(board));
@@ -65,17 +68,20 @@ export function loadPinnedDrawers(board: string, nodes: CanvasNode[]): DrawerSta
     return INITIAL_DRAWERS;
   }
   const ids = new Set(nodes.map((n) => n.id));
-  const drawers: Drawer[] = parse(raw)
-    .filter((s) => s.conversation.nodeId === null || ids.has(s.conversation.nodeId))
-    .map((s, i) => ({ id: `d${i + 1}`, conversation: s.conversation, pinned: true, rect: s.rect }));
+  const kept = parse(raw).filter((s) => s.conversation.nodeId === null || ids.has(s.conversation.nodeId));
+  // Solto há um só: o último (o de cima).
+  const loose = kept.filter((s) => s.pinned === false).pop();
+  const drawers: Drawer[] = kept
+    .filter((s) => s.pinned !== false || s === loose)
+    .map((s, i) => ({ id: `d${i + 1}`, conversation: s.conversation, pinned: s.pinned !== false, rect: s.rect }));
   return drawers.length ? { ...INITIAL_DRAWERS, drawers, nextId: drawers.length + 1 } : INITIAL_DRAWERS;
 }
 
-// Grava os fixados do workspace (nenhum: apaga a chave).
-export function savePinnedDrawers(board: string, drawers: readonly Drawer[]): void {
+// Grava os drawers do workspace, na ordem em que estão (nenhum: apaga a chave).
+export function saveBoardDrawers(board: string, drawers: readonly Drawer[]): void {
   const saved: Saved[] = drawers.flatMap((d) => {
-    const conversation = d.pinned ? reopenable(d.conversation) : null;
-    return conversation ? [{ conversation, rect: d.rect }] : [];
+    const conversation = reopenable(d.conversation);
+    return conversation ? [{ conversation, rect: d.rect, pinned: d.pinned }] : [];
   });
   try {
     if (saved.length) localStorage.setItem(storageKey(board), JSON.stringify(saved));

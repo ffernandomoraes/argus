@@ -5,23 +5,39 @@ import { readJsonFile, writeJsonAtomicSync } from './lib/jsonFile';
 
 // Janelas do canvas abertas ao fechar o app (uma por monitor, por exemplo): reabrem no mesmo
 // lugar, no mesmo workspace e cada uma olhando o mesmo pedaço do canvas.
-export type SavedCanvasWindow = { bounds: Rectangle; maximized: boolean; board?: string; viewport: CanvasViewport | null };
+// viewport: a câmera do workspace aberto (de versões antigas); viewports: a de cada workspace que
+// a janela visitou, para trocar de workspace depois de reabrir não voltar enquadrando tudo.
+export type SavedCanvasWindow = {
+  bounds: Rectangle
+  maximized: boolean
+  board?: string
+  viewport: CanvasViewport | null
+  viewports?: Record<string, CanvasViewport>
+};
 
 const file = () => join(app.getPath('userData'), 'windows.json');
 
 const numbers = (o: unknown, keys: string[]) =>
   !!o && typeof o === 'object' && keys.every((k) => Number.isFinite((o as Record<string, unknown>)[k]));
 
+const isViewport = (v: unknown): v is CanvasViewport => numbers(v, ['x', 'y', 'zoom']);
+
+function parseViewports(raw: unknown): Record<string, CanvasViewport> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return Object.fromEntries(Object.entries(raw).filter(([, v]) => isViewport(v))) as Record<string, CanvasViewport>;
+}
+
 // Arquivo de outra versão ou editado à mão: janela sem posição válida fica de fora (abriria
 // fora da tela ou derrubaria a abertura do app).
 function parse(w: unknown): SavedCanvasWindow | null {
-  const { bounds, maximized, board, viewport } = (w ?? {}) as Partial<SavedCanvasWindow>;
+  const { bounds, maximized, board, viewport, viewports } = (w ?? {}) as Partial<SavedCanvasWindow>;
   if (!bounds || !numbers(bounds, ['x', 'y', 'width', 'height'])) return null;
   return {
     bounds,
     maximized: maximized === true,
     ...(typeof board === 'string' && { board }),
-    viewport: viewport && numbers(viewport, ['x', 'y', 'zoom']) ? viewport : null,
+    viewport: isViewport(viewport) ? viewport : null,
+    viewports: parseViewports(viewports),
   };
 }
 

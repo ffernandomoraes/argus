@@ -14,22 +14,29 @@ let lastCanvas: BrowserWindow | null = null;
 // Páginas do canvas montadas, prontas para receber o `argus .`. Recarregar a página derruba quem
 // escuta; ela avisa de novo (cli:ready) quando o canvas montar.
 const ready = new PageMap<true>();
-// Câmera de cada janela (pelo id do webContents) em cada workspace; a do workspace aberto é
-// guardada ao fechar o app.
+// Câmera de cada janela (pelo id do webContents) em cada workspace; todas são guardadas ao fechar
+// o app.
 const viewports = new Map<number, Map<string, CanvasViewport>>();
 // Workspace que cada janela mostra. Sem ele, o primeiro (quem lê confere se ainda existe).
 const shownBoards = new Map<number, string>();
 
-export function addCanvasWindow(win: BrowserWindow, board?: string, viewport?: CanvasViewport | null): void {
+export function addCanvasWindow(
+  win: BrowserWindow,
+  board?: string,
+  viewport?: CanvasViewport | null,
+  saved: Record<string, CanvasViewport> = {},
+): void {
   const id = win.webContents.id;
   canvasWindows.add(win);
   // Janela nova sem workspace guardado (⇧⌘N): abre no da janela em uso.
   const shown = board ?? (lastCanvas && !lastCanvas.isDestroyed() ? shownBoards.get(lastCanvas.webContents.id) : undefined);
   lastCanvas = win;
+  const byBoard = new Map(Object.entries(saved));
   if (shown) {
     shownBoards.set(id, shown);
-    if (viewport) viewports.set(id, new Map([[shown, viewport]]));
+    if (viewport) byBoard.set(shown, viewport);
   }
+  if (byBoard.size) viewports.set(id, byBoard);
   win.on('focus', () => (lastCanvas = win));
   win.on('closed', () => {
     canvasWindows.delete(win);
@@ -82,6 +89,11 @@ export function setWindowBoard(wc: Page, board: string): void {
 // Sem workspace, o que a janela mostra agora (para guardar ao fechar o app).
 export function windowViewport(wc: Page, board = shownBoards.get(wc.id)): CanvasViewport | null {
   return (board && viewports.get(wc.id)?.get(board)) || null;
+}
+
+// A câmera da janela em cada workspace visitado (para guardar ao fechar o app).
+export function windowViewports(wc: Page): Record<string, CanvasViewport> {
+  return Object.fromEntries(viewports.get(wc.id) ?? []);
 }
 
 export function setWindowViewport(wc: Page, board: string, viewport: CanvasViewport): void {

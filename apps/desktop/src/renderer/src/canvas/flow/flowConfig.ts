@@ -1,6 +1,5 @@
 import type { FitViewOptions, OnMove, ProOptions } from '@xyflow/react';
 import { AreaNode } from '../AreaNode';
-import { currentBoard } from '../boards';
 import { ChatNode } from '../ChatNode';
 import { ChatPanelNode } from '../ChatPanelNode';
 import { NoteNode } from '../NoteNode';
@@ -32,4 +31,8 @@ export const PRO_OPTIONS: ProOptions = { hideAttribution: true };
 export const keepPointerEvents = () => {};
 
 // Câmera desta janela no workspace, para ela voltar no mesmo lugar (ao trocar de volta ou ao abrir).
-export const saveViewport: OnMove = (_, viewport) => window.api.canvas.setViewport(currentBoard(), viewport);
+// Pelo workspace do canvas que se mexeu, não pelo atual: um movimento que termina logo depois da
+// troca gravava a câmera no workspace novo.
+export const viewportSaver =
+  (board: string): OnMove =>
+    (_, viewport) => window.api.canvas.setViewport(board, viewport);

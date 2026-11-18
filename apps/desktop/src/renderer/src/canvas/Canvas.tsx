@@ -167,6 +167,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     <CanvasContext.Provider value={commands}>
       <CanvasViewContext.Provider value={view}>
         <CanvasFlow
+          board={board}
           nodes={nodes}
           nodesRef={nodesRef}
           setNodes={setNodes}

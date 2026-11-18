@@ -16,14 +16,17 @@ export { MODES } from './permissionModes';
 // `field`: nas Configurações. O botão tem cara de campo de seleção, o menu abre para baixo (para
 // cima seria cortado com a página rolada), só com ícone e nome, e ganha o item "Padrão da conta"
 // (valor vazio).
+// `compact`: dentro de um `@container` estreito (rodapé da caixa de escrever), mostra só o ícone.
 export function PermissionModePicker({
   value,
   onChange,
   field,
+  compact,
 }: {
   value: string
   onChange: (mode: string) => void
   field?: boolean
+  compact?: boolean
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -66,7 +69,7 @@ export function PermissionModePicker({
           }`}
         >
           <Icon size={13} />
-          <span>{current.label}</span>
+          <span className={compact ? '@max-[30rem]:hidden' : undefined}>{current.label}</span>
           <ChevronUp size={12} className="text-faint" />
         </button>
       )}

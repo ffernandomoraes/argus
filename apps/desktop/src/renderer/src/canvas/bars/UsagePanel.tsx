@@ -91,11 +91,6 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
   );
 }
 
-// Separa um agente do outro (um embaixo do outro) com as ondinhas do divisor da conversa (ver EventDivider).
-function AgentDivider() {
-  return <span className="wavy-line block" />;
-}
-
 // Ordem dos agentes, de cima para baixo. Só aparece o agente que tem conta à vista.
 const AGENT_ORDER: (ProviderId | 'claude')[] = ['cursor', 'claude', 'gemini', 'codex'];
 
@@ -206,46 +201,48 @@ export function UsagePanel({
       {/* Depois da curva do canto (rounded-2xl, 16px): no padrão, a seta caía em cima dela. */}
       <MenuArrow side="bottom" align="end" at={30} />
       <div className="max-h-[70vh] overflow-auto p-4 text-left">
+        {/* A hora da leitura fica na ponta oposta do título. */}
         <div className="mb-4 flex items-center gap-2">
           {!mixed && <ClaudeIcon size={14} />}
           <span className="text-xs font-medium text-text">
             {mixed ? tr('Limites de uso', 'Usage limits') : tr('Limites do Claude', 'Claude limits')}
           </span>
-        </div>
-        <div className="flex flex-col gap-5">
-          {groups.map((columns, i) => (
-            <Fragment key={i}>
-              {i > 0 && <AgentDivider />}
-              {/* Contas do mesmo agente lado a lado, com um traço vertical entre elas. */}
-              <div className="flex">
-                {columns.map((column, j) => (
-                  <Fragment key={column.key}>
-                    {j > 0 && <span className="mx-4 w-px shrink-0 self-stretch bg-line" />}
-                    <div className="w-64 shrink-0">{column.node}</div>
-                  </Fragment>
-                ))}
-              </div>
-            </Fragment>
-          ))}
-        </div>
-        <div className="mt-4 flex flex-col gap-1 border-t border-line pt-2 text-[11px] text-faint">
-          {silent.length > 0 && <span>{silentNote(silent)}</span>}
-          {saved && (
-            <span>
-              {tr(
-                'Último uso guardado, da abertura anterior. Conferindo de novo.',
-                'Last saved usage, from the previous launch. Checking again.',
-              )}
-            </span>
-          )}
           {shown.length > 0 && (
-            <span>
+            <span className="ml-auto pl-4 text-[11px] text-faint">
               {updatedToday
                 ? tr(`Atualizado às ${updatedTime}`, `Updated at ${updatedTime}`)
                 : tr(`Atualizado ${resetLabel(new Date(updatedAt).toISOString(), now)}`, `Updated ${resetLabel(new Date(updatedAt).toISOString(), now)}`)}
             </span>
           )}
         </div>
+        <div className="flex flex-col gap-8">
+          {/* Um agente embaixo do outro, separados só pelo espaço; as contas do mesmo agente lado a lado,
+              com a ondinha em pé entre elas. */}
+          {groups.map((columns) => (
+            <div key={columns[0].key} className="flex">
+              {columns.map((column, j) => (
+                <Fragment key={column.key}>
+                  {j > 0 && <span className="wavy-line-vertical mx-4 shrink-0 self-stretch" />}
+                  <div className="w-64 shrink-0">{column.node}</div>
+                </Fragment>
+              ))}
+            </div>
+          ))}
+        </div>
+        {/* Rodapé só com aviso: agente que não informa os limites ou uso guardado da abertura anterior. */}
+        {(silent.length > 0 || saved) && (
+          <div className="mt-5 flex flex-col items-center gap-1 text-center text-[11px] text-faint">
+            {silent.length > 0 && <span>{silentNote(silent)}</span>}
+            {saved && (
+              <span>
+                {tr(
+                  'Último uso guardado, da abertura anterior. Conferindo de novo.',
+                  'Last saved usage, from the previous launch. Checking again.',
+                )}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

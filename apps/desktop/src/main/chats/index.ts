@@ -11,10 +11,10 @@ import { renameSessionFile } from '../sessions/rename';
 import { withTimeout } from '../lib/timeout';
 import { ChatSession, type OpenRequest } from './session';
 import { memoryTight } from '../systemHealth/memory';
-import { resolveAccount } from '../accounts';
 import { telemetry } from '../telemetry';
 import { tr } from '../i18n';
 import { sharesAppLogin } from '../wsl/sharedLogin';
+import { runsOtherAccount, withChosenAccount, type ChosenAccount } from './accountSwitch';
 
 // Conversa do Claude (SDK) ou de outro agente (Codex, Gemini, Cursor; ver agentChats/): as duas têm
 // as mesmas operações.
@@ -41,6 +41,8 @@ export type ChatHooks = {
   // O Claude Code recusou um pedido da conta por falta de login: o login dela se perdeu (apagado,
   // recusado pelo servidor, vencido). O resto do app (cartão da conta, barra, menus) fica sabendo.
   loginLost?: (account: string) => void
+  // Conta gravada para a conversa (ver accountSwitch.ts).
+  chosenAccount?: ChosenAccount
 };
 
 // Quem roda a conversa: uma já gravada continua com o agente dela, seja qual for o do grupo agora;
@@ -207,6 +209,13 @@ export class Chats {
     });
   }
 
+  // Conta da conversa trocada (em qualquer janela ou no celular): a sessão aberta com a de antes fecha
+  // na hora, mesmo trabalhando ou com o remote control; a tela avisou o que para.
+  accountChosen(id: string, account: string | undefined): void {
+    const session = this.sessions.get(id);
+    if (session && account && runsOtherAccount(session, account)) this.closeSession(session);
+  }
+
   // Conta removida: as conversas dela fecham na hora, mesmo trabalhando.
   closeAccount(account: string): void {
     new Set(this.sessions.values()).forEach((s) => s.account === account && this.closeSession(s));
@@ -290,16 +299,14 @@ export class Chats {
     return this.sessions.get(req.key) ?? (req.sessionId ? this.sessions.get(req.sessionId) : undefined);
   }
 
-  // Sessão da conversa, aberta agora se ainda não existe.
-  private open(req: OpenRequest): AnySession {
+  // Sessão da conversa, aberta agora se ainda não existe. Com outra conta que não a da conversa, a
+  // aberta fecha e abre de novo com a certa, retomando a mesma conversa (ver accountSwitch.ts).
+  private open(asked: OpenRequest): AnySession {
+    const req = withChosenAccount(asked, this.hooks.chosenAccount);
     let session = this.find(req);
-    // Trocou a conta do Claude na conversa já começada: a sessão parada fecha e abre de novo com a
-    // nova, retomando a mesma conversa. Trabalhando ou com o remote control, segue na de antes.
-    if (session instanceof ChatSession && !parseAgentRef(req.account) && session.account !== resolveAccount(req.account)) {
-      if (!session.busy && !session.remoteOn) {
-        this.closeSession(session);
-        session = undefined;
-      }
+    if (session && runsOtherAccount(session, req.account)) {
+      this.closeSession(session);
+      session = undefined;
     }
     if (!session) {
       const agent = agentFor(req);

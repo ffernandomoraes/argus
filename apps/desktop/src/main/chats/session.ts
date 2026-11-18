@@ -401,6 +401,8 @@ export class ChatSession {
         activity: undefined,
         retry: undefined,
         compactingSince: undefined,
+        // Com o processo, acaba também o remote control (a conta trocada fecha a sessão ligada).
+        remote: undefined,
         revision: this.state.revision + 1,
       });
       this.events.ended(this);

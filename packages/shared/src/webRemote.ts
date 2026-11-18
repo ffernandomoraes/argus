@@ -25,6 +25,8 @@ export const WEB_CHANNELS = {
   'chat:answer': 'send',
   'chat:interrupt': 'send',
   'chat:details': 'invoke',
+  // Conta trocada no celular: fica gravada no Argus, que fecha a sessão aberta com a de antes.
+  'chatChoices:set': 'send',
   'preferences:forPhone': 'invoke',
   'chat:configure': 'send',
   'chat:rename': 'invoke',

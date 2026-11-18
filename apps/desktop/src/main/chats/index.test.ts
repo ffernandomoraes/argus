@@ -249,7 +249,10 @@ describe('Chats: chaves e contas', () => {
     expect(fake.sessions).toHaveLength(1);
   });
 
-  it('trocou a conta da conversa parada: reabre com a nova; trabalhando, segue na de antes', () => {
+  // 2026-11-17: trabalhando (subagente, comando em segundo plano) ou com o remote control, a sessão
+  // seguia na conta de antes, com o cabeçalho já mostrando a nova. Agora fecha sempre: a tela avisa
+  // antes o que para (ver shared/accountSwitch.ts).
+  it('trocou a conta da conversa: reabre com a nova, mesmo trabalhando ou com o remote control', () => {
     const { chats, openChat } = setup();
     const a = openChat('a');
     chats.send(send('a', { account: 'trabalho' }));
@@ -258,8 +261,55 @@ describe('Chats: chaves e contas', () => {
     expect(b.account).toBe('trabalho');
     b.busy = true;
     chats.send(send('a'));
-    expect(b.closed).toBe(false);
-    expect(fake.sessions).toHaveLength(2);
+    expect(b.closed).toBe(true);
+    const c = fake.sessions.at(-1)!;
+    expect(c.account).toBe('main');
+    c.remoteOn = true;
+    chats.send(send('a', { account: 'trabalho' }));
+    expect(c.closed).toBe(true);
+    expect(fake.sessions.at(-1)!.account).toBe('trabalho');
+    expect(fake.sessions.at(-1)!.sent).toEqual(['oi']);
+  });
+
+  it('a mesma conta não fecha a sessão trabalhando', () => {
+    const { chats, openChat } = setup();
+    const a = openChat('a', { account: 'trabalho' });
+    a.busy = true;
+    chats.send(send('a', { account: 'trabalho' }));
+    expect(a.closed).toBe(false);
+    expect(a.sent).toEqual(['oi', 'oi']);
+  });
+
+  it('a conta gravada da conversa vale sobre a do pedido (tela desatualizada, celular)', () => {
+    const chosen: Record<string, string> = { s1: 'trabalho' };
+    const { openChat } = setup({ chosenAccount: (id) => chosen[id] });
+    const a = openChat('a', { sessionId: 's1' });
+    expect(a.account).toBe('trabalho');
+    // Conversa nova: pela chave provisória.
+    chosen['new-1'] = 'pessoal';
+    expect(openChat('new-1').account).toBe('pessoal');
+    // Sem conta gravada, vale a do pedido.
+    expect(openChat('b', { account: 'outra' }).account).toBe('outra');
+  });
+
+  it('conta trocada em qualquer tela fecha na hora a sessão aberta com a de antes, mesmo trabalhando', () => {
+    const { chats, openChat } = setup();
+    const a = openChat('a', { account: 'trabalho' });
+    a.busy = true;
+    a.remoteOn = true;
+    chats.accountChosen('a', 'trabalho');
+    expect(a.closed).toBe(false);
+    chats.accountChosen('a', undefined);
+    expect(a.closed).toBe(false);
+    chats.accountChosen('a', 'pessoal');
+    expect(a.closed).toBe(true);
+  });
+
+  it('conversa de outro agente não fecha pela conta do Claude', () => {
+    const { chats, openChat } = setup();
+    const a = openChat('a', { account: 'trabalho' });
+    chats.accountChosen('a', 'codex:main');
+    expect(a.closed).toBe(false);
   });
 
   it('pasta do workspace mudou: a parada encerra já, a que trabalha encerra ao parar', () => {

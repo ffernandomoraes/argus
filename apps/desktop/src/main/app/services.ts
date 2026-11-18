@@ -73,9 +73,11 @@ export function createServices() {
   };
 
   // Conta e modelo/esforço/modo de cada conversa: as janelas (as daqui e a do acesso remoto) leem daqui.
-  const choices = new ChatChoices(join(app.getPath('userData'), 'chatChoices.json'), (id, choice) =>
-    broadcast('chatChoices:changed', id, choice),
-  );
+  // Conta trocada: a sessão aberta com a de antes fecha já (ver chats/accountSwitch.ts).
+  const choices = new ChatChoices(join(app.getPath('userData'), 'chatChoices.json'), (id, choice) => {
+    broadcast('chatChoices:changed', id, choice);
+    chats.accountChosen(id, choice?.account);
+  });
 
   // Respostas que você ainda não viu, como as janelas contam: o ícone da barra mostra quantas.
   const unread = new UnreadChats(() => {
@@ -155,6 +157,7 @@ export function createServices() {
       // O login da conta se perdeu no meio do uso: ela é conferida já, sem esperar a próxima abertura
       // do app ou das Configurações.
       loginLost: (account) => auth.loginLost(account, 'chat'),
+      chosenAccount: (id) => choices.get(id)?.account,
     },
   );
 

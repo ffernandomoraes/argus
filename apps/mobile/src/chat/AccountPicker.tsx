@@ -9,9 +9,9 @@ import { Sheet } from '../ui/Sheet';
 
 // A conta (e o agente) da conversa, na barra do topo, como o selo do cabeçalho da conversa no Argus.
 // Conversa nova: qualquer agente e conta conectados. Conversa do Claude já começada: só as contas
-// do Claude e com ela parada (o Argus reabre a sessão na outra conta, retomando a mesma conversa;
-// trabalhando ou esperando você, ele seguiria na de antes). Conversa de outro agente já começada: só
-// mostra.
+// do Claude, a qualquer momento (o Argus reabre a sessão na outra conta, retomando a mesma conversa;
+// com algo em andamento, quem chama pergunta antes, ver useAccountSwitch). Conversa de outro agente
+// já começada: só mostra.
 
 type Option = { id: string; name: string; provider?: ProviderId };
 type Group = { label: string; provider?: ProviderId; options: Option[] };
@@ -50,15 +50,12 @@ export function resolveAccount(account: string | undefined, auth: AuthState | un
 export function AccountPicker({
   account,
   started,
-  busy,
   tint,
   circle,
   onChange,
 }: {
   account: string | undefined
   started: boolean
-  // Trabalhando ou esperando você: não troca (como no Argus).
-  busy?: boolean
   tint?: boolean
   // Botão redondo só com o logo do agente (a conversa no estilo flutuante).
   circle?: boolean
@@ -70,7 +67,7 @@ export function AccountPicker({
   const current = resolveAccount(account, auth, providers);
   if (!current) return null;
   const agentChat = !!current.provider;
-  const locked = started && (agentChat || !!busy);
+  const locked = started && agentChat;
   const groups = locked ? [] : groupsFor(auth, providers, started);
   const total = groups.reduce((n, g) => n + g.options.length, 0);
   const canChange = !locked && total > 1;
@@ -111,7 +108,7 @@ export function AccountPicker({
                   key={o.id}
                   type="button"
                   onClick={() => {
-                    onChange(o.id);
+                    if (o.id !== current.id) onChange(o.id);
                     setOpen(false);
                   }}
                   className="flex w-full items-center gap-3 border-b border-line px-4 py-[13px] text-left last:border-0 active:bg-card-press"

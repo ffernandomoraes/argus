@@ -12,6 +12,7 @@ import type { ConversationSummary } from '../canvas/types';
 import { useStableCallback } from '../lib/useStableCallback';
 import { Presence } from '../motion';
 import { ChatView } from './ChatView';
+import { useAccountSwitch } from './header/useAccountSwitch';
 import { moveConversationAccount, setConversationAccount, useConversationAccountChoice } from './conversationAccount';
 import { moveConversationSettings, useConversationSettings } from './conversationSettings';
 import { fileInFolder, ownFolder } from '../canvas/drawers/fileInFolder';
@@ -143,12 +144,13 @@ export const ConversationView = memo(function ConversationView({
   const favorite = useIsFavorite(conversation);
   const agents = useAgentList(cwd, viewKey, agentProviderOf(account));
   // Conversa vazia (nada enviado e nenhuma sessão aberta) troca para qualquer conta. Depois, só entre
-  // as do Claude e com ela parada: a próxima mensagem reabre a sessão com a nova, na mesma conversa
-  // (as conversas ficam numa pasta só para todas as contas; ver Chats.open).
+  // as do Claude, a qualquer momento: a sessão aberta fecha e a próxima mensagem a reabre com a nova,
+  // na mesma conversa (as conversas ficam numa pasta só para todas as contas; ver Chats.open). Com
+  // algo em andamento, pergunta antes dizendo o que para (ver useAccountSwitch).
   const empty = !!conversation.draft && !live && !messages.length;
-  const canSwitchClaude = !empty && !parseAgentRef(account) && status !== 'running' && status !== 'needs-you';
-  const canChangeAccount = empty || canSwitchClaude;
-  const chooseAccount = useCallback((id: string) => setConversationAccount(settingsId, id), [settingsId]);
+  const canChangeAccount = empty || !parseAgentRef(account);
+  const accountSwitch = useAccountSwitch(live, (id) => setConversationAccount(settingsId, id));
+  const chooseAccount = useStableCallback(accountSwitch.choose);
   const settings = useConversationSettings(settingsId);
   const actionsFor = useConversationActions({ chatKey: viewKey, conversation, cwd, folders, account, settings, agents });
   const { remoteControl } = actionsFor;
@@ -331,6 +333,7 @@ export const ConversationView = memo(function ConversationView({
       </PlanOpenContext.Provider>
       </FileRevealContext.Provider>
       </FileLinkContext.Provider>
+      {accountSwitch.dialog}
       <Presence kind="modal">
         {mcpOpen && <McpPanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeMcp} />}
         {styleOpen && <OutputStylePanel conversationKey={viewKey} cwd={cwd} account={account} onClose={closeStyle} />}

@@ -8,6 +8,7 @@ import { ChatTimeline, type Pending } from '../chat/ChatTimeline';
 import { ScrollToEndButton } from '../chat/ScrollToEndButton';
 import { PinnedPrompt } from '../chat/PinnedPrompt';
 import { WorkingLine } from '../chat/WorkingLine';
+import { hasBackground } from '../lib/background';
 import { reuseMessages } from '../chat/reuseMessages';
 import { fetchHistory } from '../chat/fetchHistory';
 import { scrollToEnd, useStickToBottom } from '../chat/useStickToBottom';
@@ -16,6 +17,7 @@ import { tr } from '../i18n';
 import { useAgentInfo, useAuthState, useBranch, useChatDetails, useChatState, useProvidersState, useSessions, useUnread, useWorkspaces } from '../lib/data';
 import { parseAgentRef } from '@argus/shared/providers';
 import { AccountPicker, resolveAccount } from '../chat/AccountPicker';
+import { useAccountSwitch } from '../chat/useAccountSwitch';
 import { DEFAULT_SETTINGS, loadPrefs, movePrefs, savePrefs } from '../chat/options';
 import { newChatId } from './FolderScreen';
 import { useHost, useStatus } from '../lib/host';
@@ -110,11 +112,14 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
     // Aberta no Argus: a troca vale já (como nos seletores de lá).
     if (state) void conn.call('chat:configure', chatKey, patch).catch(() => {});
   };
-  const changeAccount = (a: string) => {
+  // Também vai para o Argus: lá ela vale sobre a de qualquer tela, e a sessão aberta com a de antes
+  // fecha (Argus de casa mais antigo, sem o canal: fica só aqui, como antes).
+  const accountSwitch = useAccountSwitch(state, (a: string) => {
     setPicked(a);
     setChosenAccount(a);
     savePrefs(prefsId, { account: a });
-  };
+    void conn.call('chatChoices:set', prefsId, { account: a }).catch(() => {});
+  });
 
   // Aberta aqui (o app só fala com o Argus com a tela acesa): vista, some a bolinha verde das
   // listas, aqui e no Argus. Também quando termina com ela na tela.
@@ -303,8 +308,9 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
         subtitle={folder?.name ?? baseName(cwd)}
         onBack={() => back({ name: 'folder', path: cwd })}
         backLabel={folder?.name ?? baseName(cwd)}
-        right={<AccountPicker account={account} started={!!sessionId} busy={running} onChange={changeAccount} circle />}
+        right={<AccountPicker account={account} started={!!sessionId} onChange={accountSwitch.choose} circle />}
       />
+      {accountSwitch.sheet}
       {/* A conversa termina logo acima da caixa de escrever (pela altura medida dela). */}
       <div className={`px-safe ${FLOATING_HEADER_SPACE}`} style={{ paddingBottom: composerHeight + 12 }}>
         {more && (
@@ -351,7 +357,7 @@ export function ChatScreen({ cwd, id }: { cwd: string; id: string }) {
         branch={branch}
         suggestion={prefs.suggestions ? state?.suggestion : undefined}
         groupColor={folder?.group?.color}
-        working={state && running ? <WorkingLine state={state} /> : undefined}
+        working={state && (running || hasBackground(state)) ? <WorkingLine state={state} /> : undefined}
         onSettingsChange={changeSettings}
         onCommand={command}
         onHeight={setComposerHeight}

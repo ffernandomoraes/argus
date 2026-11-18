@@ -113,7 +113,7 @@ export function AccountTag({
   if (!onChange || total < 2)
     return (
       <span
-        title={`${title}. ${tr('Dá para trocar com a conversa parada.', 'It can be changed while the chat is idle.')}`}
+        title={title}
         className={`${TAG} min-w-0 max-w-40 shrink-0 gap-1`}
       >
         {content}
@@ -129,7 +129,7 @@ export function AccountTag({
         aria-label={title}
         onClick={() => setOpen((o) => !o)}
         title={title}
-        // A setinha mostra que dá para escolher; some depois do primeiro envio, junto com o seletor.
+        // A setinha mostra que dá para escolher; na conversa de outro agente, some depois do primeiro envio.
         className={`${TAG} min-w-0 gap-1 ${open ? 'bg-surface-2 text-text' : 'hover:bg-surface-2 hover:text-text'}`}
       >
         {content}
@@ -150,7 +150,7 @@ export function AccountTag({
                   <button
                     key={o.id}
                     onClick={() => {
-                      onChange(o.id);
+                      if (o.id !== currentId) onChange(o.id);
                       setOpen(false);
                     }}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs ${MENU_HOVER}`}

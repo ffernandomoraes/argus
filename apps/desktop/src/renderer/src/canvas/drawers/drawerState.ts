@@ -59,7 +59,8 @@ export const INITIAL_DRAWERS: DrawerState = {
 
 export type DrawerAction =
   // area: tamanho da janela, para o drawer novo achar lugar quando o fixado ainda não tem área.
-  | { type: 'show'; conversation: ActiveConversation; area: AreaSize }
+  // pinned: abre num drawer novo já fixado, sem trocar a conversa do solto (preferência pinNewDrawers).
+  | { type: 'show'; conversation: ActiveConversation; area: AreaSize; pinned?: boolean }
   | { type: 'closeAll' }
   | { type: 'close'; slot: SlotId }
   | { type: 'replace'; slot: SlotId; conversation: ActiveConversation }
@@ -103,15 +104,15 @@ function placeNew(state: DrawerState, area: AreaSize): PanelRect | null {
 }
 
 // Abre a conversa no drawer. Já à vista, fica como está. Senão vai para o solto, trocando a dele;
-// com todos fixados, abre num drawer novo.
-function show(state: DrawerState, conversation: ActiveConversation, area: AreaSize): DrawerState {
+// com todos fixados (ou `pinned`), abre num drawer novo.
+function show(state: DrawerState, conversation: ActiveConversation, area: AreaSize, pinned = false): DrawerState {
   const s = state;
   const shown = s.drawers.find((d) => isSameConversation(d.conversation, conversation.conversationId));
   // As tarefas já à vista mostram a pedida agora.
   if (shown) return shown.conversation.tasks ? update(s, shown.id, (d) => ({ ...d, conversation })) : s;
-  const loose = looseDrawer(s.drawers);
+  const loose = pinned ? null : looseDrawer(s.drawers);
   if (loose) return { ...s, drawers: s.drawers.map((d) => (d === loose ? { ...d, conversation } : d)) };
-  const drawer: Drawer = { id: `d${s.nextId}`, conversation, pinned: false, rect: placeNew(s, area) };
+  const drawer: Drawer = { id: `d${s.nextId}`, conversation, pinned, rect: placeNew(s, area) };
   return { ...s, drawers: [...s.drawers, drawer], nextId: s.nextId + 1 };
 }
 
@@ -210,7 +211,7 @@ function file(state: DrawerState, next: OpenFile | null): DrawerState {
 export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerState {
   switch (action.type) {
     case 'show':
-      return show(state, action.conversation, action.area);
+      return show(state, action.conversation, action.area, action.pinned);
     case 'closeAll':
       return closeAll(state);
     case 'close':

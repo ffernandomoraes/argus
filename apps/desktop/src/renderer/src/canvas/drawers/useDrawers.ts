@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer } from 'react';
 import { outsideEditor } from '@argus/shared/files';
 import type { PanelRect } from '../../conversation/FloatingPanel';
 import type { LineRange } from '../../conversation/fileLinks';
+import { getPreferences } from '../../settings/preferences';
 import type { ActiveConversation } from '../CanvasContext';
 import type { CanvasNode, ProjectData } from '../types';
 import { drawerReducer, type DrawerState, type SlotId } from './drawerState';
@@ -52,7 +53,12 @@ export function useDrawers(board: string, nodes: CanvasNode[]): { state: DrawerS
   const commands = useMemo<DrawerCommands>(
     () => ({
       show: (conversation) =>
-        dispatch({ type: 'show', conversation, area: { width: window.innerWidth, height: window.innerHeight } }),
+        dispatch({
+          type: 'show',
+          conversation,
+          area: { width: window.innerWidth, height: window.innerHeight },
+          pinned: getPreferences().pinNewDrawers,
+        }),
       closeAll: () => dispatch({ type: 'closeAll' }),
       close: (slot) => dispatch({ type: 'close', slot }),
       replace: (slot, conversation) => dispatch({ type: 'replace', slot, conversation }),

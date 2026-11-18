@@ -95,3 +95,16 @@ describe('drawerReducer: tarefas em segundo plano', () => {
     expect(again.drawers[0].conversation.tasks?.selected).toBe('b2');
   });
 });
+
+// Preferência "Abrir conversas fixadas": cada conversa nasce no seu drawer, já fixado.
+describe('drawerReducer: show pinned', () => {
+  it('abre num drawer novo fixado, sem trocar a conversa do solto', () => {
+    const state = drawerReducer(shown('pasta', 's1'), { type: 'show', conversation: { nodeId: 'pasta', conversationId: 's2' }, area, pinned: true });
+    expect(state.drawers.map((d) => [d.conversation.conversationId, d.pinned])).toEqual([['s1', false], ['s2', true]]);
+  });
+
+  it('conversa já à vista fica onde está', () => {
+    const state = drawerReducer(shown('pasta', 's1'), { type: 'show', conversation: { nodeId: 'pasta', conversationId: 's1' }, area, pinned: true });
+    expect(state.drawers).toHaveLength(1);
+  });
+});

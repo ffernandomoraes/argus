@@ -10,6 +10,7 @@ import { tr } from '../../i18n';
 export function GeneralSection() {
   const openIn = usePreference('openIn');
   const mediaPlayer = usePreference('mediaPlayer');
+  const pinNewDrawers = usePreference('pinNewDrawers');
   return (
     <Group>
       <LanguageRow />
@@ -24,6 +25,21 @@ export function GeneralSection() {
           ]}
         />
       </Row>
+      {openIn === 'panel' && (
+        <Row
+          label={tr('Abrir conversas fixadas', 'Open chats pinned')}
+          description={tr(
+            'Cada conversa abre no seu próprio painel, já fixado, em vez de trocar a do painel aberto.',
+            'Each chat opens in its own panel, already pinned, instead of replacing the one already open.',
+          )}
+        >
+          <Switch
+            label={tr('Abrir conversas fixadas', 'Open chats pinned')}
+            checked={pinNewDrawers}
+            onChange={(next) => setPreferences({ pinNewDrawers: next })}
+          />
+        </Row>
+      )}
       <Row
         label={tr('Player de música', 'Music player')}
         description={tr(

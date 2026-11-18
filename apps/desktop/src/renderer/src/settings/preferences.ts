@@ -33,6 +33,8 @@ export type Preferences = {
   favoriteChats: string[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
   promptSuggestions: boolean
+  // Conversa aberta no painel lateral já nasce fixada, cada uma no seu drawer (Configurações > Geral).
+  pinNewDrawers: boolean
 };
 
 const KEY = 'preferences';
@@ -51,6 +53,7 @@ const DEFAULTS: Preferences = {
   mascotLook: DEFAULT_LOOK,
   favoriteChats: [],
   promptSuggestions: true,
+  pinNewDrawers: false,
 };
 
 function read(): Preferences {

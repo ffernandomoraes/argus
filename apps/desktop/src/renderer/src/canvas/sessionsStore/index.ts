@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import type { UncommittedFile } from '@argus/shared/sessions';
 import { shallowEqual } from '../../lib/shallowEqual';
-import { backgroundBusy, useBackgroundBusy } from '../backgroundTasks';
+import { backgroundBusy } from '../backgroundTasks';
 import { useStore } from '../../lib/useStore';
 import { onWindowActive, windowActive } from '../../lib/windowActivity';
 import type { ConversationSummary } from '../types';
@@ -52,7 +52,7 @@ window.api.sessions.onChanged((path, change) => {
   if (change === 'transcript') requestChangesSoon(path);
 });
 
-// Lida na hora, como a tela mostra: com algo em segundo plano, a conversa conta como rodando. Antes
+// Lida na hora, para as travas: com algo em segundo plano, a conversa conta como rodando. Antes
 // vinha crua, e remover a tarefa passava com um comando ainda rodando na pasta (2026-11-16).
 export function getSessions(path: string): ConversationSummary[] {
   return withBackground(store.get().sessions.get(path) ?? EMPTY, backgroundBusy());
@@ -68,11 +68,12 @@ function withBackground(list: ConversationSummary[], busy: ReadonlySet<string>):
 }
 
 // Conversas de uma pasta; mantém a lista atualizada enquanto o componente estiver na tela.
+// O status é o da própria conversa: já respondeu e só deixou um subagente ou comando rodando (um
+// servidor, por exemplo), aparece concluída; o que roda tem a linha própria embaixo dela. Antes
+// aparecia rodando, e de longe parecia que ela ainda trabalhava (2026-11-17).
 export function useSessions(path: string): ConversationSummary[] {
   useEffect(() => watch(path), [path]);
-  const list = useStore(store, (s) => s.sessions.get(path) ?? EMPTY);
-  const busy = useBackgroundBusy();
-  return useMemo(() => withBackground(list, busy), [list, busy]);
+  return useStore(store, (s) => s.sessions.get(path) ?? EMPTY);
 }
 
 // Como está a lista da pasta: ainda lendo, sem resposta dela (o WSL parado ou travado) ou lida.
@@ -91,9 +92,7 @@ export function useSessionsOf(paths: readonly string[]): ConversationSummary[][]
     const stops = (key ? key.split('\0') : []).map((path) => watch(path));
     return () => stops.forEach((stop) => stop());
   }, [key]);
-  const lists = useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual);
-  const busy = useBackgroundBusy();
-  return useMemo(() => lists.map((list) => withBackground(list, busy)), [lists, busy]);
+  return useStore(store, (s) => paths.map((path) => s.sessions.get(path) ?? EMPTY), shallowEqual);
 }
 
 // Branch atual da pasta; nulo fora de repositório ou antes da primeira leitura.

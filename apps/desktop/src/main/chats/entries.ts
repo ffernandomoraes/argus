@@ -1,4 +1,4 @@
-import type { ActiveChat, ChatState } from '@argus/shared/chat';
+import type { ActiveChat, BackgroundItem, ChatState } from '@argus/shared/chat';
 import { tr } from '../i18n';
 
 // Uma conversa aberta no app (ver Chats.list), como a bandeja e as notificações enxergam.
@@ -42,8 +42,20 @@ export class StatusChanges {
   }
 }
 
-// Conversas trabalhando ou esperando você, para o indicador no canto do canvas. Parada com algo
-// ainda rodando em segundo plano também conta como rodando.
+// Subagentes e tarefas em segundo plano de uma conversa, do mais antigo ao mais novo.
+function backgroundItems(s: ChatState): BackgroundItem[] {
+  const agents = s.agents
+    .filter((a) => a.background)
+    .map((a): BackgroundItem => ({ id: a.id, kind: 'agent', description: a.description || a.agent, startedAt: a.startedAt }));
+  const tasks = Object.entries(s.backgroundStarts ?? {}).map(
+    ([id, startedAt]): BackgroundItem => ({ id, kind: 'task', description: s.backgroundInfo?.[id]?.description ?? '', startedAt }),
+  );
+  return [...agents, ...tasks].sort((a, b) => a.startedAt - b.startedAt);
+}
+
+// Conversas trabalhando ou esperando você, para o indicador no canto do canvas e o celular. Parada
+// com algo ainda rodando em segundo plano entra com turnDone: o status segue 'running' para quem
+// ainda não conhece o campo (celular antigo, mascote).
 export function activeChats(entries: ChatEntry[]): ActiveChat[] {
   return entries.flatMap(({ id, cwd, state: s }) => {
     const background = s.agents.filter((a) => a.background).length + s.backgroundTasks;
@@ -58,6 +70,8 @@ export function activeChats(entries: ChatEntry[]): ActiveChat[] {
         foregroundAgents: s.agents.filter((a) => !a.background).length,
         background,
         turnStartedAt: s.status === 'idle' ? undefined : s.turnStartedAt,
+        turnDone: s.status === 'idle',
+        backgroundItems: background ? backgroundItems(s) : [],
       },
     ];
   });
@@ -66,6 +80,11 @@ export function activeChats(entries: ChatEntry[]): ActiveChat[] {
 // Resumo do que o indicador mostra: o texto chegando não muda nada disso, e quem compara sai cedo.
 export function activeSignature(chats: ActiveChat[]): string {
   return chats
-    .map((c) => [c.key, c.sessionId, c.status, c.activity?.kind, c.activity?.tool, c.foregroundAgents, c.background, c.turnStartedAt].join(':'))
+    .map((c) =>
+      [
+        c.key, c.sessionId, c.status, c.activity?.kind, c.activity?.tool, c.foregroundAgents, c.background, c.turnStartedAt, c.turnDone,
+        (c.backgroundItems ?? []).map((i) => `${i.id}/${i.description}`).join(','),
+      ].join(':'),
+    )
     .join('|');
 }

@@ -104,6 +104,20 @@ export type ActiveChat = {
   // conversa no indicador (status 'running', sem turnStartedAt).
   background: number
   turnStartedAt?: number
+  // O pedido já terminou e a resposta chegou: o que a deixa na lista é só o que ficou em segundo
+  // plano. A conversa aparece concluída, com o que roda embaixo dela. Argus antigo não manda.
+  turnDone?: boolean
+  // O que roda em segundo plano, do mais antigo ao mais novo. Argus antigo não manda.
+  backgroundItems?: BackgroundItem[]
+};
+
+// Subagente ou tarefa (comando, monitor, workflow) rodando em segundo plano numa conversa.
+export type BackgroundItem = {
+  id: string
+  kind: 'agent' | 'task'
+  // O que o Claude escreveu ao lançar.
+  description: string
+  startedAt: number
 };
 
 // Conversa com resposta que você ainda não viu (bolinha verde na lista), como a janela conta.

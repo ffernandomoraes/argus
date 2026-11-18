@@ -10,6 +10,8 @@ import { Empty, Row, Section } from '../ui/List';
 import { StatusDot } from '../ui/StatusDot';
 import { SearchField } from '../ui/SearchField';
 import { TabHeader } from '../ui/TabBar';
+import { isTurnDone } from '../lib/background';
+import { BackgroundChatRows } from './BackgroundRows';
 import { ChatSearchResults } from './ChatSearch';
 
 export function activityText(a: ChatActivity | undefined, status: string): string {
@@ -23,12 +25,11 @@ export function activityText(a: ChatActivity | undefined, status: string): strin
 
 function ActiveRow({ chat, title }: { chat: ActiveChat; title?: string }) {
   const id = chat.sessionId ?? chat.key;
-  const waiting = !chat.turnStartedAt && chat.status === 'running' && chat.background > 0;
   return (
     <Row
       icon={<StatusDot status={chat.status} />}
       title={title || tr('Conversa nova', 'New chat')}
-      subtitle={`${baseName(chat.cwd)} - ${waiting ? tr('Tarefas em segundo plano', 'Background tasks') : activityText(chat.activity, chat.status)}`}
+      subtitle={`${baseName(chat.cwd)} - ${activityText(chat.activity, chat.status)}`}
       onClick={() => go({ name: 'chat', cwd: chat.cwd, id })}
     />
   );
@@ -70,7 +71,9 @@ export function HomeScreen() {
   const titles = useTitles([...active.map((c) => c.cwd), ...interrupted.list.map((c) => c.cwd)]);
   const { workspaces, loaded } = useWorkspaces();
   const needs = active.filter((c) => c.status === 'needs-you');
-  const running = active.filter((c) => c.status !== 'needs-you');
+  // Já respondeu e só deixou algo em segundo plano: concluída, com o que roda embaixo dela.
+  const behind = active.filter((c) => c.status !== 'needs-you' && isTurnDone(c));
+  const running = active.filter((c) => c.status !== 'needs-you' && !isTurnDone(c));
   // As em andamento ou interrompidas já aparecem em cima.
   const folders = workspaces.flatMap((w) => w.groups.flatMap((g) => g.folders));
   const shown = new Set([...active.map((c) => c.sessionId), ...interrupted.list.map((c) => c.sessionId)]);
@@ -100,10 +103,18 @@ export function HomeScreen() {
         <ChatSearchResults query={query} chats={all} folderName={folderName} />
       ) : (
         <>
-          {(needs.length > 0 || running.length > 0) && (
+          {active.length > 0 && (
             <Section title={tr('Em andamento', 'In progress')}>
               {[...needs, ...running].map((c) => (
                 <ActiveRow key={c.key} chat={c} title={c.sessionId ? titles.get(c.sessionId) : undefined} />
+              ))}
+              {behind.map((c) => (
+                <BackgroundChatRows
+                  key={c.key}
+                  chat={c}
+                  title={c.sessionId ? titles.get(c.sessionId) : undefined}
+                  unread={unread.has(c.sessionId ?? c.key)}
+                />
               ))}
             </Section>
           )}

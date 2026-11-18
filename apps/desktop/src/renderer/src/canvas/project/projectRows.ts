@@ -6,12 +6,19 @@ import { ROW_GAP, ROW_HEIGHT } from './geometry';
 // botão no fim da lista, no painel flutuante.
 export const MAX_CONVERSATIONS = 3;
 
-// Recolhida, a pasta ainda mostra o que pede atenção, para nenhum aviso sumir junto.
-const isActive = (c: ConversationSummary) => c.status === 'running' || c.status === 'needs-you';
+// Recolhida, a pasta ainda mostra o que pede atenção, para nenhum aviso sumir junto, e a conversa
+// concluída que deixou algo rodando em segundo plano (busy), com a linha do que roda embaixo.
+// busy: ids das conversas com subagente ou tarefa em segundo plano (ver backgroundTasks).
+const isActive = (c: ConversationSummary, busy: ReadonlySet<string>) =>
+  c.status === 'running' || c.status === 'needs-you' || busy.has(c.id);
 
 // As que aparecem na caixa. A lista já vem da mais recente para a mais antiga (sessionsStore).
-export function visibleConversations(conversations: ConversationSummary[], collapsed: boolean): ConversationSummary[] {
-  return (collapsed ? conversations.filter(isActive) : conversations).slice(0, MAX_CONVERSATIONS);
+export function visibleConversations(
+  conversations: ConversationSummary[],
+  collapsed: boolean,
+  busy: ReadonlySet<string>,
+): ConversationSummary[] {
+  return (collapsed ? conversations.filter((c) => isActive(c, busy)) : conversations).slice(0, MAX_CONVERSATIONS);
 }
 
 // Conversas na ordem da lista, cada uma seguida dos subagentes que ela tem rodando agora e, por

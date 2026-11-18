@@ -1,4 +1,4 @@
-import { useBackgroundSinceOf, useBackgroundTasksOf } from '../backgroundTasks';
+import { useBackgroundBusy, useBackgroundSinceOf, useBackgroundTasksOf } from '../backgroundTasks';
 import { useRunningAgentsOf } from '../runningAgents';
 import type { ConversationSummary } from '../types';
 import { agentsKeyOf, legsOf, visibleConversations, withAgents, type Row } from './projectRows';
@@ -11,7 +11,7 @@ export function useProjectRows(
   conversations: ConversationSummary[],
   collapsed: boolean,
 ): { rows: Row[]; legs: { middle: number; running: boolean }[] } {
-  const visible = visibleConversations(conversations, collapsed);
+  const visible = visibleConversations(conversations, collapsed, useBackgroundBusy());
   const keys = visible.map(agentsKeyOf);
   const lists = useRunningAgentsOf(keys);
   const tasks = useBackgroundTasksOf(keys);

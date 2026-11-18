@@ -56,9 +56,27 @@ describe('activeChats', () => {
     expect(activeChats([entry('a')])).toEqual([]);
   });
 
-  it('parada com tarefa ou subagente em segundo plano conta como rodando', () => {
-    const [chat] = activeChats([entry('a', { backgroundTasks: 1, agents: [agent(true)], turnStartedAt: 5, activity: { kind: 'writing', since: 1 } })]);
-    expect(chat).toMatchObject({ key: 'a', status: 'running', background: 2, foregroundAgents: 0, activity: undefined, turnStartedAt: undefined });
+  it('parada com tarefa ou subagente em segundo plano entra concluída, com o que roda', () => {
+    const [chat] = activeChats([
+      entry('a', {
+        backgroundTasks: 1,
+        backgroundStarts: { t1: 3 },
+        backgroundInfo: { t1: { description: 'pnpm dev', type: 'local_bash' } },
+        agents: [{ ...agent(true), description: 'Revisar o login', startedAt: 7 }],
+        turnStartedAt: 5,
+        activity: { kind: 'writing', since: 1 },
+      }),
+    ]);
+    expect(chat).toMatchObject({ key: 'a', status: 'running', turnDone: true, background: 2, foregroundAgents: 0, activity: undefined, turnStartedAt: undefined });
+    expect(chat.backgroundItems).toEqual([
+      { id: 't1', kind: 'task', description: 'pnpm dev', startedAt: 3 },
+      { id: 'a', kind: 'agent', description: 'Revisar o login', startedAt: 7 },
+    ]);
+  });
+
+  it('trabalhando com subagente em segundo plano não está concluída', () => {
+    const [chat] = activeChats([entry('a', { status: 'running', agents: [agent(true)], turnStartedAt: 5 })]);
+    expect(chat).toMatchObject({ turnDone: false, background: 1 });
   });
 
   it('trabalhando mostra a etapa e os subagentes em primeiro plano', () => {

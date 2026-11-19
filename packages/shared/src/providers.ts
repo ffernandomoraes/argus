@@ -12,6 +12,9 @@ export const PROVIDER_NAMES: Record<ProviderId, string> = {
   cursor: 'Cursor',
 };
 
+// Versão mais antiga de cada CLI que o Argus consegue usar. Antigravity: o `agy acp` nasceu na 1.5.0.
+export const MIN_VERSIONS: Partial<Record<ProviderId, string>> = { antigravity: '1.5.0' };
+
 // Em teste: o nome leva o selo "Experimento" na tela de Contas.
 export const EXPERIMENTAL_PROVIDERS: ProviderId[] = ['antigravity'];
 
@@ -43,10 +46,13 @@ export type ProviderAccount = {
 };
 
 // found: achado (path). missing: não instalado. installing/failed: o Argus rodando o instalador
-// oficial; `command` é o mesmo instalador, para rodar à mão.
+// oficial; `command` é o mesmo instalador, para rodar à mão. outdated: instalado numa versão que o
+// Argus não consegue usar (`version`); `command` é o que atualiza. updating: o `installing` é uma
+// atualização.
 export type ProviderInstall = {
-  status: 'found' | 'missing' | 'installing' | 'failed'
+  status: 'found' | 'missing' | 'installing' | 'failed' | 'outdated'
   version?: string
+  updating?: boolean
   message?: string
   command: string
 };

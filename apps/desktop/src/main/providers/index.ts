@@ -19,6 +19,7 @@ import {
 import { tr } from '../i18n';
 import { openAcpProcess } from './acpProcess';
 import { antigravitySignIn } from './antigravity';
+import { antigravityInstall, reportSignInFailure, signInFailure, UPDATE_COMMAND } from './antigravityCheck';
 import { createBackoff } from '../lib/backoff';
 import { errorMessage } from '../lib/errors';
 import { findCommand, lookupShellPath } from './bins';
@@ -164,6 +165,8 @@ export class Providers {
     await lookupShellPath();
     const list = provider ? [provider] : PROVIDERS;
     for (const p of list) if (this.installs[p].status !== 'installing') this.installs[p] = this.installState(p, findCommand(p) ? 'found' : this.installs[p].status === 'failed' ? 'failed' : 'missing', this.installs[p].message);
+    // Antigravity sem o `agy acp` (versão antiga): pede para atualizar antes de conectar.
+    if (list.includes('antigravity') && this.installs.antigravity.status === 'found') Object.assign(this.installs.antigravity, await antigravityInstall());
     await Promise.all(list.flatMap((p) => entries(p).map((e) => this.check(p, e.id, e.kind))));
     this.emit();
     this.retryLater();
@@ -171,9 +174,10 @@ export class Providers {
 
   async install(provider: ProviderId): Promise<void> {
     if (this.installs[provider].status === 'installing') return;
-    this.installs[provider] = this.installState(provider, 'installing');
+    const updating = this.installs[provider].command === UPDATE_COMMAND;
+    this.installs[provider] = { ...this.installState(provider, 'installing'), updating };
     this.emit();
-    const error = await runInstaller(provider);
+    const error = await runInstaller(provider, updating);
     await lookupShellPath();
     this.installs[provider] = findCommand(provider)
       ? this.installState(provider, 'found')
@@ -296,6 +300,7 @@ export class Providers {
     if (!launch) return;
     let rpc: JsonRpcProcess | null = null;
     const session: LoginSession = { ...target, stop: () => rpc?.close() };
+    const startedAt = Date.now();
     this.session = session;
     this.setLogin({ status: 'waiting', ...target });
     try {
@@ -306,7 +311,8 @@ export class Providers {
       if (this.session === session) await this.finish(session);
     } catch (err) {
       rpc?.close();
-      if (this.session === session) this.fail(session, new Error(tr('O login do Antigravity não terminou.', 'Antigravity sign-in didn’t finish.'), { cause: err }));
+      // O motivo de verdade na tela, e no diário e no Sentry (ver antigravityCheck.ts).
+      if (this.session === session) this.fail(session, new Error(reportSignInFailure(signInFailure(err), startedAt)));
     }
   }
 

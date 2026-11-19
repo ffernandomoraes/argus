@@ -3,6 +3,7 @@ import type { ChatSettings } from '@argus/shared/chat';
 import type { ProviderId } from '@argus/shared/providers';
 import { tr } from '../i18n';
 import { openAcpProcess } from '../providers/acpProcess';
+import { missingAcp, outdatedMessage } from '../providers/antigravityOutdated';
 import { providerLaunch } from '../providers/env';
 import { folderArgs } from '../workspaceFolders';
 import { trustGemini } from '../workspaces';
@@ -381,6 +382,7 @@ const SIGN_IN: Record<ProviderId, string> = {
 
 // Erro do agente em português, quando dá para reconhecer.
 function friendly(provider: ProviderId, detail: string, code?: number): string {
+  if (provider === 'antigravity' && missingAcp(detail)) return outdatedMessage();
   if (code === 429 || /quota|rate.?limit|429|resource_exhausted|usage limit/i.test(detail)) return LIMIT[provider] || detail;
   if (/auth|login|api key|unauthorized|401/i.test(detail)) return SIGN_IN[provider] || detail;
   return detail;

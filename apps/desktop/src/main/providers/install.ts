@@ -6,6 +6,7 @@ import type { ProviderId } from '@argus/shared/providers';
 import { tr } from '../i18n';
 import { errorMessage } from '../lib/errors';
 import { childEnv, IS_WIN, prependPath, WINDOWS_POWERSHELL } from '../platform';
+import { findCommand } from './bins';
 import { toolsDir } from './paths';
 
 // Instaladores oficiais, os mesmos da documentação de cada um. O Gemini só existe pelo npm (exige
@@ -28,9 +29,21 @@ const tailOf = (text: string) =>
     .slice(-6)
     .join('\n');
 
-// Devolve nulo se terminou bem; senão, o motivo.
-export function runInstaller(provider: ProviderId): Promise<string | null> {
+// Devolve nulo se terminou bem; senão, o motivo. update: o agente já está instalado, numa versão
+// antiga (o Antigravity: o instalador dele não substitui o que existe, quem atualiza é o `agy update`).
+export function runInstaller(provider: ProviderId, update = false): Promise<string | null> {
+  if (update) return runUpdate(provider);
   return provider === 'gemini' ? installGemini() : runScript(INSTALL_COMMANDS[provider]);
+}
+
+function runUpdate(provider: ProviderId): Promise<string | null> {
+  const cmd = findCommand(provider);
+  if (!cmd) return runScript(INSTALL_COMMANDS[provider]);
+  return new Promise((resolve) =>
+    execFile(cmd.file, [...cmd.args, 'update'], { env: childEnv(), timeout: TIMEOUT_MS, windowsHide: true, encoding: 'utf8' }, (err, stdout, stderr) =>
+      resolve(err ? tailOf(`${stderr}\n${stdout}`) || err.message : null),
+    ),
+  );
 }
 
 // Mesmo jeito do instalador do Claude (claudeInstall.ts): sem janela, pipefail no bash, TLS 1.2 e

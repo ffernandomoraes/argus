@@ -2,6 +2,7 @@ import { Loader2, Plus } from 'lucide-react';
 import {
   EXPERIMENTAL_PROVIDERS,
   MAIN_PROVIDER_ACCOUNT,
+  MIN_VERSIONS,
   PROVIDER_NAMES,
   type ProviderAccount,
   type ProviderId,
@@ -98,19 +99,30 @@ function InstallCard({ provider, state }: { provider: ProviderId; state: Provide
       {state.status === 'installing' ? (
         <div className="flex items-center gap-2 text-[16px] text-text">
           <Loader2 size={14} className="animate-spin text-muted" />
-          {tr(`Instalando o ${name}…`, `Installing ${name}…`)}
+          {state.updating ? tr(`Atualizando o ${name}…`, `Updating ${name}…`) : tr(`Instalando o ${name}…`, `Installing ${name}…`)}
         </div>
       ) : (
         <div className="flex items-center gap-3">
           <p className="min-w-0 flex-1 text-[16px] text-muted">
-            {state.status === 'failed'
-              ? tr(`A instalação do ${name} não deu certo.`, `${name} installation failed.`)
-              : tr(`O ${name} não está instalado neste computador.`, `${name} isn’t installed on this computer.`)}
+            {state.status === 'outdated'
+              ? tr(
+                  `O Argus funciona com o ${name} CLI ${MIN_VERSIONS[provider]} ou mais novo. O deste computador é o ${state.version}: atualize para conectar.`,
+                  `Argus works with ${name} CLI ${MIN_VERSIONS[provider]} or newer. This computer has ${state.version}: update it to connect.`,
+                )
+              : state.status === 'failed'
+                ? tr(`A instalação do ${name} não deu certo.`, `${name} installation failed.`)
+                : tr(`O ${name} não está instalado neste computador.`, `${name} isn’t installed on this computer.`)}
           </p>
           <Button variant="primary" onClick={() => window.api.providers.install(provider)}>
-            {state.status === 'failed' ? tr('Tentar de novo', 'Try again') : tr('Instalar', 'Install')}
+            {state.status === 'outdated' ? tr('Atualizar', 'Update') : state.status === 'failed' ? tr('Tentar de novo', 'Try again') : tr('Instalar', 'Install')}
           </Button>
         </div>
+      )}
+      {state.status === 'outdated' && (
+        <p className="text-[15px] text-faint">
+          {tr(`Ou rode no ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}:`, `Or run in ${HOST_IS_WIN ? 'PowerShell' : 'Terminal'}:`)}{' '}
+          <code className="select-text text-muted">{state.command}</code>
+        </p>
       )}
       {state.status === 'failed' && (
         <>

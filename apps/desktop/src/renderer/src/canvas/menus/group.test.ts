@@ -79,7 +79,7 @@ describe('Agente ▸ outros agentes', () => {
   function withCodex(accounts: ProviderAccount[]) {
     const none = { install: {}, accounts: [], defaultId: null };
     providers.state = {
-      providers: { codex: { install: {}, accounts, defaultId: accounts[0]?.id ?? null }, gemini: none, cursor: none },
+      providers: { codex: { install: {}, accounts, defaultId: accounts[0]?.id ?? null }, gemini: none, antigravity: none, cursor: none },
       login: {},
     } as unknown as ProvidersState;
   }

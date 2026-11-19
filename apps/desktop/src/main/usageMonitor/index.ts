@@ -2,6 +2,7 @@ import type { ClaudeAccount } from '@argus/shared/auth';
 import type { ClaudeInfo } from '@argus/shared/models';
 import type { Usage } from '@argus/shared/usage';
 import { configEmail } from '../auth/status';
+import { AntigravityUsageMonitors } from './antigravity';
 import { CodexUsageMonitors } from './codex';
 import { LoginWatch } from './loginWatch';
 import { UsageMonitor } from './monitor';
@@ -12,7 +13,8 @@ import { WslUsageMonitors } from './wsl';
 export { UsageMonitor } from './monitor';
 
 // Um monitor por conta logada. Quem sai ou é removida para, e o uso dela some da tela.
-// As contas do Codex vão pelo mesmo aviso ('usage:update'), com a chave "codex:<id>" (ver codex.ts).
+// As contas do Codex e a de login do Antigravity vão pelo mesmo aviso ('usage:update'), com a chave
+// "codex:<id>" ou "antigravity:<id>" (ver codex.ts e antigravity.ts).
 // Enquanto a conta não tem leitura nova nesta abertura, vale o último uso guardado dela, se o
 // login for o mesmo que o gerou (ver saved.ts).
 // O login da conta dentro de uma distro do WSL, quando é de outra conta do Claude, tem o uso dele à
@@ -26,6 +28,7 @@ export class UsageMonitors {
   private saved = new SavedUsages();
   private logins: LoginWatch;
   readonly codex: CodexUsageMonitors;
+  readonly antigravity: AntigravityUsageMonitors;
   readonly wsl: WslUsageMonitors;
 
   constructor(
@@ -39,6 +42,7 @@ export class UsageMonitors {
   ) {
     this.logins = new LoginWatch(onLoginChanged);
     this.codex = new CodexUsageMonitors(onUpdate, this.saved);
+    this.antigravity = new AntigravityUsageMonitors(onUpdate, this.saved);
     this.wsl = new WslUsageMonitors(onUpdate, this.logins);
     // O guardado do Claude aparece já na abertura se o .claude.json da conta tem o mesmo login, sem
     // esperar o `claude auth status` (que pode demorar ou falhar). Os do Codex esperam a conferência.
@@ -151,7 +155,7 @@ export class UsageMonitors {
       if (saved) out[key] = saved;
     }
     for (const [account, monitor] of this.monitors) if (monitor.current) out[account] = monitor.current;
-    return { ...out, ...this.codex.all(), ...this.wsl.all() };
+    return { ...out, ...this.codex.all(), ...this.antigravity.all(), ...this.wsl.all() };
   }
 
   info(account: string): ClaudeInfo | null {
@@ -163,6 +167,7 @@ export class UsageMonitors {
     this.monitors.forEach((m) => m.stop());
     this.monitors.clear();
     this.codex.stop();
+    this.antigravity.stop();
     this.wsl.stop();
   }
 }

@@ -37,7 +37,7 @@ export type Report = {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,6}([-+][\w.]{1,30})?$/;
-const AGENTS = ['claude', 'codex', 'gemini', 'cursor'];
+const AGENTS = ['claude', 'codex', 'gemini', 'antigravity', 'cursor'];
 const SYSTEMS = ['macos', 'windows', 'linux'];
 // Nomes de modelo e ferramenta: letras, números e pontuação comum de id, sem espaço.
 const KEY = /^[\w.:\-/@[\]]{1,80}$/;

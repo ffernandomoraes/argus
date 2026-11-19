@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { app } from 'electron';
 import type { ProviderAccountStatus, ProviderId } from '@argus/shared/providers';
 import { tr } from '../i18n';
+import { antigravityStatus } from './antigravity';
 import { providerLaunch, type Launch } from './env';
 import { keyHint, readKey } from './keys';
 import { JsonRpcProcess } from './rpc';
@@ -72,6 +73,7 @@ export async function readStatus(provider: ProviderId, accountId: string, kind: 
     return { signedIn: true, keyHint: keyHint(key) };
   }
   if (provider === 'cursor') return cursorStatus(accountId);
+  if (provider === 'antigravity') return antigravityStatus(accountId);
   if (provider === 'codex') {
     const launch = providerLaunch('codex', ['app-server'], accountId);
     if (!launch) return null;
@@ -91,8 +93,9 @@ export async function readStatus(provider: ProviderId, accountId: string, kind: 
 
 // Testa uma chave antes de guardar. Devolve nulo se ela funciona; senão, o motivo em português.
 export async function checkKey(provider: ProviderId, key: string, accountId: string): Promise<string | null> {
-  if (provider === 'gemini') {
-    // A própria API do Gemini lista os modelos que a chave pode usar: é a conferência mais barata.
+  if (provider === 'gemini' || provider === 'antigravity') {
+    // A própria API do Gemini lista os modelos que a chave pode usar: é a conferência mais barata
+    // (o Antigravity usa a mesma chave).
     try {
       const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', {
         headers: { 'x-goog-api-key': key },

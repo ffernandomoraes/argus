@@ -239,16 +239,18 @@ export function createServices() {
 
   // Contas dos outros agentes (Codex, Gemini, Cursor; ver src/main/providers/). Login trocado: as
   // conversas paradas da conta abrem de novo com o novo. Conta removida: fecham na hora.
-  // Limites: só o Codex informa (Gemini e Cursor não têm leitura por programa); um monitor por conta
-  // logada, que some com ela.
+  // Limites: o Codex e a conta de login do Antigravity informam (Gemini, Cursor e as contas por chave
+  // não têm leitura por programa); um monitor por conta logada, que some com ela.
   const providers = new Providers(
     (state) => {
       broadcast('providers:state', state);
       usage.codex.sync(state.providers.codex.accounts);
+      usage.antigravity.sync(state.providers.antigravity.accounts.filter((a) => a.kind === 'login'));
     },
     (provider, id) => {
       chats.releaseAll(agentRef(provider, id));
       if (provider === 'codex') usage.codex.reread(id);
+      if (provider === 'antigravity') usage.antigravity.reread(id);
     },
     (provider, id) => {
       chats.closeAccount(agentRef(provider, id));

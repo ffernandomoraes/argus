@@ -92,7 +92,7 @@ function WindowDetail({ title, window, note, now }: Row & { now: number }) {
 }
 
 // Ordem dos agentes, de cima para baixo. Só aparece o agente que tem conta à vista.
-const AGENT_ORDER: (ProviderId | 'claude')[] = ['cursor', 'claude', 'gemini', 'codex'];
+const AGENT_ORDER: (ProviderId | 'claude')[] = ['cursor', 'claude', 'gemini', 'antigravity', 'codex'];
 
 function AccountName({ name }: { name: string }) {
   return (

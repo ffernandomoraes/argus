@@ -15,6 +15,7 @@ export const INSTALL_COMMANDS: Record<ProviderId, string> = {
   codex: IS_WIN ? 'irm https://chatgpt.com/codex/install.ps1 | iex' : 'curl -fsSL https://chatgpt.com/codex/install.sh | sh',
   cursor: IS_WIN ? "irm 'https://cursor.com/install?win32=true' | iex" : 'curl https://cursor.com/install -fsS | bash',
   gemini: 'npm install -g @google/gemini-cli',
+  antigravity: IS_WIN ? 'irm https://antigravity.google/cli/install.ps1 | iex' : 'curl -fsSL https://antigravity.google/cli/install.sh | bash',
 };
 
 const TIMEOUT_MS = 10 * 60_000;

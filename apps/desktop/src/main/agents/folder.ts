@@ -12,15 +12,18 @@ import { parseAgent, parseCodexAgent } from './format';
 // - Claude: ~/.claude/agents de quem roda o Claude Code de `path`; num projeto do WSL, o do Linux.
 // - Codex: ~/.codex/agents, em .toml.
 // - Gemini: ~/.gemini/agents.
+// - Antigravity: ~/.gemini/config/agents (no projeto, .agents/agents), em .md como os do Claude.
 // - Cursor: o CLI não tem agentes globais; ficam na pasta do Argus.
 export function globalDir(provider: AgentProvider, path?: string): string {
   if (provider === 'claude') return join(claudeDir(path), 'agents');
   if (provider === 'cursor') return cursorAgentsDir();
+  if (provider === 'antigravity') return join(homedir(), '.gemini', 'config', 'agents');
   return join(homedir(), `.${provider}`, 'agents');
 }
 
-// <pasta>/.claude/agents, .codex/agents, .gemini/agents ou .cursor/agents.
-export const projectDir = (provider: AgentProvider, projectPath: string): string => join(expandHome(projectPath), `.${provider}`, 'agents');
+// <pasta>/.claude/agents, .codex/agents, .gemini/agents ou .cursor/agents; no Antigravity, .agents/agents.
+export const projectDir = (provider: AgentProvider, projectPath: string): string =>
+  join(expandHome(projectPath), provider === 'antigravity' ? '.agents' : `.${provider}`, 'agents');
 
 export const agentExt = (provider: AgentProvider): string => (provider === 'codex' ? '.toml' : '.md');
 

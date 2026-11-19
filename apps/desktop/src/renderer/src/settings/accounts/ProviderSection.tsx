@@ -1,5 +1,6 @@
 import { Loader2, Plus } from 'lucide-react';
 import {
+  EXPERIMENTAL_PROVIDERS,
   MAIN_PROVIDER_ACCOUNT,
   PROVIDER_NAMES,
   type ProviderAccount,
@@ -10,6 +11,7 @@ import {
 import type { ConfirmRequest } from '../../canvas/ConfirmDialog';
 import { HOST_IS_WIN } from '../../platform';
 import { Button } from '../../ui/Button';
+import { ExperimentTag } from '../../ui/ExperimentTag';
 import { AgentIcon } from '@argus/ui/icons/AgentIcon';
 import { AccountName } from './AccountName';
 import { ProviderLoginPanel } from './ProviderLoginPanel';
@@ -21,6 +23,10 @@ const HOW: Record<ProviderId, string> = {
   gemini: tr(
     'Usa uma chave do Google AI Studio. O login com a conta Google não é usado: o Google suspende contas que fazem isso fora do Gemini CLI.',
     'Uses a Google AI Studio key. Google sign-in isn’t used: Google suspends accounts that do it outside the Gemini CLI.',
+  ),
+  antigravity: tr(
+    'A primeira conta entra com o Google, pelo próprio Antigravity CLI (a do terminal). As outras usam chave do Google AI Studio. A Google só aceita esse login em conversas que você mesmo conduz: para automação, use uma conta por chave.',
+    'The first account signs in with Google, through the Antigravity CLI itself (the terminal one). Others use a Google AI Studio key. Google only accepts this sign-in in chats you drive yourself: for automation, use a key account.',
   ),
   cursor: tr(
     'A primeira conta é a do terminal, pelo navegador. As outras usam chave de API, para uma não trocar a outra.',
@@ -48,6 +54,7 @@ export function ProviderSection({
       <div className="mb-1 flex items-center gap-2">
         <AgentIcon provider={provider} size={15} />
         <h3 className="text-[16px] font-medium text-text">{name}</h3>
+        {EXPERIMENTAL_PROVIDERS.includes(provider) && <ExperimentTag />}
       </div>
       <p className="mb-3 text-[15px] leading-relaxed text-faint">{HOW[provider]}</p>
 

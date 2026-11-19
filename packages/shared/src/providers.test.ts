@@ -24,10 +24,11 @@ describe('agentProviderOf', () => {
     expect(agentProviderOf(undefined)).toBe('claude');
     expect(agentProviderOf('ab12cd34')).toBe('claude');
     expect(agentProviderOf('gemini:main')).toBe('gemini');
+    expect(agentProviderOf('antigravity:ab12cd34')).toBe('antigravity');
   });
 
-  it('isAgentProvider só aceita os quatro agentes', () => {
-    expect(['claude', 'codex', 'gemini', 'cursor'].every(isAgentProvider)).toBe(true);
+  it('isAgentProvider só aceita os agentes do app', () => {
+    expect(['claude', 'codex', 'gemini', 'antigravity', 'cursor'].every(isAgentProvider)).toBe(true);
     expect(isAgentProvider('copilot')).toBe(false);
     expect(isAgentProvider(undefined)).toBe(false);
   });

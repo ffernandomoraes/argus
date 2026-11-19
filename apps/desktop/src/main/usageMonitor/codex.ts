@@ -1,4 +1,3 @@
-import { agentRef, type ProviderAccountStatus } from '@argus/shared/providers';
 import type { Usage } from '@argus/shared/usage';
 import { createBackoff } from '../lib/backoff';
 import { errorMessage } from '../lib/errors';
@@ -6,6 +5,7 @@ import { providerLaunch } from '../providers/env';
 import type { JsonRpcProcess } from '../providers/rpc';
 import { openCodex } from '../providers/status';
 import { codexBuckets, codexUsage, mergeCodexSnapshot, type CodexBuckets, type CodexSnapshot } from './codexParse';
+import { ProviderUsageMonitors, type AccountUsageMonitor, type AccountUsageUpdate } from './providerMonitors';
 import type { SavedUsages } from './saved';
 
 // Limites de cada conta do Codex. O app-server responde `account/rateLimits/read` sem gastar uso;
@@ -19,7 +19,7 @@ const POLL_MS = 5 * 60_000;
 let onLive: (accountId: string, snapshot: CodexSnapshot) => void = () => {};
 export const reportCodexRateLimits = (accountId: string, snapshot: CodexSnapshot) => onLive(accountId, snapshot);
 
-class CodexUsageMonitor {
+class CodexUsageMonitor implements AccountUsageMonitor {
   private timer: NodeJS.Timeout | null = null;
   private rpc: JsonRpcProcess | null = null;
   private reading = false;
@@ -34,8 +34,7 @@ class CodexUsageMonitor {
 
   constructor(
     private accountId: string,
-    // had: havia uso à vista antes deste aviso.
-    private onUpdate: (usage: Usage | null, had: boolean) => void,
+    private onUpdate: AccountUsageUpdate,
   ) {}
 
   start(): void {
@@ -110,87 +109,10 @@ class CodexUsageMonitor {
   }
 }
 
-// Um monitor por conta do Codex logada, na mesma chave das conversas ("codex:<id>"). O último uso
-// de cada uma fica guardado (ver saved.ts) e só aparece depois de o login dela ser conferido com o
-// mesmo e-mail: o app nunca lê o login do Codex por fora.
-export class CodexUsageMonitors {
-  private monitors = new Map<string, CodexUsageMonitor>();
-  // E-mail do login conferido de cada conta, guardado junto com o uso lido.
-  private emails = new Map<string, string | undefined>();
-  private closed = false;
-
-  constructor(
-    private onUpdate: (account: string, usage: Usage | null) => void,
-    private saved: SavedUsages,
-  ) {
-    onLive = (id, snapshot) => this.monitors.get(id)?.live(snapshot);
-  }
-
-  // Cada conferência de login das contas do Codex. Sem status (não deu para conferir), a conta fica
-  // como estava.
-  sync(accounts: { id: string; status: ProviderAccountStatus | null }[]): void {
-    if (this.closed) return;
-    const ids = new Set(accounts.map((a) => agentRef('codex', a.id)));
-    for (const key of this.saved.keys()) if (key.startsWith('codex:') && !ids.has(key)) this.forgetSaved(key);
-    for (const { id, status } of accounts) {
-      if (!status) continue;
-      const key = agentRef('codex', id);
-      const email = status.signedIn ? status.email : undefined;
-      // Login trocado por fora (no terminal): o que estava na tela era da conta anterior.
-      const changed = this.emails.has(id) && this.emails.get(id) !== email;
-      this.emails.set(id, email);
-      if (changed && status.signedIn) this.monitors.get(id)?.reread();
-      const change = this.saved.confirm(key, status);
-      if (change && !this.monitors.get(id)?.last) this.onUpdate(key, change === 'shown' ? this.saved.get(key) : null);
-    }
-
-    const signedIn = accounts.filter((a) => a.status?.signedIn).map((a) => a.id);
-    for (const [id, monitor] of this.monitors) if (!signedIn.includes(id)) this.drop(id, monitor);
-    for (const id of signedIn) {
-      if (this.monitors.has(id)) continue;
-      const key = agentRef('codex', id);
-      const monitor = new CodexUsageMonitor(id, (usage, had) => {
-        if (usage) {
-          this.saved.remember(key, usage, this.emails.get(id));
-          this.onUpdate(key, usage);
-          return;
-        }
-        // Sem limite agora: some o que estava à vista, inclusive o guardado. Sem nada antes, nada a avisar.
-        if (this.saved.forget(key) || had) this.onUpdate(key, null);
-      });
-      this.monitors.set(id, monitor);
-      monitor.start();
-    }
-  }
-
-  // Login trocado: o guardado era do login anterior.
-  reread(id: string): void {
-    const key = agentRef('codex', id);
-    this.emails.delete(id);
-    this.forgetSaved(key);
-    this.monitors.get(id)?.reread();
-  }
-
-  private drop(id: string, monitor: CodexUsageMonitor): void {
-    monitor.stop();
-    this.monitors.delete(id);
-    const key = agentRef('codex', id);
-    if (this.saved.forget(key) || monitor.last) this.onUpdate(key, null);
-  }
-
-  private forgetSaved(key: string): void {
-    if (this.saved.forget(key)) this.onUpdate(key, null);
-  }
-
-  all(): Record<string, Usage> {
-    const out: Record<string, Usage> = {};
-    for (const [id, monitor] of this.monitors) if (monitor.last) out[agentRef('codex', id)] = monitor.last;
-    return out;
-  }
-
-  stop(): void {
-    this.closed = true;
-    this.monitors.forEach((m) => m.stop());
-    this.monitors.clear();
+// Um monitor por conta do Codex logada (ver providerMonitors.ts).
+export class CodexUsageMonitors extends ProviderUsageMonitors<CodexUsageMonitor> {
+  constructor(onUpdate: (account: string, usage: Usage | null) => void, saved: SavedUsages) {
+    super('codex', (id, update) => new CodexUsageMonitor(id, update), onUpdate, saved);
+    onLive = (id, snapshot) => this.get(id)?.live(snapshot);
   }
 }

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatSettings } from '@argus/shared/chat';
 import type { DriverEvents, PermissionAsk, PermissionReply, ToolEvent } from './driver';
 
-// Gemini e Cursor pelo ACP, com o processo do agente trocado por um falso: o teste responde aos
+// Gemini, Cursor e Antigravity pelo ACP, com o processo do agente trocado por um falso: o teste responde aos
 // pedidos e manda os avisos session/update como o agente mandaria (ver acp.ts).
 
 type Params = Record<string, unknown>;
@@ -13,9 +13,11 @@ const fake = vi.hoisted(() => ({
     onNotification: (method: string, params: unknown) => void
     onRequest: (method: string, params: unknown) => Promise<unknown>
   },
+
+  env: {} as Record<string, string>,
 }));
 
-vi.mock('../providers/env', () => ({ providerLaunch: () => ({ command: 'agent', args: [], env: {}, account: 'main' }) }));
+vi.mock('../providers/env', () => ({ providerLaunch: () => ({ command: 'agent', args: [], env: fake.env, account: 'main' }) }));
 vi.mock('../workspaces', () => ({ trustGemini: () => {} }));
 vi.mock('../providers/rpc', async () => {
   const { RpcError } = await vi.importActual<typeof import('../providers/rpc')>('../providers/rpc');
@@ -64,7 +66,7 @@ function recorder(answer: PermissionReply = 'allow') {
 
 const SESSION = { sessionId: 's1', modes: { currentModeId: 'default', availableModes: [{ id: 'default', name: 'Default' }, { id: 'autoEdit', name: 'Auto edit' }, { id: 'yolo', name: 'YOLO' }, { id: 'plan', name: 'Plan' }] } };
 
-async function opened(provider: 'gemini' | 'cursor' = 'cursor', s = settings(), answer: PermissionReply = 'allow', nativeId?: string) {
+async function opened(provider: 'gemini' | 'cursor' | 'antigravity' = 'cursor', s = settings(), answer: PermissionReply = 'allow', nativeId?: string) {
   const r = recorder(answer);
   const driver = new AcpDriver(provider, 'main', '/Users/ana/proj', s, r.events);
   await driver.start(nativeId);
@@ -84,13 +86,43 @@ const OPTIONS = [
 beforeEach(() => {
   fake.calls = [];
   fake.rpc = null;
+  fake.env = {};
   fake.replies = { 'session/new': SESSION, 'session/load': { modes: SESSION.modes } };
 });
 
 describe('abrir', () => {
-  it('Gemini abre com --acp; Cursor, com as pastas antes do acp', () => {
+  it('Gemini abre com --acp; Cursor, com as pastas antes do acp; Antigravity, depois', () => {
     expect(launchArgs('gemini', ['/a'])).toEqual(['--acp', '--include-directories', '/a']);
     expect(launchArgs('cursor', ['/a'])).toEqual(['--add-dir', '/a', 'acp']);
+    expect(launchArgs('antigravity', ['/a'])).toEqual(['acp', '--add-dir', '/a']);
+  });
+
+  // O authenticate da conta de login abriria a página da Google a cada conversa (ver acp.ts).
+  it('Antigravity: a conta de login não se apresenta; a conta por chave, com a chave', async () => {
+    await opened('antigravity');
+    expect(calls('authenticate')).toEqual([]);
+    fake.calls = [];
+    fake.env = { GEMINI_API_KEY: 'AIza-teste' };
+    await opened('antigravity');
+    expect(calls('authenticate')).toEqual([{ methodId: 'gemini-api-key' }]);
+  });
+
+  it('Antigravity: o esforço vai depois do modelo, só se o modelo novo tem esse nível', async () => {
+    const options = (model: string, levels: string[]) => [
+      { id: 'model', name: 'Model', type: 'select', currentValue: model, options: [{ value: 'pro', name: 'Pro' }, { value: 'neon', name: 'Neon' }] },
+      { id: 'thought_level', name: 'Thinking Level', type: 'select', currentValue: 'low', options: levels.map((value) => ({ value, name: value })) },
+      { id: 'mode', name: 'Mode', type: 'select', currentValue: 'default', options: [{ value: 'default', name: 'Default' }, { value: 'accept-edits', name: 'Accept edits' }] },
+    ];
+    fake.replies['session/new'] = { sessionId: 's1', configOptions: options('pro', ['low', 'high']) };
+    fake.replies['session/set_config_option'] = (p: Params) => (p.configId === 'model' ? { configOptions: options('neon', ['low', 'medium', 'high', 'xhigh']) } : {});
+    const { driver } = await opened('antigravity', settings({ model: 'neon', effort: 'xhigh', permissionMode: 'acceptEdits' }));
+    expect(calls('session/set_config_option')).toEqual([
+      { sessionId: 's1', configId: 'model', value: 'neon' },
+      { sessionId: 's1', configId: 'thought_level', value: 'xhigh' },
+      { sessionId: 's1', configId: 'mode', value: 'accept-edits' },
+    ]);
+    await driver.configure(settings({ model: 'neon', effort: 'max', permissionMode: 'acceptEdits' }));
+    expect(calls('session/set_config_option')).toHaveLength(3);
   });
 
   it('conversa retomada: a conversa antiga que o agente reenvia não aparece de novo', async () => {
@@ -240,6 +272,28 @@ describe('erros em português', () => {
   it('Cursor deslogado pede para entrar de novo', async () => {
     fake.replies['session/new'] = new RpcError('Unauthorized', -32000);
     await expect(opened('cursor')).rejects.toThrow(/pediu login de novo/);
+  });
+
+  // O Antigravity manda o erro do pedido como texto da resposta e termina o pedido normalmente.
+  it('Antigravity: o aviso sozinho vira o erro do pedido, sem aparecer como resposta', async () => {
+    const { driver, log } = await opened('antigravity');
+    fake.replies['session/prompt'] = () => {
+      update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: '\n⚠ agent executor error: generating and executing: Error 400, Message: API key not valid.' } });
+      return { stopReason: 'end_turn' };
+    };
+    await expect(driver.prompt({ text: 'oi', images: [] })).rejects.toThrow(/recusou o login \(ou a chave\)/);
+    expect(log.text).toBe('');
+  });
+
+  it('Antigravity: aviso seguido de resposta aparece junto, e o pedido termina bem', async () => {
+    const { driver, log } = await opened('antigravity');
+    fake.replies['session/prompt'] = () => {
+      update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: '⚠ servidor MCP falhou\n' } });
+      update({ sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Pronto.' } });
+      return { stopReason: 'end_turn' };
+    };
+    await driver.prompt({ text: 'oi', images: [] });
+    expect(log.text).toBe('⚠ servidor MCP falhou\nPronto.');
   });
 
   it('erro desconhecido passa com a mensagem do agente', async () => {

@@ -1,18 +1,23 @@
-// Agentes além do Claude Code (Codex, Gemini CLI, Cursor CLI): instalação e contas. O Claude
-// continua com o tipo dele (auth.ts); a tela de Contas junta os dois.
+// Agentes além do Claude Code (Codex, Gemini CLI, Antigravity CLI, Cursor CLI): instalação e contas.
+// O Claude continua com o tipo dele (auth.ts); a tela de Contas junta os dois.
 
-export type ProviderId = 'codex' | 'gemini' | 'cursor';
+export type ProviderId = 'codex' | 'gemini' | 'antigravity' | 'cursor';
 
-export const PROVIDERS: ProviderId[] = ['codex', 'gemini', 'cursor'];
+export const PROVIDERS: ProviderId[] = ['codex', 'gemini', 'antigravity', 'cursor'];
 
 export const PROVIDER_NAMES: Record<ProviderId, string> = {
   codex: 'Codex',
   gemini: 'Gemini',
+  antigravity: 'Antigravity',
   cursor: 'Cursor',
 };
 
-// login: entra pelo navegador, pelo próprio CLI (Codex; a principal do Cursor). key: chave de API
-// guardada no cofre do sistema (Gemini; as outras do Cursor). Ver apps/desktop/src/main/providers/.
+// Em teste: o nome leva o selo "Experimento" na tela de Contas.
+export const EXPERIMENTAL_PROVIDERS: ProviderId[] = ['antigravity'];
+
+// login: entra pelo navegador, pelo próprio CLI (Codex; a principal do Cursor e do Antigravity).
+// key: chave de API guardada no cofre do sistema (Gemini; as outras do Cursor e do Antigravity).
+// Ver apps/desktop/src/main/providers/.
 export type AccountKind = 'login' | 'key';
 
 // A principal de cada agente é a do terminal (~/.codex, ~/.cursor). As outras moram em pastas do app.
@@ -53,7 +58,8 @@ export type ProviderLogin =
   | { status: 'waiting'; provider: ProviderId; accountId: string; adding: boolean; url?: string; code?: string }
   | { status: 'key'; provider: ProviderId; accountId: string; adding: boolean }
   | { status: 'checking'; provider: ProviderId; accountId: string; adding: boolean }
-  | { status: 'error'; provider: ProviderId; accountId: string; adding: boolean; message: string };
+  // kind: o que falhou, o login pelo navegador ou a chave (a tela da chave deixa tentar outra).
+  | { status: 'error'; provider: ProviderId; accountId: string; adding: boolean; kind: AccountKind; message: string };
 
 export type ProviderState = {
   install: ProviderInstall
@@ -67,9 +73,13 @@ export type ProvidersState = {
   login: ProviderLogin
 };
 
-// Página onde a pessoa cria a chave.
-export const KEY_PAGES: Record<'gemini' | 'cursor', string> = {
+// Agentes que aceitam conta por chave de API.
+export type KeyProviderId = Exclude<ProviderId, 'codex'>;
+
+// Página onde a pessoa cria a chave. O Antigravity usa a mesma chave do Gemini.
+export const KEY_PAGES: Record<KeyProviderId, string> = {
   gemini: 'https://aistudio.google.com/apikey',
+  antigravity: 'https://aistudio.google.com/apikey',
   cursor: 'https://cursor.com/dashboard?tab=integrations',
 };
 
@@ -84,6 +94,6 @@ export type AgentRef = { provider: ProviderId; account: string };
 export const agentRef = (provider: ProviderId, account: string) => `${provider}:${account}`;
 
 export function parseAgentRef(account?: string): AgentRef | null {
-  const m = account ? /^(codex|gemini|cursor):([a-z0-9]+)$/.exec(account) : null;
+  const m = account ? /^(codex|gemini|antigravity|cursor):([a-z0-9]+)$/.exec(account) : null;
   return m ? { provider: m[1] as ProviderId, account: m[2] } : null;
 }

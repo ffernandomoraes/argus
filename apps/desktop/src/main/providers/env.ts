@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join } from 'node:path';
 import type { ProviderId } from '@argus/shared/providers';
@@ -17,6 +17,10 @@ import { resolveEntry } from './registry';
 //   configurações e MCPs do ~/.gemini da pessoa entram como padrão.
 // - Cursor: a principal é a do terminal (login no cofre do sistema). As outras: CURSOR_CONFIG_DIR e
 //   a chave em CURSOR_API_KEY, sem gravar credencial em lugar nenhum (AGENT_CLI_CREDENTIAL_STORE).
+// - Antigravity: a principal é a do terminal (login Google no cofre do sistema, um só por
+//   computador). As outras: a chave em GEMINI_API_KEY; no `agy acp`, a pasta da conta em
+//   --gemini-dir (conversas e configurações separadas). A tela interativa não aceita essa opção:
+//   lá a chave vale por um --settings só da sessão (conferido com o agy 1.5.12).
 // Variáveis herdadas do ambiente do app (um CODEX_HOME exportado no shell) saem: quem decide é a conta.
 
 const INHERITED = [
@@ -25,6 +29,7 @@ const INHERITED = [
   'GEMINI_API_KEY',
   'GOOGLE_API_KEY',
   'GOOGLE_GENAI_USE_VERTEXAI',
+  'AGY_ADC_AUTH',
   'CURSOR_CONFIG_DIR',
   'CURSOR_API_KEY',
   'CURSOR_AUTH_TOKEN',
@@ -60,6 +65,12 @@ export function providerLaunch(provider: ProviderId, args: string[], accountId?:
     const shared = join(homedir(), '.gemini', 'settings.json');
     if (existsSync(shared)) env.GEMINI_CLI_SYSTEM_DEFAULTS_PATH = shared;
   }
+  if (provider === 'antigravity' && dir) {
+    const key = readKey(provider, entry.id);
+    if (key) env.GEMINI_API_KEY = key;
+    if (args[0] === 'acp') extra.push(`--gemini-dir=${dir}`);
+    else extra.push('--settings', keySettingsFile(dir));
+  }
   if (provider === 'cursor' && dir) {
     env.CURSOR_CONFIG_DIR = dir;
     env.AGENT_CLI_CREDENTIAL_STORE = 'memory';
@@ -67,4 +78,12 @@ export function providerLaunch(provider: ProviderId, args: string[], accountId?:
     if (key) env.CURSOR_API_KEY = key;
   }
   return { file: cmd.file, args: [...cmd.args, ...args, ...extra], env, account: entry.id };
+}
+
+// Antigravity na tela interativa com conta por chave: o arquivo que manda os pedidos direto para a
+// API do Gemini, com a chave do ambiente. Vai por arquivo porque aspas num argumento quebram no Windows.
+function keySettingsFile(dir: string): string {
+  const file = join(dir, 'argus-key-settings.json');
+  if (!existsSync(file)) writeFileSync(file, JSON.stringify({ modelProvider: 'gemini' }));
+  return file;
 }

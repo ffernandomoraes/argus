@@ -35,7 +35,7 @@ export function OtherAgents() {
           <span className="flex items-center gap-1.5 text-sm text-text">
             {tr('Usar outro agente', 'Use another agent')}
           </span>
-          <span className="block text-xs text-faint">{tr('Codex, Gemini ou Cursor, no lugar do Claude.', 'Codex, Gemini or Cursor, instead of Claude.')}</span>
+          <span className="block text-xs text-faint">{tr('Codex, Gemini, Antigravity ou Cursor, no lugar do Claude.', 'Codex, Gemini, Antigravity or Cursor, instead of Claude.')}</span>
         </span>
         <ChevronRight size={14} className="shrink-0 text-faint" />
       </button>

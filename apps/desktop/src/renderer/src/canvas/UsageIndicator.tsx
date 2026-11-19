@@ -17,13 +17,16 @@ import { UsagePanel, type LoginEnding, type ShownUsage, type SignedOutLogin } fr
 import { useUsages } from './bars/useUsages';
 import { tr } from '../i18n';
 
-// Agentes sem limite legível por programa: aparecem só como aviso no painel (ver UsagePanel).
-const SILENT: ProviderId[] = ['gemini', 'cursor'];
+// Agentes sem limite legível por programa: aparecem só como aviso no painel (ver UsagePanel). No
+// Antigravity, só as contas por chave: a de login informa (ver usageMonitor/antigravity.ts).
+const SILENT: ProviderId[] = ['gemini', 'antigravity', 'cursor'];
+// Agentes com limite na barra, na ordem em que aparecem depois do Claude.
+const WITH_LIMITS: ProviderId[] = ['codex', 'antigravity'];
 
 // Limites no canto direito da barra de baixo; o painel abre para cima. O botão mostra a janela mais curta de cada
 // conta (a sessão de 5 horas no Claude; o semanal na conta sem sessão, ver barWindow), com o logo antes das contas de cada agente e o nome quando
 // o agente tem mais de uma; o painel traz todas as janelas de todas. As contas dos outros agentes
-// (hoje, só o Codex informa limite) entram só com o experimento de vários agentes ligado.
+// (o Codex e a conta de login do Antigravity informam limite) entram só com o experimento de vários agentes ligado.
 // Só o que ainda vale (ver usableUsage): janela que já recomeçou não mostra o número antigo (a conta
 // fica com "--" até a leitura nova, sem sumir; ver showsUsage), e o relógio é o mesmo do painel. O
 // uso guardado da abertura anterior aparece apagado até a leitura nova.
@@ -54,7 +57,7 @@ export const UsageIndicator = memo(function UsageIndicator({
     if (open) window.api.usage.refresh();
   }, [open]);
 
-  // Na ordem das configurações: o Claude primeiro (a principal antes), depois as do Codex.
+  // Na ordem das configurações: o Claude primeiro (a principal antes), depois as dos outros agentes.
   // Conta desconectada sai da barra mesmo com uso na mão; sem status (não deu para conferir), fica.
   const accounts = auth?.accounts ?? [];
   const wsl = wslUsage(accounts);
@@ -84,11 +87,11 @@ export const UsageIndicator = memo(function UsageIndicator({
       const own = a.status?.loggedIn !== false ? [{ key: a.id, name: a.name, note, endings: [...ending(a.status), ...unlisted] }] : [];
       return [...own, ...there];
     }),
-    ...(providers?.providers.codex.accounts ?? []).filter((a) => a.status?.signedIn !== false).map((a) => ({
-      key: agentRef('codex', a.id),
-      provider: 'codex' as const,
-      name: a.name,
-    })),
+    ...WITH_LIMITS.flatMap((provider) =>
+      (providers?.providers[provider].accounts ?? [])
+        .filter((a) => a.status?.signedIn !== false && (provider !== 'antigravity' || a.kind === 'login'))
+        .map((a) => ({ key: agentRef(provider, a.id), provider, name: a.name })),
+    ),
   ];
   const shown = candidates.flatMap((c): ShownUsage[] => {
     const usage = usages[c.key] && usableUsage(usages[c.key], now);
@@ -96,7 +99,7 @@ export const UsageIndicator = memo(function UsageIndicator({
     // motivo no painel.
     return usage && showsUsage(usage) ? [{ ...c, usage }] : [];
   });
-  const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn));
+  const silent = SILENT.filter((p) => providers?.providers[p].accounts.some((a) => a.status?.signedIn && (p !== 'antigravity' || a.kind === 'key')));
   // Contas do Claude que perderam o login (ver lostLogin): ficam na barra, em destaque, com o botão
   // de entrar no painel, em vez de sumir junto com os números.
   const signedOut: SignedOutLogin[] = accounts.filter(lostLogin).map((a) => ({ key: `lost:${a.id}`, name: a.name, account: a.id }));

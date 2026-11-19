@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Os modelos de cada conta dos outros agentes, no formato do seletor de modelo do chat. Os
 // processos do Codex e do ACP são trocados por falsos que respondem a lista.
 
-const fake = vi.hoisted(() => ({ codex: [] as unknown[], acp: {} as Record<string, unknown>, opened: 0, fail: false }));
+const fake = vi.hoisted(() => ({ codex: [] as unknown[], acp: {} as Record<string, unknown>, opened: 0, fail: false, dropped: [] as string[] }));
 
 vi.mock('../providers/env', () => ({ providerLaunch: () => ({ command: 'codex', args: [], env: {}, account: 'main' }) }));
 vi.mock('../providers/status', () => ({
@@ -13,7 +13,9 @@ vi.mock('../providers/status', () => ({
     return { request: async () => ({ data: fake.codex }), close: () => {} };
   },
 }));
+vi.mock('../providers/antigravity', () => ({ dropEmptyConversation: (_account: string, id: string) => fake.dropped.push(id) }));
 vi.mock('./acp', () => ({
+  EFFORT_OPTION: 'thought_level',
   GEMINI_DEFAULT: ['gemini-3-flash-preview', 'gemini-3.5-flash'],
   openAcp: async () => ({ request: async () => fake.acp, close: () => {} }),
 }));
@@ -30,13 +32,14 @@ const codexModel = (id: string, extra: Record<string, unknown> = {}) => ({
 });
 
 let n = 0;
-const ref = (provider: 'codex' | 'gemini' | 'cursor') => ({ provider, account: `conta${++n}` });
+const ref = (provider: 'codex' | 'gemini' | 'cursor' | 'antigravity') => ({ provider, account: `conta${++n}` });
 
 beforeEach(() => {
   fake.codex = [];
   fake.acp = {};
   fake.opened = 0;
   fake.fail = false;
+  fake.dropped = [];
 });
 
 describe('modelos do Codex', () => {
@@ -89,6 +92,35 @@ describe('modelos do Gemini e do Cursor', () => {
     const info = await agentInfo(ref('gemini'));
     expect(info?.models[0].resolvedName).toBe('Gemini 3.5 Flash');
     expect(info?.models.map((m) => m.value)).toEqual(['', 'auto', 'gemini-3-pro']);
+  });
+});
+
+describe('modelos do Antigravity', () => {
+  it('os esforços de cada modelo saem das variantes por nível, e a conversa de leitura é apagada', async () => {
+    fake.acp = {
+      sessionId: 'a1b2c3d4-0000-4000-8000-000000000000',
+      configOptions: [
+        { id: 'model', name: 'Model', type: 'select', currentValue: 'gemini-3.1-pro', options: [{ value: 'gemini-4-neon', name: 'Gemini 4 Neon' }, { value: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro' }] },
+        { id: 'thought_level', name: 'Thinking Level', type: 'select', currentValue: 'low', options: [] },
+      ],
+      models: {
+        currentModelId: 'gemini-3.1-pro-low',
+        availableModels: ['gemini-4-neon-high', 'gemini-4-neon-xhigh', 'gemini-4-neon-low', 'gemini-3.1-pro-high', 'gemini-3.1-pro-low'].map((modelId) => ({ modelId, name: modelId })),
+      },
+    };
+    const info = await agentInfo(ref('antigravity'));
+    expect(info?.models.map((m) => [m.value, m.resolvedName ?? m.displayName, m.efforts])).toEqual([
+      ['', 'Gemini 3.1 Pro', ['low', 'high']],
+      ['gemini-4-neon', 'Gemini 4 Neon', ['low', 'high', 'xhigh']],
+    ]);
+    expect(fake.dropped).toEqual(['a1b2c3d4-0000-4000-8000-000000000000']);
+  });
+
+  it('Cursor e Gemini continuam sem esforço e sem apagar conversa', async () => {
+    fake.acp = { sessionId: 's1', configOptions: [{ id: 'model', name: 'Model', type: 'select', currentValue: 'gpt-5', options: [{ value: 'gpt-5', name: 'GPT-5' }] }] };
+    const info = await agentInfo(ref('cursor'));
+    expect(info?.models[0].efforts).toEqual([]);
+    expect(fake.dropped).toEqual([]);
   });
 });
 

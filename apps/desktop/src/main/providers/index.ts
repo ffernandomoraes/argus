@@ -1,6 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { clipboard, shell } from 'electron';
 import {
@@ -10,21 +9,23 @@ import {
   PROVIDERS,
   type AccountKind,
   type ClipboardKey,
+  type KeyProviderId,
   type ProviderAccountStatus,
   type ProviderId,
   type ProviderInstall,
   type ProviderLogin,
   type ProvidersState,
 } from '@argus/shared/providers';
-import { unlinkAgentsDir } from '../agents/accountLinks';
 import { tr } from '../i18n';
+import { openAcpProcess } from './acpProcess';
+import { antigravitySignIn } from './antigravity';
 import { createBackoff } from '../lib/backoff';
 import { errorMessage } from '../lib/errors';
 import { findCommand, lookupShellPath } from './bins';
 import { providerLaunch } from './env';
 import { INSTALL_COMMANDS, runInstaller } from './install';
-import { deleteKey, KEY_PATTERNS, keyHint, saveKey } from './keys';
-import { ID, providerAccountDir } from './paths';
+import { removeAccountDir, suggestName } from './accountFiles';
+import { KEY_PATTERNS, keyHint, saveKey } from './keys';
 import {
   addEntry,
   addPending,
@@ -49,6 +50,8 @@ export { providerLaunch } from './env';
 //   porque o login do Cursor mora num item fixo das Chaves do macOS e uma conta trocaria a outra.
 // - Gemini: só chave de API. O Google suspende contas que usam o login Google do Gemini CLI em
 //   apps de terceiros e pede chave para esse uso.
+// - Antigravity: a principal pelo login Google do próprio `agy` (a do terminal); as outras por chave
+//   de API. As regras da Google para esse login estão em antigravity.ts.
 // A chave: o Argus abre a página onde ela é criada; ao voltar, reconhece a chave copiada, testa e
 // guarda no cofre do sistema (keys.ts).
 
@@ -182,8 +185,9 @@ export class Providers {
     await this.refresh(provider);
   }
 
-  // Conta nova. Codex e Cursor começam pela do terminal, se ainda não está no app (já logada, entra
-  // direto); depois, o Codex abre o login numa pasta nova e o Cursor pede chave. O Gemini, sempre chave.
+  // Conta nova. Codex, Cursor e Antigravity começam pela do terminal, se ainda não está no app (já
+  // logada, entra direto); depois, o Codex abre o login numa pasta nova e os outros pedem chave. O
+  // Gemini, sempre chave.
   async add(provider: ProviderId): Promise<void> {
     this.cancel();
     if (!findCommand(provider)) return;
@@ -219,7 +223,7 @@ export class Providers {
   }
 
   private askKey(target: LoginTarget): void {
-    const page = KEY_PAGES[target.provider as 'gemini' | 'cursor'];
+    const page = KEY_PAGES[target.provider as KeyProviderId];
     this.session = { ...target, stop: () => {} };
     this.setLogin({ status: 'key', ...target });
     if (page) void shell.openExternal(page);
@@ -230,7 +234,7 @@ export class Providers {
     const s = this.session;
     if (!s || (this.loginState.status !== 'key' && this.loginState.status !== 'error')) return null;
     const text = (await clipboard.readText()).trim();
-    const pattern = KEY_PATTERNS[s.provider as 'gemini' | 'cursor'];
+    const pattern = KEY_PATTERNS[s.provider as KeyProviderId];
     return pattern?.test(text) ? { provider: s.provider, hint: keyHint(text) } : null;
   }
 
@@ -244,11 +248,11 @@ export class Providers {
     this.setLogin({ status: 'checking', ...target });
     const problem = await checkKey(s.provider, key, s.accountId);
     if (this.session !== s) return;
-    if (problem) return this.setLogin({ status: 'error', message: problem, ...target });
+    if (problem) return this.setLogin({ status: 'error', kind: 'key', message: problem, ...target });
     try {
       saveKey(s.provider, s.accountId, key);
     } catch (err) {
-      return this.setLogin({ status: 'error', message: errorMessage(err), ...target });
+      return this.setLogin({ status: 'error', kind: 'key', message: errorMessage(err), ...target });
     }
     await this.finish(s);
   }
@@ -267,6 +271,7 @@ export class Providers {
         this.session = null;
         return this.setLogin({
           status: 'error',
+          kind,
           message: tr(`essa conta já está no app, como "${twin.name}".`, `this account is already in the app, as "${twin.name}".`),
           ...target,
         });
@@ -282,6 +287,27 @@ export class Providers {
   private async startLogin(target: LoginTarget): Promise<void> {
     if (target.provider === 'codex') return this.codexLogin(target);
     if (target.provider === 'cursor') return this.cursorLogin(target);
+    if (target.provider === 'antigravity') return this.antigravityLogin(target);
+  }
+
+  // Antigravity (só a principal): o `agy acp` abre a página da Google e responde quando o login termina.
+  private async antigravityLogin(target: LoginTarget): Promise<void> {
+    const launch = providerLaunch('antigravity', ['acp'], target.accountId);
+    if (!launch) return;
+    let rpc: JsonRpcProcess | null = null;
+    const session: LoginSession = { ...target, stop: () => rpc?.close() };
+    this.session = session;
+    this.setLogin({ status: 'waiting', ...target });
+    try {
+      rpc = await openAcpProcess(launch);
+      if (this.session !== session) return rpc.close();
+      await antigravitySignIn(rpc, !target.adding);
+      rpc.close();
+      if (this.session === session) await this.finish(session);
+    } catch (err) {
+      rpc?.close();
+      if (this.session === session) this.fail(session, new Error(tr('O login do Antigravity não terminou.', 'Antigravity sign-in didn’t finish.'), { cause: err }));
+    }
   }
 
   // Codex: o app-server da conta gera o link; o navegador volta para ele (porta 1455) e ele avisa.
@@ -353,7 +379,7 @@ export class Providers {
   private fail(s: LoginSession, err: unknown): void {
     this.discard(s);
     this.session = null;
-    this.setLogin({ status: 'error', message: errorMessage(err) || tr('Não deu para entrar.', 'Couldn’t sign in.'), provider: s.provider, accountId: s.accountId, adding: s.adding });
+    this.setLogin({ status: 'error', kind: 'login', message: errorMessage(err) || tr('Não deu para entrar.', 'Couldn’t sign in.'), provider: s.provider, accountId: s.accountId, adding: s.adding });
   }
 
   // Conta nova que não chegou a entrar: some a pasta (a principal não tem pasta).
@@ -361,7 +387,7 @@ export class Providers {
     s.stop();
     if (!s.adding) return;
     dropPending(s.provider, s.accountId);
-    removeDir(s.provider, s.accountId);
+    removeAccountDir(s.provider, s.accountId);
   }
 
   cancel(): void {
@@ -378,7 +404,7 @@ export class Providers {
     if (this.session?.provider === provider && this.session.accountId === id) this.cancel();
     this.onAccountRemoved(provider, id);
     forgetEntry(provider, id);
-    removeDir(provider, id);
+    removeAccountDir(provider, id);
     this.statuses.delete(`${provider}/${id}`);
     this.checks.delete(`${provider}/${id}`);
     this.unsure.delete(`${provider}/${id}`);
@@ -395,24 +421,4 @@ export class Providers {
     setDefaultEntry(provider, id);
     this.emit();
   }
-}
-
-function removeDir(provider: ProviderId, id: string): void {
-  const dir = providerAccountDir(provider, id);
-  if (!dir || !ID.test(id)) return;
-  deleteKey(provider, id);
-  unlinkAgentsDir(provider, dir);
-  try {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
-  } catch (err) {
-    console.warn('[providers] não deu para apagar a pasta da conta:', dir, errorMessage(err));
-  }
-}
-
-// Nome sugerido: o e-mail da conta; chave sem e-mail, o final dela.
-function suggestName(id: string, kind: AccountKind, status: ProviderAccountStatus | null, taken: Set<string>): string {
-  const email = status?.email;
-  if (email) return taken.has(email) ? `${email} (${id})` : email;
-  if (kind === 'key' && status?.keyHint) return tr(`Chave ${status.keyHint}`, `Key ${status.keyHint}`);
-  return id === MAIN_PROVIDER_ACCOUNT ? tr('Do terminal', 'From terminal') : tr('Conta', 'Account');
 }

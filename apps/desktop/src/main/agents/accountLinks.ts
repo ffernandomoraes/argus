@@ -4,13 +4,15 @@ import type { ProviderId } from '@argus/shared/providers';
 import { errorMessage } from '../lib/errors';
 import { globalDir } from './folder';
 
-// As contas extras do Codex e do Gemini têm pasta própria (CODEX_HOME, GEMINI_CLI_HOME), e o CLI
+// As contas extras do Codex, do Gemini e do Antigravity têm pasta própria (CODEX_HOME,
+// GEMINI_CLI_HOME, --gemini-dir), e o CLI
 // procura os agentes globais dentro dela. A pasta de agentes da conta aponta para a biblioteca (a
 // da conta principal): um agente criado no Argus vale em todas as contas, como no Claude.
 // O Cursor não entra: os agentes dele vão no texto da mensagem.
 function accountAgentsDir(provider: ProviderId, accountDir: string): string | null {
   if (provider === 'codex') return join(accountDir, 'agents');
   if (provider === 'gemini') return join(accountDir, '.gemini', 'agents');
+  if (provider === 'antigravity') return join(accountDir, 'config', 'agents');
   return null;
 }
 

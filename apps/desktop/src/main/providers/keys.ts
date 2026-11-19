@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { app, safeStorage } from 'electron';
-import type { ProviderId } from '@argus/shared/providers';
+import type { KeyProviderId, ProviderId } from '@argus/shared/providers';
 import { errorMessage } from '../lib/errors';
 import { keychainDelete, keychainRead, keychainWrite } from '../lib/macKeychain';
 import { providerAccountDir } from './paths';
 
-// Chaves de API das contas por chave (Gemini; as outras do Cursor). Nunca vão para a tela; o CLI
+// Chaves de API das contas por chave (Gemini; as outras do Cursor e do Antigravity). Nunca vão para a tela; o CLI
 // recebe a chave pelo ambiente, na hora de abrir. Onde ficam:
 //
 // - App instalado no Mac: nas Chaves, pelo `security` (ver lib/macKeychain.ts). O safeStorage pedia a
@@ -97,8 +97,12 @@ export function deleteKey(provider: ProviderId, id: string): void {
 export const keyHint = (key: string) => `…${key.slice(-4)}`;
 
 // Formatos conhecidos, para reconhecer a chave copiada (ver clipboardKey).
-export const KEY_PATTERNS: Record<'gemini' | 'cursor', RegExp> = {
-  gemini: /^AIza[0-9A-Za-z_-]{35}$/,
+const GOOGLE_KEY = /^AIza[0-9A-Za-z_-]{35}$/;
+
+export const KEY_PATTERNS: Record<KeyProviderId, RegExp> = {
+  gemini: GOOGLE_KEY,
+  // O Antigravity usa a mesma chave do Google AI Studio.
+  antigravity: GOOGLE_KEY,
   // Formato do Cursor sem documentação oficial: "key_" + letras e números (visto em detectores de
   // segredo). Colar à mão continua valendo para qualquer formato.
   cursor: /^key_[0-9A-Za-z]{32,}$/,

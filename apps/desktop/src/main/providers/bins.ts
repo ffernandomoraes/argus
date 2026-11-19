@@ -30,6 +30,8 @@ const CANDIDATES: Record<ProviderId, () => string[]> = {
     IS_WIN
       ? [join(LOCAL, 'cursor-agent', 'agent.exe'), join(LOCAL, 'cursor-agent', 'cursor-agent.exe')]
       : [join(home, '.local/bin/agent'), join(home, '.local/bin/cursor-agent')],
+  // O instalador oficial põe o `agy` aqui. O `antigravity` do PATH é o editor, não o CLI.
+  antigravity: () => (IS_WIN ? [join(LOCAL, 'agy', 'bin', 'agy.exe')] : [join(home, '.local/bin/agy')]),
   gemini: () =>
     IS_WIN
       ? []
@@ -49,6 +51,7 @@ const PATH_NAMES: Record<ProviderId, string[]> = {
   codex: ['codex'],
   cursor: ['cursor-agent', 'agent'],
   gemini: ['gemini'],
+  antigravity: ['agy'],
 };
 
 const shellDirs: string[] = [];

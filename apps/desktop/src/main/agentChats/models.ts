@@ -4,9 +4,10 @@ import { join } from 'node:path';
 import type { ClaudeInfo, ClaudeModel } from '@argus/shared/models';
 import type { AgentRef } from '@argus/shared/providers';
 import { tr } from '../i18n';
+import { dropEmptyConversation } from '../providers/antigravity';
 import { providerLaunch } from '../providers/env';
 import { openCodex } from '../providers/status';
-import { GEMINI_DEFAULT, openAcp, type ConfigOption } from './acp';
+import { EFFORT_OPTION, GEMINI_DEFAULT, openAcp, type ConfigOption } from './acp';
 
 // Modelos de cada conta dos outros agentes, no formato que os seletores do chat já usam (o mesmo
 // do Claude): o seletor de modelo e de esforço mostra o que a conta oferece. Contas de planos
@@ -60,17 +61,30 @@ async function codexInfo(account: string): Promise<ClaudeInfo | null> {
   }
 }
 
-// Gemini e Cursor só dizem os modelos de dentro de uma sessão: abre uma numa pasta temporária, lê
-// e fecha.
+const EFFORT_ORDER = ['low', 'medium', 'high', 'xhigh', 'max'];
+
+// Antigravity: a sessão lista cada modelo também por nível ("gemini-4-neon-xhigh"); daí saem os
+// esforços que cada modelo aceita.
+function effortsOf(model: string | undefined, variants: string[]): string[] {
+  if (!model) return [];
+  const found = variants.filter((id) => id.startsWith(`${model}-`)).map((id) => id.slice(model.length + 1));
+  return EFFORT_ORDER.filter((e) => found.includes(e));
+}
+
+// Gemini, Cursor e Antigravity só dizem os modelos de dentro de uma sessão: abre uma numa pasta
+// temporária, lê e fecha.
 async function acpInfo(ref: AgentRef): Promise<ClaudeInfo | null> {
   const dir = join(tmpdir(), 'argus-models');
   mkdirSync(dir, { recursive: true });
   const rpc = await openAcp(ref.provider, ref.account, dir);
+  let sessionId = '';
   try {
     const s = await rpc.request<{
+      sessionId?: string
       configOptions?: ConfigOption[]
       models?: { currentModelId: string; availableModels: { modelId: string; name: string }[] }
     }>('session/new', { cwd: dir, mcpServers: [] }, 60_000);
+    sessionId = s.sessionId ?? '';
     const option = s.configOptions?.find((o) => o.id === 'model');
     const list = option
       ? option.options.map((o) => ({ value: o.value, name: o.name }))
@@ -79,12 +93,14 @@ async function acpInfo(ref: AgentRef): Promise<ClaudeInfo | null> {
     const fallback = ref.provider === 'gemini' ? GEMINI_DEFAULT.find((m) => list.some((x) => x.value === m)) : undefined;
     const current = fallback ?? option?.currentValue ?? s.models?.currentModelId;
     const currentName = list.find((m) => m.value === current)?.name;
+    const variants = s.configOptions?.some((o) => o.id === EFFORT_OPTION) ? (s.models?.availableModels.map((m) => m.modelId) ?? []) : [];
     return base([
-      { value: '', displayName: tr('Padrão', 'Default'), resolvedName: currentName, efforts: [] },
-      ...list.filter((m) => m.value !== current).map((m) => ({ value: m.value, displayName: m.name, efforts: [] })),
+      { value: '', displayName: tr('Padrão', 'Default'), resolvedName: currentName, efforts: effortsOf(current, variants) },
+      ...list.filter((m) => m.value !== current).map((m) => ({ value: m.value, displayName: m.name, efforts: effortsOf(m.value, variants) })),
     ]);
   } finally {
     rpc.close();
+    if (ref.provider === 'antigravity' && sessionId) dropEmptyConversation(ref.account, sessionId);
   }
 }
 

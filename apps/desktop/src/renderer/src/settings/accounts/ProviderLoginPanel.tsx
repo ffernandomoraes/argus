@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
 import { ClipboardCheck, Loader2 } from 'lucide-react';
-import { KEY_PAGES, PROVIDER_NAMES, type ClipboardKey, type ProviderLogin } from '@argus/shared/providers';
+import { KEY_PAGES, PROVIDER_NAMES, type ClipboardKey, type KeyProviderId, type ProviderLogin } from '@argus/shared/providers';
 import { Button } from '../../ui/Button';
 import { tr } from '../../i18n';
 
 type Active = Exclude<ProviderLogin, { status: 'idle' }>;
 
 // Onde cada chave é criada, para o passo a passo.
-const KEY_PLACE = {
+const KEY_PLACE: Record<KeyProviderId, string> = {
   gemini: 'Google AI Studio',
+  antigravity: 'Google AI Studio',
   cursor: tr('painel do Cursor (Integrations > API Keys)', 'Cursor dashboard (Integrations > API Keys)'),
-} as const;
+};
 
-// O login em andamento de um agente: navegador (Codex, a principal do Cursor) ou chave (Gemini, as
-// outras do Cursor). Na chave, o app procura a chave copiada sozinho: a pessoa cria, copia, volta
+// O login em andamento de um agente: navegador (Codex, a principal do Cursor e do Antigravity) ou
+// chave (Gemini, as outras do Cursor e do Antigravity). Na chave, o app procura a chave copiada sozinho: a pessoa cria, copia, volta
 // e confirma, sem colar nada.
 export function ProviderLoginPanel({ login }: { login: Active }) {
   const name = PROVIDER_NAMES[login.provider];
@@ -37,6 +38,20 @@ export function ProviderLoginPanel({ login }: { login: Active }) {
           )}
         </p>
         <Actions />
+      </Panel>
+    );
+  }
+  // Login pelo navegador que não terminou: só o motivo (a tela da chave não serve para essa conta).
+  if (login.status === 'error' && login.kind === 'login') {
+    return (
+      <Panel>
+        <p className="text-[16px] text-text">{tr(`Não deu para entrar no ${name}.`, `Couldn’t sign in to ${name}.`)}</p>
+        <p role="alert" className="text-[15px] text-red-400">
+          {login.message}
+        </p>
+        <div className="flex justify-end">
+          <Button onClick={() => window.api.providers.cancel()}>{tr('Fechar', 'Close')}</Button>
+        </div>
       </Panel>
     );
   }
@@ -77,7 +92,7 @@ function useClipboardKey(active: boolean): ClipboardKey {
 }
 
 function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
-  const provider = login.provider as 'gemini' | 'cursor';
+  const provider = login.provider as KeyProviderId;
   const name = PROVIDER_NAMES[provider];
   const checking = login.status === 'checking';
   const found = useClipboardKey(!checking);

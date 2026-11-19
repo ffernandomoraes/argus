@@ -9,9 +9,17 @@ import type { RemoteAccessState, RemoteConnectionState } from '@argus/shared/rem
 export const REMOTE_HOST = window.api.remote?.host ?? null;
 export const IS_REMOTE = REMOTE_HOST !== null;
 
+// Começa como a ligação estava quando a página carregou: a que carrega com ela caída (religou,
+// recarregou e caiu de novo) já mostra o aviso. Ao começar a ouvir, pergunta de novo: a mudança que
+// veio antes disso não chegou a ninguém.
 export function useRemoteState(): RemoteConnectionState {
-  const [state, setState] = useState<RemoteConnectionState>('connected');
-  useEffect(() => (IS_REMOTE ? window.api.remote.onState(setState) : undefined), []);
+  const [state, setState] = useState<RemoteConnectionState>(REMOTE_HOST?.connection ?? 'connected');
+  useEffect(() => {
+    if (!IS_REMOTE) return;
+    const off = window.api.remote.onState(setState);
+    setState(window.api.remote.connection());
+    return off;
+  }, []);
   return state;
 }
 

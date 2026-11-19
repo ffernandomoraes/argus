@@ -101,7 +101,10 @@ export function ProjectsScreen() {
 
   const createWorkspace = (name: string) => {
     setError(null);
-    conn.call('boards:create', name).then(pick, (err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+    conn.call('boards:create', name).then(
+      (id) => (id ? pick(id) : setError(tr('Não deu para criar o workspace.', "Couldn't create the workspace."))),
+      (err: unknown) => setError(err instanceof Error ? err.message : String(err)),
+    );
   };
   const groups = current?.groups.filter((g) => g.folders.length) ?? [];
 

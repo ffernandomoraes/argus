@@ -12,7 +12,9 @@ export type PendingOpen = { cwd: string; sessionId: string };
 
 type State = { boards: BoardSummary[]; current: string; pendingOpen: PendingOpen | null };
 
-const initial = window.api.boards.state();
+// Nulo só na janela remota que abriu sem ligação: ela fica coberta pelo aviso e recarrega quando a
+// ligação volta (ARGUS-T, 2026-11-19). Até lá, o principal e vazio.
+const initial = window.api.boards.state() ?? { boards: [], current: 'main' };
 const store = createStore<State>({ ...initial, pendingOpen: null });
 
 const firstOpen = (boards: BoardSummary[]) => (boards.find((b) => !b.closed) ?? boards[0]).id;
@@ -42,9 +44,10 @@ export function switchBoard(id: string, pendingOpen: PendingOpen | null = null):
   }));
 }
 
-// Workspace novo já vira o desta janela.
-export function createBoard(name: string): string {
+// Workspace novo já vira o desta janela. Nulo sem ligação, na janela remota.
+export function createBoard(name: string): string | null {
   const id = window.api.boards.create(name);
+  if (!id) return null;
   const created: BoardSummary = { id, name, paths: [], sessions: [] };
   // O aviso da lista pode chegar depois: o novo entra já, para o menu e o canvas acharem ele.
   store.set((s) => ({ ...s, boards: s.boards.some((b) => b.id === id) ? s.boards : [...s.boards, created] }));

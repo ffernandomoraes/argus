@@ -5,9 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { broadcast } from '../ipc/events';
 import { isRemotePage, type Caller, type Page } from '../ipc/page';
 import { handle, on, onSync } from '../ipc/register';
-import { RemoteClient } from './client';
+import { RemoteClient, remoteInfoFor } from './client';
 import { RemoteHost } from './host';
 import { memoryLinks } from './link';
+import { isNoConnectionMessage } from './noConnection';
 import { blockedReply, channelPolicy } from './policy';
 import { decodeClient, encode, type ClientMessage } from './protocol';
 
@@ -162,6 +163,19 @@ describe('acesso remoto', () => {
     expect(wc.sent).toContainEqual(['remote:state', 'closed']);
     await expect(route.call('invoke', 'sessions:list', ['/proj'])).rejects.toThrow(/Sem ligação/);
     await expect(route.call('sync', 'boards:create', ['x'])).resolves.toBeNull();
+  });
+
+  // ARGUS-T e P a W, 2026-11-19: religou, recarregou e caiu de novo antes de a página abrir.
+  it('página que abre com a ligação caída: sabe disso, e o erro dos pedidos não vai ao Sentry', async () => {
+    const { route, clientSide } = await connected(11);
+    expect(remoteInfoFor(11)?.connection).toBe('connected');
+    clientSide.close();
+    await settle();
+    expect(remoteInfoFor(11)?.connection).toBe('closed');
+    const err = await route.call('invoke', 'updates:get', []).catch((e: Error) => e);
+    expect(isNoConnectionMessage(`Error invoking remote method 'updates:get': Error: ${(err as Error).message}`)).toBe(true);
+    expect(isNoConnectionMessage("Error invoking remote method 'updates:get': Error: No connection to the other computer.")).toBe(true);
+    expect(isNoConnectionMessage('TypeError: x is undefined')).toBe(false);
   });
 
   it('pedido em andamento quando a ligação cai é rejeitado', async () => {

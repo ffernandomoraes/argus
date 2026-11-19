@@ -5,6 +5,7 @@ import { isAppFrame } from '../app/appUrl';
 import { loadAppSettings, saveAppSettings } from '../appSettings';
 import { errorMessage } from '../lib/errors';
 import { IS_LINUX, IS_MAC, IS_WIN } from '../platform';
+import { isNoConnectionMessage } from '../remote/noConnection';
 import { SMOKE_TEST } from '../smokeTest';
 import { claudeDistro, knownDistros } from '../wsl';
 import { scrubBreadcrumb, scrubEvent } from './scrub';
@@ -104,9 +105,10 @@ export function startErrorReports(): void {
       // Junta o retrato do app na hora (ver snapshot.ts) e depois limpa tudo, inclusive o retrato. O
       // aviso de janela travada que é só eco do processo principal parado, que não foi todo com uma
       // janela do Argus em foco, ou de uma janela escondida que responde (alarme falso), não vai (ver
-      // echoOfMainLag, unfocusedWindowBlock e hiddenWindowBlock).
+      // echoOfMainLag, unfocusedWindowBlock e hiddenWindowBlock). Nem o pedido da janela remota que
+      // falhou com a ligação caída (remote/noConnection.ts).
       beforeSend: async (event) =>
-        echoOfMainLag(event) || unfocusedWindowBlock(event) || (await hiddenWindowBlock(event))
+        remoteDisconnected(event) || echoOfMainLag(event) || unfocusedWindowBlock(event) || (await hiddenWindowBlock(event))
           ? null
           : scrubEvent(tagged(await withSnapshot(event))),
       beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
@@ -125,6 +127,9 @@ export function startErrorReports(): void {
   watchWindowFocus();
   void app.whenReady().then(startBlockDetection);
 }
+
+const remoteDisconnected = (event: Sentry.ErrorEvent): boolean =>
+  !!event.exception?.values?.some((value) => isNoConnectionMessage(value.value));
 
 // No teste de fumaça, nada sai pelo SDK (o travamento vai pela linha de execução à parte, para o
 // endereço local).

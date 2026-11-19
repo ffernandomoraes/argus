@@ -46,6 +46,8 @@ export type Api = {
   // ligação. Nela, platform, homeDir e windowsBuild são os de lá.
   remote: {
     host: RemoteHostInfo | null
+    // A situação de agora: a mudança que veio antes de a tela começar a ouvir não se perde.
+    connection: () => RemoteConnectionState
     onState: (cb: (state: RemoteConnectionState) => void) => Off
     // Pediu algo que não funciona pelo acesso remoto (o canal), para a tela explicar.
     onBlocked: (cb: (channel: string) => void) => Off
@@ -310,13 +312,13 @@ export type Api = {
   }
   // Workspaces: canvas separados, trocados no menu da barra de título.
   boards: {
-    // Síncrono: a janela já abre no workspace dela.
-    state: () => BoardsState
+    // Síncrono: a janela já abre no workspace dela. Nulo na janela remota sem ligação.
+    state: () => BoardsState | null
     onChange: (cb: (boards: BoardSummary[]) => void) => Off
     // Esta janela passou a mostrar o workspace.
     show: (board: string) => void
-    // Síncrono: devolve o id, para a janela já trocar para ele.
-    create: (name: string) => string
+    // Síncrono: devolve o id, para a janela já trocar para ele. Nulo na janela remota sem ligação.
+    create: (name: string) => string | null
     rename: (board: string, name: string) => void
     // Tira do menu, sem parar nada (o último aberto não fecha); reabrir traz de volta.
     close: (board: string) => void

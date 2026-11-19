@@ -5,6 +5,7 @@ import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } fro
 import { tr } from '../i18n';
 import type { Link } from './link';
 import { decodeHost, encode, PROTOCOL_VERSION, type ClientMessage, type HostMessage } from './protocol';
+import { noConnection } from './noConnection';
 import { forgetRemoteNotices, remoteNotice } from './remoteNotices';
 import { ServerMirror } from './serverMirror';
 import { TunnelClient } from './tunnelClient';
@@ -36,10 +37,10 @@ function installRouting(): void {
 }
 
 // O computador que a janela daqui mostra, como está agora (depois de religar, a versão de lá pode ter
-// mudado), com a versão deste. Nulo para as janelas comuns.
+// mudado), com a versão deste e a situação da ligação. Nulo para as janelas comuns.
 export function remoteInfoFor(wcId: number): RemoteHostInfo | null {
   const client = windowClients.get(wcId);
-  return client?.info ? { ...client.info, clientVersion: client.clientVersion } : null;
+  return client?.info ? { ...client.info, clientVersion: client.clientVersion, connection: client.state } : null;
 }
 
 // A ligação que a janela daqui mostra; nula para as janelas comuns.
@@ -48,8 +49,6 @@ export function remoteClientOf(wcId: number): RemoteClient | null {
 }
 
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void; timer?: NodeJS.Timeout; sync: boolean };
-
-const noConnection = () => new Error(tr('Sem ligação com o outro computador.', 'No connection to the other computer.'));
 
 export class RemoteClient {
   private windows = new Map<number, WebContents>();

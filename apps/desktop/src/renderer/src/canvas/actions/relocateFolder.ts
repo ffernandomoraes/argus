@@ -20,7 +20,7 @@ export async function relocateFolderCard({ board, nodesRef, setNodes }: NodesApi
   const warning = await window.api.sessions.relocate(from, chosen).catch((err: Error) => err.message);
   window.api.chat.restartIn(from);
   setNodes((ns) => relocateFolder(ns, from, chosen));
-  for (const other of window.api.boards.state().boards) {
+  for (const other of window.api.boards.state()?.boards ?? []) {
     if (other.id === board || !other.paths.some((p) => sameFolder(p, from))) continue;
     const saved = nodesFromSaved(window.api.canvas.load(other.id)).nodes;
     const next = relocateFolder(saved, from, chosen);

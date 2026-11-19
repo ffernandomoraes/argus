@@ -46,6 +46,7 @@ const api: Api = {
   windowsBuild: remote ? remote.windowsBuild : windowsBuild(),
   remote: {
     host: remote,
+    connection: () => sendSync('remote:info')?.connection ?? 'connected',
     onState: (cb) => listen('remote:state', cb),
     onBlocked: (cb) => listen('remote:blocked', cb),
     onPortMoved: (cb) => listen('remote:portMoved', cb),

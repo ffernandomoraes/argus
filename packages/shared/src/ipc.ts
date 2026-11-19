@@ -315,8 +315,9 @@ export type SendSyncChannels = {
   'language:get': () => Lang
   'canvas:load': (board: string) => unknown
   'canvas:viewport': (board: string) => CanvasViewport | null
-  'boards:state': () => BoardsState
-  'boards:create': (name: string) => string
+  // Nulos na janela remota sem ligação (ver main/remote/client.ts).
+  'boards:state': () => BoardsState | null
+  'boards:create': (name: string) => string | null
   // Janela de acesso remoto: o computador que ela mostra, como está agora (nulo nas comuns).
   'remote:info': () => RemoteHostInfo | null
 };

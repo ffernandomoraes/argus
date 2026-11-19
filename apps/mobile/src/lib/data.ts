@@ -134,8 +134,9 @@ export function groupsOf(nodes: unknown): Group[] {
 export function useWorkspaces(): { workspaces: Workspace[]; loaded: boolean } {
   const { conn } = useHost();
   const r = useRemote(async (c) => {
+    // Nulo se deu erro lá (o pedido síncrono responde nulo no lugar do erro).
     const state = await c.call('boards:state');
-    const open = state.boards.filter((b) => !b.closed);
+    const open = (state?.boards ?? []).filter((b) => !b.closed);
     const loaded = await Promise.all(open.map(async (b) => ({ id: b.id, name: b.name, groups: groupsOf(await c.call('canvas:load', b.id)) })));
     // Workspace sem nada também: acabou de ser criado e recebe pastas pelo celular.
     return loaded;

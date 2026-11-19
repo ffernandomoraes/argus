@@ -12,6 +12,9 @@ export type RemoteHostInfo = {
   // Versão do Argus de quem mostra (o notebook), posta por ele ao abrir a janela: diferente da de lá,
   // a barra avisa.
   clientVersion?: string
+  // Situação da ligação quando a janela perguntou, posta pelo notebook. A página que carrega com a
+  // ligação caída (religou, recarregou e caiu de novo) já abre com o aviso, sem esperar o próximo.
+  connection?: RemoteConnectionState
 };
 
 // Situação da ligação de uma janela remota: ligada, tentando de novo ou encerrada.

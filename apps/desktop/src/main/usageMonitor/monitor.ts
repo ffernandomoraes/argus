@@ -474,8 +474,9 @@ export class UsageMonitor {
   // saía na batida da nova tentativa, antes dela: ARGUS-A, 2026-11-04, uma falha só e a janela
   // escondida logo depois.
   private checkStall(now: number): void {
-    // A distro desligada não é parada: nada a ler até ela ligar.
-    if (this.failure?.reason === 'wsl_stopped') return;
+    // A distro desligada não é parada: nada a ler até ela ligar. Nem o Claude Code que responde sem
+    // limites para mostrar: a causa já se sabe (ARGUS-A, 2026-11-16, com o login em dia).
+    if (this.failure?.reason === 'wsl_stopped' || this.failure?.reason === 'unavailable') return;
     if (!this.failingSince || this.reported || now - Math.max(this.failingSince, this.quietUntil) < STALL_MS) return;
     if (this.polling || (this.askedClaudeAt && now - this.askedClaudeAt < ONE_SHOT_TIMEOUT_MS)) return;
     this.reported = true;

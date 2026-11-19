@@ -456,17 +456,12 @@ describe('UsageMonitor', () => {
     expect(fake.spawned).toBe(1);
     expect(fake.closed).toBe(1);
 
-    // Sem login para ler: fica o de reserva, que responde sem limites e segue aberto.
+    // Sem login para ler: fica o de reserva, que responde sem limites e segue aberto. A causa já se
+    // sabe: não vira aviso de parada.
     await vi.advanceTimersByTimeAsync(20 * MIN);
     expect(fake.spawned).toBe(2);
     expect(fake.closed).toBe(1);
-    expect(fake.warn).toHaveBeenCalledTimes(1);
-    expect(fake.warn.mock.calls[0][1]).toMatchObject({
-      reason: 'unavailable',
-      claudeNoLimits: true,
-      claudeOpen: true,
-      loginState: 'missing',
-    });
+    expect(fake.warn).not.toHaveBeenCalled();
   });
 
   // O mecanismo do "Claude sai da conta" (2026-11-08): renovação recusada, o Claude Code apaga o login.

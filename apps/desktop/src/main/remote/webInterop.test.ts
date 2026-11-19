@@ -86,7 +86,9 @@ describe('app do celular com o Argus de casa', () => {
     link.send(big);
     accepted.link.send(Buffer.from('oi de casa'));
     accepted.link.send(Buffer.from(big));
-    await settle();
+    // A cifra do navegador (WebCrypto) roda fora da linha do teste: 700 KB numa máquina lenta da CI
+    // passam de 20 voltas (falhou no Linux em 2026-11-19). Espera as mensagens chegarem, até 5 s.
+    await vi.waitFor(() => expect(atHome.length + atPhone.length).toBe(4), { timeout: 5_000 });
 
     expect(atHome.map((d) => d.length)).toEqual([11, big.length]);
     expect(atHome[0].toString()).toBe('oi de longe');

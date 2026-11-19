@@ -5,6 +5,9 @@ import { setupLifecycle } from './app/lifecycle';
 import { createServices } from './app/services';
 import { startApp } from './app/startup';
 import { openArg } from './cli';
+import { setChatCounter } from './diagnostics/claudeProcesses';
+import { startJournalFile } from './diagnostics/journalFile';
+import { watchSystem } from './diagnostics/system';
 import { setAppState, startErrorReports } from './errorReports';
 import { cleanAppImageEnv, IS_MAC, IS_WIN } from './platform';
 
@@ -32,19 +35,25 @@ else start();
 function start(): void {
   // Windows: identifica o app nas notificações, com o mesmo id do atalho que o instalador cria.
   if (IS_WIN) app.setAppUserModelId(app.isPackaged ? 'dev.argus.app' : process.execPath);
-  // Primeiro de tudo: um erro já na criação dos serviços vira relatório (ver errorReports).
+  // Primeiro de tudo: um erro já na criação dos serviços vira relatório (ver errorReports), com o
+  // diário do app gravado desde já (ver diagnostics/journal.ts).
   startErrorReports();
+  startJournalFile();
   // Antes dos serviços: um erro ao criá-los já oferece voltar de versão (ver app/crashGuard.ts).
   const crashedBefore = armCrashGuard();
   const services = createServices();
   // O que o app estava fazendo, em números, para os relatórios de erro.
   setAppState(() => ({ chats: services.chats.summary(), terminals: services.terminals.count() }));
+  setChatCounter((account) => services.chats.summary().byAccount[account] ?? 0);
   receiveFolders();
   const life = setupLifecycle(services);
   attachRecovery(services.updater, life.restartToUpdate);
   app
     .whenReady()
-    .then(() => (crashedBefore ? askAfterCrash() : true))
+    .then(() => {
+      watchSystem();
+      return crashedBefore ? askAfterCrash() : true;
+    })
     .then((open) => open && startApp(services, life))
     .catch((err: unknown) => console.error('[app] a abertura falhou:', err));
 }

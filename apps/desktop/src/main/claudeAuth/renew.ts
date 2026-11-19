@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { claudeLaunch } from '../chats';
+import { trackClaude } from '../diagnostics/claudeProcesses';
 import { closeGently, guardStdin, writeStdin } from '../lib/childProcess';
 
 // Um `claude` só para pedidos de controle (o monitor de uso também usa). --strict-mcp-config sem
@@ -43,6 +44,7 @@ export async function renewWithClaude(account: string): Promise<void> {
   await new Promise<void>((resolve) => {
     // windowsHide: sem ele, o Windows mostraria uma janela de terminal para este `claude` escondido.
     const proc = spawn(l.file, l.args, { cwd: l.cwd, env: l.env, windowsHide: true });
+    trackClaude(proc, account, 'renew');
     guardStdin(proc);
     let done = false;
     const finish = () => {

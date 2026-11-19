@@ -1,5 +1,6 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
+import { timed } from '../diagnostics/timing';
 import { findAllInPath, findInPath, IS_WIN } from '../platform';
 import { claudeDistro } from '../wsl/distros';
 import { editorClaudes } from './editors';
@@ -61,10 +62,12 @@ export function lookupClaude(): Promise<void> {
 }
 
 // O `claude` deste sistema existe de verdade? Sem achar, claudePath devolve só o nome, na
-// esperança do PATH.
+// esperança do PATH. Medido: segurou o processo principal por 5 s num Windows (ARGUS-M, 2026-11-18).
 export function nativeClaudeFound(): boolean {
-  const claude = claudePath();
-  return isAbsolute(claude) ? existsSync(claude) : !!findInPath(claude.replace(/\.exe$/i, ''));
+  return timed('claudePathCheck', () => {
+    const claude = claudePath();
+    return isAbsolute(claude) ? existsSync(claude) : !!findInPath(claude.replace(/\.exe$/i, ''));
+  });
 }
 
 // Tem um Claude Code para o app usar? No Windows, vale também o instalado no Linux do WSL: quem

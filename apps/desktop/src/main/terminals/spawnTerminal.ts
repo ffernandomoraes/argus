@@ -8,6 +8,7 @@ import { applyAccount } from '../accounts';
 import { CLI_BIN } from '../cli';
 import { claudeCommand, claudePath, claudeReady } from '../claudePath';
 import { tr } from '../i18n';
+import { timed } from '../diagnostics/timing';
 import { errorMessage } from '../lib/errors';
 import { childEnv, defaultShell, IS_WIN, prependPath } from '../platform';
 import { distroFor, toLinux } from '../wsl';
@@ -44,8 +45,13 @@ export type Spawned =
 // sistema reescreve a saída: redesenha a tela inteira quando o tamanho muda e manda as marcas do
 // shell antes do texto que veio antes delas, e o Claude lia a saída de um comando embaralhada. O
 // novo repassa o que o programa escreveu, na ordem. Sem o conpty.dll (instalação incompleta), fica
-// o do sistema. Fora do Windows não há ConPTY: a saída sempre chega como o programa escreveu.
+// o do sistema. Fora do Windows não há ConPTY: a saída sempre chega como o programa escreveu. A
+// abertura é medida: segurou o processo principal por 5 s (ARGUS-G, 2026-11-10).
 function spawnPty(file: string, args: string[], options: IBasePtyForkOptions): { pty: IPty; passthrough: boolean } {
+  return timed('ptySpawn', () => openPty(file, args, options));
+}
+
+function openPty(file: string, args: string[], options: IBasePtyForkOptions): { pty: IPty; passthrough: boolean } {
   if (!IS_WIN) return { pty: spawn(file, args, options), passthrough: true };
   try {
     return { pty: spawn(file, args, { ...options, useConptyDll: true }), passthrough: true };

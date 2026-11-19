@@ -1,5 +1,6 @@
 import { powerSaveBlocker, type BrowserWindow, type WebContents } from 'electron';
 import type { RemoteConnectionState, RemoteHostInfo } from '@argus/shared/remote';
+import { note } from '../diagnostics/journal';
 import { sendTo, setRemoteWindowCheck } from '../ipc/events';
 import { setRemoteBlocked, setRemoteRoute, type CallKind, type RemoteRoute } from '../ipc/register';
 import { tr } from '../i18n';
@@ -289,6 +290,7 @@ export class RemoteClient {
   }
 
   private dropped(): void {
+    note('remote', 'ligação caiu', { windows: this.windows.size, ended: this.ended, willRetry: !!this.reconnect && !this.ended });
     this.failPending();
     this.mirror.stop();
     this.tunnels.dropConnections();
@@ -299,13 +301,14 @@ export class RemoteClient {
   }
 
   private async retry(): Promise<void> {
-    for (const delay of RECONNECT_DELAYS_MS) {
+    for (const [attempt, delay] of RECONNECT_DELAYS_MS.entries()) {
       await new Promise((r) => setTimeout(r, delay));
       if (this.ended || !this.windows.size) return;
       let link: Link;
       try {
         link = await this.reconnect!();
-      } catch {
+      } catch (err) {
+        note('remote', 'tentativa de religar falhou', { attempt: attempt + 1, error: err instanceof Error ? err.message : String(err) });
         continue;
       }
       if (this.ended) return void link.close();
@@ -320,6 +323,7 @@ export class RemoteClient {
         return this.finish();
       }
       this._state = 'connected';
+      note('remote', 'religou: recarregando as janelas', { attempt: attempt + 1, windows: this.windows.size });
       for (const [w, wc] of this.windows) {
         this.post({ t: 'open', w });
         if (!wc.isDestroyed()) wc.reload();
@@ -333,6 +337,7 @@ export class RemoteClient {
   }
 
   private finish(state: 'closed' | 'kicked' = 'closed'): void {
+    note('remote', 'ligação encerrada', { state });
     this.ended = true;
     this.releaseAwake();
     forgetRemoteNotices(this);

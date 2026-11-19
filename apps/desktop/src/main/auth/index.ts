@@ -48,6 +48,8 @@ import { openLoginQuery, type LoginQuery } from './loginQuery';
 import { readAccount, runClaude, type AccountRead } from './status';
 import { findTwins } from './twins';
 import { loginDistro, otherDistros, readWslAccount, wslPlace } from './wslPlace';
+import { lostLoginClues } from './lostLoginClues';
+import { note } from '../diagnostics/journal';
 
 // Mesmo caminho da extensão do VS Code: um `claude` aberto só para o login gera o link,
 // recebe o retorno do navegador e grava o login, nas Chaves do macOS (no Windows, num arquivo da
@@ -234,9 +236,11 @@ export class Auth {
   }
 
   private async reportLostLogin(id: string, before: Account | null, trigger: CheckTrigger, now: number): Promise<void> {
-    const read = await withTimeout(readStoredState(id), STORED_TIMEOUT_MS, null);
+    const [read, clues] = await Promise.all([withTimeout(readStoredState(id), STORED_TIMEOUT_MS, null), lostLoginClues(id, now)]);
     const seen = this.seenLoggedIn.get(id);
+    note('login', 'conta perdeu o login', { account: id, trigger, storedState: read?.state ?? 'timeout' });
     this.reportLost({
+      ...clues,
       trigger,
       main: id === MAIN_ACCOUNT,
       accounts: accountIds().length,

@@ -263,14 +263,19 @@ export class Chats {
 
   // Só números, para o relatório de erro (ver errorReports): quantas abertas, quantas trabalhando e
   // de qual agente.
-  summary(): { open: number; running: number; subagents: number; agents: Record<string, number> } {
+  // byAccount: conversas abertas de cada conta do Claude (o diário conta quantos `claude` do Argus a
+  // conta tinha quando o login mudou; ver diagnostics/loginHistory.ts).
+  summary(): { open: number; running: number; subagents: number; agents: Record<string, number>; byAccount: Record<string, number> } {
     const sessions = [...new Set(this.sessions.values())];
     const agents: Record<string, number> = {};
+    const byAccount: Record<string, number> = {};
     for (const s of sessions) {
       const agent = s instanceof AgentChatSession ? s.account.split(':')[0] : 'claude';
       agents[agent] = (agents[agent] ?? 0) + 1;
+      if (agent === 'claude') byAccount[s.account] = (byAccount[s.account] ?? 0) + 1;
     }
     return {
+      byAccount,
       open: sessions.length,
       running: sessions.filter((s) => s.state.status === 'running').length,
       subagents: sessions.reduce((sum, s) => sum + s.state.agents.length, 0),

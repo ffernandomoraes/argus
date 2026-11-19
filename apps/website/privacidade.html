@@ -57,8 +57,11 @@
 <table class="doc-table"><tr><th>O que vai</th><th>O que não vai</th></tr>
 <tr><td>Onde o erro aconteceu (a pilha de funções e as últimas ações no app)</td><td>Conversas e conteúdo de arquivos</td></tr>
 <tr><td>Versão do Argus, sistema operacional e se há WSL</td><td>Chaves, tokens e e-mails (são apagados)</td></tr>
-<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário (saem até dos caminhos de pasta)</td></tr></table>
-<p>Também ficam desligadas a coleta das variáveis das funções e as fotos da memória das quedas, que poderiam conter trechos de conversa.</p></section>
+<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário (saem até dos caminhos de pasta)</td></tr>
+<tr><td>O diário das últimas horas do app: o que cada parte fez e por quê (estados, motivos, tempos, quando o computador dormiu e o nome dos programas que abriram o Claude Code)</td><td>Prompts, respostas e nomes de conversas</td></tr>
+<tr><td>Um resumo de 8 letras do login do Claude, que não dá para desfazer, só para saber quando o login mudou</td><td>O login em si</td></tr></table>
+<p>Também ficam desligadas a coleta das variáveis das funções e as fotos da memória das quedas, que poderiam conter trechos de conversa.</p>
+<p>O mesmo diário fica gravado no seu computador, em <code>~/.argus/logs</code>, por 7 dias (até 5 MB por dia).</p></section>
         <section class="doc-sec" id="uso"><h2>Dados de uso</h2><p>No app instalado, o Argus manda uma vez por dia um resumo anônimo de como ele é usado, para saber o que melhorar. O envio vem ligado e desliga em <strong>Configurações › Geral</strong>.</p>
 <table class="doc-table"><tr><th>O que vai</th><th>O que não vai</th></tr>
 <tr><td>Quantas vezes cada recurso foi usado (ex.: ditado, trocar de branch, anexar arquivo), só a contagem</td><td>Nomes de pastas, projetos e arquivos</td></tr>

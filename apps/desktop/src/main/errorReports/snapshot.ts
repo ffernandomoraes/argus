@@ -2,6 +2,7 @@ import { performance } from 'node:perf_hooks';
 import { app, BrowserWindow, ipcMain, type WebContents } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '@argus/shared/windowBlock';
+import { note } from '../diagnostics/journal';
 
 // O retrato do app na hora de um erro: tudo lido só quando um relatório sai, nada medido sem parar.
 // A exceção é o relógio de 1 s do processo principal (ver watchMainLag), que só confere a hora.
@@ -30,7 +31,9 @@ export function watchMainLag(): void {
     while (lags.length && now - lags[0].at > LAG_KEEP_MS) lags.shift();
     if (ms < 200) return;
     lags.push({ at: now, ms });
-    if (ms >= 1000) Sentry.addBreadcrumb({ category: 'main.lag', level: 'warning', message: `Processo principal parado por ${ms} ms` });
+    if (ms < 1000) return;
+    Sentry.addBreadcrumb({ category: 'main.lag', level: 'warning', message: `Processo principal parado por ${ms} ms` });
+    note('slow', 'processo principal parado', { ms });
   }, TICK_MS).unref();
 }
 

@@ -56,13 +56,15 @@ export type RunError = Error & { stdout?: string; stderr?: string; code?: number
 // Como o execFile, mas o prazo só para de esperar: o processo segue aberto por mais `graceMs` antes de
 // ser encerrado à força (ver closeGently). Rejeita com stdout e stderr no erro (saída diferente de 0
 // ou prazo esgotado), como o execFile.
+// onSpawn: recebe o processo aberto (o diário acompanha os `claude`; ver diagnostics/claudeProcesses.ts).
 export function runGently(
   file: string,
   args: string[],
-  o: { env?: NodeJS.ProcessEnv; cwd?: string; timeoutMs: number; graceMs?: number },
+  o: { env?: NodeJS.ProcessEnv; cwd?: string; timeoutMs: number; graceMs?: number; onSpawn?: (child: ChildProcess) => void },
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(file, args, { env: o.env, cwd: o.cwd, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    o.onSpawn?.(child);
     let stdout = '';
     let stderr = '';
     let settled = false;

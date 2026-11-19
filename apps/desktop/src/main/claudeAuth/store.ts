@@ -5,6 +5,8 @@ import { promisify } from 'node:util';
 import { accountDir } from '../accounts';
 import { keychainAccount, keychainService } from '../accounts/keychain';
 import { configDir } from '../claudeHome';
+import { note } from '../diagnostics/journal';
+import { observeLogin } from '../diagnostics/loginHistory';
 import { IS_MAC } from '../platform';
 
 // Onde o Claude Code guarda o login de cada conta: nas Chaves do macOS no Mac (um item por pasta
@@ -45,8 +47,22 @@ export function loginState(stored: Stored | null): StoredState {
   return oauth.refreshToken === '' || oauth.loginEnded ? 'ended' : 'empty';
 }
 
-// O guardado e o estado dele. Nunca rejeita.
+// Leitura que passa disso entra no diário: no Windows com o Claude no WSL, a leitura atrás do
+// \\wsl.localhost chegou a passar de 10 s logo depois de ligar o computador (ARGUS-K, 2026-11-14).
+const SLOW_READ_MS = 2000;
+
+// O guardado e o estado dele. Nunca rejeita. Cada leitura alimenta o histórico do login da conta (ver
+// diagnostics/loginHistory.ts).
 export async function readStoredState(account: string, place?: string): Promise<{ stored: Stored | null; state: StoredState }> {
+  const startedAt = Date.now();
+  const read = await readRaw(account, place);
+  const ms = Date.now() - startedAt;
+  if (ms >= SLOW_READ_MS) note('slow', 'leitura do login guardado demorou', { account, ms, wsl: place ? true : undefined, state: read.state });
+  observeLogin({ account, place, ...read });
+  return read;
+}
+
+async function readRaw(account: string, place?: string): Promise<{ stored: Stored | null; state: StoredState }> {
   let text: string;
   try {
     if (!IS_MAC) text = await readFile(credentialsFile(account, place), 'utf8');

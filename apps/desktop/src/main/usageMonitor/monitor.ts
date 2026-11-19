@@ -6,6 +6,8 @@ import { LIVE_MAX_MS, type Usage, type UsageFailure, type UsageWindow } from '@a
 import { claudeLaunch } from '../chats';
 import { CONTROL_ARGS as ARGS } from '../claudeAuth/renew';
 import { readStoredState, type Stored, type StoredState } from '../claudeAuth/store';
+import { trackClaude } from '../diagnostics/claudeProcesses';
+import { note } from '../diagnostics/journal';
 import { reportWarning } from '../errorReports';
 import { createBackoff } from '../lib/backoff';
 import { closeGently, guardStdin, writeStdin } from '../lib/childProcess';
@@ -417,6 +419,7 @@ export class UsageMonitor {
   }
 
   private succeeded(usage: Usage): void {
+    if (this.failingSince) note('usage', 'leitura voltou', { account: this.account, minutesFailing: Math.round((Date.now() - this.failingSince) / 60_000) });
     this.rateLimited = 0;
     this.status = null;
     this.claudeNoLimits = false;
@@ -457,6 +460,7 @@ export class UsageMonitor {
   // A leitura não deu certo: a tela segue com os últimos números, marcados com o motivo.
   private fail(reason: UsageFailure, retryAt?: number): void {
     if (this.stopped) return;
+    if (this.failure?.reason !== reason) note('usage', `leitura falhou: ${reason}`, { account: this.account, httpStatus: this.status, failures: this.failures });
     const signedOutNow = reason === 'signed_out' && this.failure?.reason !== 'signed_out';
     this.failure = retryAt ? { reason, retryAt } : { reason };
     if (signedOutNow) this.options.onSignedOut?.();
@@ -508,6 +512,7 @@ export class UsageMonitor {
     if (this.persistent || this.options.wsl) return;
     this.persistent = true;
     console.warn('[usage] sem a chamada direta para esta conta; segue com o `claude` aberto');
+    note('usage', 'sem a chamada direta: segue com o claude aberto', { account: this.account });
     if (!this.proc) this.launch(false);
   }
 
@@ -515,6 +520,7 @@ export class UsageMonitor {
   private renewLogin(): void {
     this.fail('login');
     if (Date.now() - this.renewedAt < RENEW_GAP_MS) return;
+    note('usage', 'login vencido ou recusado: pedindo ao claude que renove', { account: this.account });
     this.renewedAt = Date.now();
     this.token = null;
     this.launch(true);
@@ -538,6 +544,7 @@ export class UsageMonitor {
   }
 
   private attach(proc: ChildProcessWithoutNullStreams, oneShot: boolean): void {
+    trackClaude(proc, this.account, oneShot ? 'usageOnce' : 'usage');
     this.proc = proc;
     this.oneShot = oneShot;
     // O poll pode escrever num `claude` que morreu antes do aviso de saída: sem ouvinte, o EPIPE

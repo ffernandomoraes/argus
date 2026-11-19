@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { timed } from '../diagnostics/timing';
 import { HIDDEN, NETSTAT } from './system';
 
 // Saída do `netstat -ano` → portas abertas para conexão, por processo (IPv4 e IPv6). A coluna do
@@ -20,11 +21,14 @@ export function parseNetstat(text: string): Map<number, number[]> {
   return ports;
 }
 
-// Pelo netstat, que responde rápido.
+// Pelo netstat, que responde rápido. A abertura dele é medida: segurou o processo principal por 5 s
+// (ARGUS-N, 2026-11-16).
 export function listeningPorts(): Promise<Map<number, number[]>> {
   return new Promise((resolve) =>
-    execFile(NETSTAT, ['-ano'], { ...HIDDEN, timeout: 10_000, encoding: 'utf8' }, (_err, stdout) =>
-      resolve(parseNetstat(String(stdout ?? ''))),
+    timed('netstatSpawn', () =>
+      execFile(NETSTAT, ['-ano'], { ...HIDDEN, timeout: 10_000, encoding: 'utf8' }, (_err, stdout) =>
+        resolve(parseNetstat(String(stdout ?? ''))),
+      ),
     ),
   );
 }

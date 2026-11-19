@@ -79,7 +79,17 @@ export function readMessage(m: SDKMessage, chat: ChatState, reader: Reader, ctx:
   if (m.type === 'rate_limit_event') return { reader, rateLimits: m.rate_limit_info };
   // Chega depois do result. Pedido novo já começado nesse meio-tempo: a sugestão era do anterior.
   if (m.type === 'prompt_suggestion') return chat.turnStartedAt ? { reader } : { reader, patch: { suggestion: m.suggestion }, urgent: true };
+  if (m.type === 'conversation_reset') return readReset(m.new_conversation_id, chat, reader);
   return { reader };
+}
+
+// /clear (ou /reset, /new, ou o modo plano saindo com o contexto limpo): o mesmo processo segue numa
+// sessão nova, gravada em outro arquivo. O id novo chega aqui, antes do init dela; a tela troca de
+// conversa pelo clearedFrom (ver useClearedConversations). Conferido na 2.1.323 em 2026-11-18.
+function readReset(sessionId: string, chat: ChatState, reader: Reader): Step {
+  if (!sessionId || sessionId === chat.sessionId) return { reader };
+  const patch: Partial<ChatState> = { sessionId, clearedFrom: chat.sessionId, suggestion: undefined };
+  return { reader, sessionId, patch, urgent: true };
 }
 
 // Mesma etapa continua contando do começo dela (ex.: pensando antes e durante o raciocínio).

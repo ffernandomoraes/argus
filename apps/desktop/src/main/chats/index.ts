@@ -105,6 +105,13 @@ export class Chats {
       if ([...s.keys].some((k) => this.sessions.get(k) === s)) this.closeIfDone(s);
     },
     identified: (s, id) => {
+      // Trocou de conversa (/clear): o id antigo deixa de levar a esta sessão. Reaberta da lista, a
+      // conversa antiga abre um processo próprio em vez de mandar a mensagem para a nova.
+      const old = s.state.sessionId;
+      if (old && old !== id && this.sessions.get(old) === s) {
+        this.sessions.delete(old);
+        s.keys.delete(old);
+      }
       s.keys.add(id);
       this.sessions.set(id, s);
     },

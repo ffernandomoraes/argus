@@ -69,6 +69,7 @@ export type DrawerAction =
   | { type: 'sessionStarted'; conversationId: string; sessionId: string; nodeId?: string }
   | { type: 'forget'; conversationId: string }
   | { type: 'moved'; conversationId: string; sessionId?: string; nodeId: string }
+  | { type: 'cleared'; from: string; to: string }
   | { type: 'toggleCode'; slot: SlotId }
   | { type: 'openProjectCode'; project: ProjectData }
   | { type: 'openFile'; slot?: SlotId; project?: ProjectData; file: OpenFile | null }
@@ -154,6 +155,18 @@ function sessionStarted(state: DrawerState, conversationId: string, sessionId: s
   return update(state, drawer.id, (d) => ({ ...d, conversation: { ...active, sessionId, ...(nodeId && { nodeId }) } }));
 }
 
+// /clear numa conversa à vista: o drawer passa para a conversa nova, que segue como nova (draft) até
+// aparecer na lista da pasta. A antiga continua na lista.
+function cleared(state: DrawerState, from: string, to: string): DrawerState {
+  return state.drawers.reduce(
+    (next, d) =>
+      d.conversation.sessionId === from || d.conversation.conversationId === from
+        ? update(next, d.id, (x) => ({ ...x, conversation: { nodeId: x.conversation.nodeId, conversationId: to, sessionId: to, draft: true } }))
+        : next,
+    state,
+  );
+}
+
 // A conversa passou a ser de outro card (o Claude a levou para um worktree, ou de volta): os drawers
 // que a mostram abrem dele, com a lista de conversas da pasta nova.
 function moved(state: DrawerState, conversationId: string, sessionId: string | undefined, nodeId: string): DrawerState {
@@ -228,6 +241,8 @@ export function drawerReducer(state: DrawerState, action: DrawerAction): DrawerS
       return forget(state, action.conversationId);
     case 'moved':
       return moved(state, action.conversationId, action.sessionId, action.nodeId);
+    case 'cleared':
+      return cleared(state, action.from, action.to);
     // Com o plano por cima do código, o botão mostra o código em vez de fechá-lo.
     case 'toggleCode':
       return state.code.open && state.code.slot === action.slot && !state.plan

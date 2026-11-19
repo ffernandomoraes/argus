@@ -74,6 +74,10 @@ export type ChatState = {
   // Próxima mensagem que o Claude Code prevê que você mandaria, ao fim do pedido: vira um balão
   // clicável em cima da caixa de escrever. Sai quando começa outro pedido.
   suggestion?: string
+  // A conversa foi trocada por uma nova no mesmo processo (/clear, /reset, /new, ou o modo plano
+  // saindo com o contexto limpo): o id da sessão de antes. A tela passa para a nova (sessionId) e a
+  // antiga fica na lista, como no terminal.
+  clearedFrom?: string
   // O Claude entrou num git worktree ou saiu dele (ferramentas EnterWorktree e ExitWorktree).
   worktree?: ChatWorktree
   // Pedido aberto pelo próprio Claude Code para entregar o aviso de uma tarefa em segundo plano que

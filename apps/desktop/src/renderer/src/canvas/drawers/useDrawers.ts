@@ -24,6 +24,8 @@ export type DrawerCommands = {
   forget: (conversationId: string) => void
   // A conversa passou a ser do card `nodeId` (worktree em que o Claude entrou, ou a pasta de volta).
   moved: (conversationId: string, sessionId: string | undefined, nodeId: string) => void
+  // /clear: quem mostrava a conversa `from` passa para a nova, `to`.
+  cleared: (from: string, to: string) => void
   toggleCode: (slot: SlotId) => void
   // Código da pasta pelo botão do card dela, sem conversa aberta.
   openProjectCode: (project: ProjectData) => void
@@ -68,6 +70,7 @@ export function useDrawers(board: string, nodes: CanvasNode[]): { state: DrawerS
         dispatch({ type: 'sessionStarted', conversationId, sessionId, nodeId }),
       forget: (conversationId) => dispatch({ type: 'forget', conversationId }),
       moved: (conversationId, sessionId, nodeId) => dispatch({ type: 'moved', conversationId, sessionId, nodeId }),
+      cleared: (from, to) => dispatch({ type: 'cleared', from, to }),
       toggleCode: (slot) => dispatch({ type: 'toggleCode', slot }),
       openProjectCode: (project) => dispatch({ type: 'openProjectCode', project }),
       openFile: (from, root, path, lines, diff) => {

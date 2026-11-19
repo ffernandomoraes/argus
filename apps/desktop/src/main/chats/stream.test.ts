@@ -197,6 +197,22 @@ describe('readMessage: avisos do sistema', () => {
   });
 });
 
+describe('readMessage: /clear', () => {
+  const reset = (id: string) => sdk({ type: 'conversation_reset', new_conversation_id: id, trigger: 'clear', session_id: 's1' });
+
+  it('passa para a sessão nova e guarda de qual veio', () => {
+    const { chat, steps } = play([reset('s2')], idle({ sessionId: 's1', suggestion: 'roda os testes' }));
+    expect(steps[0].sessionId).toBe('s2');
+    expect(chat).toMatchObject({ sessionId: 's2', clearedFrom: 's1' });
+    expect(chat.suggestion).toBeUndefined();
+  });
+
+  it('o init da sessão nova, que vem depois, não muda nada', () => {
+    const { chat } = play([reset('s2'), sdk({ type: 'system', subtype: 'init', session_id: 's2' })], idle({ sessionId: 's1' }));
+    expect(chat).toMatchObject({ sessionId: 's2', clearedFrom: 's1' });
+  });
+});
+
 describe('readMessage: nova tentativa da API e compactação', () => {
   const retry = (m: Record<string, unknown>) =>
     sdk({ type: 'system', subtype: 'api_retry', attempt: 2, max_retries: 10, retry_delay_ms: 8000, error_status: null, error: 'unknown', ...m });

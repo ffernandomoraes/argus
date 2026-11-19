@@ -2,6 +2,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { ResolvedTheme } from '../theme/useTheme';
 import type { NodesApi } from './actions/types';
 import { useArrange } from './actions/useArrange';
+import { useClearedConversations } from './actions/useClearedConversations';
 import { useCanvasCommands } from './actions/useCanvasCommands';
 import { useConversationActions } from './actions/useConversationActions';
 import { useGroupWide } from './actions/useGroupWide';
@@ -99,6 +100,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
   const drop = useGroupDrop(api, view, projectMoves.dropOnProject);
   const worktrees = useWorktreeActions(api, drawers.commands, overlays.commands.confirm);
   useWorktreeMoves(api, drawers.commands);
+  useClearedConversations(api, drawers.commands);
   const menus = useMenuHandlers({
     nodesRef,
     setMenu: overlays.commands.setMenu,

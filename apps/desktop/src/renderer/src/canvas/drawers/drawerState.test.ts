@@ -22,6 +22,23 @@ describe('drawerReducer: moved', () => {
   });
 });
 
+describe('drawerReducer: cleared (/clear)', () => {
+  it('o drawer passa para a conversa nova, como nova até ela entrar na lista', () => {
+    const state = drawerReducer(shown('pasta', 's1', 's1'), { type: 'cleared', from: 's1', to: 's2' });
+    expect(state.drawers[0].conversation).toEqual({ nodeId: 'pasta', conversationId: 's2', sessionId: 's2', draft: true });
+  });
+
+  it('conversa que nasceu aqui (id provisório) também passa, pelo id da sessão', () => {
+    const state = drawerReducer(shown('pasta', 'new-1', 's1'), { type: 'cleared', from: 's1', to: 's2' });
+    expect(state.drawers[0].conversation).toMatchObject({ conversationId: 's2', sessionId: 's2' });
+  });
+
+  it('outra conversa fica como estava', () => {
+    const state = shown('pasta', 's3', 's3');
+    expect(drawerReducer(state, { type: 'cleared', from: 's1', to: 's2' })).toBe(state);
+  });
+});
+
 describe('drawerReducer: plano', () => {
   const withRect = () => {
     const state = shown('pasta', 's1');

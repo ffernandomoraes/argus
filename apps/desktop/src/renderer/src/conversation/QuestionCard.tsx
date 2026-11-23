@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, MessageCircleQuestion } from 'lucide-react';
 import type { Question } from '@argus/shared/chat';
+import { QuestionText } from './QuestionText';
 import { tr } from '../i18n';
 
 // Perguntas do Claude com opções. "Outra" deixa escrever a resposta. Várias perguntas viram abas,
@@ -66,7 +67,7 @@ export function QuestionCard({
               <MessageCircleQuestion size={14} className="mt-px shrink-0 text-ask" />
               <div>
                 {q.header && questions.length === 1 && <span className="mr-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted">{q.header}</span>}
-                <span className="font-medium text-text">{q.question}</span>
+                <QuestionText text={q.question} className="font-medium text-text" />
                 {q.multiSelect && <span className="ml-1 text-muted">{tr('(pode marcar mais de uma)', '(select all that apply)')}</span>}
               </div>
             </div>

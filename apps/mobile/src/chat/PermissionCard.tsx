@@ -2,25 +2,36 @@ import { useState } from 'react';
 import { ShieldQuestion } from 'lucide-react';
 import type { PermissionAnswer, PermissionRequest, Question } from '@argus/shared/chat';
 import { tr } from '../i18n';
+import { QuestionText } from './QuestionText';
 
 // O Claude pedindo permissão (rodar um comando, editar um arquivo) ou fazendo perguntas com opções.
 
+// Marcador da opção "Outra resposta", que abre o campo de texto livre.
+const OTHER = '__other';
+
 function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (a: PermissionAnswer) => void }) {
   const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [other, setOther] = useState<Record<string, string>>({});
   const toggle = (q: Question, label: string) =>
     setPicked((prev) => {
       const cur = prev[q.question] ?? [];
       const next = q.multiSelect ? (cur.includes(label) ? cur.filter((l) => l !== label) : [...cur, label]) : [label];
       return { ...prev, [q.question]: next };
     });
-  const complete = questions.every((q) => picked[q.question]?.length);
+  // Opções marcadas + o texto livre, se "Outra resposta" estiver marcada e preenchida.
+  const answerOf = (q: Question) => {
+    const cur = picked[q.question] ?? [];
+    const typed = cur.includes(OTHER) ? other[q.question]?.trim() : '';
+    return [...cur.filter((l) => l !== OTHER), ...(typed ? [typed] : [])].join(', ');
+  };
+  const complete = questions.every((q) => answerOf(q));
   return (
     <div className="mt-2 space-y-3">
       {questions.map((q) => (
         <div key={q.question}>
-          <p className="text-[14px] font-semibold">{q.question}</p>
+          <QuestionText text={q.question} className="text-[14px] font-semibold" />
           <div className="mt-1.5 flex flex-col gap-1.5">
-            {q.options.map((o) => {
+            {[...q.options, { label: OTHER, description: '' }].map((o) => {
               const on = picked[q.question]?.includes(o.label);
               return (
                 <button
@@ -29,11 +40,22 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
                   onClick={() => toggle(q, o.label)}
                   className={`rounded-xl border px-3 py-2 text-left ${on ? 'border-accent bg-accent/10' : 'border-line'}`}
                 >
-                  <span className="block text-[14px] font-medium">{o.label}</span>
+                  <span className="block text-[14px] font-medium">{o.label === OTHER ? tr('Outra resposta', 'Other answer') : o.label}</span>
                   {o.description && <span className="block text-[12px] leading-snug text-muted">{o.description}</span>}
                 </button>
               );
             })}
+            {picked[q.question]?.includes(OTHER) && (
+              // 16px: abaixo disso o iPhone dá zoom na página ao focar o campo.
+              <textarea
+                autoFocus
+                rows={2}
+                value={other[q.question] ?? ''}
+                onChange={(e) => setOther((prev) => ({ ...prev, [q.question]: e.target.value }))}
+                placeholder={tr('Escreva sua resposta', 'Type your answer')}
+                className="resize-none rounded-xl border border-line bg-card px-3 py-2 text-[16px] leading-snug outline-none placeholder:text-faint focus:border-accent"
+              />
+            )}
           </div>
         </div>
       ))}
@@ -41,7 +63,7 @@ function Questions({ questions, onAnswer }: { questions: Question[]; onAnswer: (
         <button
           type="button"
           disabled={!complete}
-          onClick={() => onAnswer({ answers: Object.fromEntries(Object.entries(picked).map(([k, v]) => [k, v.join(', ')])) })}
+          onClick={() => onAnswer({ answers: Object.fromEntries(questions.map((q) => [q.question, answerOf(q)])) })}
           className="flex-1 rounded-xl bg-accent py-2.5 text-[14px] font-semibold text-white disabled:opacity-40"
         >
           {tr('Responder', 'Answer')}

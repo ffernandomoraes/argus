@@ -36,10 +36,11 @@ export function FolderTag({ cwd, folders, children }: { cwd: string; folders?: s
       <span
         onContextMenu={showMenu}
         title={folders ? folders.join('\n') : cwd}
-        className="no-drag nodrag flex min-w-0 max-w-[45%] shrink items-center gap-1.5 text-faint"
+        // Sem encolher: o nome da pasta importa mais que o título da conversa, então quem trunca é o título.
+        className="no-drag nodrag flex shrink-0 items-center gap-1.5 whitespace-nowrap text-faint"
       >
         {folders ? <Folders size={13} className="shrink-0" /> : <Folder size={13} className="shrink-0" />}
-        <span className="truncate">{children}</span>
+        <span>{children}</span>
       </span>
       {/* No body: dentro do canvas o `fixed` seguiria o zoom e o deslocamento dele. */}
       {menu && createPortal(<ContextMenu menu={menu} onClose={() => setMenu(null)} />, document.body)}

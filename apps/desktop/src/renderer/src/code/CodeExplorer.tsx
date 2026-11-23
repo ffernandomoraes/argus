@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Folder } from 'lucide-react';
 import { ConfirmDialog } from '../canvas/ConfirmDialog';
@@ -68,6 +68,13 @@ export function CodeExplorer({
     onOpenFile(path);
   };
   const finder = useFileFinder(root, search.nameQuery, openByName);
+
+  // Todo arquivo aberto (pela aba, por um link do chat, pela busca no conteúdo) aparece na árvore:
+  // as pastas até ele abrem e a linha dele rola para a vista. Recolher depois fica como a pessoa deixou.
+  const revealSelected = useEffectEvent((path: string) => revealInTree(path));
+  useEffect(() => {
+    if (selected) revealSelected(selected);
+  }, [root, selected]);
 
   const filesTab = search.tab === 'files';
 

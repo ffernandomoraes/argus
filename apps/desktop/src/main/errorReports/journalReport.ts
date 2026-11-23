@@ -12,6 +12,9 @@ import { repeatSummaries, repeatSummaryText } from './breadcrumbs';
 // sem beforeSend nem anexo: leva só o que estiver no escopo global do Sentry, que essa linha copia a
 // cada poucos segundos. Por isso o fim do diário e o resto ficam também no escopo (syncJournalToScope).
 // O texto do diário já sai limpo (ver journal.ts): o relatório de travamento não passa pela limpeza.
+// Só chega com o @sentry/node-native na versão que o @sentry/electron pede: com outra, a linha lê o
+// escopo de outra cópia do SDK, vazio (ver sentryCopies.test.ts). O rastro de ações não vai: ele fica
+// no escopo de isolamento, que a linha não copia.
 
 const ATTACH_WINDOW_MS = 3 * 60 * 60_000;
 const ATTACH_MAX_CHARS = 200_000;

@@ -3,9 +3,11 @@ import { app, BrowserWindow, ipcMain, type WebContents } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 import { WINDOW_BLOCK_MS, WINDOW_POLL_MS } from '@argus/shared/windowBlock';
 import { note } from '../diagnostics/journal';
+import { stallMeter } from '../diagnostics/stallClues';
 
 // O retrato do app na hora de um erro: tudo lido só quando um relatório sai, nada medido sem parar.
-// A exceção é o relógio de 1 s do processo principal (ver watchMainLag), que só confere a hora.
+// A exceção é o relógio de 1 s do processo principal (ver watchMainLag), que confere a hora e a CPU
+// gasta (no Linux, também o /proc/stat).
 // Só números e estados: nenhum título, caminho ou texto de conversa.
 
 // O que o app estava fazendo (conversas abertas, terminais), lido na hora do erro. Quem sabe disso
@@ -24,16 +26,20 @@ let lastTick = performance.now();
 const lags: { at: number; ms: number }[] = [];
 
 export function watchMainLag(): void {
+  // CPU do processo e, no Linux, tempo tirado pelo hipervisor e espera do disco desde o tique anterior:
+  // dizem quem segurou o processo na parada (ver diagnostics/stallClues.ts).
+  const sinceLastTick = stallMeter();
   setInterval(() => {
     const now = performance.now();
     const ms = Math.round(now - lastTick - TICK_MS);
     lastTick = now;
+    const clues = sinceLastTick();
     while (lags.length && now - lags[0].at > LAG_KEEP_MS) lags.shift();
     if (ms < 200) return;
     lags.push({ at: now, ms });
     if (ms < 1000) return;
-    Sentry.addBreadcrumb({ category: 'main.lag', level: 'warning', message: `Processo principal parado por ${ms} ms` });
-    note('slow', 'processo principal parado', { ms });
+    Sentry.addBreadcrumb({ category: 'main.lag', level: 'warning', message: `Processo principal parado por ${ms} ms`, data: clues });
+    note('slow', 'processo principal parado', { ms, ...clues });
   }, TICK_MS).unref();
 }
 

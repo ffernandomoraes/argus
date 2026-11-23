@@ -112,13 +112,8 @@ export function FileViewer({
         onCloseCode={onCloseCode}
       />
       {view === 'file' && conflict && (
-        <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[12px] text-needs-you">
-          <span className="flex-1">
-            {tr(
-              'O arquivo mudou no disco depois da sua edição. Salvar sobrescreve a versão do disco.',
-              'The file changed on disk after your edit. Saving overwrites the version on disk.',
-            )}
-          </span>
+        <div className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2 text-[12px] text-muted">
+          <span className="flex-1">{tr('Alterações não salvas', 'Unsaved changes')}</span>
           <button onClick={() => void reloadFromDisk()} className="rounded-md px-2 py-0.5 text-text hover:bg-surface-2">
             {tr('Descartar a minha e recarregar', 'Discard mine and reload')}
           </button>

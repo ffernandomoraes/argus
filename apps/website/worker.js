@@ -1,5 +1,5 @@
 // Worker of the site: serves the static files (dist/) and, under /api/github/*, a cached copy of the
-// GitHub data the pages show (stars, latest release, release notes). Calling api.github.com straight
+// GitHub data the pages show (stars, forks, latest release, release notes, release count, contributors). Calling api.github.com straight
 // from the browser hit the 60 requests/hour limit for shared IPs (PageSpeed servers included) and
 // logged 403 errors. Here GitHub is asked at most once every 10 minutes per data center; when it
 // fails, the last good copy (kept for a week) is served, and with none the answer is `null`.
@@ -8,12 +8,21 @@ const FRESH_SECONDS = 600;
 const STALE_SECONDS = 7 * 24 * 3600;
 
 const pickAsset = (a) => ({ name: a.name, size: a.size, browser_download_url: a.browser_download_url });
+const pickContributor = (c) => ({
+  login: c.login,
+  type: c.type,
+  html_url: c.html_url,
+  avatar_url: c.avatar_url,
+  contributions: c.contributions,
+});
 const pickRelease = (r) => ({ tag_name: r.tag_name, html_url: r.html_url, published_at: r.published_at, body: r.body });
 
 const ROUTES = {
-  repo: { url: REPO, pick: (repo) => ({ stargazers_count: repo.stargazers_count }) },
+  repo: { url: REPO, pick: (repo) => ({ stargazers_count: repo.stargazers_count, forks_count: repo.forks_count }) },
   latest: { url: `${REPO}/releases/latest`, pick: (r) => ({ tag_name: r.tag_name, assets: r.assets.map(pickAsset) }) },
   releases: { url: `${REPO}/releases?per_page=20`, pick: (list) => list.map(pickRelease) },
+  releaseCount: { url: `${REPO}/releases?per_page=100`, pick: (list) => ({ count: list.length }) },
+  contributors: { url: `${REPO}/contributors?per_page=50`, pick: (list) => list.map(pickContributor) },
 };
 
 const json = (body, maxAge) =>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="Ícone na barra de menus com o resumo das conversas, notificações do sistema, limite de uso por conta e servidores rodando">
+<title>Ícone na barra de menus com o resumo das conversas, notificações do sistema, limite de uso por conta e servidores rodando</title>
+<style>
+svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+--bg:#ececec;--surface:#fff;--surface2:#ebebeb;--line:#dedede;--line2:#c6c6c6;--text:#1d1d1f;--muted:#6e6e73;
+--faint:#8e8e93;--dots:#c4c4c4;--accent:#0a84ff;--run:#2563eb;--need:#d97706;--done:#059669;--add:#dcfce7;--del:#fee2e2;
+--addtx:#047857;--deltx:#b91c1c;--shadow:#000;--shadowop:.10}
+@media (prefers-color-scheme:dark){svg{--bg:#1c1c1c;--surface:#282828;--surface2:#333;--line:#3a3a3a;--line2:#4c4c4c;
+--text:#f4f4f4;--muted:#a5a5a5;--faint:#7a7a7a;--dots:#3c3c3c;--run:#60a5fa;--need:#fbbf24;--done:#34d399;
+--add:#10391f;--del:#3f1d1d;--addtx:#6ee7b7;--deltx:#fca5a5;--shadowop:.45}}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.bg{fill:var(--bg)}.sf{fill:var(--surface);stroke:var(--line)}.sf2{fill:var(--surface);stroke:var(--line2)}
+.s2{fill:var(--surface2)}.sl{stroke:var(--line)}.sl2{stroke:var(--line2)}.tx{fill:var(--text)}.mu{fill:var(--muted)}
+.fa{fill:var(--faint)}.dot{fill:var(--dots)}.acc{fill:var(--accent)}.run{fill:var(--run)}.need{fill:var(--need)}
+.done{fill:var(--done)}.add{fill:var(--add)}.del{fill:var(--del)}.addtx{fill:var(--addtx)}.deltx{fill:var(--deltx)}
+.stx{stroke:var(--text)}.smu{stroke:var(--muted)}.sfa{stroke:var(--faint)}.srun{stroke:var(--run)}.sacc{stroke:var(--accent)}
+.shadow{flood-color:var(--shadow);flood-opacity:var(--shadowop)}
+</style>
+<defs>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.1" class="dot"/></pattern>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="10" class="shadow"/></filter>
+</defs>
+<rect x="1" y="1" width="388" height="398" rx="16" class="bg" stroke="var(--line2)"/><rect x="1" y="1" width="388" height="32" rx="16" class="s2"/><rect x="1" y="20" width="388" height="13" class="s2"/><text x="292" y="22" font-size="12" class="tx" font-weight="500">14:32</text>
+<rect x="238" y="7" width="22" height="20" rx="5" class="acc" fill-opacity=".25"/><g transform="translate(241 9) scale(0.019417475728155338)"><rect width="824" height="824" rx="186" fill="#1f1f23"/><rect x="96" y="114" width="604" height="220" rx="48" fill="#3a3a41"/><rect x="136" y="164" width="120" height="120" rx="30" fill="#f2f2f4"/><rect x="292" y="182" width="320" height="38" rx="19" fill="#ececef"/><rect x="260" y="412" width="468" height="120" rx="36" fill="#2a2a2f"/><circle cx="320" cy="472" r="17" fill="#60a5fa"/></g><circle cx="257" cy="10" r="4" class="need"/>
+<rect x="26" y="44" width="336" height="330" rx="14" class="sf" filter="url(#sh)"/>
+<text x="44" y="74" font-size="11" class="fa" font-weight="600">Rodando</text>
+<circle cx="50" cy="96" r="7" class="run" fill-opacity=".18"/><circle cx="50" cy="96" r="3.6" class="run"/><text x="64" y="100" font-size="12.5" class="tx">site - Refatorar checkout</text>
+<circle cx="50" cy="126" r="7" class="run" fill-opacity=".18"/><circle cx="50" cy="126" r="3.6" class="run"/><text x="64" y="130" font-size="12.5" class="tx">design-system - Tokens de cor</text>
+<text x="44" y="160" font-size="11" class="fa" font-weight="600">Esperando você</text>
+<circle cx="50" cy="182" r="4" class="need"/><text x="64" y="186" font-size="12.5" class="tx">api - Migrar o banco</text>
+<text x="44" y="216" font-size="11" class="fa" font-weight="600">Concluídas hoje</text>
+<circle cx="50" cy="238" r="4" class="done"/><text x="64" y="242" font-size="12.5" class="tx">site - Ajustar header</text>
+<circle cx="50" cy="268" r="4" class="done"/><text x="64" y="272" font-size="12.5" class="tx">app-mobile - Push de pedidos</text>
+<path d="M38 328.5 H350" class="sl"/><text x="44" y="356" font-size="12.5" class="tx" font-weight="500">Abrir o Argus</text>
+<rect x="407" y="1" width="388" height="398" rx="16" fill="url(#dots)" stroke="var(--line2)"/>
+<rect x="428" y="40" width="346" height="88" rx="18" class="sf" filter="url(#sh)"/><g transform="translate(444 58) scale(0.0412621359223301)"><rect width="824" height="824" rx="186" fill="#1f1f23"/><rect x="96" y="114" width="604" height="220" rx="48" fill="#3a3a41"/><rect x="136" y="164" width="120" height="120" rx="30" fill="#f2f2f4"/><rect x="292" y="182" width="320" height="38" rx="19" fill="#ececef"/><rect x="260" y="412" width="468" height="120" rx="36" fill="#2a2a2f"/><circle cx="320" cy="472" r="17" fill="#60a5fa"/></g><text x="492" y="68" font-size="12.5" class="tx" font-weight="600">api</text><text x="758" y="68" font-size="11" class="fa" text-anchor="end">agora</text><text x="492" y="87" font-size="12" class="tx">Migrar o banco</text><text x="492" y="105" font-size="12" class="mu">O Claude quer rodar um comando</text>
+<rect x="428" y="146" width="346" height="88" rx="18" class="sf" filter="url(#sh)"/><g transform="translate(444 164) scale(0.0412621359223301)"><rect width="824" height="824" rx="186" fill="#1f1f23"/><rect x="96" y="114" width="604" height="220" rx="48" fill="#3a3a41"/><rect x="136" y="164" width="120" height="120" rx="30" fill="#f2f2f4"/><rect x="292" y="182" width="320" height="38" rx="19" fill="#ececef"/><rect x="260" y="412" width="468" height="120" rx="36" fill="#2a2a2f"/><circle cx="320" cy="472" r="17" fill="#60a5fa"/></g><text x="492" y="174" font-size="12.5" class="tx" font-weight="600">site</text><text x="758" y="174" font-size="11" class="fa" text-anchor="end">2 min</text><text x="492" y="193" font-size="12" class="tx">Refatorar checkout</text><text x="492" y="211" font-size="12" class="mu">Concluída em 4 min</text>
+<rect x="428" y="252" width="346" height="88" rx="18" class="sf" filter="url(#sh)"/><g transform="translate(444 270) scale(0.0412621359223301)"><rect width="824" height="824" rx="186" fill="#1f1f23"/><rect x="96" y="114" width="604" height="220" rx="48" fill="#3a3a41"/><rect x="136" y="164" width="120" height="120" rx="30" fill="#f2f2f4"/><rect x="292" y="182" width="320" height="38" rx="19" fill="#ececef"/><rect x="260" y="412" width="468" height="120" rx="36" fill="#2a2a2f"/><circle cx="320" cy="472" r="17" fill="#60a5fa"/></g><text x="492" y="280" font-size="12.5" class="tx" font-weight="600">design-system</text><text x="758" y="280" font-size="11" class="fa" text-anchor="end">6 min</text><text x="492" y="299" font-size="12" class="tx">Tokens de cor</text><text x="492" y="317" font-size="12" class="mu">O Claude tem uma pergunta</text>
+<rect x="813" y="1" width="386" height="398" rx="16" class="bg" stroke="var(--line2)"/>
+<rect x="832" y="22" width="348" height="150" rx="14" class="sf"/><text x="850" y="50" font-size="13" class="tx" font-weight="600">Limite de uso</text>
+<text x="850" y="84" font-size="12" class="tx">Pessoal</text><text x="1162" y="84" font-size="12" class="mu" text-anchor="end">38%</text><rect x="850" y="94" width="312" height="7" rx="3.5" class="s2"/><rect x="850" y="94" width="119" height="7" rx="3.5" class="done"/>
+<text x="850" y="128" font-size="12" class="tx">Trabalho</text><text x="1162" y="128" font-size="12" class="mu" text-anchor="end">72%</text><rect x="850" y="138" width="312" height="7" rx="3.5" class="s2"/><rect x="850" y="138" width="225" height="7" rx="3.5" class="need"/>
+<rect x="832" y="188" width="348" height="190" rx="14" class="sf"/><text x="850" y="216" font-size="13" class="tx" font-weight="600">Servidores rodando</text>
+<circle cx="856" cy="248" r="4" class="done"/><text x="870" y="252" font-size="12.5" class="tx" font-weight="500">site</text><text x="918" y="252" font-size="12" class="mu mono">:3000</text><rect x="1038" y="234" width="58" height="26" rx="7" class="s2"/><text x="1067" y="251" font-size="11.5" class="tx" text-anchor="middle">Abrir</text><rect x="1102" y="234" width="62" height="26" rx="7" class="s2"/><text x="1133" y="251" font-size="11.5" class="tx" text-anchor="middle">Encerrar</text>
+<circle cx="856" cy="290" r="4" class="done"/><text x="870" y="294" font-size="12.5" class="tx" font-weight="500">admin</text><text x="918" y="294" font-size="12" class="mu mono">:3001</text><rect x="1038" y="276" width="58" height="26" rx="7" class="s2"/><text x="1067" y="293" font-size="11.5" class="tx" text-anchor="middle">Abrir</text><rect x="1102" y="276" width="62" height="26" rx="7" class="s2"/><text x="1133" y="293" font-size="11.5" class="tx" text-anchor="middle">Encerrar</text>
+<circle cx="856" cy="332" r="4" class="done"/><text x="870" y="336" font-size="12.5" class="tx" font-weight="500">api</text><text x="918" y="336" font-size="12" class="mu mono">:8080</text><rect x="1038" y="318" width="58" height="26" rx="7" class="s2"/><text x="1067" y="335" font-size="11.5" class="tx" text-anchor="middle">Abrir</text><rect x="1102" y="318" width="62" height="26" rx="7" class="s2"/><text x="1133" y="335" font-size="11.5" class="tx" text-anchor="middle">Encerrar</text>
+</svg>

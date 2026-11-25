@@ -2,33 +2,54 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MQVZGP55"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Argus - ferramenta para quem quer performar de verdade com agentes de código</title>
-  <meta name="description" content="O Argus é um canvas para quem trabalha com Claude Code, Codex, Gemini ou Cursor em vários projetos ao mesmo tempo: tudo à vista, organizado em grupos e workspaces, com aviso quando uma conversa termina ou precisa de você.">
+  <title>Argus · O canvas aberto para agentes de código</title>
+  <meta name="description" content="Argus é um canvas infinito para acompanhar todos os seus projetos e as conversas do Claude Code, Codex, Gemini e Cursor ao mesmo tempo.">
   <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="home.css">
 </head>
 <body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: modo design, comente em cima da página e o Claude ajusta o código</p>
+  <a href="modo-design.html">Ver como funciona</a>
+</div>
 
 <!-- Navegação -->
 <header class="nav">
   <div class="nav__inner">
-    <a class="logo" href="index.html"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+    <a class="logo" href="#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
 
     <nav class="nav__links" aria-label="Principal">
-      <a href="index.html#recursos">Recursos</a>
-      <a href="index.html#remoto">Acesso remoto</a>
-      <a href="index.html#faq">Dúvidas</a>
-      <a href="novidades.html">Novidades</a>
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="modo-design.html"><span class="dd__ic">◇</span>Modo design</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
     </nav>
 
     <div class="nav__right">
@@ -36,81 +57,42 @@
         <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
         <span data-stars>GitHub</span>
       </a>
-      <a class="btn btn--outline" href="download.html">Baixar</a>
+      <a class="nav__plain" href="#planos">Ver versões</a>
+      <a class="btn btn--outline" href="#planos">Baixar Argus</a>
     </div>
   </div>
 </header>
 
 <main>
 
-  <!-- Topo: para quem é, o botão de baixar e o app desenhado em HTML (ilustração, não print) -->
-  <section class="top" data-download>
+  <!-- Hero -->
+  <section class="hero">
     <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
-    <div class="container center top__copy">
-      <h1>Ferramenta para quem quer <span class="hl">performar de verdade</span> com agentes de código.</h1>
-      <p class="top__lede">Um canvas para tocar vários projetos ao mesmo tempo com Claude Code, Codex, Gemini e Cursor, com tudo à vista.</p>
-      <div class="hero__btns center-row">
-        <a class="btn btn--primary btn--lg" data-dl-main href="download.html">Baixar o Argus</a>
-        <a class="btn btn--outline btn--lg" href="#recursos">Ver o que ele faz</a>
-      </div>
-      <p class="top__note">Usa o Claude Code e a assinatura que você já tem. Sem chave de API. <a href="download.html">Outros sistemas</a></p>
-    </div>
-
-    <div class="container">
-      <div class="app" role="img" aria-label="Ilustração do Argus: dois grupos de projetos no canvas, com as conversas de cada pasta e o status de cada uma, uma nota, um terminal, a conversa aberta ao lado pedindo permissão e a barra de baixo com o resumo do que está rodando">
-        <div class="app__bar">
-          <span class="app__dots"><i></i><i></i><i></i></span>
-          <span class="app__ws">Cliente A <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></span>
-          <span class="app__title">Argus</span>
-          <span class="app__usage">
-            <span class="usage"><b>Empresa</b><span class="usage__bar"><i style="width:42%"></i></span>42%</span>
-            <span class="usage usage--warn"><b>Pessoal</b><span class="usage__bar"><i style="width:71%"></i></span>71%</span>
-          </span>
+    <div class="hero__grid">
+      <div class="hero__copy">
+        <h1>O canvas aberto <span class="hl">para agentes de código</span></h1>
+        <p class="hero__lede">Acompanhe todos os seus projetos e conversas do Claude Code num canvas infinito. Grátis e de <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">código aberto</a>, roda na sua máquina com a assinatura que você já tem.</p>
+        <div class="hero__btns">
+          <a class="btn btn--primary" href="#planos">
+            <svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg>
+            Baixar Argus
+            <svg class="chev" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg>
+          </a>
+          <a class="btn btn--text" href="#faq">Fale com a gente</a>
         </div>
-        <div class="app__body">
-          <div class="app__canvas">
-            <div class="grp grp--blue">
-              <span class="grp__tag">Trabalho</span>
-              <div class="fold">
-                <div class="fold__head"><b>loja-online</b><span class="fold__branch">feat/checkout</span></div>
-                <span class="fold__row is-open"><i class="rdot rdot--run"></i>Refatorar o cálculo do frete</span>
-                <span class="fold__row"><i class="rdot rdot--wait"></i>Ajustar o header no celular<em>esperando você</em></span>
-                <span class="fold__row"><i class="rdot rdot--done"></i>Página de cupons<small>há 3 h</small></span>
-              </div>
-              <div class="fold">
-                <div class="fold__head"><b>api-pedidos</b><span class="fold__branch">main</span></div>
-                <span class="fold__row"><i class="rdot rdot--run"></i>Migrar a tabela de pedidos</span>
-                <span class="fold__row"><i class="rdot rdot--done"></i>Rate limit nas rotas<small>há 1 d</small></span>
-              </div>
-            </div>
-            <div class="grp grp--green">
-              <span class="grp__tag">Pessoal</span>
-              <div class="fold">
-                <div class="fold__head"><b>blog</b><span class="fold__branch">main</span></div>
-                <span class="fold__row"><i class="rdot rdot--done"></i>Post sobre agentes<small>há 50 min</small></span>
-              </div>
-            </div>
-            <div class="app__loose">
-              <div class="note"><b>Nota</b>Revisar o checkout antes da reunião de sexta</div>
-              <div class="tty"><p class="tty__bar">shell - loja-online</p><p>$ pnpm dev</p><p class="tty__ok">➜ Local: http://localhost:5173</p></div>
-            </div>
+        <div class="byo">
+          <div class="byo__icons">
+            <span title="Claude Code"><img src="assets/tools/claude.svg" alt="Claude Code"></span><span title="Codex"><img src="assets/tools/openai.svg" alt="Codex"></span><span title="Gemini CLI"><img src="assets/tools/googlegemini.svg" alt="Gemini CLI"></span><span title="Cursor CLI"><img src="assets/tools/cursor.svg" alt="Cursor CLI"></span>
           </div>
-          <aside class="app__chat">
-            <p class="chat__head">loja-online <span>›</span> <b>Refatorar o cálculo do frete</b></p>
-            <p class="chat__me">Separe o cálculo do frete num módulo e cubra com testes.</p>
-            <p class="chat__step"><i class="rdot rdot--done"></i><b>Read</b> cart.ts</p>
-            <p class="chat__step"><i class="rdot rdot--done"></i><b>Edit</b> frete.ts</p>
-            <div class="perm"><p>Permitir este comando?</p><code>$ pnpm test src/cart</code><div><span>Negar</span><span class="perm__ok">Permitir</span></div></div>
-            <p class="chat__input">Escreva, fale ou cole um print</p>
-          </aside>
-        </div>
-        <div class="app__status">
-          <span><i class="rdot rdot--run"></i>2 trabalhando</span>
-          <span><i class="rdot rdot--wait"></i>1 precisa de você</span>
-          <span><i class="rdot rdot--done"></i>3 concluídas</span>
+          <span>Traga o seu agente</span>
         </div>
       </div>
-      <p class="top__caption">Ilustração do app, com projetos de exemplo.</p>
+
+      <!-- Prévia do app: print do Argus com projetos e conversas de exemplo -->
+      <div class="preview">
+        <div class="pv-chrome"><i></i><i></i><i></i></div>
+        <img src="assets/argus-app.webp" alt="O Argus com os projetos agrupados em Trabalho e Pessoal, as conversas de cada pasta com o status e uma conversa aberta no painel lateral" width="2400" height="1520">
+      </div>
     </div>
 
     <!-- Faixa de logos: os arquivos ficam em assets/logos/<nome>.svg; sem o arquivo, aparece o nome -->
@@ -118,209 +100,221 @@
       <p class="logos__label">Usado por quem trabalha na</p>
       <div class="marquee">
         <div class="marquee__track">
-          <span class="brand"><img src="assets/logos/eduzz.svg" width="104" height="28" alt="Eduzz" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/flui.svg" width="45" height="28" alt="Flui" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/hayah.svg" width="115" height="28" alt="Hayah" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/wegou.svg" width="110" height="28" alt="Wegou" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/daya.svg" width="75" height="28" alt="Daya" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/z2pay.svg" width="90" height="28" alt="Z2Pay" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/sicredi.svg" width="114" height="28" alt="Sicredi" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/renner.svg" width="120" height="28" alt="Renner" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="assets/logos/globo.svg" width="120" height="28" alt="Globo" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/eduzz.svg" width="104" height="28" alt="Eduzz" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/flui.svg" width="45" height="28" alt="Flui" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/hayah.svg" width="115" height="28" alt="Hayah" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/wegou.svg" width="110" height="28" alt="Wegou" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/daya.svg" width="75" height="28" alt="Daya" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/z2pay.svg" width="90" height="28" alt="Z2Pay" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/sicredi.svg" width="114" height="28" alt="Sicredi" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/renner.svg" width="120" height="28" alt="Renner" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="assets/logos/globo.svg" width="120" height="28" alt="Globo" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/eduzz.svg" alt="Eduzz" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/flui.svg" alt="Flui" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/hayah.svg" alt="Hayah" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/wegou.svg" alt="Wegou" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/daya.svg" alt="Daya" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/z2pay.svg" alt="Z2Pay" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/sicredi.svg" alt="Sicredi" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/renner.svg" alt="Renner" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand"><img src="assets/logos/globo.svg" alt="Globo" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/eduzz.svg" alt="Eduzz" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/flui.svg" alt="Flui" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/hayah.svg" alt="Hayah" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/wegou.svg" alt="Wegou" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/daya.svg" alt="Daya" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/z2pay.svg" alt="Z2Pay" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/sicredi.svg" alt="Sicredi" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/renner.svg" alt="Renner" onerror="this.replaceWith(this.alt)"></span>
+          <span class="brand" aria-hidden="true"><img src="assets/logos/globo.svg" alt="Globo" onerror="this.replaceWith(this.alt)"></span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- O que vai no canvas + os três ganhos -->
-  <section class="section section--tight" id="porque">
-    <div class="container">
-      <p class="eyebrow center">Tudo vira um bloco no canvas</p>
-      <div class="kinds"><span>pasta</span><span>conversa</span><span>terminal</span><span>nota</span><span>grupo</span><span>workspace</span><span>agente</span></div>
-      <div class="gains">
-        <article class="gain"><p class="gain__tag"><i style="background:#3b82f6"></i>visão ampla</p><h2>Veja tudo de uma vez</h2><p>Cada projeto é um bloco, com as conversas e o status de cada uma. Um olhar e você sabe o que está rodando, o que terminou e o que espera você.</p></article>
-        <article class="gain"><p class="gain__tag"><i style="background:var(--green)"></i>organização</p><h2>Organize do seu jeito</h2><p>Grupos coloridos por cliente ou contexto, um workspace para cada frente de trabalho e notas soltas ao lado dos projetos.</p></article>
-        <article class="gain"><p class="gain__tag"><i style="background:var(--accent)"></i>produtividade</p><h2>Toque mais coisas em paralelo</h2><p>Várias conversas e terminais rodando ao mesmo tempo. Você só para quando o Argus avisa que alguém terminou ou precisa de uma resposta.</p></article>
+  <!-- Monte uma vez -->
+  <section class="section" id="produto">
+    <div class="container center">
+      <h2>Abra uma vez. Deixe os agentes trabalhando.</h2>
+      <p class="lede">Arraste suas pastas para o canvas, comece as conversas e acompanhe tudo de longe. O Argus avisa quando alguém precisa de você.</p>
+      <a class="btn btn--primary" href="#casos">Ver o que dá para fazer</a>
+    </div>
+    <div class="cards-marquee">
+      <div class="cards-marquee__track">
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/claude.svg" alt="Claude Code"></div><h3>Converse com o Claude Code</h3><p>O chat completo de cada pasta, com o mesmo CLAUDE.md, configurações e MCPs do terminal.</p><span class="tag">Agente</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/openai.svg" alt="Codex"></div><h3>Use o Codex no mesmo canvas</h3><p>Abra conversas do Codex ao lado das do Claude e compare o que cada um entrega.</p><span class="tag">Agente</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/googlegemini.svg" alt="Gemini"></div><h3>Delegue etapas ao Gemini CLI</h3><p>Uma conversa passa uma etapa para o Gemini e você acompanha o resultado nela mesma.</p><span class="tag">Orquestração</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/github.svg" alt="GitHub"></div><h3>Revise cada pull request</h3><p>Abra o repositório no GitHub pela pasta e peça a revisão completa de uma branch.</p><span class="tag">Code review</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/git.svg" alt="git"></div><h3>Veja o que mudou antes do commit</h3><p>O selo da branch mostra os arquivos não comitados, e um clique abre o diff de cada um.</p><span class="tag">Versionamento</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/nodedotjs.svg" alt="Node.js"></div><h3>Suba o servidor do projeto</h3><p>Um botão acima da pasta roda o script dev do package.json e mostra o endereço.</p><span class="tag">Servidores</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/figma.svg" alt="Figma"></div><h3>Do layout à tela no código</h3><p>No modo design, comente em cima da página e o Claude ajusta o componente certo.</p><span class="tag">Design</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/gnubash.svg" alt="Terminal"></div><h3>Terminais soltos no canvas</h3><p>Shell ou Claude Code numa pasta, com modo foco e a conta do Claude do grupo.</p><span class="tag">Terminal</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/docker.svg" alt="Docker"></div><h3>Saiba o que ficou rodando</h3><p>A lista de servidores locais mostra o que os agentes deixaram no ar, com atalho para encerrar.</p><span class="tag">Infra</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/claude.svg" alt="Claude Code"></div><h3>Converse com o Claude Code</h3><p>O chat completo de cada pasta, com o mesmo CLAUDE.md, configurações e MCPs do terminal.</p><span class="tag">Agente</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/openai.svg" alt="Codex"></div><h3>Use o Codex no mesmo canvas</h3><p>Abra conversas do Codex ao lado das do Claude e compare o que cada um entrega.</p><span class="tag">Agente</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/googlegemini.svg" alt="Gemini"></div><h3>Delegue etapas ao Gemini CLI</h3><p>Uma conversa passa uma etapa para o Gemini e você acompanha o resultado nela mesma.</p><span class="tag">Orquestração</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/github.svg" alt="GitHub"></div><h3>Revise cada pull request</h3><p>Abra o repositório no GitHub pela pasta e peça a revisão completa de uma branch.</p><span class="tag">Code review</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/git.svg" alt="git"></div><h3>Veja o que mudou antes do commit</h3><p>O selo da branch mostra os arquivos não comitados, e um clique abre o diff de cada um.</p><span class="tag">Versionamento</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/nodedotjs.svg" alt="Node.js"></div><h3>Suba o servidor do projeto</h3><p>Um botão acima da pasta roda o script dev do package.json e mostra o endereço.</p><span class="tag">Servidores</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/figma.svg" alt="Figma"></div><h3>Do layout à tela no código</h3><p>No modo design, comente em cima da página e o Claude ajusta o componente certo.</p><span class="tag">Design</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/gnubash.svg" alt="Terminal"></div><h3>Terminais soltos no canvas</h3><p>Shell ou Claude Code numa pasta, com modo foco e a conta do Claude do grupo.</p><span class="tag">Terminal</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/docker.svg" alt="Docker"></div><h3>Saiba o que ficou rodando</h3><p>A lista de servidores locais mostra o que os agentes deixaram no ar, com atalho para encerrar.</p><span class="tag">Infra</span></article>
       </div>
     </div>
   </section>
 
-  <!-- Recursos: um cartão por recurso, cada um com uma mini ilustração em HTML/CSS -->
-  <section class="section" id="recursos">
+  <!-- Fluxo -->
+  <section class="section">
     <div class="container">
-      <div class="center">
-        <h2>Feito para quem toca vários projetos.</h2>
-        <p class="lede">O que muda no seu dia quando os agentes trabalham e você só acompanha.</p>
-      </div>
-      <div class="pillars">
-
-        <article class="pillar pillar--wide">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-track">
-              <div class="pl-rows">
-                <span class="pl-row"><i class="rdot rdot--run"></i><b>Refatorar o cálculo do frete</b><small>escrevendo os testes - 3 min</small></span>
-                <span class="pl-row pl-row--sub">↳ 2 subagentes: lendo o carrinho, rodando a suíte</span>
-                <span class="pl-row"><i class="rdot rdot--wait"></i><b>Migrar a tabela de pedidos</b><em>esperando você</em></span>
-                <span class="pl-row"><i class="rdot rdot--done"></i><b>Página de cupons</b><small>concluída há 3 h</small></span>
-              </div>
-              <div class="pl-side">
-                <div class="pl-toast"><b>Argus</b>“Migrar a tabela de pedidos” pede permissão</div>
-                <div class="pl-toast"><b>Argus</b>“Página de cupons” terminou</div>
-                <div class="pl-status"><span><i class="rdot rdot--run"></i>2</span><span><i class="rdot rdot--wait"></i>1</span><span><i class="rdot rdot--done"></i>3</span></div>
-              </div>
-            </div>
+      <div class="cycle">
+        <div class="cycle__text">
+          <p class="cycle__eyebrow"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="4.5" cy="4.5" r="2.5"/><circle cx="11.5" cy="11.5" r="2.5"/><path d="M4.5 7v2a2.5 2.5 0 0 0 2.5 2.5H9"/></svg>Fluxo</p>
+          <h2>Do pedido à mudança pronta.</h2>
+          <p class="cycle__lede">Escreva o pedido, acompanhe o plano, aprove o que precisa e revise o resultado. Cada conversa passa pelas mesmas etapas, e você vê em qual delas está.</p>
+          <div class="cycle__now" aria-live="polite">
+            <span class="cycle__step mono" data-cycle-num>01</span>
+            <strong data-cycle-title>Pedido</strong>
+            <p data-cycle-text>Escreva, cole um print ou dite o que precisa.</p>
           </div>
-          <div class="pillar__body"><h3>Saiba a hora de agir</h3><p>Cada conversa mostra o que o agente está fazendo agora e há quanto tempo. Quando uma termina, pede permissão ou faz uma pergunta, chega a notificação. A barra de baixo resume todas, de todos os workspaces.</p></div>
-        </article>
-
-        <article class="pillar">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-menu">
-              <p class="pl-menu__btn">Cliente A <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></p>
-              <span class="pl-menu__item is-on"><b>Cliente A</b><small><i class="rdot rdot--run"></i>2 trabalhando</small></span>
-              <span class="pl-menu__item"><b>Produto</b><small><i class="rdot rdot--wait"></i>1 precisa de você</small></span>
-              <span class="pl-menu__item"><b>Pessoal</b><small>tudo parado</small></span>
-              <span class="pl-menu__new">+ Novo workspace</span>
-            </div>
-          </div>
-          <div class="pillar__body"><h3>Um workspace para cada frente</h3><p>Separe clientes, produtos ou estudos em canvas diferentes e troque entre eles pela barra de cima. O que está rodando nos outros continua aparecendo.</p></div>
-        </article>
-
-        <article class="pillar">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-accounts">
-              <div class="grp grp--blue"><span class="grp__tag">Trabalho</span><p class="pl-acc"><b>Conta da empresa</b><span class="usage"><span class="usage__bar"><i style="width:42%"></i></span>42%</span></p></div>
-              <div class="grp grp--green"><span class="grp__tag">Pessoal</span><p class="pl-acc"><b>Minha conta</b><span class="usage usage--warn"><span class="usage__bar"><i style="width:71%"></i></span>71%</span></p></div>
-            </div>
-          </div>
-          <div class="pillar__body"><h3>Uma conta para cada grupo</h3><p>A conta da empresa num grupo, a pessoal em outro. Pastas, conversas e terminais usam a conta do grupo, e o limite de uso de cada uma fica à vista.</p></div>
-        </article>
-
-        <article class="pillar">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-agentgrid">
-              <span class="pl-agentcard"><span class="pl-agent"><img src="assets/tools/claude.svg" alt=""></span><b>Claude Code</b><small><i class="rdot rdot--run"></i>Refatorar o frete</small></span>
-              <span class="pl-agentcard"><span class="pl-agent"><img src="assets/tools/openai.svg" alt=""></span><b>Codex</b><small><i class="rdot rdot--done"></i>Revisar o PR</small></span>
-              <span class="pl-agentcard"><span class="pl-agent"><img src="assets/tools/googlegemini.svg" alt=""></span><b>Gemini CLI</b><small><i class="rdot rdot--run"></i>Documentar a API</small></span>
-              <span class="pl-agentcard"><span class="pl-agent"><img src="assets/tools/cursor.svg" alt=""></span><b>Cursor CLI</b><small><i class="rdot rdot--wait"></i>Ajustar o layout</small></span>
-            </div>
-          </div>
-          <div class="pillar__body"><h3>O agente que você preferir</h3><p>Claude Code, Codex, Gemini CLI e Cursor CLI lado a lado, cada conversa com o agente e o modelo que fizer mais sentido para a tarefa.</p></div>
-        </article>
-
-        <article class="pillar">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-at">
-              <div class="pl-at__menu">
-                <span class="is-on"><b>@revisor</b><small>Revisa o diff antes do commit</small></span>
-                <span><b>@testes</b><small>Escreve e roda os testes</small></span>
-                <span><b>@docs</b><small>Mantém a documentação em dia</small></span>
-              </div>
-              <p class="pl-at__input">Peça para o <b>@rev</b><i></i></p>
-            </div>
-          </div>
-          <div class="pillar__body"><h3>Seus agentes em todos os projetos</h3><p>Monte uma biblioteca de agentes especialistas uma vez e chame qualquer um com @ em qualquer conversa, de qualquer projeto.</p></div>
-        </article>
-
-        <article class="pillar">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-ttys">
-              <div class="tty"><p class="tty__bar">shell - loja-online</p><p>$ pnpm dev</p><p class="tty__ok">➜ Local: http://localhost:5173</p></div>
-              <div class="tty"><p class="tty__bar">shell - api-pedidos</p><p>$ pnpm test --watch</p><p class="tty__ok">✓ 48 testes passaram</p></div>
-            </div>
-          </div>
-          <div class="pillar__body"><h3>Vários terminais, lado a lado</h3><p>Abra quantos terminais quiser, soltos no canvas ao lado da pasta. O servidor de um projeto e os testes de outro ficam à vista ao mesmo tempo.</p></div>
-        </article>
-
-        <article class="pillar">
-          <div class="pillar__art" aria-hidden="true">
-            <div class="pl-notes">
-              <div class="note"><b>Nota</b>Revisar o checkout antes da reunião de sexta</div>
-              <div class="note"><b>Nota</b>Pedir acesso ao banco de testes</div>
-              <div class="fold"><div class="fold__head"><b>loja-online</b><span class="fold__branch">feat/checkout</span></div><span class="fold__row"><i class="rdot rdot--run"></i>Refatorar o frete</span></div>
-            </div>
-          </div>
-          <div class="pillar__body"><h3>Notas ao lado do trabalho</h3><p>Deixe lembretes soltos no canvas, perto do projeto de que eles falam. O que falta fazer fica no mesmo lugar onde o trabalho acontece.</p></div>
-        </article>
-
+        </div>
+        <!-- Órbita das etapas: o Argus no centro e as etapas girando em volta (script.js) -->
+        <div class="orbit" data-orbit role="img" aria-label="O Argus no centro e as seis etapas de uma conversa girando em volta: pedido, plano, execução, permissão, revisão e pronto">
+          <span class="orbit__ring orbit__ring--outer"></span>
+          <span class="orbit__ring orbit__ring--inner"></span>
+          <div class="orbit__core"><img src="assets/icone-argus-laranja.svg" alt=""></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Acesso remoto: de outro computador e do celular -->
-  <section class="section" id="remoto">
+  <!-- Casos de uso -->
+  <section class="section" id="casos">
     <div class="container">
-      <div class="center">
-        <p class="eyebrow">Acesso remoto</p>
-        <h2>Saiu de perto? O Argus vai junto.</h2>
-        <p class="lede">Deixe o Argus ligado num computador e use de outro, ou acompanhe pelo celular. Os projetos e as conversas continuam onde estão.</p>
+      <p class="eyebrow">Casos de uso</p>
+      <h2>Tire as tarefas repetitivas da sua frente.</h2>
+      <p class="lede">Deixe os agentes no trabalho de volume enquanto você fica com as decisões.</p>
+      <div class="ugrid">
+        <article><span class="num">01</span><h3>Revisar PRs e corrigir o CI</h3><p>Peça a revisão de uma branch e acompanhe o agente lendo, testando e propondo correções.</p></article>
+        <article><span class="num">02</span><h3>Transformar issues em código</h3><p>Cole o link da issue, deixe o agente levantar o contexto e abrir a mudança.</p></article>
+        <article><span class="num">03</span><h3>Prototipar telas no projeto</h3><p>Descreva a tela ou comente em cima dela no modo design. O código é o do projeto.</p></article>
+        <article><span class="num">04</span><h3>Investigar bugs com calma</h3><p>Logs, terminal e código lado a lado no canvas, com o agente seguindo as pistas.</p></article>
+        <article><span class="num">05</span><h3>Manter a documentação em dia</h3><p>Atualize o CLAUDE.md e os docs do projeto conforme o código muda.</p></article>
+        <article><span class="num">06</span><h3>Tarefas de manutenção</h3><p>Atualizar dependências, limpar warnings e escrever notas de versão sem ficar olhando.</p></article>
       </div>
-      <figure class="rscene" role="img" aria-label="Ilustração: o Argus do computador de casa aberto no notebook e no celular, ligados por uma conexão criptografada">
-        <div class="rscene__win">
-          <div class="rwin">
-            <div class="rwin__bar"><span class="rwin__dots"><i></i><i></i><i></i></span><span class="rwin__host">Mac de casa</span><span class="rwin__count">2 conectados</span></div>
-            <div class="rwin__canvas">
-              <div class="rgroup">
-                <p class="rgroup__name">Trabalho</p>
-                <div class="rfolder"><b>loja-online</b><span class="rchat"><i class="rdot rdot--run"></i>Refatorar o cálculo do frete</span><span class="rchat"><i class="rdot rdot--done"></i>Página de cupons</span></div>
-                <div class="rfolder"><b>api-pedidos</b><span class="rchat"><i class="rdot rdot--wait"></i>Migrar a tabela de pedidos</span></div>
-              </div>
-              <div class="rterm"><p>$ pnpm dev</p><p class="rterm__ok">➜ Local: http://localhost:5173</p></div>
-            </div>
-          </div>
-          <p class="rscene__label">Notebook do trabalho</p>
+    </div>
+  </section>
+
+  <!-- Integrações -->
+  <section class="section">
+    <div class="container center">
+      <h2>Conecte com o que você já usa</h2>
+      <p class="lede">Os mesmos MCPs, agentes e configurações do seu Claude Code. Nada para configurar de novo.</p>
+    </div>
+    <!-- Piso de teclas inclinado: as fileiras deslizam e o Argus fica no meio (script.js) -->
+    <div class="floor" data-floor role="img" aria-label="O Argus no centro, cercado pelas ferramentas que você já usa: GitHub, git, MCP, Node, npm, pnpm, Figma, Notion, Linear, Docker, Vercel, Supabase, Postgres, Ubuntu, terminal, Claude, Codex, Gemini e Cursor">
+      <div class="floor__plane"></div>
+      <div class="floor__fade"></div>
+    </div>
+  </section>
+
+  <!-- Multi agente -->
+  <section class="section" id="stack">
+    <div class="container split">
+      <div>
+        <p class="eyebrow">Vários agentes</p>
+        <h2>Seus agentes. Seus modelos. Sua máquina.</h2>
+        <p class="lede">Use o agente que fizer mais sentido para cada tarefa. Uma conversa pode até delegar etapas para outro agente, e você acompanha cada uma.</p>
+      </div>
+      <div class="stack">
+        <p class="stack__title">Sua stack</p>
+        <div class="stack__row">
+          <p>Agente</p>
+          <div><span class="on">Claude Code</span><span>Codex</span><span>Gemini CLI</span><span>Cursor CLI</span></div>
         </div>
-        <div class="rlink"><span class="rlink__lock"><svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></span>Criptografado<br>de ponta a ponta</div>
-        <div>
-          <div class="rphone"><div class="rphone__screen">
-            <p class="rphone__title">Conversas</p>
-            <div class="rusage"><div class="rusage__row"><span>Claude - limite de 5 h</span><span>42%</span></div><div class="rusage__bar"><i></i></div></div>
-            <div class="rtoast"><b>Argus</b>“Página de cupons” terminou</div>
-            <ul class="rlist">
-              <li><i class="rdot rdot--wait"></i><span>Migrar a tabela de pedidos<small>api-pedidos - precisa de você</small></span></li>
-              <li><i class="rdot rdot--run"></i><span>Refatorar o cálculo do frete<small>loja-online - trabalhando</small></span></li>
-              <li><i class="rdot rdot--done"></i><span>Página de cupons<small>loja-online - concluída</small></span></li>
-            </ul>
-            <div class="rinput"><span>Pedir algo…</span><svg viewBox="0 0 16 16"><rect x="5.5" y="1.5" width="5" height="8.5" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg></div>
-          </div></div>
-          <p class="rscene__label">Celular</p>
+        <div class="stack__row">
+          <p>Modelos</p>
+          <div><span class="on">Opus</span><span>Sonnet</span><span>Haiku</span><span>GPT</span><span>Gemini</span></div>
         </div>
+        <div class="stack__row">
+          <p>Onde roda</p>
+          <div><span class="on">macOS</span><span>Windows</span><span>Linux</span><span>WSL</span><span>Worktree</span><span>Sua rede</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Infra + depoimento -->
+  <section class="section infra">
+    <canvas class="ascii ascii--soft" data-ascii aria-hidden="true"></canvas>
+    <div class="container center">
+      <h2>Feito para o sistema que você usa.</h2>
+      <p class="lede">Mac, Windows ou Linux, com os recursos de cada um por trás. Projetos no WSL rodam dentro da distro.</p>
+      <div class="infra__logos"><span><img src="assets/os/apple.svg" alt="">macOS</span><span><img src="assets/os/windows.svg" alt="">Windows</span><span><img src="assets/os/linux.svg" alt="">Linux</span><span><img src="assets/os/wsl.svg" alt="">WSL</span></div>
+      <figure class="quote">
+        <blockquote>“O Argus aumentou minha produtividade. Consigo gerir vários projetos ao mesmo tempo e não perco a memória de nenhum deles. Ele agiliza muito o meu dia a dia, e ficou muito mais fácil integrar com outras ferramentas, manter o histórico e trocar de IA quando preciso.”</blockquote>
+        <figcaption><img class="avatar" src="assets/joao-andrade.webp" alt="João Andrade" width="44" height="44"><div><strong><a href="https://www.linkedin.com/in/joandrade/" target="_blank" rel="noopener">João Andrade</a></strong><small>AI Product Engineer, HAYAH</small></div></figcaption>
       </figure>
-      <div class="pgrid remote-feats">
-        <article class="pfeat"><h3>De um computador para outro</h3><p>No notebook, o Argus de casa abre inteiro: canvas, conversas, terminais e arquivos. Funciona entre Mac, Windows e Linux.</p></article>
-        <article class="pfeat"><h3>No celular</h3><p>Aponte a câmera para o QR code. Veja o uso e as conversas, mande pedidos por texto, voz ou foto e receba aviso quando algo termina.</p></article>
-        <article class="pfeat"><h3>Só entra quem você pareou</h3><p>Código de uso único, conexão criptografada de ponta a ponta e a lista de quem está conectado sempre à vista.</p></article>
-      </div>
     </div>
   </section>
 
-  <!-- Argus x editor de código -->
-  <section class="section" id="diferenca">
+  <!-- Planos -->
+  <section class="section" id="planos">
+    <div class="container center">
+      <h2>Comece no seu computador. Leve para o time.</h2>
+      <p class="lede">Instale, abra suas pastas e comece a conversar. Quando funcionar para você, compartilhe com o time.</p>
+    </div>
+    <div class="container tiers">
+      <article class="tier">
+        <p class="tier__kind">Para você</p>
+        <h3>Rode os agentes do seu jeito.</h3>
+        <ul>
+          <li>Roda local, no código de verdade</li>
+          <li>Claude Code, Codex, Gemini ou Cursor</li>
+          <li>Várias conversas em paralelo</li>
+          <li>Notificação quando algo precisa de você</li>
+          <li>Usa a assinatura que você já tem</li>
+        </ul>
+        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar grátis</a>
+      </article>
+      <article class="tier">
+        <p class="tier__kind">Para o time</p>
+        <h3>Organize projetos e contas por grupo.</h3>
+        <ul>
+          <li>Uma conta do Claude por grupo</li>
+          <li>Trabalho, freela e pessoal separados</li>
+          <li>Biblioteca de agentes compartilhável</li>
+          <li>Worktrees para tarefas em paralelo</li>
+          <li>Memória do projeto editável no app</li>
+        </ul>
+        <a class="btn btn--outline" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">Ver no GitHub</a>
+      </article>
+      <article class="tier">
+        <p class="tier__kind">Para contribuir</p>
+        <h3>Ajude a construir o Argus.</h3>
+        <ul>
+          <li>Código aberto no GitHub</li>
+          <li>Electron, React e TypeScript</li>
+          <li>Release a cada melhoria</li>
+          <li>Decisões documentadas no repositório</li>
+          <li>Issues abertas para sugestões</li>
+        </ul>
+        <a class="btn btn--outline" href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">Abrir uma issue</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- Controle -->
+  <section class="section" id="controle">
     <div class="container">
-      <p class="eyebrow">Argus x editor de código</p>
-      <h2>Um editor resolve um projeto. O Argus é para quem quer performar de verdade.</h2>
-      <p class="lede">Com vários agentes trabalhando ao mesmo tempo, o que segura você não é escrever código: é acompanhar, aprovar e revisar tudo sem se perder. É aí que o Argus entra.</p>
-      <div class="vs">
-        <table class="vs__table">
-          <thead><tr><th scope="col"><span class="sr-only">O que muda</span></th><th scope="col">Editor de código</th><th scope="col" class="vs__argus">Argus</th></tr></thead>
-          <tbody><tr><th scope="row">Vários projetos</th><td data-label="Editor de código">Uma janela por projeto, uma de cada vez na frente.</td><td data-label="Argus">Todos os projetos num canvas, agrupados por cliente ou contexto.</td></tr><tr><th scope="row">Conversas com agentes</th><td data-label="Editor de código">Um painel lateral, com uma conversa à vista por vez.</td><td data-label="Argus">Várias conversas em paralelo, cada uma com o status: trabalhando, precisa de você ou concluída.</td></tr><tr><th scope="row">Saber a hora de agir</th><td data-label="Editor de código">Você volta para conferir se terminou.</td><td data-label="Argus">O Argus avisa quando uma conversa termina ou pede permissão.</td></tr><tr><th scope="row">Agentes</th><td data-label="Editor de código">Um agente por extensão, cada um no seu painel.</td><td data-label="Argus">Claude Code, Codex, Gemini CLI e Cursor CLI lado a lado.</td></tr><tr><th scope="row">Contas do Claude</th><td data-label="Editor de código">Uma conta logada por vez.</td><td data-label="Argus">Uma conta por grupo: trabalho, freela e pessoal separados.</td></tr><tr><th scope="row">Terminais e servidores</th><td data-label="Editor de código">Terminais presos no rodapé de cada janela.</td><td data-label="Argus">Terminais soltos no canvas e a lista do que os agentes deixaram rodando.</td></tr><tr><th scope="row">Longe do computador</th><td data-label="Editor de código">Feito para usar na frente dele.</td><td data-label="Argus">Continue pelo notebook ou pelo celular, com o acesso remoto.</td></tr></tbody>
-        </table>
+      <div class="control">
+        <div>
+          <p class="eyebrow">Permissões</p>
+          <h2>Controle o que os agentes podem fazer.</h2>
+          <p class="lede">Escolha o modo de permissão de cada conversa, aprove comandos um a um e veja tudo o que foi feito. Nada roda escondido.</p>
+          <a class="btn btn--outline" href="#faq">Saber mais</a>
+        </div>
+        <div class="control__card">
+          <p class="mono">Permitir este comando?</p>
+          <code>$ pnpm test src/cart</code>
+          <div class="control__btns"><span>Negar</span><span class="yes">Permitir</span></div>
+        </div>
       </div>
-      <p class="vs__note">O Argus não substitui o seu editor: ele tem árvore de arquivos e editor para ajustes rápidos, e você continua usando o seu editor no resto.</p>
     </div>
   </section>
 
   <!-- Mural de depoimentos (tema claro) -->
-  <section class="section love" id="depoimentos">
+  <section class="section love" id="amor">
     <div class="container center">
       <h2>Quem usa, recomenda</h2>
       <p class="lede">O que dizem as pessoas que já trabalham com o Argus no dia a dia.</p>
@@ -336,35 +330,38 @@
     </div>
   </section>
 
-  <!-- Começar -->
-  <section class="section" id="comecar">
-    <div class="container">
-      <p class="eyebrow">Comece agora</p>
-      <h2>Rodando em menos de 5 minutos.</h2>
-      <p class="lede">Grátis, sem precisar de conta e sem chave de API. Se você já usa o Claude Code, é só abrir.</p>
-      <ol class="psteps">
-        <li><span>1</span><h3>Baixe o Argus</h3><p>macOS, Windows ou Linux. Depois de instalado, ele se atualiza sozinho.</p></li>
-        <li><span>2</span><h3>Entre com o Claude</h3><p>O Argus usa o Claude Code da sua máquina e a assinatura que você já tem. Se faltar, as boas-vindas instalam.</p></li>
-        <li><span>3</span><h3>Arraste uma pasta</h3><p>Solte o projeto no canvas, ou rode <code>argus .</code> no terminal, e comece a conversar.</p></li>
-      </ol>
-    </div>
-  </section>
-
   <!-- FAQ -->
   <section class="section" id="faq">
     <div class="container faq">
       <div>
         <h2>Perguntas frequentes</h2>
-        <p class="lede">Não achou a resposta? Abra uma issue no GitHub.</p>
-        <a class="btn btn--outline" href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">Perguntar no GitHub</a>
+        <p class="lede">O que mais perguntam sobre o Argus, os agentes e a sua assinatura.</p>
+        <a class="btn btn--outline" href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">Fale com a gente</a>
       </div>
       <div class="faq__list">
-        <details open><summary>Para quem é o Argus?</summary><p>Para quem trabalha com agentes de código em mais de um projeto: quem atende vários clientes, cuida de vários repositórios ou deixa tarefas rodando em paralelo. Com um projeto só e uma conversa por vez, o terminal já resolve.</p></details>
-        <details><summary>É grátis?</summary><p>Sim. O Argus é grátis e o código é aberto. Você paga só a assinatura do Claude (ou do agente que usar), como já paga hoje.</p></details>
-        <details><summary>Preciso de chave de API?</summary><p>Não. O Argus roda o Claude Code instalado na sua máquina, com a assinatura que você já tem.</p></details>
-        <details><summary>Qual a diferença para usar o agente no terminal?</summary><p>O agente é o mesmo, com o mesmo CLAUDE.md, as mesmas configurações e os mesmos MCPs. A diferença é ver todas as conversas juntas, com status, diff e permissões, sem caçar abas.</p></details>
-        <details><summary>Meu código sai da minha máquina?</summary><p>O app roda local. As conversas vão para o modelo do mesmo jeito que iriam pelo terminal. No acesso remoto, a ponte entre os aparelhos só repassa dados criptografados de ponta a ponta. Os detalhes estão na página de <a href="privacidade.html">privacidade</a>.</p></details>
-        <details><summary>Em que sistemas funciona?</summary><p>macOS (Apple Silicon), Windows 10 e 11 e Linux (AppImage), além de projetos dentro do WSL.</p></details>
+        <details open><summary>O que é o Argus?</summary><p>Um app desktop com um canvas infinito onde cada pasta de projeto vira um bloco. Dentro dele você conversa com os agentes de código e acompanha o que cada um está fazendo.</p></details>
+        <details><summary>Qual a diferença para o terminal?</summary><p>O agente é o mesmo. A diferença é ver todas as conversas juntas, com status, diff, permissões e subagentes, sem caçar abas.</p></details>
+        <details><summary>Preciso de chave de API?</summary><p>Não. O Argus roda o claude instalado na sua máquina, com a assinatura que você já tem.</p></details>
+        <details><summary>Meu código sai da minha máquina?</summary><p>O app roda local, sem servidor no meio. As conversas vão para o modelo do mesmo jeito que iriam pelo terminal.</p></details>
+        <details><summary>Funciona no Windows e no Linux?</summary><p>Sim. Tem versão para macOS (Apple Silicon), Windows 10 e 11 e Linux (AppImage), além de projetos dentro do WSL.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Código aberto -->
+  <section class="section">
+    <div class="container center">
+      <h2>Aberto por dentro.</h2>
+      <p class="lede">Modelos mudam. Agentes mudam. O Argus lê os mesmos arquivos do seu Claude Code e deixa tudo à vista, sem prender você a nada.</p>
+      <div class="hero__btns center-row">
+        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">Estrela no GitHub</a>
+        <a class="btn btn--outline" href="https://github.com/ffernandomoraes/argus/releases" target="_blank" rel="noopener">Ver as versões</a>
+        <a class="btn btn--outline" href="#amor">Entrar na comunidade</a>
+      </div>
+      <div class="stats">
+        <div><strong>3</strong><span>Sistemas</span></div>
+        <div><strong>4</strong><span>Agentes</span></div>
+        <div><strong>0</strong><span>Chaves de API</span></div>
       </div>
     </div>
   </section>
@@ -373,10 +370,9 @@
   <section class="outro">
     <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
     <div class="container outro__inner">
-      <p class="outro__title">Abra uma vez. Deixe os agentes trabalhando.</p>
-      <p class="lede">Todos os seus projetos à vista, organizados e avisando quando precisam de você.</p>
-      <a class="btn btn--primary btn--lg" href="download.html">Baixar o Argus</a>
-      <div class="infra__logos outro__os"><span><img src="assets/os/apple.svg" alt="">macOS</span><span><img src="assets/os/windows.svg" alt="">Windows</span><span><img src="assets/os/linux.svg" alt="">Linux</span></div>
+      <p class="outro__title">Construindo o jeito aberto de acompanhar agentes de código.</p>
+      <p class="lede">O Argus é a base para trabalhar com vários agentes ao mesmo tempo, com tudo à vista e na sua máquina.</p>
+      <a class="btn btn--primary" href="#planos">Baixar o Argus</a>
       <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Ícone do Argus feito de partículas"></canvas></div>
     </div>
   </section>
@@ -385,8 +381,8 @@
 
 <footer class="legal">
   <div class="container legal__inner">
-    <span class="mono">© 2026 Argus</span>
-    <nav><a href="novidades.html">Novidades</a><a href="privacidade.html">Privacidade</a><a href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">Reportar um problema</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+    <span class="mono">© 2026 Argus · Protótipo</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
   </div>
 </footer>
 

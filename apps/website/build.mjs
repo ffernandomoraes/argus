@@ -15,15 +15,17 @@ const out = join(root, 'dist');
 
 const isRootFile = (name) => name !== 'worker.js' && /^(?:[\w-]+\.(?:html|css|js)|_headers|robots\.txt|sitemap\.xml)$/.test(name);
 const ASSET_DIRS = ['assets'];
-const isAssetFile = (name) => /\.(?:svg|png|webp|jpe?g|gif|ico|avif|woff2?)$/i.test(name) || /^OFL[\w-]*\.txt$/.test(name);
+const PAGE_DIRS = ['ajuda', 'blog'];
+const isAssetFile = (name) => /\.(?:svg|png|webp|jpe?g|gif|ico|avif|mp4|woff2?)$/i.test(name) || /^OFL[\w-]*\.txt$/.test(name);
+const isPageFile = (name) => /^[\w-]+\.html$/.test(name);
 
 // Real files only: symlinks and dotfiles are skipped, so nothing from outside the folder sneaks in.
-function copyAssets(from, to) {
+function copyMatching(from, to, accept) {
   for (const entry of readdirSync(from, { withFileTypes: true })) {
     if (entry.name.startsWith('.')) continue;
     const source = join(from, entry.name);
-    if (entry.isDirectory()) copyAssets(source, join(to, entry.name));
-    else if (entry.isFile() && isAssetFile(entry.name)) {
+    if (entry.isDirectory()) copyMatching(source, join(to, entry.name), accept);
+    else if (entry.isFile() && accept(entry.name)) {
       mkdirSync(to, { recursive: true });
       copyFileSync(source, join(to, entry.name));
     }
@@ -35,15 +37,30 @@ mkdirSync(out);
 for (const entry of readdirSync(root, { withFileTypes: true })) {
   if (entry.isFile() && isRootFile(entry.name)) copyFileSync(join(root, entry.name), join(out, entry.name));
 }
-for (const dir of ASSET_DIRS) copyAssets(join(root, dir), join(out, dir));
+for (const dir of ASSET_DIRS) copyMatching(join(root, dir), join(out, dir), isAssetFile);
+for (const dir of PAGE_DIRS) copyMatching(join(root, dir), join(out, dir), isPageFile);
 
-const stylesheet = /<link rel="stylesheet" href="([\w-]+\.css)">/g;
-for (const page of readdirSync(out).filter((name) => name.endsWith('.html'))) {
+// Pages in subfolders (ajuda/, blog/) point to ../styles.css; the stylesheet always lives at the root.
+// Relative url() inside the CSS (fonts) would then resolve from the subfolder, so they become absolute.
+const stylesheet = /<link rel="stylesheet" href="(?:\.\.\/)?([\w-]+\.css)">/g;
+const inlineCss = (href) => readFileSync(join(root, href), 'utf8').replace(/url\((['"]?)(?!\/|data:|https?:)/g, 'url($1/');
+// Google Tag Manager, added here so the page sources stay exactly as designed.
+const GTM = `<meta charset="utf-8">
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MQVZGP55"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  </script>`;
+const pages = [
+  ...readdirSync(out).filter(isPageFile),
+  ...PAGE_DIRS.flatMap((dir) => readdirSync(join(out, dir)).filter(isPageFile).map((name) => join(dir, name))),
+];
+for (const page of pages) {
   const file = join(out, page);
-  const html = readFileSync(file, 'utf8').replace(stylesheet, (_, href) => {
-    const css = readFileSync(join(root, href), 'utf8');
-    return `<style>\n${css}</style>`;
-  });
+  const html = readFileSync(file, 'utf8')
+    .replace(stylesheet, (_, href) => `<style>\n${inlineCss(href)}</style>`)
+    .replace('<meta charset="utf-8">', GTM);
   writeFileSync(file, html);
 }
 process.stdout.write('Site built in dist/\n');

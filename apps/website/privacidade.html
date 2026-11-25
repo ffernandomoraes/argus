@@ -2,32 +2,54 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MQVZGP55"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Privacidade - Argus</title>
+  <title>Privacidade · Argus</title>
   <meta name="description" content="O que o Argus envia para fora da sua máquina, e o que não envia.">
   <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="assets/fonts/DMSans-latin-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>Novo: modo design, comente em cima da página e o Claude ajusta o código</p>
+  <a href="modo-design.html">Ver como funciona</a>
+</div>
+
 <!-- Navegação -->
 <header class="nav">
   <div class="nav__inner">
-    <a class="logo" href="index.html"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
 
     <nav class="nav__links" aria-label="Principal">
-      <a href="index.html#recursos">Recursos</a>
-      <a href="index.html#remoto">Acesso remoto</a>
-      <a href="index.html#faq">Dúvidas</a>
-      <a href="novidades.html">Novidades</a>
+      <div class="dd">
+        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
+          <a href="modo-design.html"><span class="dd__ic">◇</span>Modo design</a>
+          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+        </div>
+      </div>
+      <a href="times.html">Para times</a>
+      <a href="download.html">Download</a>
+      <a href="comunidade.html">Comunidade</a>
+      <div class="dd">
+        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Aprender</p>
+          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Documentação</a>
+          <a href="novidades.html"><span class="dd__ic">≡</span>Novidades</a>
+          <a href="atalhos.html"><span class="dd__ic">▥</span>Atalhos</a>
+          <p class="dd__eyebrow">Projeto</p>
+          <a href="sobre.html"><span class="dd__ic">ⓘ</span>Sobre</a>
+          <a href="contato.html"><span class="dd__ic">✉</span>Contato</a>
+        </div>
+      </div>
     </nav>
 
     <div class="nav__right">
@@ -35,7 +57,8 @@
         <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
         <span data-stars>GitHub</span>
       </a>
-      <a class="btn btn--outline" href="download.html">Baixar</a>
+      <a class="nav__plain" href="index.html#planos">Ver versões</a>
+      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
     </div>
   </div>
 </header>
@@ -47,62 +70,36 @@
       <p class="pbadge"><span class="dd__ic">◍</span>Privacidade</p>
       <h1>Privacidade.</h1>
       <p class="lede">O que o Argus envia para fora da sua máquina, e o que não envia.</p>
-      <p class="pnote">Atualizada em 24 de novembro de 2026.</p>
+      <p class="pnote">Atualizada em 31 de outubro de 2026.</p>
     </div>
   </section>
 
   <section class="section">
     <div class="container doc">
-      <nav class="doc-side" aria-label="Privacidade"><a href="#resumo">Resumo</a><a href="#conversas">Suas conversas e seus projetos</a><a href="#erros">Relatórios de erro</a><a href="#uso">Dados de uso</a><a href="#remoto">Acesso remoto</a><a href="#conta">Conta do Argus</a><a href="#consultas">Consultas que o app faz</a><a href="#site">Este site</a><a href="#codigo">Código aberto</a><a href="#contato">Dúvidas</a></nav>
+      <nav class="doc-side" aria-label="Privacidade"><a href="#resumo">Resumo</a><a href="#conversas">Suas conversas e seus projetos</a><a href="#erros">Relatórios de erro</a><a href="#consultas">Consultas que o app faz</a><a href="#site">Este site</a><a href="#codigo">Código aberto</a><a href="#contato">Dúvidas</a></nav>
       <div class="doc-body">
-        <section class="doc-sec" id="resumo"><h2>Resumo</h2><p>O Argus é um app que roda na sua máquina. A conta do Argus é opcional e serve só para levar suas preferências, workspaces e as instruções e skills dos seus agentes de um computador para outro. Não há servidor do Argus no meio das suas conversas, e o app não coleta o conteúdo dos seus projetos nem das suas conversas.</p>
-<p>O que sai da sua máquina são as conversas com os agentes (como já sairiam pelo terminal), algumas consultas técnicas, relatórios de erro e números de uso anônimos, sem dados pessoais. Se você ligar o acesso remoto, o que passa entre os seus aparelhos vai criptografado de ponta a ponta. Se você entrar na conta do Argus, ficam guardados seu nome, e-mail, foto, as preferências que sincronizam, o desenho dos seus workspaces e as instruções e skills dos seus agentes (como o CLAUDE.md, o AGENTS.md, o GEMINI.md, skills e comandos). Os detalhes estão abaixo.</p></section>
+        <section class="doc-sec" id="resumo"><h2>Resumo</h2><p>O Argus é um app que roda na sua máquina. Não existe conta no Argus, não há servidor do Argus no meio das suas conversas e o app não coleta o conteúdo dos seus projetos nem das suas conversas.</p>
+<p>O que sai da sua máquina são as conversas com os agentes (como já sairiam pelo terminal), algumas consultas técnicas e relatórios de erro sem dados pessoais. Os detalhes estão abaixo.</p></section>
         <section class="doc-sec" id="conversas"><h2>Suas conversas e seus projetos</h2><p>O Argus roda o Claude Code (e, se você conectar, o Codex, o Gemini CLI ou o Cursor CLI) instalado na sua máquina, com o seu login. O que você manda numa conversa vai para o provedor do agente do mesmo jeito que iria pelo terminal, e segue a política de privacidade dele: a da <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic</a>, no caso do Claude.</p>
 <p>Projetos, histórico das conversas, canvas e configurações ficam nos arquivos da sua máquina. O Argus lê o histórico que o próprio Claude Code grava em <code>~/.claude</code>.</p></section>
         <section class="doc-sec" id="erros"><h2>Relatórios de erro</h2><p>No app instalado, erros, quedas e travamentos são enviados ao <a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Sentry</a> para que possam ser corrigidos. Eles são enviados sempre, sem uma opção para desligar.</p>
 <table class="doc-table"><tr><th>O que vai</th><th>O que não vai</th></tr>
 <tr><td>Onde o erro aconteceu (a pilha de funções e as últimas ações no app)</td><td>Conversas e conteúdo de arquivos</td></tr>
 <tr><td>Versão do Argus, sistema operacional e se há WSL</td><td>Chaves, tokens e e-mails (são apagados)</td></tr>
-<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário (saem até dos caminhos de pasta)</td></tr>
-<tr><td>O diário das últimas horas do app: o que cada parte fez e por quê (estados, motivos, tempos, quando o computador dormiu e o nome dos programas que abriram o Claude Code)</td><td>Prompts, respostas e nomes de conversas</td></tr>
-<tr><td>Um resumo de 8 letras do login do Claude, que não dá para desfazer, só para saber quando o login mudou</td><td>O login em si</td></tr></table>
-<p>Também ficam desligadas a coleta das variáveis das funções e as fotos da memória das quedas, que poderiam conter trechos de conversa.</p>
-<p>O mesmo diário fica gravado no seu computador, em <code>~/.argus/logs</code>, por 7 dias (até 5 MB por dia).</p></section>
-        <section class="doc-sec" id="uso"><h2>Dados de uso</h2><p>No app instalado, o Argus manda uma vez por dia um resumo anônimo de como ele é usado, para saber o que melhorar. O envio vem ligado e desliga em <strong>Configurações › Geral</strong>.</p>
-<table class="doc-table"><tr><th>O que vai</th><th>O que não vai</th></tr>
-<tr><td>Quantas vezes cada recurso foi usado (ex.: ditado, trocar de branch, anexar arquivo), só a contagem</td><td>Nomes de pastas, projetos e arquivos</td></tr>
-<tr><td>Tempo de uso (no computador e com o app do celular aberto) e quantas conversas, mensagens, pastas, workspaces e terminais</td><td>Conversas, prompts e conteúdo de arquivos</td></tr>
-<tr><td>Tokens e pedidos por agente e modelo, e o nome das ferramentas usadas (Bash, Edit…)</td><td>Nomes de pastas, projetos, conversas, MCPs e skills</td></tr>
-<tr><td>Versão do Argus e do Claude Code, sistema, idioma, se há WSL e o plano de cada conta</td><td>E-mails e logins</td></tr>
-<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário</td></tr>
-<tr><td>O país de onde veio o envio, que o servidor deduz da conexão</td><td>O endereço IP, o estado e a cidade</td></tr></table></section>
-        <section class="doc-sec" id="remoto"><h2>Acesso remoto</h2><p>O acesso remoto vem desligado. Quando você liga e pareia um aparelho, os dois conversam por uma ponte hospedada na Cloudflare. A conexão é criptografada de ponta a ponta: a ponte só repassa dados cifrados e não consegue ler as conversas, os terminais nem os arquivos.</p>
-<p>O app do celular é uma página servida por essa mesma ponte. Os avisos do celular saem do computador de casa, criptografados, pelo serviço de notificações do sistema do celular (Apple ou Google).</p></section>
-        <section class="doc-sec" id="conta"><h2>Conta do Argus</h2><p>A conta é opcional. Você entra com o GitHub ou o Google em <strong>Configurações › Perfil</strong>, e ela serve para levar suas preferências, seus workspaces e as instruções e skills dos seus agentes de um computador para outro.</p>
-<table class="doc-table"><tr><th>O que fica guardado</th><th>O que não fica</th></tr>
-<tr><td>Nome, e-mail e foto, como vêm do GitHub ou do Google, e o número da sua conta lá, que reconhece você no próximo login</td><td>Senha: o login é feito no próprio GitHub ou Google</td></tr>
-<tr><td>As preferências que sincronizam: tema, idioma, notificações, padrões da conversa e prazos do armazenamento</td><td>Conversas e o conteúdo dos seus projetos</td></tr>
-<tr><td>O desenho dos workspaces de cada computador: nomes, grupos, notas, cores, posições, os caminhos das pastas e o endereço do repositório git de cada uma, para achar a pasta no outro computador</td><td>Terminais, tarefas isoladas e a conta do Claude de cada grupo</td></tr>
-<tr><td>As instruções e skills dos agentes, com o conteúdo de cada arquivo: o CLAUDE.md global, as skills, os agentes e os comandos do ~/.claude; o AGENTS.md e as skills do ~/.codex; o GEMINI.md e os comandos do ~/.gemini; os comandos e as skills do ~/.cursor. De cada skill vão todos os arquivos de texto da pasta dela, inclusive scripts</td><td>As configurações de cada agente (settings.json, config.toml, mcp.json), os servidores MCP e as chaves deles. Das skills, os arquivos com cara de segredo (.env, chaves privadas, credenciais)</td></tr>
-<tr><td>Avisos entre os seus computadores: quando uma conversa termina num computador sem ninguém na frente, o título dela e o nome da pasta passam pelo servidor para chegar aos seus outros computadores ligados</td><td>Os avisos em si: o servidor só repassa e não guarda</td></tr>
-<tr><td>Se o acesso remoto estiver ligado: o endereço do computador na ponte e um código de pareamento renovado a cada poucos minutos, que só os aparelhos da sua conta recebem para entrar sem digitar código</td><td>O que passa entre os aparelhos: continua cifrado de ponta a ponta, e o servidor da conta não participa da ligação</td></tr>
-<tr><td>Se você conectar o GitHub para clonar: seu nome de usuário no GitHub e a chave de acesso do app Argus, cifrada. A chave só lê os repositórios que você escolheu no GitHub e vence em 8 horas (o servidor renova sozinho)</td><td>Permissão para mudar qualquer coisa no GitHub: a chave não escreve, não apaga e não vê os repositórios que você não liberou</td></tr>
-<tr><td>Os aparelhos com a conta aberta (os computadores e o app do celular): o nome de cada um, o sistema e quando foi usado. Durante o login, o endereço IP e o navegador ficam guardados por poucos minutos, até o app receber a entrada, e então são apagados</td><td>O acesso ao seu GitHub ou Google usado no login: ele serve uma vez, só para ler nome, e-mail e foto</td></tr></table>
-<p>Os dados ficam num servidor do Argus hospedado na Railway, nos Estados Unidos. As instruções e skills vão para a conta sozinhas, então evite guardar senhas ou chaves nelas (arquivos com cara de segredo ficam de fora, mas uma chave escrita dentro de um script ou texto vai junto). O app do celular também pode entrar na conta, para escolher o computador sem código. Em <strong>Configurações › Perfil</strong> você vê os aparelhos conectados, tira um deles da conta, tira da conta uma instrução ou skill, desconecta o GitHub (o que também desfaz a autorização lá) e apaga a conta, o que desfaz a autorização do GitHub e apaga na hora tudo o que estava guardado no servidor.</p></section>
+<tr><td>Um identificador aleatório da instalação</td><td>O nome da máquina e o seu nome de usuário (saem até dos caminhos de pasta)</td></tr></table>
+<p>Também ficam desligadas a coleta das variáveis das funções e as fotos da memória das quedas, que poderiam conter trechos de conversa.</p></section>
         <section class="doc-sec" id="consultas"><h2>Consultas que o app faz</h2><table class="doc-table"><tr><th>Para quê</th><th>Para onde</th></tr>
 <tr><td>Procurar e baixar atualizações (ao abrir e a cada 5 horas)</td><td>GitHub</td></tr>
 <tr><td>Saber se há versão nova do Claude Code</td><td>npm</td></tr>
 <tr><td>Mostrar o limite de uso de cada conta</td><td>Anthropic, com o seu login</td></tr>
 <tr><td>Instalar o Claude Code, quando você pede nas boas-vindas</td><td>claude.ai (instalador oficial)</td></tr>
 <tr><td>Ditado: o áudio vai em tempo real para o serviço de voz do Claude</td><td>Anthropic, com o seu login</td></tr>
-<tr><td>Transcrição de áudio local: baixar o modelo uma vez</td><td>Hugging Face</td></tr>
-<tr><td>Conta do Argus, se você entrar: login, preferências, workspaces, instruções e skills</td><td>Servidor da conta do Argus (Railway), GitHub ou Google</td></tr>
-<tr><td>Clonar do GitHub, se você conectar: a lista dos repositórios liberados e o git clone</td><td>Servidor da conta do Argus (que pergunta ao GitHub) e GitHub</td></tr></table>
+<tr><td>Transcrição de áudio local (experimento): baixar o modelo uma vez</td><td>Hugging Face</td></tr></table>
 <p>Nenhuma dessas consultas leva o conteúdo das suas conversas, exceto o ditado, que leva o áudio que você grava.</p></section>
-        <section class="doc-sec" id="site"><h2>Este site</h2><p>O site é estático e hospedado na Cloudflare. Ele usa o Google Tag Manager com o Google Analytics para contar visitas e saber de onde elas vêm. O Google grava cookies no seu navegador e recebe o endereço da página, o navegador e o endereço IP, conforme a <a href="https://policies.google.com/privacy?hl=pt-BR" target="_blank" rel="noopener">política do Google</a>. O site não tem anúncios.</p>
-<p>Ao abrir uma página, o seu navegador conversa só com a Cloudflare, que entrega o site e pode registrar o seu endereço IP, conforme a <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">política da Cloudflare</a>. Os números do repositório, as novidades e os links de download vêm do GitHub pelo próprio site, sem o seu navegador falar com ele. Ao baixar o app, o arquivo sai direto do GitHub, conforme a <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">política do GitHub</a>. As fontes ficam hospedadas junto com o site.</p></section>
+        <section class="doc-sec" id="site"><h2>Este site</h2><p>O site é estático e hospedado no GitHub Pages. Ele não usa cookies e não tem ferramentas de análise ou de anúncios.</p>
+<p>Ao abrir uma página, o seu navegador conversa só com o GitHub, que hospeda o site e fornece os números do repositório e os links de download. O GitHub pode registrar o seu endereço IP, conforme a <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">política de privacidade do GitHub</a>. As fontes ficam hospedadas junto com o site.</p></section>
         <section class="doc-sec" id="codigo"><h2>Código aberto</h2><p>Tudo o que está nesta página pode ser conferido no código do Argus, que é aberto no <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a>.</p></section>
-        <section class="doc-sec" id="contato"><h2>Dúvidas</h2><p>Se tiver dúvidas sobre privacidade, fale com a gente pelas <a href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">issues do GitHub</a>. Quando o app passar a enviar algo novo, esta página muda junto.</p></section>
+        <section class="doc-sec" id="contato"><h2>Dúvidas</h2><p>Se tiver dúvidas sobre privacidade, fale com a gente pela <a href="contato.html">página de contato</a>. Quando o app passar a enviar algo novo, esta página muda junto.</p></section>
       </div>
     </div>
   </section>
@@ -110,8 +107,8 @@
 
 <footer class="legal">
   <div class="container legal__inner">
-    <span class="mono">© 2026 Argus</span>
-    <nav><a href="novidades.html">Novidades</a><a href="privacidade.html">Privacidade</a><a href="https://github.com/ffernandomoraes/argus/issues" target="_blank" rel="noopener">Reportar um problema</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+    <span class="mono">© 2026 Argus · Protótipo</span>
+    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
   </div>
 </footer>
 

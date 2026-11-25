@@ -26,10 +26,10 @@
   --color-card: var(--color-surface);
   --color-card-hover: var(--color-surface-2);
 
-  /* Cor de destaque do sistema (Ajustes > Aparência no Mac, Cores no Windows). O valor aqui é o
-     azul padrão; o app troca pela do sistema ao abrir (main.tsx). `selection` é o fundo do item
+  /* Cor de destaque: o laranja do Argus, o mesmo da landing (apps/website/styles.css). Desde
+     2026-11-23 não segue mais a cor de destaque do sistema. `selection` é o fundo do item
      selecionado: mais fechado no escuro, como o do macOS. */
-  --color-accent: #0a84ff;
+  --color-accent: #d77552;
   --color-selection: color-mix(in srgb, var(--color-accent) 78%, black);
 
   /* Parte clara de um controle: o segmento escolhido e a bolinha do interruptor. */

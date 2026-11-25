@@ -1,5 +1,4 @@
 import { isInterfaceZoom } from '@argus/shared/interfaceZoom';
-import { DEFAULT_LOOK, normalizeLook, type MascotLook } from '../canvas/mascot/look';
 import { DEFAULT_SETTINGS, type SessionSettings } from '../conversation/SessionSettings';
 import { createStore } from '../lib/createStore';
 import { useStore } from '../lib/useStore';
@@ -20,15 +19,6 @@ export type Preferences = {
   conversationDefaults: number
   // Player da música que toca no sistema, na barra de título (MediaControls).
   mediaPlayer: boolean
-  // Mascote solto na tela, por cima de qualquer app (canvas/mascot). O lugar dele fica no
-  // processo principal (AppSettings.mascotSpot), que é quem move a janela.
-  mascot: boolean
-  // Fixo por cima de todas as janelas (aba Mascote). Desligado: ele vive dentro do canvas, no lugar
-  // mascotCanvasSpot (fração da janela; null = canto esquerdo, no meio da altura).
-  mascotFloating: boolean
-  mascotCanvasSpot: { x: number; y: number } | null
-  // Visual do mascote e o golpe no envio (Configurações > Mascote).
-  mascotLook: MascotLook
   // Conversas favoritas (id da sessão do Claude): ficam no topo da lista de todas as conversas.
   favoriteChats: string[]
   // Balão com a próxima mensagem provável no pé da conversa (Configurações > Conversas).
@@ -47,10 +37,6 @@ const DEFAULTS: Preferences = {
   welcomeSeen: false,
   conversationDefaults: CONVERSATION_DEFAULTS,
   mediaPlayer: true,
-  mascot: false,
-  mascotFloating: false,
-  mascotCanvasSpot: null,
-  mascotLook: DEFAULT_LOOK,
   favoriteChats: [],
   promptSuggestions: true,
   pinNewDrawers: false,
@@ -75,7 +61,6 @@ function read(): Preferences {
           : { ...DEFAULT_SETTINGS, ...saved.conversation, thinking: false, ultracode: false },
       conversationDefaults: CONVERSATION_DEFAULTS,
       interfaceZoom: isInterfaceZoom(saved.interfaceZoom) ? saved.interfaceZoom : 1,
-      mascotLook: normalizeLook(saved.mascotLook),
     };
   } catch {
     return DEFAULTS;

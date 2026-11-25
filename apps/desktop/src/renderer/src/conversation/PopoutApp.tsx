@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MascotBridge } from '../canvas/mascot/MascotBridge';
 import { useSessions } from '../canvas/sessionsStore';
 import type { ConversationSummary, ProjectData } from '../canvas/types';
 import { tildify } from '../platform';
@@ -55,8 +54,6 @@ function PopoutConversation({ payload }: { payload: PopoutPayload }) {
   return (
     <div className="relative h-full">
       <ConversationWindow project={project} account={payload.account} conversation={conversation} onClose={closeWindow} />
-      {/* Escrevendo um pedido aqui, o mascote solto na tela escuta. */}
-      <MascotBridge />
       <RequiredUpdateModal />
     </div>
   );

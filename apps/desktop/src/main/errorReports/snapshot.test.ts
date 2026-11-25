@@ -40,7 +40,7 @@ const mainError = { exception: { values: [{ type: 'Error', mechanism: { type: 'g
 beforeAll(() => {
   vi.useFakeTimers();
   watchMainLag();
-  watchWindowVisibility((contents) => (contents.id === 2 ? 'mascot' : 'canvas'));
+  watchWindowVisibility((contents) => (contents.id === 2 ? 'conversation' : 'canvas'));
   watchWindowFocus();
 });
 afterAll(() => vi.useRealTimers());

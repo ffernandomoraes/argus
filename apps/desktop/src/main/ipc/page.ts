@@ -3,7 +3,7 @@ import type { WebContents } from 'electron';
 // Quem conversa com o processo principal: uma janela do app (o webContents dela) ou uma janela de
 // outro Argus ligada por acesso remoto (RemotePage, em src/main/remote/remotePage.ts). Os dois
 // recebem avisos, abrem terminais e seguram conversas do mesmo jeito; o que só existe numa janela
-// de verdade (diálogo do sistema, zoom, mascote) pede o webContents com `contentsOf`.
+// de verdade (diálogo do sistema, zoom) pede o webContents com `contentsOf`.
 
 export type PageEvent = 'did-navigate' | 'render-process-gone' | 'destroyed';
 

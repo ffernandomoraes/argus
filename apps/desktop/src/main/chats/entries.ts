@@ -55,7 +55,7 @@ function backgroundItems(s: ChatState): BackgroundItem[] {
 
 // Conversas trabalhando ou esperando você, para o indicador no canto do canvas e o celular. Parada
 // com algo ainda rodando em segundo plano entra com turnDone: o status segue 'running' para quem
-// ainda não conhece o campo (celular antigo, mascote).
+// ainda não conhece o campo (celular antigo).
 export function activeChats(entries: ChatEntry[]): ActiveChat[] {
   return entries.flatMap(({ id, cwd, state: s }) => {
     const background = s.agents.filter((a) => a.background).length + s.backgroundTasks;

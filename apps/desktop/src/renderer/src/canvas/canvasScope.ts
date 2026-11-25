@@ -7,7 +7,7 @@ import type { CanvasNode } from './types';
 
 // O que está no canvas desta janela (o workspace dela): as pastas (blocos de pasta) e as conversas
 // postas soltas (card de conversa sem projeto, conversa aberta no canvas). Pasta fora do canvas não conta para o
-// "concluído", o ícone da barra de menus nem o mascote, mesmo que a lista dela ainda esteja guardada
+// "concluído", nem o ícone da barra de menus, mesmo que a lista dela ainda esteja guardada
 // (pasta removida, aberta pela notificação) ou que outra cópia do app (produção x desenvolvimento)
 // esteja trabalhando nela.
 // Nulo: janela sem canvas (conversa em janela separada), que não filtra nada.

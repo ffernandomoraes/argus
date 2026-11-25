@@ -10,30 +10,16 @@ import { hasDrafts } from './code/drafts';
 import { loadEditor } from './code/editor/useCodeEditor';
 import { loadXterm } from './conversation/terminal/useXterm';
 import { tr } from './i18n';
-import { MascotOverlay } from './canvas/mascot/MascotOverlay';
 import { PopoutApp } from './conversation/PopoutApp';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { SelectionMenu } from './ui/selectionMenu';
 import { installWindowActivity } from './lib/windowActivity';
 
-// Cor de destaque do sistema antes do primeiro desenho, para não piscar o azul padrão. Sem ela,
-// vale a do index.css.
-const applyAccent = (color: string | null) =>
-  color
-    ? document.documentElement.style.setProperty('--color-accent', color)
-    : document.documentElement.style.removeProperty('--color-accent');
-applyAccent(window.api.accent.get());
-window.api.accent.onChange(applyAccent);
-
-// A mesma página serve a janela principal, as janelas de conversa (#popout/<id>) e a do mascote
-// solto na tela (#mascot).
+// A mesma página serve a janela principal e as janelas de conversa (#popout/<id>).
 const popout = location.hash.match(/^#popout\/(.+)$/);
-const mascot = location.hash === '#mascot';
 
-// Animações infinitas param com a janela sem foco (lib/windowActivity.ts). A do mascote nunca
-// pega o foco e é só ele, pequeno: anima sempre. O fundo dela é transparente (styles/mascot.css).
-if (mascot) document.documentElement.classList.add('mascot-overlay');
-else installWindowActivity();
+// Animações infinitas param com a janela sem foco (lib/windowActivity.ts).
+installWindowActivity();
 
 // Idioma trocado nos ajustes: recarrega para redesenhar os textos. Rascunhos do painel de código só
 // existem na memória; com algum, pergunta antes (sem recarregar, fica no idioma antigo até a próxima).
@@ -48,15 +34,13 @@ window.api.language.onChange(() => {
 // Editor e terminal ficam fora do que roda na abertura; carregam logo depois, com a janela ociosa,
 // para o primeiro arquivo ou terminal aberto não esperar. Terminal já aberto na abertura carrega
 // por conta própria (useXterm).
-if (!mascot) {
-  requestIdleCallback(
-    () => {
-      loadXterm().catch((err: unknown) => console.error('[abertura] pré-carregar o terminal:', err));
-      loadEditor().catch((err: unknown) => console.error('[abertura] pré-carregar o editor:', err));
-    },
-    { timeout: 3000 },
-  );
-}
+requestIdleCallback(
+  () => {
+    loadXterm().catch((err: unknown) => console.error('[abertura] pré-carregar o terminal:', err));
+    loadEditor().catch((err: unknown) => console.error('[abertura] pré-carregar o editor:', err));
+  },
+  { timeout: 3000 },
+);
 
 // Traço 1.5 em todos os ícones, no lugar do 2 padrão do lucide.
 // Erro ao desenhar a janela não a deixa em branco: aparece o aviso para recarregar. O canvas tem
@@ -64,8 +48,8 @@ if (!mascot) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LucideProvider strokeWidth={1.5}>
-      <ErrorBoundary>{mascot ? <MascotOverlay /> : popout ? <PopoutApp id={decodeURIComponent(popout[1])} /> : <App />}</ErrorBoundary>
-      {!mascot && <SelectionMenu />}
+      <ErrorBoundary>{popout ? <PopoutApp id={decodeURIComponent(popout[1])} /> : <App />}</ErrorBoundary>
+      <SelectionMenu />
     </LucideProvider>
   </StrictMode>,
 );

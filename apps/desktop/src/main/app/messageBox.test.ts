@@ -12,7 +12,7 @@ vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => electron.focused },
   dialog: { showMessageBox: electron.showMessageBox },
 }));
-// Janelas do app (canvas e conversa); a do mascote não entra.
+// Janelas do app (canvas e conversa).
 const appWindows = vi.hoisted(() => new Set<object>());
 vi.mock('./windowChrome', () => ({ isAppWindow: (win: object) => appWindows.has(win) }));
 // Quantas vezes a detecção de travamento pausou, e o sistema da vez.
@@ -48,7 +48,7 @@ describe('showMessageBox', () => {
     expect(electron.showMessageBox.mock.calls).toEqual([[canvas, options]]);
   });
 
-  it('sem janela do Argus em foco, solta, para aparecer na frente; o mascote nunca fica com ela', async () => {
+  it('sem janela do Argus em foco, solta, para aparecer na frente', async () => {
     await showMessageBox(options);
     electron.focused = {};
     await showMessageBox(options);

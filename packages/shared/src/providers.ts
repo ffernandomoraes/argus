@@ -15,9 +15,6 @@ export const PROVIDER_NAMES: Record<ProviderId, string> = {
 // Versão mais antiga de cada CLI que o Argus consegue usar. Antigravity: o `agy acp` nasceu na 1.5.0.
 export const MIN_VERSIONS: Partial<Record<ProviderId, string>> = { antigravity: '1.5.0' };
 
-// Em teste: o nome leva o selo "Experimento" na tela de Contas.
-export const EXPERIMENTAL_PROVIDERS: ProviderId[] = ['antigravity'];
-
 // login: entra pelo navegador, pelo próprio CLI (Codex; a principal do Cursor e do Antigravity).
 // key: chave de API guardada no cofre do sistema (Gemini; as outras do Cursor e do Antigravity).
 // Ver apps/desktop/src/main/providers/.

@@ -10,8 +10,7 @@
 const ATTR = 'data-window';
 
 // O mesmo estado para o que roda git de fundo (a faixa dos worktrees, o git status das pastas):
-// como o VS Code, espera alguém voltar para a janela. Janela sem o vigia instalado (a do mascote)
-// conta como ativa.
+// como o VS Code, espera alguém voltar para a janela.
 let idle = false;
 const onActive = new Set<() => void>();
 

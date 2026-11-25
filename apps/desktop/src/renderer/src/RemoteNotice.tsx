@@ -14,7 +14,7 @@ const HIDE_MS = 7000;
 const host = () => REMOTE_HOST?.name ?? tr('outro computador', 'the other computer');
 
 // O texto de cada pedido bloqueado. Fora daqui, silêncio: o que o app pede sozinho, sem clique
-// (mascote, player, ditado, que já tem o aviso dele), não vira aviso.
+// (player, ditado, que já tem o aviso dele), não vira aviso.
 function blockedMessage(channel: string): string | null {
   const h = host();
   switch (channel) {

@@ -162,7 +162,7 @@ function tagged(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
 
 function rendererName(contents: WebContents): string {
   const hash = contents.getURL().split('#')[1] ?? '';
-  return hash === 'mascot' ? 'mascot' : hash.startsWith('popout/') ? 'conversation' : 'canvas';
+  return hash.startsWith('popout/') ? 'conversation' : 'canvas';
 }
 
 // Mensagens de erro e aviso do console das janelas do app (e falhas ao carregar) entram nas últimas

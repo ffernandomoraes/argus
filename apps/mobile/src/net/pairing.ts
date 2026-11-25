@@ -123,8 +123,9 @@ function pairFailure(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-// Pareia com o código do computador (Configurações > Acesso remoto). Erro em texto, ou nulo.
-export async function pairWithCode(text: string): Promise<string | null> {
+// Pareia com o código do computador (Configurações > Acesso remoto), ou com o da conta e o bilhete
+// dela. Erro em texto, ou nulo.
+export async function pairWithCode(text: string, ticket?: string): Promise<string | null> {
   const code = parsePairCode(text);
   if (!code) return tr('O código tem 5 letras e números, um hífen e 6 números, como K7Q4M-913776.', 'The code has 5 letters and digits, a hyphen and 6 digits, like K7Q4M-913776.');
   let raw: Link;
@@ -134,7 +135,7 @@ export async function pairWithCode(text: string): Promise<string | null> {
     return pairFailure(err);
   }
   try {
-    const granted = await pairAsClient(raw, code, deviceName());
+    const granted = await pairAsClient(raw, code, deviceName(), ticket);
     savePairedHost({ hostId: granted.hostId, hostName: granted.hostName, deviceId: granted.deviceId, psk: b64(granted.psk) });
     return null;
   } catch (err) {

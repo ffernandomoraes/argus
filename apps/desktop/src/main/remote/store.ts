@@ -19,6 +19,8 @@ import { newPushKeys, type PushKeys } from './push';
 
 // kind: outro Argus ou o navegador do celular (sem ele: Argus, os pareados antes do celular).
 // push: inscrição das notificações do navegador.
+// accountSession: pareado pela conta do Argus, preso à sessão da conta desse aparelho (ver
+// accountDevices.ts): ela saiu da conta, o pareamento sai junto.
 export type PairedDevice = {
   id: string
   name: string
@@ -27,6 +29,7 @@ export type PairedDevice = {
   lastSeen?: number
   kind?: DeviceKind
   push?: WebPushSubscription
+  accountSession?: string
 };
 export type KnownHost = { hostId: string; name: string; deviceId: string; psk: string; pairedAt: number };
 
@@ -42,6 +45,8 @@ export type RemoteStore = {
   hosts: KnownHost[]
   // Chaves com que este computador assina as notificações do celular (ver push.ts).
   pushKeys: PushKeys
+  // Sessões da conta de aparelhos removidos aqui que ainda falta tirar da conta (sem internet na hora).
+  accountRemovals?: string[]
 };
 
 const SEALED = 'remote-access.bin';
@@ -112,6 +117,7 @@ function parse(text: string): RemoteStore {
     hosts: Array.isArray(raw.hosts) ? raw.hosts.filter((h) => h && typeof h.hostId === 'string' && typeof h.psk === 'string') : [],
     pushKeys:
       raw.pushKeys && typeof raw.pushKeys.publicKey === 'string' && typeof raw.pushKeys.privateKey === 'string' ? raw.pushKeys : base.pushKeys,
+    ...(Array.isArray(raw.accountRemovals) && raw.accountRemovals.length > 0 && { accountRemovals: raw.accountRemovals.filter((s): s is string => typeof s === 'string').slice(-200) }),
   };
 }
 

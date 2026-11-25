@@ -60,7 +60,7 @@ export const WEB_CHANNELS = {
 
 export type WebChannel = keyof typeof WEB_CHANNELS;
 
-// Avisos que chegam ao aparelho web; o resto (terminais, mascote...) não sai de casa. O canvas
+// Avisos que chegam ao aparelho web; o resto (terminais...) não sai de casa. O canvas
 // inteiro (canvas:remote) fica de fora: vem a cada quadro de um arraste; boards:changed já avisa
 // quando pastas e conversas mudam.
 export const WEB_EVENTS = ['chat:state', 'chat:active', 'chat:interrupted', 'chat:unreadList', 'usage:update', 'auth:state', 'sessions:changed', 'boards:changed', 'favorites:changed', 'claude:info', 'providers:state'] as const;

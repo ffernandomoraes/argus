@@ -1,28 +1,24 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Loader2, Monitor, Settings2, Smartphone } from 'lucide-react';
 import { useCopied } from '../../lib/useCopied';
 import { IconButton } from '../../ui/IconButton';
 import { useRemoteAccess } from '../../remote';
 import type { RemoteAccessState } from '@argus/shared/remote';
 import { LOCALE, tr } from '../../i18n';
+import { EmptyState } from '../../ui/emptyState/EmptyState';
+import { RemoteDevicesArt } from '../../ui/emptyState/illustrations';
 import { Button } from '../../ui/Button';
 import { Group, Row, Switch } from '../controls';
+import { Tabs } from '../Tabs';
+import { RemoteAccountHosts } from './RemoteAccountHosts';
+import { FIELD } from '../fieldStyles';
 
 // Acesso remoto: usar o Argus deste computador de outro (o notebook no trabalho), ou
 // abrir daqui o de outro computador. A ligação passa pela ponte do Argus na internet, cifrada de
 // ponta a ponta (ver src/main/remote).
 
 const date = (ms: number) => new Date(ms).toLocaleString(LOCALE, { dateStyle: 'short', timeStyle: 'short' });
-
-function Title({ children, hint }: { children: ReactNode; hint: string }) {
-  return (
-    <div className="mt-6 mb-2 first:mt-0">
-      <h3 className="text-[16px] font-medium text-text">{children}</h3>
-      <p className="text-[15px] leading-relaxed text-faint">{hint}</p>
-    </div>
-  );
-}
 
 // Segundos até o código vencer, contando na tela.
 function useCountdown(until: number | null): number {
@@ -65,45 +61,77 @@ function CopyCode({ code }: { code: string }) {
 
 function relayText(s: RemoteAccessState): string {
   if (!s.hosting) return tr('Desligado: nenhum outro computador entra.', 'Off: no other computer can connect.');
+  if (s.relay === 'online' && s.account === 'on') {
+    return tr('Ligado - os aparelhos pareados e os da sua conta do Argus podem entrar.', 'On - paired devices and the ones in your Argus account can connect.');
+  }
   if (s.relay === 'online') return tr('Ligado - os aparelhos pareados podem entrar.', 'On - paired devices can connect.');
   if (s.relay === 'connecting') return tr('Ligando à ponte do acesso remoto…', 'Connecting to the remote access relay…');
   return tr('Sem conexão com a ponte. Tentando de novo…', 'No connection to the relay. Retrying…');
 }
 
+type Tab = 'general' | 'devices' | 'computers';
+
+// Três abas: o que este computador oferece (ligar, manter acordado, parear), os aparelhos que entram
+// nele e os outros computadores que este abre.
 export function RemoteAccessSection() {
   const state = useRemoteAccess();
+  const [tab, setTab] = useState<Tab>('general');
   if (!state) return null;
   return (
     <>
-      <ThisComputer state={state} />
-      <Devices state={state} />
-      <OtherComputers state={state} />
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        label={tr('Acesso remoto', 'Remote access')}
+        options={[
+          { value: 'general', label: tr('Geral', 'General'), icon: <Settings2 size={15} /> },
+          { value: 'devices', label: tr('Aparelhos conectados', 'Connected devices'), icon: <Smartphone size={15} /> },
+          { value: 'computers', label: tr('Conexão a outros computadores', 'Connect to other computers'), icon: <Monitor size={15} /> },
+        ]}
+      />
+      {tab === 'general' && <ThisComputer state={state} />}
+      {tab === 'devices' && <Devices state={state} />}
+      {tab === 'computers' && <OtherComputers state={state} />}
     </>
   );
 }
 
+// Texto da aba sem nada na lista, no lugar das linhas.
 function ThisComputer({ state }: { state: RemoteAccessState }) {
+  return (
+    <Group>
+      <Row label={tr('Permitir acesso de outros computadores', 'Allow access from other computers')} description={relayText(state)}>
+        <Switch label={tr('Permitir acesso', 'Allow access')} checked={state.hosting} onChange={(on) => void window.api.remoteAccess.setHosting(on)} />
+      </Row>
+      <Row
+        label={tr('Manter este computador acordado', 'Keep this computer awake')}
+        description={tr('Com o acesso ligado, o sistema não dorme; a tela pode apagar.', 'With access on, the system doesn’t sleep; the screen can turn off.')}
+        info={tr(
+          'Dormindo, o computador sai da internet e ninguém de longe consegue acordá-lo. Num notebook, fechar a tampa ainda faz ele dormir, a menos que esteja na tomada com um monitor externo.',
+          'Asleep, the computer drops off the internet and no one can wake it from afar. On a laptop, closing the lid still puts it to sleep, unless it is plugged in with an external display.',
+        )}
+      >
+        <Switch label={tr('Manter acordado', 'Keep awake')} checked={state.keepAwake} onChange={(on) => void window.api.remoteAccess.setKeepAwake(on)} />
+      </Row>
+    </Group>
+  );
+}
+
+// Parear: o botão que gera o código e, gerado, o código com o QR code. Fica em cima da lista dos
+// aparelhos, que é onde o aparelho novo aparece.
+function PairDevice({ state }: { state: RemoteAccessState }) {
   const left = useCountdown(state.pairing?.expiresAt ?? null);
+  // Gerando o código (a ponte pode demorar): o botão gira até o código e o QR code aparecerem.
+  const [starting, setStarting] = useState(false);
+  // O botão segue aceso (desligado ele apagaria o giro); o clique repetido é ignorado.
+  const startPairing = () => {
+    if (starting) return;
+    setStarting(true);
+    void window.api.remoteAccess.startPairing().finally(() => setStarting(false));
+  };
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
   return (
     <>
-      <Title hint={tr(`Deixe ${state.name} ligado e use o Argus dele de outro computador.`, `Leave ${state.name} on and use its Argus from another computer.`)}>
-        {tr('Este computador', 'This computer')}
-      </Title>
-      <Group>
-        <Row label={tr('Permitir acesso de outros computadores', 'Allow access from other computers')} description={relayText(state)}>
-          <Switch label={tr('Permitir acesso', 'Allow access')} checked={state.hosting} onChange={(on) => void window.api.remoteAccess.setHosting(on)} />
-        </Row>
-        <Row
-          label={tr('Manter este computador acordado', 'Keep this computer awake')}
-          description={tr('Com o acesso ligado, o sistema não dorme; a tela pode apagar.', 'With access on, the system doesn’t sleep; the screen can turn off.')}
-          info={tr(
-            'Dormindo, o computador sai da internet e ninguém de longe consegue acordá-lo. Num notebook, fechar a tampa ainda faz ele dormir, a menos que esteja na tomada com um monitor externo.',
-            'Asleep, the computer drops off the internet and no one can wake it from afar. On a laptop, closing the lid still puts it to sleep, unless it is plugged in with an external display.',
-          )}
-        >
-          <Switch label={tr('Manter acordado', 'Keep awake')} checked={state.keepAwake} onChange={(on) => void window.api.remoteAccess.setKeepAwake(on)} />
-        </Row>
         <Row
           label={tr('Parear um aparelho', 'Pair a device')}
           description={tr(
@@ -120,13 +148,14 @@ function ThisComputer({ state }: { state: RemoteAccessState }) {
               {tr('Cancelar', 'Cancel')}
             </Button>
           ) : (
-            <Button variant="secondary" onClick={() => void window.api.remoteAccess.startPairing()}>
-              {tr('Gerar código', 'Generate code')}
+            <Button variant="secondary" aria-busy={starting} onClick={startPairing}>
+              {starting && <Loader2 size={13} className="animate-spin" aria-hidden="true" />}
+              {starting ? tr('Gerando…', 'Generating…') : tr('Gerar código', 'Generate code')}
             </Button>
           )}
         </Row>
         {state.pairing && (
-          <div className="flex flex-col items-center gap-1 border-b border-line py-4 last:border-0">
+          <div className="flex flex-col items-center gap-1 border-b border-dashed border-line py-4 last:border-0">
             <div className="flex items-center gap-2">
               <span className="font-mono text-[28px] font-semibold tracking-[0.15em] text-text select-all">{state.pairing.code}</span>
               <CopyCode code={state.pairing.code} />
@@ -144,21 +173,26 @@ function ThisComputer({ state }: { state: RemoteAccessState }) {
         )}
         {/* Pareou: o aparelho já aparece na lista de pareados, sem aviso. Só o erro fica à vista. */}
         {!state.pairing && state.pairingResult && !state.pairingResult.ok && (
-          <p className="border-b border-line py-3 text-[15px] text-red-400 last:border-0">{state.pairingResult.error}</p>
+          <p className="border-b border-dashed border-line py-3 text-[15px] text-red-400 last:border-0">{state.pairingResult.error}</p>
         )}
-      </Group>
     </>
   );
 }
 
 function Devices({ state }: { state: RemoteAccessState }) {
-  if (!state.devices.length) return null;
   return (
-    <>
-      <Title hint={tr('Podem entrar neste computador. Remova o que você não usa mais.', 'Can connect to this computer. Remove the ones you no longer use.')}>
-        {tr('Aparelhos pareados', 'Paired devices')}
-      </Title>
-      <Group>
+    <Group>
+      <PairDevice state={state} />
+      {!state.devices.length && (
+        <EmptyState
+          art={<RemoteDevicesArt />}
+          title={tr('Nenhum aparelho pareado', 'No paired devices')}
+          text={tr(
+            'Pareie o celular ou outro computador aqui em cima para acompanhar e mandar mensagens às conversas de longe.',
+            'Pair your phone or another computer above to follow and message your chats from anywhere.',
+          )}
+        />
+      )}
         {state.devices.map((d) => (
           <Row
             key={d.id}
@@ -172,8 +206,8 @@ function Devices({ state }: { state: RemoteAccessState }) {
                   : tr(`Pareado em ${date(d.pairedAt)}`, `Paired on ${date(d.pairedAt)}`))
             }
             info={tr(
-              'Remover desconecta o aparelho na hora e ele não entra mais. O que já foi feito por ele (comandos nos terminais, arquivos alterados) continua como está.',
-              'Removing disconnects the device right away and it can no longer connect. What it already did (terminal commands, changed files) stays as it is.',
+              'Remover desconecta o aparelho na hora e ele não entra mais. Se ele entrou pela conta do Argus, sai da conta também. O que já foi feito por ele (comandos nos terminais, arquivos alterados) continua como está.',
+              'Removing disconnects the device right away and it can no longer connect. If it came in through your Argus account, it leaves the account too. What it already did (terminal commands, changed files) stays as it is.',
             )}
           >
             <Button variant="secondary" danger onClick={() => window.api.remoteAccess.removeDevice(d.id)}>
@@ -181,8 +215,7 @@ function Devices({ state }: { state: RemoteAccessState }) {
             </Button>
           </Row>
         ))}
-      </Group>
-    </>
+    </Group>
   );
 }
 
@@ -211,9 +244,7 @@ function OtherComputers({ state }: { state: RemoteAccessState }) {
 
   return (
     <>
-      <Title hint={tr('Abra aqui o Argus de outro computador, com os projetos de lá.', 'Open here the Argus of another computer, with its projects.')}>
-        {tr('Outros computadores', 'Other computers')}
-      </Title>
+      <RemoteAccountHosts state={state} />
       <Group>
         {state.hosts.map((h) => (
           <Row
@@ -234,13 +265,12 @@ function OtherComputers({ state }: { state: RemoteAccessState }) {
         <Row
           label={tr('Conectar a outro Argus', 'Connect to another Argus')}
           description={tr(
-            'No outro computador, em Acesso remoto, clique em "Gerar código" e digite o código aqui.',
-            'On the other computer, under Remote access, click "Generate code" and type the code here.',
+            'Gere o código no outro computador, em Acesso remoto - Aparelhos conectados.',
+            'Generate the code on the other computer, under Remote access - Connected devices.',
           )}
-          below
         >
           <form
-            className="flex w-full gap-2"
+            className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               if (code.trim() && !busy) void pair();
@@ -253,14 +283,14 @@ function OtherComputers({ state }: { state: RemoteAccessState }) {
               autoCapitalize="characters"
               spellCheck={false}
               aria-label={tr('Código de pareamento', 'Pairing code')}
-              className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-1 font-mono text-[16px] text-text uppercase outline-none focus:border-accent"
+              className={`${FIELD} w-48 font-mono uppercase`}
             />
             <Button type="submit" variant="primary" disabled={!code.trim() || busy !== null}>
               {busy === 'pair' ? tr('Pareando…', 'Pairing…') : tr('Parear', 'Pair')}
             </Button>
           </form>
         </Row>
-        {error && <p className="border-b border-line py-3 text-[15px] text-red-400 last:border-0">{error}</p>}
+        {error && <p className="border-b border-dashed border-line py-3 text-[15px] text-red-400 last:border-0">{error}</p>}
       </Group>
     </>
   );

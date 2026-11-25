@@ -130,8 +130,11 @@ function text(value: unknown, max = 200): string {
 export type PairGrant = { hostId: string; hostName: string; deviceId: string; psk: Buffer };
 
 // No computador de casa, com o código que ele mostrou. `grant` cria o aparelho (com o nome e o tipo
-// que o outro mandou: sem tipo, outro Argus) e devolve o que entregar a ele.
-type Grant = (deviceName: string, psk: Buffer, kind: DeviceKind) => PairGrant;
+// que o outro mandou: sem tipo, outro Argus) e devolve o que entregar a ele. `ticket`: o bilhete da
+// conta do Argus, no pareamento pela conta (ver accountDevices.ts); erro no grant recusa o aparelho.
+export type Grant = (deviceName: string, psk: Buffer, kind: DeviceKind, ticket: string | null) => PairGrant | Promise<PairGrant>;
+
+const ticketOf = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 && v.length <= 200 ? v : null);
 
 async function pairAsHostSteps(raw: Link, code: PairCode, grant: Grant): Promise<PairGrant> {
   const io = splitLink(raw);
@@ -154,13 +157,13 @@ async function pairAsHostSteps(raw: Link, code: PairCode, grant: Grant): Promise
   const keys = directionKeys(result.key, 'pair');
   const link = secureLink(io.rest(), keys.hostToClient, keys.clientToHost);
   const hello = await nextJson(link);
-  const granted = grant(text(hello.name), devicePsk(result.key), hello.kind === 'web' ? 'web' : 'app');
+  const granted = await grant(text(hello.name), devicePsk(result.key), hello.kind === 'web' ? 'web' : 'app', ticketOf(hello.ticket));
   link.send(Buffer.from(JSON.stringify({ hostId: granted.hostId, hostName: granted.hostName, deviceId: granted.deviceId }), 'utf8'));
   return granted;
 }
 
-// No notebook, com o código digitado.
-async function pairAsClientSteps(raw: Link, code: PairCode, deviceName: string): Promise<PairGrant> {
+// No notebook, com o código digitado (ou o da conta, com o bilhete dela).
+async function pairAsClientSteps(raw: Link, code: PairCode, deviceName: string, ticket?: string): Promise<PairGrant> {
   const io = splitLink(raw);
   const spake = new Spake2('client', code);
   io.send({ t: 'pake', m: b64(spake.message) });
@@ -181,7 +184,7 @@ async function pairAsClientSteps(raw: Link, code: PairCode, deviceName: string):
   io.send({ t: 'confirm', c: b64(result.myConfirm) });
   const keys = directionKeys(result.key, 'pair');
   const link = secureLink(io.rest(), keys.clientToHost, keys.hostToClient);
-  link.send(Buffer.from(JSON.stringify({ name: deviceName }), 'utf8'));
+  link.send(Buffer.from(JSON.stringify({ name: deviceName, ...(ticket && { ticket }) }), 'utf8'));
   const granted = await nextJson(link);
   return { hostId: text(granted.hostId), hostName: text(granted.hostName), deviceId: text(granted.deviceId), psk: devicePsk(result.key) };
 }
@@ -277,6 +280,7 @@ async function closingOnError<T>(raw: Link, run: () => Promise<T>): Promise<T> {
 
 export const pairAsHost = (raw: Link, code: PairCode, grant: Grant) =>
   closingOnError(raw, () => pairAsHostSteps(raw, code, grant));
-export const pairAsClient = (raw: Link, code: PairCode, deviceName: string) => closingOnError(raw, () => pairAsClientSteps(raw, code, deviceName));
+export const pairAsClient = (raw: Link, code: PairCode, deviceName: string, ticket?: string) =>
+  closingOnError(raw, () => pairAsClientSteps(raw, code, deviceName, ticket));
 export const acceptSession = (raw: Link, pskOf: (deviceId: string) => Buffer | null) => closingOnError(raw, () => acceptSessionSteps(raw, pskOf));
 export const openSession = (raw: Link, deviceId: string, psk: Buffer) => closingOnError(raw, () => openSessionSteps(raw, deviceId, psk));

@@ -22,6 +22,8 @@ export function registerRemoteAccessIpc(): void {
   handle('remoteAccess:startPairing', () => remoteAccess().startPairing());
   handle('remoteAccess:pair', (_e, code) => remoteAccess().pair(code));
   handle('remoteAccess:open', (_e, hostId) => remoteAccess().open(hostId));
+  handle('remoteAccess:accountHosts', () => remoteAccess().accountHosts());
+  handle('remoteAccess:openAccountHost', (_e, hostId) => (typeof hostId === 'string' ? remoteAccess().openAccountHost(hostId) : null));
   on('remoteAccess:cancelPairing', () => remoteAccess().cancelPairing());
   on('remoteAccess:disconnect', (_e, id) => remoteAccess().disconnect(id));
   on('remoteAccess:removeDevice', (_e, id) => remoteAccess().removeDevice(id));

@@ -38,14 +38,37 @@ function ActiveRow({ chat, title }: { chat: ActiveChat; title?: string }) {
 // Quantas conversas recentes a aba mostra, agrupadas por dia.
 const RECENT_COUNT = 30;
 
-function RecentSections({ list, folderName, unread }: { list: RecentChat[]; folderName: (path: string) => string; unread: ReadonlySet<string> }) {
+// A partir de quantas respostas não vistas aparece "Marcar todas como lidas" (igual ao Argus).
+const MARK_ALL_FROM = 11;
+
+function RecentSections({
+  list,
+  folderName,
+  unread,
+  onMarkAll,
+}: {
+  list: RecentChat[]
+  folderName: (path: string) => string
+  unread: ReadonlySet<string>
+  onMarkAll: () => void
+}) {
   const groups = new Map<string, RecentChat[]>();
   for (const s of list) {
     const g = dayGroup(s.repliedAt || s.updatedAt);
     groups.set(g, [...(groups.get(g) ?? []), s]);
   }
   return [...groups].map(([group, chats], i) => (
-    <Section key={group} title={i === 0 ? `${tr('Recentes', 'Recent')} - ${group}` : group}>
+    <Section
+      key={group}
+      title={i === 0 ? `${tr('Recentes', 'Recent')} - ${group}` : group}
+      action={
+        i === 0 && unread.size >= MARK_ALL_FROM ? (
+          <button className="text-[13px] text-accent" onClick={onMarkAll}>
+            {tr('Marcar todas como lidas', 'Mark all as read')}
+          </button>
+        ) : undefined
+      }
+    >
       {chats.map((s) => (
         <Row
           key={s.id}
@@ -82,7 +105,7 @@ export function HomeScreen() {
   const [query, setQuery] = useState('');
   const searching = query.trim().length > 0;
   const folderName = (path: string) => folders.find((f) => f.path === path)?.name ?? baseName(path);
-  const unread = useUnread().ids;
+  const { ids: unread, markAllRead } = useUnread();
   const empty = loaded && !active.length && !interrupted.list.length && !recent.length;
 
   return (
@@ -145,7 +168,7 @@ export function HomeScreen() {
             </Section>
           )}
 
-          <RecentSections list={recent} folderName={folderName} unread={unread} />
+          <RecentSections list={recent} folderName={folderName} unread={unread} onMarkAll={markAllRead} />
           {empty && (
             <Section>
               <Empty>{tr('Nenhuma conversa ainda. Abra um projeto para começar.', 'No chats yet. Open a project to start.')}</Empty>

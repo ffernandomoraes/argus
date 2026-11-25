@@ -1,18 +1,22 @@
-import { app, Notification, powerSaveBlocker } from 'electron';
+import { app, powerSaveBlocker } from 'electron';
 import type { RemoteAccessState, RemotePairResult } from '@argus/shared/remote';
-import { loadAppSettings } from '../appSettings';
 import { tr } from '../i18n';
 import { formatPairCode, newPairCode, parsePairCode, type PairCode } from './crypto';
-import { acceptSession, HandshakeError, openSession, pairAsClient, pairAsHost, PAIR_WAIT_MS } from './handshake';
+import { acceptSession, HandshakeError, openSession, pairAsClient, pairAsHost, PAIR_WAIT_MS, type Grant } from './handshake';
 import { RemoteClient } from './client';
 import { RemoteHost, type HostSession } from './host';
 import type { Link } from './link';
 import { sendPush, type PushPayload } from './push';
-import { markPhoneChat, phoneDevicesOf } from './phoneChats';
+import { phoneDevicesOf } from './phoneChats';
 import { connectPairing, connectToHost, HostRelay, RelayError, relayWebUrl } from './relay';
 import { loadStoreWhenReady } from './loadStore';
 import { freshRemoteStore, newDeviceId, saveRemoteStore, type PairedDevice, type RemoteStore } from './store';
 import { WebHostSession } from './webHost';
+import { acceptWebDevice } from './webDevice';
+import { notifyConnected } from './connectedNotice';
+import type { AccountBridge } from './accountRemote';
+import { AccountHosting } from './accountHosting';
+import type { AccountRemoteHost } from '@argus/shared/remote';
 
 // O acesso remoto deste computador, dos dois lados:
 // - de casa (hosting): fica ligado à ponte, aceita os aparelhos pareados e mostra o código de
@@ -49,6 +53,22 @@ export class RemoteAccess {
   // Bloqueio do sono do sistema enquanto hospeda (ver keepAwake); separado do app/keepAwake.ts, que
   // segura enquanto alguma conversa trabalha.
   private awake: number | null = null;
+  // Conta do Argus aberta neste computador: a vaga para os aparelhos dela e os pareados por ela.
+  readonly accountSide = new AccountHosting({
+    hostId: () => this.store.hostId,
+    hosting: () => !!this.relay,
+    create: (name, psk, kind, accountSession) => this.createDevice(name, psk, kind, accountSession),
+    changed: () => this.changed(),
+    devices: () => this.store.devices,
+    drop: (id) => this.dropDevice(id),
+    removals: {
+      get: () => this.store.accountRemovals ?? [],
+      set: (list) => {
+        this.store.accountRemovals = list;
+        this.save();
+      },
+    },
+  });
 
   constructor(private deps: Deps) {
     this.host = new RemoteHost(deps.hostInfo);
@@ -95,6 +115,7 @@ export class RemoteAccess {
         : null,
       pairingResult: this.pairingResult,
       hosts: this.store.hosts.map((h) => ({ hostId: h.hostId, name: h.name, pairedAt: h.pairedAt, open: this.clients.has(h.hostId) })),
+      account: this.accountSide.state(),
     };
   }
 
@@ -142,12 +163,14 @@ export class RemoteAccess {
     this.relay = new HostRelay(this.store.hostId, this.store.hostKey, (link, authenticated) => void this.incoming(link, authenticated), () => this.changed());
     this.relay.start();
     this.syncAwake();
+    this.accountSide.sync();
   }
 
   private stopHosting(): void {
     this.relay?.stop();
     this.relay = null;
     this.syncAwake();
+    this.accountSide.sync();
     this.host.closeAll();
     for (const sessions of this.live.values()) for (const s of [...sessions]) s.close();
     this.cancelPairing();
@@ -167,8 +190,9 @@ export class RemoteAccess {
     }
     authenticated();
     const device = this.store.devices.find((d) => d.id === session.deviceId);
-    if (!device) return session.link.close();
-    const quiet = !!device.lastSeen && Date.now() - device.lastSeen < QUIET_RECONNECT_MS;
+    if (!device || !(await this.accountSide.devices.allowLink(device, session.link))) return session.link.close();
+    const firstTime = !device.lastSeen;
+    const quiet = !firstTime && Date.now() - device.lastSeen! < QUIET_RECONNECT_MS;
     const hostSession = device.kind === 'web' ? this.acceptWeb(session.link, device) : this.host.accept(session.link);
     const sessions = this.live.get(device.id) ?? new Set<HostSession | WebHostSession>();
     sessions.add(hostSession);
@@ -182,37 +206,13 @@ export class RemoteAccess {
       this.save();
       this.changed();
     });
-    if (!quiet) this.notifyConnected(device.name);
+    if (!quiet) notifyConnected(device.name, firstTime);
     this.changed();
   }
 
-  // O app do celular: mensagens em JSON e só a lista curta de canais (ver webHost.ts).
+  // O app do celular: mensagens em JSON e só a lista curta de canais (ver webDevice.ts).
   private acceptWeb(link: Link, device: PairedDevice): WebHostSession {
-    return new WebHostSession(link, {
-      info: () => ({ ...this.deps.hostInfo(), pushKey: this.store.pushKeys.publicKey }),
-      push: (sub) => {
-        if (sub) device.push = sub;
-        else delete device.push;
-        this.save();
-      },
-      pushTest: async () => {
-        const sub = device.push;
-        if (!sub) return 'none';
-        const result = await sendPush(
-          sub,
-          { title: 'Argus', body: tr('Notificação de teste: está funcionando.', 'Test notification: it works.'), url: '#/settings', tag: 'argus-test' },
-          this.store.pushKeys,
-          relayWebUrl(),
-        );
-        if (result === 'gone' && device.push === sub) {
-          delete device.push;
-          this.save();
-        }
-        return result;
-      },
-      interacted: (keys) => markPhoneChat(device.id, keys),
-      onEnd: () => {},
-    });
+    return acceptWebDevice(link, device, { info: () => this.deps.hostInfo(), pushKeys: () => this.store.pushKeys, save: () => this.save() });
   }
 
   // Algum app do celular aberto na tela agora (dados de uso: tempo no celular).
@@ -245,14 +245,6 @@ export class RemoteAccess {
         }
       });
     }
-  }
-
-  private notifyConnected(name: string): void {
-    if (!Notification.isSupported() || !loadAppSettings().notifications) return;
-    new Notification({
-      title: tr(`${name} entrou no Argus`, `${name} connected to Argus`),
-      body: tr('Acesso remoto: este computador está sendo usado de outro.', 'Remote access: this computer is being used from another one.'),
-    }).show();
   }
 
   // Código novo para parear um aparelho. Liga a hospedagem junto: sem ela, o aparelho pareado não
@@ -291,12 +283,7 @@ export class RemoteAccess {
     pairing.link = link;
     this.changed();
     try {
-      const granted = await pairAsHost(link, code, (deviceName, psk, kind) => {
-        const device: PairedDevice = { id: newDeviceId(), name: deviceName.slice(0, 80), psk: psk.toString('base64'), pairedAt: Date.now(), kind };
-        this.store.devices = [...this.store.devices, device];
-        this.save();
-        return { hostId: this.store.hostId, hostName: this.deps.hostName(), deviceId: device.id, psk };
-      });
+      const granted = await pairAsHost(link, code, this.grantDevice);
       const device = this.store.devices.find((d) => d.id === granted.deviceId);
       this.pairingResult = { ok: true, name: device?.name ?? '' };
     } catch (err) {
@@ -308,6 +295,40 @@ export class RemoteAccess {
       if (this.pairing === pairing) this.pairing = null;
       this.changed();
     }
+  }
+
+  // Aparelho novo pareado pelo código mostrado aqui (o da conta passa por accountSide, preso à sessão
+  // da conta dele: `accountSession`).
+  private readonly grantDevice: Grant = (deviceName, psk, kind) => this.createDevice(deviceName, psk, kind);
+
+  private createDevice(deviceName: string, psk: Buffer, kind: PairedDevice['kind'], accountSession?: string) {
+    const device: PairedDevice = { id: newDeviceId(), name: deviceName.slice(0, 80), psk: psk.toString('base64'), pairedAt: Date.now(), kind, accountSession };
+    this.store.devices = [...this.store.devices, device];
+    this.save();
+    return { hostId: this.store.hostId, hostName: this.deps.hostName(), deviceId: device.id, psk };
+  }
+
+  // --- Conta do Argus ---
+
+  // A conta abriu ou fechou neste computador (nula: fechou).
+  setAccount(bridge: AccountBridge | null): void {
+    if (this.accountSide.setAccount(bridge)) this.changed();
+  }
+
+  // A sala deste computador, se os aparelhos da conta conseguem entrar nele agora.
+  accountHostId(): string | null {
+    return this.accountSide.hostId();
+  }
+
+  // Os outros computadores da conta com o acesso ligado. Nulo: sem conta ou sem resposta.
+  accountHosts(): Promise<AccountRemoteHost[] | null> {
+    return this.accountSide.hosts();
+  }
+
+  // Abre um computador da conta (pareia com o código dele antes, se precisar).
+  openAccountHost(hostId: string): Promise<string | null> {
+    if (this.store.hosts.some((h) => h.hostId === hostId)) return this.open(hostId);
+    return this.accountSide.open(hostId, { pair: (code, ticket) => this.pair(code, ticket), open: (id) => this.open(id) });
   }
 
   cancelPairing(): void {
@@ -328,7 +349,14 @@ export class RemoteAccess {
     this.changed();
   }
 
+  // Removido aqui: pareado pela conta, sai da conta também (ver accountDevices.ts).
   removeDevice(id: string): void {
+    const device = this.store.devices.find((d) => d.id === id);
+    if (device) this.accountSide.devices.forget(device);
+    this.dropDevice(id);
+  }
+
+  private dropDevice(id: string): void {
     this.store.devices = this.store.devices.filter((d) => d.id !== id);
     this.save();
     for (const s of [...(this.live.get(id) ?? [])]) s.kick();
@@ -338,12 +366,12 @@ export class RemoteAccess {
 
   // --- Notebook ---
 
-  async pair(text: string): Promise<RemotePairResult> {
+  async pair(text: string, ticket?: string): Promise<RemotePairResult> {
     const code = parsePairCode(text);
     if (!code) return { ok: false, error: tr('O código tem 5 letras e números, um hífen e 6 números, como K7Q4M-913776.', 'The code has 5 letters and digits, a hyphen and 6 digits, like K7Q4M-913776.') };
     try {
       const link = await connectPairing(code.nameplate, 'client');
-      const granted = await pairAsClient(link, code, this.deps.hostName()).finally(() => link.close());
+      const granted = await pairAsClient(link, code, this.deps.hostName(), ticket).finally(() => link.close());
       // Pareado de novo com o mesmo computador: vale o novo.
       this.store.hosts = [
         ...this.store.hosts.filter((h) => h.hostId !== granted.hostId),
@@ -400,6 +428,7 @@ export class RemoteAccess {
   }
 
   shutdown(): void {
+    this.accountSide.shutdown();
     this.relay?.stop();
     for (const c of this.clients.values()) c.close();
   }

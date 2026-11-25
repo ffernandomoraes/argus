@@ -72,6 +72,27 @@ describe('pareamento pela ligação', () => {
     expect(cg.psk.equals(hg.psk)).toBe(true);
   });
 
+  it('o bilhete da conta chega ao computador de casa, e o grant que recusa não pareia ninguém', async () => {
+    const [h, c] = memoryLinks();
+    const seen: (string | null)[] = [];
+    const host = pairAsHost(h, CODE, async (name, psk, _kind, ticket) => {
+      seen.push(ticket);
+      return { hostId: 'room-1', hostName: 'casa', deviceId: `dev-${name}`, psk };
+    });
+    await Promise.all([host, pairAsClient(c, CODE, 'notebook', 'bilhete-1')]);
+    expect(seen).toEqual(['bilhete-1']);
+
+    const [h2, c2] = memoryLinks();
+    const [refused, client] = await Promise.allSettled([
+      pairAsHost(h2, CODE, async () => {
+        throw new HandshakeError('invalid');
+      }),
+      pairAsClient(c2, CODE, 'notebook'),
+    ]);
+    expect(refused.status).toBe('rejected');
+    expect(client.status).toBe('rejected');
+  });
+
   it('com o código errado, nenhum lado pareia', async () => {
     const [h, c] = memoryLinks();
     const [host, client] = await Promise.allSettled([

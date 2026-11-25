@@ -3,12 +3,13 @@ import { AppBadge } from './lib/appBadge';
 import { HostProvider } from './lib/host';
 import { setCacheScope } from './lib/cache';
 import { ConnectionOverlay } from './ui/ConnectionOverlay';
-import { parseRoute, useHash } from './lib/router';
+import { parseRoute, replace, useHash } from './lib/router';
 import { HostConnection, loadPairedHost, type PairedHost } from './net/connection';
 import { ChatScreen } from './screens/ChatScreen';
 import { FolderScreen } from './screens/FolderScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PairScreen } from './screens/PairScreen';
+import { AccountReturn } from './screens/AccountReturn';
 import { InstallScreen } from './screens/InstallScreen';
 import { needsInstall, syncPush } from './lib/push';
 import { NotificationsStep, usePushStep } from './screens/NotificationsStep';
@@ -99,6 +100,14 @@ export function App() {
     navigator.serviceWorker?.addEventListener('message', onMessage);
     return () => navigator.serviceWorker?.removeEventListener('message', onMessage);
   }, []);
+  // Volta do login da conta: vem antes de tudo (até de pedir para instalar), para o código não se perder.
+  if (route.name === 'account' || route.name === 'accountError')
+    return (
+      <>
+        <StatusBarCover />
+        <AccountReturn code={route.name === 'account' ? route.code : undefined} error={route.name === 'accountError' ? route.error : undefined} />
+      </>
+    );
   // No celular, só roda instalado (tela cheia, armazenamento e notificações de app); no computador,
   // também no navegador. No pnpm mobile:dev, roda no navegador para ver as mudanças na hora.
   if (needsInstall() && !import.meta.env.DEV)
@@ -108,12 +117,18 @@ export function App() {
         <InstallScreen code={route.name === 'pair' ? route.code : undefined} />
       </>
     );
-  // Um QR code novo pareia de novo (outro computador, ou este depois de remover o aparelho).
+  // Um QR code novo pareia de novo (outro computador, ou este depois de remover o aparelho). Já
+  // pareado, a tela pergunta antes de trocar; recusar volta para o computador de agora.
   if (!host || route.name === 'pair')
     return (
       <>
         <StatusBarCover />
-        <PairScreen initialCode={route.name === 'pair' ? route.code : undefined} onPaired={() => setHost(loadPairedHost())} />
+        <PairScreen
+          initialCode={route.name === 'pair' ? route.code : undefined}
+          current={host?.hostName}
+          onPaired={() => setHost(loadPairedHost())}
+          onKeep={host ? () => replace({ name: 'home' }) : undefined}
+        />
       </>
     );
   return (

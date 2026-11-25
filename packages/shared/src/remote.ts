@@ -30,6 +30,9 @@ export type RemoteRelayStatus = 'connecting' | 'online' | 'offline';
 // web: o app do celular, pelo navegador (os outros são Argus instalados).
 export type RemoteDevice = { id: string; name: string; pairedAt: number; lastSeen: number | null; connected: boolean; web: boolean };
 export type RemoteKnownHost = { hostId: string; name: string; pairedAt: number; open: boolean };
+// Outro computador da mesma conta do Argus com o acesso ligado. available: está com o código
+// aberto agora (desligado ou sem internet, não).
+export type AccountRemoteHost = { hostId: string; name: string; platform: string; available: boolean };
 
 export type RemoteAccessState = {
   // Este computador aceita aparelhos pareados (o "de casa").
@@ -47,6 +50,9 @@ export type RemoteAccessState = {
   pairingResult: { ok: true; name: string } | { ok: false; error: string } | null
   // Computadores que este pode abrir.
   hosts: RemoteKnownHost[]
+  // Conta do Argus: signedOut (sem conta neste computador), ou se este computador está aceitando os
+  // aparelhos da conta sem código (o acesso ligado e a conta aberta).
+  account: 'signedOut' | 'off' | 'on'
 };
 
 export type RemotePairResult = { ok: true; hostId: string; name: string } | { ok: false; error: string };

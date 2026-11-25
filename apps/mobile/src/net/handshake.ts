@@ -135,8 +135,9 @@ async function closingOnError<T>(raw: Link, run: () => Promise<T>): Promise<T> {
   }
 }
 
-// Pareia este navegador com o código mostrado no computador de casa.
-export const pairAsClient = (raw: Link, code: PairCode, deviceName: string): Promise<PairGrant> =>
+// Pareia este navegador com o código mostrado no computador de casa. `ticket`: o bilhete da conta do
+// Argus, no pareamento pela conta (prende o pareamento à sessão da conta deste celular).
+export const pairAsClient = (raw: Link, code: PairCode, deviceName: string, ticket?: string): Promise<PairGrant> =>
   closingOnError(raw, async () => {
     const io = splitLink(raw);
     const spake = new Spake2Client(code);
@@ -155,7 +156,7 @@ export const pairAsClient = (raw: Link, code: PairCode, deviceName: string): Pro
     const keys = await directionKeys(result.key, 'pair');
     const link = secureLink(io.rest(), keys.clientToHost, keys.hostToClient);
     // kind: o computador de casa trata este aparelho como o app do celular (ver webHost.ts).
-    link.send(new TextEncoder().encode(JSON.stringify({ name: deviceName, kind: 'web' })));
+    link.send(new TextEncoder().encode(JSON.stringify({ name: deviceName, kind: 'web', ...(ticket && { ticket }) })));
     const granted = await nextJson(link);
     return { hostId: text(granted.hostId), hostName: text(granted.hostName), deviceId: text(granted.deviceId), psk: await devicePsk(result.key) };
   });

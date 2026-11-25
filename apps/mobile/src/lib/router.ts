@@ -9,6 +9,8 @@ import { useSyncExternalStore } from 'react';
 // #/usage                uso do Claude em detalhe
 // #/add-folder/<board>   adicionar uma pasta ao workspace
 // #pair=<código>         pareamento vindo do QR code
+// #account=<código>      volta do login da conta do Argus (ver net/account.ts)
+// #account-error=<motivo> o login não deu certo
 
 export type Route =
   | { name: 'home' }
@@ -18,11 +20,17 @@ export type Route =
   | { name: 'settings' }
   | { name: 'usage' }
   | { name: 'addFolder'; board: string }
-  | { name: 'pair'; code: string };
+  | { name: 'pair'; code: string }
+  | { name: 'account'; code: string }
+  | { name: 'accountError'; error: string };
 
 export function parseRoute(hash: string): Route {
   const pair = /^#pair=([^&]+)/.exec(hash);
   if (pair) return { name: 'pair', code: decodeURIComponent(pair[1]) };
+  const account = /^#account=([\w-]+)/.exec(hash);
+  if (account) return { name: 'account', code: account[1] };
+  const accountError = /^#account-error=(\w+)/.exec(hash);
+  if (accountError) return { name: 'accountError', error: accountError[1] };
   const parts = hash.replace(/^#\/?/, '').split('/').map((p) => {
     try {
       return decodeURIComponent(p);
@@ -55,6 +63,9 @@ export function routeHash(route: Route): string {
       return `#/add-folder/${encodeURIComponent(route.board)}`;
     case 'pair':
       return `#pair=${encodeURIComponent(route.code)}`;
+    case 'account':
+    case 'accountError':
+      return '#/';
     default:
       return '#/';
   }

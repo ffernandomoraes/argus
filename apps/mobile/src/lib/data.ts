@@ -63,7 +63,7 @@ export function useInterrupted(): { list: InterruptedChat[]; dismiss: (id: strin
 
 // As janelas do Argus contam quais conversas terminaram sem ninguém olhar; abrir no celular ou no
 // Argus tira das duas listas (markRead avisa as janelas).
-export function useUnread(): { ids: ReadonlySet<string>; markRead: (id: string) => void } {
+export function useUnread(): { ids: ReadonlySet<string>; markRead: (id: string) => void; markAllRead: () => void } {
   const { conn } = useHost();
   // Argus antigo não tem o canal: sem bolinhas verdes.
   const r = useRemote((c) => c.call('chat:unreadList').catch(() => []), [], 'unread');
@@ -71,7 +71,8 @@ export function useUnread(): { ids: ReadonlySet<string>; markRead: (id: string) 
   useEffect(() => conn.on('chat:unreadList', (list) => setLive(list)), [conn]);
   useEffect(() => setLive(null), [r.data]);
   const list = live ?? r.data ?? [];
-  return { ids: new Set(list.map((c) => c.id)), markRead: (id) => void conn.call('chat:markRead', id).catch(() => {}) };
+  const markRead = (id: string) => void conn.call('chat:markRead', id).catch(() => {});
+  return { ids: new Set(list.map((c) => c.id)), markRead, markAllRead: () => list.forEach((c) => markRead(c.id)) };
 }
 
 // --- Projetos (as pastas dos workspaces do canvas) ---

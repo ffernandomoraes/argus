@@ -16,9 +16,12 @@ import {
 } from './allWorkspaces';
 import { displayPath } from './factory';
 import { untildify } from '../platform';
-import { useIsUnread, useSessions } from './sessionsStore';
+import { markAllAsRead, useIsUnread, useSessions } from './sessionsStore';
 import { StatusDot } from './StatusBadge';
 import { tr } from '../i18n';
+
+// A partir de quantos concluídos aparece o botão de marcar todos como lidos.
+const MARK_ALL_FROM = 11;
 
 // No canto esquerdo da barra de baixo, enquanto alguma conversa do app (de qualquer workspace) trabalha, espera você, foi
 // interrompida pelo Argus fechando (bolinha vermelha), terminou sem você ver (bolinha verde) ou já respondeu e deixou
@@ -92,6 +95,16 @@ export const RunningIndicator = memo(function RunningIndicator({
                 <BackgroundRow key={c.key} chat={c} onOpen={() => pick(c.cwd, c.sessionId ?? c.key)} />
               ))}
             </ul>
+            {done >= MARK_ALL_FROM && (
+              <div className="mt-1 border-t border-line pt-1">
+                <button
+                  onClick={() => markAllAsRead(finishedOnly.map((c) => c.id))}
+                  className={`${MENU_ROW} ${MENU_HOVER} justify-center text-muted`}
+                >
+                  {tr('Marcar todos como lidos', 'Mark all as read')}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Presence>

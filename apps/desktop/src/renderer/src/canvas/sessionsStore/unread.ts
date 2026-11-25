@@ -81,6 +81,11 @@ export function markAsRead(id: string): void {
   markRead([id]);
 }
 
+// "Marcar todas como lidas" (lista de concluídos da barra de baixo).
+export function markAllAsRead(ids: Iterable<string>): void {
+  markRead(ids);
+}
+
 export const isUnread = (id: string): boolean => unread.get().has(id);
 
 // Lista nova de uma pasta: conversa que estava trabalhando (ou esperando você) e parou, sem

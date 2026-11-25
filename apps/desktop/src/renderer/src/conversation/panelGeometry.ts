@@ -11,7 +11,7 @@ export type Edges = { left?: boolean; right?: boolean; top?: boolean; bottom?: b
 export const PANEL_MARGIN = 8;
 const MARGIN = PANEL_MARGIN;
 // Barra de título transparente no topo da janela (TitleBar): os painéis começam abaixo dela.
-export const TITLE_BAR_HEIGHT = 34;
+export const TITLE_BAR_HEIGHT = 40;
 export const PANEL_TOP = TITLE_BAR_HEIGHT + MARGIN;
 // Barra de baixo (BottomBar), também fora do canvas: os painéis param acima dela.
 export const BOTTOM_BAR_HEIGHT = 30;

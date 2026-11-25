@@ -65,7 +65,8 @@ export const TitleBar = memo(function TitleBar({
       style={{ height: TITLE_BAR_HEIGHT }}
       className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line ${IS_REMOTE || beingAccessed ? 'bg-remote-bar' : 'bg-surface'} hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
     >
-      <div className="absolute inset-y-0 flex items-center" style={{ left: 12 + controls.left }}>
+      {/* No Mac, afastado dos semáforos; fora do Mac, colado na ponta esquerda. */}
+      <div className="absolute inset-y-0 flex items-center" style={{ left: IS_MAC ? controls.left + 24 : 8 }}>
         <BoardSwitcher confirm={confirm} align="start" />
       </div>
       <span className="text-[13px] font-semibold text-muted">Argus</span>
@@ -108,16 +109,16 @@ export const TitleBar = memo(function TitleBar({
               <NavButton
                 label={uiHidden ? tr('Mostrar interface', 'Show interface') : tr('Ocultar interface', 'Hide interface')}
                 shortcut={'⌘ \\'}
-                compact
+                medium
                 selected={uiHidden}
                 side="bottom-end"
                 onClick={onToggleUi}
               >
-                {uiHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                {uiHidden ? <Eye size={16} /> : <EyeOff size={16} />}
               </NavButton>
               {!IS_REMOTE && (
-                <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" compact side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
-                <AppWindow size={14} />
+                <NavButton label={tr('Nova janela do canvas', 'New canvas window')} shortcut="⇧⌘N" medium side="bottom-end" onClick={() => window.api.canvas.newWindow()}>
+                <AppWindow size={16} />
               </NavButton>
               )}
             </span>
@@ -125,8 +126,8 @@ export const TitleBar = memo(function TitleBar({
             <UpdateStatus version={updates.version} {...status} />
             {/* Novidades à direita da versão: o que mudou nela e nas anteriores. */}
             <span className="no-drag flex">
-              <NavButton label={tr('Novidades', "What's new")} compact side="bottom-end" onClick={() => setNotesOpen(true)}>
-                <ScrollText size={14} />
+              <NavButton label={tr('Novidades', "What's new")} medium side="bottom-end" onClick={() => setNotesOpen(true)}>
+                <ScrollText size={16} />
               </NavButton>
             </span>
           </>

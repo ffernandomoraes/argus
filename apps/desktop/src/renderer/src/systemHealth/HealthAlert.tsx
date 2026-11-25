@@ -32,9 +32,9 @@ export function HealthAlert() {
       {state && severity && (
         // Fora da área que arrasta a janela, senão o botão não recebe o mouse.
         <span className="no-drag flex">
-          <NavButton label={headline(state)} compact side="bottom-end" onClick={show}>
+          <NavButton label={headline(state)} medium side="bottom-end" onClick={show}>
             <TriangleAlert
-              size={14}
+              size={16}
               className={`${severity === 'critical' ? 'text-danger' : 'text-needs-you'} ${fresh ? 'motion-safe:animate-pulse' : ''}`}
             />
           </NavButton>

@@ -6,9 +6,9 @@ import { linuxIcon } from './linuxDesktop';
 // Moldura das janelas: barra de título própria, os botões do sistema na cor dela e os atalhos que,
 // sem menu, o Windows não teria.
 
-// Altura da barra de título do canvas (TITLE_BAR_HEIGHT, em conversation/panelGeometry.ts). A janela
-// da conversa segue com a altura de antes, a do cabeçalho dela.
-const TITLE_BAR_HEIGHT = { canvas: 34, conversation: 40 };
+// Altura da barra de título do canvas (TITLE_BAR_HEIGHT, em conversation/panelGeometry.ts). Hoje a
+// mesma da janela da conversa (a do cabeçalho dela), para caber os controles no tamanho novo.
+const TITLE_BAR_HEIGHT = { canvas: 40, conversation: 40 };
 
 // Semáforos do Mac na janela do canvas, no meio da barra de título. Eles têm 14 pt de altura do
 // macOS 26 (Darwin 25) em diante e 12 pt antes; o topo sai da sobra dividida entre cima e baixo.
@@ -59,7 +59,7 @@ export function setWindowKind(win: BrowserWindow, kind: WindowKind): void {
   windowKinds.set(win, kind);
 }
 
-// Janela do app (canvas ou conversa). A do mascote não é: não tem a moldura do app.
+// Janela do app (canvas ou conversa).
 export function isAppWindow(win: BrowserWindow): boolean {
   return windowKinds.has(win);
 }

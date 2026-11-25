@@ -11,6 +11,7 @@ export function NavButton({
   selected,
   primary,
   compact,
+  medium,
   side = 'right',
   children,
 }: {
@@ -22,6 +23,8 @@ export function NavButton({
   primary?: boolean
   // Versão menor, para barras discretas (ViewBar). A largura cresce com o conteúdo, como o "88%".
   compact?: boolean
+  // Entre os dois, para a barra de título.
+  medium?: boolean
   side?: TooltipSide
   children: ReactNode
 }) {
@@ -36,7 +39,7 @@ export function NavButton({
     <button
       aria-label={label}
       onClick={onClick}
-      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-md' : 'size-8 rounded-md'} ${tone}`}
+      className={`group relative flex items-center justify-center ${compact ? 'h-6 min-w-6 rounded-md' : medium ? 'size-7 rounded-md' : 'size-8 rounded-md'} ${tone}`}
     >
       {children}
       {!active && <Tooltip label={label} shortcut={shortcut} side={side} />}

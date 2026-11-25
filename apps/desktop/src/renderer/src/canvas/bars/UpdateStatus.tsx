@@ -14,7 +14,7 @@ export function UpdateStatus({ version, ready, progress }: UpdateProgress & { ve
           title={tr(`Reinicia o Argus na versão ${ready}`, `Restarts Argus on version ${ready}`)}
           className="no-drag flex items-center gap-1.5 rounded-md border border-line bg-fill px-2.5 py-0.5 text-[12px] text-text hover:bg-surface-2"
         >
-          <CircleArrowUp size={12} className="text-running" />
+          <CircleArrowUp size={14} className="text-running" />
           {tr(`Atualizar para ${ready}`, `Update to ${ready}`)}
         </button>
       )}

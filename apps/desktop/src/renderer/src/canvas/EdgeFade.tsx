@@ -17,30 +17,33 @@ const PLACE: Record<Side, CSSProperties> = {
   right: { top: TITLE_BAR_HEIGHT, bottom: BOTTOM_BAR_HEIGHT, right: 0, width: FADE_SIZE },
 };
 
-// Bordas do canvas esfumaçadas: desfoque e a cor do fundo, fortes na beirada e sumindo para o
-// centro. Os blocos que passam por baixo da navegação, do zoom e dos limites (todos nos cantos)
-// deixam de brigar com eles. Fica acima dos blocos (camada 4 do React Flow) e abaixo dos painéis
-// (camada 5); não pega o mouse. São quatro faixas em vez de uma camada na tela toda, para o
-// desfoque ser calculado só nas bordas ao arrastar o canvas.
+// Quanto da cor do fundo em cada ponto da faixa, da beirada (0%) ao centro (100%): cai rápido no
+// começo e devagar no fim, a mesma curva que a máscara dava antes (65% x o quadrado da distância).
+const FADE_STOPS: [opacity: number, at: number][] = [
+  [65, 0],
+  [36.6, 25],
+  [16.3, 50],
+  [4.1, 75],
+  [0, 100],
+];
+
+const fade = (toward: string): string =>
+  `linear-gradient(${toward}, ${FADE_STOPS.map(([opacity, at]) => `color-mix(in srgb, var(--color-canvas) ${opacity}%, transparent) ${at}%`).join(', ')})`;
+
+// Bordas do canvas esfumaçadas: a cor do fundo, forte na beirada e sumindo para o centro. Os
+// blocos que passam por baixo da navegação, do zoom e dos limites (todos nos cantos) deixam de
+// brigar com eles. Fica acima dos blocos (camada 4 do React Flow) e abaixo dos painéis (camada 5);
+// não pega o mouse.
+// Só a cor, sem desfoque de fundo (backdrop-filter) nem máscara: com o desfoque, a janela inteira
+// piscava de vez em quando por um quadro (ao enviar mensagem ditada, ao voltar para a janela). No
+// quadro gravado, o retângulo destas faixas mais a sobra do desfoque era desenhado por cima do
+// painel da conversa, do Menu e da barra de baixo (2026-11-24).
 export function EdgeFade() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[4] overflow-hidden">
-      {(Object.keys(PLACE) as Side[]).map((side) => {
-        const mask = `linear-gradient(${TOWARD[side]}, black, transparent)`;
-        return (
-          <div
-            key={side}
-            className="absolute"
-            style={{
-              ...PLACE[side],
-              background: `linear-gradient(${TOWARD[side]}, color-mix(in srgb, var(--color-canvas) 65%, transparent), transparent)`,
-              backdropFilter: 'blur(3px)',
-              maskImage: mask,
-              WebkitMaskImage: mask,
-            }}
-          />
-        );
-      })}
+      {(Object.keys(PLACE) as Side[]).map((side) => (
+        <div key={side} className="absolute" style={{ ...PLACE[side], background: fade(TOWARD[side]) }} />
+      ))}
     </div>
   );
 }

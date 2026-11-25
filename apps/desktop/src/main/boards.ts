@@ -174,6 +174,11 @@ export class Boards {
     this.hubs.get(id)?.sync(nodes, null);
   }
 
+  // Todos os workspaces com os blocos salvos, abertos ou fechados (o que vai para a conta do Argus).
+  everything(): { id: string; name: string; nodes: unknown }[] {
+    return this.entries.map((e) => ({ id: e.id, name: e.name, nodes: this.hubs.get(e.id)?.load() ?? null }));
+  }
+
   // Fechando o app: grava o que estiver pendente em cada canvas.
   flush(): void {
     for (const hub of this.hubs.values()) hub.flush();

@@ -52,6 +52,11 @@ export type ProjectData = {
   // Recolhida: embaixo da pasta ficam só as conversas rodando ou esperando você; as tarefas em
   // paralelo dela e, no espaço de trabalho, a lista das pastas somem.
   collapsed?: boolean
+  // Trazida de outro computador pela conta do Argus e não achada aqui: o aviso de pasta não
+  // encontrada explica isso em vez de "renomeada, movida ou apagada".
+  imported?: boolean
+  // Repositório da pasta trazida e não achada: o card oferece "Clonar…" (ver actions/relocateFolder.ts).
+  cloneUrl?: string
   // Tarefa isolada (git worktree): card filho da pasta `of`, abaixo dela e ligado por uma linha.
   // Anda e recolhe junto com ela. `path` é a pasta da cópia (~/.argus/worktrees/<repo>/<tarefa>).
   worktree?: WorktreeLink

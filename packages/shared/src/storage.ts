@@ -15,6 +15,15 @@ export type StorageSettings = {
 
 export const STORAGE_DEFAULTS: StorageSettings = { conversationDays: 90, scratchDays: 7, mediaDays: 60 };
 
+// Os prazos que a aba Armazenamento oferece. Também são os únicos aceitos da conta do Argus: um prazo
+// curto vindo de fora apagaria o histórico do Claude Code (o das conversas vai para o settings.json
+// dele).
+export const STORAGE_DAY_OPTIONS: Record<keyof StorageSettings, readonly number[]> = {
+  conversationDays: [30, 60, 90, 180, 365],
+  scratchDays: [1, 3, 7, 14],
+  mediaDays: [30, 60, 90, 180],
+};
+
 // O que uma limpeza liberou.
 export type CleanResult = { at: number; freedBytes: number; scratchRemoved: number; conversationsTrimmed: number };
 

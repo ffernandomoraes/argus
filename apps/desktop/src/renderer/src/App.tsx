@@ -8,6 +8,7 @@ import { setPreferences, usePreference } from './settings/preferences';
 import { IS_REMOTE } from './remote';
 import { useInterfaceZoom } from './theme/useInterfaceZoom';
 import { useTheme } from './theme/useTheme';
+import { usePrefsSync } from './account/usePrefsSync';
 import { Presence } from './motion';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { RequiredUpdateModal } from './updates/RequiredUpdateModal';
@@ -39,6 +40,8 @@ export function App() {
   useEffect(() => {
     if (!IS_REMOTE) window.api.chat.sharePreferences({ conversation, suggestions });
   }, [conversation, suggestions]);
+  // Preferências que vão para a conta do Argus e as que vêm dela (outro computador).
+  usePrefsSync(theme.preference, theme.setPreference);
   const providers = useProviders();
   // Falta configurar: sem o Claude Code pronto (instalado e com uma conta logada) e sem outro agente
   // conectado. Com outra conta logada, a principal sem login aparece só em Configurações.

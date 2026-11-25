@@ -17,11 +17,12 @@ type Parts = {
   openSettings: () => void
   newGroupConversation: (groupId: string) => void
   relocateFolder: (id: string) => void
+  cloneFolder: (id: string) => Promise<void>
 };
 
 // O valor do CanvasContext: só os comandos, num objeto criado uma vez (useStableCommands). O
 // estado que os blocos mostram fica no store do canvasView, lido por bloco.
-export function useCanvasCommands({ nodeActions, conversations, worktrees, overlays, openConversationMenu, openSettings, newGroupConversation, relocateFolder }: Parts): CanvasActions {
+export function useCanvasCommands({ nodeActions, conversations, worktrees, overlays, openConversationMenu, openSettings, newGroupConversation, relocateFolder, cloneFolder }: Parts): CanvasActions {
   return useStableCommands<CanvasActions>({
     ...nodeActions,
     addFolder: overlays.addFolder,
@@ -39,6 +40,7 @@ export function useCanvasCommands({ nodeActions, conversations, worktrees, overl
     openConversationMenu,
     newGroupConversation,
     relocateFolder,
+    cloneFolder,
     openAllConversations: overlays.openAllConversations,
     openSettings,
     openMemory: overlays.openMemory,

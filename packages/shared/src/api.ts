@@ -5,7 +5,7 @@ import type { ClipboardKey, ProviderId, ProvidersState } from './providers';
 import type { Lang, LangPreference } from './i18n';
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas';
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent';
-import type { ActiveChat, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
+import type { ActiveChat, InterruptedChat, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
 import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
 import type { CliStatus } from './cli';
@@ -17,6 +17,11 @@ import type { ClipboardCommand, EditAction, ThemeSource } from './ipc';
 import type { SharedPreferences } from './phonePreferences';
 import type { PlaceFolderRequest } from './phoneChannels';
 import type { ConversationChoice } from './chatChoices';
+import type { AccountDevice, AccountProvider, AccountState } from './account';
+import type { GitHubConnectResult, GitHubInstallationList, GitHubRepoList, GitHubStatus } from './accountGitHub';
+import type { ClaudeAction, ClaudeItem } from './accountClaude';
+import type { RendererSyncValues } from './accountSync';
+import type { AccountComputer, WorkspaceImportResult } from './accountWorkspaces';
 import type { McpAuthResult, McpCallbackResult, McpStatus } from './mcp';
 import type { MediaCommand, NowPlaying } from './media';
 import type { MemoryGroup, MemoryProject, MemoryWriteResult } from './memory';
@@ -29,7 +34,7 @@ import type { TranscriptionModel } from './transcription';
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates';
 import type { Usage } from './usage';
 import type { WorktreeReserved, WorktreeStatus } from './worktrees';
-import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote';
+import type { AccountRemoteHost, RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote';
 
 // Formato de `window.api`, a ponte entre a interface e o processo principal. Escrito só aqui: o
 // preload implementa (`const api: Api`) e a interface usa (preload/index.d.ts). Os `on...` devolvem
@@ -70,6 +75,8 @@ export type Api = {
     pair: (code: string) => Promise<RemotePairResult>
     // Erro em texto, ou nulo quando abriu.
     open: (hostId: string) => Promise<string | null>
+    accountHosts: () => Promise<AccountRemoteHost[] | null>
+    openAccountHost: (hostId: string) => Promise<string | null>
     forgetHost: (hostId: string) => void
     onState: (cb: (state: RemoteAccessState) => void) => Off
   }
@@ -78,11 +85,6 @@ export type Api = {
   setInterfaceZoom: (factor: number) => void
   // Recortar, copiar ou colar no campo com o foco, como o ⌘X/⌘C/⌘V.
   clipboardCommand: (command: ClipboardCommand) => void
-  // Cor de destaque do sistema, "#rrggbb"; nula quando o sistema não informa.
-  accent: {
-    get: () => string | null
-    onChange: (cb: (color: string | null) => void) => Off
-  }
   // Idioma da interface já resolvido; o aviso chega quando muda nos ajustes.
   language: {
     get: () => Lang
@@ -91,8 +93,12 @@ export type Api = {
   // distro: abre na pasta do usuário no Linux daquela distro do WSL.
   pickFolder: (distro?: string) => Promise<string | null>
   pickFolders: (distro?: string) => Promise<string[]>
+  // Onde pôr um repositório clonado (o seletor abre na última escolhida).
+  pickCloneParent: () => Promise<string | null>
   // Pasta do workspace (nova, sem dir), com o aviso das pastas dele; devolve o caminho.
   syncWorkspace: (folders: string[], dir?: string) => Promise<string>
+  gitLocalClones: () => Promise<Record<string, string>>
+  gitClone: (url: string, parent: string, name: string) => Promise<{ ok: true; path: string } | { ok: false; error: string }>
   wsl: {
     // Distros do WSL instaladas (só no Windows; vazio sem WSL).
     distros: () => Promise<string[]>
@@ -109,7 +115,7 @@ export type Api = {
     openSettings: () => void
     onEvent: (cb: (event: SpeechEvent) => void) => Off
   }
-  // Transcrição de áudio anexado (Experimentos): o modelo é baixado só quando a pessoa aceita.
+  // Transcrição de áudio anexado: o modelo é baixado só quando a pessoa aceita.
   transcription: {
     model: () => Promise<TranscriptionModel>
     download: () => void
@@ -122,24 +128,6 @@ export type Api = {
     open: (id: string, payload: unknown) => void
     payload: (id: string) => Promise<unknown>
     onClosed: (cb: (id: string) => void) => Off
-  }
-  // Mascote solto na tela. As janelas do app avisam se está ligado e se alguém escreve; a janela
-  // do mascote pega o clique só em cima do boneco e muda de lugar arrastando.
-  mascot: {
-    setEnabled: (on: boolean) => void
-    setTyping: (typing: boolean) => void
-    setInteractive: (on: boolean) => void
-    dragTo: (x: number, y: number) => void
-    dragEnd: () => void
-    home: () => void
-    reportTarget: (key: string, turn: number, rect: { x: number; y: number; width: number; height: number }) => void
-    findTarget: (key: string, turn: number) => Promise<{ x: number; y: number } | null>
-    walk: (x: number, y: number) => Promise<void>
-    homeSpot: () => Promise<{ x: number; y: number }>
-    alerts: () => Promise<MascotAlerts>
-    onAlerts: (cb: (alerts: MascotAlerts) => void) => Off
-    onTyping: (cb: (typing: boolean) => void) => Off
-    onReleased: (cb: () => void) => Off
   }
   // Modelos e modo padrão que o `claude` de cada conta informa; sem conta, a padrão.
   claude: {
@@ -339,6 +327,34 @@ export type Api = {
     // A ação foi respondida no lugar da janela ("parar", tempo esgotado): o que ela ainda fizer
     // (um seletor de pasta que continuou aberto) não deve entrar no canvas.
     onCancel: (cb: (id: string) => void) => Off
+  }
+  // Conta do Argus (login com GitHub ou Google) e as preferências sincronizadas (ver account.ts).
+  account: {
+    state: () => Promise<AccountState>
+    onState: (cb: (state: AccountState) => void) => Off
+    signIn: (provider: AccountProvider) => void
+    cancelSignIn: () => void
+    signOut: () => void
+    syncNow: () => void
+    devices: () => Promise<AccountDevice[] | null>
+    removeDevice: (id: string) => Promise<boolean>
+    deleteAccount: () => Promise<boolean>
+    // Preferências da janela que sincronizam: conta as atuais e recebe as que vieram da conta.
+    reportPrefs: (prefs: RendererSyncValues) => void
+    onApplyPrefs: (cb: (prefs: RendererSyncValues) => void) => Off
+    // Workspaces dos outros computadores da conta e trazer uma cópia de um (ver accountWorkspaces.ts).
+    computers: () => Promise<AccountComputer[] | null>
+    importWorkspace: (computerId: string, boardId: string) => Promise<WorkspaceImportResult>
+    // CLAUDE.md, skills, agentes e comandos na conta (ver accountClaude.ts).
+    claudeItems: () => Promise<ClaudeItem[] | null>
+    claudeAct: (action: ClaudeAction, keys: string[]) => Promise<ClaudeItem[] | null>
+    // GitHub conectado à conta, para clonar (ver accountGitHub.ts).
+    github: () => Promise<GitHubStatus>
+    githubConnect: () => Promise<GitHubConnectResult>
+    githubCancel: () => void
+    githubRepos: () => Promise<GitHubRepoList>
+    githubInstallations: () => Promise<GitHubInstallationList>
+    githubDisconnect: () => Promise<boolean>
   }
   // Conversas favoritas: a janela conta ao processo principal (o app do celular lê de lá).
   favorites: {

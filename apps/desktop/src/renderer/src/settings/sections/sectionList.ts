@@ -1,151 +1,101 @@
-import { Bell, Coffee, FlaskConical, Globe, HardDrive, MessagesSquare, Palette, PersonStanding, Plug, RefreshCw, Settings2, Users } from 'lucide-react';
+import { Bell, Coffee, Globe, HardDrive, MessagesSquare, Palette, Plug, RefreshCw, Settings2, UserRound, Users } from 'lucide-react';
 import { tr } from '../../i18n';
 
 export type Section =
+  | 'profile'
   | 'general'
   | 'conversations'
   | 'notifications'
   | 'appearance'
   | 'updates'
   | 'storage'
-  | 'mascot'
   | 'accounts'
   | 'mcp'
   | 'remote'
-  | 'experiments'
   | 'coffee';
 
-export type SectionGroup = 'app' | 'agents' | 'extras' | 'footer';
+// 'account': a linha da conta do Argus no topo da lateral (AccountNavRow), fora dos grupos.
+export type SectionGroup = 'account' | 'app' | 'agents' | 'footer';
 
 // Grupos da lateral, na ordem em que aparecem, com o título em cima de cada um. O 'footer' não
 // tem título: vai para o pé da lateral.
-export const SECTION_GROUPS: { id: Exclude<SectionGroup, 'footer'>; label: string }[] = [
+export const SECTION_GROUPS: { id: Exclude<SectionGroup, 'footer' | 'account'>; label: string }[] = [
   { id: 'app', label: tr('Preferências', 'Preferences') },
   { id: 'agents', label: tr('Conexões', 'Connections') },
-  { id: 'extras', label: tr('Extras', 'Extras') },
 ];
 
-// Cada seção com o ícone e a frase do cabeçalho dela. Ícone solto, sem quadradinho: com fundo
+// Cada seção com o ícone da lateral. Ícone solto, sem quadradinho: com fundo
 // ficou carregado demais.
-// experimental: ligada em Experimentos; leva o selo na frente do nome.
 export const SECTIONS: {
   id: Section
   group: SectionGroup
   label: string
   icon: typeof Settings2
-  description: string
-  experimental?: boolean
 }[] = [
+  {
+    id: 'profile',
+    group: 'account',
+    label: tr('Perfil', 'Profile'),
+    icon: UserRound,
+  },
   {
     id: 'general',
     group: 'app',
     label: tr('Geral', 'General'),
     icon: Settings2,
-    description: tr(
-      'Idioma, onde as conversas abrem, o player de música e o comando no terminal.',
-      'Language, where chats open, the music player and the terminal command.',
-    ),
   },
   {
     id: 'conversations',
     group: 'app',
     label: tr('Conversas', 'Chats'),
     icon: MessagesSquare,
-    description: tr(
-      'Como cada conversa abre. O que você troca no próprio chat vale só para aquela conversa.',
-      'How each chat opens. What you change in the chat itself applies only to that chat.',
-    ),
   },
   {
     id: 'notifications',
     group: 'app',
     label: tr('Notificações', 'Notifications'),
     icon: Bell,
-    description: tr(
-      'Os avisos do sistema quando uma conversa precisa de você, termina ou para com erro.',
-      'System alerts when a chat needs you, is done or stops with an error.',
-    ),
   },
   {
     id: 'appearance',
     group: 'app',
     label: tr('Aparência', 'Appearance'),
     icon: Palette,
-    description: tr('Tema claro, escuro ou o mesmo do sistema.', 'Light, dark or the same as the system.'),
   },
   {
     id: 'updates',
     group: 'app',
     label: tr('Atualizações', 'Updates'),
     icon: RefreshCw,
-    description: tr('As versões do Argus e do Claude Code, e o que mudou em cada uma.', 'The Argus and Claude Code versions, and what changed in each.'),
   },
   {
     id: 'storage',
     group: 'app',
     label: tr('Armazenamento', 'Storage'),
     icon: HardDrive,
-    description: tr(
-      'O espaço que as conversas e os rascunhos do agente ocupam, e a limpeza automática deles.',
-      'The space chats and the agent’s scratch files take up, and their automatic cleanup.',
-    ),
   },
   {
     id: 'accounts',
     group: 'agents',
     label: tr('Contas', 'Accounts'),
     icon: Users,
-    description: tr('As contas do Claude Code que o Argus usa.', 'The Claude Code accounts Argus uses.'),
   },
   {
     id: 'mcp',
     group: 'agents',
     label: 'MCP',
     icon: Plug,
-    description: tr(
-      'Os servidores MCP de cada conta: autorize, reconecte ou desconecte sem abrir uma conversa.',
-      'Each account’s MCP servers: authorize, reconnect or sign out without opening a chat.',
-    ),
   },
   {
     id: 'remote',
     group: 'agents',
     label: tr('Acesso remoto', 'Remote access'),
     icon: Globe,
-    description: tr(
-      'Use o Argus deste computador de outro, ou abra aqui o de outro computador. Tudo vai cifrado de ponta a ponta.',
-      'Use this computer’s Argus from another one, or open another computer’s Argus here. Everything is end-to-end encrypted.',
-    ),
-  },
-  {
-    id: 'mascot',
-    group: 'extras',
-    label: tr('Mascote', 'Mascot'),
-    icon: PersonStanding,
-    experimental: true,
-    description: tr(
-      'Monte o bonequinho solto na tela: corpo, pele, rosto, olhos, boca, cabelo, barba e o golpe que ele dá no envio.',
-      'Build the little character loose on your screen: body, skin, face, eyes, mouth, hair, beard and the strike it gives on send.',
-    ),
-  },
-  {
-    id: 'experiments',
-    group: 'extras',
-    label: tr('Experimentos', 'Experiments'),
-    icon: FlaskConical,
-    description: tr(
-      'Recursos em teste ou só por diversão. Vêm desligados; ligue o que quiser experimentar.',
-      'Features being tested or just for fun. They start off; turn on what you want to try.',
-    ),
   },
   {
     id: 'coffee',
     group: 'footer',
     label: tr('Me pague um café', 'Buy me a coffee'),
     icon: Coffee,
-    description: tr(
-      'Se o Argus te ajuda no dia a dia, um Pix de qualquer valor ajuda a manter o projeto.',
-      'If Argus helps you every day, a Pix of any amount helps keep the project going.',
-    ),
   },
 ];

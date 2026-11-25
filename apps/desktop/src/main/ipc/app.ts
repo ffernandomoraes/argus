@@ -1,13 +1,11 @@
 import { app, BrowserWindow, dialog } from 'electron';
 import { resolveAccount } from '../accounts';
-import { accentColor, setTheme } from '../app/appearance';
+import { setTheme } from '../app/appearance';
 import type { Lifecycle } from '../app/lifecycle';
 import type { Services } from '../app/services';
-import { refreshAppMenu } from '../app/menu';
 import { mediaCommand, nowPlaying, setVolume } from '../media';
 import { loadAppSettings, saveAppSettings } from '../appSettings';
-import { lang, setLang, tr } from '../i18n';
-import { broadcast } from './events';
+import { lang, tr } from '../i18n';
 import { ensureDistro, homeUnc, listDistros } from '../wsl';
 import { wslDiagnostics } from '../wsl/diagnostics';
 import { setSharedLoginEnabled } from '../wsl/sharedLogin';
@@ -16,10 +14,13 @@ import { agentInfo } from '../agentChats/models';
 import { handle, on, onSync } from './register';
 import { contentsOf, isRemotePage } from './page';
 import { syncWorkspace } from '../workspaces';
+import { cloneRepository } from '../gitClone';
+import { forgetLocalClones, localClones } from '../localClones';
 import { IS_MAC } from '../platform';
 import { isInterfaceZoom } from '@argus/shared/interfaceZoom';
 import { CLIPBOARD_COMMANDS } from '@argus/shared/ipc';
 import { setInterfaceZoom } from '../app/windowChrome';
+import { applyLanguage, applyMenuBarIcon } from '../app/settingsActions';
 import { fetchReleaseNotes } from '../updater/notes';
 import { telemetry } from '../telemetry';
 import { telemetrySources } from '../telemetry/sources';
@@ -36,10 +37,26 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   on('clipboard:command', (e, command) => {
     if (CLIPBOARD_COMMANDS.includes(command)) contentsOf(e.sender)?.[command]();
   });
-  onSync('accent:get', () => accentColor());
   onSync('language:get', () => lang());
   handle('dialog:pickFolder', async (e, distro) => (await pickFolders(contentsOf(e.sender), distro, false))[0] ?? null);
   handle('dialog:pickFolders', (e, distro) => pickFolders(contentsOf(e.sender), distro, true));
+  // Onde pôr o repositório clonado: abre na última pasta escolhida (nesta abertura do app).
+  let cloneParent: string | null = null;
+  handle('dialog:pickCloneParent', async (e) => {
+    const wc = contentsOf(e.sender);
+    const win = wc && BrowserWindow.fromWebContents(wc);
+    const options: Electron.OpenDialogOptions = {
+      title: tr('Escolha onde clonar o repositório', 'Choose where to clone the repository'),
+      message: tr('O repositório entra numa pasta nova dentro desta.', 'The repository goes into a new folder inside this one.'),
+      buttonLabel: tr('Clonar aqui', 'Clone here'),
+      defaultPath: cloneParent ?? app.getPath('home'),
+      properties: ['openDirectory', 'createDirectory'],
+    };
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+    if (result.canceled || !result.filePaths[0]) return null;
+    cloneParent = result.filePaths[0];
+    return cloneParent;
+  });
   // Uma pasta, ou várias de uma vez (workspace: sem abrir o seletor uma vez por pasta). O seletor do
   // Mac, do Windows e do GTK no Linux aceitam marcar várias pastas.
   const MOD = IS_MAC ? '⌘' : 'Ctrl';
@@ -65,15 +82,24 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
     return result.canceled ? [] : result.filePaths;
   }
   handle('workspace:sync', (_e, folders, dir) => syncWorkspace(folders, dir));
+  handle('git:localClones', () => localClones());
+  handle('git:clone', async (_e, url, parent, name) => {
+    if (typeof url !== 'string' || typeof parent !== 'string' || typeof name !== 'string') return { ok: false as const, error: 'invalid' };
+    const result = await cloneRepository(url, parent, name, await s.account.github.cloneToken(url));
+    if (result.ok) forgetLocalClones();
+    return result;
+  });
   handle('wsl:distros', () => listDistros());
   handle('wsl:diagnostics', () => wslDiagnostics());
   handle('settings:get', () => loadAppSettings());
-  handle('settings:menuBarIcon', (_e, enabled) => {
-    s.tray.set(enabled);
-    return saveAppSettings({ menuBarIcon: enabled });
-  });
-  handle('settings:notifications', (_e, enabled) => saveAppSettings({ notifications: enabled }));
-  handle('settings:notificationSound', (_e, enabled) => saveAppSettings({ notificationSound: enabled }));
+  // As que sincronizam com a conta do Argus avisam a conta (ver account/mainSettings.ts).
+  const synced = <T>(saved: T): T => {
+    s.account.mainChanged();
+    return saved;
+  };
+  handle('settings:menuBarIcon', (_e, enabled) => synced(applyMenuBarIcon(enabled, s.tray)));
+  handle('settings:notifications', (_e, enabled) => synced(saveAppSettings({ notifications: enabled })));
+  handle('settings:notificationSound', (_e, enabled) => synced(saveAppSettings({ notificationSound: enabled })));
   handle('settings:usageStats', (_e, enabled) => {
     telemetry.setEnabled(enabled, telemetrySources(s));
     return loadAppSettings();
@@ -87,15 +113,7 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
     void s.auth.refresh();
     return saved;
   });
-  // Idioma trocado: menu e ícone do sistema refeitos aqui; as janelas recarregam (renderer/i18n).
-  handle('settings:language', (_e, pref) => {
-    const saved = saveAppSettings({ language: pref });
-    setLang(pref);
-    refreshAppMenu();
-    s.tray.refresh();
-    broadcast('language:changed');
-    return saved;
-  });
+  handle('settings:language', (_e, pref) => synced(applyLanguage(pref, s.tray)));
   handle('updates:get', () => ({ version: app.getVersion(), state: s.updater.state }));
   handle('updates:check', () => s.updater.check(true));
   handle('updates:notes', () => fetchReleaseNotes());
@@ -103,20 +121,6 @@ export function registerAppIpc(s: Services, life: Lifecycle): void {
   // deixaria a atualização esperando alguém na frente deste computador.
   on('updates:install', (e) => life.restartToUpdate({ ask: !isRemotePage(e.sender) }));
   on('popout:open', (_e, id, payload) => s.popouts.show(id, payload));
-  // Mascote solto na tela. Ligar, "escrevendo" e voltar ao canto vêm das janelas do app; o resto,
-  // só da janela dele.
-  on('mascot:enabled', (_e, enabled) => s.mascot.setEnabled(enabled));
-  on('mascot:typing', (_e, typing) => s.mascot.setTyping(typing));
-  on('mascot:interactive', (e, interactive) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.setInteractive(interactive));
-  on('mascot:drag', (e, x, y) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.dragTo(x, y));
-  on('mascot:dragEnd', (e) => s.mascot.owns(contentsOf(e.sender)) && s.mascot.dragEnd());
-  // Voltar ao canto: dois cliques no boneco ou o botão das configurações.
-  on('mascot:home', () => s.mascot.home());
-  handle('mascot:alerts', () => s.mascot.alerts());
-  on('mascot:target', (e, key, turn, rect) => s.mascot.reportTarget(contentsOf(e.sender), key, turn, rect));
-  handle('mascot:findTarget', (_e, key, turn) => s.mascot.findTarget(key, turn));
-  handle('mascot:walk', (e, x, y) => (s.mascot.owns(contentsOf(e.sender)) ? s.mascot.walk(x, y) : undefined));
-  handle('mascot:homeSpot', () => s.mascot.homeSpot());
   handle('popout:payload', (_e, id) => s.popouts.payload(id));
   handle('usage:get', () => s.usage.all());
   on('usage:refresh', () => s.usage.refresh(true));

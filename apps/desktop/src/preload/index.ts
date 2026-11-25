@@ -1,6 +1,7 @@
 import { contextBridge, webUtils } from 'electron';
 import type { Api } from '@argus/shared/api';
 import { REMOTE_ARG, type RemoteHostInfo } from '@argus/shared/remote';
+import { accountApi } from './account';
 import { invoke, listen, listenKey, send, sendSync } from './ipc';
 import { onEdit, onReloadKey } from './keys';
 import { winMic } from './winMic';
@@ -62,23 +63,24 @@ const api: Api = {
     removeDevice: (id) => send('remoteAccess:removeDevice', id),
     pair: (code) => invoke('remoteAccess:pair', code),
     open: (hostId) => invoke('remoteAccess:open', hostId),
+    accountHosts: () => invoke('remoteAccess:accountHosts'),
+    openAccountHost: (hostId) => invoke('remoteAccess:openAccountHost', hostId),
     forgetHost: (hostId) => send('remoteAccess:forgetHost', hostId),
     onState: (cb) => listen('remoteAccess:state', cb),
   },
   setTheme: (theme) => send('theme:set', theme),
   setInterfaceZoom: (factor) => send('interface:zoom', factor),
   clipboardCommand: (command) => send('clipboard:command', command),
-  accent: {
-    get: () => sendSync('accent:get'),
-    onChange: (cb) => listen('accent:changed', cb),
-  },
   language: {
     get: () => sendSync('language:get') ?? 'pt',
     onChange: (cb) => listen('language:changed', cb),
   },
   pickFolder: (distro) => invoke('dialog:pickFolder', distro),
   pickFolders: (distro) => invoke('dialog:pickFolders', distro),
+  pickCloneParent: () => invoke('dialog:pickCloneParent'),
   syncWorkspace: (folders, dir) => invoke('workspace:sync', folders, dir),
+  gitLocalClones: () => invoke('git:localClones'),
+  gitClone: (url, parent, name) => invoke('git:clone', url, parent, name),
   wsl: {
     distros: () => invoke('wsl:distros'),
     diagnostics: () => invoke('wsl:diagnostics'),
@@ -114,22 +116,6 @@ const api: Api = {
     open: (id, payload) => send('popout:open', id, payload),
     payload: (id) => invoke('popout:payload', id),
     onClosed: (cb) => listen('popout:closed', cb),
-  },
-  mascot: {
-    setEnabled: (on) => send('mascot:enabled', on),
-    setTyping: (typing) => send('mascot:typing', typing),
-    setInteractive: (on) => send('mascot:interactive', on),
-    dragTo: (x, y) => send('mascot:drag', x, y),
-    dragEnd: () => send('mascot:dragEnd'),
-    home: () => send('mascot:home'),
-    reportTarget: (key, turn, rect) => send('mascot:target', key, turn, rect),
-    findTarget: (key, turn) => invoke('mascot:findTarget', key, turn),
-    walk: (x, y) => invoke('mascot:walk', x, y),
-    homeSpot: () => invoke('mascot:homeSpot'),
-    alerts: () => invoke('mascot:alerts'),
-    onAlerts: (cb) => listen('mascot:alerts', cb),
-    onTyping: (cb) => listen('mascot:typing', cb),
-    onReleased: (cb) => listen('mascot:released', cb),
   },
   claude: {
     info: (account) => invoke('claude:info', account),
@@ -278,6 +264,7 @@ const api: Api = {
     respond: (result) => send('canvasAgent:result', result),
     onCancel: (cb) => listen('canvasAgent:cancel', cb),
   },
+  account: accountApi,
   favorites: {
     set: (ids) => send('favorites:set', ids),
   },

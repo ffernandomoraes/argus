@@ -8,7 +8,7 @@ import { useConversationActions } from './actions/useConversationActions';
 import { useGroupWide } from './actions/useGroupWide';
 import { useLooseCards } from './actions/useLooseCards';
 import { useNodeActions } from './actions/useNodeActions';
-import { relocateFolderCard } from './actions/relocateFolder';
+import { cloneFolderCard, relocateFolderCard } from './actions/relocateFolder';
 import { useNotificationOpen } from './actions/useNotificationOpen';
 import { usePoppedOut } from './actions/usePoppedOut';
 import { CanvasContext } from './CanvasContext';
@@ -42,8 +42,6 @@ import { useCanvasAgentTools } from './useCanvasAgentTools';
 import { usePhoneFolders } from './usePhoneFolders';
 import { setCanvasScope } from './canvasScope';
 import { useHistory } from './useHistory';
-import { Mascot } from './mascot/Mascot';
-import { MascotBridge } from './mascot/MascotBridge';
 import { useWorktreeActions } from './worktrees/useWorktreeActions';
 import { useWorktreeMoves } from './worktrees/useWorktreeMoves';
 
@@ -57,7 +55,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
   const [nodes, setNodes] = useState<CanvasNode[]>(() => loadNodes(board));
   const { nodesRef, change, trackGesture, undo, redo } = useHistory(board, nodes, setNodes);
   useCanvasSync(board, nodes, setNodes);
-  // O que está no canvas: só essas pastas contam para o "concluído", a barra de menus e o mascote.
+  // O que está no canvas: só essas pastas contam para o "concluído" e a barra de menus.
   useEffect(() => setCanvasScope(nodes), [nodes]);
   useCanvasAgentTools(nodesRef, change);
   usePhoneFolders();
@@ -128,6 +126,7 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
     openSettings: onOpenSettings,
     newGroupConversation,
     relocateFolder: (id) => void relocateFolderCard(api, overlays.commands.confirm, id),
+    cloneFolder: (id) => cloneFolderCard(api, overlays.commands.confirm, id),
   });
 
   const spaceHeld = useSpaceHeld();
@@ -186,8 +185,6 @@ function CanvasView({ board, colorMode, onOpenSettings }: Props & { board: strin
           arranging={arranging}
           zoomShortcuts={!shown}
         />
-        <MascotBridge nodesRef={nodesRef} />
-        <Mascot nodesRef={nodesRef} hidden={uiHidden} />
         {/* Escurece levemente o canvas com um painel aberto; não bloqueia cliques */}
         <div
           aria-hidden="true"

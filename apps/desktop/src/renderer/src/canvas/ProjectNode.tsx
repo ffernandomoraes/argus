@@ -149,7 +149,7 @@ function ProjectNodeView({ id, data, selected, parentId }: NodeProps<ProjectNode
           )}
         </header>
 
-        {missing && <MissingFolderStrip nodeId={id} />}
+        {missing && <MissingFolderStrip nodeId={id} imported={data.imported} cloneUrl={data.cloneUrl} />}
 
         {conversations.length === 0 ? (
           <p className="border-t border-line px-3 py-2.5 text-xs text-faint">{emptyText}</p>

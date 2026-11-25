@@ -1,0 +1,1 @@
+ALTER TABLE "device_workspaces" ADD COLUMN "summary" jsonb;

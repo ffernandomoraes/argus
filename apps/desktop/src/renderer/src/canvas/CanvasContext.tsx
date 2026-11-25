@@ -54,7 +54,7 @@ export type CanvasActions = {
   startRename: (id: string) => void
   finishRename: (id: string, value: string | null) => void
   addGroup: (position: XYPosition) => void
-  addFolder: (position: XYPosition, groupId?: string) => void
+  addFolder: (position: XYPosition, groupId?: string, github?: boolean) => void
   // Espaço de trabalho antigo (ver ProjectData.folders): não se cria mais, mas os salvos continuam.
   addWorkspaceFolder: (id: string) => void
   removeWorkspaceFolder: (id: string, folder: string) => void
@@ -73,6 +73,9 @@ export type CanvasActions = {
   toggleProject: (id: string) => void
   // Pasta renomeada ou movida fora do Argus: escolher onde ela está agora (leva o histórico junto).
   relocateFolder: (id: string) => void
+  // Pasta trazida de outro computador e não achada aqui: clonar o repositório dela (termina quando
+  // o card já aponta para a cópia, ou quando desistiu/deu erro).
+  cloneFolder: (id: string) => Promise<void>
   // "Tirar do grupo": o grupo encolhe, o bloco vai para fora e a câmera vai até ele.
   leaveGroup: (id: string) => void
   // "Mover para workspace": o bloco (com o que vai junto) sai daqui e entra no outro.

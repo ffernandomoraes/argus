@@ -5,9 +5,10 @@ import type { AuthState, LoginMethod } from './auth';
 import type { ClipboardKey, ProviderId, ProvidersState } from './providers';
 import type { BoardsState, BoardSummary, CanvasViewport } from './canvas';
 import type { CanvasAgentState, CanvasToolCall, CanvasToolResult } from './canvasAgent';
-import type { ActiveChat, ChatDetails, InterruptedChat, MascotAlerts, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
+import type { ActiveChat, ChatDetails, InterruptedChat, UnreadChat, ChatRemoteRequest, ChatRenameRequest, ChatSendRequest, ChatSettings, ChatState, OutputStyleStatus, PermissionAnswer } from './chat';
 import type { PhoneEventChannels, PhoneInvokeChannels, PhoneSendChannels } from './phoneChannels';
 import type { ChatChoicesEventChannels, ChatChoicesInvokeChannels, ChatChoicesSendChannels } from './chatChoices';
+import type { AccountEventChannels, AccountInvokeChannels, AccountSendChannels } from './account';
 import type { SessionsInvokeChannels } from './sessionChannels';
 import type { SystemHealthState } from './systemHealth';
 import type { CleanResult, StorageSettings, StorageUsage } from './storage';
@@ -26,7 +27,7 @@ import type { TranscriptionModel } from './transcription';
 import type { ReleaseNote, UpdateInfo, UpdateState } from './updates';
 import type { Usage } from './usage';
 import type { WorktreeReserved, WorktreeStatus } from './worktrees';
-import type { RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote';
+import type { AccountRemoteHost, RemoteAccessState, RemoteConnectionState, RemoteHostInfo, RemoteLocalhostResult, RemotePairResult } from './remote';
 
 // Contrato dos canais entre o processo principal e a janela, num lugar só. O main registra cada
 // canal com handle/on/onSync (apps/desktop/src/main/ipc/register.ts) e o preload chama com invoke/send/sendSync/
@@ -46,7 +47,7 @@ export type ClipboardCommand = 'cut' | 'copy' | 'paste';
 export const CLIPBOARD_COMMANDS: readonly ClipboardCommand[] = ['cut', 'copy', 'paste'];
 
 // Pedidos com resposta: ipcRenderer.invoke ↔ ipcMain.handle.
-export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoicesInvokeChannels & SessionsInvokeChannels & {
+export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoicesInvokeChannels & SessionsInvokeChannels & AccountInvokeChannels & {
   // Janela de acesso remoto: abre no navegador daqui um servidor que roda no localhost do outro
   // computador (ver main/remote/tunnelClient.ts).
   'remote:openLocalhost': (port: number) => RemoteLocalhostResult
@@ -54,8 +55,15 @@ export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoic
   'dialog:pickFolder': (distro?: string) => string | null
   // Várias pastas de uma vez (workspace); cancelado: vazio.
   'dialog:pickFolders': (distro?: string) => string[]
+  // Onde pôr um repositório clonado; cancelado: nulo.
+  'dialog:pickCloneParent': () => string | null
   // Workspace: cria (sem dir) ou atualiza a pasta dele (apps/desktop/src/main/workspaces.ts); devolve o caminho.
   'workspace:sync': (folders: string[], dir?: string) => string
+  // git clone de `url` em <parent>/<name> (o "Clonar…" do card de pasta trazida de outro computador e o
+  // "Clonar do GitHub"). Repositório do github.com com o GitHub conectado à conta: usa a chave dela.
+  // Repositórios já clonados neste computador: endereço normalizado ("github.com/dono/nome") -> pasta.
+  'git:localClones': () => Record<string, string>
+  'git:clone': (url: string, parent: string, name: string) => { ok: true; path: string } | { ok: false; error: string }
   // Distros do WSL instaladas (só no Windows; vazio sem WSL).
   'wsl:distros': () => string[]
   // Texto para copiar e mandar quando algo do WSL não funciona.
@@ -71,13 +79,6 @@ export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoic
   'updates:check': () => UpdateState
   'updates:notes': () => ReleaseNote[]
   'popout:payload': (id: string) => unknown
-  // Respostas não vistas e conversas que pararam com erro (o check verde e o aviso do mascote).
-  'mascot:alerts': () => MascotAlerts
-  // Golpe do envio: onde está, na tela, o cabeçalho da pasta da conversa que começou (a janela do
-  // canvas avisa; espera um pouco por ele), andar até um ponto da tela e o lugar de casa.
-  'mascot:findTarget': (key: string, turn: number) => { x: number; y: number } | null
-  'mascot:walk': (x: number, y: number) => void
-  'mascot:homeSpot': () => { x: number; y: number }
   'usage:get': () => Record<string, Usage>
   'media:get': () => NowPlaying | null
   'media:command': (command: MediaCommand) => void
@@ -183,10 +184,14 @@ export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoic
   'remoteAccess:pair': (code: string) => RemotePairResult
   // Erro em texto, ou nulo quando abriu.
   'remoteAccess:open': (hostId: string) => string | null
+  // Os outros computadores da conta do Argus com o acesso ligado (nulo: sem conta ou sem resposta) e
+  // abrir um deles sem código (pareia pelo código publicado na conta).
+  'remoteAccess:accountHosts': () => AccountRemoteHost[] | null
+  'remoteAccess:openAccountHost': (hostId: string) => string | null
 };
 
 // Mensagens sem resposta: ipcRenderer.send ↔ ipcMain.on.
-export type SendChannels = PhoneSendChannels & CodePanelSendChannels & ChatChoicesSendChannels & {
+export type SendChannels = PhoneSendChannels & CodePanelSendChannels & ChatChoicesSendChannels & AccountSendChannels & {
   // "Abrir localhost" pelo acesso remoto: do Argus do notebook para o de casa, nunca de uma janela
   // (ver main/remote/tunnelHost.ts). As respostas voltam como avisos tunnel:data e tunnel:close.
   'tunnel:open': (id: number, port: number) => void
@@ -196,18 +201,6 @@ export type SendChannels = PhoneSendChannels & CodePanelSendChannels & ChatChoic
   'interface:zoom': (factor: number) => void
   'clipboard:command': (command: ClipboardCommand) => void
   'popout:open': (id: string, payload: unknown) => void
-  // Mascote solto na tela (apps/desktop/src/main/app/mascotOverlay.ts). Das janelas do app: ligado nas
-  // Configurações e alguém escrevendo um pedido. Da janela do mascote: o ponteiro em cima do boneco
-  // (pega o clique), arrastar (o canto de cima da janela em coordenadas da tela), soltar e voltar
-  // ao canto (dois cliques).
-  'mascot:enabled': (on: boolean) => void
-  'mascot:typing': (typing: boolean) => void
-  'mascot:interactive': (on: boolean) => void
-  'mascot:drag': (x: number, y: number) => void
-  'mascot:dragEnd': () => void
-  'mascot:home': () => void
-  // Janela do canvas: pedido começou numa conversa cuja pasta está à vista; rect em px da página.
-  'mascot:target': (key: string, turn: number, rect: { x: number; y: number; width: number; height: number }) => void
   // Painel dos limites aberto: o uso do Claude é lido de novo (ver UsageMonitor.refresh).
   'usage:refresh': () => void
   'updates:install': () => void
@@ -310,7 +303,6 @@ export type SendChannels = PhoneSendChannels & CodePanelSendChannels & ChatChoic
 // Síncronas, para o que a janela precisa antes do primeiro desenho: ipcRenderer.sendSync ↔
 // ipcMain.on com returnValue.
 export type SendSyncChannels = {
-  'accent:get': () => string | null
   // Idioma da interface já resolvido (o do sistema, quando o ajuste é "system").
   'language:get': () => Lang
   'canvas:load': (board: string) => unknown
@@ -323,15 +315,9 @@ export type SendSyncChannels = {
 };
 
 // Avisos do processo principal para a janela: webContents.send ↔ ipcRenderer.on.
-export type EventChannels = PhoneEventChannels & ChatChoicesEventChannels & {
+export type EventChannels = PhoneEventChannels & ChatChoicesEventChannels & AccountEventChannels & {
   edit: (action: EditAction) => void
-  // Para a janela do mascote: alguém escrevendo um pedido no app; respostas não vistas e erros.
-  'mascot:typing': (typing: boolean) => void
-  'mascot:alerts': (alerts: MascotAlerts) => void
-  // O ponteiro saiu do boneco e o clique voltou a atravessar a janela dele.
-  'mascot:released': () => void
   'reload-request': () => void
-  'accent:changed': (color: string | null) => void
   // Idioma trocado nos ajustes: a janela recarrega para redesenhar os textos.
   'language:changed': () => void
   'popout:closed': (id: string) => void

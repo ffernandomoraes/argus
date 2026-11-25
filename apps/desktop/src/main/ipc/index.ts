@@ -1,5 +1,6 @@
 import type { Lifecycle } from '../app/lifecycle';
 import type { Services } from '../app/services';
+import { registerAccountIpc } from './account';
 import { registerAgentsIpc } from './agents';
 import { registerAppIpc } from './app';
 import { registerAuthIpc } from './auth';
@@ -38,7 +39,8 @@ export function registerIpc(s: Services, life: Lifecycle): void {
   registerChatIpc(s.chats, s.chatHolders, s.terminals, s.unread, s.interrupted);
   registerChatChoicesIpc(s.chats, s.choices);
   registerHealthIpc(s.health);
-  registerStorageIpc(s.storage);
+  registerStorageIpc(s.storage, () => s.account.mainChanged());
+  registerAccountIpc(s.account);
   registerTerminalIpc(s.terminals, s.chats, s.terminalViewers, s.terminalSizes);
   registerCliIpc();
   registerRemoteAccessIpc();

@@ -45,7 +45,12 @@ export function isWorkspaceDir(dir: string): boolean {
 // configurações) ele descobre lendo o projeto. Agente rodando no WSL: os caminhos do Linux, que são
 // os que ele enxerga lá dentro (C:\ vira /mnt/c).
 function instructions(folders: string[], inWsl: boolean): string {
-  const list = folders.map((f) => `- ${inWsl ? toLinux(expandHome(f)) : expandHome(f)}`).join('\n');
+  // Caminho com quebra de linha (ou outro caractere de controle) escreveria texto solto no arquivo
+  // que o agente lê como instrução: fica de fora.
+  const list = folders
+    .filter((f) => !/\p{Cc}/u.test(f))
+    .map((f) => `- ${inWsl ? toLinux(expandHome(f)) : expandHome(f)}`)
+    .join('\n');
   return `# Workspace
 
 This folder is only the Argus workspace anchor: it has no project files. The work happens in the

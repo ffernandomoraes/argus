@@ -14,3 +14,7 @@ apps/relay/public/
 apps/telemetry/worker-configuration.d.ts
 apps/telemetry/.wrangler/
 apps/telemetry/.dev.vars
+
+# Servidor da conta: variáveis locais e o banco PGlite do dev.
+apps/account/.env
+apps/account/.data/

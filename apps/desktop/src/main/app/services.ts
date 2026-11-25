@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { app } from 'electron';
 import { Auth } from '../auth';
+import { createAccount } from '../account/create';
 import { Providers } from '../providers';
 import { onConversationSaved } from '../agentChats/store';
 import { agentRef } from '@argus/shared/providers';
@@ -35,7 +36,6 @@ import { DockBadge } from './dockBadge';
 import { InterruptedChats } from './interruptedChats';
 import { KeepAwake } from './keepAwake';
 import { openFolder } from './folderOpener';
-import { MascotOverlay } from './mascotOverlay';
 import { MenuBarIcon } from './menuBarIcon';
 import { TerminalSizes } from './terminalSizes';
 import { TerminalViewers } from './terminalViewers';
@@ -84,7 +84,6 @@ export function createServices() {
     broadcast('chat:unreadList', unread.list());
     tray.refresh();
     badge.refresh();
-    mascot.refresh();
   });
   // Memória e disco do computador e o que parou por falta deles: o aviso da barra de cima.
   const health = new SystemHealth({ memory: readMemory, disk: (previous) => readDisk(app.getPath('userData'), previous) }, (state) =>
@@ -107,6 +106,8 @@ export function createServices() {
     tray.refresh();
   });
   const tray = new MenuBarIcon({ chats: () => chats.list(), unread: () => unread.list(), interrupted: () => interrupted.list(), showApp, openChat });
+  // Conta do Argus: login com GitHub ou Google e as preferências sincronizadas entre computadores.
+  const account = createAccount(tray, storage, () => boards);
   // Só o deste computador vai para os notebooks: o deles já soma o que eles mostram.
   const badge = new DockBadge(
     () => chats.list(),
@@ -115,8 +116,6 @@ export function createServices() {
     (total) => remoteAccess().notifyDesktops(REMOTE_BADGE, [total], true),
   );
   onRemoteBadgeChange(() => badge.refresh());
-  // Mascote solto na tela: check verde com resposta não vista, aviso vermelho com erro.
-  const mascot = new MascotOverlay(() => unread.list(), () => chats.list());
 
   // O indicador do canto do canvas só recebe a lista quando ela muda de verdade.
   let activeShown = '';
@@ -139,8 +138,6 @@ export function createServices() {
       tray.refresh();
       badge.refresh();
       notifier.refresh();
-      // Antes da lista de ativas: a janela do mascote precisa saber do erro quando vê o pedido acabar.
-      mascot.refresh();
       publishActive();
       keepAwake.refresh();
     },
@@ -178,6 +175,8 @@ export function createServices() {
     (alert) => {
       const { title, body, kind, cwd, sessionId } = alert;
       remoteAccess().notifyDesktops(REMOTE_ALERT, [{ title, body, kind, cwd, sessionId }]);
+      // Os outros computadores da conta do Argus, se não tem ninguém na frente deste.
+      account.shareNotice({ title, body, kind });
       remoteAccess().notifyDevices({
         title,
         body,
@@ -299,6 +298,7 @@ export function createServices() {
   const unsavedFiles = new UnsavedFiles();
 
   return {
+    account,
     terminals,
     terminalViewers,
     terminalSizes,
@@ -323,6 +323,5 @@ export function createServices() {
     cli,
     popouts,
     unsavedFiles,
-    mascot,
   };
 }

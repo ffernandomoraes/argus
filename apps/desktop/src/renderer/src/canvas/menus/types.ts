@@ -13,7 +13,7 @@ export type Deps = {
   confirm: (req: ConfirmRequest) => void
   startRename: (id: string) => void
   addGroup: (position: XYPosition) => void
-  addFolder: (position: XYPosition, groupId?: string) => void
+  addFolder: (position: XYPosition, groupId?: string, github?: boolean) => void
   // Conversas do grupo todo (ProjectData.groupWide): cria o card do grupo ou vai até ele.
   openGroupWide: (groupId: string) => void
   addWorkspaceFolder: (id: string) => void

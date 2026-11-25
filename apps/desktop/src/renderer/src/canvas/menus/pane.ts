@@ -1,9 +1,10 @@
-import { FolderPlus, LayoutGrid, MessageCirclePlus, SquareDashed, StickyNote } from 'lucide-react';
+import { FolderGit2, FolderPlus, LayoutGrid, MessageCirclePlus, SquareDashed, StickyNote } from 'lucide-react';
 import type { XYPosition } from '@xyflow/react';
 import type { MenuItem } from '../ContextMenu';
 import { terminalSubmenu } from './shared';
 import type { Deps } from './types';
 import { tr } from '../../i18n';
+import { IS_REMOTE } from '../../remote';
 
 type PaneDeps = Pick<Deps, 'addNote' | 'newLooseConversation' | 'addTerminal' | 'addFolder' | 'addGroup' | 'organizeBoard'>;
 
@@ -17,6 +18,7 @@ export function paneMenu(deps: PaneDeps, position: XYPosition): MenuItem[] {
     terminalSubmenu(tr('Novo terminal', 'New terminal'), (kind, account) => deps.addTerminal(position, undefined, undefined, kind, account)),
     { type: 'separator' },
     { type: 'action', label: tr('Nova pasta', 'New folder'), icon: FolderPlus, shortcut: '⌘P', onSelect: () => deps.addFolder(position) },
+    ...(IS_REMOTE ? [] : [{ type: 'action', label: tr('Clonar do GitHub', 'Clone from GitHub'), icon: FolderGit2, onSelect: () => deps.addFolder(position, undefined, true) } as const]),
     { type: 'action', label: tr('Criar grupo', 'Create group'), icon: SquareDashed, shortcut: '⌘G', onSelect: () => deps.addGroup(position) },
     { type: 'separator' },
     { type: 'action', label: tr('Organizar board', 'Organize board'), icon: LayoutGrid, onSelect: deps.organizeBoard },

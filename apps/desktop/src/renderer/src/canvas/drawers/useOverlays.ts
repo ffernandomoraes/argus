@@ -5,7 +5,8 @@ import type { ConfirmRequest } from '../ConfirmDialog';
 import type { MenuState } from '../ContextMenu';
 
 // "Nova pasta" aberto: onde a pasta entra e, se veio de um grupo, em qual.
-type FolderPickerState = { position: XYPosition; groupId?: string };
+// github: abre direto no "Clonar do GitHub".
+type FolderPickerState = { position: XYPosition; groupId?: string; github?: boolean };
 
 export type OverlayState = {
   menu: MenuState | null
@@ -35,7 +36,7 @@ export type OverlayCommands = {
   closeDevServers: () => void
   openCommandBar: () => void
   closeCommandBar: () => void
-  addFolder: (position: XYPosition, groupId?: string) => void
+  addFolder: (position: XYPosition, groupId?: string, github?: boolean) => void
   closeFolderPicker: () => void
   openAllConversations: (nodeId: string) => void
   closeAllConversations: () => void
@@ -76,7 +77,7 @@ export function useOverlays(): { state: OverlayState; commands: OverlayCommands 
       openCommandBar: () => setCommandBar((c) => c ?? { voice: false }),
       closeCommandBar: () => setCommandBar(null),
       // A pasta é escolhida no FolderPicker (CanvasOverlays).
-      addFolder: (position, groupId) => setFolderPicker({ position, groupId }),
+      addFolder: (position, groupId, github) => setFolderPicker({ position, groupId, github }),
       closeFolderPicker: () => setFolderPicker(null),
       openAllConversations: (nodeId) => setAllConversations(nodeId),
       closeAllConversations: () => setAllConversations(null),

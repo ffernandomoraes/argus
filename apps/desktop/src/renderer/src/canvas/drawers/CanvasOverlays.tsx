@@ -103,6 +103,7 @@ function CanvasOverlaysView(props: Props) {
             onCanvas={onCanvas}
             onPick={pickFolder}
             onClose={commands.closeFolderPicker}
+            github={folderPicker.github}
           />
         )}
       </Presence>

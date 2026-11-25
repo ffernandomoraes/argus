@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, FolderPlus, Fullscreen, LayoutGrid, MessagesSquare, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react';
+import { ChevronDown, ChevronUp, FolderGit2, FolderPlus, Fullscreen, LayoutGrid, MessagesSquare, Pencil, StickyNote, Trash2, Ungroup } from 'lucide-react';
 import { agentRef, parseAgentRef, PROVIDER_NAMES, PROVIDERS } from '@argus/shared/providers';
 import { liveAccount, resolveAccount } from '../../auth/useAuth';
 import { AGENT_MENU_ICONS } from '@argus/ui/icons/AgentIcon';
@@ -10,6 +10,7 @@ import type { AreaNode, CanvasNode, ProjectNode } from '../types';
 import { boardSubmenu, terminalSubmenu } from './shared';
 import type { Deps } from './types';
 import { tr } from '../../i18n';
+import { IS_REMOTE } from '../../remote';
 
 type GroupDeps = Pick<
   Deps,
@@ -109,6 +110,7 @@ export function groupMenu(deps: GroupDeps, group: AreaNode): MenuItem[] {
       icon: FolderPlus,
       onSelect: () => deps.addFolder(group.position, group.id),
     },
+    ...(IS_REMOTE ? [] : [{ type: 'action', label: tr('Clonar do GitHub', 'Clone from GitHub'), icon: FolderGit2, onSelect: () => deps.addFolder(group.position, group.id, true) } as const]),
     // O grupo já junta as pastas: este card dá a elas uma conversa em comum. Um por grupo.
     {
       type: 'action',

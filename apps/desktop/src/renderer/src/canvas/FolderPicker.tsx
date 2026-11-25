@@ -1,20 +1,22 @@
 import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { Folder, FolderOpen, Search } from 'lucide-react';
+import { Folder, FolderGit2, FolderOpen, Search } from 'lucide-react';
 import type { KnownFolder } from '@argus/shared/sessions';
 import { HOST_IS_WIN, isAbsolutePath, lastSep, parentDir } from '../platform';
 import { IS_REMOTE, REMOTE_HOST } from '../remote';
 import { Modal } from '../ui/Modal';
 import { TimeAgo } from './blocks/TimeAgo';
+import { GitHubClone } from './GitHubClone';
 import { displayPath, folderKey } from './factory';
 import { tr } from '../i18n';
 
 // "Nova pasta": as pastas onde o Claude Code já conversou, da mais recente para a mais antiga,
 // para não confundir pastas de nome parecido no seletor do sistema. Pasta sem conversa
-// entra por "Escolher outra pasta…".
+// entra por "Escolher outra pasta…"; repositório que ainda não está aqui, por "Clonar do GitHub…".
 export function FolderPicker({
   onCanvas,
   onPick,
   onClose,
+  github = false,
 }: {
   // Pastas já no canvas (como folderKey): aparecem marcadas e, escolhidas, levam até a que existe
   // em vez de entrar de novo.
@@ -22,7 +24,10 @@ export function FolderPicker({
   // Caminho absoluto da pasta escolhida.
   onPick: (folder: string) => void
   onClose: () => void
+  // Abre direto na lista do GitHub (o "Clonar do GitHub" do menu).
+  github?: boolean
 }) {
+  const [mode, setMode] = useState<'folders' | 'github'>(github && !IS_REMOTE ? 'github' : 'folders');
   const [folders, setFolders] = useState<KnownFolder[] | null>(null);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
@@ -64,6 +69,14 @@ export function FolderPicker({
     e.preventDefault();
   };
 
+  if (mode === 'github') {
+    return (
+      <Modal variant="palette" label={tr('Clonar do GitHub', 'Clone from GitHub')} className="flex flex-col" onClose={onClose}>
+        <GitHubClone onCloned={onPick} onBack={() => setMode('folders')} />
+      </Modal>
+    );
+  }
+
   return (
     <Modal variant="palette" label={tr('Nova pasta', 'New folder')} className="flex flex-col" onClose={onClose}>
       <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2.5">
@@ -104,11 +117,35 @@ export function FolderPicker({
         </ul>
       )}
 
+      <PickerFooter typedPath={typedPath} distros={distros} onPick={onPick} onOther={(d) => void pickOther(d)} onGitHub={() => setMode('github')} />
+    </Modal>
+  );
+}
+
+// O pé da janela: escolher outra pasta no seletor do sistema (ou digitar o caminho, na janela remota),
+// as pastas do Linux de cada distro do WSL e o "Clonar do GitHub…".
+const BUTTON = 'flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text';
+
+function PickerFooter({
+  typedPath,
+  distros,
+  onPick,
+  onOther,
+  onGitHub,
+}: {
+  typedPath: string | null
+  distros: string[]
+  onPick: (folder: string) => void
+  onOther: (distro?: string) => void
+  onGitHub: () => void
+}) {
+  return (
+    <>
       {IS_REMOTE ? (
         typedPath ? (
           <button
             onClick={() => onPick(typedPath)}
-            className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+            className={BUTTON}
           >
             <FolderOpen size={14} className="shrink-0" />
             <span className="truncate">{tr(`Abrir ${typedPath}`, `Open ${typedPath}`)}</span>
@@ -123,24 +160,33 @@ export function FolderPicker({
         )
       ) : (
         <button
-          onClick={() => void pickOther()}
-          className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+          onClick={() => onOther()}
+          className={BUTTON}
         >
           <FolderOpen size={14} className="shrink-0" />
           {tr('Escolher outra pasta…', 'Choose another folder…')}
         </button>
       )}
+      {!IS_REMOTE && (
+        <button
+          onClick={onGitHub}
+          className={BUTTON}
+        >
+          <FolderGit2 size={14} className="shrink-0" />
+          {tr('Clonar do GitHub…', 'Clone from GitHub…')}
+        </button>
+      )}
       {distros.map((d) => (
         <button
           key={d}
-          onClick={() => void pickOther(d)}
-          className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-text"
+          onClick={() => onOther(d)}
+          className={BUTTON}
         >
           <FolderOpen size={14} className="shrink-0" />
           {tr(`Escolher pasta do Linux - WSL (${d})…`, `Choose Linux folder - WSL (${d})…`)}
         </button>
       ))}
-    </Modal>
+    </>
   );
 }
 

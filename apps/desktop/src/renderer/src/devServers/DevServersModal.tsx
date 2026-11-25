@@ -6,6 +6,8 @@ import { Modal } from '../ui/Modal';
 import { ModalCloseButton } from '../ui/ModalCloseButton';
 import { useDevServers } from './useDevServers';
 import { tr } from '../i18n';
+import { EmptyState } from '../ui/emptyState/EmptyState';
+import { ServersArt } from '../ui/emptyState/illustrations';
 import { IS_REMOTE } from '../remote';
 import { openRemoteLocalhost } from '../RemoteNotice';
 
@@ -62,7 +64,15 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
       </header>
 
       {loaded && servers.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted">{tr('Nenhum servidor rodando.', 'No servers running.')}</p>
+        <EmptyState
+          size="sm"
+          art={<ServersArt />}
+          title={tr('Nenhum servidor rodando', 'No servers running')}
+          text={tr(
+            'Quando o Claude Code ou o play subirem um servidor numa pasta do canvas, ele aparece aqui com a porta para abrir.',
+            'When Claude Code or play starts a server in a canvas folder, it shows up here with the port to open.',
+          )}
+        />
       ) : (
         <ul className="flex flex-col gap-1 overflow-y-auto p-3">
           {servers.map((s) => (

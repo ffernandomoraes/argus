@@ -15,6 +15,8 @@ import { ResizeHandles } from './FloatingPanel';
 import { TaskOutputView } from './TaskOutputView';
 import { useDrawerZoom } from './useDrawerZoom';
 import { tr } from '../i18n';
+import { EmptyState } from '../ui/emptyState/EmptyState';
+import { TasksArt } from '../ui/emptyState/illustrations';
 
 type Props = {
   project: ProjectData
@@ -140,9 +142,15 @@ export function TasksDrawer(props: Props) {
             />
           </>
         ) : (
-          <div className="m-auto px-6 text-center text-xs text-faint">
-            {tr('Nenhuma tarefa em segundo plano agora.', 'No background tasks right now.')}
-          </div>
+          <EmptyState
+            size="sm"
+            art={<TasksArt />}
+            title={tr('Nada rodando em segundo plano', 'Nothing running in the background')}
+            text={tr(
+              'Comandos longos que o agente deixa rodando, como um build ou um servidor, aparecem aqui com a saída ao vivo.',
+              'Long commands the agent leaves running, like a build or a server, show up here with live output.',
+            )}
+          />
         )}
       </div>
     </aside>

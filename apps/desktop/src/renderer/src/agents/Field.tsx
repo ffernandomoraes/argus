@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
+import { FIELD_SHELL } from '../settings/fieldStyles';
 
-// Campo de texto do agente (nome, quando usar, instruções, outras ferramentas).
-export const INPUT =
-  'rounded-md border border-line bg-bg px-2.5 py-1.5 text-sm text-text outline-none placeholder:text-faint focus:border-line-strong';
+// Campo de texto do agente (nome, quando usar, instruções, outras ferramentas): o das Configurações,
+// com a letra menor da biblioteca.
+export const INPUT = `${FIELD_SHELL} text-sm`;
 
 // Rótulo em cima, o campo e a explicação embaixo.
 export function Field({

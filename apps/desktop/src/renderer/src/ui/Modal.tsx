@@ -1,25 +1,38 @@
-import { useCallback, useLayoutEffect, useRef, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useLayoutEffect, useRef, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { PANEL_BOTTOM, PANEL_TOP } from '../conversation/panelGeometry';
 import { useEscape } from '../useEscape';
 import { ModalCloseContext, type ModalCloseReason } from './modalContext';
 import { useFocusTrap } from './useFocusTrap';
 
-// panel: os modais grandes (configurações, agentes, memória, servidores), dentro da janela e com
-// folga para a barra de título. alert: confirmação pequena, centrada na tela. blocking: por cima
-// de tudo, com a faixa de cima ainda arrastando a janela (boas-vindas); não
-// fecha clicando fora. palette: caixa de busca presa no alto da tela (Nova pasta).
+// panel: os modais grandes (agentes, memória, servidores), dentro da janela e com folga para a
+// barra de título. fill: ocupa quase a janela toda, com a mesma folga nos quatro lados (a altura
+// das barras de título e de baixo mais 8 px), por cima das barras desfocadas (configurações). alert: confirmação pequena,
+// centrada na tela. blocking: por cima de tudo, com a faixa de cima ainda arrastando a janela
+// (boas-vindas); não fecha clicando fora. palette: caixa de busca presa no alto da tela (Nova pasta).
 // Todos com o fundo escuro desfocado, igual à máscara dos limites (ver BottomBar).
-export type ModalVariant = 'panel' | 'alert' | 'blocking' | 'palette';
+export type ModalVariant = 'panel' | 'fill' | 'alert' | 'blocking' | 'palette';
 export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'auto';
 
 const BACKDROP: Record<ModalVariant, string> = {
   panel: 'absolute inset-0 z-50 flex items-center justify-center bg-black/30 p-6 pt-16 backdrop-blur-sm',
+  fill: 'absolute inset-0 z-50 flex bg-black/30 backdrop-blur-sm',
   alert: 'fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm',
   blocking: 'absolute inset-0 z-[60] flex items-center justify-center bg-black/30 px-6 pb-6 pt-12 backdrop-blur-sm',
   palette: 'fixed inset-0 z-50 bg-black/30 backdrop-blur-sm',
 };
 
+// No fill, o fundo cobre a janela toda (as barras de título e de baixo ficam desfocadas) e o painel
+// começa 8 px depois de cada barra, como o drawer de conversa (conversation/panelGeometry.ts). As
+// laterais têm a mesma folga, a média das duas, para a moldura parecer igual nos quatro lados.
+const SIDE_GAP = (PANEL_TOP + PANEL_BOTTOM) / 2;
+const BACKDROP_STYLE: Partial<Record<ModalVariant, CSSProperties>> = {
+  fill: { padding: `${PANEL_TOP}px ${SIDE_GAP}px ${PANEL_BOTTOM}px` },
+};
+
 const CARD: Record<ModalVariant, string> = {
   panel: 'overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50 outline-none',
+  // Cresce até encher o fundo (sobra só a folga); cantos e sombra iguais aos do drawer.
+  fill: 'min-w-0 flex-1 overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50 outline-none',
   alert: 'rounded-2xl border border-line bg-surface p-5 shadow-2xl shadow-black/60 outline-none',
   blocking: 'relative overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/50 outline-none',
   palette:
@@ -27,8 +40,8 @@ const CARD: Record<ModalVariant, string> = {
 };
 
 // Tamanhos da caixa. xs: confirmação; sm: boas-vindas; md: lista que cresce com o conteúdo
-// (servidores); lg: configurações; xl: memória; 2xl: agentes. auto: sem tamanho daqui (a medida
-// vem no className, ex.: o painel de MCPs).
+// (servidores); lg: modais grandes de uma coluna; xl: memória; 2xl: agentes. auto: sem tamanho
+// daqui (a medida vem no className, ex.: o painel de MCPs, ou do próprio fill).
 const SIZES: Record<ModalSize, string> = {
   xs: 'w-96',
   sm: 'max-h-full w-[min(540px,100%)]',
@@ -39,7 +52,7 @@ const SIZES: Record<ModalSize, string> = {
   auto: '',
 };
 
-const DEFAULT_SIZE: Record<ModalVariant, ModalSize> = { panel: 'lg', alert: 'xs', blocking: 'sm', palette: 'auto' };
+const DEFAULT_SIZE: Record<ModalVariant, ModalSize> = { panel: 'lg', fill: 'auto', alert: 'xs', blocking: 'sm', palette: 'auto' };
 
 const stop = (e: MouseEvent) => e.stopPropagation();
 
@@ -102,6 +115,7 @@ export function Modal({
   return (
     <div
       className={BACKDROP[variant]}
+      style={BACKDROP_STYLE[variant]}
       onMouseDown={(e) => backdropCloses && e.target === e.currentTarget && requestClose('backdrop')}
     >
       {/* Faixa de cima continua arrastando a janela, como a barra de título. */}

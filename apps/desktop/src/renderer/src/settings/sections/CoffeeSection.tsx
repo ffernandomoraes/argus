@@ -35,7 +35,7 @@ export function CoffeeSection() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center rounded-xl bg-fill px-6 py-6 text-center">
+    <div className="flex flex-col items-center py-6 text-center">
       {/* Fundo branco também no tema escuro: leitor de QR Code precisa de contraste claro. */}
       <div className="rounded-xl bg-white p-3">
         {qr ? (

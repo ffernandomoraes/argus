@@ -91,14 +91,14 @@ export const BoardSwitcher = memo(function BoardSwitcher({
         onClick={toggle}
         aria-expanded={menu.open}
         aria-label={tr(`Workspace: ${name}`, `Workspace: ${name}`)}
-        // O mesmo selo da branch acima da pasta (project/BranchSwitcher).
-        className={`flex h-6 max-w-64 min-w-0 items-center gap-1.5 rounded-md border border-line px-2 text-[12px] shadow-sm ${
-          menu.open ? 'bg-surface-2 text-text' : 'bg-surface text-muted hover:bg-surface-2 hover:text-text'
+        // No padrão do Select das Configurações (settings/Select), numa altura que cabe na barra.
+        className={`flex h-[26px] max-w-64 min-w-0 items-center gap-2 rounded-lg border bg-fill px-2.5 text-[13px] text-text outline-none transition-[border-color,box-shadow] ${
+          menu.open ? 'border-accent ring-2 ring-accent/20' : 'border-line hover:border-line-strong focus-visible:border-accent'
         }`}
       >
         <span className="truncate">{name}</span>
         {elsewhere && <StatusDot status={elsewhere} />}
-        <ChevronDown size={12} className="-mr-0.5 shrink-0" aria-hidden="true" />
+        <ChevronDown size={14} className={`-mr-0.5 shrink-0 text-faint transition-transform ${menu.open ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
       <Presence kind="menu">
         {menu.open && (

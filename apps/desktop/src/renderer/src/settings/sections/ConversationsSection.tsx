@@ -1,6 +1,6 @@
 import { EFFORTS, groupByFamily } from '../../conversation/ModelEffortPicker';
 import { EffortSlider } from '../../conversation/composer/EffortSlider';
-import { PermissionModePicker } from '../../conversation/PermissionModePicker';
+import { PermissionModeField } from '../../conversation/PermissionModeField';
 import type { SessionSettings } from '../../conversation/SessionSettings';
 import { useClaudeInfo } from '../../conversation/useModels';
 import { Group, Row, Select, Switch } from '../controls';
@@ -22,21 +22,17 @@ export function ConversationsSection() {
     <>
       <Group>
         <Row label={tr('Modelo', 'Model')}>
-          <Select value={s.model} onChange={(model) => set({ model })}>
-            <option value="">
-              {tr('Padrão', 'Default')}
-              {defaultModel?.resolvedName ? ` - ${defaultModel.resolvedName}` : ''}
-            </option>
-            {groupByFamily(models).map(([family, versions]) => (
-              <optgroup key={family} label={family}>
-                {versions.map((v) => (
-                  <option key={v.value} value={v.value}>
-                    {v.displayName}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </Select>
+          <Select
+            value={s.model}
+            onChange={(model) => set({ model })}
+            label={tr('Modelo', 'Model')}
+            options={[
+              { value: '', label: tr('Padrão', 'Default') + (defaultModel?.resolvedName ? ` - ${defaultModel.resolvedName}` : '') },
+              ...groupByFamily(models).flatMap(([family, versions]) =>
+                versions.map((v) => ({ value: v.value, label: v.displayName, group: family })),
+              ),
+            ]}
+          />
         </Row>
 
         <Row
@@ -56,8 +52,8 @@ export function ConversationsSection() {
         </Row>
 
         <Row label={tr('Modo', 'Mode')} description={tr('Quanto o Claude pode fazer sem pedir sua aprovação.', 'How much Claude can do without asking for your approval.')}>
-          {/* O mesmo menu do modo na conversa, com os ícones e o que cada um faz. */}
-          <PermissionModePicker field value={s.permissionMode} onChange={(permissionMode) => set({ permissionMode })} />
+          {/* Os mesmos modos da conversa, com os ícones, no campo de escolha das outras linhas. */}
+          <PermissionModeField value={s.permissionMode} onChange={(permissionMode) => set({ permissionMode })} />
         </Row>
       </Group>
 

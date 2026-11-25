@@ -11,7 +11,6 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
   return (
     <Group>
       <Row
-        below
         label={tr('Tema', 'Theme')}
         description={tr(`Sistema acompanha o modo claro ou escuro do ${SYSTEM_NAME}.`, `System follows the light or dark mode of ${SYSTEM_NAME}.`)}
       >
@@ -33,13 +32,15 @@ export function AppearanceSection({ theme, onThemeChange }: { theme: ThemePrefer
           'Scales the whole window up or down for larger or smaller displays. Canvas and conversation zoom still apply on top.',
         )}
       >
-        <Select value={String(zoom)} onChange={(v) => setPreferences({ interfaceZoom: Number(v) })} label={tr('Tamanho da interface', 'Interface size')}>
-          {INTERFACE_ZOOMS.map((z) => (
-            <option key={z} value={z}>
-              {Math.round(z * 100)}%{z === 1 ? tr(' (padrão)', ' (default)') : ''}
-            </option>
-          ))}
-        </Select>
+        <Select
+          value={String(zoom)}
+          onChange={(v) => setPreferences({ interfaceZoom: Number(v) })}
+          label={tr('Tamanho da interface', 'Interface size')}
+          options={INTERFACE_ZOOMS.map((z) => ({
+            value: String(z),
+            label: `${Math.round(z * 100)}%${z === 1 ? tr(' (padrão)', ' (default)') : ''}`,
+          }))}
+        />
       </Row>
     </Group>
   );

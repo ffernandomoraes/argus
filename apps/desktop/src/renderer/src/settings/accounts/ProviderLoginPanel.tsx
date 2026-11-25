@@ -3,6 +3,7 @@ import { ClipboardCheck, Loader2 } from 'lucide-react';
 import { KEY_PAGES, PROVIDER_NAMES, type ClipboardKey, type KeyProviderId, type ProviderLogin } from '@argus/shared/providers';
 import { Button } from '../../ui/Button';
 import { tr } from '../../i18n';
+import { FIELD } from '../fieldStyles';
 
 type Active = Exclude<ProviderLogin, { status: 'idle' }>;
 
@@ -162,7 +163,7 @@ function KeyStep({ login }: { login: Exclude<Active, { status: 'waiting' }> }) {
             onChange={(e) => setTyped(e.target.value)}
             placeholder={tr('Cole a chave aqui', 'Paste the key here')}
             aria-label={tr('Chave de API', 'API key')}
-            className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-1 text-[16px] text-text outline-none focus:border-accent"
+            className={`${FIELD} min-w-0 flex-1`}
           />
           <Button type="submit" disabled={!typed.trim()}>
             {tr('Usar', 'Use')}

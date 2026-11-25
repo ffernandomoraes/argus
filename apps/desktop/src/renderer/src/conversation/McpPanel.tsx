@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import type { McpSource } from '../mcp/McpServers';
-import { McpServerList, useMcpServers } from '../mcp/McpServers';
+import { McpServerList } from '../mcp/McpServerList';
+import { useMcpServers } from '../mcp/McpServers';
 import { IconButton } from '../ui/IconButton';
 import { Modal } from '../ui/Modal';
 import { ModalCloseButton } from '../ui/ModalCloseButton';

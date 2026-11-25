@@ -11,7 +11,7 @@
 // `danger` troca a cor para o vermelho: com primary, o vermelho cheio da confirmação de apagar;
 // nas outras, texto vermelho. `pressed` é o estado ligado de um botão de alternar.
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'subtle' | 'floating';
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'field';
 export type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 export type ToneOptions = { danger?: boolean; pressed?: boolean };
@@ -47,12 +47,14 @@ const TONES: Record<ButtonVariant, { normal: string; danger: string; pressed: st
   },
 };
 
-// Texto: o md é o BUTTON das configurações; o xl, o dos rodapés das boas-vindas.
+// Texto: o xl é o dos rodapés das boas-vindas. O field é o das Configurações (padrão lá dentro, ver
+// ButtonSizeContext): a mesma altura, letra e canto dos campos (settings/fieldStyles e o Select).
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'gap-1.5 px-2.5 py-1 text-xs',
-  md: 'gap-1.5 px-3 py-1 text-xs',
-  lg: 'gap-1.5 px-3 py-1.5 text-xs',
-  xl: 'gap-1.5 px-3.5 py-1.5 text-sm',
+  sm: 'gap-1.5 rounded-md px-2.5 py-1 text-xs',
+  md: 'gap-1.5 rounded-md px-3 py-1 text-xs',
+  lg: 'gap-1.5 rounded-md px-3 py-1.5 text-xs',
+  xl: 'gap-1.5 rounded-md px-3.5 py-1.5 text-sm',
+  field: 'h-9 gap-2 rounded-lg px-3.5 text-[15px]',
 };
 
 // Ícone: quadrado. O md (28 px) é o dos cabeçalhos e do X dos modais.
@@ -63,7 +65,8 @@ const ICON_SIZES: Record<IconButtonSize, string> = {
   lg: 'size-8',
 };
 
-const BASE = 'inline-flex shrink-0 items-center justify-center rounded-md disabled:opacity-40';
+// O canto vem do tamanho (o field acompanha o dos campos); os de ícone são rounded-md.
+const BASE = 'inline-flex shrink-0 items-center justify-center disabled:opacity-40';
 
 // Só as cores (fundo, texto, borda, sombra), para elemento com tamanho próprio, como um link com
 // cara de botão ou o botão de servidor que cresce com a porta.
@@ -77,5 +80,5 @@ export function buttonClass(variant: ButtonVariant = 'secondary', size: ButtonSi
 }
 
 export function iconButtonClass(variant: ButtonVariant = 'ghost', size: IconButtonSize = 'md', options?: ToneOptions): string {
-  return `${BASE} ${ICON_SIZES[size]} ${buttonTone(variant, options)}`;
+  return `${BASE} rounded-md ${ICON_SIZES[size]} ${buttonTone(variant, options)}`;
 }

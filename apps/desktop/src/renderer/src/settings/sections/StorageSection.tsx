@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { withMediaCap, type CleanResult, type StorageSettings, type StorageUsage } from '@argus/shared/storage';
+import { STORAGE_DAY_OPTIONS, withMediaCap, type CleanResult, type StorageSettings, type StorageUsage } from '@argus/shared/storage';
 import { LOCALE, tr } from '../../i18n';
 import { HOST_IS_MAC } from '../../platform';
 import { formatBytes } from '../../systemHealth/texts';
 import { Button } from '../../ui/Button';
-import { Group, Row, Segmented } from '../controls';
+import { Group, Row, Select } from '../controls';
 
 // O que as conversas e os rascunhos do agente ocupam, os prazos da limpeza automática (ver
 // main/storage) e o "Limpar agora". Medir os rascunhos leva alguns segundos: a tela pergunta de novo
@@ -14,14 +14,12 @@ const POLL_MS = 2_000;
 // O disco na base do sistema: o Finder conta de 1000 em 1000; o Windows, de 1024.
 const BASE = HOST_IS_MAC ? 1000 : 1024;
 
-const CONVERSATION_DAYS = [30, 60, 90, 180, 365];
-const SCRATCH_DAYS = [1, 3, 7, 14];
-const MEDIA_DAYS = [30, 60, 90, 180];
+const { conversationDays: CONVERSATION_DAYS, scratchDays: SCRATCH_DAYS, mediaDays: MEDIA_DAYS } = STORAGE_DAY_OPTIONS;
 
 const days = (n: number) => (n === 1 ? tr('1 dia', '1 day') : tr(`${n} dias`, `${n} days`));
 
 // Um prazo posto à mão no settings.json do Claude Code (fora das opções) aparece também, marcado.
-const withCurrent = (list: number[], current: number) => (list.includes(current) ? list : [...list, current].sort((a, b) => a - b));
+const withCurrent = (list: readonly number[], current: number) => (list.includes(current) ? list : [...list, current].sort((a, b) => a - b));
 
 // A data da última limpeza, sozinha: o detalhe do que sai fica no ícone de info.
 function lastCleanText(last: CleanResult | null): string | undefined {
@@ -150,44 +148,46 @@ export function StorageSection() {
 
       {settings && (
         <Group>
+          {/* Prazos: o rótulo diz o que sai; a explicação, depois de quanto tempo parada a conversa. */}
           <Row
-            label={tr('Apagar as conversas paradas há mais de', 'Delete chats idle for more than')}
+            label={tr('Apagar conversas', 'Delete chats')}
             description={tr(
-              'A conversa sai inteira: texto, prints e anexos. Vale também para o claude no terminal.',
-              'The whole chat goes: text, screenshots and attachments. Also applies to claude in the terminal.',
+              'Paradas há mais tempo que isso. Sai tudo, inclusive o que rodou no claude do terminal.',
+              'Idle for longer than this. Everything goes, including claude runs in the terminal.',
             )}
-            below
           >
-            <Segmented
+            <Select
+              label={tr('Apagar conversas', 'Delete chats')}
               value={String(settings.conversationDays)}
               options={withCurrent(CONVERSATION_DAYS, settings.conversationDays).map((n) => ({ value: String(n), label: days(n) }))}
               onChange={(v) => change({ conversationDays: Number(v) })}
             />
           </Row>
           <Row
-            label={tr('Apagar os rascunhos de conversas paradas há mais de', 'Delete scratch files of chats idle for more than')}
-            description={tr('Os de uma conversa rodando nunca saem.', 'Those of a running chat never go.')}
-            below
+            label={tr('Apagar rascunhos', 'Delete scratch files')}
+            description={tr('De conversas paradas há mais tempo que isso. Os de uma conversa rodando ficam.', 'Of chats idle for longer than this. A running chat keeps its own.')}
           >
-            <Segmented
+            <Select
+              label={tr('Apagar rascunhos', 'Delete scratch files')}
               value={String(settings.scratchDays)}
               options={SCRATCH_DAYS.map((n) => ({ value: String(n), label: days(n) }))}
               onChange={(v) => change({ scratchDays: Number(v) })}
             />
           </Row>
           <Row
-            label={tr('Tirar prints e anexos das conversas paradas há mais de', 'Remove screenshots and attachments from chats idle for more than')}
-            description={tr('O texto da conversa fica; no lugar fica "[imagem removida]".', 'The chat text stays; "[image removed]" takes their place.')}
-            below
+            label={tr('Tirar prints e anexos', 'Remove screenshots and attachments')}
+            description={tr(
+              'De conversas paradas há mais tempo que isso. O texto fica, com "[imagem removida]".',
+              'From chats idle for longer than this. The text stays, with "[image removed]".',
+            )}
           >
-            <Segmented
+            {/* Só prazos até o das conversas: depois dele a conversa já saiu inteira. */}
+            <Select
+              label={tr('Tirar prints e anexos', 'Remove screenshots and attachments')}
               value={String(settings.mediaDays)}
-              options={withCurrent(MEDIA_DAYS, settings.mediaDays).map((n) => ({
-                value: String(n),
-                label: days(n),
-                disabled: n > settings.conversationDays,
-                title: n > settings.conversationDays ? tr('Maior que o prazo das conversas', 'Longer than the chat period') : undefined,
-              }))}
+              options={withCurrent(MEDIA_DAYS, settings.mediaDays)
+                .filter((n) => n <= settings.conversationDays || n === settings.mediaDays)
+                .map((n) => ({ value: String(n), label: days(n) }))}
               onChange={(v) => change({ mediaDays: Number(v) })}
             />
           </Row>

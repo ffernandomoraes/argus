@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { InfoTip } from '../ui/InfoTip';
+
+// O campo de escolha mora no próprio arquivo; sai daqui também, como antes.
+export { Select, type SelectOption } from './Select';
 
 // Controles das configurações (e de quem segue o mesmo desenho, como a biblioteca de agentes). O
 // botão com borda daqui virou o Button da base (ui/Button, variante secondary).
@@ -35,41 +37,44 @@ export function IconTile({
   );
 }
 
-// Lista agrupada: as linhas (Row) num cartão arredondado, separadas por uma linha fina.
+// Lista de linhas (Row), separadas por uma linha tracejada. Sem cartão nem espaço entre um grupo e o
+// seguinte: a linha de baixo do grupo continua a lista, e a página fica uma lista só. O último da
+// página não tem linha.
 export function Group({ children }: { children: ReactNode }) {
-  return <div className="mb-4 rounded-xl bg-fill px-4 last:mb-0">{children}</div>;
+  return <div className="border-b border-dashed border-line last:border-0">{children}</div>;
 }
 
-// Linha de configuração: rótulo e explicação à esquerda, controle à direita. below: o controle vai
-// na linha de baixo. Use com todo Segmented (opções lado a lado): ao lado, com o texto a 15px, ele
-// espremia o rótulo. Os outros controles também descem se não couberem.
+// Linha de configuração: rótulo e explicação à esquerda, controle sempre à direita (o padrão de
+// todas as páginas; nada de controle na linha de baixo). Sem espaço, quem encolhe é o texto, que
+// quebra em mais linhas; o controle fica inteiro. Controle largo demais para a direita (muitas
+// opções lado a lado) vira Select, e rótulo comprido fica curto, com o detalhe na explicação.
 // info: explicação longa, num ícone ao lado do rótulo que abre ao passar o mouse. A description
 // fica com uma frase curta; texto de várias linhas embaixo do rótulo pesava a tela.
 export function Row({
   label,
   description,
   info,
-  below,
+  tag,
   children,
 }: {
   label: string
   description?: string
   info?: string
-  below?: boolean
+  // Etiqueta ao lado do rótulo (ex.: o tipo do item, "Skill").
+  tag?: ReactNode
   children: ReactNode
 }) {
   return (
-    <div
-      className={`flex border-b border-line py-3 last:border-0 ${below ? 'flex-col gap-2' : 'flex-wrap items-center justify-between gap-x-6 gap-y-2'}`}
-    >
-      <div className="min-w-56 flex-1">
+    <div className="flex items-center justify-between gap-6 border-b border-dashed border-line py-5 last:border-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1 text-[16px] text-text">
           {label}
           {info && <InfoTip text={info} />}
+          {tag && <span className="ml-1.5 flex">{tag}</span>}
         </div>
         {description && <div className="mt-0.5 text-[15px] leading-relaxed text-muted">{description}</div>}
       </div>
-      <div className={below ? 'flex' : 'shrink-0'}>{children}</div>
+      <div className="shrink-0">{children}</div>
     </div>
   );
 }
@@ -85,14 +90,17 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="flex rounded-lg bg-fill p-0.5 ring-1 ring-line ring-inset">
+    // Trilho de 36 px com borda, como os campos; o escolhido fica num "chip" (Head Desk).
+    <div className="inline-flex h-9 items-stretch rounded-xl border border-line bg-fill p-1">
       {options.map((o) => (
         <button
           key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           disabled={o.disabled}
           title={o.title}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-[15px] disabled:opacity-40 ${
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-[15px] disabled:opacity-40 ${
             value === o.value ? 'bg-control text-text shadow-sm shadow-black/20' : 'text-muted enabled:hover:text-text'
           }`}
         >
@@ -104,39 +112,6 @@ export function Segmented<T extends string>({
   );
 }
 
-export function Select({
-  value,
-  onChange,
-  disabled,
-  label,
-  children,
-}: {
-  value: string
-  onChange: (value: string) => void
-  disabled?: boolean
-  // Nome para leitor de tela, quando não há rótulo à vista.
-  label?: string
-  children: ReactNode
-}) {
-  return (
-    <label className={`relative flex items-center ${disabled ? 'opacity-40' : ''}`}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        aria-label={label}
-        className={'min-w-44 cursor-pointer appearance-none disabled:cursor-default rounded-md border border-line bg-fill py-1 pl-2.5 pr-8 text-[15px] text-text outline-none enabled:hover:border-line-strong'}
-      >
-        {children}
-      </select>
-      {/* A setinha num quadradinho na cor de destaque, como o menu suspenso do macOS. */}
-      <span className="pointer-events-none absolute right-1 flex size-4 items-center justify-center rounded bg-accent text-white">
-        <ChevronDown size={11} />
-      </span>
-    </label>
-  );
-}
-
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button
@@ -144,9 +119,9 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${checked ? 'bg-accent' : 'bg-line-strong'}`}
+      className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors ${checked ? 'bg-accent' : 'bg-line-strong'}`}
     >
-      <span className={`size-4 rounded-full bg-white shadow-sm shadow-black/30 transition-transform ${checked ? 'translate-x-4' : ''}`} />
+      <span className={`size-5 rounded-full bg-white shadow-sm shadow-black/30 transition-transform ${checked ? 'translate-x-5' : ''}`} />
     </button>
   );
 }

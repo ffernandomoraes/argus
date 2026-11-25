@@ -21,7 +21,9 @@ function interfaceZoomKey(e: KeyboardEvent): void {
   e.stopImmediatePropagation();
 }
 
-// Configurações por cima do canvas; fecha no X, no Esc ou clicando fora.
+// Configurações num painel flutuante que ocupa quase a janela toda, com a mesma folga nos quatro
+// lados e as barras desfocadas por baixo (ver variant fill em ui/Modal). Fecha no X, no Esc ou
+// clicando fora.
 export function SettingsModal({
   theme,
   onThemeChange,
@@ -37,7 +39,7 @@ export function SettingsModal({
   }, []);
 
   return (
-    <Modal label={tr('Configurações', 'Settings')} onClose={onClose}>
+    <Modal variant="fill" label={tr('Configurações', 'Settings')} onClose={onClose}>
       <SettingsPage theme={theme} onThemeChange={onThemeChange} />
     </Modal>
   );

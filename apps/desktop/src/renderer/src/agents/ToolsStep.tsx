@@ -20,16 +20,9 @@ export function ToolsStep({
           label={tr('Modelo', 'Model')}
           description={tr('Um modelo menor responde mais rápido e gasta menos; um maior pensa melhor.', 'A smaller model answers faster and costs less; a larger one thinks better.')}
         >
-          <Select value={draft.model} onChange={(model) => onChange({ model })}>
-            {MODELS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </Select>
+          <Select value={draft.model} onChange={(model) => onChange({ model })} label={tr('Modelo', 'Model')} options={MODELS} />
         </Row>
         <Row
-          below
           label={tr('Ferramentas', 'Tools')}
           description={
             draft.allTools
@@ -48,7 +41,7 @@ export function ToolsStep({
         </Row>
       </Group>
       {!draft.allTools && (
-        <div className="flex flex-col gap-3 rounded-xl bg-fill p-4">
+        <div className="mt-4 flex flex-col gap-3 rounded-xl bg-fill p-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {TOOLS.map((t) => (
               <label key={t.name} className="flex items-center gap-2 text-xs text-text">

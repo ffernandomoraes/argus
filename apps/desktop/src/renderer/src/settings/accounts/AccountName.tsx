@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { tr } from '../../i18n';
+import { FIELD } from '../fieldStyles';
 
 // Apelido editável no próprio card: Enter grava, Esc desiste. Vazio volta para o nome sugerido.
 // Sem onRename, grava numa conta do Claude.
@@ -49,7 +50,7 @@ export function AccountName({ account, onRename }: { account: { id: string; name
           done(false);
         }
       }}
-      className="min-w-0 flex-1 rounded-md border border-line bg-bg px-2 py-0.5 text-[16px] text-text outline-none focus:border-accent"
+      className={`${FIELD} min-w-0 flex-1`}
     />
   );
 }

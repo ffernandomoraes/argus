@@ -12,9 +12,13 @@ const where = (b: ClaudeBinary) =>
 function describe(s: ClaudeVersionState): string {
   if (!s.current) return s.checking ? tr('Conferindo a versão…', 'Checking the version…') : tr('Nenhum Claude Code achado.', 'No Claude Code found.');
   const version = s.current.version ?? '?';
-  const parts = [tr(`Versão ${version}.`, `Version ${version}.`)];
+  const upToDate = !s.outdated && !!s.latest;
+  const parts = [
+    upToDate
+      ? tr(`Versão ${version} - mais recente${s.error ? '.' : ''}`, `Version ${version} - latest${s.error ? '.' : ''}`)
+      : tr(`Versão ${version}.`, `Version ${version}.`),
+  ];
   if (s.outdated) parts.push(tr(`A ${s.latest} já saiu.`, `${s.latest} is out.`));
-  else if (s.latest) parts.push(tr('É a mais recente.', 'It’s the latest.'));
   if (s.error) parts.push(tr(`A atualização falhou: ${s.error}`, `The update failed: ${s.error}`));
   return parts.join(' ');
 }

@@ -117,9 +117,10 @@ isso liga o corepack, que lê o `packageManager` da raiz). Segredos: `BETTER_AUT
 Domínio: `account.argusterm.com` com CNAME para `cb6o78n7.up.railway.app` e TXT
 `_railway-verify.account`, na zona `argusterm.com` da `cf-pessoal`, sem proxy.
 
-Publicar: a primeira versão subiu com `rw-pessoal up -s account --detach` (o código local, sem
-commit). Depois do push com `apps/account`, ligar o repositório ao serviço com os padrões de watch
-acima, para publicar sozinho.
+Publicar: sozinho, a cada push na `main` que mexe nos caminhos do Watch. O serviço está ligado ao
+repositório `ffernandomoraes/argus` (branch `main`) desde 2026-11-25, pela API GraphQL
+(`serviceConnect`). Para subir o código local sem commit (teste urgente): `rw-pessoal up -s account
+--detach`; o próximo push publica por cima.
 
 Pegadinhas:
 - O `packageManager` da raiz fixa o pnpm 11 para a Railway (sem ele, o Railpack usa o pnpm 9 e o

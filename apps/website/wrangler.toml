@@ -1,6 +1,8 @@
-# Site do Argus (landing page), servido como arquivos estáticos por um Worker sem código.
-# Publicar: cf-pessoal wrangler deploy (nesta pasta). O que não é do site fica no .assetsignore.
+# Site do Argus (landing page): arquivos estáticos (dist/) e o worker.js, que só responde /api/github/*
+# (cópia guardada dos dados do GitHub). GITHUB_TOKEN (secret, opcional) aumenta o limite da API.
+# Publicar: cf-pessoal wrangler deploy (nesta pasta). O [build] monta o dist/ (build.mjs) antes.
 name = "argus-website"
+main = "worker.js"
 compatibility_date = "2026-09-01"
 workers_dev = false
 routes = [
@@ -8,5 +10,10 @@ routes = [
   { pattern = "www.argusterm.com", custom_domain = true },
 ]
 
+[build]
+command = "node build.mjs"
+
 [assets]
-directory = "."
+directory = "dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]

@@ -390,6 +390,7 @@ document.querySelectorAll('[data-marquee]').forEach((track) => {
   const clone = (item) => {
     const copy = item.cloneNode(true);
     copy.setAttribute('aria-hidden', 'true');
+    copy.inert = true; // the copy's links stay out of the Tab order
     track.appendChild(copy);
   };
   while (track.scrollWidth < 2600) unit.forEach(clone);
@@ -410,9 +411,10 @@ if (download) {
     main.textContent = `Baixar para ${NAMES[os]}`;
   }
   const MATCH = { dmg: /arm64\.dmg$/, zip: /arm64\.zip$/, exe: /Setup.*\.exe$/, appimage: /\.AppImage$/ };
-  fetch('https://api.github.com/repos/ffernandomoraes/argus/releases/latest')
-    .then((r) => (r.ok ? r.json() : Promise.reject()))
+  fetch('/api/github/latest')
+    .then((r) => (r.ok ? r.json() : null))
     .then((rel) => {
+      if (!rel) return;
       const urls = {};
       for (const [k, re] of Object.entries(MATCH)) {
         const a = rel.assets.find((x) => re.test(x.name));
@@ -460,9 +462,10 @@ const relList = document.querySelector('[data-releases]');
 if (relList) {
   const TAGS = { FUNCIONALIDADE: ['Novo', 'new'], MELHORIA: ['Melhoria', 'imp'], BUG: ['Correção', 'fix'] };
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  fetch('https://api.github.com/repos/ffernandomoraes/argus/releases?per_page=20')
-    .then((r) => (r.ok ? r.json() : Promise.reject()))
+  fetch('/api/github/releases')
+    .then((r) => (r.ok ? r.json() : null))
     .then((rels) => {
+      if (!rels) return;
       const html = rels
         .map((r) => {
           const items = (r.body || '')
@@ -481,9 +484,11 @@ if (relList) {
 }
 
 // Estrelas do repositório no menu de todas as páginas. Sem a API, fica o que veio no HTML.
-fetch('https://api.github.com/repos/ffernandomoraes/argus')
-  .then((r) => (r.ok ? r.json() : Promise.reject()))
+// As três consultas ao GitHub passam pelo worker.js, que guarda a resposta (limite de 60 por hora).
+fetch('/api/github/repo')
+  .then((r) => (r.ok ? r.json() : null))
   .then((repo) => {
+    if (!repo) return;
     const n = repo.stargazers_count;
     const text = n >= 1000 ? (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K' : String(n);
     document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = text));

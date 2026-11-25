@@ -1,0 +1,9 @@
+# Cabeçalhos de segurança do site (Workers Static Assets lê este arquivo no dist/; o build.mjs copia).
+# A CSP não limita scripts: o Google Tag Manager carrega o que estiver configurado no painel dele.
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests

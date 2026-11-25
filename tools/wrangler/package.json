@@ -1,0 +1,8 @@
+{
+  "name": "argus-ci-wrangler",
+  "private": true,
+  "description": "O wrangler que a CI usa para montar e publicar na Cloudflare (ponte, painel e site), com ele e as dependências dele travados neste lockfile. Fica fora do monorepo para não mexer nas dependências do app.",
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}

@@ -14,8 +14,8 @@ name: Release
 on:
   push:
     branches: [main]
-    # Só texto (README, anotações) e o site (que tem o website.yml): não vira versão.
-    paths-ignore: ['**.md', 'apps/website/**']
+    # Só texto (README, anotações), o site (que tem o website.yml) e o wrangler da CI: não vira versão.
+    paths-ignore: ['**.md', 'apps/website/**', 'tools/wrangler/**']
   workflow_dispatch:
     inputs:
       bump:
@@ -32,16 +32,13 @@ on:
         type: string
         default: ''
 
+# Só leitura por padrão: escrever (commit da versão, tag e release) é só do job publicar.
 permissions:
-  contents: write
+  contents: read
 
 # Um release por vez. Pushes que chegam durante um release esperam; se vierem vários, só o
 # último fica na fila, e ele publica tudo de uma vez.
 concurrency: release
-
-env:
-  # Wrangler dos jobs da Cloudflare: a mesma versão usada na máquina de desenvolvimento.
-  WRANGLER: wrangler@4.158.0
 
 jobs:
   # Escolhe o commit e o número da versão uma vez só, para o Mac e o Windows montarem o mesmo.
@@ -59,7 +56,7 @@ jobs:
     steps:
       # A main como está agora, não a do push que disparou: um run que esperou na fila
       # pega o commit de versão do anterior e o que chegou depois.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
@@ -93,16 +90,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -138,16 +133,14 @@ jobs:
     steps:
       # O commit escolhido no job versao. persist-credentials: false: o token não fica no
       # .git/config enquanto as dependências instalam (um pacote com script poderia lê-lo).
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -157,7 +150,7 @@ jobs:
 
       # O binário do Electron (baixado no postinstall e usado pelo electron-builder). Mudou o
       # lockfile, começa do zero: assim versões antigas do Electron não se acumulam no cache.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/electron
           key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -249,7 +242,7 @@ jobs:
       # Publicando, o job publicar pega daqui e a cópia some em 1 dia (os arquivos ficam no
       # release); testando, fica para baixar no run pelo prazo padrão do repositório (0).
       - name: Guardar o app
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Argus-Mac-${{ env.VERSION }}
           path: |
@@ -275,16 +268,14 @@ jobs:
     steps:
       # O mesmo commit do Mac; a versão é trocada aqui (a tag só existe depois do job publicar).
       # Sem token no .git/config (ver o job do Mac): este job não faz push.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -322,7 +313,7 @@ jobs:
       # Publicando, o job publicar pega daqui e a cópia some em 1 dia (o .exe fica no
       # release); testando, fica para baixar no run pelo prazo padrão do repositório (0).
       - name: Guardar o instalador
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Argus-Setup-${{ env.VERSION }}
           path: apps/desktop/dist/Argus-Setup-*.exe
@@ -341,16 +332,14 @@ jobs:
     env:
       VERSION: ${{ needs.versao.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -388,7 +377,7 @@ jobs:
           fi
 
       - name: Guardar o AppImage
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Argus-Linux-${{ env.VERSION }}
           path: apps/desktop/dist/Argus-*.AppImage
@@ -417,7 +406,7 @@ jobs:
       telemetry: ${{ steps.diff.outputs.telemetry }}
       mobile: ${{ steps.diff.outputs.mobile }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           fetch-depth: 0
@@ -463,16 +452,14 @@ jobs:
       TELEMETRY: ${{ needs.cloudflare-mudancas.outputs.telemetry }}
       MOBILE: ${{ needs.cloudflare-mudancas.outputs.mobile }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -480,6 +467,13 @@ jobs:
       - name: Instalar dependências
         if: env.MOBILE == 'true'
         run: pnpm install --frozen-lockfile --filter "@argus/mobile..."
+
+      # O wrangler com o lockfile próprio (tools/wrangler): versão e dependências travadas, em vez de
+      # um baixado na hora pelo npx.
+      - name: Instalar o wrangler
+        run: |
+          pnpm install --frozen-lockfile --dir tools/wrangler
+          echo "$GITHUB_WORKSPACE/tools/wrangler/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Conferir os tipos do app do celular
         if: env.MOBILE == 'true'
@@ -492,12 +486,12 @@ jobs:
       - name: Empacotar a ponte
         if: env.MOBILE == 'true'
         working-directory: apps/relay
-        run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/relay"
+        run: wrangler deploy --dry-run --outdir "$RUNNER_TEMP/relay"
 
       - name: Empacotar o painel
         if: env.TELEMETRY == 'true'
         working-directory: apps/telemetry
-        run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/telemetry"
+        run: wrangler deploy --dry-run --outdir "$RUNNER_TEMP/telemetry"
 
   # --- Publicar: só com tudo montado e conferido ---
   # Commit da versão, tag e release com os instaladores dos três sistemas de uma vez (antes o do Mac
@@ -511,6 +505,9 @@ jobs:
       && needs.mac.result == 'success' && needs.windows.result == 'success' && needs.linux.result == 'success'
       && (needs.cloudflare-conferir.result == 'success' || needs.cloudflare-conferir.result == 'skipped') }}
     runs-on: ubuntu-latest
+    # O único job que escreve no repositório: o push da versão e o release.
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: apps/desktop
@@ -519,23 +516,23 @@ jobs:
     steps:
       # fetch-depth: 0: as notas listam os commits desde a última tag. Sem token no .git/config:
       # ele entra só no push da versão.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: Argus-Mac-${{ env.VERSION }}
           path: release-files
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: Argus-Setup-${{ env.VERSION }}
           path: release-files
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: Argus-Linux-${{ env.VERSION }}
           path: release-files
@@ -580,36 +577,46 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+    # O token da Cloudflare vai só nos passos do wrangler que publicam: a instalação das dependências e a
+    # montagem do app do celular (código de terceiros) rodam sem ele.
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       TELEMETRY: ${{ needs.cloudflare-mudancas.outputs.telemetry }}
       MOBILE: ${{ needs.cloudflare-mudancas.outputs.mobile }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.versao.outputs.sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
+
+      # O mesmo wrangler travado do cloudflare-conferir (tools/wrangler).
+      - name: Instalar o wrangler
+        run: |
+          pnpm install --frozen-lockfile --dir tools/wrangler
+          echo "$GITHUB_WORKSPACE/tools/wrangler/node_modules/.bin" >> "$GITHUB_PATH"
 
       # Antes do código: o Worker novo pode depender de uma coluna nova. Sem migração pendente, não faz nada.
       - name: Banco de dados do painel
         if: env.TELEMETRY == 'true'
         working-directory: apps/telemetry
-        run: npx --yes "$WRANGLER" d1 migrations apply argus-telemetry --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler d1 migrations apply argus-telemetry --remote
 
       - name: Publicar o painel
         if: env.TELEMETRY == 'true'
         working-directory: apps/telemetry
-        run: npx --yes "$WRANGLER" deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler deploy
 
       - name: Instalar dependências do app do celular
         if: env.MOBILE == 'true'
@@ -623,4 +630,7 @@ jobs:
       - name: Publicar a ponte e o app do celular
         if: env.MOBILE == 'true'
         working-directory: apps/relay
-        run: npx --yes "$WRANGLER" deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler deploy

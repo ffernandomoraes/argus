@@ -1,0 +1,8 @@
+# Projeto à parte, fora do monorepo (apps/*, packages/*): só o wrangler da CI (ver package.json). Este
+# arquivo faz o pnpm tratar a pasta como raiz própria, com o lockfile dela.
+# Instalar: pnpm install --frozen-lockfile --dir tools/wrangler
+allowBuilds:
+  esbuild: true
+  # Publicar não usa o workerd (só o `wrangler dev`), e o binário dele já chega pelo pacote opcional da
+  # plataforma; o script só confere essa instalação.
+  workerd: false

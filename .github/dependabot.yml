@@ -19,6 +19,15 @@ updates:
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
 
+  # O wrangler da CI (tools/wrangler), com lockfile próprio, fora do monorepo.
+  - package-ecosystem: npm
+    directory: /tools/wrangler
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

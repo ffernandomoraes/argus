@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // O painel que sai animando (Presence) desmonta depois do que entrou e desligava a vigia dele: o
@@ -16,6 +17,9 @@ vi.mock('node:fs', () => ({
 }));
 
 const { unwatchFile, watchFile } = await import('./fileWatch');
+
+// O caminho completo como o fileWatch monta (no Windows, com a unidade: D:\docs\README.md).
+const README = resolve('/docs', 'README.md');
 
 function fakePage() {
   const sent: unknown[][] = [];
@@ -36,7 +40,7 @@ describe('vigia de arquivo da janela', () => {
     watchFile(page, '/proj', 'a.md');
     watchFile(page, '/docs', 'README.md');
     unwatchFile(page, '/proj', 'a.md');
-    fsMock.watched.get('/docs/README.md')?.();
+    fsMock.watched.get(README)?.();
     vi.advanceTimersByTime(200);
     expect(sent).toEqual([['files:changed', '/docs', 'README.md']]);
   });
@@ -45,6 +49,6 @@ describe('vigia de arquivo da janela', () => {
     const { page } = fakePage();
     watchFile(page, '/docs', 'README.md');
     unwatchFile(page, '/docs', 'README.md');
-    expect(fsMock.closed).toContain('/docs/README.md');
+    expect(fsMock.closed).toContain(README);
   });
 });

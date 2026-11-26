@@ -8,6 +8,7 @@ import type { Auth } from '../auth/auth';
 import { session } from '../auth/auth.table';
 import { createLoginCode, isChallenge, parseLang, parsePort } from './desktop.codes';
 import { isDoneStatus, sendDonePage } from './desktop.pages';
+import { phoneWaitRoutes } from './desktop.phoneWait';
 import { desktopDevice } from './desktop.table';
 
 // As páginas por onde o navegador passa no login do app do computador (fora de /api):
@@ -19,6 +20,7 @@ import { desktopDevice } from './desktop.table';
 //    de volta ao app (http://127.0.0.1:<porta>/callback); /auth/failed/...: idem, com o erro;
 // 4. /auth/done: a página final, para onde o app manda o navegador depois de receber a volta.
 // O app do celular usa /auth/<provedor>/web: o mesmo caminho, voltando para WEB_APP_URL/#account=<código>.
+// Instalado, o navegador não consegue voltar para ele: /auth/<provedor>/wait (desktop.phoneWait.ts).
 
 type BrowserContext = { config: Config; db: Database; auth: Auth };
 
@@ -159,6 +161,8 @@ export function browserRoutes({ config, db, auth }: BrowserContext): Router {
     const error = typeof req.query.error === 'string' ? req.query.error : '';
     toWeb(res, { 'account-error': error === 'access_denied' ? 'denied' : 'error' });
   });
+
+  router.use(phoneWaitRoutes({ config, db, browserSession, toProvider }));
 
   router.get('/auth/done', (req, res) => {
     const status = req.query.status;

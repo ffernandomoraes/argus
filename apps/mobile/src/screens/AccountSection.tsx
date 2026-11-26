@@ -15,7 +15,7 @@ import { useAccountHosts } from './useAccountHosts';
 export function AccountSection() {
   const { conn } = useHost();
   const [notice] = useState(() => takeAccountNotice());
-  const { session, hosts, busy, error, login, connect, signOut } = useAccountHosts(notice);
+  const { session, hosts, busy, error, waiting, login, connect, signOut } = useAccountHosts(notice);
   const [switchTo, setSwitchTo] = useState<AccountHost | null>(null);
   // O nome fica depois de fechar, para o título não sumir na animação da gaveta.
   const [askingSwitch, setAskingSwitch] = useState(false);
@@ -37,6 +37,7 @@ export function AccountSection() {
       <>
         <AccountLoginRows
           busy={busy}
+          waiting={waiting}
           onLogin={login}
           footer={tr(
             'Entre com a mesma conta do Argus do computador para trocar de computador sem código.',

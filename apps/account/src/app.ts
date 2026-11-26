@@ -36,7 +36,7 @@ export function createApp(context: AppContext): Express {
   // Cada começo de login ou de conexão do GitHub guarda um estado (no banco ou na memória): por IP,
   // poucos a cada 10 minutos, para ninguém encher a tabela nem empurrar para fora o de quem está no
   // meio do login.
-  app.get(['/auth/:provider/start', '/auth/:provider/web', '/github/start'], rateLimit(new RateLimiter(10 * MINUTE_MS, config.STARTS_PER_10_MINUTES), byIp(behindProxy)));
+  app.get(['/auth/:provider/start', '/auth/:provider/web', '/auth/:provider/wait', '/github/start'], rateLimit(new RateLimiter(10 * MINUTE_MS, config.STARTS_PER_10_MINUTES), byIp(behindProxy)));
   app.use('/api', cors(config));
   // Respostas da API são de uma pessoa: nada de cópia guardada no caminho.
   app.use('/api', (_req, res, next) => {

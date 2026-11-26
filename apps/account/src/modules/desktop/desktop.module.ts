@@ -7,7 +7,7 @@ import { session, user } from '../auth/auth.table';
 import { profileOf } from '../profile/profile.service';
 import { noticeHub } from '../notices/notices.hub';
 import type { ApiModule } from '../types';
-import { cleanDevice, isCode, isVerifier, redeemLoginCode } from './desktop.codes';
+import { cleanDevice, isCode, isVerifier, redeemLoginCode, redeemWaitingLogin } from './desktop.codes';
 import { desktopDevice } from './desktop.table';
 
 // Sessão que saiu da conta: o fluxo de avisos dela fecha, e os outros computadores ficam sabendo
@@ -19,6 +19,8 @@ function gone(userId: string, sessionId: string): void {
 
 // Rotas do app do computador:
 // POST   /api/desktop/redeem  troca o código do fim do login (com o segredo) pela sessão do aparelho
+// POST   /api/desktop/redeem-wait  o app do celular instalado pergunta, com o segredo, se o login
+//                                    terminou (202: ainda não; ver /auth/web-confirm)
 // POST   /api/logout          sai deste aparelho
 // GET    /api/devices         aparelhos com a conta aberta
 // DELETE /api/devices/<id>    tira um aparelho da conta (ele vê 401 no próximo pedido)
@@ -30,14 +32,31 @@ export const desktopModule: ApiModule = ({ db, auth, authed }) => {
     if (!isCode(code) || !isVerifier(verifier)) throw badRequest('Código ou segredo inválido.');
     const userId = await redeemLoginCode(db, code, verifier);
     if (!userId) throw unauthorized('O código do login não vale mais. Entre de novo.');
+    res.json(await deviceSession(userId, device));
+  });
+
+  router.post('/desktop/redeem-wait', async (req, res) => {
+    const { verifier, device } = (req.body ?? {}) as Record<string, unknown>;
+    if (!isVerifier(verifier)) throw badRequest('Segredo inválido.');
+    const userId = await redeemWaitingLogin(db, verifier);
+    if (userId === 'pending') {
+      res.status(202).json({ pending: true });
+      return;
+    }
+    if (!userId) throw unauthorized('O login demorou demais. Entre de novo.');
+    res.json(await deviceSession(userId, device));
+  });
+
+  // A sessão do aparelho que acabou de entrar, com o nome dele na lista de aparelhos.
+  async function deviceSession(userId: string, device: unknown) {
     const [owner] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
     if (!owner) throw unauthorized();
     const context = await auth.$context;
     const created = await context.internalAdapter.createSession(userId);
     const { name, platform } = cleanDevice(device);
     await db.insert(desktopDevice).values({ sessionId: created.id, name, platform });
-    res.json({ token: created.token, profile: await profileOf(db, owner) });
-  });
+    return { token: created.token, profile: await profileOf(db, owner) };
+  }
 
   router.post('/logout', authed, async (req, res) => {
     const id = currentSession(req).id;

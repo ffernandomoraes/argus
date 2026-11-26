@@ -20,7 +20,7 @@ export function accountBase(): string {
   return (env || PUBLISHED_ACCOUNT).replace(/\/+$/, '');
 }
 
-const base64url = (bytes: Uint8Array) => {
+export const base64url = (bytes: Uint8Array) => {
   let s = '';
   for (const b of bytes) s += String.fromCharCode(b);
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -35,7 +35,7 @@ export function loadAccount(): AccountSession | null {
   }
 }
 
-function saveAccount(session: AccountSession | null): void {
+export function saveAccount(session: AccountSession | null): void {
   try {
     if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     else localStorage.removeItem(SESSION_KEY);
@@ -53,7 +53,7 @@ export async function startAccountLogin(provider: AccountProvider): Promise<void
   location.assign(`${accountBase()}/auth/${provider}/web?${query}`);
 }
 
-function deviceName(): string {
+export function deviceName(): string {
   const ua = navigator.userAgent;
   if (/iPhone/.test(ua)) return 'iPhone';
   if (/iPad|Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return 'iPad';

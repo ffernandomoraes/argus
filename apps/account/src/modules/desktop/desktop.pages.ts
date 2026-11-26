@@ -6,13 +6,18 @@ import { DM_SANS_WOFF2, LOGO_SVG } from './desktop.pageAssets';
 // A página que o navegador mostra no fim do login (o app manda para cá depois de receber a volta),
 // no idioma do app. Os textos são fixos e podem ter <strong> (vão direto para o HTML).
 
-// linked e installed: o GitHub conectado e os repositórios escolhidos (ver modules/github).
-export type DoneStatus = 'ok' | 'denied' | 'expired' | 'error' | 'linked' | 'installed';
+// linked e installed: o GitHub conectado e os repositórios escolhidos (ver modules/github). phone: o
+// login do app do celular instalado, que espera o fim do login (ver sendConfirmPage).
+export type DoneStatus = 'ok' | 'phone' | 'denied' | 'expired' | 'error' | 'linked' | 'installed';
 
 const TEXT: Record<DoneStatus, Record<Lang, [string, string]>> = {
   ok: {
     pt: ['Você entrou no Argus', 'Pode fechar esta aba e voltar ao app.'],
     en: ["You're signed in to Argus", 'You can close this tab and go back to the app.'],
+  },
+  phone: {
+    pt: ['Você entrou no Argus', 'Volte ao <strong>app do Argus</strong> no celular: ele entra sozinho.'],
+    en: ["You're signed in to Argus", 'Go back to the <strong>Argus app</strong> on your phone: it signs in by itself.'],
   },
   denied: {
     pt: ['Login cancelado', 'Volte ao Argus se quiser tentar de novo.'],
@@ -36,13 +41,14 @@ const TEXT: Record<DoneStatus, Record<Lang, [string, string]>> = {
   },
 };
 
-const STATUSES: readonly DoneStatus[] = ['ok', 'denied', 'expired', 'error', 'linked', 'installed'];
+const STATUSES: readonly DoneStatus[] = ['ok', 'phone', 'denied', 'expired', 'error', 'linked', 'installed'];
 export const isDoneStatus = (v: unknown): v is DoneStatus => STATUSES.includes(v as DoneStatus);
 
 type Tone = 'ok' | 'warn' | 'error';
 
 const TONE: Record<DoneStatus, Tone> = {
   ok: 'ok',
+  phone: 'ok',
   linked: 'ok',
   installed: 'ok',
   denied: 'warn',
@@ -86,13 +92,41 @@ const STYLE = `
   p { margin: 0; color: var(--muted); font-size: 16px; text-wrap: pretty; }
   strong { color: var(--text); font-weight: 600; white-space: nowrap; }
   footer { font-size: 14px; color: var(--muted); }
+  .code { margin: 20px 0 24px; font: 700 30px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; color: var(--text); }
+  button { width: 100%; padding: 13px 16px; border: 0; border-radius: 999px; background: var(--text); color: var(--card);
+    font-family: inherit; font-size: 16px; font-weight: 600; line-height: 1.2; cursor: pointer; }
+  button:active { opacity: .7; }
 `;
 
 export function sendDonePage(res: Response, status: DoneStatus, lang: Lang): void {
   const [title, hint] = TEXT[status][lang];
   const tone = TONE[status];
+  sendPage(res, status === 'error' ? 400 : 200, lang, { title, body: `
+  <span class="icon ${tone}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[tone]}</svg></span>
+  <h1>${title}</h1>
+  <p>${hint}</p>` });
+}
+
+// Login do app do celular instalado, já de volta do GitHub ou do Google: antes de liberar, mostra o
+// código que o app está mostrando e pede para confirmar. Sem isso, um link de login mandado por outra
+// pessoa daria a conta de quem clicou ao app de quem mandou. O formulário manda para o mesmo endereço.
+export function sendConfirmPage(res: Response, lang: Lang, code: string): void {
+  const [title, hint, button] =
+    lang === 'pt'
+      ? ['Entrar no app do celular?', 'Confira se o app do Argus no seu celular mostra este código. Se não mostra, feche esta página.', 'Confirmar e entrar']
+      : ['Sign in to the phone app?', 'Check that the Argus app on your phone shows this code. If it doesn\'t, close this page.', 'Confirm and sign in'];
+  // Só este formulário manda para o próprio servidor; o resto da CSP continua a de todas as páginas.
+  res.set('Content-Security-Policy', String(res.get('Content-Security-Policy')).replace("form-action 'none'", "form-action 'self'"));
+  sendPage(res, 200, lang, { title, body: `
+  <h1>${title}</h1>
+  <p>${hint}</p>
+  <div class="code">${code}</div>
+  <form method="post"><button type="submit">${button}</button></form>` });
+}
+
+function sendPage(res: Response, httpStatus: number, lang: Lang, { title, body }: { title: string; body: string }): void {
   res
-    .status(status === 'error' ? 400 : 200)
+    .status(httpStatus)
     .type('html')
     .set('Cache-Control', 'no-store')
     .send(`<!doctype html>
@@ -105,10 +139,7 @@ export function sendDonePage(res: Response, status: DoneStatus, lang: Lang): voi
 </head>
 <body>
 ${LOGO_SVG.replace('<svg ', '<svg class="logo" role="img" aria-label="Argus" ')}
-<main>
-  <span class="icon ${tone}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[tone]}</svg></span>
-  <h1>${title}</h1>
-  <p>${hint}</p>
+<main>${body}
 </main>
 <footer>argusterm.com</footer>
 </body>

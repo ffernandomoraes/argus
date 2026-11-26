@@ -1,19 +1,22 @@
 import { Monitor } from 'lucide-react';
+import { ProviderMark } from '@argus/ui/icons/ProviderMark';
 import { tr } from '../i18n';
 import type { AccountHost, AccountProvider } from '../net/account';
+import { confirmCodeOf, type PendingLogin } from '../net/loginWait';
 import { Empty, Row, Section } from '../ui/List';
 import { useAccountHosts } from './useAccountHosts';
 
 // Na tela de parear: entrar na conta do Argus e escolher um dos computadores dela, sem código (o
 // computador publicou o código na conta; ver net/account.ts). `notice`: o que veio da volta do login.
 export function AccountHosts({ onPaired, notice }: { onPaired: () => void; notice?: string | null }) {
-  const { session, hosts, busy, error, login, connect, signOut } = useAccountHosts(notice);
+  const { session, hosts, busy, error, waiting, login, connect, signOut } = useAccountHosts(notice);
 
   if (!session) {
     return (
       <>
         <AccountLoginRows
           busy={busy}
+          waiting={waiting}
           onLogin={login}
           footer={tr(
             'Entre com a mesma conta do Argus do computador para escolher o computador sem código.',
@@ -53,11 +56,37 @@ export function AccountHosts({ onPaired, notice }: { onPaired: () => void; notic
   );
 }
 
-export function AccountLoginRows({ busy, onLogin, footer }: { busy: string | null; onLogin: (p: AccountProvider) => void; footer: string }) {
+type Waiting = { pending: PendingLogin; reopen: () => void; cancel: () => void } | null;
+
+// Entrar com o GitHub ou o Google. Com o app instalado esperando o login no navegador (`waiting`), mostra
+// o código que a página do navegador vai pedir para conferir.
+export function AccountLoginRows({ busy, waiting, onLogin, footer }: { busy: string | null; waiting: Waiting; onLogin: (p: AccountProvider) => void; footer: string }) {
+  if (waiting)
+    return (
+      <Section
+        title={tr('Conta do Argus', 'Argus account')}
+        footer={tr(
+          'Quando terminar no navegador, volte para cá: o app entra sozinho.',
+          'When you finish in the browser, come back here: the app signs in by itself.',
+        )}
+      >
+        <div className="border-b border-line px-4 py-5 text-center">
+          <p className="text-[14px] leading-snug text-muted">
+            {tr('Entre no navegador e confira se a página mostra este código:', 'Sign in in the browser and check that the page shows this code:')}
+          </p>
+          <p className="mt-3 font-mono text-[26px] font-bold tracking-[0.08em]">{confirmCodeOf(waiting.pending.challenge)}</p>
+        </div>
+        <Row title={tr('Abrir o login de novo', 'Open sign-in again')} onClick={waiting.reopen} chevron={false} />
+        <Row title={tr('Cancelar', 'Cancel')} onClick={waiting.cancel} chevron={false} />
+      </Section>
+    );
+  const label = (p: AccountProvider) =>
+    busy === p ? tr('Abrindo…', 'Opening…') : p === 'github' ? tr('Entrar com GitHub', 'Sign in with GitHub') : tr('Entrar com Google', 'Sign in with Google');
   return (
     <Section title={tr('Conta do Argus', 'Argus account')} footer={footer}>
-      <Row title={busy === 'github' ? tr('Abrindo…', 'Opening…') : tr('Entrar com GitHub', 'Sign in with GitHub')} onClick={() => onLogin('github')} />
-      <Row title={busy === 'google' ? tr('Abrindo…', 'Opening…') : tr('Entrar com Google', 'Sign in with Google')} onClick={() => onLogin('google')} />
+      {(['github', 'google'] as const).map((p) => (
+        <Row key={p} icon={<ProviderMark provider={p} size={20} />} title={label(p)} onClick={() => onLogin(p)} />
+      ))}
     </Section>
   );
 }

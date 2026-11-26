@@ -55,3 +55,24 @@ export function cleanDevice(raw: unknown): { name: string; platform: string } {
   const platform = typeof r.platform === 'string' && PLATFORMS.has(r.platform) ? r.platform : 'other';
   return { name: name || 'Argus', platform };
 }
+
+// Login do app do celular instalado (iPhone, Android): o navegador não consegue devolver o código ao
+// app, então o app pergunta, com o segredo, se o login do challenge dele já terminou. O código do
+// banco fica sem uso aqui: vale o challenge. 'pending': ainda não terminou (ou nunca começou).
+export async function redeemWaitingLogin(db: Database, verifier: string, now = new Date()): Promise<string | 'pending' | null> {
+  const rows = await db.delete(desktopLoginCode).where(eq(desktopLoginCode.challenge, sha256(verifier))).returning();
+  if (!rows.length) return 'pending';
+  const valid = rows.find((r) => r.expiresAt >= now);
+  return valid ? valid.userId : null;
+}
+
+// O código curto que o app do celular mostra enquanto espera e a página do navegador repete antes de
+// confirmar: quem recebeu um link de login de outra pessoa vê que não bate com nada na tela dele.
+// Repetido em apps/mobile/src/net/loginWait.ts (tem que dar o mesmo).
+const CONFIRM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function confirmCodeOf(challenge: string): string {
+  const n = Buffer.from(challenge, 'base64url').readUInt32BE(0);
+  let code = '';
+  for (let i = 0; i < 6; i++) code += CONFIRM_ALPHABET[(n >>> (i * 5)) & 31];
+  return `${code.slice(0, 3)}-${code.slice(3)}`;
+}

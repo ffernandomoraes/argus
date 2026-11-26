@@ -12,6 +12,7 @@ import { cleanupDownloads, newDownloadDir, removePath } from './files';
 import { fetchLatestRelease, fetchRecentReleases } from './github';
 import { currentBundle, extractApp, hasExecutable, spawnSwap, verifyApp } from './mac';
 import { countNewer, isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, previousWith, releaseVersion, type Release, type ReleaseAsset } from './releases';
+import { recordCheck, recordUnsupported } from './report';
 import { skipVersion, updateFloor } from './skipped';
 import { installedByInstaller, spawnInstaller } from './windows';
 
@@ -105,7 +106,8 @@ export class Updater {
   }
 
   start(): void {
-    if (this.state.status === 'unsupported') return;
+    const support = this.state;
+    if (support.status === 'unsupported') return recordUnsupported(support.reason);
     this.cleaning = cleanupDownloads();
     setTimeout(() => void this.check(), FIRST_CHECK_MS);
     this.timer = setInterval(() => void this.check(), EVERY_MS);
@@ -126,11 +128,14 @@ export class Updater {
     // fica a que já estava.
     const quiet = this.ready !== null && !visible;
     if (!quiet) this.set({ status: 'checking' });
+    let found = '';
+    let failure: unknown = null;
     try {
       await this.cleaning;
       const floor = this.floor();
       const latest = await fetchLatestRelease();
       const version = latest ? releaseVersion(latest) : '';
+      found = version;
       await this.decideRequired(!!latest && !!version && isNewer(version, app.getVersion()));
       if (!latest || !version || !isNewer(version, floor)) {
         if (!quiet) this.set({ status: 'latest' });
@@ -144,12 +149,14 @@ export class Updater {
         await this.downloadMac(version, asset, latest.html_url, !quiet);
       }
     } catch (err) {
+      failure = err;
       if (!quiet) this.set({ status: 'error', message: errorMessage(err) });
     } finally {
       this.busy = false;
       // Conferência visível sem versão mais nova (ou com erro): volta a mostrar a que já estava baixada.
       if (this.ready && this.current.status !== 'ready') this.showReady(this.ready);
     }
+    recordCheck({ visible, found, state: this.state, failure });
     return this.state;
   }
 

@@ -12,7 +12,7 @@ import { scrubText } from '../errorReports/scrub';
 // O texto passa pela mesma limpeza dos relatórios (sem nome de usuário nem e-mail). Nunca entra o
 // login, um token ou conteúdo de conversa: quem anota passa só estados, números e motivos.
 
-export type JournalArea = 'login' | 'usage' | 'claude' | 'system' | 'remote' | 'slow';
+export type JournalArea = 'login' | 'usage' | 'claude' | 'system' | 'remote' | 'slow' | 'update';
 
 // O nome da área como aparece na linha.
 const AREA_LABELS: Record<JournalArea, string> = {
@@ -22,6 +22,7 @@ const AREA_LABELS: Record<JournalArea, string> = {
   system: 'sistema',
   remote: 'remoto',
   slow: 'lento',
+  update: 'atualização',
 };
 
 export type JournalData = Record<string, string | number | boolean | null | undefined>;

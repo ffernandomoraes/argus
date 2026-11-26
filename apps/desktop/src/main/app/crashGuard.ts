@@ -209,7 +209,7 @@ async function install(updater: Updater, restart: () => Promise<void>, version: 
     type: 'info',
     message: tr(`A versão ${version} está baixada.`, `Version ${version} is downloaded.`),
     detail: IS_WIN
-      ? tr(`Ela entra pelo botão "Atualizar para ${version}", na barra de título.`, `It will be installed with the "Update to ${version}" button in the title bar.`)
+      ? tr('Ela entra pelo botão "Nova versão disponível", na barra de título.', 'It will be installed with the "New version available" button in the title bar.')
       : tr('Ela entra quando o Argus fechar.', 'It will be installed when Argus quits.'),
     buttons: ['OK'],
   });

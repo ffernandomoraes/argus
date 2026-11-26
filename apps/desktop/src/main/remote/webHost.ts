@@ -1,5 +1,6 @@
 import { addRemotePage, removeRemotePage } from '../ipc/events';
 import { dispatch } from '../ipc/register';
+import { note } from '../diagnostics/journal';
 import { tr } from '../i18n';
 import { telemetry } from '../telemetry';
 import {
@@ -111,7 +112,7 @@ export class WebHostSession {
   private receive(data: Buffer): void {
     const m = decodeWeb(data);
     if (!m) {
-      console.warn('[remoto web] mensagem inválida; ligação encerrada');
+      note('remote', 'celular mandou mensagem inválida: ligação encerrada');
       return this.close();
     }
     if (!this.page && m.t !== 'hello') return this.close();
@@ -144,6 +145,7 @@ export class WebHostSession {
     if (this.page) return;
     const info = this.hooks.info();
     if (protocol !== WEB_PROTOCOL_VERSION) {
+      note('remote', 'celular recusado: versão do app diferente', { protocol: String(protocol).slice(0, 20) });
       this.send({
         t: 'reject',
         reason: tr(
@@ -161,6 +163,7 @@ export class WebHostSession {
     addRemotePage(this.page);
     registerPhonePage(this.page);
     telemetry.phoneOpened();
+    note('remote', 'celular recebeu as boas-vindas');
     this.send({ t: 'welcome', info });
   }
 

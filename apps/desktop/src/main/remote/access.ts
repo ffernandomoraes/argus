@@ -1,5 +1,6 @@
 import { app, powerSaveBlocker } from 'electron';
 import type { RemoteAccessState, RemotePairResult } from '@argus/shared/remote';
+import { note } from '../diagnostics/journal';
 import { tr } from '../i18n';
 import { formatPairCode, newPairCode, parsePairCode, type PairCode } from './crypto';
 import { acceptSession, HandshakeError, openSession, pairAsClient, pairAsHost, PAIR_WAIT_MS, type Grant } from './handshake';
@@ -10,6 +11,7 @@ import { sendPush, type PushPayload } from './push';
 import { phoneDevicesOf } from './phoneChats';
 import { connectPairing, connectToHost, HostRelay, RelayError, relayWebUrl } from './relay';
 import { loadStoreWhenReady } from './loadStore';
+import { refuseLink } from './refuseLink';
 import { freshRemoteStore, newDeviceId, saveRemoteStore, type PairedDevice, type RemoteStore } from './store';
 import { WebHostSession } from './webHost';
 import { acceptWebDevice } from './webDevice';
@@ -185,12 +187,13 @@ export class RemoteAccess {
       });
     } catch (err) {
       // A ligação crua já fechou no aperto de mão (libera a vaga na ponte).
-      console.warn('[remoto] conexão recusada:', failure(err));
+      note('remote', 'ligação recusada no aperto de mão', { reason: failure(err).slice(0, 80) });
       return;
     }
     authenticated();
     const device = this.store.devices.find((d) => d.id === session.deviceId);
-    if (!device || !(await this.accountSide.devices.allowLink(device, session.link))) return session.link.close();
+    if (!device) return session.link.close();
+    if (!(await this.accountSide.devices.allowLink(device, session.link))) return refuseLink(session.link, device, this.store.devices.includes(device), this.deps.hostName());
     const firstTime = !device.lastSeen;
     const quiet = !firstTime && Date.now() - device.lastSeen! < QUIET_RECONNECT_MS;
     const hostSession = device.kind === 'web' ? this.acceptWeb(session.link, device) : this.host.accept(session.link);
@@ -199,7 +202,9 @@ export class RemoteAccess {
     this.live.set(device.id, sessions);
     device.lastSeen = Date.now();
     this.save();
+    note('remote', 'aparelho entrou', { kind: device.kind, viaAccount: !!device.accountSession, firstTime });
     session.link.onClose(() => {
+      note('remote', 'aparelho saiu', { kind: device.kind });
       sessions.delete(hostSession);
       // A hora em que saiu conta para o aviso da próxima entrada.
       device.lastSeen = Date.now();

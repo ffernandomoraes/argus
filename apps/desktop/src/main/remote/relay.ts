@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { note } from '../diagnostics/journal';
 import { tr } from '../i18n';
 import type { Link } from './link';
 
@@ -174,6 +175,8 @@ export class HostRelay {
   private setStatus(status: HostRelayStatus): void {
     if (status === this._status) return;
     this._status = status;
+    // Sem a ponte ligada, celular e notebook ficam em "Conectando…" (ver Acesso remoto).
+    if (status !== 'connecting') note('remote', `ponte do acesso remoto: ${status === 'online' ? 'ligada' : 'desligada'}`);
     this.onStatus(status);
   }
 

@@ -1,5 +1,6 @@
 import type { DeviceKind } from '@argus/shared/webRemote';
 import { AccountHttpError } from '../account/http';
+import { note } from '../diagnostics/journal';
 import type { AccountBridge } from './accountRemote';
 import { HandshakeError, type Grant, type PairGrant } from './handshake';
 import type { Link } from './link';
@@ -54,9 +55,13 @@ export class AccountDevices {
     return async (name, psk, kind, ticket) => {
       const bridge = this.deps.bridge();
       if (!ticket || !bridge) throw new HandshakeError('invalid');
-      const r = await bridge.request<{ sessionId?: unknown }>('/api/remote/claim', 'POST', { ticket }).catch(() => null);
+      const r = await bridge.request<{ sessionId?: unknown }>('/api/remote/claim', 'POST', { ticket }).catch((err: unknown) => {
+        note('remote', 'pareamento pela conta: bilhete não trocado', { error: err instanceof Error ? err.message.slice(0, 80) : 'erro' });
+        return null;
+      });
       const session = typeof r?.sessionId === 'string' ? r.sessionId : null;
       if (!session || this.deps.removals.get().includes(session)) throw new HandshakeError('invalid');
+      note('remote', 'pareado pela conta', { kind, name: name.slice(0, 40) });
       return create(name, psk, kind, session);
     };
   }
@@ -67,9 +72,14 @@ export class AccountDevices {
   async allow(device: PairedDevice): Promise<boolean> {
     const session = device.accountSession;
     if (!session) return true;
-    if (!this.deps.bridge()) return false;
+    if (!this.deps.bridge()) {
+      note('remote', 'aparelho da conta recusado: conta não aberta neste computador', { kind: device.kind });
+      return false;
+    }
     const alive = await this.alive([session], [session]);
+    if (!alive) note('remote', 'conta não respondeu à conferência: aparelho entra assim mesmo', { kind: device.kind });
     if (!alive || alive.includes(session)) return true;
+    note('remote', 'aparelho da conta recusado: sessão não vale mais, pareamento removido', { kind: device.kind });
     this.deps.drop(device.id);
     return false;
   }
@@ -79,7 +89,9 @@ export class AccountDevices {
     if (!device.accountSession) return true;
     let closed = false;
     link.onClose(() => (closed = true));
-    return (await this.allow(device)) && !closed;
+    const allowed = await this.allow(device);
+    if (allowed && closed) note('remote', 'ligação caiu durante a conferência na conta', { kind: device.kind });
+    return allowed && !closed;
   }
 
   // Confere todos os pareados pela conta e manda de novo as remoções que ficaram pendentes.
@@ -138,7 +150,8 @@ export class AccountDevices {
     try {
       const r = await bridge.request<{ alive?: unknown }>('/api/remote/check', 'POST', { ids, seen });
       return Array.isArray(r?.alive) ? r.alive.filter((s): s is string => typeof s === 'string') : null;
-    } catch {
+    } catch (err) {
+      note('remote', 'conferência na conta falhou', { error: err instanceof Error ? err.message.slice(0, 80) : 'erro' });
       return null;
     }
   }

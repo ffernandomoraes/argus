@@ -41,7 +41,7 @@ export function ConnectionOverlay() {
       : status === 'offline'
         ? tr(`${name} não responde`, `${name} isn't answering`)
         : status === 'rejected'
-          ? tr('Versões diferentes', 'Different versions')
+          ? tr('Não deu para entrar', "Couldn't connect")
           : status === 'kicked'
             ? tr('Desconectado', 'Disconnected')
             : tr('Pareamento desfeito', 'Pairing removed');
@@ -90,7 +90,10 @@ export function ConnectionOverlay() {
         open={asking}
         above
         title={tr(`Desconectar de ${name}?`, `Disconnect from ${name}?`)}
-        message={tr('Para entrar de novo, será preciso parear com um código novo.', 'To connect again you will need a new pairing code.')}
+        message={tr(
+          'Para entrar de novo, pareie com um código novo ou escolha o computador pela conta do Argus.',
+          'To connect again, pair with a new code or pick the computer through your Argus account.',
+        )}
         confirmLabel={tr('Desconectar', 'Disconnect')}
         danger
         onConfirm={() => disconnect(conn)}

@@ -479,7 +479,7 @@ export type Api = {
     view: (root: string, rel: string) => void
     openInBrowser: (root: string, rel: string) => void
     watch: (root: string, rel: string) => void
-    unwatch: () => void
+    unwatch: (root: string, rel: string) => void
     onChanged: (cb: (root: string, rel: string) => void) => Off
     // Há (ou não) arquivo com alteração não salva no painel de código desta janela.
     setUnsaved: (has: boolean) => void

@@ -7,6 +7,7 @@ import { PANEL_BOTTOM, PANEL_MARGIN, PANEL_TOP } from '../../conversation/Floati
 import { usePreference } from '../../settings/preferences';
 import { IconButton } from '../../ui/IconButton';
 import { useEscape } from '../../useEscape';
+import { useDiskText } from './useDiskText';
 import { tr } from '../../i18n';
 
 // Mais estreito que isso, o plano fica por baixo do drawer (que anda por cima) em vez de sumir.
@@ -14,9 +15,11 @@ const MIN_WIDTH = 280;
 
 // Plano inteiro (ou o .md criado, com `path`), formatado como documento, à esquerda do drawer da
 // conversa que o abriu: vai da borda da janela até a borda do drawer (`drawerX`), na altura toda.
-// ESC fecha. Segue o zoom do drawer (⌘+ / ⌘-).
-export function PlanPanel({ text, path, drawerX, onClose }: { text: string; path?: string; drawerX: number; onClose: () => void }) {
+// ESC fecha. Segue o zoom do drawer (⌘+ / ⌘-). O .md mostra o que está no disco e se atualiza
+// quando o arquivo muda.
+export function PlanPanel({ text: cardText, path, drawerX, onClose }: { text: string; path?: string; drawerX: number; onClose: () => void }) {
   const zoom = usePreference('drawerZoom');
+  const text = useDiskText(path, cardText);
   useEscape(onClose);
   return (
     <aside

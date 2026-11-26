@@ -60,6 +60,6 @@ export function registerFilesIpc(unsaved: UnsavedFiles): void {
   on('files:openInBrowser', (_e, root, rel) => void openInBrowser(root, rel));
   // Um arquivo vigiado por janela: o que está aberto no painel de código.
   on('files:watch', (e, root, rel) => watchFile(e.sender, root, rel));
-  on('files:unwatch', (e) => unwatchFile(e.sender));
+  on('files:unwatch', (e, root, rel) => unwatchFile(e.sender, root, rel));
   on('files:unsaved', (e, has) => unsaved.set(e.sender, has));
 }

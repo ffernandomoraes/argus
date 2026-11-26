@@ -20,5 +20,5 @@ const subscribe = (listener: () => void) => {
   return () => void listeners.delete(listener);
 };
 
-// Texto do plano aberto ao lado (nulo: nenhum).
+// O que está aberto ao lado (nulo: nada): o caminho do .md ou o texto do plano.
 export const useOpenPlan = (): string | null => useSyncExternalStore(subscribe, () => shown);

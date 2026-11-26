@@ -280,7 +280,8 @@ export type SendChannels = PhoneSendChannels & CodePanelSendChannels & ChatChoic
   'files:view': (root: string, rel: string) => void
   'files:openInBrowser': (root: string, rel: string) => void
   'files:watch': (root: string, rel: string) => void
-  'files:unwatch': () => void
+  // Só desliga se a vigia ainda for deste arquivo (quem sai animando não derruba a de quem entrou).
+  'files:unwatch': (root: string, rel: string) => void
   // O painel de código desta janela tem (ou deixou de ter) arquivo com alteração não salva: fechar
   // ou atualizar o app pergunta antes.
   'files:unsaved': (has: boolean) => void

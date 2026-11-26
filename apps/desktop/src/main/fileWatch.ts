@@ -30,9 +30,12 @@ function pollFile(full: string, onChange: () => void): { close(): void } {
   return { close: () => stopPolling(full, listener) };
 }
 
-export function unwatchFile(sender: Page): void {
+// Com `root` e `rel`: só se a vigia ainda for desse arquivo. O painel que sai animando (Presence)
+// desmonta depois do que entrou, e desligava a vigia que o novo acabara de ligar.
+export function unwatchFile(sender: Page, root?: string, rel?: string): void {
   const current = watchers.get(sender.id);
   if (!current) return;
+  if (root !== undefined && (current.root !== root || current.rel !== rel)) return;
   clearTimeout(current.timer);
   current.watcher?.close();
   watchers.delete(sender.id);

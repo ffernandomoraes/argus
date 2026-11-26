@@ -333,7 +333,7 @@ const api: Api = {
     view: (root, rel) => send('files:view', root, rel),
     openInBrowser: (root, rel) => send('files:openInBrowser', root, rel),
     watch: (root, rel) => send('files:watch', root, rel),
-    unwatch: () => send('files:unwatch'),
+    unwatch: (root, rel) => send('files:unwatch', root, rel),
     onChanged: (cb) => listen('files:changed', cb),
     setUnsaved: (has) => send('files:unsaved', has),
   },

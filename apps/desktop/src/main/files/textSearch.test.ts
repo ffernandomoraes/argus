@@ -78,7 +78,11 @@ const gitInit = () => {
   git('add', 'src/a.ts');
 };
 
-describe('searchText', () => {
+// Estes chamam o git: aqui levam milissegundos, mas no macOS do GitHub, com a máquina cheia, o
+// primeiro git passou dos 5 s padrão e derrubou a versão 0.1.157 (2026-11-26).
+const GIT_TIMEOUT = { timeout: 30_000 };
+
+describe('searchText', GIT_TIMEOUT, () => {
   it('fora do git: lê os arquivos e pula node_modules e binários', async () => {
     const res = await searchText({}, root, 'alvo', opts);
     expect(res).toMatchObject({ ok: true, total: 2, truncated: false });
@@ -108,7 +112,7 @@ describe('searchText', () => {
   });
 });
 
-describe('listFileNames', () => {
+describe('listFileNames', GIT_TIMEOUT, () => {
   it('no git: sem o que o .gitignore esconde', async () => {
     gitInit();
     const { files } = await listFileNames(root);

@@ -42,8 +42,8 @@ function MarkdownCard({
   children?: ReactNode
 }) {
   const openBeside = useContext(PlanOpenContext);
-  // Este texto já está na janela ao lado: o botão fecha.
-  const beside = useOpenPlan() === text;
+  // Este plano (ou este .md, em qualquer versão) já está na janela ao lado: o botão fecha.
+  const beside = useOpenPlan() === (path ?? text);
   const [expanded, setExpanded] = useState(false);
   const whole = expanded;
   const bodyRef = useRef<HTMLDivElement>(null);

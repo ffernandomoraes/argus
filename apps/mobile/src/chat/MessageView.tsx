@@ -4,8 +4,9 @@ import remarkGfm from 'remark-gfm';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { filesInBlock, withoutLegacyFiles } from '@argus/shared/attachedFiles';
 import type { DiffHunk, Message } from '@argus/shared/history';
-import { imageType, localImagePath } from '@argus/shared/imageFiles';
+import { imageType, inlineImagePath, localImagePath } from '@argus/shared/imageFiles';
 import { tr } from '../i18n';
+import { remarkImagePaths } from './remarkImagePaths';
 import { UserImages } from './UserImages';
 import { ImageLink, ImageStatus, SessionImageContext, useSessionImage } from './SessionImage';
 import { baseName, formatDuration, formatTokens, messageTime } from '../ui/format';
@@ -36,7 +37,17 @@ const MARKDOWN: Components = {
     );
   },
   img: ({ src, alt }) => <MarkdownImage src={typeof src === 'string' ? src : ''} alt={alt} />,
+  // Caminho de imagem em código em linha (`/private/tmp/print.png`) abre o preview, como no Argus.
+  // O de bloco (termina em quebra de linha) e o que está dentro de um link ficam como estão.
+  code: ({ children, className }) => <InlineCode className={className}>{children}</InlineCode>,
 };
+
+function InlineCode({ className, children }: { className?: string; children?: ReactNode }) {
+  const inLink = useContext(InsideLink);
+  const file = !className && !inLink && typeof children === 'string' && !children.includes('\n') ? inlineImagePath(children) : null;
+  const code = <code className={className}>{children}</code>;
+  return file ? <ImageLink file={file}>{code}</ImageLink> : code;
+}
 
 // Imagem da web não carrega (a página só fala com a ponte); a do computador, citada na conversa,
 // vira um link que abre o preview.
@@ -47,10 +58,13 @@ function MarkdownImage({ src, alt }: { src: string; alt?: string }) {
   return file && !inLink ? <ImageLink file={file}>{label}</ImageLink> : <span className="text-muted">{label}</span>;
 }
 
+// remarkImagePaths depois do GFM: o endereço da web já virou link e fica de fora.
+const REMARK_PLUGINS = [remarkGfm, remarkImagePaths];
+
 export const MarkdownText = memo(function MarkdownText({ text }: { text: string }) {
   return (
     <div className="prose-chat text-[15px]">
-      <Markdown remarkPlugins={[remarkGfm]} components={MARKDOWN} urlTransform={urlTransform}>
+      <Markdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN} urlTransform={urlTransform}>
         {text}
       </Markdown>
     </div>

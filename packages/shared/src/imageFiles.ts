@@ -40,13 +40,45 @@ export function markdownTargets(text: string): string[] {
   return [...text.matchAll(/\]\(\s*(<[^>\n]+>|[^\s)]+)/g)].map((m) => m[1] ?? '');
 }
 
-// A imagem aparece na conversa: o Claude leu o arquivo (o caminho da ferramenta) ou citou num link
-// ou imagem da resposta. O celular só recebe imagens que passam aqui, não qualquer arquivo do disco.
+// Código em linha que é caminho de imagem (`/private/tmp/print.png`): o Claude costuma citar o
+// arquivo assim, sem link. Precisa de uma barra; com espaço, só caminho absoluto, senão um comando
+// (`open shots/a.png`) viraria caminho. null: não é.
+export function inlineImagePath(code: string): string | null {
+  const text = code.trim();
+  if (!/[\\/]/.test(text)) return null;
+  if (/\s/.test(text) && !/^(\/|~[\\/]|[a-zA-Z]:[\\/])/.test(text)) return null;
+  return localImagePath(text);
+}
+
+// Trechos de código em linha de um texto em markdown (`assim`).
+export function inlineCodes(text: string): string[] {
+  return [...text.matchAll(/`([^`\n]+)`/g)].map((m) => m[1] ?? '');
+}
+
+// Caminho de imagem solto no texto ("salvei em /private/tmp/x/shot.png."): começo do texto, depois
+// de espaço ou de pontuação de abertura; ao menos uma barra; sem espaço (no texto solto não dá para
+// saber onde acaba); termina na extensão de imagem (o ponto final da frase fica de fora, mas
+// "a.png.bak" não é imagem). Sem lookbehind: o Safari antigo não entende, e
+// a expressão quebraria o app do celular inteiro ao carregar.
+const PATH_IN_TEXT =
+  /(^|[\s([{"'`*_>:])((?:~|[a-zA-Z]:)?[\\/]?(?:[^\s\\/`'"()<>[\]{}|*?]+[\\/])+[^\s\\/`'"()<>[\]{}|*?]+\.(?:png|jpe?g|gif|webp|bmp|svg|avif|ico))(?![\w/\\]|\.\w)/gi;
+
+// Os caminhos de imagem soltos num texto, com a posição de cada um.
+export function textImagePaths(text: string): { index: number; path: string }[] {
+  return [...text.matchAll(PATH_IN_TEXT)].map((m) => ({ index: m.index + (m[1] ?? '').length, path: m[2] ?? '' }));
+}
+
+// A imagem aparece na conversa: o Claude leu o arquivo (o caminho da ferramenta) ou citou na
+// resposta (link, imagem, código em linha ou caminho solto no texto). O celular só recebe imagens
+// que passam aqui, não qualquer arquivo do disco.
 export function mentionsImage(messages: Message[], path: string): boolean {
   if (!imageType(path)) return false;
   return messages.some(
     (m) =>
       (m.role === 'tool' && m.detail === path) ||
-      (m.role === 'assistant' && markdownTargets(m.text).some((t) => localImagePath(t) === path)),
+      (m.role === 'assistant' &&
+        (markdownTargets(m.text).some((t) => localImagePath(t) === path) ||
+          inlineCodes(m.text).some((c) => inlineImagePath(c) === path) ||
+          textImagePaths(m.text).some((t) => t.path === path))),
   );
 }

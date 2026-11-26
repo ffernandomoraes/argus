@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Message } from './history';
-import { localImagePath, markdownTargets, mentionsImage } from './imageFiles';
+import { inlineImagePath, localImagePath, markdownTargets, mentionsImage, textImagePaths } from './imageFiles';
 
 const read = (detail: string): Message => ({ id: 't', role: 'tool', name: 'Read', label: 'Ler', input: 'print', detail, result: '' });
 const answer = (text: string): Message => ({ id: 'a', role: 'assistant', text });
@@ -31,7 +31,44 @@ describe('markdownTargets', () => {
   });
 });
 
+describe('inlineImagePath', () => {
+  it('caminho de imagem em código em linha', () => {
+    expect(inlineImagePath('/private/tmp/claude-501/shot.png')).toBe('/private/tmp/claude-501/shot.png');
+    expect(inlineImagePath('shots/a.png')).toBe('shots/a.png');
+    expect(inlineImagePath('/Users/a/Captura de Tela.png')).toBe('/Users/a/Captura de Tela.png');
+  });
+
+  it('sem barra, comando com espaço ou arquivo que não é imagem ficam de fora', () => {
+    expect(inlineImagePath('print.png')).toBeNull();
+    expect(inlineImagePath('open shots/a.png')).toBeNull();
+    expect(inlineImagePath('/tmp/notas.md')).toBeNull();
+  });
+});
+
+describe('textImagePaths', () => {
+  it('caminhos soltos no texto, sem a pontuação do fim', () => {
+    expect(textImagePaths('Salvei em /private/tmp/x/shot.png. Veja (~/Desktop/a.jpg) e shots/b.PNG')).toEqual([
+      { index: 10, path: '/private/tmp/x/shot.png' },
+      { index: 41, path: '~/Desktop/a.jpg' },
+      { index: 60, path: 'shots/b.PNG' },
+    ]);
+    expect(textImagePaths('C:\\Users\\a\\print.png')).toEqual([{ index: 0, path: 'C:\\Users\\a\\print.png' }]);
+  });
+
+  it('endereço da web, nome sem barra e arquivo que não é imagem ficam de fora', () => {
+    expect(textImagePaths('https://site.com/a.png print.png /tmp/notas.md /tmp/a.png.bak')).toEqual([]);
+  });
+});
+
 describe('mentionsImage', () => {
+  it('imagem citada solta no texto da resposta', () => {
+    expect(mentionsImage([answer('ver /Users/a/foto.png')], '/Users/a/foto.png')).toBe(true);
+  });
+
+  it('imagem citada em código em linha na resposta', () => {
+    expect(mentionsImage([answer('Salvei em `/private/tmp/x/shot.png`.')], '/private/tmp/x/shot.png')).toBe(true);
+  });
+
   it('imagem que o Claude leu', () => {
     expect(mentionsImage([read('/tmp/print.png')], '/tmp/print.png')).toBe(true);
   });
@@ -41,7 +78,7 @@ describe('mentionsImage', () => {
   });
 
   it('caminho que não aparece na conversa não passa', () => {
-    expect(mentionsImage([read('/tmp/print.png'), answer('ver /Users/a/foto.png')], '/Users/a/foto.png')).toBe(false);
+    expect(mentionsImage([read('/tmp/print.png'), answer('ver /Users/a/foto.png')], '/Users/a/outra.png')).toBe(false);
     expect(mentionsImage([answer('[a](/tmp/x/print.png)')], 'print.png')).toBe(false);
   });
 

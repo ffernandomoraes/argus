@@ -12,7 +12,7 @@ import { PermissionRow } from './rows/PermissionRow';
 import { UserBubble } from './rows/UserBubble';
 import { WorkingRow } from './rows/WorkingRow';
 import { StreamingMarkdown } from './StreamingMarkdown';
-import { stepItem, type TimelineItem } from './timelineItem';
+import { liveStepItem, type TimelineItem } from './timelineItem';
 import { tr } from '../../i18n';
 
 export type LiveOptions = {
@@ -41,7 +41,7 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
     const view = w.images ? o.viewFor(w.id, w.read) : undefined;
     const files = attachedFiles(w.files);
     // fresh: acabou de ser enviada, entra com animação (ver Timeline).
-    items.push({ kind: 'user', key: w.id, fresh: true, node: <UserBubble text={w.text} images={w.images} imageView={view} files={files} /> });
+    items.push({ kind: 'user', key: w.id, fresh: true, live: true, node: <UserBubble text={w.text} images={w.images} imageView={view} files={files} /> });
   }
   const partial = partialText(o.live, o.messages);
   if (partial) {
@@ -50,13 +50,13 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
         <StreamingMarkdown text={partial} />
       </div>
     );
-    items.push(stepItem(o.previewKey, 'bg-running animate-pulse', node));
+    items.push(liveStepItem(o.previewKey, 'bg-running animate-pulse', node));
   }
   // data-continues-turn: responder deixa o pedido seguir, então o clique não solta o fim da conversa
   // (ver useStickyScroll).
   o.live?.permissions.forEach((p) =>
     items.push(
-      stepItem(
+      liveStepItem(
         `perm-${p.id}`,
         'bg-ask',
         <div data-continues-turn>
@@ -80,9 +80,9 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
         tokens={tokens}
       />
     );
-    items.push(stepItem('working', 'bg-running animate-pulse', row));
+    items.push(liveStepItem('working', 'bg-running animate-pulse', row));
   }
-  if (o.live?.error) items.push(stepItem('error', 'bg-red-400', <ErrorRow error={o.live.error} loginNeeded={o.live.loginNeeded} onResend={o.onResend} />));
+  if (o.live?.error) items.push(liveStepItem('error', 'bg-red-400', <ErrorRow error={o.live.error} loginNeeded={o.live.loginNeeded} onResend={o.onResend} />));
   if (o.status === 'needs-you' && !o.live?.permissions.length) {
     const notice = (
       <div className="rounded-lg border border-ask/40 bg-ask/10 px-3 py-2 text-[13px] text-text">
@@ -92,7 +92,7 @@ export function liveItems(o: LiveItemsOptions): TimelineItem[] {
         )}
       </div>
     );
-    items.push(stepItem('needs-you', 'bg-ask', notice));
+    items.push(liveStepItem('needs-you', 'bg-ask', notice));
   }
   return items;
 }

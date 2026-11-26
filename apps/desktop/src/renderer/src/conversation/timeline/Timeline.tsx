@@ -46,15 +46,29 @@ export const Timeline = memo(function Timeline({
     [rows, virtualizer],
   );
 
-  const initial = useRef<Set<string> | null>(null);
-  // A mensagem recém-enviada nunca conta como já estando: na conversa nova ela é a primeira linha.
-  if (!initial.current && rows.length) initial.current = new Set(rows.filter((row) => !(row.kind === 'user' && row.fresh)).map((row) => row.key));
-  let lastInitial = rows.length - 1;
-  while (lastInitial >= 0 && !initial.current?.has(rows[lastInitial].key)) lastInitial--;
   // Os que já chegaram, na tela ou fora dela (você tinha subido para ler).
   const entered = useRef(new Set<string>());
+  const initial = useRef<Set<string> | null>(null);
+  // Só o histórico conta como já estando. As linhas ao vivo da abertura (o "Trabalhando…" de um
+  // pedido em andamento) aparecem paradas, mas não marcam onde o histórico acaba: antes, com elas no
+  // fim, nada do que chegava acima delas animava. A mensagem recém-enviada também é ao vivo: na
+  // conversa nova ela é a primeira linha.
+  if (!initial.current && rows.length) {
+    initial.current = new Set(rows.filter((row) => !row.live).map((row) => row.key));
+    for (const row of rows) if (row.live && !(row.kind === 'user' && row.fresh)) entered.current.add(row.key);
+  }
+  let lastInitial = rows.length - 1;
+  while (lastInitial >= 0 && !initial.current?.has(rows[lastInitial].key)) lastInitial--;
+  // Linha ao vivo que saiu (o "Trabalhando…" no fim do pedido) entra animada de novo quando voltar.
+  const shownLive = useRef<string[]>([]);
   useEffect(() => {
-    for (let i = lastInitial + 1; i < rows.length; i++) entered.current.add(rows[i].key);
+    const present = new Set<string>();
+    for (let i = lastInitial + 1; i < rows.length; i++) {
+      entered.current.add(rows[i].key);
+      present.add(rows[i].key);
+    }
+    for (const key of shownLive.current) if (!present.has(key)) entered.current.delete(key);
+    shownLive.current = rows.slice(lastInitial + 1).flatMap((row) => (row.live ? [row.key] : []));
   });
 
   const items = virtualizer.getVirtualItems();
@@ -67,15 +81,16 @@ export const Timeline = memo(function Timeline({
         const i = vi.index;
         const item = rows[i];
         if (!item) return null;
+        const arrived = i > lastInitial && !entered.current.has(item.key);
         return (
           // O espaço entre os itens fica dentro de cada um (pb-3), para entrar na medida.
           <div key={vi.key} data-index={i} ref={virtualizer.measureElement} className={i < rows.length - 1 ? 'pb-3' : undefined}>
             {item.kind === 'step' ? (
-              <Step dot={item.dot} dotTop={item.dotTop} connect={rows[i + 1]?.kind === 'step'} enter={i > lastInitial && !entered.current.has(item.key)}>
+              <Step dot={item.dot} dotTop={item.dotTop} connect={rows[i + 1]?.kind === 'step'} enter={arrived}>
                 {item.node}
               </Step>
             ) : (
-              <Loose prompt={item.kind === 'user' ? item.key : undefined} enter={item.kind === 'user' && !!item.fresh && i > lastInitial && !entered.current.has(item.key)}>
+              <Loose prompt={item.kind === 'user' ? item.key : undefined} enter={arrived ? looseEntry(item) : undefined}>
                 {item.node}
               </Loose>
             )}
@@ -86,13 +101,21 @@ export const Timeline = memo(function Timeline({
   );
 });
 
+// Como entra um balão ou divisor que acabou de chegar: a mensagem que você enviou cresce de leve
+// (bubble-in); divisor (o dia, a troca de modelo) entra como os passos. O balão gravado que toma o
+// lugar do provisório não anima de novo (outra chave, mas é a mesma mensagem na tela).
+function looseEntry(item: TimelineItem): 'bubble-in' | 'step-in' | undefined {
+  if (item.kind === 'user') return item.fresh ? 'bubble-in' : undefined;
+  return 'step-in';
+}
+
 // Balão ou divisor (fora da linha dos passos). data-prompt: o balão, para o prompt preso no topo e
-// para a piscada ao pular até ele (jump-flash). `enter`: a mensagem que você acabou de enviar entra
-// crescendo de leve (bubble-in); como no Step, vale o da montagem.
-function Loose({ prompt, enter, children }: { prompt?: string; enter: boolean; children: ReactNode }) {
+// para a piscada ao pular até ele (jump-flash). `enter`: a animação de entrada (looseEntry); como
+// no Step, vale o da montagem.
+function Loose({ prompt, enter, children }: { prompt?: string; enter?: 'bubble-in' | 'step-in'; children: ReactNode }) {
   const [entering] = useState(enter);
   return (
-    <div data-prompt={prompt} className={`timeline-item relative ${entering ? 'bubble-in' : ''}`}>
+    <div data-prompt={prompt} className={`timeline-item relative ${entering ?? ''}`}>
       {children}
     </div>
   );

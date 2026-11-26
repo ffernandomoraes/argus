@@ -161,15 +161,17 @@
   }
 }
 
-/* Passo novo na conversa (Step): aparece subindo um pouco, bem de leve. */
+/* Linha nova na conversa (Step, divisores): o comando, o raciocínio, a resposta, o "Trabalhando…"
+   aparecem subindo e clareando. Era 4px em 220ms e passava despercebido: a resposta parecia
+   estática (pedido do Fernando, 2026-11-25). */
 @keyframes step-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(10px);
   }
 }
 .step-in {
-  animation: step-in 220ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: step-in 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .step-in {

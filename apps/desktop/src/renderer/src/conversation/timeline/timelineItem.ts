@@ -4,11 +4,14 @@ import type { ReactNode } from 'react';
 // bolinha à esquerda e a linha até o próximo passo).
 // search: o texto em que a busca na conversa procura (o que fica dentro do data-search-text da
 // linha); sem ele, a linha fica de fora da busca.
-export type TimelineItem =
+// live: vem do que acontece agora, não do histórico gravado (o "Trabalhando…", a resposta sendo
+// escrita, as permissões, os balões a caminho; ver liveItems).
+export type TimelineItem = (
   // fresh: mensagem que você acabou de enviar (a provisória, antes do histórico); entra animada.
   | { kind: 'user'; key: string; node: ReactNode; fresh?: boolean; search?: string }
   | { kind: 'divider'; key: string; node: ReactNode }
-  | { kind: 'step'; key: string; dot: string; dotTop?: number; node: ReactNode; search?: string };
+  | { kind: 'step'; key: string; dot: string; dotTop?: number; node: ReactNode; search?: string }
+) & { live?: boolean };
 
 // Altura da bolinha (topo, em px) para ficar no meio da primeira linha do passo. A padrão
 // serve à resposta (15px, leading-relaxed); ações e raciocínio têm linha de 20px com 4px
@@ -26,3 +29,6 @@ export const stepItem = (key: string, dot: string, node: ReactNode, dotTop?: num
   node,
   search,
 });
+
+// Passo do que acontece agora (ver `live`).
+export const liveStepItem = (key: string, dot: string, node: ReactNode): TimelineItem => ({ ...stepItem(key, dot, node), live: true });

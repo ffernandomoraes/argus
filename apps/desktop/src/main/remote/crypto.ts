@@ -209,6 +209,8 @@ export { sameBytes };
 const CHUNK = 256 * 1024;
 // Uma mensagem montada nunca passa disto (protege a memória de quem recebe).
 const MAX_MESSAGE = 64 * 1024 * 1024;
+// Mensagens guardadas enquanto ninguém ouve a ligação (ver `held` em secureLink).
+const MAX_HELD = 32;
 
 function nonce(counter: bigint): Buffer {
   const n = Buffer.alloc(12);
@@ -224,6 +226,10 @@ export function secureLink(raw: Link, sendKey: Uint8Array, receiveKey: Uint8Arra
   let parts: Buffer[] = [];
   let size = 0;
   const messageListeners: ((d: Buffer) => void)[] = [];
+  // O que chegou antes de alguém ouvir fica para o primeiro ouvinte. Quem recebe a ligação pode
+  // demorar a ouvir (o de casa confere na conta o aparelho pareado por ela): o "hello" do celular
+  // chegava nessa espera, se perdia e o celular ficava em "Conectando…" para sempre (2026-11-26).
+  let held: Buffer[] | null = [];
 
   const seal = (plain: Buffer): Buffer => {
     const cipher = createCipheriv('aes-256-gcm', sendKey, nonce(sendCounter++), { authTagLength: 16 });
@@ -257,7 +263,12 @@ export function secureLink(raw: Link, sendKey: Uint8Array, receiveKey: Uint8Arra
     const message = parts.length === 1 ? parts[0] : Buffer.concat(parts);
     parts = [];
     size = 0;
-    for (const cb of messageListeners) cb(message);
+    if (!held) return messageListeners.forEach((cb) => cb(message));
+    if (held.length >= MAX_HELD) {
+      console.warn('[remoto] mensagens demais sem ninguém ouvindo; ligação encerrada');
+      return raw.close();
+    }
+    held.push(message);
   });
 
   return {
@@ -268,7 +279,18 @@ export function secureLink(raw: Link, sendKey: Uint8Array, receiveKey: Uint8Arra
         if (end >= data.length) break;
       }
     },
-    onMessage: (cb) => void messageListeners.push(cb),
+    onMessage: (cb) => {
+      messageListeners.push(cb);
+      if (!held || messageListeners.length > 1) return;
+      if (!held.length) return void (held = null);
+      // Depois, como numa rede: nunca no meio de quem acabou de começar a ouvir. Até lá, o que chegar
+      // entra no fim da fila, para manter a ordem.
+      setImmediate(() => {
+        const waiting = held ?? [];
+        held = null;
+        for (const m of waiting) messageListeners.forEach((l) => l(m));
+      });
+    },
     onClose: (cb) => raw.onClose(cb),
     close: () => raw.close(),
   };

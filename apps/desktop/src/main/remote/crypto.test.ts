@@ -183,6 +183,21 @@ describe('mensagens cifradas', () => {
     expect(got[1]).toHaveLength(0);
   });
 
+  // O de casa confere na conta o aparelho pareado por ela antes de ouvir a ligação: o "hello" do
+  // celular chegava nessa espera e se perdia ("Conectando…" sem fim, 2026-11-26).
+  it('mensagem que chega antes de alguém ouvir não se perde', async () => {
+    const [a, b] = memoryLinks();
+    const sa = secureLink(a, k1, k2);
+    const sb = secureLink(b, k2, k1);
+    sa.send(Buffer.from('hello'));
+    sa.send(Buffer.from('depois'));
+    await settle();
+    const got = received(sb);
+    sa.send(Buffer.from('já ouvindo'));
+    await settle();
+    expect(got.map((d) => d.toString())).toEqual(['hello', 'depois', 'já ouvindo']);
+  });
+
   it('mensagem alterada no caminho fecha a ligação e não chega', async () => {
     const [a, b] = memoryLinks();
     // A ponte, no meio, troca um byte.

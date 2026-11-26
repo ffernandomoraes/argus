@@ -7,6 +7,9 @@ export const DEFAULT_PUBLIC_URL = 'https://account.argusterm.com';
 // O app do celular (servido pela ponte do acesso remoto): para onde o login do celular volta e a
 // única origem de navegador que pode chamar a API (ver middlewares/cors.ts).
 export const DEFAULT_WEB_APP_URL = 'https://remote.argusterm.com';
+// O mesmo app, pelo endereço do Worker da ponte na Cloudflare: há celulares com o app instalado por
+// ele (o iPhone guarda a origem de onde instalou). Pode chamar a API; o login nunca volta para lá.
+export const WEB_APP_ALIASES = ['https://argus-relay.fernando-moraes-10e.workers.dev'];
 
 const emptyToUndefined = (value: unknown) => (typeof value === 'string' && value.trim() === '' ? undefined : value);
 const optionalString = z.preprocess(emptyToUndefined, z.string().trim().optional());

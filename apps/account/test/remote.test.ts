@@ -102,4 +102,10 @@ describe('CORS', () => {
     const evil = await request(ctx.app).options('/api/remote/hosts').set('Origin', 'https://evil.example');
     expect(evil.headers['access-control-allow-origin']).toBeUndefined();
   });
+
+  it('o mesmo app pelo endereço do Worker da ponte (instalado por ele) também pode', async () => {
+    const worker = 'https://argus-relay.fernando-moraes-10e.workers.dev';
+    const pre = await request(ctx.app).options('/api/desktop/redeem-wait').set('Origin', worker).set('Access-Control-Request-Headers', 'content-type');
+    expect(pre.headers['access-control-allow-origin']).toBe(worker);
+  });
 });

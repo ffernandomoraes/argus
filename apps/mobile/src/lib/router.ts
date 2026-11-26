@@ -80,6 +80,13 @@ export function useHash(): string {
   return useSyncExternalStore(subscribe, () => location.hash);
 }
 
+// No app instalado do iPhone, as telas não entram no histórico do navegador: o arrastar da borda do
+// próprio Safari voltava a página dele (com a foto da tela de antes deslizando), e não a tela do app.
+// Lá, as telas de trás ficam guardadas aqui, e o arrastar chama o mesmo voltar do botão (ver
+// ui/useEdgeSwipeBack.ts). No navegador e no Android, segue o histórico (botão e gesto de voltar do sistema).
+export const ownHistory = (navigator as { standalone?: boolean }).standalone === true;
+const behind: string[] = [];
+
 // Profundidade dentro do app, guardada em cada passo do histórico: com ela, "voltar" sabe se há
 // uma tela do app para trás (aberto por uma notificação, não há).
 const depth = (): number => {
@@ -90,18 +97,30 @@ const depth = (): number => {
 const changed = () => window.dispatchEvent(new HashChangeEvent('hashchange'));
 
 export function go(route: Route): void {
-  history.pushState({ depth: depth() + 1 }, '', routeHash(route));
+  if (ownHistory) {
+    behind.push(location.hash || '#/');
+    history.replaceState(null, '', routeHash(route));
+  } else history.pushState({ depth: depth() + 1 }, '', routeHash(route));
   changed();
 }
 
 // Troca o endereço sem criar uma volta no histórico (conversa nova que ganhou a sessão).
 export function replace(route: Route): void {
-  history.replaceState({ depth: depth() }, '', routeHash(route));
+  history.replaceState(ownHistory ? null : { depth: depth() }, '', routeHash(route));
   changed();
 }
 
 // Volta pelo histórico quando a tela veio de dentro do app; senão, para a tela de cima.
 export function back(fallback: Route): void {
-  if (depth() > 0) history.back();
+  if (ownHistory) {
+    history.replaceState(null, '', behind.pop() ?? routeHash(fallback));
+    changed();
+  } else if (depth() > 0) history.back();
   else replace(fallback);
+}
+
+// Volta para o início sem deixar volta (antes de recarregar, ao esquecer o computador).
+export function resetToStart(): void {
+  behind.length = 0;
+  history.replaceState(null, '', '#/');
 }

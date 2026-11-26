@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { tr } from '../i18n';
+import { useEdgeSwipeBack } from './useEdgeSwipeBack';
 
 // Topo flutuante (o da conversa): voltar num botão redondo à esquerda, o título pequeno no meio,
 // uma ação à direita, e o conteúdo sumindo suave embaixo deles. A tela dá o espaço de cima com
@@ -24,6 +25,8 @@ export function FloatingHeader({
   backLabel?: string
   right?: ReactNode
 }) {
+  // Arrastar da borda esquerda volta como este botão (no app instalado do iPhone).
+  useEdgeSwipeBack(onBack);
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-20">
       {/* Fundo sólido até o fim da linha do título e, só depois, o degradê: o texto que rola some

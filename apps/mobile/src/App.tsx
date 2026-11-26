@@ -3,7 +3,7 @@ import { AppBadge } from './lib/appBadge';
 import { HostProvider } from './lib/host';
 import { setCacheScope } from './lib/cache';
 import { ConnectionOverlay } from './ui/ConnectionOverlay';
-import { parseRoute, replace, useHash } from './lib/router';
+import { go, parseRoute, replace, useHash } from './lib/router';
 import { HostConnection, loadPairedHost, type PairedHost } from './net/connection';
 import { ChatScreen } from './screens/ChatScreen';
 import { FolderScreen } from './screens/FolderScreen';
@@ -95,7 +95,7 @@ export function App() {
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       const data = e.data as { type?: string; url?: string } | null;
-      if (data?.type === 'open' && typeof data.url === 'string' && data.url.startsWith('#')) location.hash = data.url;
+      if (data?.type === 'open' && typeof data.url === 'string' && data.url.startsWith('#')) go(parseRoute(data.url));
     };
     navigator.serviceWorker?.addEventListener('message', onMessage);
     return () => navigator.serviceWorker?.removeEventListener('message', onMessage);

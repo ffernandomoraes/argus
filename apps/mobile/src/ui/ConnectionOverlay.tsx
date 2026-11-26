@@ -3,6 +3,7 @@ import { Loader2, WifiOff } from 'lucide-react';
 import { tr } from '../i18n';
 import { forgetPairedHost, type HostConnection } from '../net/connection';
 import { useHost, useStatus } from '../lib/host';
+import { resetToStart } from '../lib/router';
 import { disablePush } from '../lib/push';
 import { ConfirmSheet } from './ConfirmSheet';
 
@@ -11,7 +12,7 @@ function disconnect(conn: HostConnection): void {
   void disablePush(conn).catch(() => {});
   conn.stop();
   forgetPairedHost();
-  location.hash = '';
+  resetToStart();
   location.reload();
 }
 

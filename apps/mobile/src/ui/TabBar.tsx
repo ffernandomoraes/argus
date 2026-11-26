@@ -1,11 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Folder, MessageCircle, UserRound } from 'lucide-react';
 import { tr } from '../i18n';
+import { isTurnDone } from '../lib/background';
+import { useActiveChats } from '../lib/data';
 import { replace, type Route } from '../lib/router';
 
 // Navegação de baixo, flutuando como a caixa de escrever: Conversas, Projetos e Conta. Aparece só
 // nessas três telas; dentro de uma pasta ou conversa, some (lá embaixo fica a caixa de escrever).
-// Trocar de aba não cria volta no histórico, como no iOS.
+// Trocar de aba não cria volta no histórico, como no iOS. A barra inteira na cor do Argus (laranja),
+// a aba atual numa pílula branca; com alguma conversa trabalhando, uma bolinha pisca em Conversas.
 
 export type Tab = 'home' | 'projects' | 'settings';
 
@@ -18,12 +21,13 @@ const TABS: { tab: Tab; label: () => string; icon: typeof Folder }[] = [
 export const isTab = (route: Route): route is Route & { name: Tab } => TABS.some((t) => t.tab === route.name);
 
 export function TabBar({ current }: { current: Tab }) {
+  const working = useActiveChats().some((c) => c.status === 'running' && !isTurnDone(c));
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-20">
       {/* O conteúdo some suave atrás da barra, em vez de cortar seco. */}
       <div className="h-6 bg-gradient-to-b from-transparent to-bg" />
       <div className="px-safe bg-bg pb-[max(12px,env(safe-area-inset-bottom))]">
-        <div className="pointer-events-auto mx-auto flex max-w-[340px] rounded-full border border-line bg-card p-0.5 shadow-[0_6px_24px_rgba(0,0,0,0.10)]">
+        <div className="pointer-events-auto mx-auto flex max-w-[360px] gap-1 rounded-full bg-accent p-1 shadow-[0_6px_24px_rgba(0,0,0,0.16)]">
           {TABS.map(({ tab, label, icon: Icon }) => {
             const on = tab === current;
             return (
@@ -32,9 +36,17 @@ export function TabBar({ current }: { current: Tab }) {
                 type="button"
                 aria-current={on ? 'page' : undefined}
                 onClick={() => !on && replace({ name: tab })}
-                className={`flex flex-1 flex-col items-center gap-px rounded-full py-1 text-[11px] font-medium active:opacity-60 ${on ? 'bg-code text-accent' : 'text-muted'}`}
+                className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[12px] font-semibold active:opacity-60 ${on ? 'bg-white text-accent' : 'text-white/85'}`}
               >
-                <Icon size={17} strokeWidth={on ? 2.4 : 2} />
+                <span className="relative">
+                  <Icon size={22} strokeWidth={on ? 2.4 : 2} />
+                  {tab === 'home' && working && (
+                    <span
+                      aria-label={tr('Conversa em andamento', 'Chat in progress')}
+                      className="animate-pulse-dot absolute -top-1 -right-1.5 size-2.5 rounded-full bg-running ring-2 ring-white"
+                    />
+                  )}
+                </span>
                 {label()}
               </button>
             );

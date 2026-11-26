@@ -14,7 +14,7 @@
   --muted: #6c6c70;
   --faint: #8e8e93;
   --line: rgba(60, 60, 67, 0.18);
-  --accent: #007aff;
+  --accent: #d77552;
   --green: #34c759;
   --orange: #ff9500;
   --red: #ff3b30;
@@ -44,7 +44,7 @@
     --muted: #aeaeb2;
     --faint: #8d8d93;
     --line: rgba(84, 84, 88, 0.6);
-    --accent: #0a84ff;
+    --accent: #d77552;
     --green: #30d158;
     --orange: #ff9f0a;
     --red: #ff453a;
@@ -70,7 +70,7 @@
   --muted: #aeaeb2;
   --faint: #8d8d93;
   --line: rgba(84, 84, 88, 0.6);
-  --accent: #0a84ff;
+  --accent: #d77552;
   --green: #30d158;
   --orange: #ff9f0a;
   --red: #ff453a;
@@ -167,7 +167,7 @@ textarea {
 }
 /* Telas com a barra de abas (ui/TabBar.tsx) embaixo: o fim da lista passa acima dela. */
 .pb-tabs {
-  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  padding-bottom: calc(116px + env(safe-area-inset-bottom));
 }
 .px-safe {
   padding-left: max(16px, env(safe-area-inset-left));

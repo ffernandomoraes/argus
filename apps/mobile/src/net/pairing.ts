@@ -6,7 +6,8 @@ import { HandshakeError, pairAsClient } from './handshake';
 // O computador pareado (guardado no aparelho), o endereço da ponte, o WebSocket como ligação e o
 // pareamento pelo código. A conexão em si fica em connection.ts.
 
-export type PairedHost = { hostId: string; hostName: string; deviceId: string; psk: string };
+// viaAccount: pareado pela conta do Argus (com bilhete): sair da conta tira o celular do computador.
+export type PairedHost = { hostId: string; hostName: string; deviceId: string; psk: string; viaAccount?: boolean };
 
 const STORE_KEY = 'argus-paired-host';
 
@@ -136,7 +137,7 @@ export async function pairWithCode(text: string, ticket?: string): Promise<strin
   }
   try {
     const granted = await pairAsClient(raw, code, deviceName(), ticket);
-    savePairedHost({ hostId: granted.hostId, hostName: granted.hostName, deviceId: granted.deviceId, psk: b64(granted.psk) });
+    savePairedHost({ hostId: granted.hostId, hostName: granted.hostName, deviceId: granted.deviceId, psk: b64(granted.psk), viaAccount: Boolean(ticket) });
     return null;
   } catch (err) {
     return pairFailure(err);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { tr } from '../i18n';
 import { useHost, useStatus } from '../lib/host';
+import { resetToStart } from '../lib/router';
 import { forgetPush } from '../lib/push';
 import { forgetPairedHost } from '../net/connection';
 import { ConfirmSheet } from '../ui/ConfirmSheet';
@@ -9,8 +10,9 @@ import { TabHeader } from '../ui/TabBar';
 import { UsageSection } from '../ui/UsageSummary';
 import { NotificationsSection } from './NotificationsSection';
 import { PreferencesSection } from './PreferencesSection';
+import { AccountSection } from './AccountSection';
 
-// Aba Conta: o uso das contas, as preferências, o computador pareado, as notificações e esquecer o
+// Aba Conta: a conta do Argus (AccountSection), o uso das contas, as preferências, o computador pareado, as notificações e esquecer o
 // computador.
 export function SettingsScreen() {
   const { conn } = useHost();
@@ -21,13 +23,14 @@ export function SettingsScreen() {
     void forgetPush(conn).catch(() => {});
     conn.stop();
     forgetPairedHost();
-    location.hash = '';
+    resetToStart();
     location.reload();
   };
   return (
     <div className="min-h-full">
       <div className="px-safe pb-tabs">
         <TabHeader title={tr('Conta', 'Account')} />
+        <AccountSection />
         <UsageSection />
         <PreferencesSection />
 
@@ -51,7 +54,10 @@ export function SettingsScreen() {
       <ConfirmSheet
         open={asking}
         title={tr('Esquecer este computador?', 'Forget this computer?')}
-        message={tr('Para entrar de novo, será preciso parear com um código novo.', 'To connect again you will need a new pairing code.')}
+        message={tr(
+          'Para entrar de novo, pareie com um código novo ou escolha o computador pela conta do Argus.',
+          'To connect again, pair with a new code or pick the computer through your Argus account.',
+        )}
         confirmLabel={tr('Esquecer', 'Forget')}
         danger
         onConfirm={forget}

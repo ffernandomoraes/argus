@@ -27,7 +27,7 @@ export function TabBar({ current }: { current: Tab }) {
       {/* O conteúdo some suave atrás da barra, em vez de cortar seco. */}
       <div className="h-6 bg-gradient-to-b from-transparent to-bg" />
       <div className="px-safe bg-bg pb-[max(12px,env(safe-area-inset-bottom))]">
-        <div className="pointer-events-auto mx-auto flex max-w-[360px] gap-1 rounded-full bg-accent p-1 shadow-[0_6px_24px_rgba(0,0,0,0.16)]">
+        <div className="pointer-events-auto mx-auto flex max-w-[330px] gap-0.5 rounded-full bg-accent p-[3px] shadow-[0_6px_24px_rgba(0,0,0,0.16)]">
           {TABS.map(({ tab, label, icon: Icon }) => {
             const on = tab === current;
             return (
@@ -36,14 +36,14 @@ export function TabBar({ current }: { current: Tab }) {
                 type="button"
                 aria-current={on ? 'page' : undefined}
                 onClick={() => !on && replace({ name: tab })}
-                className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[12px] font-semibold active:opacity-60 ${on ? 'bg-white text-accent' : 'text-white/85'}`}
+                className={`flex flex-1 flex-col items-center gap-px rounded-full py-1.5 text-[11px] font-semibold active:opacity-60 ${on ? 'bg-white text-accent' : 'text-white/85'}`}
               >
                 <span className="relative">
-                  <Icon size={22} strokeWidth={on ? 2.4 : 2} />
+                  <Icon size={18} strokeWidth={on ? 2.4 : 2} />
                   {tab === 'home' && working && (
                     <span
                       aria-label={tr('Conversa em andamento', 'Chat in progress')}
-                      className="animate-pulse-dot absolute -top-1 -right-1.5 size-2.5 rounded-full bg-running ring-2 ring-white"
+                      className="animate-pulse-dot absolute -top-0.5 -right-1 size-2 rounded-full bg-running ring-2 ring-white"
                     />
                   )}
                 </span>

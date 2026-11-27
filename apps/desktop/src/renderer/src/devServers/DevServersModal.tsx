@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ExternalLink, Lock, Power, Server } from 'lucide-react';
 import { baseName, tildify } from '../platform';
 import { Button } from '../ui/Button';
+import { MiddleEllipsis } from '../ui/MiddleEllipsis';
 import { Modal } from '../ui/Modal';
 import { ModalCloseButton } from '../ui/ModalCloseButton';
 import { useDevServers } from './useDevServers';
@@ -18,17 +19,6 @@ const LOCK_REASON = tr(
 
 // Sem pasta (no Windows, servidor iniciado fora das pastas do canvas): o programa, pela linha de comando.
 const folderName = (cwd: string, command: string) => baseName(cwd) || cwd || baseName(command.split(' ')[0].replace(/"/g, '')) || tr('Servidor', 'Server');
-
-// Caminho longo em uma linha só: corta no meio e deixa o começo e a última pasta à vista.
-function MiddlePath({ path }: { path: string }) {
-  const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1;
-  return (
-    <div className="mt-0.5 flex min-w-0 font-mono text-[12px] text-faint" title={path}>
-      <span className="truncate">{path.slice(0, cut)}</span>
-      <span className="max-w-[70%] shrink-0 truncate">{path.slice(cut)}</span>
-    </div>
-  );
-}
 
 // Servidores locais que o Claude Code ou o play deixou rodando, ou que rodam dentro de uma pasta
 // do canvas (`paths`): abrir no navegador ou encerrar.
@@ -83,10 +73,11 @@ export function DevServersModal({ paths, onClose }: { paths: string[]; onClose: 
                   {s.current && <span className="shrink-0 text-xs text-muted">{tr('(este app)', '(this app)')}</span>}
                   <span className="shrink-0 font-mono text-xs text-muted">:{s.port}</span>
                 </div>
-                {s.cwd && <MiddlePath path={tildify(s.cwd)} />}
-                <div className="truncate font-mono text-[12px] text-faint" title={s.command}>
-                  {s.command}
-                </div>
+                <MiddleEllipsis
+                  text={s.cwd ? tildify(s.cwd) : s.command}
+                  title={s.cwd ? `${s.cwd}\n${s.command}` : s.command}
+                  className="mt-0.5 font-mono text-[12px] text-faint"
+                />
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <Button size="sm" onClick={() => (IS_REMOTE ? openRemoteLocalhost(s.port) : void window.open(`http://localhost:${s.port}`))} title={tr(`Abrir localhost:${s.port} no navegador`, `Open localhost:${s.port} in the browser`)}>

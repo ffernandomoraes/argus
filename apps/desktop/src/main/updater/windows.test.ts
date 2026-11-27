@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { installerCommand } from './windows';
+import { installerCommand, isStandardInstallDir } from './windows';
 
 // O instalador do Windows desinstala a versão antiga antes de copiar a nova: se a cópia falhar, o
 // app some da máquina. A linha do cmd precisa rodar o instalador de novo quando o Argus.exe faltar.
@@ -23,5 +23,26 @@ describe('installerCommand', () => {
     const line = installerCommand(installer, exe, false);
     expect(line).toContain(`"${installer}"`);
     expect(line).toContain(`if not exist "${exe}"`);
+  });
+});
+
+// Pista do aviso de atualização desligada: o desinstalador sumido na pasta do instalador é diferente
+// de rodar de uma cópia da pasta.
+describe('isStandardInstallDir', () => {
+  const local = 'C:\\Users\\João Silva\\AppData\\Local';
+
+  it('reconhece a pasta do instalador, sem diferença de maiúsculas nem barra no fim', () => {
+    expect(isStandardInstallDir('C:\\Users\\João Silva\\AppData\\Local\\Programs\\argus', local)).toBe(true);
+    expect(isStandardInstallDir('c:\\users\\JOÃO SILVA\\appdata\\local\\programs\\Argus\\', local)).toBe(true);
+  });
+
+  it('acento decomposto (NFD) conta como o mesmo caminho', () => {
+    expect(isStandardInstallDir('C:\\Users\\João Silva\\AppData\\Local\\Programs\\argus'.normalize('NFD'), local)).toBe(true);
+  });
+
+  it('outra pasta ou sem LOCALAPPDATA não conta', () => {
+    expect(isStandardInstallDir('D:\\Apps\\argus', local)).toBe(false);
+    expect(isStandardInstallDir('C:\\Users\\João Silva\\AppData\\Local\\Programs\\argus-copia', local)).toBe(false);
+    expect(isStandardInstallDir('C:\\Users\\João Silva\\AppData\\Local\\Programs\\argus', undefined)).toBe(false);
   });
 });

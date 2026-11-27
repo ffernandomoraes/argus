@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import type { UpdateState } from '@argus/shared/updates';
-import { note } from '../diagnostics/journal';
+import { note, type JournalData } from '../diagnostics/journal';
 import { reportWarning } from '../errorReports';
 import { errorMessage } from '../lib/errors';
 import { skippedVersion } from './skipped';
@@ -62,7 +62,20 @@ export function recordCheck({ visible, found, state, failure }: CheckResult): vo
   reportWarning('Atualização falhando', { current, found: latest, skipped, failures: tracker.failures, errors: tracker.errors });
 }
 
-// Onde o app não se atualiza (rodando de fora do instalador, do .dmg): fica anotado o motivo.
-export function recordUnsupported(reason: string): void {
-  note('update', 'atualização desligada', { current: app.getVersion(), reason });
+// Onde o app não se atualiza (rodando de fora do instalador, do .dmg): fica anotado o motivo e, no
+// app instalado, vai um aviso ao Sentry a cada abertura. Antes era só o diário, e a atualização
+// desligada não deixava pista: o app parava numa versão sem nenhuma consulta ao GitHub (caso de
+// 2026-11-27, Windows parado na 0.1.152). clues: o que separa as causas (no Windows, installClues).
+export function recordUnsupported(reason: string, clues: JournalData = {}): void {
+  const current = app.getVersion();
+  note('update', 'atualização desligada', { current, reason, ...clues });
+  if (app.isPackaged) reportWarning('Atualização desligada', { current, reason, ...clues });
+}
+
+// Windows na pasta do instalador sem o desinstalador: a atualização segue (ver installedByInstaller),
+// mas o aviso mostra se é antivírus apagando o arquivo, a suspeita do caso de 2026-11-27.
+export function recordMissingUninstaller(clues: JournalData): void {
+  const current = app.getVersion();
+  note('update', 'desinstalador ausente', { current, ...clues });
+  if (app.isPackaged) reportWarning('Atualização sem o desinstalador', { current, ...clues });
 }

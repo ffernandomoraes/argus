@@ -1,15 +1,43 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, win32 } from 'node:path';
 
 // Atualização no Windows: baixa o instalador da versão nova e roda ele em modo silencioso no
 // "Reiniciar e atualizar": ele termina de fechar o que sobrou do app, troca os arquivos e abre o
 // Argus de novo. Fechar o app não instala (ver shutdown.ts).
 
-// O instalador cria este desinstalador na pasta do app; sem ele, o app não foi instalado por ele
-// (rodando de uma pasta copiada, o instalador instalaria outra cópia em vez de atualizar esta).
-export function installedByInstaller(): boolean {
+// O instalador cria este desinstalador na pasta do app.
+export function hasUninstaller(): boolean {
   return existsSync(join(dirname(process.execPath), 'Uninstall Argus.exe'));
+}
+
+// Pasta onde o instalador (de um clique, por usuário) põe o Argus: %LOCALAPPDATA%\Programs\argus.
+export function isStandardInstallDir(dir: string, localAppData: string | undefined): boolean {
+  if (!localAppData) return false;
+  const norm = (p: string) => win32.normalize(p).normalize('NFC').replace(/\\+$/, '').toLowerCase();
+  return norm(dir) === norm(win32.join(localAppData, 'Programs', 'argus'));
+}
+
+// Instalado pelo instalador: com o desinstalador ao lado ou na pasta padrão dele. Fora dos dois, o app
+// roda de uma pasta copiada, e o instalador instalaria outra cópia em vez de atualizar esta. Só o
+// desinstalador não basta: ele pode sumir (antivírus apagando executável sem assinatura, por exemplo),
+// e a atualização desligava sem aviso (2026-11-27). Sem ele, o instalador silencioso não consegue
+// desinstalar a versão antiga, instala por cima (installUtil.nsh do electron-builder, `DoesNotExist`)
+// e cria o desinstalador de novo.
+export function installedByInstaller(): boolean {
+  return hasUninstaller() || isStandardInstallDir(dirname(process.execPath), process.env.LOCALAPPDATA);
+}
+
+export type InstallClues = { uninstaller: boolean; standardDir: boolean };
+
+// Pistas para os avisos da atualização (ver report.ts), sem o caminho, que tem o nome da pessoa.
+// Sem o desinstalador na pasta padrão, algo apagou o arquivo depois de instalar; fora dela, o app roda
+// de uma cópia da pasta, que de fato não se atualiza.
+export function installClues(): InstallClues {
+  return {
+    uninstaller: hasUninstaller(),
+    standardDir: isStandardInstallDir(dirname(process.execPath), process.env.LOCALAPPDATA),
+  };
 }
 
 // Linha do cmd que roda o instalador e confere o resultado. O instalador desinstala a versão antiga

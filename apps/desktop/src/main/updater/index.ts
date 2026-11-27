@@ -12,9 +12,9 @@ import { cleanupDownloads, newDownloadDir, removePath } from './files';
 import { fetchLatestRelease, fetchRecentReleases } from './github';
 import { currentBundle, extractApp, hasExecutable, spawnSwap, verifyApp } from './mac';
 import { countNewer, isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, previousWith, releaseVersion, type Release, type ReleaseAsset } from './releases';
-import { recordCheck, recordUnsupported } from './report';
+import { recordCheck, recordMissingUninstaller, recordUnsupported } from './report';
 import { skipVersion, updateFloor } from './skipped';
-import { installedByInstaller, spawnInstaller } from './windows';
+import { installClues, installedByInstaller, spawnInstaller } from './windows';
 
 // Atualização pelos releases do GitHub, sem o Squirrel (electron-updater): o app é assinado com
 // certificado próprio, não com o da Apple. No Mac, baixa o .zip, confere se a assinatura é a mesma
@@ -107,7 +107,9 @@ export class Updater {
 
   start(): void {
     const support = this.state;
-    if (support.status === 'unsupported') return recordUnsupported(support.reason);
+    const clues = IS_WIN ? installClues() : null;
+    if (support.status === 'unsupported') return recordUnsupported(support.reason, clues ?? {});
+    if (clues && !clues.uninstaller) recordMissingUninstaller(clues);
     this.cleaning = cleanupDownloads();
     setTimeout(() => void this.check(), FIRST_CHECK_MS);
     this.timer = setInterval(() => void this.check(), EVERY_MS);

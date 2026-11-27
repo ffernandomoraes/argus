@@ -14,6 +14,7 @@ import { currentBundle, extractApp, hasExecutable, spawnSwap, verifyApp } from '
 import { countNewer, isLinuxAsset, isMacAsset, isNewer, isWindowsAsset, newestWith, previousWith, releaseVersion, type Release, type ReleaseAsset } from './releases';
 import { recordCheck, recordMissingUninstaller, recordUnsupported } from './report';
 import { skipVersion, updateFloor } from './skipped';
+import { withSince } from './trouble';
 import { installClues, installedByInstaller, spawnInstaller } from './windows';
 
 // Atualização pelos releases do GitHub, sem o Squirrel (electron-updater): o app é assinado com
@@ -57,8 +58,9 @@ export class Updater {
   }
 
   // "Sem suporte" é refeito a cada leitura: o motivo sai no idioma escolhido, mesmo trocado depois.
+  // Sem suporte ou com erro, leva desde quando a atualização não funciona (ver trouble.ts).
   get state(): UpdateState {
-    return this.current.status === 'unsupported' ? this.support() : this.current;
+    return withSince(this.current.status === 'unsupported' ? this.support() : this.current);
   }
 
   private support(): UpdateState {
@@ -93,7 +95,7 @@ export class Updater {
 
   private set(state: UpdateState): void {
     this.current = state;
-    this.onChange(state);
+    this.onChange(withSince(state));
   }
 
   get pending(): boolean {

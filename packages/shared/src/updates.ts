@@ -1,7 +1,10 @@
 // Atualização do app pelos releases do GitHub.
+// since (em 'unsupported' e 'error', só no app instalado): desde quando a atualização não funciona
+// nesta versão, contando as aberturas anteriores (ver updater/trouble.ts). Com um dia ou mais, a barra
+// de título avisa e oferece o instalador.
 export type UpdateState =
   // Em desenvolvimento, ou rodando de um lugar onde não dá para trocar o app (o .dmg, por exemplo).
-  | { status: 'unsupported'; reason: string }
+  | { status: 'unsupported'; reason: string; since?: number }
   | { status: 'idle' }
   | { status: 'checking' }
   | { status: 'latest' }
@@ -13,7 +16,7 @@ export type UpdateState =
   // Windows: a versão nova saiu, mas o instalador dela ainda não subiu (sai alguns minutos depois
   // do app do Mac). Não é erro: procurar de novo daqui a pouco resolve.
   | { status: 'waiting'; version: string; message: string }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; since?: number };
 
 // Notas de uma versão publicada, lidas do release no GitHub (Novidades, na barra de título).
 // kind: a etiqueta da frente da linha ([BUG], [MELHORIA], [FUNCIONALIDADE]); null sem etiqueta.

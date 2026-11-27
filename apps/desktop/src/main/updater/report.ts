@@ -4,6 +4,7 @@ import { note, type JournalData } from '../diagnostics/journal';
 import { reportWarning } from '../errorReports';
 import { errorMessage } from '../lib/errors';
 import { skippedVersion } from './skipped';
+import { recordTrouble } from './trouble';
 
 // Rastro das conferências de atualização. Sem ele, quem ficava dias preso numa versão não deixava
 // pista: o erro só aparecia em Configurações (caso de 2026-11-26, Windows parado na 0.1.152 por seis
@@ -58,6 +59,8 @@ export function recordCheck({ visible, found, state, failure }: CheckResult): vo
     readyVersion: state.status === 'ready' || state.status === 'waiting' ? state.version : undefined,
     error,
   });
+  // Falha com uma versão já baixada (a conferência silenciosa) não prende ninguém: dá para reiniciar.
+  recordTrouble(state.status !== 'error');
   if (!trackFailure(tracker, error)) return;
   reportWarning('Atualização falhando', { current, found: latest, skipped, failures: tracker.failures, errors: tracker.errors });
 }
@@ -69,6 +72,7 @@ export function recordCheck({ visible, found, state, failure }: CheckResult): vo
 export function recordUnsupported(reason: string, clues: JournalData = {}): void {
   const current = app.getVersion();
   note('update', 'atualização desligada', { current, reason, ...clues });
+  recordTrouble(false);
   if (app.isPackaged) reportWarning('Atualização desligada', { current, reason, ...clues });
 }
 

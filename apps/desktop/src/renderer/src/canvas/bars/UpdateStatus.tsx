@@ -2,12 +2,15 @@ import { CircleArrowUp } from 'lucide-react';
 import { tr } from '../../i18n';
 import type { UpdateProgress } from './updateProgress';
 import { installUpdate } from '../../updates/installUpdate';
+import type { UpdateTrouble as Trouble } from '../../updates/trouble';
+import { UpdateTrouble } from '../../updates/UpdateTrouble';
 
 // Canto direito da barra de título: "Nova versão disponível" quando há versão nova pronta, o andamento da
-// conferência e a versão em uso.
-export function UpdateStatus({ version, ready, progress }: UpdateProgress & { version: string }) {
+// conferência, o aviso de que não deu para atualizar (um dia ou mais sem funcionar) e a versão em uso.
+export function UpdateStatus({ version, ready, progress, trouble }: UpdateProgress & { version: string; trouble: Trouble | null }) {
   return (
     <>
+      {trouble && <UpdateTrouble trouble={trouble} version={version} />}
       {ready && (
         <button
           onClick={() => installUpdate()}

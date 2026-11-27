@@ -7,13 +7,14 @@ import { IS_REMOTE, REMOTE_HOST, useRemoteAccess } from '../remote';
 import { Presence } from '../motion';
 import { HealthAlert } from '../systemHealth/HealthAlert';
 import { ReleaseNotesModal } from '../updates/ReleaseNotesModal';
+import { useUpdateTrouble } from '../updates/trouble';
 import { useUpdates } from '../updates/useUpdates';
 import { IS_MAC } from '../platform';
 import { useWindowControls } from '../useWindowControls';
 import { BoardSwitcher } from './bars/BoardSwitcher';
 import { RemoteConnections } from './bars/RemoteConnections';
 import { UpdateStatus } from './bars/UpdateStatus';
-import { updateProgress } from './bars/updateProgress';
+import { hasUpdateNotice, updateProgress } from './bars/updateProgress';
 import { useNewWindowShortcut } from './bars/useNewWindowShortcut';
 import type { ConfirmRequest } from './ConfirmDialog';
 import { tr } from '../i18n';
@@ -42,6 +43,8 @@ export const TitleBar = memo(function TitleBar({
   const updates = useUpdates();
   const controls = useWindowControls();
   const status = updateProgress(updates?.state);
+  // A atualização não funciona há um dia ou mais: aviso no lugar do "Nova versão disponível".
+  const trouble = useUpdateTrouble(updates?.state);
   const [notesOpen, setNotesOpen] = useState(false);
   useNewWindowShortcut();
   // Azul nos dois lados do acesso remoto: na janela que mostra outro computador e no computador que
@@ -63,7 +66,7 @@ export const TitleBar = memo(function TitleBar({
     // título segue no centro sem encostar nele. Os limites e o player ficam na barra de baixo (BottomBar).
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line ${IS_REMOTE || beingAccessed ? 'bg-remote-bar' : 'bg-surface'} hover:z-[55] ${status.ready || status.progress || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
+      className={`drag absolute inset-x-0 top-0 z-[35] flex items-center justify-center gap-2 border-b border-line ${IS_REMOTE || beingAccessed ? 'bg-remote-bar' : 'bg-surface'} hover:z-[55] ${hasUpdateNotice(status, trouble) || !IS_MAC ? 'px-[20rem]' : 'px-[16rem]'}`}
     >
       {/* No Mac, afastado dos semáforos; fora do Mac, colado na ponta esquerda. */}
       <div className="absolute inset-y-0 flex items-center" style={{ left: IS_MAC ? controls.left + 24 : 8 }}>
@@ -123,7 +126,7 @@ export const TitleBar = memo(function TitleBar({
               )}
             </span>
             <Divider />
-            <UpdateStatus version={updates.version} {...status} />
+            <UpdateStatus version={updates.version} trouble={trouble} {...status} />
             {/* Novidades à direita da versão: o que mudou nela e nas anteriores. */}
             <span className="no-drag flex">
               <NavButton label={tr('Novidades', "What's new")} medium side="bottom-end" onClick={() => setNotesOpen(true)}>

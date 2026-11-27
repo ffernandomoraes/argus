@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 const electronApp = vi.hoisted(() => ({ getVersion: () => '0.1.152', getPath: () => '/tmp', isPackaged: true }));
 vi.mock('electron', () => ({ app: electronApp }));
 vi.mock('../errorReports', () => ({ reportWarning: vi.fn() }));
+vi.mock('./trouble', () => ({ recordTrouble: vi.fn() }));
 
 const { recordMissingUninstaller, recordUnsupported, trackFailure } = await import('./report');
 const { reportWarning } = await import('../errorReports');
+const { recordTrouble } = await import('./trouble');
 
 // Quem ficava dias sem atualizar não deixava pista (2026-11-26): falhas seguidas precisam virar
 // aviso, uma vez só, e uma conferência certa zera a contagem.
@@ -68,6 +70,12 @@ describe('recordUnsupported', () => {
       electronApp.isPackaged = true;
     }
     expect(reportWarning).not.toHaveBeenCalled();
+  });
+
+  it('conta como atualização parada desde agora (ver trouble.ts)', () => {
+    vi.mocked(recordTrouble).mockClear();
+    recordUnsupported('Instale pelo instalador.');
+    expect(recordTrouble).toHaveBeenCalledWith(false);
   });
 });
 

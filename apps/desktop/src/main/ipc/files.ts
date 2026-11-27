@@ -21,6 +21,7 @@ import {
 import { importPaths, moveItems } from '../files/move';
 import { installedEditors, openInEditor } from '../files/openInEditor';
 import { saveUpload } from '../files/upload';
+import { copyImage, revealImage } from '../files/imageActions';
 import { discardFile } from '../gitBranch/discard';
 import { unwatchFile, watchFile } from '../fileWatch';
 import type { UnsavedFiles } from '../app/unsavedFiles';
@@ -43,6 +44,8 @@ export function registerFilesIpc(unsaved: UnsavedFiles): void {
   handle('files:paste', (_e, root, dir) => pasteFromClipboard(root, dir));
   handle('files:copyInto', (_e, fromRoot, rels, root, dir) => copyInto(fromRoot, rels, root, dir));
   handle('files:upload', (_e, name, data) => saveUpload(name, data));
+  handle('files:copyImage', (_e, dataUrl) => copyImage(dataUrl));
+  handle('files:revealImage', (_e, dataUrl) => revealImage(dataUrl));
   handle('files:names', (_e, root) => listFileNames(root));
   // Uma busca por janela: a nova cancela a anterior (ver textSearch.ts).
   handle('files:search', (e, root, query, options) => searchText(e.sender, root, query, options));

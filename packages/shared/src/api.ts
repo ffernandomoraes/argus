@@ -460,6 +460,9 @@ export type Api = {
     // Grava um anexo da janela de acesso remoto numa pasta temporária do computador da conversa; o
     // caminho dele em `path`.
     upload: (name: string, data: Uint8Array) => Promise<FileOpResult>
+    // Imagem aberta em tela cheia (data URL; só PNG para copiar): false se não deu.
+    copyImage: (dataUrl: string) => Promise<boolean>
+    revealImage: (dataUrl: string) => Promise<boolean>
     // Busca do painel de código: os nomes de todos os arquivos (filtrados na janela) e o texto
     // dentro deles. Uma busca nova da mesma janela cancela a anterior.
     names: (root: string) => Promise<FileNameList>

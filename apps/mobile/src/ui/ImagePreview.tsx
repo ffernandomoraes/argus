@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useZoomPan } from '@argus/ui/zoom/useZoomPan';
 import { tr } from '../i18n';
 import { lockPage, unlockPage } from './Sheet';
 
 // Preview das imagens enviadas numa mensagem, em tela cheia sobre fundo escuro (como o do Argus).
-// Várias imagens: passa uma para o lado. Fecha no X ou tocando fora da imagem.
+// Várias imagens: passa uma para o lado. Fecha no X ou tocando fora da imagem. Pinça ou dois toques
+// aumentam; aumentada, o dedo arrasta a imagem em vez de passar para a próxima.
 export function ImagePreview({ urls, start, onClose }: { urls: string[]; start: number; onClose: () => void }) {
   const strip = useRef<HTMLDivElement>(null);
 
@@ -28,10 +30,10 @@ export function ImagePreview({ urls, start, onClose }: { urls: string[]; start: 
         {urls.map((src, i) => (
           <div
             key={i}
-            className="flex h-full w-full shrink-0 snap-center items-center justify-center p-4 pt-[max(56px,calc(env(safe-area-inset-top)+48px))] pb-[max(24px,env(safe-area-inset-bottom))]"
+            className="flex h-full w-full shrink-0 snap-center items-center justify-center overflow-hidden p-4 pt-[max(56px,calc(env(safe-area-inset-top)+48px))] pb-[max(24px,env(safe-area-inset-bottom))]"
             onClick={(e) => e.target === e.currentTarget && onClose()}
           >
-            <img src={src} alt={tr(`Imagem ${i + 1}`, `Image ${i + 1}`)} className="max-h-full max-w-full rounded-lg object-contain" />
+            <ZoomableImage src={src} alt={tr(`Imagem ${i + 1}`, `Image ${i + 1}`)} />
           </div>
         ))}
       </div>
@@ -51,4 +53,9 @@ export function ImagePreview({ urls, start, onClose }: { urls: string[]; start: 
     </div>,
     document.body,
   );
+}
+
+function ZoomableImage({ src, alt }: { src: string; alt: string }) {
+  const { bind } = useZoomPan<HTMLImageElement>();
+  return <img {...bind} src={src} alt={alt} className="max-h-full max-w-full select-none rounded-lg object-contain" />;
 }

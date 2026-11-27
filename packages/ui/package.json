@@ -3,7 +3,8 @@
   "private": true,
   "description": "Componentes React usados pelo desktop e pelo app do celular",
   "exports": {
-    "./icons/*": "./src/icons/*.tsx"
+    "./icons/*": "./src/icons/*.tsx",
+    "./zoom/*": "./src/zoom/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

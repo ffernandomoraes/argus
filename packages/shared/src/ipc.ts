@@ -169,6 +169,9 @@ export type InvokeChannels = PhoneInvokeChannels & CodePanelChannels & ChatChoic
   'files:paste': (root: string, dir: string) => FileOpResult
   'files:copyInto': (fromRoot: string, rels: string[], root: string, dir: string) => FileOpResult
   'files:upload': (name: string, data: Uint8Array) => FileOpResult
+  // Imagem aberta em tela cheia (data URL): para a área de transferência, ou gravada e mostrada na pasta.
+  'files:copyImage': (dataUrl: string) => boolean
+  'files:revealImage': (dataUrl: string) => boolean
   // Terminais
   'terminal:open': (req: TerminalOpenRequest) => TerminalOpenResult
   // Conversa que o `claude` do terminal criou ou retomou, já gravada; nula se ainda não há.

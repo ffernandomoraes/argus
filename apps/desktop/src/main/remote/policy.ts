@@ -51,6 +51,9 @@ const LOCAL = new Set<string>([
   'account:githubInstallations',
   'account:githubDisconnect',
   'account:githubCancel',
+  // A imagem vai junto no pedido: copia e mostra no computador de quem está usando.
+  'files:copyImage',
+  'files:revealImage',
 ] satisfies (keyof InvokeChannels | keyof SendChannels | keyof SendSyncChannels)[]);
 
 const unavailable = (): string => tr('Indisponível no acesso remoto.', 'Unavailable over remote access.');

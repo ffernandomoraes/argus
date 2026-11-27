@@ -4,9 +4,11 @@ import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
 import { useEscape } from '../useEscape';
 import { TITLE_BAR_HEIGHT } from './panelGeometry';
+import { ViewerImage } from './ViewerImage';
 import { tr } from '../i18n';
 
-// Imagens enviadas numa mensagem, grandes, sobre o app. ESC ou clique fora fecha; ← → trocam.
+// Imagens enviadas numa mensagem, grandes, sobre o app. ESC ou clique fora fecha; ← → trocam. Zoom e
+// botão direito: ver ViewerImage.
 // Vai direto para o body: o chat tem zoom (⌘+ / ⌘-) e o modal não deve encolher junto.
 export function ImageViewer({
   load,
@@ -54,7 +56,7 @@ export function ImageViewer({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 p-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 overflow-hidden bg-black/75 p-8 backdrop-blur-sm"
       style={{ paddingTop: TITLE_BAR_HEIGHT + 32 }}
       onMouseDown={onClose}
     >
@@ -64,7 +66,7 @@ export function ImageViewer({
         variant="floating"
         size="lg"
         onClick={onClose}
-        className="absolute right-4"
+        className="absolute right-4 z-10"
         style={{ top: TITLE_BAR_HEIGHT + 12 }}
       >
         <X size={15} />
@@ -78,17 +80,16 @@ export function ImageViewer({
       ) : (
         <>
           <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-            <img
+            <ViewerImage
+              key={`${index}:${urls[index]}`}
               src={urls[index]}
               alt={tr(`Imagem ${index + 1} de ${count}`, `Image ${index + 1} of ${count}`)}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="max-h-full max-w-full rounded-lg object-contain shadow-2xl shadow-black/60"
             />
           </div>
           {count > 1 && (
             <div
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-2 rounded-xl border border-line bg-surface px-1 py-1 text-xs text-muted"
+              className="relative z-10 flex items-center gap-2 rounded-xl border border-line bg-surface px-1 py-1 text-xs text-muted"
             >
               <IconButton label={tr('Imagem anterior', 'Previous image')} size="lg" onClick={() => go(-1)}>
                 <ChevronLeft size={15} />

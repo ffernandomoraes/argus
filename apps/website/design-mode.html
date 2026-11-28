@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design mode · Argus</title>
+  <meta name="description" content="Open your project's page inside Argus, click any element and leave a comment. Comments go along with your next request, and Claude updates the project's code.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="design-mode.html">
+  <link rel="alternate" hreflang="pt-BR" href="pt/modo-design.html">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="design-mode.html">See how it works</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Main">
+      <div class="dd">
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
+        </div>
+      </div>
+      <a href="teams.html">For teams</a>
+      <a href="download.html">Download</a>
+      <a href="community.html">Community</a>
+      <div class="dd">
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Learn</p>
+          <a href="help.html"><span class="dd__ic">?</span>Help</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="contact.html"><span class="dd__ic">✉</span>Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="lang" href="pt/modo-design.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="index.html#planos">Download Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Hero do produto: nome, título e o vídeo do recurso funcionando -->
+  <section class="phero">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">◇</span>Design mode</p>
+      <h1>From comment to finished screen, in real code.</h1>
+      <p class="lede">Open your project's page inside Argus, click any element and leave a comment. Comments go along with your next request, and Claude updates the project's code.</p>
+      <div class="hero__btns center-row">
+        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Download for free</a>
+        <a class="btn btn--outline" href="index.html">Meet Argus</a>
+      </div>
+      <figure class="pvideo">
+        <div class="pv-chrome"><i></i><i></i><i></i></div>
+        <video src="assets/produto/design.mp4" poster="assets/produto/design.webp" autoplay muted loop playsinline preload="metadata" aria-label="Design mode with a checkout page open and two comments pinned to elements"></video>
+      </figure>
+      <p class="pnote">Video of Argus with sample projects and conversations.</p>
+    </div>
+  </section>
+
+  <!-- Recursos -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Prototype in the project, not in a mockup</p>
+      <div class="pgrid">
+        <article class="pfeat"><h3>Comments pinned to elements</h3><p>Click a spot on the page and type. The bubble stays pinned to the element, along with its path in the code.</p></article>
+        <article class="pfeat"><h3>Desktop and mobile</h3><p>Switch views with one click and see the same page at both sizes.</p></article>
+        <article class="pfeat"><h3>Text snapshot</h3><p>Every request carries the URL, the view and a text snapshot of the screen, without spending tokens on images.</p></article>
+        <article class="pfeat"><h3>New or existing screen</h3><p>Describe a screen from scratch or open an existing one to tweak it.</p></article>
+        <article class="pfeat"><h3>Multiple apps</h3><p>In projects with a site, admin and app in the same dev script, pick which one to open.</p></article>
+        <article class="pfeat"><h3>Server under control</h3><p>The project's server never starts on its own: the button sits right next to the chat.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Print com texto ao lado -->
+  <section class="section">
+    <div class="container psplit">
+      <div>
+        <p class="eyebrow">Comment</p>
+        <h2>Point, type, send.</h2>
+        <p class="lede">Turn on “Comment”, click the elements you want to change and write what you need. When you send, Claude gets each comment tied to the right element.</p>
+        <ul class="pchecks"><li>Address bar with the project's routes</li><li>Preview just the page (Esc exits)</li><li>Ctrl+R reloads just the page</li><li>Global agents with @</li></ul>
+      </div>
+      <figure class="pshot"><img src="assets/produto/design.webp" alt="Design mode with a checkout page open and two comments pinned to elements" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <!-- Começar -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Get started</p>
+      <h2>Up and running in under 5 minutes.</h2>
+      <p class="lede">No API key and no server in the middle. Download, open your folders and go.</p>
+      <ol class="psteps">
+        <li><span>1</span><h3>Download Argus</h3><p>macOS, Windows or Linux, straight from the GitHub releases.</p></li>
+        <li><span>2</span><h3>Sign in with Claude</h3><p>Argus uses the claude on your machine and the subscription you already have.</p></li>
+        <li><span>3</span><h3>Open a folder</h3><p>Drag it onto the canvas or run argus . in the terminal.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Outros recursos -->
+  <section class="section section--tight">
+    <div class="container">
+      <p class="eyebrow">See also</p>
+      <div class="pnexts"><a class="pnext" href="canvas.html"><span class="dd__ic">▦</span><strong>Canvas</strong><span class="pnext__go">→</span></a><a class="pnext" href="conversations.html"><span class="dd__ic">◌</span><strong>Conversations</strong><span class="pnext__go">→</span></a><a class="pnext" href="terminals.html"><span class="dd__ic">{ }</span><strong>Terminals</strong><span class="pnext__go">→</span></a></div>
+    </div>
+  </section>
+
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Building the open way to keep track of coding agents.</p>
+      <p class="lede">Argus is the foundation for working with many agents at once, with everything in view and on your machine.</p>
+      <a class="btn btn--primary" href="index.html#planos">Download Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Argus icon made of particles"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

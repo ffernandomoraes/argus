@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog · Argus</title>
+  <meta name="description" content="What changed in each version of Argus.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="changelog.html">
+  <link rel="alternate" hreflang="pt-BR" href="pt/novidades.html">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="design-mode.html">See how it works</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Main">
+      <div class="dd">
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
+        </div>
+      </div>
+      <a href="teams.html">For teams</a>
+      <a href="download.html">Download</a>
+      <a href="community.html">Community</a>
+      <div class="dd">
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Learn</p>
+          <a href="help.html"><span class="dd__ic">?</span>Help</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="contact.html"><span class="dd__ic">✉</span>Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="lang" href="pt/novidades.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="index.html#planos">Download Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">≡</span>Changelog</p>
+      <h1>What's new.</h1>
+      <p class="lede">A new version ships almost every day. Here are the latest changes, straight from the releases.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container rel-wrap">
+      <div class="rel-list" data-releases><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.103" target="_blank" rel="noopener" class="rel__tag mono">v0.1.103</a><time>Oct 31, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>Windows: updating no longer leaves Argus uninstalled; closing the app doesn't install, only &quot;Update to&quot; does</li><li><span class="rel-tag rel-tag--imp">Improvement</span>Storage tab: &quot;Clean up now&quot; shows only how much can be freed and the last cleanup; the details are behind the info icon</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.102" target="_blank" rel="noopener" class="rel__tag mono">v0.1.102</a><time>Oct 30, 2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Improvement</span>Deleting a conversation also deletes the agent's drafts, the file restore points and its terminal environment</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.101" target="_blank" rel="noopener" class="rel__tag mono">v0.1.101</a><time>Oct 30, 2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Improvement</span>Storage tab shows separately what takes up space and what's past its retention period, and &quot;Clean up now&quot; says how much it will free and what it freed</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.100" target="_blank" rel="noopener" class="rel__tag mono">v0.1.100</a><time>Oct 30, 2026</time></div><ul><li><span class="rel-tag rel-tag--new">New</span>Memory and disk warning next to the Argus name (with what stopped for lack of them) and a Storage tab with automatic cleanup of conversations, screenshots and agent drafts</li><li><span class="rel-tag rel-tag--fix">Fix</span>Updating or closing Argus no longer erases what was done, and anything that was working comes back marked as interrupted (red dot) with a &quot;Continue where it left off&quot; button</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.99" target="_blank" rel="noopener" class="rel__tag mono">v0.1.99</a><time>Oct 30, 2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Improvement</span>Updated dependencies with security issues flagged by Dependabot (undici, qs and fast-uri)</li><li><span class="rel-tag rel-tag--new">New</span>Mark a conversation as unread (right-click in the list or the conversation's three-dot menu): the dot turns green again until you reopen it</li><li><span class="rel-tag rel-tag--new">New</span>Clicking an image pasted in the message box opens it full size before sending</li><li><span class="rel-tag rel-tag--new">New</span>Clicking background tasks (on the canvas or &quot;View output&quot; in the chat) opens each one's live output in a read-only drawer</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.98" target="_blank" rel="noopener" class="rel__tag mono">v0.1.98</a><time>Oct 29, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>A minimized window, one behind others or with the screen locked no longer shows up as a hang in Sentry when the computer wakes or the screen unlocks</li><li><span class="rel-tag rel-tag--fix">Fix</span>On Mac, an Argus dialog opened with no window in focus (like the prompt on close) no longer shows up as a hang in Sentry</li><li><span class="rel-tag rel-tag--fix">Fix</span>The &quot;Claude usage not updating&quot; warning no longer goes to Sentry at the end of the wait requested by the usage API, before the retry</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.97" target="_blank" rel="noopener" class="rel__tag mono">v0.1.97</a><time>Oct 28, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>An idle window with the CPU throttled by the system (power saving on Windows, temperature on Mac) no longer shows up as a hang in Sentry</li><li><span class="rel-tag rel-tag--fix">Fix</span>The &quot;Claude usage not updating&quot; warning no longer goes to Sentry while Argus is just waiting out the delay requested by the usage API</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.96" target="_blank" rel="noopener" class="rel__tag mono">v0.1.96</a><time>Oct 28, 2026</time></div><ul><li><span class="rel-tag rel-tag--new">New</span>Clicking a subagent (on the canvas or &quot;View conversation&quot; in the chat) opens everything it did in a read-only drawer</li><li><span class="rel-tag rel-tag--fix">Fix</span>In focus mode, canvas groups no longer flash for a few frames when scrolling the conversation</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.95" target="_blank" rel="noopener" class="rel__tag mono">v0.1.95</a><time>Oct 28, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>On Windows, Claude reads the right terminal output even after the panel is resized, closed and reopened, and gets the right exit code from PowerShell</li><li><span class="rel-tag rel-tag--fix">Fix</span>Values that aren't secrets (&quot;private&quot;: true, keywords, sessionTimeout) no longer turn into *** in the terminal output Claude reads</li><li><span class="rel-tag rel-tag--new">New</span>Claude runs commands in the conversation's terminal and reads the output; secrets reach it as ***</li><li><span class="rel-tag rel-tag--new">New</span>.md files created by Claude show up formatted in the conversation, with the path, &quot;Show all&quot; and &quot;Open alongside&quot;</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.94" target="_blank" rel="noopener" class="rel__tag mono">v0.1.94</a><time>Oct 27, 2026</time></div><ul><li><span class="rel-tag rel-tag--new">New</span>A sent message can be edited right in its bubble and resent at the end of the conversation; if Claude is replying, it stops and the new version runs next</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.93" target="_blank" rel="noopener" class="rel__tag mono">v0.1.93</a><time>Oct 27, 2026</time></div><ul><li><span class="rel-tag rel-tag--imp">Improvement</span>Hang reports no longer blame a hidden window (covered by another, minimized or with the screen locked), and a real hang while it's hidden is still reported</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.92" target="_blank" rel="noopener" class="rel__tag mono">v0.1.92</a><time>Oct 27, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>A background task or subagent finishing no longer triggers a &quot;Done&quot; notification</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.91" target="_blank" rel="noopener" class="rel__tag mono">v0.1.91</a><time>Oct 27, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>On Windows and Linux, open dropdown lists are readable in the dark theme</li><li><span class="rel-tag rel-tag--fix">Fix</span>On Windows, the close button of an enlarged image no longer sits under the window buttons</li><li><span class="rel-tag rel-tag--imp">Improvement</span>On Windows and Linux, the workspace picker sits at the left end of the title bar</li><li><span class="rel-tag rel-tag--fix">Fix</span>Code opens with syntax highlighting in the code panel again, including Dockerfile and Makefile on Windows</li><li><span class="rel-tag rel-tag--fix">Fix</span>With tools running in parallel, the conversation step no longer shows as &quot;Running: undefined&quot;</li><li><span class="rel-tag rel-tag--new">New</span>On Windows, the Running servers panel appears and shows what's running in the canvas folders; the menu no longer wraps item names</li><li><span class="rel-tag rel-tag--new">New</span>New Notifications section in settings: turn system notifications and their sound on or off</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.90" target="_blank" rel="noopener" class="rel__tag mono">v0.1.90</a><time>Oct 26, 2026</time></div><ul><li><span class="rel-tag rel-tag--new">New</span>.md files in the code panel have a formatted preview; ⌘⇧V (Ctrl+Shift+V) toggles it with the source</li><li><span class="rel-tag rel-tag--new">New</span>Claude's plan shows up formatted in the conversation, with &quot;Show all&quot; and &quot;Open alongside&quot; in a larger window</li></ul></article><article class="rel"><div class="rel__head"><a href="https://github.com/ffernandomoraes/argus/releases/tag/v0.1.89" target="_blank" rel="noopener" class="rel__tag mono">v0.1.89</a><time>Oct 26, 2026</time></div><ul><li><span class="rel-tag rel-tag--fix">Fix</span>Claude usage no longer stalls silently: the check has a timeout, the panel rechecks when opened and shows why when it doesn't update</li><li><span class="rel-tag rel-tag--fix">Fix</span>The conversation no longer disappears when resizing the window, the panel or the drawer zoom</li><li><span class="rel-tag rel-tag--fix">Fix</span>The Mac close, minimize and maximize buttons sit in the middle of the title bar, aligned with the workspace picker</li></ul></article>
+      </div>
+      <p class="pnote center">Every version at <a class="dl-link" href="https://github.com/ffernandomoraes/argus/releases" target="_blank" rel="noopener">github.com/ffernandomoraes/argus/releases</a>.</p>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

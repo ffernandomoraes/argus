@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shortcuts · Argus</title>
+  <meta name="description" content="Argus keyboard shortcuts for Windows, Linux and macOS.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="shortcuts.html">
+  <link rel="alternate" hreflang="pt-BR" href="pt/atalhos.html">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="design-mode.html">See how it works</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Main">
+      <div class="dd">
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
+        </div>
+      </div>
+      <a href="teams.html">For teams</a>
+      <a href="download.html">Download</a>
+      <a href="community.html">Community</a>
+      <div class="dd">
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Learn</p>
+          <a href="help.html"><span class="dd__ic">?</span>Help</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="contact.html"><span class="dd__ic">✉</span>Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="lang" href="pt/atalhos.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="index.html#planos">Download Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">▥</span>Shortcuts</p>
+      <h1>Keyboard shortcuts.</h1>
+      <p class="lede">Get more done without taking your hands off the keyboard.</p>
+    </div>
+  </section>
+
+  <section class="section" data-keys>
+    <div class="container">
+      <div class="dl-tabs keys-os" role="tablist"><button role="tab" data-os="win">Windows and Linux</button><button role="tab" data-os="mac">macOS</button></div>
+      <div class="keys-grid">
+      <section class="keys-group"><h2>Canvas</h2><table class="keys"><tr><td>New folder</td><td class='k-win'><kbd>Ctrl</kbd><kbd>P</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>P</kbd></td></tr><tr><td>New group</td><td class='k-win'><kbd>Ctrl</kbd><kbd>G</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>G</kbd></td></tr><tr><td>New conversation</td><td class='k-win'><kbd>Ctrl</kbd><kbd>N</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>N</kbd></td></tr><tr><td>Note on the canvas</td><td class='k-win'><kbd>C</kbd></td><td class='k-mac'><kbd>C</kbd></td></tr><tr><td>Undo layout change</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Z</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>Z</kbd></td></tr><tr><td>Redo layout change</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd></td></tr><tr><td>Fit everything</td><td class='k-win'><kbd>Shift</kbd><kbd>1</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>1</kbd></td></tr><tr><td>Zoom to 100%</td><td class='k-win'><kbd>Shift</kbd><kbd>0</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>0</kbd></td></tr><tr><td>Hide the bars</td><td class='k-win'><kbd>Ctrl</kbd><kbd>\</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>\</kbd></td></tr><tr><td>New canvas window</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd></td></tr><tr><td>Delete selection</td><td class='k-win'><kbd>Delete</kbd></td><td class='k-mac'><kbd>⌫</kbd></td></tr></table></section>
+      <section class="keys-group"><h2>Panels</h2><table class="keys"><tr><td>Agents</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>A</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd></td></tr><tr><td>Running servers</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd></td></tr><tr><td>Claude’s memory</td><td class='k-win'><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd></td><td class='k-mac'><kbd>⇧</kbd><kbd>⌘</kbd><kbd>M</kbd></td></tr><tr><td>Settings</td><td class='k-win'><kbd>Ctrl</kbd><kbd>,</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>,</kbd></td></tr></table></section>
+      <section class="keys-group"><h2>Conversations and code</h2><table class="keys"><tr><td>Paste a screenshot</td><td class='k-win'><kbd>Ctrl</kbd><kbd>V</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>V</kbd></td></tr><tr><td>Slash commands</td><td class='k-win'><kbd>/</kbd></td><td class='k-mac'><kbd>/</kbd></td></tr><tr><td>Call an agent</td><td class='k-win'><kbd>@</kbd></td><td class='k-mac'><kbd>@</kbd></td></tr><tr><td>Save file in the editor</td><td class='k-win'><kbd>Ctrl</kbd><kbd>S</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>S</kbd></td></tr></table></section>
+      <section class="keys-group"><h2>Design mode and terminals</h2><table class="keys"><tr><td>Reload just the page</td><td class='k-win'><kbd>Ctrl</kbd><kbd>R</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>R</kbd></td></tr><tr><td>Exit Preview</td><td class='k-win'><kbd>Esc</kbd></td><td class='k-mac'><kbd>Esc</kbd></td></tr><tr><td>Increase terminal font size</td><td class='k-win'><kbd>Ctrl</kbd><kbd>+</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>+</kbd></td></tr><tr><td>Decrease terminal font size</td><td class='k-win'><kbd>Ctrl</kbd><kbd>-</kbd></td><td class='k-mac'><kbd>⌘</kbd><kbd>-</kbd></td></tr></table></section>
+      </div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

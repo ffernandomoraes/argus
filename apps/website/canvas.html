@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Canvas · Argus</title>
-  <meta name="description" content="Cada pasta vira um bloco com a branch do git, os arquivos não comitados e as conversas mais recentes. Agrupe por trabalho, freela e pessoal e veja de longe o que está rodando.">
+  <meta name="description" content="Each folder becomes a block with its git branch, uncommitted files and latest conversations. Group by work, freelance and personal, and see at a glance what's running.">
   <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="canvas.html">
+  <link rel="alternate" hreflang="pt-BR" href="pt/canvas.html">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <!-- Faixa de aviso -->
 <div class="banner">
-  <p>Novo: modo design, comente em cima da página e o Claude ajusta o código</p>
-  <a href="modo-design.html">Ver como funciona</a>
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="design-mode.html">See how it works</a>
 </div>
 
 <!-- Navegação -->
@@ -23,42 +25,43 @@
   <div class="nav__inner">
     <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
 
-    <nav class="nav__links" aria-label="Principal">
+    <nav class="nav__links" aria-label="Main">
       <div class="dd">
-        <button class="dd__btn">Produto <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd__menu">
           <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
-          <a href="conversas.html"><span class="dd__ic">◌</span>Conversas</a>
-          <a href="modo-design.html"><span class="dd__ic">◇</span>Modo design</a>
-          <a href="terminais.html"><span class="dd__ic">{ }</span>Terminais</a>
+          <a href="conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
         </div>
       </div>
-      <a href="times.html">Para times</a>
+      <a href="teams.html">For teams</a>
       <a href="download.html">Download</a>
-      <a href="comunidade.html">Comunidade</a>
+      <a href="community.html">Community</a>
       <div class="dd">
-        <button class="dd__btn">Recursos <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd__menu dd__menu--wide">
-          <p class="dd__eyebrow">Aprender</p>
-          <a href="ajuda.html"><span class="dd__ic">?</span>Ajuda</a>
+          <p class="dd__eyebrow">Learn</p>
+          <a href="help.html"><span class="dd__ic">?</span>Help</a>
           <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
-          <a href="index.html#"><span class="dd__ic">▤</span>Documentação</a>
-          <a href="index.html#"><span class="dd__ic">≡</span>Novidades</a>
-          <a href="index.html#"><span class="dd__ic">▥</span>Atalhos</a>
-          <p class="dd__eyebrow">Projeto</p>
-          <a href="index.html#"><span class="dd__ic">ⓘ</span>Sobre</a>
-          <a href="index.html#"><span class="dd__ic">✉</span>Contato</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="contact.html"><span class="dd__ic">✉</span>Contact</a>
         </div>
       </div>
     </nav>
 
     <div class="nav__right">
+      <a class="lang" href="pt/canvas.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
       <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
         <span data-stars>GitHub</span>
       </a>
-      <a class="nav__plain" href="index.html#planos">Ver versões</a>
-      <a class="btn btn--outline" href="index.html#planos">Baixar Argus</a>
+      <a class="nav__plain" href="index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="index.html#planos">Download Argus</a>
     </div>
   </div>
 </header>
@@ -70,31 +73,31 @@
     <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
     <div class="container center">
       <p class="pbadge"><span class="dd__ic">▦</span>Canvas</p>
-      <h1>Todos os seus projetos num canvas só.</h1>
-      <p class="lede">Cada pasta vira um bloco com a branch do git, os arquivos não comitados e as conversas mais recentes. Agrupe por trabalho, freela e pessoal e veja de longe o que está rodando.</p>
+      <h1>All your projects on one canvas.</h1>
+      <p class="lede">Each folder becomes a block with its git branch, uncommitted files and latest conversations. Group by work, freelance and personal, and see at a glance what's running.</p>
       <div class="hero__btns center-row">
-        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Baixar grátis</a>
-        <a class="btn btn--outline" href="index.html">Conhecer o Argus</a>
+        <a class="btn btn--primary" href="https://github.com/ffernandomoraes/argus/releases/latest" target="_blank" rel="noopener">Download for free</a>
+        <a class="btn btn--outline" href="index.html">Explore Argus</a>
       </div>
       <figure class="pvideo">
         <div class="pv-chrome"><i></i><i></i><i></i></div>
-        <video src="assets/produto/canvas.mp4" poster="assets/produto/canvas.webp" autoplay muted loop playsinline preload="metadata" aria-label="Canvas do Argus com os grupos Trabalho e Pessoal, pastas com conversas e uma nota"></video>
+        <video src="assets/produto/canvas.mp4" poster="assets/produto/canvas.webp" autoplay muted loop playsinline preload="metadata" aria-label="Argus canvas with Work and Personal groups, folders with conversations and a note"></video>
       </figure>
-      <p class="pnote">Vídeo do Argus com projetos e conversas de exemplo.</p>
+      <p class="pnote">Video of Argus with sample projects and conversations.</p>
     </div>
   </section>
 
   <!-- Recursos -->
   <section class="section">
     <div class="container">
-      <p class="eyebrow">Mais do que uma lista de projetos</p>
+      <p class="eyebrow">More than a project list</p>
       <div class="pgrid">
-        <article class="pfeat"><h3>Grupos coloridos</h3><p>Junte pastas, terminais e conversas em regiões do canvas, como os frames do Figma. Recolha ou oculte o conteúdo quando quiser.</p></article>
-        <article class="pfeat"><h3>Status de cada conversa</h3><p>Rodando, esperando você ou concluída: a cor e a etiqueta de cada linha mostram na hora quem precisa de atenção.</p></article>
-        <article class="pfeat"><h3>Git à vista</h3><p>O selo da branch mostra quantos arquivos não foram comitados. Um clique lista os arquivos e abre o diff.</p></article>
-        <article class="pfeat"><h3>Notas soltas</h3><p>Deixe lembretes no canvas, como os comentários do Figma. Tecla C ou botão direito.</p></article>
-        <article class="pfeat"><h3>Desfazer o layout</h3><p>Arrastou errado? Ctrl+Z desfaz e Ctrl+Shift+Z refaz, em todas as janelas do canvas.</p></article>
-        <article class="pfeat"><h3>Organize por voz</h3><p>“Cria um grupo Freela com essas duas pastas.” A barra de comando entende texto e voz.</p></article>
+        <article class="pfeat"><h3>Colored groups</h3><p>Gather folders, terminals and conversations into regions of the canvas, like Figma frames. Collapse or hide the contents whenever you want.</p></article>
+        <article class="pfeat"><h3>Status for every conversation</h3><p>Running, waiting on you or done: each row's color and label show instantly what needs your attention.</p></article>
+        <article class="pfeat"><h3>Git in view</h3><p>The branch badge shows how many files are uncommitted. One click lists them and opens the diff.</p></article>
+        <article class="pfeat"><h3>Sticky notes</h3><p>Leave reminders on the canvas, like Figma comments. Press C or right-click.</p></article>
+        <article class="pfeat"><h3>Undo for the layout</h3><p>Dragged something by mistake? Ctrl+Z undoes and Ctrl+Shift+Z redoes, in every canvas window.</p></article>
+        <article class="pfeat"><h3>Organize by voice</h3><p>“Create a Freelance group with these two folders.” The command bar understands text and voice.</p></article>
       </div>
     </div>
   </section>
@@ -103,25 +106,25 @@
   <section class="section">
     <div class="container psplit">
       <div>
-        <p class="eyebrow">Uma conta por grupo</p>
-        <h2>Trabalho e pessoal, cada um com a sua conta.</h2>
-        <p class="lede">Cada grupo usa a conta do Claude que você escolher. Pastas, terminais e conversas do grupo herdam essa conta, e o limite de uso de cada uma fica à vista na barra de título.</p>
-        <ul class="pchecks"><li>Minimapa com a cor de cada grupo</li><li>Novas janelas do canvas para outro monitor</li><li>O layout volta igual ao reabrir o app</li><li>argus . no terminal abre a pasta atual</li></ul>
+        <p class="eyebrow">One account per group</p>
+        <h2>Work and personal, each with its own account.</h2>
+        <p class="lede">Each group uses the Claude account you choose. The group's folders, terminals and conversations inherit that account, and each one's usage limit stays visible in the title bar.</p>
+        <ul class="pchecks"><li>Minimap with each group's color</li><li>Extra canvas windows for another monitor</li><li>The layout comes back exactly as it was when you reopen the app</li><li>argus . in the terminal opens the current folder</li></ul>
       </div>
-      <figure class="pshot"><img src="assets/produto/canvas.webp" alt="Canvas do Argus com os grupos Trabalho e Pessoal, pastas com conversas e uma nota" loading="lazy"></figure>
+      <figure class="pshot"><img src="assets/produto/canvas.webp" alt="Argus canvas with Work and Personal groups, folders with conversations and a note" loading="lazy"></figure>
     </div>
   </section>
 
   <!-- Começar -->
   <section class="section">
     <div class="container">
-      <p class="eyebrow">Comece agora</p>
-      <h2>Rodando em menos de 5 minutos.</h2>
-      <p class="lede">Sem chave de API e sem servidor no meio. Baixe, abra suas pastas e comece.</p>
+      <p class="eyebrow">Get started</p>
+      <h2>Up and running in under 5 minutes.</h2>
+      <p class="lede">No API key and no server in between. Download, open your folders and go.</p>
       <ol class="psteps">
-        <li><span>1</span><h3>Baixe o Argus</h3><p>macOS, Windows ou Linux, direto dos releases no GitHub.</p></li>
-        <li><span>2</span><h3>Entre com o Claude</h3><p>O Argus usa o claude da sua máquina e a assinatura que você já tem.</p></li>
-        <li><span>3</span><h3>Abra uma pasta</h3><p>Arraste para o canvas ou rode argus . no terminal.</p></li>
+        <li><span>1</span><h3>Download Argus</h3><p>macOS, Windows or Linux, straight from the GitHub releases.</p></li>
+        <li><span>2</span><h3>Sign in with Claude</h3><p>Argus uses the claude on your machine and the subscription you already have.</p></li>
+        <li><span>3</span><h3>Open a folder</h3><p>Drag it onto the canvas or run argus . in the terminal.</p></li>
       </ol>
     </div>
   </section>
@@ -129,8 +132,8 @@
   <!-- Outros recursos -->
   <section class="section section--tight">
     <div class="container">
-      <p class="eyebrow">Veja também</p>
-      <div class="pnexts"><a class="pnext" href="conversas.html"><span class="dd__ic">◌</span><strong>Conversas</strong><span class="pnext__go">→</span></a><a class="pnext" href="modo-design.html"><span class="dd__ic">◇</span><strong>Modo design</strong><span class="pnext__go">→</span></a><a class="pnext" href="terminais.html"><span class="dd__ic">{ }</span><strong>Terminais</strong><span class="pnext__go">→</span></a></div>
+      <p class="eyebrow">See also</p>
+      <div class="pnexts"><a class="pnext" href="conversations.html"><span class="dd__ic">◌</span><strong>Conversations</strong><span class="pnext__go">→</span></a><a class="pnext" href="design-mode.html"><span class="dd__ic">◇</span><strong>Design mode</strong><span class="pnext__go">→</span></a><a class="pnext" href="terminals.html"><span class="dd__ic">{ }</span><strong>Terminals</strong><span class="pnext__go">→</span></a></div>
     </div>
   </section>
 
@@ -138,10 +141,10 @@
   <section class="outro">
     <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
     <div class="container outro__inner">
-      <p class="outro__title">Construindo o jeito aberto de acompanhar agentes de código.</p>
-      <p class="lede">O Argus é a base para trabalhar com vários agentes ao mesmo tempo, com tudo à vista e na sua máquina.</p>
-      <a class="btn btn--primary" href="index.html#planos">Baixar o Argus</a>
-      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Ícone do Argus feito de partículas"></canvas></div>
+      <p class="outro__title">Building the open way to keep track of coding agents.</p>
+      <p class="lede">Argus is the foundation for working with many agents at once, with everything in view and on your machine.</p>
+      <a class="btn btn--primary" href="index.html#planos">Download Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Argus icon made of particles"></canvas></div>
     </div>
   </section>
 
@@ -150,8 +153,8 @@
 
 <footer class="legal">
   <div class="container legal__inner">
-    <span class="mono">© 2026 Argus · Protótipo</span>
-    <nav><a href="privacidade.html">Privacidade</a><a href="contato.html">Contato</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
   </div>
 </footer>
 

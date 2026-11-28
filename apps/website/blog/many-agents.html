@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude, Codex, Gemini and Cursor on the same canvas · Argus</title>
+  <meta name="description" content="The right agent for each task, and a conversation that hands steps off to another.">
+  <link rel="icon" href="../assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="../assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="many-agents.html">
+  <link rel="alternate" hreflang="pt-BR" href="../pt/blog/varios-agentes.html">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="../design-mode.html">See how it works</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="../index.html#"><img src="../assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Main">
+      <div class="dd">
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="../canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="../conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="../design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="../terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
+        </div>
+      </div>
+      <a href="../teams.html">For teams</a>
+      <a href="../download.html">Download</a>
+      <a href="../community.html">Community</a>
+      <div class="dd">
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Learn</p>
+          <a href="../help.html"><span class="dd__ic">?</span>Help</a>
+          <a href="../blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="../docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="../changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="../shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="../about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="../contact.html"><span class="dd__ic">✉</span>Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="lang" href="../pt/blog/varios-agentes.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="../index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="../index.html#planos">Download Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">✎</span>Blog</p>
+      <h1>Claude, Codex, Gemini and Cursor on the same canvas</h1>
+      <p class="lede">The right agent for each task, and a conversation that hands steps off to another.</p>
+      <p class="art-meta"><span>New</span><span>João Andrade</span><span>Oct 31, 2026</span></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container article prose">
+      <p class="crumbs"><a href="../blog.html">Blog</a> › New</p>
+      <figure class="pshot article__img"><img src="../assets/produto/terminais.webp" alt="" loading="lazy"></figure>
+      <p>Every coding agent has its strengths. Instead of picking just one, Argus lets you use several side by side.</p>
+<h2>Many agents, one interface</h2>
+<p>Besides Claude Code, Argus connects Codex, Gemini CLI and Cursor CLI. Each one's main account is the one from your terminal; other accounts go in Settings › Accounts.</p>
+<h2>Orchestration</h2>
+<p>With the orchestrator turned on (an experiment), a conversation can split a request into steps and hand each one to another agent. Every agent gets the same delegation tools, and each step asks permission for whatever it does.</p>
+<h2>Everything in view</h2>
+<p>Delegated steps show up in the conversation, with what each agent received and delivered. Nothing is hidden, which has been one of the project's principles from the start.</p>
+    </div>
+  </section>
+  <section class="section section--tight">
+    <div class="container">
+      <p class="eyebrow">Keep reading</p>
+      <div class="post-grid"><a class="post" href="why-a-canvas.html"><img src="../assets/produto/canvas.webp" alt="" loading="lazy"><span class="post__tag">Product</span><h3>Why a canvas for keeping track of coding agents</h3><p>Ten terminal tabs don't scale. What changes when every project becomes a block.</p><span class="post__meta">Oct 31, 2026</span></a><a class="post" href="on-your-subscription.html"><img src="../assets/produto/conversas.webp" alt="" loading="lazy"><span class="post__tag">Behind the scenes</span><h3>How Argus uses your Claude subscription, with no API key</h3><p>Argus doesn't talk to the API: it runs the claude that's already on your machine.</p><span class="post__meta">Oct 31, 2026</span></a><a class="post" href="design-mode.html"><img src="../assets/produto/design.webp" alt="" loading="lazy"><span class="post__tag">New</span><h3>Design mode: from a comment to a finished screen</h3><p>Open your project page in Argus, click an element and say what to change.</p><span class="post__meta">Oct 31, 2026</span></a></div>
+    </div>
+  </section>
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Building the open way to keep track of coding agents.</p>
+      <p class="lede">Argus is the foundation for working with many agents at once, with everything in view and on your machine.</p>
+      <a class="btn btn--primary" href="../index.html#planos">Download Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="../assets/icone-argus-laranja.svg" role="img" aria-label="Argus icon made of particles"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="../privacy.html">Privacy</a><a href="../contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="../script.js"></script>
+</body>
+</html>

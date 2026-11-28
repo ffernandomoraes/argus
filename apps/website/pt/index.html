@@ -91,37 +91,10 @@
         </div>
       </div>
 
-      <!-- Prévia do app: print do Argus com projetos e conversas de exemplo -->
-      <div class="preview">
-        <div class="pv-chrome"><i></i><i></i><i></i></div>
-        <img src="../assets/argus-app.webp" alt="O Argus com os projetos agrupados em Trabalho e Pessoal, as conversas de cada pasta com o status e uma conversa aberta no painel lateral" width="2400" height="1520">
-      </div>
-    </div>
-
-    <!-- Faixa de logos: os arquivos ficam em assets/logos/<nome>.svg; sem o arquivo, aparece o nome -->
-    <div class="logos">
-      <p class="logos__label">Usado por quem trabalha na</p>
-      <div class="marquee">
-        <div class="marquee__track">
-          <span class="brand"><img src="../assets/logos/eduzz.svg" alt="Eduzz" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/flui.svg" alt="Flui" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/hayah.svg" alt="Hayah" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/wegou.svg" alt="Wegou" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/daya.svg" alt="Daya" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/z2pay.svg" alt="Z2Pay" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/sicredi.svg" alt="Sicredi" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/renner.svg" alt="Renner" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand"><img src="../assets/logos/globo.svg" alt="Globo" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/eduzz.svg" alt="Eduzz" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/flui.svg" alt="Flui" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/hayah.svg" alt="Hayah" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/wegou.svg" alt="Wegou" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/daya.svg" alt="Daya" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/z2pay.svg" alt="Z2Pay" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/sicredi.svg" alt="Sicredi" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/renner.svg" alt="Renner" onerror="this.replaceWith(this.alt)"></span>
-          <span class="brand" aria-hidden="true"><img src="../assets/logos/globo.svg" alt="Globo" onerror="this.replaceWith(this.alt)"></span>
-        </div>
+      <!-- Filme de lançamento: começa sozinho e sem som; o botão liga o som e volta ao início -->
+      <div class="preview preview--film" data-film>
+        <video src="../assets/argus-film.mp4" poster="../assets/argus-film.webp" autoplay muted loop playsinline preload="metadata" width="1280" height="720" aria-label="Filme de lançamento do Argus: projetos e agentes de código num canvas infinito, cada conversa com os passos, os diffs e os pedidos de permissão"></video>
+        <button class="film-sound" type="button" data-film-sound aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6h2.3L8 3.5v9L4.8 10H2.5z"/><path class="wave" d="M10.5 5.8a3 3 0 0 1 0 4.4M12.3 4a5.6 5.6 0 0 1 0 8"/></svg><span>Ativar som</span></button>
       </div>
     </div>
   </section>

@@ -553,6 +553,24 @@ if (download) {
     .catch(() => {});
 }
 
+// Filme do topo: toca sozinho e sem som (os navegadores só deixam assim). O botão liga o som e
+// recomeça do início, para a narração ser ouvida inteira; ligado, o filme para no fim em vez de repetir.
+document.querySelectorAll('[data-film]').forEach((box) => {
+  const video = box.querySelector('video');
+  const button = box.querySelector('[data-film-sound]');
+  const label = button.querySelector('span');
+  button.addEventListener('click', () => {
+    const on = video.muted;
+    video.muted = !on;
+    video.loop = !on;
+    if (on) video.currentTime = 0;
+    video.play().catch(() => {});
+    button.setAttribute('aria-pressed', String(on));
+    label.textContent = on ? t('Silenciar', 'Mute') : t('Ativar som', 'Sound on');
+  });
+  video.addEventListener('ended', () => button.click());
+});
+
 // Abas do passo a passo e botão de copiar o comando.
 document.querySelectorAll('.dl-tabs').forEach((tabs) => {
   const box = tabs.parentElement;

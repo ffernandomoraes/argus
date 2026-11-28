@@ -1,5 +1,11 @@
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Idioma da página (o inglês fica na raiz e o português em /pt/) e a pasta do site, tirada do
+// endereço deste script, para montar os caminhos de assets/ de qualquer página.
+const PT = document.documentElement.lang.startsWith('pt');
+const BASE = new URL('.', document.currentScript.src).href;
+const t = (pt, en) => (PT ? pt : en);
+
 // Fundo de caracteres ASCII que se mexe devagar, como uma névoa (hero, infra e rodapé).
 const CHARS = ' .·:-=+*#%@';
 function ascii(canvas) {
@@ -220,12 +226,12 @@ document.querySelectorAll('[data-ripple-grid]').forEach(rippleGrid);
 // Seção do fluxo: o Argus no centro e as seis etapas girando em volta dele. A etapa que passa pelo
 // topo acende e aparece no texto ao lado.
 const STEPS = [
-  { title: 'Pedido', text: 'Escreva, cole um print ou dite o que precisa.', icon: '<path d="M4 5h16v11H9l-5 4z"/>' },
-  { title: 'Plano', text: 'O agente lê o projeto e explica o que vai fazer.', icon: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>' },
-  { title: 'Execução', text: 'Ferramentas e subagentes trabalham, e você vê cada passo.', icon: '<path d="M5 7l5 5-5 5M12.5 17H19"/>' },
-  { title: 'Permissão', text: 'O que pede aprovação chega no chat. Você decide.', icon: '<path d="M12 3l7 3v5.5c0 4.3-3 7.6-7 9.5-4-1.9-7-5.2-7-9.5V6z"/><path d="M9 12l2 2 4-4"/>' },
-  { title: 'Revisão', text: 'O diff de cada arquivo editado, antes e depois.', icon: '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M12 8.5v5M9.5 11h5M9.5 16.5h5"/>' },
-  { title: 'Pronto', text: 'Notificação no sistema quando termina.', icon: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>' },
+  { title: t('Pedido', 'Request'), text: t('Escreva, cole um print ou dite o que precisa.', 'Type it, paste a screenshot or dictate what you need.'), icon: '<path d="M4 5h16v11H9l-5 4z"/>' },
+  { title: t('Plano', 'Plan'), text: t('O agente lê o projeto e explica o que vai fazer.', 'The agent reads the project and explains what it will do.'), icon: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>' },
+  { title: t('Execução', 'Execution'), text: t('Ferramentas e subagentes trabalham, e você vê cada passo.', 'Tools and subagents get to work, and you see every step.'), icon: '<path d="M5 7l5 5-5 5M12.5 17H19"/>' },
+  { title: t('Permissão', 'Permission'), text: t('O que pede aprovação chega no chat. Você decide.', 'Anything that needs approval shows up in the chat. You decide.'), icon: '<path d="M12 3l7 3v5.5c0 4.3-3 7.6-7 9.5-4-1.9-7-5.2-7-9.5V6z"/><path d="M9 12l2 2 4-4"/>' },
+  { title: t('Revisão', 'Review'), text: t('O diff de cada arquivo editado, antes e depois.', 'The diff of every edited file, before and after.'), icon: '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M12 8.5v5M9.5 11h5M9.5 16.5h5"/>' },
+  { title: t('Pronto', 'Done'), text: t('Notificação no sistema quando termina.', 'A system notification when it finishes.'), icon: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>' },
 ];
 
 function orbit(el) {
@@ -334,14 +340,14 @@ function floor(el) {
     for (const name of [...tiles, ...tiles]) {
       const tile = document.createElement('span');
       tile.className = 'floor__tile';
-      tile.innerHTML = `<img src="assets/stack/${name}.svg" alt="" loading="lazy">`;
+      tile.innerHTML = `<img src="${BASE}assets/stack/${name}.svg" alt="" loading="lazy">`;
       row.appendChild(tile);
     }
     plane.appendChild(row);
   }
   const core = document.createElement('span');
   core.className = 'floor__core';
-  core.innerHTML = '<img src="assets/icone-argus-laranja.svg" alt="">';
+  core.innerHTML = `<img src="${BASE}assets/icone-argus-laranja.svg" alt="">`;
   plane.appendChild(core);
   if (reduceMotion) el.querySelectorAll('.floor__row').forEach((row) => (row.style.animation = 'none'));
 }
@@ -520,7 +526,7 @@ if (download) {
   const main = download.querySelector('[data-dl-main]');
   if (os) {
     download.querySelector(`.dl-card[data-os="${os}"]`)?.classList.add('is-mine');
-    main.textContent = `Baixar para ${NAMES[os]}`;
+    main.textContent = t(`Baixar para ${NAMES[os]}`, `Download for ${NAMES[os]}`);
   }
   const MATCH = { dmg: /arm64\.dmg$/, zip: /arm64\.zip$/, exe: /Setup.*\.exe$/, appimage: /\.AppImage$/ };
   fetch('/api/github/latest')
@@ -547,6 +553,24 @@ if (download) {
     .catch(() => {});
 }
 
+// Filme do topo: toca sozinho e sem som (os navegadores só deixam assim). O botão liga o som e
+// recomeça do início, para a narração ser ouvida inteira; ligado, o filme para no fim em vez de repetir.
+document.querySelectorAll('[data-film]').forEach((box) => {
+  const video = box.querySelector('video');
+  const button = box.querySelector('[data-film-sound]');
+  const label = button.querySelector('span');
+  button.addEventListener('click', () => {
+    const on = video.muted;
+    video.muted = !on;
+    video.loop = !on;
+    if (on) video.currentTime = 0;
+    video.play().catch(() => {});
+    button.setAttribute('aria-pressed', String(on));
+    label.textContent = on ? t('Silenciar', 'Mute') : t('Ativar som', 'Sound on');
+  });
+  video.addEventListener('ended', () => button.click());
+});
+
 // Abas do passo a passo e botão de copiar o comando.
 document.querySelectorAll('.dl-tabs').forEach((tabs) => {
   const box = tabs.parentElement;
@@ -561,8 +585,8 @@ document.querySelectorAll('.dl-tabs').forEach((tabs) => {
 document.querySelectorAll('[data-copy]').forEach((b) =>
   b.addEventListener('click', () => {
     navigator.clipboard.writeText(b.dataset.copy).then(() => {
-      b.textContent = 'Copiado';
-      setTimeout(() => (b.textContent = 'Copiar'), 1500);
+      b.textContent = t('Copiado', 'Copied');
+      setTimeout(() => (b.textContent = t('Copiar', 'Copy')), 1500);
     });
   }),
 );
@@ -591,7 +615,8 @@ if (docSide) {
 }
 
 // Novidades: troca a lista pela dos releases mais recentes do GitHub (a do HTML fica de reserva).
-const relList = document.querySelector('[data-releases]');
+// As notas dos releases são escritas em português, então a página em inglês fica com a lista do HTML.
+const relList = PT && document.querySelector('[data-releases]');
 if (relList) {
   const TAGS = { FUNCIONALIDADE: ['Novo', 'new'], MELHORIA: ['Melhoria', 'imp'], BUG: ['Correção', 'fix'] };
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -620,7 +645,7 @@ if (relList) {
 {
   // Pelo worker.js (cópia guardada dos dados do GitHub), não direto no api.github.com.
   const get = (name) => fetch('/api/github/' + name).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => d ?? Promise.reject());
-  const fmt = (n) => (n >= 1000 ? (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K' : String(n));
+  const fmt = (n) => (n >= 1000 ? (n / 1000).toLocaleString(t('pt-BR', 'en-US'), { maximumFractionDigits: 1 }) + 'K' : String(n));
   get('repo')
     .then((r) => {
       document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = fmt(r.stargazers_count)));
@@ -646,7 +671,7 @@ if (relList) {
           a.href = c.html_url;
           a.target = '_blank';
           a.rel = 'noopener';
-          a.innerHTML = `<img src="${c.avatar_url}&s=96" alt=""><strong></strong><span>${c.contributions} contribuições</span>`;
+          a.innerHTML = `<img src="${c.avatar_url}&s=96" alt=""><strong></strong><span>${c.contributions} ${t('contribuições', c.contributions === 1 ? 'contribution' : 'contributions')}</span>`;
           a.querySelector('strong').textContent = c.login;
           people.appendChild(a);
         }

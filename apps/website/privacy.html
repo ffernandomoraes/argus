@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy · Argus</title>
+  <meta name="description" content="What Argus sends off your machine, and what it doesn’t.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="privacy.html">
+  <link rel="alternate" hreflang="pt-BR" href="pt/privacidade.html">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="design-mode.html">See how it works</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Main">
+      <div class="dd">
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="chats.html"><span class="dd__ic">◌</span>Chats</a>
+          <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
+        </div>
+      </div>
+      <a href="teams.html">For teams</a>
+      <a href="download.html">Download</a>
+      <a href="community.html">Community</a>
+      <div class="dd">
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Learn</p>
+          <a href="help.html"><span class="dd__ic">?</span>Help</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="contact.html"><span class="dd__ic">✉</span>Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="lang" href="pt/privacidade.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="index.html#planos">Download Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">◍</span>Privacy</p>
+      <h1>Privacy.</h1>
+      <p class="lede">What Argus sends off your machine, and what it doesn’t.</p>
+      <p class="pnote">Last updated October 31, 2026.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container doc">
+      <nav class="doc-side" aria-label="Privacy"><a href="#resumo">Summary</a><a href="#conversas">Your chats and projects</a><a href="#erros">Error reports</a><a href="#consultas">Requests the app makes</a><a href="#site">This website</a><a href="#codigo">Open source</a><a href="#contato">Questions</a></nav>
+      <div class="doc-body">
+        <section class="doc-sec" id="resumo"><h2>Summary</h2><p>Argus is an app that runs on your machine. There is no Argus account, there is no Argus server sitting between you and your chats, and the app does not collect the contents of your projects or your chats.</p>
+<p>What leaves your machine is your chats with the agents (just as they would from the terminal), a few technical requests and error reports with no personal data. The details are below.</p></section>
+        <section class="doc-sec" id="conversas"><h2>Your chats and projects</h2><p>Argus runs the Claude Code installed on your machine (and, if you connect them, Codex, Gemini CLI or Cursor CLI), with your own login. What you send in a chat goes to the agent’s provider exactly as it would from the terminal, and is covered by that provider’s privacy policy: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic’s</a>, in Claude’s case.</p>
+<p>Projects, chat history, the canvas and settings stay in files on your machine. Argus reads the history that Claude Code itself writes to <code>~/.claude</code>.</p></section>
+        <section class="doc-sec" id="erros"><h2>Error reports</h2><p>In the installed app, errors, crashes and freezes are sent to <a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Sentry</a> so they can be fixed. They are always sent; there is no option to turn them off.</p>
+<table class="doc-table"><tr><th>What is sent</th><th>What is not sent</th></tr>
+<tr><td>Where the error happened (the function stack and your last actions in the app)</td><td>Chats and file contents</td></tr>
+<tr><td>Argus version, operating system and whether WSL is present</td><td>Keys, tokens and email addresses (they are scrubbed)</td></tr>
+<tr><td>A random installation identifier</td><td>Your machine name and your username (they are removed even from folder paths)</td></tr></table>
+<p>Collection of function variables and crash memory snapshots, which could contain bits of chats, is also turned off.</p></section>
+        <section class="doc-sec" id="consultas"><h2>Requests the app makes</h2><table class="doc-table"><tr><th>What for</th><th>Where to</th></tr>
+<tr><td>Check for and download updates (on launch and every 5 hours)</td><td>GitHub</td></tr>
+<tr><td>Find out whether there is a new version of Claude Code</td><td>npm</td></tr>
+<tr><td>Show the usage limit of each account</td><td>Anthropic, with your login</td></tr>
+<tr><td>Install Claude Code, when you ask for it on the welcome screen</td><td>claude.ai (official installer)</td></tr>
+<tr><td>Dictation: audio is streamed in real time to Claude’s voice service</td><td>Anthropic, with your login</td></tr>
+<tr><td>Local audio transcription (experimental): download the model once</td><td>Hugging Face</td></tr></table>
+<p>None of these requests carries the contents of your chats, except dictation, which carries the audio you record.</p></section>
+        <section class="doc-sec" id="site"><h2>This website</h2><p>This website is static and hosted on GitHub Pages. It does not use cookies and has no analytics or advertising tools.</p>
+<p>When you open a page, your browser talks only to GitHub, which hosts the site and provides the repository numbers and download links. GitHub may log your IP address, as described in the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub privacy statement</a>. The fonts are hosted together with the site.</p></section>
+        <section class="doc-sec" id="codigo"><h2>Open source</h2><p>Everything on this page can be checked in the Argus source code, which is open on <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a>.</p></section>
+        <section class="doc-sec" id="contato"><h2>Questions</h2><p>If you have questions about privacy, reach out through the <a href="contact.html">contact page</a>. If the app starts sending anything new, this page will change too.</p></section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help · Argus</title>
+  <meta name="description" content="Step-by-step tutorials for using Argus.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="alternate" hreflang="en" href="help.html">
+  <link rel="alternate" hreflang="pt-BR" href="pt/ajuda.html">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Faixa de aviso -->
+<div class="banner">
+  <p>New: design mode. Comment right on the page and Claude updates the code</p>
+  <a href="design-mode.html">See how it works</a>
+</div>
+
+<!-- Navegação -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="index.html#"><img src="assets/logo-argus.svg" alt="Argus" width="100" height="40"></a>
+
+    <nav class="nav__links" aria-label="Main">
+      <div class="dd">
+        <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu">
+          <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
+          <a href="chats.html"><span class="dd__ic">◌</span>Chats</a>
+          <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
+          <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
+        </div>
+      </div>
+      <a href="teams.html">For teams</a>
+      <a href="download.html">Download</a>
+      <a href="community.html">Community</a>
+      <div class="dd">
+        <button class="dd__btn">Resources <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="dd__menu dd__menu--wide">
+          <p class="dd__eyebrow">Learn</p>
+          <a href="help.html"><span class="dd__ic">?</span>Help</a>
+          <a href="blog.html"><span class="dd__ic">✎</span>Blog</a>
+          <a href="docs.html"><span class="dd__ic">▤</span>Docs</a>
+          <a href="changelog.html"><span class="dd__ic">≡</span>Changelog</a>
+          <a href="shortcuts.html"><span class="dd__ic">▥</span>Shortcuts</a>
+          <p class="dd__eyebrow">Project</p>
+          <a href="about.html"><span class="dd__ic">ⓘ</span>About</a>
+          <a href="contact.html"><span class="dd__ic">✉</span>Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav__right">
+      <a class="lang" href="pt/ajuda.html" hreflang="pt-BR" lang="pt-BR" title="Português">PT</a>
+      <a class="gh" href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>
+        <span data-stars>GitHub</span>
+      </a>
+      <a class="nav__plain" href="index.html#planos">See versions</a>
+      <a class="btn btn--outline" href="index.html#planos">Download Argus</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="phero phero--small">
+    <canvas class="ripple-grid" data-ripple-grid aria-hidden="true"></canvas>
+    <div class="container center">
+      <p class="pbadge"><span class="dd__ic">?</span>Help</p>
+      <h1>How can we help?</h1>
+      <p class="lede">Short step-by-step tutorials, from your first project to parallel tasks.</p>
+    </div>
+  </section>
+
+  <section class="section" data-help>
+    <div class="container">
+      <div class="help-search"><input type="search" placeholder="Search tutorials" aria-label="Search tutorials" data-help-search></div>
+      <div class="help-filters" role="group" aria-label="Filter by topic"><button data-filter="" aria-pressed="true">All</button><button data-filter="Começar" aria-pressed="false">Getting started</button><button data-filter="Canvas" aria-pressed="false">Canvas</button><button data-filter="Conversas" aria-pressed="false">Chats</button><button data-filter="Contas" aria-pressed="false">Accounts</button><button data-filter="Modo design" aria-pressed="false">Design mode</button><button data-filter="Terminais" aria-pressed="false">Terminals</button><button data-filter="Agentes" aria-pressed="false">Agents</button><button data-filter="Avançado" aria-pressed="false">Advanced</button></div>
+      <div class="tgrid"><a class="tcard" href="help/getting-started.html" data-cat="Começar"><span class="tcard__cat">Getting started</span><h3>Getting started: install and open your first project</h3><p>From installation to your first Claude Code chat on the canvas.</p><span class="tcard__meta">Beginner · 5 min</span></a><a class="tcard" href="help/organizing-the-canvas.html" data-cat="Canvas"><span class="tcard__cat">Canvas</span><h3>Organize the canvas with groups and notes</h3><p>Keep work, freelance and personal apart, and leave reminders on the canvas.</p><span class="tcard__meta">Beginner · 4 min</span></a><a class="tcard" href="help/permissions-and-diffs.html" data-cat="Conversas"><span class="tcard__cat">Chats</span><h3>Review every edit before accepting it</h3><p>Permissions, file diffs and each chat's permission mode.</p><span class="tcard__meta">Beginner · 4 min</span></a><a class="tcard" href="help/accounts-per-group.html" data-cat="Contas"><span class="tcard__cat">Accounts</span><h3>Use your company account for work and your own for personal projects</h3><p>Several Claude accounts, one per group, with each one's limit in view.</p><span class="tcard__meta">Intermediate · 3 min</span></a><a class="tcard" href="help/design-mode.html" data-cat="Modo design"><span class="tcard__cat">Design mode</span><h3>Tweak a screen by commenting right on it</h3><p>Open the project's page in Argus and pin comments to its elements.</p><span class="tcard__meta">Intermediate · 5 min</span></a><a class="tcard" href="help/terminals-and-servers.html" data-cat="Terminais"><span class="tcard__cat">Terminals</span><h3>Terminals and the project server on the canvas</h3><p>Open terminals next to your folders and start the server with one button.</p><span class="tcard__meta">Beginner · 3 min</span></a><a class="tcard" href="help/agents-and-memory.html" data-cat="Agentes"><span class="tcard__cat">Agents</span><h3>Create agents and manage project memory</h3><p>A library of agents called with @name, and the CLAUDE.md editor.</p><span class="tcard__meta">Intermediate · 5 min</span></a><a class="tcard" href="help/parallel-tasks.html" data-cat="Avançado"><span class="tcard__cat">Advanced</span><h3>Several tasks in the same project, without conflicts</h3><p>Use git worktrees so each agent works in its own copy of the folder.</p><span class="tcard__meta">Advanced · 5 min</span></a></div>
+      <p class="pnote center" data-help-empty hidden>No tutorials match that search. Try the <a class="dl-link" href="docs.html">docs</a>.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Still have questions?</p>
+      <div class="contact-grid contact-grid--3">
+        <a class="contact" href="docs.html"><span class="contact__ic">▤</span><h3>Docs</h3><p>Concepts, accounts, chats and where data lives.</p><span class="contact__go">Read →</span></a>
+        <a class="contact" href="shortcuts.html"><span class="contact__ic">⌨</span><h3>Shortcuts</h3><p>Every keyboard shortcut, on Windows, Linux and Mac.</p><span class="contact__go">View →</span></a>
+        <a class="contact" href="contact.html"><span class="contact__ic">✉</span><h3>Get in touch</h3><p>Report a problem or suggest an idea on GitHub.</p><span class="contact__go">Contact →</span></a>
+      </div>
+    </div>
+  </section>
+  <!-- Rodapé com CTA -->
+  <section class="outro">
+    <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+    <div class="container outro__inner">
+      <p class="outro__title">Building the open way to keep track of coding agents.</p>
+      <p class="lede">Argus is the foundation for working with many agents at once, with everything in view and on your machine.</p>
+      <a class="btn btn--primary" href="index.html#planos">Download Argus</a>
+      <div class="outro__mark"><canvas data-particles data-src="assets/icone-argus-laranja.svg" role="img" aria-label="Argus icon made of particles"></canvas></div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer class="legal">
+  <div class="container legal__inner">
+    <span class="mono">© 2026 Argus · Prototype</span>
+    <nav><a href="privacy.html">Privacy</a><a href="contact.html">Contact</a><a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">GitHub</a></nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

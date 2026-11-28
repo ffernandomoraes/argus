@@ -30,7 +30,7 @@
         <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd__menu">
           <a href="../canvas.html"><span class="dd__ic">▦</span>Canvas</a>
-          <a href="../conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="../chats.html"><span class="dd__ic">◌</span>Chats</a>
           <a href="../design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
           <a href="../terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
         </div>
@@ -83,9 +83,9 @@
       <figure class="pshot article__img"><img src="../assets/produto/conversas.webp" alt="" loading="lazy"></figure>
       <p>One decision from the start of the project was not to ask for an API key. Anyone who uses Claude Code every day already has a subscription, and paying per use all over again just to get an interface makes no sense.</p>
 <h2>The claude on your machine</h2>
-<p>Every Argus conversation is opened by the Claude Agent SDK pointing at the <code>claude</code> installed on your computer. The SDK doesn't call the API directly: it starts that <code>claude</code> and talks to it. That's why the conversation uses the login you already have and behaves just like in the terminal, with the same prompt, <code>CLAUDE.md</code>, settings and MCPs.</p>
+<p>Every Argus chat is opened by the Claude Agent SDK pointing at the <code>claude</code> installed on your computer. The SDK doesn't call the API directly: it starts that <code>claude</code> and talks to it. That's why the chat uses the login you already have and behaves just like in the terminal, with the same prompt, <code>CLAUDE.md</code>, settings and MCPs.</p>
 <h2>What the app reads</h2>
-<p>To show conversation history and status, Argus reads the files Claude Code itself writes to <code>~/.claude</code>: the history of each session and the status of each open Claude Code. That's also how it sees conversations opened in the terminal or in VS Code.</p>
+<p>To show chat history and status, Argus reads the files Claude Code itself writes to <code>~/.claude</code>: the history of each session and the status of each open Claude Code. That's also how it sees chats opened in the terminal or in VS Code.</p>
 <h2>The caveat</h2>
 <p>These files are an internal Claude Code format, not a public API. Every part of the app that depends on them has the version it was checked against noted in the code, so any change gets noticed quickly.</p>
     </div>

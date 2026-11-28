@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Argus · The open canvas for coding agents</title>
-  <meta name="description" content="Argus is an infinite canvas for keeping track of all your projects and your Claude Code, Codex, Gemini and Cursor conversations at once.">
+  <meta name="description" content="Argus is an infinite canvas for keeping track of all your projects and your Claude Code, Codex, Gemini and Cursor chats at once.">
   <link rel="icon" href="assets/favicon.png" type="image/png" sizes="256x256">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -30,7 +30,7 @@
         <button class="dd__btn">Product <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd__menu">
           <a href="canvas.html"><span class="dd__ic">▦</span>Canvas</a>
-          <a href="conversations.html"><span class="dd__ic">◌</span>Conversations</a>
+          <a href="chats.html"><span class="dd__ic">◌</span>Chats</a>
           <a href="design-mode.html"><span class="dd__ic">◇</span>Design mode</a>
           <a href="terminals.html"><span class="dd__ic">{ }</span>Terminals</a>
         </div>
@@ -74,7 +74,7 @@
     <div class="hero__grid">
       <div class="hero__copy">
         <h1>The open canvas <span class="hl">for coding agents</span></h1>
-        <p class="hero__lede">Keep track of all your projects and Claude Code conversations on an infinite canvas. Free and <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">open source</a>, it runs on your machine with the subscription you already have.</p>
+        <p class="hero__lede">Keep track of all your projects and Claude Code chats on an infinite canvas. Free and <a href="https://github.com/ffernandomoraes/argus" target="_blank" rel="noopener">open source</a>, it runs on your machine with the subscription you already have.</p>
         <div class="hero__btns">
           <a class="btn btn--primary" href="#planos">
             <svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg>
@@ -94,7 +94,7 @@
       <!-- Prévia do app: print do Argus com projetos e conversas de exemplo -->
       <div class="preview">
         <div class="pv-chrome"><i></i><i></i><i></i></div>
-        <img src="assets/argus-app.webp" alt="Argus with projects grouped into Work and Personal, each folder's conversations with their status, and a conversation open in the side panel" width="2400" height="1520">
+        <img src="assets/argus-app.webp" alt="Argus with projects grouped into Work and Personal, each folder's chats with their status, and a chat open in the side panel" width="2400" height="1520">
       </div>
     </div>
 
@@ -130,14 +130,14 @@
   <section class="section" id="produto">
     <div class="container center">
       <h2>Open it once. Let the agents work.</h2>
-      <p class="lede">Drag your folders onto the canvas, start conversations and keep an eye on everything from a distance. Argus lets you know when someone needs you.</p>
+      <p class="lede">Drag your folders onto the canvas, start chats and keep an eye on everything from a distance. Argus lets you know when someone needs you.</p>
       <a class="btn btn--primary" href="#casos">See what you can do</a>
     </div>
     <div class="cards-marquee">
       <div class="cards-marquee__track">
         <article class="ucard"><div class="ucard__ic"><img src="assets/tools/claude.svg" alt="Claude Code"></div><h3>Chat with Claude Code</h3><p>The full chat for each folder, with the same CLAUDE.md, settings and MCPs as your terminal.</p><span class="tag">Agent</span></article>
-        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/openai.svg" alt="Codex"></div><h3>Use Codex on the same canvas</h3><p>Open Codex conversations next to your Claude ones and compare what each delivers.</p><span class="tag">Agent</span></article>
-        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/googlegemini.svg" alt="Gemini"></div><h3>Hand off steps to Gemini CLI</h3><p>A conversation passes a step to Gemini, and you follow the result right there.</p><span class="tag">Orchestration</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/openai.svg" alt="Codex"></div><h3>Use Codex on the same canvas</h3><p>Open Codex chats next to your Claude ones and compare what each delivers.</p><span class="tag">Agent</span></article>
+        <article class="ucard"><div class="ucard__ic"><img src="assets/tools/googlegemini.svg" alt="Gemini"></div><h3>Hand off steps to Gemini CLI</h3><p>A chat passes a step to Gemini, and you follow the result right there.</p><span class="tag">Orchestration</span></article>
         <article class="ucard"><div class="ucard__ic"><img src="assets/tools/github.svg" alt="GitHub"></div><h3>Review every pull request</h3><p>Open the repository on GitHub from the folder and ask for a full review of a branch.</p><span class="tag">Code review</span></article>
         <article class="ucard"><div class="ucard__ic"><img src="assets/tools/git.svg" alt="git"></div><h3>See what changed before you commit</h3><p>The branch badge shows uncommitted files, and one click opens the diff for each.</p><span class="tag">Version control</span></article>
         <article class="ucard"><div class="ucard__ic"><img src="assets/tools/nodedotjs.svg" alt="Node.js"></div><h3>Start the project's server</h3><p>A button above the folder runs the dev script from package.json and shows the address.</p><span class="tag">Servers</span></article>
@@ -145,8 +145,8 @@
         <article class="ucard"><div class="ucard__ic"><img src="assets/tools/gnubash.svg" alt="Terminal"></div><h3>Terminals anywhere on the canvas</h3><p>A shell or Claude Code in a folder, with focus mode and the group's Claude account.</p><span class="tag">Terminal</span></article>
         <article class="ucard"><div class="ucard__ic"><img src="assets/tools/docker.svg" alt="Docker"></div><h3>Know what's still running</h3><p>The local servers list shows what the agents left up, with a shortcut to stop it.</p><span class="tag">Infra</span></article>
         <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/claude.svg" alt="Claude Code"></div><h3>Chat with Claude Code</h3><p>The full chat for each folder, with the same CLAUDE.md, settings and MCPs as your terminal.</p><span class="tag">Agent</span></article>
-        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/openai.svg" alt="Codex"></div><h3>Use Codex on the same canvas</h3><p>Open Codex conversations next to your Claude ones and compare what each delivers.</p><span class="tag">Agent</span></article>
-        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/googlegemini.svg" alt="Gemini"></div><h3>Hand off steps to Gemini CLI</h3><p>A conversation passes a step to Gemini, and you follow the result right there.</p><span class="tag">Orchestration</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/openai.svg" alt="Codex"></div><h3>Use Codex on the same canvas</h3><p>Open Codex chats next to your Claude ones and compare what each delivers.</p><span class="tag">Agent</span></article>
+        <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/googlegemini.svg" alt="Gemini"></div><h3>Hand off steps to Gemini CLI</h3><p>A chat passes a step to Gemini, and you follow the result right there.</p><span class="tag">Orchestration</span></article>
         <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/github.svg" alt="GitHub"></div><h3>Review every pull request</h3><p>Open the repository on GitHub from the folder and ask for a full review of a branch.</p><span class="tag">Code review</span></article>
         <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/git.svg" alt="git"></div><h3>See what changed before you commit</h3><p>The branch badge shows uncommitted files, and one click opens the diff for each.</p><span class="tag">Version control</span></article>
         <article class="ucard" aria-hidden="true"><div class="ucard__ic"><img src="assets/tools/nodedotjs.svg" alt="Node.js"></div><h3>Start the project's server</h3><p>A button above the folder runs the dev script from package.json and shows the address.</p><span class="tag">Servers</span></article>
@@ -164,7 +164,7 @@
         <div class="cycle__text">
           <p class="cycle__eyebrow"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="4.5" cy="4.5" r="2.5"/><circle cx="11.5" cy="11.5" r="2.5"/><path d="M4.5 7v2a2.5 2.5 0 0 0 2.5 2.5H9"/></svg>Flow</p>
           <h2>From request to finished change.</h2>
-          <p class="cycle__lede">Write the request, follow the plan, approve what needs approving and review the result. Every conversation goes through the same steps, and you can see which one it's on.</p>
+          <p class="cycle__lede">Write the request, follow the plan, approve what needs approving and review the result. Every chat goes through the same steps, and you can see which one it's on.</p>
           <div class="cycle__now" aria-live="polite">
             <span class="cycle__step mono" data-cycle-num>01</span>
             <strong data-cycle-title>Request</strong>
@@ -172,7 +172,7 @@
           </div>
         </div>
         <!-- Órbita das etapas: o Argus no centro e as etapas girando em volta (script.js) -->
-        <div class="orbit" data-orbit role="img" aria-label="Argus at the center with the six steps of a conversation circling it: request, plan, execution, permission, review and done">
+        <div class="orbit" data-orbit role="img" aria-label="Argus at the center with the six steps of a chat circling it: request, plan, execution, permission, review and done">
           <span class="orbit__ring orbit__ring--outer"></span>
           <span class="orbit__ring orbit__ring--inner"></span>
           <div class="orbit__core"><img src="assets/icone-argus-laranja.svg" alt=""></div>
@@ -217,7 +217,7 @@
       <div>
         <p class="eyebrow">Multiple agents</p>
         <h2>Your agents. Your models. Your machine.</h2>
-        <p class="lede">Use whichever agent makes the most sense for each task. A conversation can even hand off steps to another agent, and you follow each one.</p>
+        <p class="lede">Use whichever agent makes the most sense for each task. A chat can even hand off steps to another agent, and you follow each one.</p>
       </div>
       <div class="stack">
         <p class="stack__title">Your stack</p>
@@ -264,7 +264,7 @@
         <ul>
           <li>Runs locally, on your real code</li>
           <li>Claude Code, Codex, Gemini or Cursor</li>
-          <li>Many conversations in parallel</li>
+          <li>Many chats in parallel</li>
           <li>Notifications when something needs you</li>
           <li>Uses the subscription you already have</li>
         </ul>
@@ -304,7 +304,7 @@
         <div>
           <p class="eyebrow">Permissions</p>
           <h2>Control what agents can do.</h2>
-          <p class="lede">Pick the permission mode for each conversation, approve commands one by one and see everything that was done. Nothing runs behind your back.</p>
+          <p class="lede">Pick the permission mode for each chat, approve commands one by one and see everything that was done. Nothing runs behind your back.</p>
           <a class="btn btn--outline" href="#faq">Learn more</a>
         </div>
         <div class="control__card">
@@ -343,9 +343,9 @@
       </div>
       <div class="faq__list">
         <details open><summary>What is Argus?</summary><p>A desktop app with an infinite canvas where each project folder becomes a block. Inside it, you chat with coding agents and follow what each one is doing.</p></details>
-        <details><summary>How is it different from the terminal?</summary><p>The agent is the same. The difference is seeing all your conversations together, with status, diffs, permissions and subagents, without hunting through tabs.</p></details>
+        <details><summary>How is it different from the terminal?</summary><p>The agent is the same. The difference is seeing all your chats together, with status, diffs, permissions and subagents, without hunting through tabs.</p></details>
         <details><summary>Do I need an API key?</summary><p>No. Argus runs the claude installed on your machine, with the subscription you already have.</p></details>
-        <details><summary>Does my code leave my machine?</summary><p>The app runs locally, with no server in between. Conversations go to the model the same way they would from the terminal.</p></details>
+        <details><summary>Does my code leave my machine?</summary><p>The app runs locally, with no server in between. Chats go to the model the same way they would from the terminal.</p></details>
         <details><summary>Does it work on Windows and Linux?</summary><p>Yes. There are versions for macOS (Apple Silicon), Windows 10 and 11 and Linux (AppImage), plus support for projects inside WSL.</p></details>
       </div>
     </div>
